@@ -4,6 +4,7 @@ import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import type { Diff } from "../BuildDiffState";
 import { AnnotationsRow } from "./metadata/AnnotationsRow";
 import { AutomationLibraryRow } from "./metadata/AutomationLibraryRow";
+import { BaselineRow } from "./metadata/BaselineRow";
 import { BrowserRow } from "./metadata/BrowserRow";
 import { ColorSchemeRow } from "./metadata/ColorSchemeRow";
 import { MediaTypeRow } from "./metadata/MediaTypeRow";
@@ -67,6 +68,7 @@ export function MetadataSection(props: MetadataSectionProps) {
           <ColorSchemeRow diff={diff} siblingDiffs={siblingDiffs} />
           <MediaTypeRow mediaType={metadata?.mediaType ?? null} />
           <ThresholdRow threshold={diff.threshold ?? null} />
+          <BaselineRow diff={diff} />
           <RetryRow test={test} />
           <RepeatRow
             test={test}

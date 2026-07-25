@@ -2,6 +2,7 @@ import {
   ScreenshotMetadata,
   ScreenshotMetadataJSONSchema,
 } from "@argos/schemas/screenshot-metadata";
+import { invariant } from "@argos/util/invariant";
 import type { JSONSchema, RelationMappings } from "objection";
 import type Objection from "objection";
 
@@ -16,7 +17,7 @@ export class Screenshot extends Model {
   static override tableName = "screenshots";
 
   static override get jsonAttributes() {
-    return ["metadata"];
+    return ["metadata", "baseNames"];
   }
 
   static override jsonSchema = {
@@ -28,6 +29,16 @@ export class Screenshot extends Model {
         properties: {
           name: { type: "string", maxLength: 1024 },
           baseName: { type: ["string", "null"], maxLength: 1024 },
+          baseNames: {
+            anyOf: [
+              {
+                type: "array",
+                items: { type: "string", maxLength: 1024 },
+                minItems: 1,
+              },
+              { type: "null" },
+            ],
+          },
           s3Id: { type: "string" },
           screenshotBucketId: { type: "string" },
           fileId: { type: ["string", "null"] },
@@ -47,7 +58,12 @@ export class Screenshot extends Model {
   };
 
   name!: string;
+  /**
+   * @deprecated Superseded by `baseNames`. Still read for screenshots uploaded
+   * before `baseNames` existed — always go through `$getBaseNameCandidates`.
+   */
   baseName!: string | null;
+  baseNames!: string[] | null;
   parentName!: string | null;
   s3Id!: string;
   screenshotBucketId!: string;
@@ -57,6 +73,29 @@ export class Screenshot extends Model {
   playwrightTraceFileId!: string | null;
   buildShardId!: string | null;
   threshold!: number | null;
+
+  /**
+   * The names to look for in the base bucket, in priority order: the first one
+   * that exists there wins. Without an override, a screenshot compares against
+   * its own name, so the list is never empty.
+   */
+  $getBaseNameCandidates(): string[] {
+    const overrides =
+      this.baseNames ?? (this.baseName ? [this.baseName] : null);
+    return overrides && overrides.length > 0 ? overrides : [this.name];
+  }
+
+  /**
+   * The name this screenshot occupies once it becomes a baseline — the name a
+   * later build looks for when comparing against it. This is the first
+   * candidate, so retries and repeats (`hero repeat-2`, base name `hero`) fold
+   * back onto the canonical name.
+   */
+  $getBaselineName(): string {
+    const [primary] = this.$getBaseNameCandidates();
+    invariant(primary, "candidates are never empty");
+    return primary;
+  }
 
   /**
    * Create a partial clone of a screenshot model.
@@ -89,6 +128,7 @@ export class Screenshot extends Model {
       playwrightTraceFileId: model.playwrightTraceFileId,
       threshold: model.threshold,
       baseName: model.baseName,
+      baseNames: model.baseNames,
       parentName: model.parentName,
     };
   }

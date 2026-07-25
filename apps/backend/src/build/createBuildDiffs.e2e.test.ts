@@ -276,6 +276,193 @@ describe("#createBuildDiffs", () => {
     });
   });
 
+  describe("with base name candidates", () => {
+    let baseBucket: ScreenshotBucket;
+
+    beforeEach(async () => {
+      baseBucket = await factory.ScreenshotBucket.create({
+        branch: "master",
+        projectId: project.id,
+      });
+      await build
+        .$query()
+        .patchAndFetch({ baseScreenshotBucketId: baseBucket.id });
+    });
+
+    it("falls back to the next candidate when the first one is missing", async () => {
+      const [base, compare] = await factory.Screenshot.createMany(2, [
+        {
+          name: "home.png",
+          s3Id: "s3Id-home",
+          fileId: files[2]!.id,
+          screenshotBucketId: baseBucket.id,
+        },
+        {
+          name: "home-variant-b.png",
+          s3Id: "s3Id-home-variant-b",
+          fileId: files[3]!.id,
+          screenshotBucketId: compareBucket.id,
+          baseNames: ["home-variant-b.png", "home.png"],
+        },
+      ]);
+      invariant(base && compare);
+
+      const diffs = await createBuildDiffs(build);
+      const diff = diffs.find((d) => d.compareScreenshotId === compare.id);
+
+      expect(diff).toMatchObject({ baseScreenshotId: base.id });
+    });
+
+    it("prefers the first candidate present in the baseline", async () => {
+      const [exactBase, fallbackBase, compare] =
+        await factory.Screenshot.createMany(3, [
+          {
+            name: "home-variant-b.png",
+            s3Id: "s3Id-exact",
+            fileId: files[2]!.id,
+            screenshotBucketId: baseBucket.id,
+          },
+          {
+            name: "home.png",
+            s3Id: "s3Id-fallback",
+            fileId: files[3]!.id,
+            screenshotBucketId: baseBucket.id,
+          },
+          {
+            name: "home-variant-b.png",
+            s3Id: "s3Id-compare",
+            fileId: files[4]!.id,
+            screenshotBucketId: compareBucket.id,
+            baseNames: ["home-variant-b.png", "home.png"],
+          },
+        ]);
+      invariant(exactBase && fallbackBase && compare);
+
+      const diffs = await createBuildDiffs(build);
+      const diff = diffs.find((d) => d.compareScreenshotId === compare.id);
+
+      expect(diff).toMatchObject({ baseScreenshotId: exactBase.id });
+    });
+
+    it("does not mark a baseline reached through a fallback as removed", async () => {
+      const [base, compare] = await factory.Screenshot.createMany(2, [
+        {
+          name: "home.png",
+          s3Id: "s3Id-home",
+          fileId: files[2]!.id,
+          screenshotBucketId: baseBucket.id,
+        },
+        {
+          name: "home-variant-b.png",
+          s3Id: "s3Id-home-variant-b",
+          fileId: files[3]!.id,
+          screenshotBucketId: compareBucket.id,
+          baseNames: ["home-variant-b.png", "home.png"],
+        },
+      ]);
+      invariant(base && compare);
+
+      const diffs = await createBuildDiffs(build);
+      const removedDiff = diffs.find(
+        (d) => d.baseScreenshotId === base.id && d.compareScreenshotId === null,
+      );
+
+      expect(removedDiff).toBeUndefined();
+    });
+
+    it("creates a diff per screenshot sharing the same fallback baseline", async () => {
+      const [base, firstCompare, secondCompare] =
+        await factory.Screenshot.createMany(3, [
+          {
+            name: "home.png",
+            s3Id: "s3Id-home",
+            fileId: files[2]!.id,
+            screenshotBucketId: baseBucket.id,
+          },
+          {
+            name: "home-variant-b.png",
+            s3Id: "s3Id-home-variant-b",
+            fileId: files[3]!.id,
+            screenshotBucketId: compareBucket.id,
+            baseNames: ["home-variant-b.png", "home.png"],
+          },
+          {
+            name: "home-variant-c.png",
+            s3Id: "s3Id-home-variant-c",
+            fileId: files[4]!.id,
+            screenshotBucketId: compareBucket.id,
+            baseNames: ["home-variant-c.png", "home.png"],
+          },
+        ]);
+      invariant(base && firstCompare && secondCompare);
+
+      const diffs = await createBuildDiffs(build);
+
+      expect(
+        diffs.find((d) => d.compareScreenshotId === firstCompare.id),
+      ).toMatchObject({ baseScreenshotId: base.id });
+      expect(
+        diffs.find((d) => d.compareScreenshotId === secondCompare.id),
+      ).toMatchObject({ baseScreenshotId: base.id });
+    });
+
+    it("still honors the legacy `baseName` column", async () => {
+      const [base, compare] = await factory.Screenshot.createMany(2, [
+        {
+          name: "home.png",
+          s3Id: "s3Id-home",
+          fileId: files[2]!.id,
+          screenshotBucketId: baseBucket.id,
+        },
+        {
+          name: "home repeat-2.png",
+          s3Id: "s3Id-repeat",
+          fileId: files[3]!.id,
+          screenshotBucketId: compareBucket.id,
+          baseName: "home.png",
+        },
+      ]);
+      invariant(base && compare);
+
+      const diffs = await createBuildDiffs(build);
+      const diff = diffs.find((d) => d.compareScreenshotId === compare.id);
+
+      expect(diff).toMatchObject({ baseScreenshotId: base.id });
+    });
+
+    it("reports a baseline no compare screenshot points at as removed", async () => {
+      const [base, compare] = await factory.Screenshot.createMany(2, [
+        {
+          name: "gone.png",
+          s3Id: "s3Id-gone",
+          fileId: files[2]!.id,
+          screenshotBucketId: baseBucket.id,
+        },
+        {
+          name: "home-variant-b.png",
+          s3Id: "s3Id-home-variant-b",
+          fileId: files[3]!.id,
+          screenshotBucketId: compareBucket.id,
+          baseNames: ["home-variant-b.png", "home.png"],
+        },
+      ]);
+      invariant(base && compare);
+
+      const diffs = await createBuildDiffs(build);
+
+      expect(
+        diffs.find(
+          (d) =>
+            d.baseScreenshotId === base.id && d.compareScreenshotId === null,
+        ),
+      ).toBeDefined();
+      // No candidate matched, so it is a brand new screenshot.
+      expect(
+        diffs.find((d) => d.compareScreenshotId === compare.id),
+      ).toMatchObject({ baseScreenshotId: null });
+    });
+  });
+
   describe("without base bucket", () => {
     it("should work with a first build", async () => {
       const diffs = await createBuildDiffs(build);

@@ -55,6 +55,7 @@ const ScreenshotDiffFragment = graphql(`
     contentType
     baseScreenshot {
       id
+      name
       url
       originalUrl
       width
@@ -116,6 +117,7 @@ const ScreenshotDiffFragment = graphql(`
     }
     compareScreenshot {
       id
+      name
       url
       originalUrl
       width

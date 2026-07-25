@@ -39,6 +39,24 @@ describe("ScreenshotInputSchema", () => {
     ).toBe("text/html");
   });
 
+  it("accepts baseName as a single name or as a list of candidates", () => {
+    expect(
+      ScreenshotInputSchema.parse({ ...base, baseName: "home.png" }).baseName,
+    ).toBe("home.png");
+    expect(
+      ScreenshotInputSchema.parse({
+        ...base,
+        baseName: ["home-variant-b.png", "home.png"],
+      }).baseName,
+    ).toEqual(["home-variant-b.png", "home.png"]);
+  });
+
+  it("rejects an empty list of baseName candidates", () => {
+    expect(() =>
+      ScreenshotInputSchema.parse({ ...base, baseName: [] }),
+    ).toThrow();
+  });
+
   it("rejects unsupported and unsafe content types", () => {
     const rejected = [
       "image/svg+xml",

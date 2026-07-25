@@ -2075,7 +2075,8 @@ CREATE TABLE public.screenshots (
     "buildShardId" bigint,
     threshold real,
     "baseName" character varying(1024),
-    "parentName" character varying(255)
+    "parentName" character varying(255),
+    "baseNames" jsonb
 );
 
 
@@ -5836,3 +5837,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723120000_staff-team-contacts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723130000_github-repository-installation-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260724120000_ms-teams-webhooks.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260725120000_screenshot-base-names.js', 1, NOW());

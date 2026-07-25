@@ -124,6 +124,21 @@ export async function createBuildDiffs(build: Build) {
     baseBucket.id === compareScreenshotBucket.id,
   );
 
+  // Index the baseline by name so each compare screenshot can probe its
+  // candidates cheaply. The first screenshot wins for a duplicated name, which
+  // preserves the previous `Array.find` behaviour.
+  const baseScreenshotsByName = new Map<string, Screenshot>();
+  for (const screenshot of baseBucket?.screenshots ?? []) {
+    if (!baseScreenshotsByName.has(screenshot.name)) {
+      baseScreenshotsByName.set(screenshot.name, screenshot);
+    }
+  }
+
+  // Baselines that a compare screenshot is being diffed against. They are still
+  // in use, so they must not also be reported as removed — which can happen
+  // when a baseline is reached through a fallback name instead of its own.
+  const usedBaseScreenshotIds = new Set<string>();
+
   const inserts = compareScreenshots.map((compareScreenshot) => {
     const baseScreenshot = (() => {
       if (sameBucket) {
@@ -141,13 +156,22 @@ export async function createBuildDiffs(build: Build) {
 
       invariant(baseBucket.screenshots, "no base screenshots found for build");
 
-      return baseBucket.screenshots.find(({ name }) => {
-        if (compareScreenshot.baseName) {
-          return name === compareScreenshot.baseName;
+      // Try each candidate in order and keep the first one present in the
+      // baseline. Without an override the only candidate is the screenshot's
+      // own name.
+      for (const candidate of compareScreenshot.$getBaseNameCandidates()) {
+        const found = baseScreenshotsByName.get(candidate);
+        if (found) {
+          return found;
         }
-        return name === compareScreenshot.name;
-      });
+      }
+
+      return null;
     })();
+
+    if (baseScreenshot) {
+      usedBaseScreenshotIds.add(baseScreenshot.id);
+    }
 
     const sameFileId = Boolean(
       baseScreenshot?.fileId &&
@@ -174,8 +198,9 @@ export async function createBuildDiffs(build: Build) {
   const removedScreenshots =
     baseBucket?.screenshots
       ?.filter(
-        ({ name }) =>
+        ({ id, name }) =>
           !compareScreenshotNames.includes(name) &&
+          !usedBaseScreenshotIds.has(id) &&
           // Don't mark failure screenshots as removed
           !ScreenshotDiff.screenshotFailureRegexp.test(name),
       )

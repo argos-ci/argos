@@ -16,6 +16,20 @@ function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
+/**
+ * Normalize the API's `baseName` (a single name or an ordered list of
+ * candidates) into the list stored on the screenshot.
+ */
+function normalizeBaseNames(
+  baseName: string | string[] | null | undefined,
+): string[] | null {
+  if (!baseName) {
+    return null;
+  }
+  const names = Array.isArray(baseName) ? baseName : [baseName];
+  return names.length > 0 ? names : null;
+}
+
 const getOrCreateTests = async ({
   projectId,
   buildName,
@@ -55,7 +69,7 @@ type InsertFilesAndScreenshotsParams = {
     metadata?: ScreenshotMetadata | null | undefined;
     pwTraceKey?: string | null | undefined;
     threshold?: number | null | undefined;
-    baseName?: string | null | undefined;
+    baseName?: string | string[] | null | undefined;
     parentName?: string | null | undefined;
     contentType: string;
   }[];
@@ -239,7 +253,9 @@ export async function insertFilesAndScreenshots(
           playwrightTraceFileId: pwTraceFile?.id ?? null,
           buildShardId: params.shard?.id ?? null,
           threshold: screenshot.threshold ?? null,
-          baseName: screenshot.baseName ?? null,
+          // The legacy `baseName` column is no longer written; everything goes
+          // through `baseNames`, which supports several candidates.
+          baseNames: normalizeBaseNames(screenshot.baseName),
           parentName: screenshot.parentName ?? null,
         };
       }),

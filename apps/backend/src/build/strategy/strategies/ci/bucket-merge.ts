@@ -33,7 +33,7 @@ export async function mergeBucketWithBuildDiffs(
 
   const screenshotsByName = baseScreenshots.reduce<Record<string, Screenshot>>(
     (index, screenshot) => {
-      index[screenshot.baseName ?? screenshot.name] = screenshot;
+      index[screenshot.$getBaselineName()] = screenshot;
       return index;
     },
     {},
@@ -48,16 +48,13 @@ export async function mergeBucketWithBuildDiffs(
           diff.compareScreenshot,
           "Relation `compareScreenshot` not loaded",
         );
-        screenshotsByName[
-          diff.compareScreenshot.baseName ?? diff.compareScreenshot.name
-        ] = diff.compareScreenshot;
+        screenshotsByName[diff.compareScreenshot.$getBaselineName()] =
+          diff.compareScreenshot;
         break;
       }
       case "removed": {
         invariant(diff.baseScreenshot, "Relation `baseScreenshot` not loaded");
-        delete screenshotsByName[
-          diff.baseScreenshot.baseName ?? diff.baseScreenshot.name
-        ];
+        delete screenshotsByName[diff.baseScreenshot.$getBaselineName()];
         break;
       }
       case "unchanged":

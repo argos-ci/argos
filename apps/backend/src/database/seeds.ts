@@ -680,6 +680,139 @@ export async function createTestChangeScenario(input: {
 }
 
 /**
+ * A build where a screenshot was compared against a baseline stored under a
+ * different name, because its `baseNames` listed a fallback. Kept separate from
+ * {@link createBuildScenario} so it can be used in isolation without perturbing
+ * the other scenarios' baselines.
+ */
+export async function createFallbackBaselineScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build }> {
+  const { projectId } = input;
+  const now = new Date().toISOString();
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 1,
+    storybookScreenshotCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "6dcb09b5b57875f334f61aebed695e2e4193db5e" },
+      { ...bucketProps, commit: "ac7d1a6a6b0ea1a2d2b4bd0f4c6b6f5b0e3f8a1c" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  // Reuse the CDN-hosted fixtures so the images actually render.
+  const ensureFile = async (props: {
+    type: "screenshot" | "screenshotDiff";
+    width: number;
+    height: number;
+    key: string;
+    contentType: string;
+  }): Promise<File> => {
+    const existing = await File.query().findOne({ key: props.key });
+    if (existing) {
+      return existing;
+    }
+    return File.query().insertAndFetch(props);
+  };
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [baseTest, compareTest] = await Test.query().insertAndFetch([
+    { name: "home.png", buildName: "default", projectId },
+    { name: "home-variant-b.png", buildName: "default", projectId },
+  ]);
+  invariant(baseTest && compareTest);
+
+  const [baseScreenshot, compareScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        screenshotBucketId: baseBucket.id,
+        testId: baseTest.id,
+        name: "home.png",
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        screenshotBucketId: compareBucket.id,
+        testId: compareTest.id,
+        name: "home-variant-b.png",
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+        // "home-variant-b.png" does not exist in the baseline, so the comparison
+        // falls back to "home.png".
+        baseNames: ["home-variant-b.png", "home.png"],
+      },
+    ]);
+  invariant(baseScreenshot && compareScreenshot);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "default",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+  invariant(build);
+
+  await ScreenshotDiff.query().insert([
+    {
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      testId: compareTest.id,
+      score: 0.3,
+      jobStatus: "complete" as const,
+      s3Id: diffFile.key,
+      fileId: diffFile.id,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  // Computes the build stats and conclusion the build page relies on.
+  await concludeBuild({ build, notify: false });
+
+  return { build };
+}
+
+/**
  * Manifest for the "real world" build scenario below.
  *
  * The referenced assets (screenshots, diffs, Playwright traces and markdown
