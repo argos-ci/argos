@@ -273,7 +273,11 @@ export async function serializeSnapshotDiffs(
         serializeSnapshot(diff.compareScreenshot),
         getSnapshotDiffUrl(diff),
       ]);
-      const name = base?.name ?? head?.name;
+      // Prefer the head snapshot, like `parentName` below: it is the one that
+      // exists in this build, so it is the name the user wrote. The base can be
+      // stored under another name (`baseName`), and is only a fallback for
+      // removed snapshots, which have no head snapshot at all.
+      const name = head?.name ?? base?.name;
       invariant(name, "Screenshot diff without name");
       const parentName =
         diff.compareScreenshot?.parentName ??

@@ -94,6 +94,7 @@ export const typeDefs = gql`
 
   type Screenshot implements Node {
     id: ID!
+    name: String!
     url: String!
     originalUrl: String!
     width: Int

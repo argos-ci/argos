@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { BuildScenario } from "../apps/backend/src/database/seeds";
+import {
+  BuildScenario,
+  createFallbackBaselineScenario,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -79,3 +82,35 @@ buildExamples.forEach((build) => {
     });
   });
 });
+
+loggedTest(
+  "snapshot compared against a fallback baseline",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createFallbackBaselineScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    // The metadata sidebar states which baseline the snapshot was compared
+    // against, since it differs from the snapshot's own name.
+    // The snapshot is titled by its own name, and the metadata sidebar names
+    // the baseline it was compared against.
+    await expect(
+      page.getByRole("heading", { name: "home-variant-b.png" }),
+    ).toBeVisible();
+    await expect(page.getByText("Baseline home.png")).toBeVisible();
+
+    await screenshot(page, "build-fallback-baseline", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+  },
+);

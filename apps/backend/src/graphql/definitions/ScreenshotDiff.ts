@@ -68,7 +68,11 @@ const nameResolver: IScreenshotDiffResolvers["name"] = async (
       ? ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId)
       : null,
   ]);
-  const name = baseScreenshot?.name || compareScreenshot?.name;
+  // Prefer the compare screenshot: it is the one that exists in this build, so
+  // it is the name the user wrote. The baseline can be stored under another name
+  // (`baseName`), and is only a fallback for removed snapshots, which have no
+  // compare screenshot at all.
+  const name = compareScreenshot?.name || baseScreenshot?.name;
   invariant(name, "screenshot diff without name");
   return name;
 };

@@ -434,7 +434,10 @@ describe("api v2", () => {
 
         const firstScreenshot = build.compareScreenshotBucket!.screenshots![0]!;
         expect(firstScreenshot.threshold).toBe(0.3);
-        expect(firstScreenshot.baseName).toBe("first-base");
+        expect(firstScreenshot.baseNames).toEqual(["first-base"]);
+        expect(firstScreenshot.$getBaseNameCandidates()).toEqual([
+          "first-base",
+        ]);
 
         const screenshotWithMetadata =
           build.compareScreenshotBucket!.screenshots!.find(

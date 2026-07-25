@@ -57,6 +57,33 @@ describe("#getVariantKey", () => {
     );
   });
 
+  it("handles repeated tests", async () => {
+    expect(getVariantKey("chromium/space-ui repeat-2.png")).toBe("space-ui");
+    expect(getVariantKey("space-ui repeat-1.png")).toBe("space-ui");
+    expect(getVariantKey("role/edit/space-ui repeat-10.png")).toBe(
+      "role/edit/space-ui",
+    );
+    // `repeatEach` appends its suffix after the viewport one.
+    expect(getVariantKey("chromium/space-ui vw-375 repeat-2.png")).toBe(
+      "space-ui",
+    );
+    expect(getVariantKey("space-ui mode-[dark] repeat-2.png")).toBe("space-ui");
+    // ARIA snapshots don't use the `.png` extension.
+    expect(getVariantKey("chromium/space-ui repeat-2.aria.yml")).toBe(
+      "space-ui.aria.yml",
+    );
+    // A repeated snapshot groups with its non-repeated sibling.
+    expect(getVariantKey("chromium/space-ui repeat-2.png")).toBe(
+      getVariantKey("chromium/space-ui.png"),
+    );
+  });
+
+  it("does not strip a repeat-like segment in the middle of a name", async () => {
+    expect(getVariantKey("chromium/space-ui repeat-2 detail.png")).toBe(
+      "space-ui repeat-2 detail",
+    );
+  });
+
   it("handles variant keys with modes", async () => {
     expect(getVariantKey("role/edit/space-ui mode-[big test].png")).toBe(
       "role/edit/space-ui",
