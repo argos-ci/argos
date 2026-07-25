@@ -52,10 +52,10 @@ const ScreenshotDiffFragment = graphql(`
     height
     group
     threshold
+    fallbackBaselineName
     contentType
     baseScreenshot {
       id
-      name
       url
       originalUrl
       width
@@ -117,7 +117,6 @@ const ScreenshotDiffFragment = graphql(`
     }
     compareScreenshot {
       id
-      name
       url
       originalUrl
       width

@@ -39,6 +39,8 @@ export const typeDefs = gql`
     "Represents the test change associated with this screenshot diff, if any"
     change: TestChange
     parentName: String
+    "Name of the baseline this snapshot was compared against, when it is not the snapshot's own name. Set by the baseName option to fall back to another snapshot. Null when the baseline shares the snapshot's name, and for retries and repeats, which legitimately compare against their non-repeated sibling."
+    fallbackBaselineName: String
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
@@ -123,6 +125,30 @@ export const resolvers: IResolvers = {
         return null;
       }
       return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
+    },
+    fallbackBaselineName: async (screenshotDiff, _args, ctx) => {
+      const { baseScreenshotId, compareScreenshotId } = screenshotDiff;
+      if (!baseScreenshotId || !compareScreenshotId) {
+        return null;
+      }
+      const [baseScreenshot, compareScreenshot] = await Promise.all([
+        ctx.loaders.Screenshot.load(baseScreenshotId),
+        ctx.loaders.Screenshot.load(compareScreenshotId),
+      ]);
+      invariant(baseScreenshot && compareScreenshot);
+      if (baseScreenshot.name === compareScreenshot.name) {
+        return null;
+      }
+      // A retry or a repeat has no baseline of its own and compares against its
+      // non-repeated sibling. That is the normal flow rather than a fallback the
+      // user asked for, so don't report it as one.
+      if (
+        getVariantKey(baseScreenshot.name) ===
+        getVariantKey(compareScreenshot.name)
+      ) {
+        return null;
+      }
+      return baseScreenshot.name;
     },
     parentName: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.compareScreenshotId) {

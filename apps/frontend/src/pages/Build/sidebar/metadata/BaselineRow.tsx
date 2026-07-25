@@ -12,11 +12,8 @@ import { MetadataRow } from "./MetadataRow";
  * the snapshot's own name is missing from the baseline.
  */
 export function BaselineRow(props: { diff: Diff }) {
-  const { baseScreenshot, compareScreenshot } = props.diff;
-  if (!baseScreenshot || !compareScreenshot) {
-    return null;
-  }
-  if (baseScreenshot.name === compareScreenshot.name) {
+  const { fallbackBaselineName } = props.diff;
+  if (!fallbackBaselineName) {
     return null;
   }
   return (
@@ -28,16 +25,16 @@ export function BaselineRow(props: { diff: Diff }) {
               Fallback baseline
             </TooltipHeader>
             <p>
-              <strong className="font-medium">{compareScreenshot.name}</strong>{" "}
-              was not found in the baseline build, so it was compared against{" "}
-              <strong className="font-medium">{baseScreenshot.name}</strong>{" "}
+              <strong className="font-medium">{props.diff.name}</strong> was not
+              found in the baseline build, so it was compared against{" "}
+              <strong className="font-medium">{fallbackBaselineName}</strong>{" "}
               instead.
             </p>
             <p>This comes from the snapshot’s baseName setting.</p>
           </TooltipContainer>
         }
       >
-        <Chip icon={GitCompareArrowsIcon}>Baseline {baseScreenshot.name}</Chip>
+        <Chip icon={GitCompareArrowsIcon}>Baseline {fallbackBaselineName}</Chip>
       </Tooltip>
     </MetadataRow>
   );
