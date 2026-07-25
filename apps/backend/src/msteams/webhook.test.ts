@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { checkIsRetryable } from "@/util/error";
+import { checkIsRetryable, HTTPError } from "@/util/error";
 
 import type { AdaptiveCard } from "./card";
-import { parseMsTeamsWebhookUrl, postCardToUrl } from "./webhook";
+import {
+  obfuscateMsTeamsWebhookUrl,
+  parseMsTeamsWebhookUrl,
+  postCardToUrl,
+} from "./webhook";
 
 const VALID_URL =
   "https://prod-27.westeurope.logic.azure.com/workflows/abc/triggers/manual/paths/invoke?api-version=2016-06-01&sig=xyz";
@@ -74,6 +78,39 @@ describe("parseMsTeamsWebhookUrl", () => {
   });
 });
 
+describe("obfuscateMsTeamsWebhookUrl", () => {
+  it("obfuscates the signature, keeping the rest of the URL", () => {
+    expect(obfuscateMsTeamsWebhookUrl(VALID_URL)).toBe(
+      "https://prod-27.westeurope.logic.azure.com/workflows/abc/triggers/manual/paths/invoke?api-version=2016-06-01&sig=***",
+    );
+  });
+
+  it("leaves the other query parameters alone", () => {
+    expect(
+      obfuscateMsTeamsWebhookUrl(
+        "https://default5698.e3.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/abc/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=s3cr3t",
+      ),
+    ).toBe(
+      "https://default5698.e3.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/abc/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=***",
+    );
+  });
+
+  // Legacy connectors have no signature: the path is what authorizes the call.
+  it("obfuscates the path of a legacy Microsoft 365 connector URL", () => {
+    expect(
+      obfuscateMsTeamsWebhookUrl(
+        "https://argos.webhook.office.com/webhookb2/guid@guid/IncomingWebhook/id/guid",
+      ),
+    ).toBe("https://argos.webhook.office.com/webhookb2/***");
+  });
+
+  it("obfuscates nothing else", () => {
+    const url =
+      "https://prod-27.westeurope.logic.azure.com/workflows/abc/triggers/manual/paths/invoke";
+    expect(obfuscateMsTeamsWebhookUrl(url)).toBe(url);
+  });
+});
+
 describe("postCardToUrl", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -123,15 +160,37 @@ describe("postCardToUrl", () => {
     );
   });
 
-  it("marks authentication failures as unretryable", async () => {
+  // A broken webhook is the user's to fix, so it is reported as a client error
+  // and never retried.
+  it.each([403, 404])(
+    "reports a %i from Teams as a user error",
+    async (status) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Signature expired", { status }),
+      );
+
+      const error = await postCardToUrl({ url: VALID_URL, card: CARD }).catch(
+        (error: unknown) => error,
+      );
+
+      expect(error).toBeInstanceOf(HTTPError);
+      expect((error as HTTPError).statusCode).toBe(400);
+      expect(checkIsRetryable(error)).toBe(false);
+    },
+  );
+
+  // Throttling and outages are ours to wait out.
+  it.each([429, 503])("keeps a %i from Teams retryable", async (status) => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response("Signature expired", { status: 403 }),
+      new Response("Try again later", { status }),
     );
 
     const error = await postCardToUrl({ url: VALID_URL, card: CARD }).catch(
       (error: unknown) => error,
     );
 
-    expect(checkIsRetryable(error)).toBe(false);
+    expect(error).toBeInstanceOf(HTTPError);
+    expect((error as HTTPError).statusCode).toBe(502);
+    expect(checkIsRetryable(error)).toBe(true);
   });
 });

@@ -48,7 +48,12 @@ import {
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
 import { queryActiveTests } from "../services/test";
-import { badUserInput, forbidden, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -878,18 +883,16 @@ export const resolvers: IResolvers = {
         // Map the shared service's errors onto this API's GraphQL error
         // contract, keying on the error code rather than the HTTP status: a
         // 400 does not necessarily concern the name.
-        if (error instanceof HTTPError) {
-          if (error.code === "PROJECT_NAME_INVALID") {
-            throw badUserInput(error.message, {
-              field: "name",
-              code: error.code,
-            });
-          }
-          if (error.statusCode === 403) {
-            throw forbidden(error.message);
-          }
+        if (
+          error instanceof HTTPError &&
+          error.code === "PROJECT_NAME_INVALID"
+        ) {
+          throw badUserInput(error.message, {
+            field: "name",
+            code: error.code,
+          });
         }
-        throw error;
+        throw toGraphQLError(error);
       }
     },
     importGithubProject: async (_root, args, ctx) => {
@@ -1232,7 +1235,7 @@ export const resolvers: IResolvers = {
           throw badUserInput("Domain already in use", { field: "domain" });
         }
 
-        throw error;
+        throw toGraphQLError(error);
       }
 
       ctx.loaders.ProductionInternalProjectDomainByProject.clear(

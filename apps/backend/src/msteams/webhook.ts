@@ -60,6 +60,33 @@ export function parseMsTeamsWebhookUrl(input: string): string {
   return url.toString();
 }
 
+const OBFUSCATED = "***";
+
+/**
+ * Hide the credential part of a Microsoft Teams webhook URL, keeping enough of
+ * it to tell which flow it points to.
+ *
+ * Anyone holding the whole URL can post to the channel, so this is the form to
+ * show to users who are not allowed to use it.
+ */
+export function obfuscateMsTeamsWebhookUrl(input: string): string {
+  const url = new URL(input);
+
+  // Power Automate and Logic Apps authorize the call with a signature.
+  if (url.searchParams.has("sig")) {
+    url.searchParams.set("sig", OBFUSCATED);
+  }
+
+  // Legacy Microsoft 365 connectors carry no signature: their path is the
+  // credential. Keep the first segment (`/webhookb2`, `/webhook`…) as a hint.
+  if (url.hostname.toLowerCase().endsWith(".webhook.office.com")) {
+    const [, firstSegment = ""] = url.pathname.split("/");
+    url.pathname = `/${firstSegment}/${OBFUSCATED}`;
+  }
+
+  return url.toString();
+}
+
 /**
  * Post an Adaptive Card to a Microsoft Teams webhook.
  */
@@ -99,14 +126,17 @@ export async function postCardToUrl(args: {
   const body = await response.text().catch(() => "");
   const detail = body.slice(0, 500);
 
-  // 401/403 mean the flow signature is no longer valid: retrying won't help.
-  const retryable = response.status !== 401 && response.status !== 403;
+  // A client error means the webhook itself is wrong — expired signature,
+  // deleted flow — so the user has to fix it and retrying won't help. Report it
+  // as a 400 to keep it out of Sentry. Throttling (429) is ours to wait out.
+  const isWebhookAtFault =
+    response.status >= 400 && response.status < 500 && response.status !== 429;
 
   throw boom(
-    502,
+    isWebhookAtFault ? 400 : 502,
     `Microsoft Teams rejected the message (HTTP ${response.status})${
       detail ? `: ${detail}` : ""
     }`,
-    { retryable },
+    { retryable: !isWebhookAtFault },
   );
 }

@@ -40,7 +40,7 @@ import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
 import { getVisibleProjectIds } from "../services/project";
 import { queryActiveTests } from "../services/test";
-import { badUserInput, unauthenticated } from "../util";
+import { badUserInput, toGraphQLError, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -709,7 +709,7 @@ export const resolvers: IResolvers = {
             });
           }
         }
-        throw error;
+        throw toGraphQLError(error);
       }
     },
   },

@@ -95,7 +95,7 @@ describe("GraphQL MsTeamsWebhook.url", () => {
     ]);
   });
 
-  it("strips the signature for non-admins", async () => {
+  it("obfuscates the signature for non-admins", async () => {
     const { user, userAccount, teamAccount } =
       await createTeamWithWebhook("member");
 
@@ -111,7 +111,7 @@ describe("GraphQL MsTeamsWebhook.url", () => {
       {
         id: expect.any(String),
         name: "engineering",
-        url: "https://prod-00.westeurope.logic.azure.com/workflows/wf-1/triggers/manual/paths/invoke",
+        url: WEBHOOK_URL.replace("s3cr3t", "***"),
       },
     ]);
   });

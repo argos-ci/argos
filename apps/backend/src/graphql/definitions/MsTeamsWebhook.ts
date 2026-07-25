@@ -3,12 +3,15 @@ import gqlTag from "graphql-tag";
 import { UniqueViolationError } from "objection";
 
 import { MsTeamsWebhook, type Account, type User } from "@/database/models";
-import { parseMsTeamsWebhookUrl, postCardToUrl } from "@/msteams/webhook";
-import { HTTPError } from "@/util/error";
+import {
+  obfuscateMsTeamsWebhookUrl,
+  parseMsTeamsWebhookUrl,
+  postCardToUrl,
+} from "@/msteams/webhook";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { getAdminAccount } from "../services/account";
-import { badUserInput, notFound } from "../util";
+import { badUserInput, notFound, toGraphQLError } from "../util";
 
 const { gql } = gqlTag;
 
@@ -16,7 +19,7 @@ export const typeDefs = gql`
   type MsTeamsWebhook implements Node {
     id: ID!
     name: String!
-    "Webhook URL, stripped of its signature for non-admins"
+    "Webhook URL, with its signature obfuscated for non-admins"
     url: String!
     connectedAt: DateTime!
   }
@@ -44,25 +47,6 @@ export const typeDefs = gql`
     testMsTeamsWebhook(input: TestMsTeamsWebhookInput!): Boolean!
   }
 `;
-
-/**
- * Run an operation that talks to (or validates) a Microsoft Teams webhook and
- * translate its failure into a user-facing GraphQL error.
- *
- * `parseMsTeamsWebhookUrl` and `postCardToUrl` throw `HTTPError`, which Apollo
- * reports as INTERNAL_SERVER_ERROR — every pasted typo or deleted flow would
- * otherwise page the team through Sentry.
- */
-async function asUserFacing<T>(fn: () => Promise<T> | T): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    if (error instanceof HTTPError) {
-      throw badUserInput(error.message);
-    }
-    throw error;
-  }
-}
 
 /**
  * Load a webhook along with its account, checking the user administrates it.
@@ -93,11 +77,9 @@ export const resolvers: IResolvers = {
       invariant(account, "account not found");
       const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
       if (!permissions.includes("admin")) {
-        // The URL embeds a signature that grants posting rights to the channel,
-        // so only admins see it in full. Everybody else gets enough of the URL
-        // to tell which flow it points to.
-        const url = new URL(webhook.url);
-        return `${url.origin}${url.pathname}`;
+        // Posting to the webhook is an admin action, so only admins get the
+        // credential it embeds.
+        return obfuscateMsTeamsWebhookUrl(webhook.url);
       }
       return webhook.url;
     },
@@ -117,8 +99,14 @@ export const resolvers: IResolvers = {
         throw badUserInput("Please give the webhook a name.");
       }
 
-      // Throws a user-facing error when the URL is not a Teams endpoint.
-      const parsedUrl = await asUserFacing(() => parseMsTeamsWebhookUrl(url));
+      const parsedUrl = (() => {
+        try {
+          return parseMsTeamsWebhookUrl(url);
+        } catch (error) {
+          // Rejects anything that is not a Teams endpoint, as a user error.
+          throw toGraphQLError(error);
+        }
+      })();
 
       const existing = await MsTeamsWebhook.query().findOne({
         accountId: account.id,
@@ -167,8 +155,8 @@ export const resolvers: IResolvers = {
         user: ctx.auth?.user,
       });
 
-      await asUserFacing(() =>
-        postCardToUrl({
+      try {
+        await postCardToUrl({
           url: webhook.url,
           card: {
             type: "AdaptiveCard",
@@ -191,8 +179,12 @@ export const resolvers: IResolvers = {
               },
             ],
           },
-        }),
-      );
+        });
+      } catch (error) {
+        // A rejected webhook is the user's to fix; only a Teams outage (5xx)
+        // stays an internal error.
+        throw toGraphQLError(error);
+      }
 
       return true;
     },
