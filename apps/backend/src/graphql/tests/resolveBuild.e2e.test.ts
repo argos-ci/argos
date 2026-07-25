@@ -100,13 +100,16 @@ describe("GraphQL", () => {
 
       const { edges: screenshotDiffs } =
         res.body.data.project.build.screenshotDiffs;
+      // A diff is named after its compare screenshot, which is also what the
+      // diffs are sorted by, hence `email_added` before `email_deleted` among
+      // the two unchanged ones.
       expect(screenshotDiffs).toEqual([
         {
           name: "email_deleted",
           status: "changed",
         },
         {
-          name: "email_deleted",
+          name: "email_added",
           status: "unchanged",
         },
         {

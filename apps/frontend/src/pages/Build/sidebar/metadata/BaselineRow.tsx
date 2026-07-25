@@ -37,9 +37,7 @@ export function BaselineRow(props: { diff: Diff }) {
           </TooltipContainer>
         }
       >
-        <Chip icon={GitCompareArrowsIcon}>
-          {compareScreenshot.name} → {baseScreenshot.name}
-        </Chip>
+        <Chip icon={GitCompareArrowsIcon}>Baseline {baseScreenshot.name}</Chip>
       </Tooltip>
     </MetadataRow>
   );

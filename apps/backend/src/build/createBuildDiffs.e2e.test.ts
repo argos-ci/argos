@@ -224,28 +224,40 @@ describe("#createBuildDiffs", () => {
     it("should compare only when file's dimensions is missing", async () => {
       await compareBucket.$query().patch({ commit: baseBucket.commit });
 
-      const [
-        addedDiff,
-        addDiffWithoutFile,
-        updatedDiff,
-        noFileBaseScreenshotDiff,
-        noFileCompareScreenshotDiff,
-        sameFileDiff,
-        removedDiff,
-      ] = await createBuildDiffs(build);
+      const diffs = await createBuildDiffs(build);
+      // Look diffs up by screenshot rather than by position: the diffs are
+      // built from an unordered query, so their order is not guaranteed.
+      const byCompareId = (compareScreenshotId: string) => {
+        const diff = diffs.find(
+          (diff) => diff.compareScreenshotId === compareScreenshotId,
+        );
+        invariant(diff, "diff not found");
+        return diff;
+      };
+      const removedDiff = diffs.find(
+        (diff) =>
+          diff.baseScreenshotId === removedScreenshot!.id &&
+          diff.compareScreenshotId === null,
+      );
+      invariant(removedDiff, "removed diff not found");
+
       const getJobStatuses = (diffs: ScreenshotDiff[]) => [
         ...new Set(diffs.map((diff: ScreenshotDiff) => diff.jobStatus)),
       ];
 
       expect(
-        getJobStatuses([addedDiff!, sameFileDiff!, removedDiff!]),
+        getJobStatuses([
+          byCompareId(newScreenshot!.id),
+          byCompareId(sameFileScreenshotCompare!.id),
+          removedDiff,
+        ]),
       ).toMatchObject(["complete"]);
       expect(
         getJobStatuses([
-          updatedDiff!,
-          addDiffWithoutFile!,
-          noFileBaseScreenshotDiff!,
-          noFileCompareScreenshotDiff!,
+          byCompareId(classicDiffCompareScreenshot!.id),
+          byCompareId(newScreenshotWithoutFile!.id),
+          byCompareId(noFileBaseScreenshotCompare!.id),
+          byCompareId(noFileCompareScreenshotCompare!.id),
         ]),
       ).toMatchObject(["pending"]);
     });
@@ -467,13 +479,17 @@ describe("#createBuildDiffs", () => {
     it("should work with a first build", async () => {
       const diffs = await createBuildDiffs(build);
       expect(diffs.length).toBe(2);
-      expect(diffs[0]).toMatchObject({
+      // The diffs are built from an unordered query, so look them up by
+      // screenshot rather than by position.
+      const findByCompareId = (compareScreenshotId: string) =>
+        diffs.find((diff) => diff.compareScreenshotId === compareScreenshotId);
+      expect(findByCompareId(newScreenshot!.id)).toMatchObject({
         buildId: build.id,
         baseScreenshotId: null,
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
       });
-      expect(diffs[1]).toMatchObject({
+      expect(findByCompareId(newScreenshotWithoutFile!.id)).toMatchObject({
         buildId: build.id,
         baseScreenshotId: null,
         compareScreenshotId: newScreenshotWithoutFile!.id,

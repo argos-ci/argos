@@ -100,7 +100,12 @@ loggedTest(
 
     // The metadata sidebar states which baseline the snapshot was compared
     // against, since it differs from the snapshot's own name.
-    await expect(page.getByText("home-variant-b.png → home.png")).toBeVisible();
+    // The snapshot is titled by its own name, and the metadata sidebar names
+    // the baseline it was compared against.
+    await expect(
+      page.getByRole("heading", { name: "home-variant-b.png" }),
+    ).toBeVisible();
+    await expect(page.getByText("Baseline home.png")).toBeVisible();
 
     await screenshot(page, "build-fallback-baseline", {
       replacements: {

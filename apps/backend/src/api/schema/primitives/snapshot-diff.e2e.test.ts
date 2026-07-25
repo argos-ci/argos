@@ -347,6 +347,60 @@ describe("api/schema/primitives/snapshot-diff", () => {
     expect(serialized.head?.url).toContain("changed-compare-file-key");
   });
 
+  test("names a diff after its head snapshot, not its baseline", async ({
+    factory,
+    build,
+    buckets,
+    project,
+  }) => {
+    // A snapshot compared against a fallback baseline: the names differ, and the
+    // diff must be reported under the name the user wrote.
+    const [baseFile, compareFile] = await factory.File.createMany(2, [
+      { key: "fallback-base-file-key", type: "screenshot" },
+      { key: "fallback-compare-file-key", type: "screenshot" },
+    ]);
+    invariant(baseFile && compareFile, "Expected files to be created");
+    const [baseScreenshot, compareScreenshot] =
+      await factory.Screenshot.createMany(2, [
+        {
+          screenshotBucketId: buckets.base.id,
+          name: "home.png",
+          fileId: baseFile.id,
+          s3Id: baseFile.key,
+        },
+        {
+          screenshotBucketId: buckets.compare.id,
+          name: "home-variant-b.png",
+          baseNames: ["home-variant-b.png", "home.png"],
+          fileId: compareFile.id,
+          s3Id: compareFile.key,
+        },
+      ]);
+    invariant(
+      baseScreenshot && compareScreenshot,
+      "Expected screenshots to be created",
+    );
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      score: 0.42,
+    });
+    const loadedDiff = await diff
+      .$query()
+      .withGraphFetched("[baseScreenshot.file, compareScreenshot.file, file]");
+
+    const [serialized] = await serializeSnapshotDiffs([loadedDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
+    invariant(serialized, "Expected diff to serialize");
+
+    expect(serialized.name).toBe("home-variant-b.png");
+    expect(serialized.base?.name).toBe("home.png");
+    expect(serialized.head?.name).toBe("home-variant-b.png");
+  });
+
   test("serializes a pending diff", async ({ pendingDiff, project }) => {
     const [serialized] = await serializeSnapshotDiffs([pendingDiff], {
       project,
