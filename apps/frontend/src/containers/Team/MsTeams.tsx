@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { useApolloClient, useMutation } from "@apollo/client/react";
-import { PlusIcon, SendIcon, Trash2Icon } from "lucide-react";
+import {
+  CopyIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+  SendIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
+import { useClipboard } from "use-clipboard-copy";
 
 import { graphql, type DocumentType } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -20,7 +28,6 @@ import {
   DialogFooter,
   DialogText,
   DialogTitle,
-  DialogTrigger,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
@@ -31,9 +38,18 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Link } from "@/ui/Link";
 import { List, ListRow } from "@/ui/List";
+import {
+  Menu,
+  MenuItem,
+  MenuItemIcon,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
+import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
+import { Truncable } from "@/ui/Truncable";
 
 import { MsTeamsLogo } from "../MsTeamsLogo";
 
@@ -43,6 +59,7 @@ const _AccountFragment = graphql(`
     msTeamsWebhooks {
       id
       name
+      url
       connectedAt
     }
   }
@@ -126,31 +143,25 @@ export function TeamMsTeams(props: { account: Account }) {
               {account.msTeamsWebhooks.map((webhook) => (
                 <ListRow
                   key={webhook.id}
-                  className="flex items-center justify-between gap-4 p-4 text-sm"
+                  className="flex items-center justify-between gap-8 p-4 text-sm"
                 >
-                  <div className="flex min-w-0 items-center gap-2 font-medium">
-                    <MsTeamsLogo className="size-5 shrink-0" />
-                    <span className="truncate">{webhook.name}</span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <MsTeamsLogo className="size-6 shrink-0" />
+                    <div className="min-w-0">
+                      <Truncable className="font-medium">
+                        {webhook.name}
+                      </Truncable>
+                      <Truncable className="text-low text-xs">
+                        {webhook.url}
+                      </Truncable>
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <div className="text-low text-sm">
                       Connected <Time date={webhook.connectedAt} />
                     </div>
                     {hasAdminPermission ? (
-                      <>
-                        <TestWebhookButton webhook={webhook} />
-                        <DialogTrigger>
-                          <IconButton
-                            aria-label={`Remove ${webhook.name}`}
-                            color="danger"
-                          >
-                            <Trash2Icon />
-                          </IconButton>
-                          <Modal>
-                            <DeleteWebhookDialog webhook={webhook} />
-                          </Modal>
-                        </DialogTrigger>
-                      </>
+                      <WebhookActionsMenu webhook={webhook} />
                     ) : null}
                   </div>
                 </ListRow>
@@ -214,8 +225,10 @@ export function TeamMsTeams(props: { account: Account }) {
   );
 }
 
-function TestWebhookButton(props: { webhook: MsTeamsWebhook }) {
+function WebhookActionsMenu(props: { webhook: MsTeamsWebhook }) {
   const { webhook } = props;
+  const clipboard = useClipboard();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [testWebhook, { loading }] = useMutation(TestMsTeamsWebhookMutation, {
     variables: { input: { id: webhook.id } },
     onCompleted: () => {
@@ -225,18 +238,58 @@ function TestWebhookButton(props: { webhook: MsTeamsWebhook }) {
       toast.error(error.message);
     },
   });
+  const label = `Actions for ${webhook.name}`;
   return (
-    <IconButton
-      aria-label={`Send a test message to ${webhook.name}`}
-      isDisabled={loading}
-      onPress={() => {
-        testWebhook().catch(() => {
-          // The error is surfaced by `onError`.
-        });
-      }}
-    >
-      <SendIcon />
-    </IconButton>
+    <>
+      <MenuTrigger>
+        <IconButton aria-label={label}>
+          <MoreVerticalIcon />
+        </IconButton>
+        <Popover placement="bottom end">
+          <Menu aria-label={label}>
+            <MenuItem
+              isDisabled={loading}
+              onAction={() => {
+                testWebhook().catch(() => {
+                  // The error is surfaced by `onError`.
+                });
+              }}
+            >
+              <MenuItemIcon>
+                <SendIcon />
+              </MenuItemIcon>
+              Send a test message
+            </MenuItem>
+            <MenuItem
+              onAction={() => {
+                clipboard.copy(webhook.url);
+                toast.success("Webhook URL copied to clipboard");
+              }}
+            >
+              <MenuItemIcon>
+                <CopyIcon />
+              </MenuItemIcon>
+              Copy webhook URL
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              variant="danger"
+              onAction={() => {
+                setIsDeleteDialogOpen(true);
+              }}
+            >
+              <MenuItemIcon>
+                <Trash2Icon />
+              </MenuItemIcon>
+              Remove channel
+            </MenuItem>
+          </Menu>
+        </Popover>
+      </MenuTrigger>
+      <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DeleteWebhookDialog webhook={webhook} />
+      </Modal>
+    </>
   );
 }
 

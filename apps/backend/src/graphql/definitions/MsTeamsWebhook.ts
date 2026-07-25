@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { UniqueViolationError } from "objection";
 
@@ -15,6 +16,8 @@ export const typeDefs = gql`
   type MsTeamsWebhook implements Node {
     id: ID!
     name: String!
+    "Webhook URL, stripped of its signature for non-admins"
+    url: String!
     connectedAt: DateTime!
   }
 
@@ -84,6 +87,21 @@ async function getAdminWebhook(args: {
 }
 
 export const resolvers: IResolvers = {
+  MsTeamsWebhook: {
+    url: async (webhook, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(webhook.accountId);
+      invariant(account, "account not found");
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("admin")) {
+        // The URL embeds a signature that grants posting rights to the channel,
+        // so only admins see it in full. Everybody else gets enough of the URL
+        // to tell which flow it points to.
+        const url = new URL(webhook.url);
+        return `${url.origin}${url.pathname}`;
+      }
+      return webhook.url;
+    },
+  },
   Mutation: {
     createMsTeamsWebhook: async (_root, args, ctx) => {
       const { accountId, name, url } = args.input;
