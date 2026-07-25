@@ -1,5 +1,4 @@
 import type { AutomationActionType } from "@argos/schemas/automation-action";
-import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 
 import type { AutomationActionRun } from "@/database/models/AutomationActionRun";
@@ -84,33 +83,33 @@ export function getAutomationAction<T extends AutomationActionType>(
 }
 
 /**
- * Run an action for real.
+ * Payload of an action, as the handler looked up by name expects it.
  *
- * Dispatch happens on the discriminated union rather than through
- * `getAutomationAction`: looking the handler up by name widens the payload to
- * the intersection of every action's payload, which no single action satisfies.
+ * Looking the handler up loses the pairing the discriminated union carries:
+ * TypeScript widens `process`/`test` to a union of signatures and then only
+ * accepts a payload satisfying every action at once. `AutomationActionSchema`
+ * has already validated the payload against this very action, so `never`
+ * asserts the correlation the lookup cannot express.
+ */
+function asHandlerPayload(
+  actionPayload: AutomationActionTypeDef["actionPayload"],
+): never {
+  return actionPayload as never;
+}
+
+/**
+ * Run an action for real.
  */
 export async function processAutomationAction(args: {
   action: AutomationActionTypeDef;
   ctx: { automationActionRun: AutomationActionRun };
 }): Promise<void> {
   const { action, ctx } = args;
-  switch (action.action) {
-    case "sendSlackMessage":
-      await sendSlackMessage.automationAction.process({
-        payload: action.actionPayload,
-        ctx,
-      });
-      return;
-    case "sendMsTeamsMessage":
-      await sendMsTeamsMessage.automationAction.process({
-        payload: action.actionPayload,
-        ctx,
-      });
-      return;
-    default:
-      assertNever(action);
-  }
+  const handler = getAutomationAction(action.action);
+  await handler.process({
+    payload: asHandlerPayload(action.actionPayload),
+    ctx,
+  });
 }
 
 /**
@@ -121,20 +120,9 @@ export async function testAutomationAction(args: {
   message: AutomationMessage;
 }): Promise<void> {
   const { action, message } = args;
-  switch (action.action) {
-    case "sendSlackMessage":
-      await sendSlackMessage.automationAction.test({
-        payload: action.actionPayload,
-        message,
-      });
-      return;
-    case "sendMsTeamsMessage":
-      await sendMsTeamsMessage.automationAction.test({
-        payload: action.actionPayload,
-        message,
-      });
-      return;
-    default:
-      assertNever(action);
-  }
+  const handler = getAutomationAction(action.action);
+  await handler.test({
+    payload: asHandlerPayload(action.actionPayload),
+    message,
+  });
 }
