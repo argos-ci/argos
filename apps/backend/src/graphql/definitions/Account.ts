@@ -40,7 +40,7 @@ import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
 import { getVisibleProjectIds } from "../services/project";
 import { queryActiveTests } from "../services/test";
-import { badUserInput, unauthenticated } from "../util";
+import { badUserInput, toGraphQLError, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -181,6 +181,7 @@ export const typeDefs = gql`
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
+    msTeamsWebhooks: [MsTeamsWebhook!]!
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
@@ -418,6 +419,9 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       return null;
     }
     return ctx.loaders.SlackInstallation.load(account.slackInstallationId);
+  },
+  msTeamsWebhooks: async (account, _args, ctx) => {
+    return ctx.loaders.MsTeamsWebhooksByAccountId.load(account.id);
   },
   githubAccount: async (account, _args, ctx) => {
     if (!account.githubAccountId) {
@@ -705,7 +709,7 @@ export const resolvers: IResolvers = {
             });
           }
         }
-        throw error;
+        throw toGraphQLError(error);
       }
     },
   },

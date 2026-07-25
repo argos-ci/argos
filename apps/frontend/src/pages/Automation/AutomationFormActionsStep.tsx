@@ -7,6 +7,7 @@ import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
 import { useRefetchWhenActive } from "@/containers/Apollo";
+import { MsTeamsLogo } from "@/containers/MsTeamsLogo";
 import { SlackColoredLogo } from "@/containers/Slack";
 import { graphql } from "@/gql";
 import { ButtonIcon, LinkButton } from "@/ui/Button";
@@ -34,6 +35,10 @@ const SlackInstallationQuery = graphql(`
         id
         teamName
         isUpToDate
+      }
+      msTeamsWebhooks {
+        id
+        name
       }
     }
   }
@@ -134,6 +139,75 @@ function SendSlackMessageAction(props: {
   );
 }
 
+function SendMsTeamsMessageAction(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const { name, form } = props;
+  const params = useAccountParams();
+  invariant(params, "Account params are required for Microsoft Teams webhooks");
+  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
+    variables: { accountSlug: params.accountSlug },
+  });
+
+  invariant(data.account, "Account data is required for Microsoft Teams");
+
+  const webhooks = data.account.msTeamsWebhooks;
+
+  // A webhook may have been added in another tab; pick it up on focus.
+  useRefetchWhenActive({ refetch, skip: webhooks.length > 0 });
+
+  if (webhooks.length === 0) {
+    return (
+      <div className="flex flex-col items-start gap-3 p-2">
+        <p>
+          To post to a Microsoft Teams channel, you need to connect a channel
+          webhook first.
+        </p>
+        <LinkButton
+          href={`/${params.accountSlug}/settings/integrations#ms-teams`}
+          target="_blank"
+        >
+          Connect Microsoft Teams
+        </LinkButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      Send notification to the Microsoft Teams channel
+      <SelectField
+        control={form.control}
+        name={`${name}.payload.webhookId`}
+        aria-label="Microsoft Teams channel"
+        placeholder="Select a channel…"
+      >
+        <SelectButton className="w-52">
+          <SelectValue />
+        </SelectButton>
+        <FieldError />
+        <Popover>
+          <ListBox>
+            {webhooks.map((webhook) => (
+              <ListBoxItem
+                key={webhook.id}
+                id={webhook.id}
+                textValue={webhook.name}
+              >
+                <ListBoxItemIcon>
+                  <MsTeamsLogo />
+                </ListBoxItemIcon>
+                <Text slot="label">{webhook.name}</Text>
+              </ListBoxItem>
+            ))}
+          </ListBox>
+        </Popover>
+      </SelectField>
+    </div>
+  );
+}
+
 function ActionDetail(props: {
   form: AutomationForm;
   name: `actions.${number}`;
@@ -143,8 +217,10 @@ function ActionDetail(props: {
   switch (field.type) {
     case "sendSlackMessage":
       return <SendSlackMessageAction form={form} name={name} />;
+    case "sendMsTeamsMessage":
+      return <SendMsTeamsMessageAction form={form} name={name} />;
     default:
-      assertNever(field.type, "Unknown action type");
+      assertNever(field, "Unknown action type");
   }
 }
 
@@ -153,6 +229,11 @@ export const ACTIONS = [
     type: "sendSlackMessage",
     label: "Post in Slack channel",
     icon: SlackColoredLogo,
+  },
+  {
+    type: "sendMsTeamsMessage",
+    label: "Post in Microsoft Teams channel",
+    icon: MsTeamsLogo,
   },
 ];
 
@@ -195,6 +276,13 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
                     name: "",
                     slackId: "",
                   },
+                });
+                return;
+              }
+              case "sendMsTeamsMessage": {
+                append({
+                  type: "sendMsTeamsMessage",
+                  payload: { webhookId: "" },
                 });
                 return;
               }

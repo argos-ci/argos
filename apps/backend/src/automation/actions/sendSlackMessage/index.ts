@@ -1,4 +1,3 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
@@ -9,6 +8,7 @@ import { postMessageToSlackChannel } from "@/slack/channel";
 import { AutomationActionFailureError } from "../../automationActionError";
 import { defineAutomationAction } from "../../defineAutomationAction";
 import { type AutomationMessage } from "../../types/events";
+import { getAutomationMessage } from "../message";
 import { buildSlackMessage } from "./message";
 
 const payloadSchema = z.object({
@@ -16,7 +16,9 @@ const payloadSchema = z.object({
 });
 type Payload = z.infer<typeof payloadSchema>;
 
-const payloadJsonSchema = z.toJSONSchema(payloadSchema);
+// `io: "input"` keeps the schema permissive about unknown keys, matching how
+// payloads were validated before this action existed.
+const payloadJsonSchema = z.toJSONSchema(payloadSchema, { io: "input" });
 
 type ExpandedPayload = {
   slackChannel: SlackChannel;
@@ -59,74 +61,7 @@ export const automationAction = defineAutomationAction({
   payloadSchema,
   payloadJsonSchema,
   process: async (input) => {
-    const message: AutomationMessage = await (async () => {
-      const actionRun = await input.ctx.automationActionRun.$fetchGraph(
-        "automationRun.[build.compareScreenshotBucket,buildReview]",
-      );
-
-      invariant(
-        actionRun,
-        "automationRun relation not found",
-        UnretryableError,
-      );
-
-      invariant(
-        actionRun.automationRun,
-        "automationRun relation not found",
-        UnretryableError,
-      );
-
-      switch (actionRun.automationRun.event) {
-        case "build.completed": {
-          invariant(
-            actionRun.automationRun.build,
-            "build relation not found",
-            UnretryableError,
-          );
-          invariant(
-            actionRun.automationRun.build.compareScreenshotBucket,
-            "compareScreenshotBucket relation not found",
-            UnretryableError,
-          );
-          return {
-            event: actionRun.automationRun.event,
-            payload: {
-              build: actionRun.automationRun.build,
-              compareScreenshotBucket:
-                actionRun.automationRun.build.compareScreenshotBucket,
-            },
-          };
-        }
-        case "build.reviewed": {
-          invariant(
-            actionRun.automationRun.build,
-            "build relation not found",
-            UnretryableError,
-          );
-          invariant(
-            actionRun.automationRun.build.compareScreenshotBucket,
-            "compareScreenshotBucket relation not found",
-            UnretryableError,
-          );
-          invariant(
-            actionRun.automationRun.buildReview,
-            "buildReview relation not found",
-            UnretryableError,
-          );
-          return {
-            event: actionRun.automationRun.event,
-            payload: {
-              build: actionRun.automationRun.build,
-              compareScreenshotBucket:
-                actionRun.automationRun.build.compareScreenshotBucket,
-              buildReview: actionRun.automationRun.buildReview,
-            },
-          };
-        }
-        default:
-          assertNever(actionRun.automationRun.event);
-      }
-    })();
+    const message = await getAutomationMessage(input.ctx.automationActionRun);
 
     await sendSlackMessage({ message, payload: input.payload });
   },

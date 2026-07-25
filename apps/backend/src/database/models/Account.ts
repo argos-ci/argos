@@ -10,6 +10,7 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { GithubAccount } from "./GithubAccount";
 import { GithubInstallation } from "./GithubInstallation";
+import { MsTeamsWebhook } from "./MsTeamsWebhook";
 import { Plan } from "./Plan";
 import { Project } from "./Project";
 import { ScreenshotBucket } from "./ScreenshotBucket";
@@ -252,6 +253,14 @@ export class Account extends Model {
           to: "team_saml_configs.accountId",
         },
       },
+      msTeamsWebhooks: {
+        relation: Model.HasManyRelation,
+        modelClass: MsTeamsWebhook,
+        join: {
+          from: "accounts.id",
+          to: "ms_teams_webhooks.accountId",
+        },
+      },
     };
   }
 
@@ -263,6 +272,7 @@ export class Account extends Model {
   slackInstallation?: SlackInstallation | null;
   githubLightInstallation?: GithubInstallation | null;
   teamSamlConfig?: TeamSamlConfig | null;
+  msTeamsWebhooks?: MsTeamsWebhook[];
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 

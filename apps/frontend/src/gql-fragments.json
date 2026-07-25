@@ -49,6 +49,7 @@
       "GlApiNamespace",
       "GlApiProject",
       "GoogleUser",
+      "MsTeamsWebhook",
       "Plan",
       "Project",
       "ProjectContributor",

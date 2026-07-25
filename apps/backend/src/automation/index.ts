@@ -1,4 +1,4 @@
-import { getAutomationAction, type AutomationActionTypeDef } from "./actions";
+import { testAutomationAction, type AutomationActionTypeDef } from "./actions";
 import { job } from "./job";
 import { triggerAutomation, TriggerAutomationProps } from "./triggerAutomation";
 import { type AutomationMessage } from "./types/events";
@@ -25,10 +25,6 @@ export async function testAutomation(args: {
   actions: AutomationActionTypeDef[];
 }): Promise<void> {
   for (const action of args.actions) {
-    const actionDefinition = getAutomationAction(action.action);
-    await actionDefinition.test({
-      payload: action.actionPayload,
-      message: args.message,
-    });
+    await testAutomationAction({ action, message: args.message });
   }
 }
