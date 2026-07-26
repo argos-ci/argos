@@ -410,24 +410,28 @@ function SubscribeToggleButton(props: { build: Build }) {
     });
   const subscribed = build.subscribed;
   const label = subscribed ? "Unsubscribe" : "Subscribe";
+  const subscriptionToastId = `build-subscription:${build.id}`;
   const handlePress = () => {
     if (subscribed) {
       unsubscribeFromBuild()
         .then(() => {
           toast.success(
             "You will no longer receive notifications for this build.",
+            { id: subscriptionToastId },
           );
         })
         .catch((error) => {
-          toast.error(getErrorMessage(error));
+          toast.error(getErrorMessage(error), { id: subscriptionToastId });
         });
     } else {
       subscribeToBuild()
         .then(() => {
-          toast.success("You will receive notifications for this build.");
+          toast.success("You will receive notifications for this build.", {
+            id: subscriptionToastId,
+          });
         })
         .catch((error) => {
-          toast.error(getErrorMessage(error));
+          toast.error(getErrorMessage(error), { id: subscriptionToastId });
         });
     }
   };

@@ -57,7 +57,7 @@ export function EditTokenDialog(props: EditTokenDialogProps) {
       mutation: UpdateUserAccessTokenMutation,
       variables: { input: { id, name: data.name } },
     });
-    toast.success("Token name updated");
+    toast.success("Token name updated", { id: "token-updated" });
     state.close();
   };
 

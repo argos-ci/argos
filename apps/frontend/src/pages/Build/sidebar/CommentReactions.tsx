@@ -77,16 +77,18 @@ function useReactionActions(commentId: string) {
       variables: { input: { commentId, emoji } },
     });
 
+  const reactionToastId = `comment-reaction:${commentId}`;
+
   const react = (emoji: string) => {
     addReaction(emoji).catch((error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error), { id: reactionToastId });
     });
   };
 
   const toggle = (group: ReactionGroup) => {
     const mutation = group.reactedByMe ? removeReaction : addReaction;
     mutation(group.emoji).catch((error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error), { id: reactionToastId });
     });
   };
 

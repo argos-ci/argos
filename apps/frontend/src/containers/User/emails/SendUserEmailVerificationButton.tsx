@@ -30,6 +30,7 @@ export function SendUserEmailVerificationButton(
       variables: { email: props.email },
       onCompleted: () => {
         toast.success("Verification email sent", {
+          id: `verification-email:${props.email}`,
           description: (
             <>
               Follow the verification link sent to{" "}

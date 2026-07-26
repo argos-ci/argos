@@ -30,6 +30,8 @@ import { toast } from "@/ui/Toaster";
 
 import { formatList } from "../../util/intl";
 
+const ACCESS_REVOKED_TOAST_ID = "oauth-access-revoked";
+
 const _AccountFragment = graphql(`
   fragment OAuthApps_Account on User {
     id
@@ -118,7 +120,9 @@ function RevokeAppDialog(props: {
             try {
               await revoke();
               state.close();
-              toast.success("Access revoked");
+              toast.success("Access revoked", {
+                id: ACCESS_REVOKED_TOAST_ID,
+              });
             } catch {
               // Surfaced via the mutation's `error` state above.
             }

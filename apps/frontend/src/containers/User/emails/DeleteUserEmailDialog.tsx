@@ -38,7 +38,7 @@ export function DeleteUserEmailDialog(props: DeleteUserEmailDialogProps) {
       variables: { email: props.email },
       onCompleted: () => {
         state.close();
-        toast.success("Email deleted");
+        toast.success("Email deleted", { id: "user-email-deleted" });
       },
     },
   );

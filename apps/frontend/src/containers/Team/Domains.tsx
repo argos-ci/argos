@@ -173,7 +173,7 @@ function RemoveTeamDomainDialog(props: { teamDomain: TeamDomain }) {
       },
       onCompleted: () => {
         state.close();
-        toast.success("Domain removed");
+        toast.success("Domain removed", { id: "team-domain-removed" });
       },
     },
   );

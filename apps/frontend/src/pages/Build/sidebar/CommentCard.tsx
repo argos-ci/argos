@@ -338,13 +338,18 @@ export function CommentCard(props: {
     }
   };
 
+  const subscriptionToastId = `comment-thread-subscription:${comment.id}`;
+  const resolutionToastId = `comment-thread-resolution:${comment.id}`;
+
   const subscribeThread = () => {
     subscribeToCommentThread()
       .then(() => {
-        toast.success("You will receive notifications for this thread.");
+        toast.success("You will receive notifications for this thread.", {
+          id: subscriptionToastId,
+        });
       })
       .catch((error) => {
-        toast.error(getErrorMessage(error));
+        toast.error(getErrorMessage(error), { id: subscriptionToastId });
       });
   };
 
@@ -353,10 +358,11 @@ export function CommentCard(props: {
       .then(() => {
         toast.success(
           "You will no longer receive notifications for this thread.",
+          { id: subscriptionToastId },
         );
       })
       .catch((error) => {
-        toast.error(getErrorMessage(error));
+        toast.error(getErrorMessage(error), { id: subscriptionToastId });
       });
   };
 
@@ -364,18 +370,18 @@ export function CommentCard(props: {
     if (resolved) {
       unresolveCommentThread()
         .then(() => {
-          toast.success("Thread reopened.");
+          toast.success("Thread reopened.", { id: resolutionToastId });
         })
         .catch((error) => {
-          toast.error(getErrorMessage(error));
+          toast.error(getErrorMessage(error), { id: resolutionToastId });
         });
     } else {
       resolveCommentThread()
         .then(() => {
-          toast.success("Thread resolved.");
+          toast.success("Thread resolved.", { id: resolutionToastId });
         })
         .catch((error) => {
-          toast.error(getErrorMessage(error));
+          toast.error(getErrorMessage(error), { id: resolutionToastId });
         });
     }
   };

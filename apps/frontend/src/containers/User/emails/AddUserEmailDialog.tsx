@@ -59,6 +59,7 @@ export function AddUserEmailDialog() {
     });
     state.close();
     toast.success("Verification email sent", {
+      id: `verification-email:${data.email}`,
       description: (
         <>
           Follow the verification link sent to <strong>{data.email}</strong> to

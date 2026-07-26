@@ -112,7 +112,9 @@ export function InviteDialog(props: {
             },
           });
           state.close();
-          toast.success("Invitations sent successfully");
+          toast.success("Invitations sent successfully", {
+            id: "team-invites-sent",
+          });
         }}
         noValidate
       >
@@ -227,7 +229,9 @@ function ResetInviteLinkButton(props: {
           mutation: ResetInviteLinkMutation,
           variables: { teamAccountId: props.teamAccountId },
         });
-        toast.success("Invite link reset successfully");
+        toast.success("Invite link reset successfully", {
+          id: "team-invite-link-reset",
+        });
       }}
       variant="secondary"
       className="w-full justify-center"
