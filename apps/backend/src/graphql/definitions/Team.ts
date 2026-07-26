@@ -50,6 +50,7 @@ import {
   stripe,
 } from "@/stripe";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
+import { checkIsPublicEmailDomain } from "@/util/public-email-domains";
 
 import {
   ITeamMembersOrderBy,
@@ -1842,6 +1843,18 @@ export const resolvers: IResolvers = {
           throw badUserInput("Invalid domain", { field: "domain" });
         }
       })();
+
+      // The same rule the welcome page and team creation apply. Without it here
+      // an owner whose address is `x@gmail.com` could add `gmail.com`, and
+      // `getAutoInvitesForUser` would then offer this team to every Gmail user
+      // who signs up — the outcome the domain list exists to prevent, reachable
+      // through the one write path that skipped the check.
+      if (checkIsPublicEmailDomain(domain)) {
+        throw badUserInput(
+          "This is a public email provider, so anyone could join. Use a domain your organization owns.",
+          { field: "domain" },
+        );
+      }
 
       const verifiedEmail = await findVerifiedEmailForDomain({
         userId: ctx.auth.user.id,

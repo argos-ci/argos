@@ -349,6 +349,31 @@ describe("GraphQL team domains", () => {
       field: "domain",
     });
 
+    const publicProviderRes = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation AddTeamDomain($input: AddTeamDomainInput!) {
+            addTeamDomain(input: $input) {
+              id
+            }
+          }
+        `,
+        variables: {
+          input: {
+            teamAccountId: teamAccount.id,
+            domain: "gmail.com",
+          },
+        },
+      });
+
+    expect(publicProviderRes.status).toBe(200);
+    expect(publicProviderRes.body.errors).toHaveLength(1);
+    expect(publicProviderRes.body.errors[0].extensions).toMatchObject({
+      code: "BAD_USER_INPUT",
+      field: "domain",
+    });
+
     const teamDomain = await TeamDomain.query()
       .findOne({
         teamId: teamAccount.teamId,
