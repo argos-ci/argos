@@ -288,6 +288,7 @@ function WelcomeForm() {
           })}
           label="Where, exactly?"
           className="mt-4"
+          autoFocus
           autoComplete="off"
         />
       ) : null}
