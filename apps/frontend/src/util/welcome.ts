@@ -1,3 +1,5 @@
+import { getAutoInviteTeamsURL } from "@/util/auto-invite";
+
 const WELCOME_PATH = "/~/welcome";
 
 /**
@@ -36,17 +38,41 @@ function checkCreatesTeam(redirect: string): boolean {
 }
 
 /**
- * Where a brand-new account should land after authenticating: the welcome page,
- * carrying the destination it should forward to once done.
+ * Where an account should land after authenticating.
+ *
+ * The whole decision lives here so the OAuth callback and the email-code flow
+ * cannot drift apart, and so the team-creation case is recognised before the
+ * auto-invite detour wraps the destination out of sight.
  */
-export function getPostSignupURL(redirect: string | null | undefined): string {
-  if (!redirect) {
-    return WELCOME_PATH;
+export function getPostAuthURL(input: {
+  creation: boolean;
+  hasAutoInvite: boolean;
+  redirect: string | null | undefined;
+}): string {
+  const { creation, hasAutoInvite, redirect } = input;
+
+  if (!creation) {
+    return redirect ?? "/";
   }
-  if (checkCreatesTeam(redirect)) {
+
+  // Checked against the original destination. Once `getAutoInviteTeamsURL` has
+  // wrapped it, the team-creation target is buried in a nested `r=` param and
+  // this no longer sees it — which sent the user to the welcome page before any
+  // team existed, so the domain question could never be asked and `createTeam`
+  // then skipped its own welcome hop.
+  if (redirect && checkCreatesTeam(redirect)) {
     return redirect;
   }
-  const searchParams = new URLSearchParams({ r: redirect });
+
+  const destination = hasAutoInvite
+    ? getAutoInviteTeamsURL(redirect)
+    : redirect;
+  // Left off when there is nowhere in particular to go: the welcome page already
+  // falls back to the root, so `?r=%2F` would only be noise in the URL.
+  if (!destination) {
+    return WELCOME_PATH;
+  }
+  const searchParams = new URLSearchParams({ r: destination });
   return `${WELCOME_PATH}?${searchParams}`;
 }
 

@@ -7,9 +7,8 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { LinkButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { OTPInput } from "@/ui/OTPInput";
-import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import { checkIsErrorCode, getErrorMessage } from "@/util/error";
-import { getPostSignupURL } from "@/util/welcome";
+import { getPostAuthURL } from "@/util/welcome";
 
 const AuthenticateWithEmailMutation = graphql(`
   mutation AuthWithEmail_authenticateWithEmail(
@@ -36,18 +35,11 @@ export function AuthWithEmail(props: {
       onCompleted: (data) => {
         onSuccess?.();
         const { creation, hasAutoInvite } = data.authenticateWithEmail;
-        const destination =
-          creation && hasAutoInvite
-            ? getAutoInviteTeamsURL(redirect)
-            : (redirect ?? "/");
-        // A brand-new account goes through the welcome page first, which then
-        // forwards to wherever it was headed.
-        const targetRedirect = creation
-          ? getPostSignupURL(destination)
-          : destination;
         // The server set the session cookie on the mutation response. Do a full
         // navigation so the app re-bootstraps as the logged-in user.
-        window.location.replace(targetRedirect);
+        window.location.replace(
+          getPostAuthURL({ creation, hasAutoInvite, redirect }),
+        );
       },
     },
   );

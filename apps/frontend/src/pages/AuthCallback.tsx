@@ -11,13 +11,12 @@ import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { APIError, fetchApi } from "@/util/api";
-import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import {
   AuthProvider,
   checkIsAuthProvider,
   getRedirectFromState,
 } from "@/util/oauth";
-import { getPostSignupURL } from "@/util/welcome";
+import { getPostAuthURL } from "@/util/welcome";
 
 import { NotFound } from "./NotFound";
 
@@ -68,18 +67,15 @@ function AuthCallback(props: { provider: AuthProvider }) {
       },
     )
       .then((data) => {
-        const destination =
-          data.creation && data.hasAutoInvite
-            ? getAutoInviteTeamsURL(redirectUri)
-            : redirectUri;
-        // A brand-new account goes through the welcome page first, which then
-        // forwards to wherever it was headed.
-        const target = data.creation
-          ? getPostSignupURL(destination)
-          : destination;
         // The server set the session cookie on the response. Do a full
         // navigation so the app re-bootstraps as the logged-in user.
-        window.location.replace(target);
+        window.location.replace(
+          getPostAuthURL({
+            creation: data.creation,
+            hasAutoInvite: data.hasAutoInvite,
+            redirect: redirectUri,
+          }),
+        );
       })
       .catch((error) => {
         setAuthError(error);

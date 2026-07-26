@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { getPostSignupURL, resolveWelcomeRedirect } from "./welcome";
+import { getPostAuthURL, resolveWelcomeRedirect } from "./welcome";
 
 const ORIGIN = "https://app.argos-ci.com";
 
@@ -14,32 +14,95 @@ beforeAll(() => {
   });
 });
 
-describe("getPostSignupURL", () => {
+describe("getPostAuthURL", () => {
+  it("sends a returning user straight to their destination", () => {
+    expect(
+      getPostAuthURL({
+        creation: false,
+        hasAutoInvite: true,
+        redirect: "/acme",
+      }),
+    ).toBe("/acme");
+    expect(
+      getPostAuthURL({ creation: false, hasAutoInvite: false, redirect: null }),
+    ).toBe("/");
+  });
+
+  it("routes an auto-invite signup through the teams list", () => {
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: true,
+        redirect: "/acme",
+      }),
+    ).toBe(`/~/welcome?r=${encodeURIComponent("/teams?r=%2Facme")}`);
+  });
+
+  it("recognises team auto-creation even alongside an auto-invite", () => {
+    // The auto-invite detour buries the destination in a nested `r=`, so the
+    // team-creation check has to run on the original value — otherwise the
+    // welcome page opens before the team exists and the domain question is lost.
+    const target = "/teams/new?name=Acme&autoSubmit=true";
+    expect(
+      getPostAuthURL({ creation: true, hasAutoInvite: true, redirect: target }),
+    ).toBe(target);
+  });
+});
+
+describe("getPostAuthURL for a new account", () => {
   it("wraps the destination in the welcome page", () => {
-    expect(getPostSignupURL("/acme")).toBe("/~/welcome?r=%2Facme");
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: false,
+        redirect: "/acme",
+      }),
+    ).toBe("/~/welcome?r=%2Facme");
   });
 
   it("goes to the welcome page bare when there is no destination", () => {
-    expect(getPostSignupURL(null)).toBe("/~/welcome");
-    expect(getPostSignupURL(undefined)).toBe("/~/welcome");
+    expect(
+      getPostAuthURL({ creation: true, hasAutoInvite: false, redirect: null }),
+    ).toBe("/~/welcome");
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: false,
+        redirect: undefined,
+      }),
+    ).toBe("/~/welcome");
   });
 
   it("leaves team auto-creation alone, which welcomes on its own afterwards", () => {
     const target = "/teams/new?name=Acme&autoSubmit=true";
-    expect(getPostSignupURL(target)).toBe(target);
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: false,
+        redirect: target,
+      }),
+    ).toBe(target);
   });
 
   it("still wraps the team form when it is not auto-submitting", () => {
-    expect(getPostSignupURL("/teams/new?name=Acme")).toBe(
-      "/~/welcome?r=%2Fteams%2Fnew%3Fname%3DAcme",
-    );
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: false,
+        redirect: "/teams/new?name=Acme",
+      }),
+    ).toBe("/~/welcome?r=%2Fteams%2Fnew%3Fname%3DAcme");
   });
 
   it("does not mistake another host's team page for our own", () => {
     const target = "https://evil.test/teams/new?autoSubmit=true";
-    expect(getPostSignupURL(target)).toBe(
-      `/~/welcome?r=${encodeURIComponent(target)}`,
-    );
+    expect(
+      getPostAuthURL({
+        creation: true,
+        hasAutoInvite: false,
+        redirect: target,
+      }),
+    ).toBe(`/~/welcome?r=${encodeURIComponent(target)}`);
   });
 });
 
@@ -91,7 +154,11 @@ describe("resolveWelcomeRedirect", () => {
 describe("the CLI login round trip", () => {
   it("returns the user to the CLI callback after the welcome page", () => {
     const cliUrl = `${ORIGIN}/auth/cli?port=1234&state=abc`;
-    const welcomeUrl = getPostSignupURL(cliUrl);
+    const welcomeUrl = getPostAuthURL({
+      creation: true,
+      hasAutoInvite: false,
+      redirect: cliUrl,
+    });
     const r = new URL(welcomeUrl, ORIGIN).searchParams.get("r");
     expect(resolveWelcomeRedirect(r)).toBe("/auth/cli?port=1234&state=abc");
   });
