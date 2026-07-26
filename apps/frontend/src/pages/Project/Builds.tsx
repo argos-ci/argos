@@ -234,11 +234,22 @@ function BuildsList(props: {
       lastItem &&
       lastItem.index === displayCount &&
       !isFetchingMore &&
-      hasNextPage
+      hasNextPage &&
+      // While the filters are mid-change the rendered list still belongs to the
+      // previous ones, so `edges.length` is the wrong offset: paging here would
+      // append the old query's second page to the new query's first.
+      !isUpdating
     ) {
       fetchNextPage();
     }
-  }, [lastItem, displayCount, isFetchingMore, hasNextPage, fetchNextPage]);
+  }, [
+    lastItem,
+    displayCount,
+    isFetchingMore,
+    hasNextPage,
+    isUpdating,
+    fetchNextPage,
+  ]);
 
   return (
     <List
