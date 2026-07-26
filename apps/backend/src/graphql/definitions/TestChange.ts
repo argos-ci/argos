@@ -15,8 +15,8 @@ import {
   type TestChangeIdPayload,
 } from "@/util/test-id";
 
-import type { Context } from "../context";
 import { type IResolvers } from "../__generated__/resolver-types";
+import type { Context } from "../context";
 import { badUserInput, forbidden, notFound } from "../util";
 
 const { gql } = gqlTag;
@@ -102,9 +102,7 @@ async function getChangeTrails(
     projectId: testChange.project.id,
     testId: testChange.testId,
   });
-  return trails.filter(
-    (trail) => trail.fingerprint === testChange.fingerprint,
-  );
+  return trails.filter((trail) => trail.fingerprint === testChange.fingerprint);
 }
 
 /**
@@ -117,9 +115,7 @@ async function getLastIgnoredTrail(
   ctx: Context,
 ): Promise<AuditTrail | null> {
   const trails = await getChangeTrails(testChange, ctx);
-  return (
-    trails.findLast((trail) => trail.action === "files.ignored") ?? null
-  );
+  return trails.findLast((trail) => trail.action === "files.ignored") ?? null;
 }
 
 export const resolvers: IResolvers = {
