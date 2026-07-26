@@ -94,14 +94,18 @@ type Inputs = {
  */
 function SourceField(props: { control: Control<Inputs> }) {
   const { field } = useController({ control: props.control, name: "source" });
+  // Destructured before the JSX: `react-hooks/refs` reads `field.ref` in render
+  // position as a ref access, which it forbids. Same shape as the signup page's
+  // use-case field.
+  const { ref, value, onChange, onBlur, disabled } = field;
   return (
     <RadioGroup
       className="w-full"
-      ref={field.ref}
-      value={field.value}
-      onChange={field.onChange}
-      onBlur={field.onBlur}
-      isDisabled={field.disabled}
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      onBlur={onBlur}
+      isDisabled={disabled}
     >
       <Label>Where did you find Argos?</Label>
       <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
