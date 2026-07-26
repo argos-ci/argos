@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import clsx from "clsx";
@@ -271,21 +272,40 @@ function WelcomeForm() {
    * Record the answers and move on. `answers` is null when the page was
    * skipped — which is still recorded, so the question is not put back in front
    * of the user the next time they create a team.
+   *
+   * Guarded against running twice. Skip does not go through `handleSubmit`, so
+   * nothing else marks the form busy: pressing Continue and then Skip sent two
+   * mutations, and the second one — carrying no answers — overwrote the first's
+   * recorded source with null.
    */
+  const isCompletingRef = useRef(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const complete = async (answers: Inputs | null) => {
-    await client.mutate({
-      mutation: CompleteWelcomeMutation,
-      variables: {
-        input: {
-          source: answers?.source || null,
-          sourceDetail: answers?.sourceDetail || null,
-          autoJoinTeamSlug:
-            answers?.autoJoinDomain && autoJoin.offer
-              ? autoJoin.offer.teamSlug
-              : null,
+    // A ref, not the state below: two clicks in the same tick would both read a
+    // stale `false` from state.
+    if (isCompletingRef.current) {
+      return;
+    }
+    isCompletingRef.current = true;
+    try {
+      await client.mutate({
+        mutation: CompleteWelcomeMutation,
+        variables: {
+          input: {
+            source: answers?.source || null,
+            sourceDetail: answers?.sourceDetail || null,
+            autoJoinTeamSlug:
+              answers?.autoJoinDomain && autoJoin.offer
+                ? autoJoin.offer.teamSlug
+                : null,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      // Released so a refused answer can be corrected and retried.
+      isCompletingRef.current = false;
+      throw error;
+    }
     // Full navigation rather than a client-side one: the destination is a page
     // the user has not loaded yet in this flow (a team fresh out of Stripe
     // checkout, or their dashboard), so it should bootstrap from scratch.
@@ -333,7 +353,9 @@ function WelcomeForm() {
       <div className="mt-8 flex items-center justify-between gap-4">
         <LinkButton
           className="text-sm"
+          isDisabled={isSkipping || form.formState.isSubmitting}
           onPress={() => {
+            setIsSkipping(true);
             complete(null).catch(() => {
               // The answers are optional, so a failure here is no reason to
               // trap the user on this page.
