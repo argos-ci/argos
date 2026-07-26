@@ -412,7 +412,7 @@ function PageContent() {
             Argos can track where each build was deployed, so a review links
             straight to the running site the screenshots came from.
           </Text>
-          <EmptyStateLearnMore href="https://argos-ci.com/docs" />
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/deployments" />
           <EmptyStateSteps>
             <EmptyStateStep
               icon={<UploadCloudIcon />}

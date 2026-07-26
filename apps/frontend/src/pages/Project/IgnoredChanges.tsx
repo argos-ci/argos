@@ -75,6 +75,10 @@ import {
 import { ProjectTitle } from "./ProjectTitle";
 
 const DOCS_URL =
+  "https://argos-ci.com/docs/learn/reliability-and-flakiness/ignored-changes";
+
+/** The page that documents the per-project ignore configuration. */
+const FLAKY_DETECTION_DOCS_URL =
   "https://argos-ci.com/docs/learn/reliability-and-flakiness/flaky-test-detection";
 
 const ProjectIgnoredChangesQuery = graphql(`
@@ -406,7 +410,7 @@ function FeatureDisabledEmptyState(props: { params: ProjectParams }) {
           </LinkButton>
         </EmptyStateActions>
       )}
-      <EmptyStateLearnMore href={DOCS_URL} />
+      <EmptyStateLearnMore href={FLAKY_DETECTION_DOCS_URL} />
     </EmptyState>
   );
 }

@@ -219,7 +219,7 @@ function PageContent(props: {
             suite uploads its first build, every screenshot shows up here with
             the metrics that tell you which ones you can trust.
           </Text>
-          <EmptyStateLearnMore href="https://argos-ci.com/docs/quickstart" />
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/reliability-and-flakiness/tests-dashboard" />
           <EmptyStateSteps>
             <EmptyStateStep
               icon={<CameraIcon />}

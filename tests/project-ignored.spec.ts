@@ -42,7 +42,7 @@ loggedTest(
       page.getByRole("link", { name: "Learn more" }),
     ).toHaveAttribute(
       "href",
-      "https://argos-ci.com/docs/learn/reliability-and-flakiness/flaky-test-detection",
+      "https://argos-ci.com/docs/learn/reliability-and-flakiness/ignored-changes",
     );
 
     await screenshot(page, "project-ignored-empty");

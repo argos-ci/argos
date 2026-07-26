@@ -141,7 +141,7 @@ function PageContentFound(props: { project: ProjectDocument }) {
           <EmptyStateActions>
             <AddAutomationButton />
           </EmptyStateActions>
-          <EmptyStateLearnMore href="https://argos-ci.com/docs" />
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/review-workflow/automations" />
           <EmptyStateSteps>
             <EmptyStateStep
               icon={<ZapIcon />}
