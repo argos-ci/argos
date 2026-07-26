@@ -4,18 +4,25 @@ import { invariant } from "@argos/util/invariant";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { BoxesIcon, CircleArrowUpIcon, GlobeIcon } from "lucide-react";
+import {
+  CircleArrowUpIcon,
+  ExternalLinkIcon,
+  GlobeIcon,
+  UploadCloudIcon,
+} from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
+import { DeploymentsIllustration } from "@/containers/EmptyStateIllustrations";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import type { DeploymentEnvironment, DeploymentStatus } from "@/gql/graphql";
-import { LinkButton } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
-  EmptyStateActions,
-  EmptyStateIcon,
+  EmptyStateIllustration,
+  EmptyStateLearnMore,
+  EmptyStateStep,
+  EmptyStateSteps,
   Page,
   PageContainer,
   PageHeader,
@@ -397,16 +404,41 @@ function PageContent() {
     return (
       <PageContainer>
         <EmptyState>
-          <EmptyStateIcon>
-            <BoxesIcon strokeWidth={1} />
-          </EmptyStateIcon>
-          <Heading>No deployments</Heading>
+          <EmptyStateIllustration>
+            <DeploymentsIllustration />
+          </EmptyStateIllustration>
+          <Heading>No deployments yet</Heading>
           <Text slot="description">
-            There are no deployments yet on this project.
+            Argos can track where each build was deployed, so a review links
+            straight to the running site the screenshots came from.
           </Text>
-          <EmptyStateActions>
-            <LinkButton href="/">Back to home</LinkButton>
-          </EmptyStateActions>
+          <EmptyStateLearnMore href="https://argos-ci.com/docs" />
+          <EmptyStateSteps>
+            <EmptyStateStep
+              icon={<UploadCloudIcon />}
+              step="From your CI"
+              title="Report a deployment"
+            >
+              Tell Argos the URL and environment your branch was deployed to,
+              alongside the build it belongs to.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<GitBranchIcon />}
+              step="Per branch"
+              title="Follow every preview"
+            >
+              Each branch keeps its own history, so you can see which commit is
+              live on a preview and which one is in production.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<ExternalLinkIcon />}
+              step="Back here"
+              title="Jump to the real page"
+            >
+              Open the deployed page next to its build, instead of guessing
+              which environment a screenshot came from.
+            </EmptyStateStep>
+          </EmptyStateSteps>
         </EmptyState>
       </PageContainer>
     );

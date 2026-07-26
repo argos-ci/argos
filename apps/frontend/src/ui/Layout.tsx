@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { HeadingContext, Provider, TextContext } from "react-aria-components";
 
 import { Container, type ContainerProps } from "./Container";
+import { Link } from "./Link";
 
 export function PageHeader(props: ComponentPropsWithRef<"div">) {
   return (
@@ -56,7 +57,11 @@ export function EmptyState(props: ComponentPropsWithRef<"div">) {
           TextContext,
           {
             slots: {
-              description: { className: "text-low text-sm text-center" },
+              description: {
+                // A fixed measure keeps the description readable and gives every
+                // empty state the same silhouette, whatever its copy length.
+                className: "text-low max-w-lg text-center text-sm text-balance",
+              },
             },
           },
         ],
@@ -87,9 +92,88 @@ export function EmptyStateIcon(props: ComponentPropsWithRef<"div">) {
   );
 }
 
+/**
+ * Slot for a feature illustration at the top of an empty state. Unlike
+ * {@link EmptyStateIcon} it draws no frame of its own — the illustration
+ * carries the visual weight.
+ */
+export function EmptyStateIllustration(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx("mb-5 w-full max-w-[200px]", props.className)}
+      aria-hidden="true"
+    />
+  );
+}
+
+/**
+ * Row of short "how it works" cards, for empty states that have to teach the
+ * feature rather than just report that there is nothing to show.
+ *
+ * Widest element of the empty state, one step down from the page container, so
+ * the block reads as illustration → prose → structure rather than three
+ * unrelated widths.
+ */
+export function EmptyStateSteps(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx(
+        "mt-7 grid w-full max-w-5xl gap-3 text-left sm:grid-cols-3",
+        props.className,
+      )}
+    />
+  );
+}
+
+export function EmptyStateStep(props: {
+  icon: React.ReactNode;
+  step: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const { icon, step, title, children } = props;
+  return (
+    <div className="bg-app border-thin flex flex-col gap-2 rounded-lg p-5 shadow-xs">
+      {/* The eyebrow names *when* in the workflow this happens, so the three
+          cards read as the sequence they are. Accent stays on the icon: one
+          coloured mark per card. */}
+      <div className="text-low flex items-center gap-2 text-xs font-medium">
+        <span aria-hidden="true" className="text-primary-low [&>svg]:size-3.5">
+          {icon}
+        </span>
+        {step}
+      </div>
+      {/* A plain `h3`: the surrounding `EmptyState` provides a `HeadingContext`
+          sized for its own title. */}
+      <h3 className="text-sm font-medium">{title}</h3>
+      <div className="text-low text-sm leading-relaxed text-pretty">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function EmptyStateActions(props: ComponentPropsWithRef<"div">) {
   return (
-    <div {...props} className={clsx("mt-2 flex gap-4 p-4", props.className)} />
+    <div {...props} className={clsx("mt-6 flex gap-3", props.className)} />
+  );
+}
+
+/**
+ * Documentation link for an empty state, sitting under the actions. Kept as a
+ * link rather than a second button so the real action stays the only thing
+ * competing for attention.
+ */
+export function EmptyStateLearnMore(props: {
+  href: string;
+  children?: string;
+}) {
+  return (
+    <Link external href={props.href} className="mt-4 text-sm" target="_blank">
+      {props.children ?? "Learn more"}
+    </Link>
   );
 }
 
