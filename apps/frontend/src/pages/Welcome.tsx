@@ -22,7 +22,7 @@ import { useSearchParams } from "react-router-dom";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { WelcomeIllustration } from "@/containers/WelcomeIllustration";
 import { graphql } from "@/gql";
-import { SignupSource } from "@/gql/graphql";
+import { AccountPermission, SignupSource } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Form } from "@/ui/Form";
 import { FormCheckbox } from "@/ui/FormCheckbox";
@@ -33,11 +33,22 @@ import { Label } from "@/ui/Label";
 import { LinkButton } from "@/ui/Link";
 import { resolveWelcomeRedirect } from "@/util/welcome";
 
-const AutoJoinDomainQuery = graphql(`
-  query Welcome_autoJoinDomain {
+const AutoJoinQuery = graphql(`
+  query Welcome_autoJoin($teamSlug: String!) {
     me {
       id
       eligibleAutoJoinDomain
+    }
+    account(slug: $teamSlug) {
+      id
+      name
+      slug
+      ... on Team {
+        permissions
+        teamDomains {
+          id
+        }
+      }
     }
   }
 `);
@@ -145,28 +156,35 @@ function SourceField(props: { control: Control<Inputs> }) {
 /**
  * The auto-join offer for the team named in the URL.
  *
- * Whether the offer applies depends on the user's verified addresses, which only
- * the server knows — so this is the one part of the page that waits. The team
- * comes from the URL, and whether the user may actually open it is settled by
- * the mutation, which is the only place it can be settled safely.
+ * The `team` param is whatever the URL says, so the offer is only made once the
+ * server confirms the viewer administers that team. Rendering it otherwise put
+ * the user in a dead end: ticking a box for a team they cannot open fails on
+ * every Continue, and the mutation deliberately stores nothing when it refuses.
  */
 function useAutoJoinOffer(): {
-  /** True from the first render whenever the URL names a team. */
-  isPossible: boolean;
   isLoading: boolean;
-  offer: { domain: string; teamSlug: string } | null;
+  offer: { domain: string; teamSlug: string; teamName: string } | null;
 } {
   const [searchParams] = useSearchParams();
   const teamSlug = searchParams.get("team");
-  const { data, loading } = useQuery(AutoJoinDomainQuery, {
+  const { data, loading } = useQuery(AutoJoinQuery, {
+    variables: { teamSlug: teamSlug ?? "" },
     // Nothing to offer without a team to open, so hobby signups pay nothing.
     skip: !teamSlug,
   });
+
   const domain = data?.me?.eligibleAutoJoinDomain ?? null;
+  const account = data?.account;
+  const isAdministered =
+    account?.__typename === "Team" &&
+    account.permissions.includes(AccountPermission.Admin);
+
   return {
-    isPossible: Boolean(teamSlug),
     isLoading: loading,
-    offer: teamSlug && domain ? { domain, teamSlug } : null,
+    offer:
+      teamSlug && domain && isAdministered
+        ? { domain, teamSlug, teamName: account.name || account.slug }
+        : null,
   };
 }
 
@@ -180,10 +198,11 @@ function useAutoJoinOffer(): {
  */
 function AutoJoinField(props: {
   control: Control<Inputs>;
-  domain: string | null;
+  offer: { domain: string; teamName: string } | null;
   isLoading: boolean;
 }) {
-  const { control, domain, isLoading } = props;
+  const { control, offer, isLoading } = props;
+  const domain = offer?.domain;
   return (
     <div className="bg-subtle mt-6 min-h-25 rounded-xl border p-4">
       {domain ? (
@@ -293,10 +312,10 @@ function WelcomeForm() {
         />
       ) : null}
 
-      {autoJoin.isPossible ? (
+      {autoJoin.isLoading || autoJoin.offer ? (
         <AutoJoinField
           control={form.control}
-          domain={autoJoin.offer?.domain ?? null}
+          offer={autoJoin.offer}
           isLoading={autoJoin.isLoading}
         />
       ) : null}
