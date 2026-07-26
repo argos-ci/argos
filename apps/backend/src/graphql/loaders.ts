@@ -1226,6 +1226,110 @@ function createIgnoredChangeLoader() {
   );
 }
 
+/**
+ * Loads the most recent diff carrying a given change fingerprint, across every
+ * period and every build type.
+ *
+ * `TestChangeStats` deliberately scopes its diffs to a metrics period and to
+ * reference builds; an ignored change that stopped occurring has no such diff,
+ * so it needs this unscoped lookup to still render a screenshot and a date.
+ */
+function createLatestChangeDiffLoader() {
+  return new DataLoader<
+    { testId: string; fingerprint: string },
+    ScreenshotDiff | null,
+    string
+  >(
+    async (changes) => {
+      const rows = await ScreenshotDiff.query()
+        .select("screenshot_diffs.*")
+        // The ordering below puts the newest diff of each pair first, so
+        // DISTINCT ON keeps exactly that one.
+        .distinctOn("screenshot_diffs.testId", "screenshot_diffs.fingerprint")
+        .whereIn(
+          ["screenshot_diffs.testId", "screenshot_diffs.fingerprint"],
+          changes.map(({ testId, fingerprint }) => [testId, fingerprint]),
+        )
+        .whereNotNull("screenshot_diffs.fileId")
+        .orderBy([
+          { column: "screenshot_diffs.testId" },
+          { column: "screenshot_diffs.fingerprint" },
+          { column: "screenshot_diffs.id", order: "desc" },
+        ]);
+
+      const diffByKey = new Map(
+        rows.map((diff) => [`${diff.testId}|${diff.fingerprint}`, diff]),
+      );
+
+      return changes.map(
+        ({ testId, fingerprint }) =>
+          diffByKey.get(`${testId}|${fingerprint}`) ?? null,
+      );
+    },
+    { cacheKeyFn: (input) => JSON.stringify(input) },
+  );
+}
+
+/**
+ * Counts how many times a change reappeared in auto-approved builds since a
+ * per-change date — for ignored changes, since they were ignored. Each key
+ * carries its own `from`, so this cannot reuse `getChangesTotalOccurrences`.
+ */
+function createChangeOccurrencesSinceLoader() {
+  return new DataLoader<
+    { testId: string; fingerprint: string; from: Date },
+    number,
+    string
+  >(
+    async (changes) => {
+      const result = await knex.raw<{
+        rows: {
+          testId: string;
+          fingerprint: string;
+          from: Date;
+          total: string;
+        }[];
+      }>(
+        // The join casts the *parameters* to bigint rather than the column to
+        // text: casting `tsf."testId"` would make the (testId, fingerprint,
+        // date) primary key unusable and turn this into a full table scan.
+        `
+        SELECT
+          c."testId"::text as "testId",
+          c."fingerprint",
+          c."from",
+          coalesce(sum(tsf.value), 0) as total
+        FROM unnest(:testIds::bigint[], :fingerprints::text[], :froms::timestamptz[])
+          AS c("testId", "fingerprint", "from")
+        LEFT JOIN test_stats_fingerprints tsf
+          ON tsf."testId" = c."testId"
+          AND tsf.fingerprint = c."fingerprint"
+          AND tsf.date >= c."from"
+        GROUP BY c."testId", c."fingerprint", c."from"
+        `,
+        {
+          testIds: changes.map((change) => change.testId),
+          fingerprints: changes.map((change) => change.fingerprint),
+          froms: changes.map((change) => change.from.toISOString()),
+        },
+      );
+
+      const totalByKey = new Map(
+        result.rows.map((row) => [
+          `${row.testId}|${row.fingerprint}|${new Date(row.from).getTime()}`,
+          Number(row.total),
+        ]),
+      );
+
+      return changes.map(
+        ({ testId, fingerprint, from }) =>
+          totalByKey.get(`${testId}|${fingerprint}|${from.getTime()}`) ?? 0,
+      );
+    },
+    { cacheKeyFn: (input) => JSON.stringify(input) },
+  );
+}
+
 function createTestAuditTrailLoader() {
   return new DataLoader<
     {
@@ -1500,6 +1604,8 @@ export const createLoaders = () => ({
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
   IgnoredChangeLoader: createIgnoredChangeLoader(),
+  LatestChangeDiffLoader: createLatestChangeDiffLoader(),
+  ChangeOccurrencesSinceLoader: createChangeOccurrencesSinceLoader(),
   LatestAutomationRun: createLatestAutomationRunLoader(),
   LatestDeploymentByProjectAndCommit:
     createLatestDeploymentByProjectAndCommitLoader(),

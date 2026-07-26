@@ -22,6 +22,9 @@ const ProjectQuery = graphql(`
       permissions
       name
       deploymentEnabled
+      ignoreConfig {
+        enabled
+      }
       account {
         id
         ...PaymentBanner_Account
@@ -36,11 +39,13 @@ type Account = NonNullable<
 
 function ProjectTabs(props: {
   deploymentEnabled: boolean;
+  ignoreEnabled: boolean;
   permissions: ProjectPermission[];
   account: Account;
   children: React.ReactNode;
 }) {
-  const { account, children, permissions, deploymentEnabled } = props;
+  const { account, children, permissions, deploymentEnabled, ignoreEnabled } =
+    props;
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
@@ -49,6 +54,9 @@ function ProjectTabs(props: {
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
+        {/* The ignore ledger is only meaningful while the feature is on; the
+            page itself still explains itself if reached by a direct link. */}
+        {ignoreEnabled && <TabLink href="ignored">Ignored</TabLink>}
         {deploymentEnabled && <TabLink href="deployments">Deployments</TabLink>}
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
@@ -86,6 +94,7 @@ function Project(props: { params: ProjectParams }) {
       account={project.account}
       permissions={project.permissions}
       deploymentEnabled={project.deploymentEnabled}
+      ignoreEnabled={project.ignoreConfig.enabled}
     >
       <Suspense fallback={<PageLoader />}>
         <Outlet

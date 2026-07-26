@@ -1,6 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { knex } from "@/database";
+import { ScreenshotDiff } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createLoaders } from "./loaders";
@@ -85,5 +87,210 @@ describe("ProjectTeamUserLevel loader", () => {
     expect(levelA).toBe("owner");
     expect(levelB).toBe("member");
     expect(crossed).toBeNull();
+  });
+});
+
+describe("LatestChangeDiff loader", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  async function createDiff(input: {
+    testId: string;
+    fingerprint: string | null;
+    fileId: string | null;
+  }) {
+    const diff = await factory.ScreenshotDiff.create();
+    await ScreenshotDiff.query().findById(diff.id).patch(input);
+    return diff;
+  }
+
+  it("returns the newest diff carrying the fingerprint", async () => {
+    const test = await factory.Test.create();
+    const file = await factory.File.create({ type: "screenshotDiff" });
+    await createDiff({
+      testId: test.id,
+      fingerprint: "fp-1",
+      fileId: file.id,
+    });
+    const newest = await createDiff({
+      testId: test.id,
+      fingerprint: "fp-1",
+      fileId: file.id,
+    });
+
+    const loaders = createLoaders();
+    const diff = await loaders.LatestChangeDiffLoader.load({
+      testId: test.id,
+      fingerprint: "fp-1",
+    });
+
+    expect(diff?.id).toBe(newest.id);
+  });
+
+  it("ignores diffs whose image is gone and returns null when none is left", async () => {
+    const test = await factory.Test.create();
+    await createDiff({ testId: test.id, fingerprint: "fp-1", fileId: null });
+
+    const loaders = createLoaders();
+    const diff = await loaders.LatestChangeDiffLoader.load({
+      testId: test.id,
+      fingerprint: "fp-1",
+    });
+
+    expect(diff).toBeNull();
+  });
+
+  it("keeps each key separate when the batch mixes tests and fingerprints", async () => {
+    const [testA, testB] = await Promise.all([
+      factory.Test.create(),
+      factory.Test.create(),
+    ]);
+    const file = await factory.File.create({ type: "screenshotDiff" });
+    const [diffA1, diffA2, diffB] = await Promise.all([
+      createDiff({ testId: testA.id, fingerprint: "fp-1", fileId: file.id }),
+      createDiff({ testId: testA.id, fingerprint: "fp-2", fileId: file.id }),
+      createDiff({ testId: testB.id, fingerprint: "fp-1", fileId: file.id }),
+    ]);
+
+    const loaders = createLoaders();
+    // Loaded in one tick so the DataLoader batches them into a single query.
+    const [a1, a2, b, missing] = await Promise.all([
+      loaders.LatestChangeDiffLoader.load({
+        testId: testA.id,
+        fingerprint: "fp-1",
+      }),
+      loaders.LatestChangeDiffLoader.load({
+        testId: testA.id,
+        fingerprint: "fp-2",
+      }),
+      loaders.LatestChangeDiffLoader.load({
+        testId: testB.id,
+        fingerprint: "fp-1",
+      }),
+      loaders.LatestChangeDiffLoader.load({
+        testId: testB.id,
+        fingerprint: "fp-3",
+      }),
+    ]);
+
+    expect(a1?.id).toBe(diffA1.id);
+    expect(a2?.id).toBe(diffA2.id);
+    expect(b?.id).toBe(diffB.id);
+    expect(missing).toBeNull();
+  });
+});
+
+describe("ChangeOccurrencesSince loader", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  async function insertStats(
+    rows: {
+      testId: string;
+      fingerprint: string;
+      date: string;
+      value: number;
+    }[],
+  ) {
+    await knex("test_stats_fingerprints").insert(rows);
+  }
+
+  it("only counts occurrences at or after `from`", async () => {
+    const test = await factory.Test.create();
+    await insertStats([
+      {
+        testId: test.id,
+        fingerprint: "fp-1",
+        date: "2026-01-01T00:00:00.000Z",
+        value: 5,
+      },
+      {
+        testId: test.id,
+        fingerprint: "fp-1",
+        date: "2026-02-01T00:00:00.000Z",
+        value: 3,
+      },
+      {
+        testId: test.id,
+        fingerprint: "fp-1",
+        date: "2026-03-01T00:00:00.000Z",
+        value: 2,
+      },
+    ]);
+
+    const loaders = createLoaders();
+    const total = await loaders.ChangeOccurrencesSinceLoader.load({
+      testId: test.id,
+      fingerprint: "fp-1",
+      from: new Date("2026-02-01T00:00:00.000Z"),
+    });
+
+    expect(total).toBe(5);
+  });
+
+  it("returns 0 when nothing occurred since `from`", async () => {
+    const test = await factory.Test.create();
+    await insertStats([
+      {
+        testId: test.id,
+        fingerprint: "fp-1",
+        date: "2026-01-01T00:00:00.000Z",
+        value: 4,
+      },
+    ]);
+
+    const loaders = createLoaders();
+    const total = await loaders.ChangeOccurrencesSinceLoader.load({
+      testId: test.id,
+      fingerprint: "fp-1",
+      from: new Date("2026-02-01T00:00:00.000Z"),
+    });
+
+    expect(total).toBe(0);
+  });
+
+  it("applies each key's own `from` within a single batch", async () => {
+    const test = await factory.Test.create();
+    await insertStats([
+      {
+        testId: test.id,
+        fingerprint: "fp-1",
+        date: "2026-01-01T00:00:00.000Z",
+        value: 7,
+      },
+      {
+        testId: test.id,
+        fingerprint: "fp-2",
+        date: "2026-01-01T00:00:00.000Z",
+        value: 9,
+      },
+    ]);
+
+    const loaders = createLoaders();
+    // Same test, same date, different `from` per key: the batched query must not
+    // collapse them onto a single window.
+    const [counted, excluded, allTime] = await Promise.all([
+      loaders.ChangeOccurrencesSinceLoader.load({
+        testId: test.id,
+        fingerprint: "fp-1",
+        from: new Date("2025-12-01T00:00:00.000Z"),
+      }),
+      loaders.ChangeOccurrencesSinceLoader.load({
+        testId: test.id,
+        fingerprint: "fp-2",
+        from: new Date("2026-06-01T00:00:00.000Z"),
+      }),
+      loaders.ChangeOccurrencesSinceLoader.load({
+        testId: test.id,
+        fingerprint: "fp-2",
+        from: new Date(0),
+      }),
+    ]);
+
+    expect(counted).toBe(7);
+    expect(excluded).toBe(0);
+    expect(allTime).toBe(9);
   });
 });

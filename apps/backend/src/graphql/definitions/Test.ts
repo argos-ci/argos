@@ -1,27 +1,16 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Project, ScreenshotDiff, type User } from "@/database/models";
-import {
-  getChangeMutationDenial,
-  ignoreChange as ignoreTestChange,
-  unignoreChange as unignoreTestChange,
-} from "@/database/services/ignored-change";
+import { ScreenshotDiff } from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
-import {
-  formatTestChangeId,
-  formatTestId,
-  safeParseTestChangeId,
-  type TestChangeIdPayload,
-} from "@/util/test-id";
+import { formatTestId } from "@/util/test-id";
 
 import {
   type IResolvers,
   type ITestMetrics,
 } from "../__generated__/resolver-types";
-import { badUserInput, forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
+import type { TestChangeObject } from "./TestChange";
 
 const { gql } = gqlTag;
 
@@ -45,24 +34,6 @@ export const typeDefs = gql`
   type TestMetrics {
     series: [TestMetricDataPoint!]!
     all: TestMetricData!
-  }
-
-  type TestChange implements Node {
-    id: ID!
-    stats(period: MetricsPeriod!): TestChangeStats!
-    ignored: Boolean!
-    trails: [AuditTrail!]!
-  }
-
-  type TestChangeStats {
-    totalOccurrences: Int!
-    firstSeenDiff: ScreenshotDiff!
-    lastSeenDiff: ScreenshotDiff!
-  }
-
-  type TestChangesConnection implements Connection {
-    edges: [TestChange!]!
-    pageInfo: PageInfo!
   }
 
   type TestConnection implements Connection {
@@ -99,21 +70,6 @@ export const typeDefs = gql`
     date: DateTime!
     action: String!
     user: User!
-  }
-
-  input IgnoreChangeInput {
-    accountSlug: String!
-    changeId: ID!
-  }
-
-  input UnignoreChangeInput {
-    accountSlug: String!
-    changeId: ID!
-  }
-
-  extend type Mutation {
-    ignoreChange(input: IgnoreChangeInput!): TestChange!
-    unignoreChange(input: UnignoreChangeInput!): TestChange!
   }
 `;
 
@@ -184,7 +140,11 @@ export const resolvers: IResolvers = {
       return paginateResult({
         result: {
           total: result.total,
-          results: result.results.map((screenshotDiff) => {
+          results: result.results.map((screenshotDiff): TestChangeObject => {
+            invariant(
+              screenshotDiff.fingerprint,
+              "Diffs without a fingerprint are filtered out by the query",
+            );
             return {
               project,
               testId: test.id,
@@ -219,39 +179,6 @@ export const resolvers: IResolvers = {
       });
     },
   },
-  TestChange: {
-    id: (testChange) =>
-      formatTestChangeId({
-        projectName: testChange.project.name,
-        testId: testChange.testId,
-        fingerprint: testChange.fingerprint,
-      }),
-    stats: async (testChange, args, ctx) => {
-      const { period } = args;
-      const from = getStartDateFromPeriod(period);
-      const ChangeStatsLoader = ctx.loaders.getChangeStatsLoader(
-        from.toISOString(),
-        testChange.testId,
-      );
-      return ChangeStatsLoader.load({ fingerprint: testChange.fingerprint });
-    },
-    ignored: async (testChange, _args, ctx) => {
-      return ctx.loaders.IgnoredChangeLoader.load({
-        projectId: testChange.project.id,
-        testId: testChange.testId,
-        fingerprint: testChange.fingerprint,
-      });
-    },
-    trails: async (testChange, _args, ctx) => {
-      const trails = await ctx.loaders.TestAuditTrailLoader.load({
-        projectId: testChange.project.id,
-        testId: testChange.testId,
-      });
-      return trails.filter(
-        (trail) => trail.fingerprint === testChange.fingerprint,
-      );
-    },
-  },
   AuditTrail: {
     user: async (auditTrail, _args, ctx) => {
       const account = await ctx.loaders.AccountFromRelation.load({
@@ -261,106 +188,9 @@ export const resolvers: IResolvers = {
       return account;
     },
   },
-  Mutation: {
-    ignoreChange: async (_root, { input }, ctx) => {
-      return runChangeMutaton(
-        {
-          changeId: input.changeId,
-          accountSlug: input.accountSlug,
-          user: ctx.auth?.user ?? null,
-        },
-        async ({ changeIdPayload, project, user }) => {
-          await ignoreTestChange({
-            projectId: project.id,
-            testId: changeIdPayload.testId,
-            fingerprint: changeIdPayload.fingerprint,
-            userId: user.id,
-          });
-        },
-      );
-    },
-    unignoreChange: async (_root, { input }, ctx) => {
-      return runChangeMutaton(
-        {
-          changeId: input.changeId,
-          accountSlug: input.accountSlug,
-          user: ctx.auth?.user ?? null,
-        },
-        async ({ changeIdPayload, project, user }) => {
-          await unignoreTestChange({
-            projectId: project.id,
-            testId: changeIdPayload.testId,
-            fingerprint: changeIdPayload.fingerprint,
-            userId: user.id,
-          });
-        },
-      );
-    },
-  },
-};
-
-export type TestChangeObject = {
-  project: Project;
-  testId: string;
-  fingerprint: string;
 };
 
 export type TestMetrics = {
   series: () => Promise<ITestMetrics["series"]>;
   all: () => Promise<ITestMetrics["all"]>;
 };
-
-async function runChangeMutaton(
-  context: {
-    changeId: string;
-    accountSlug: string;
-    user: User | null;
-  },
-  run: (props: {
-    changeIdPayload: TestChangeIdPayload;
-    project: Project;
-    user: User;
-  }) => Promise<void>,
-): Promise<TestChangeObject> {
-  const { changeId, accountSlug, user } = context;
-  const changeIdPayload = safeParseTestChangeId(changeId);
-
-  if (!changeIdPayload) {
-    throw notFound("Test change not found");
-  }
-
-  const project = await Project.query()
-    .joinRelated("account")
-    .where("account.slug", accountSlug)
-    .whereILike("projects.name", changeIdPayload.projectName)
-    .first();
-
-  if (!project) {
-    throw notFound("Project not found");
-  }
-
-  const denial = await getChangeMutationDenial(project, user);
-
-  switch (denial) {
-    case "forbidden":
-      throw forbidden(
-        "You do not have permission to ignore test changes in this project",
-      );
-    case "ignore-disabled":
-      throw badUserInput("The ignore feature is disabled for this project.");
-    case null:
-      break;
-    default:
-      assertNever(denial);
-  }
-
-  invariant(user, "User should be defined because of permissions check");
-
-  await run({ changeIdPayload, project, user });
-
-  return {
-    project,
-    fingerprint: changeIdPayload.fingerprint,
-    testId: changeIdPayload.testId,
-  };
-}

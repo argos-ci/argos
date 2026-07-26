@@ -2,7 +2,9 @@ import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
 import { concludeBuild } from "@/build/concludeBuild";
+import { decodeFingerprint } from "@/util/fingerprint";
 
+import { knex } from "./knex";
 import { UserEmail } from "./models";
 import { Account } from "./models/Account";
 import { Build } from "./models/Build";
@@ -24,6 +26,7 @@ import { Team } from "./models/Team";
 import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
 import { User } from "./models/User";
+import { ignoreChange } from "./services/ignored-change";
 
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
@@ -673,6 +676,66 @@ export async function createTestChangeScenario(input: {
       fingerprint: "penelope-argos-change",
       createdAt: now,
       updatedAt: now,
+    },
+  ]);
+
+  return { test, build };
+}
+
+/**
+ * The Argos bot account, created on demand. The production row comes from a
+ * migration, but the e2e database is truncated between runs.
+ */
+async function getSeedArgosBotUserId(): Promise<string> {
+  const email = "argos-bot@no-reply.argos-ci.com";
+  const existing = await User.query().select("id").findOne({ email });
+  if (existing) {
+    return existing.id;
+  }
+  const { user } = await createUserAccount({
+    email,
+    name: "Argos Bot",
+    slug: "argos-bot",
+    type: "bot",
+  });
+  return user.id;
+}
+
+/**
+ * A change that has been ignored and kept reappearing afterwards, so the ignore
+ * ledger has a row with an author, a date and a non-zero occurrence count.
+ */
+export async function createIgnoredChangeScenario(input: {
+  projectId: string;
+  userId: string;
+  /**
+   * Attribute the ignore to the Argos bot, as auto-ignore does, instead of to
+   * `userId`.
+   * @default false
+   */
+  auto?: boolean;
+}): Promise<{ test: Test; build: Build }> {
+  const { projectId, auto = false } = input;
+  const { test, build } = await createTestChangeScenario({ projectId });
+
+  // Change ids embed the fingerprint and are parsed back by splitting on `-`,
+  // so the scenario needs a realistically shaped (dash-free) fingerprint rather
+  // than the readable placeholder `createTestChangeScenario` uses.
+  const fingerprint = decodeFingerprint("v14f3a9c2e1b8d7605");
+  await ScreenshotDiff.query().where("testId", test.id).patch({ fingerprint });
+
+  const userId = auto ? await getSeedArgosBotUserId() : input.userId;
+  await ignoreChange({ projectId, testId: test.id, fingerprint, userId });
+
+  // Occurrences are read from the daily fingerprint stats, which the diff
+  // pipeline fills on reference builds — seed them directly here. They must be
+  // dated after the ignore, since that is the window the ledger counts.
+  await knex("test_stats_fingerprints").insert([
+    {
+      testId: test.id,
+      fingerprint,
+      date: new Date(Date.now() + 60_000),
+      value: 4,
     },
   ]);
 

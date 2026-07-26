@@ -42,6 +42,7 @@ import * as SlackInstallation from "./SlackInstallation";
 import * as Staff from "./Staff";
 import * as Team from "./Team";
 import * as Test from "./Test";
+import * as TestChange from "./TestChange";
 import * as TimeSeries from "./TimeSeries";
 import * as User from "./User";
 import * as UserAccessToken from "./UserAccessToken";
@@ -91,6 +92,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Staff,
   Team,
   Test,
+  TestChange,
   TimeSeries,
   User,
   UserAccessToken,

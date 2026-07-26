@@ -20,6 +20,7 @@ import {
   User,
 } from "@/database/models";
 import { queryBuilds } from "@/database/services/build";
+import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   checkProjectName,
   createProject as createProjectService,
@@ -215,6 +216,8 @@ export const typeDefs = gql`
     defaultUserLevel: ProjectUserLevel
     "Ignore feature configuration"
     ignoreConfig: IgnoreConfig!
+    "Changes currently ignored in this project, most recently ignored first"
+    ignoredChanges(after: Int = 0, first: Int = 30): TestChangesConnection!
     "List all tests in a project"
     tests(
       after: Int = 0
@@ -660,6 +663,21 @@ export const resolvers: IResolvers = {
         return null;
       }
       return test;
+    },
+    ignoredChanges: async (project, { first, after }) => {
+      const result = await queryIgnoredChanges({
+        projectId: project.id,
+        after,
+        first,
+      });
+      return paginateResult({
+        result: {
+          total: result.total,
+          results: result.results.map((row) => ({ project, ...row })),
+        },
+        first,
+        after,
+      });
     },
     tests: async (project, { first, after, period, filters }) => {
       const result = await queryActiveTests({
