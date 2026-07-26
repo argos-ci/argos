@@ -7,6 +7,7 @@ import { listActiveSessions } from "@/auth/session";
 import {
   Account,
   ProjectUser,
+  SIGNUP_SOURCE_DETAIL_MAX_LENGTH,
   Subscription,
   TeamInvite,
   User,
@@ -426,6 +427,18 @@ export const resolvers: IResolvers = {
       }
 
       const { source, sourceDetail, autoJoinTeamSlug } = args.input;
+
+      // Checked here rather than left to the column: a `varchar(255)` overflow
+      // surfaces as a Postgres error the user cannot act on.
+      if (
+        sourceDetail &&
+        sourceDetail.trim().length > SIGNUP_SOURCE_DETAIL_MAX_LENGTH
+      ) {
+        throw badUserInput(
+          `Keep it under ${SIGNUP_SOURCE_DETAIL_MAX_LENGTH} characters.`,
+          { field: "sourceDetail" },
+        );
+      }
 
       // Opening the team comes first: it is the part that can be refused, and
       // failing after the answers were stored would leave the page with nothing

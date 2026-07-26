@@ -219,6 +219,30 @@ describe("completeWelcome", () => {
     },
   );
 
+  welcomeTest(
+    "refuses a free-text answer longer than the column",
+    async ({ user, post }) => {
+      const res = await post({
+        query: CompleteWelcomeMutation,
+        variables: {
+          input: { source: "other", sourceDetail: "x".repeat(300) },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toHaveLength(1);
+      expect(res.body.errors[0].extensions).toMatchObject({
+        code: "BAD_USER_INPUT",
+        field: "sourceDetail",
+      });
+      // Rejected before anything was written, so the page can ask again.
+      const updated = await User.query()
+        .findById(user.userId)
+        .throwIfNotFound();
+      expect(updated.signupSourceAskedAt).toBeNull();
+    },
+  );
+
   welcomeTest("refuses an unknown team slug", async ({ user, post }) => {
     const res = await post({
       query: CompleteWelcomeMutation,

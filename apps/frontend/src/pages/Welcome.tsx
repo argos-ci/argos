@@ -278,10 +278,16 @@ function WelcomeForm() {
       {source === SignupSource.Other ? (
         <FormTextInput
           control={form.control}
-          {...form.register("sourceDetail")}
+          {...form.register("sourceDetail", {
+            // Matches the column, so the answer cannot be rejected after the
+            // user has typed it.
+            maxLength: {
+              value: 255,
+              message: "Keep it under 255 characters",
+            },
+          })}
           label="Where, exactly?"
           className="mt-4"
-          autoFocus
           autoComplete="off"
         />
       ) : null}

@@ -14,6 +14,10 @@ import { UserEmail } from "./UserEmail";
 
 export type SignupSource = (typeof User.signupSources)[number];
 
+/** Matches the `varchar(255)` column, so oversized input fails validation
+ * rather than reaching Postgres and raising a 500. */
+export const SIGNUP_SOURCE_DETAIL_MAX_LENGTH = 255;
+
 export class User extends Model {
   static override tableName = "users";
 
@@ -45,7 +49,10 @@ export class User extends Model {
             type: ["string", "null"],
             enum: [...User.signupSources, null],
           },
-          signupSourceDetail: { type: ["string", "null"] },
+          signupSourceDetail: {
+            type: ["string", "null"],
+            maxLength: SIGNUP_SOURCE_DETAIL_MAX_LENGTH,
+          },
           signupSourceAskedAt: { type: ["string", "null"] },
         },
       },
