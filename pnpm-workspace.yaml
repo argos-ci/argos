@@ -44,6 +44,12 @@ allowBuilds:
   "@swc/core": true
   "@tailwindcss/oxide": true
   esbuild: true
+  # Its postinstall refetches the domain list from three remote sources and
+  # rewrites domains.json, so the installed content would vary per install and
+  # escape the lockfile — and the install fails outright whenever a source is
+  # down. Blocked: we take the deterministic published snapshot instead, and
+  # top it up in src/util/public-email-domains.ts.
+  free-email-domains: false
   msw: true
   odiff-bin: true
   oxc-resolver: true

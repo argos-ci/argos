@@ -25,7 +25,7 @@ import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
+import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import {
@@ -69,6 +69,8 @@ const TrialPipelineQuery = graphql(`
           id
           name
           email
+          signupSource
+          signupSourceDetail
         }
         contact {
           id
@@ -436,6 +438,55 @@ function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
   );
 }
 
+const SIGNUP_SOURCE_LABELS: Record<SignupSource, string> = {
+  [SignupSource.SearchEngine]: "search engine",
+  [SignupSource.AiAssistant]: "AI assistant",
+  [SignupSource.SocialMedia]: "social media",
+  [SignupSource.Github]: "GitHub",
+  [SignupSource.WordOfMouth]: "word of mouth",
+  [SignupSource.Other]: "other",
+};
+
+/**
+ * How the owners said they found Argos, on one line under the team name.
+ *
+ * Deduplicated and joined rather than listed per owner: co-owners nearly always
+ * answer the same thing, and this is a hint next to the name, not a column.
+ * Owners who skipped the question contribute nothing — a blank line reads
+ * better here than "unknown".
+ */
+function FoundViaLine(props: { owners: PipelineTeam["staff"]["owners"] }) {
+  const answers = [
+    ...new Set(
+      props.owners.flatMap((owner) => {
+        const { signupSource } = owner;
+        if (!signupSource) {
+          return [];
+        }
+        // The free-text answer is the whole point of `other`, so it wins over
+        // the label whenever it was filled in.
+        if (signupSource === SignupSource.Other) {
+          return [
+            owner.signupSourceDetail?.trim() ||
+              SIGNUP_SOURCE_LABELS[signupSource],
+          ];
+        }
+        return [SIGNUP_SOURCE_LABELS[signupSource]];
+      }),
+    ),
+  ];
+
+  if (answers.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="text-low truncate text-xs">
+      Found via {answers.join(", ")}
+    </div>
+  );
+}
+
 function PipelineRow(props: { team: PipelineTeam; index: number }) {
   const { team, index } = props;
   const teamURL = getAccountURL({ accountSlug: team.slug });
@@ -445,10 +496,15 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
       <td className="p-4 text-sm">
         <div className="flex min-w-0 items-center gap-3">
           <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
-          <Link href={teamURL} className="truncate font-medium">
-            {team.name || team.slug}
-          </Link>
-          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href={teamURL} className="truncate font-medium">
+                {team.name || team.slug}
+              </Link>
+              <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
+            </div>
+            <FoundViaLine owners={team.staff.owners} />
+          </div>
         </div>
       </td>
       <td className="truncate p-4 text-sm">

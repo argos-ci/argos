@@ -7,8 +7,8 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { LinkButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { OTPInput } from "@/ui/OTPInput";
-import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import { checkIsErrorCode, getErrorMessage } from "@/util/error";
+import { getPostAuthURL } from "@/util/welcome";
 
 const AuthenticateWithEmailMutation = graphql(`
   mutation AuthWithEmail_authenticateWithEmail(
@@ -34,15 +34,12 @@ export function AuthWithEmail(props: {
     {
       onCompleted: (data) => {
         onSuccess?.();
-        const redirectToAutoInvite =
-          data.authenticateWithEmail.creation &&
-          data.authenticateWithEmail.hasAutoInvite;
-        const targetRedirect = redirectToAutoInvite
-          ? getAutoInviteTeamsURL(redirect)
-          : (redirect ?? "/");
+        const { creation, hasAutoInvite } = data.authenticateWithEmail;
         // The server set the session cookie on the mutation response. Do a full
         // navigation so the app re-bootstraps as the logged-in user.
-        window.location.replace(targetRedirect);
+        window.location.replace(
+          getPostAuthURL({ creation, hasAutoInvite, redirect }),
+        );
       },
     },
   );

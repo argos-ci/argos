@@ -4,9 +4,11 @@ import gqlTag from "graphql-tag";
 import { type UserPresence } from "@/auth/presence";
 import { subscribeToUserPresenceChanges } from "@/auth/presenceEvents";
 import { listActiveSessions } from "@/auth/session";
+import { transaction } from "@/database";
 import {
   Account,
   ProjectUser,
+  SIGNUP_SOURCE_DETAIL_MAX_LENGTH,
   Subscription,
   TeamInvite,
   User,
@@ -19,6 +21,10 @@ import {
   sendAccountDeletionRequestEmail,
 } from "@/database/services/account-deletion";
 import {
+  enableTeamDomainAutoJoin,
+  getEligibleAutoJoinDomain,
+} from "@/database/services/team-domain";
+import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
@@ -27,6 +33,7 @@ import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 import {
+  ISignupSource,
   type IResolvers,
   type ITeamUserLevel,
   type IUserType,
@@ -61,6 +68,36 @@ async function loadVisiblePresence(
     return null;
   }
   return ctx.loaders.Presence.load(targetUserId);
+}
+
+/**
+ * The team id behind a slug the caller may open to email-domain auto-join.
+ *
+ * Taken as a slug because that is what the welcome page's URL carries, so the
+ * admin check is what makes it safe — the same gate as adding a domain from the
+ * team settings.
+ */
+async function resolveAutoJoinTeamId(args: {
+  slug: string;
+  user: User;
+}): Promise<string> {
+  // One error for every way this can fail — unknown slug, someone else's team,
+  // a personal account. Distinguishing them turned the mutation into an
+  // existence oracle for any account slug, which `Query.account` deliberately
+  // avoids by returning null in both cases.
+  const refuse = () => forbidden("You can't open this team to a domain");
+
+  const account = await Account.query().findOne({ slug: args.slug });
+  if (!account) {
+    throw refuse();
+  }
+
+  const permissions = await account.$getPermissions(args.user);
+  if (!permissions.includes("admin") || !account.teamId) {
+    throw refuse();
+  }
+
+  return account.teamId;
 }
 
 export const typeDefs = gql`
@@ -131,11 +168,23 @@ export const typeDefs = gql`
     type: UserType!
     "Whether the user has staff privileges. Readable only by the user themselves — selecting it on anyone else is an error."
     staff: Boolean
+    "Email domain the user can open a team to, so that anyone with a verified address on it joins automatically. Null when they have none. Readable only by the user themselves — selecting it on anyone else is an error."
+    eligibleAutoJoinDomain: String
   }
 
   enum UserType {
     user
     bot
+  }
+
+  "Where a user found Argos, asked once on the welcome page."
+  enum SignupSource {
+    search_engine
+    ai_assistant
+    social_media
+    github
+    word_of_mouth
+    other
   }
 
   type UserPresenceChangeEvent {
@@ -170,6 +219,17 @@ export const typeDefs = gql`
     token: String!
   }
 
+  input CompleteWelcomeInput {
+    "How the user found Argos. Null when they skipped the question."
+    source: SignupSource
+    "Free-text answer, only read alongside the \`other\` source."
+    sourceDetail: String
+    "Slug of the team to open to email-domain auto-join. Null to leave it closed. Taken as a slug rather than an id so the welcome page can act on what its URL carries, without first resolving the team."
+    autoJoinTeamSlug: String
+    "The domain the user was shown when they agreed. Refused if it is no longer one of their verified company domains, so the team is never opened to a domain other than the one consented to."
+    autoJoinDomain: String
+  }
+
   extend type Mutation {
     "Request the deletion of a user account. Sends a confirmation email."
     requestAccountDeletion(input: RequestAccountDeletionInput!): Boolean!
@@ -185,6 +245,8 @@ export const typeDefs = gql`
     setPrimaryEmail(email: String!): User!
     "Verify email, returns true if success, false if failed"
     verifyEmail(email: String!, token: String!): Boolean!
+    "Record the answers given on the post-signup welcome page"
+    completeWelcome(input: CompleteWelcomeInput!): User!
   }
 `;
 
@@ -392,6 +454,73 @@ export const resolvers: IResolvers = {
 
       return markEmailAsVerified({ email, token });
     },
+    completeWelcome: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { source, sourceDetail, autoJoinTeamSlug, autoJoinDomain } =
+        args.input;
+
+      // Checked here rather than left to the column: a `varchar(255)` overflow
+      // surfaces as a Postgres error the user cannot act on.
+      if (
+        sourceDetail &&
+        sourceDetail.trim().length > SIGNUP_SOURCE_DETAIL_MAX_LENGTH
+      ) {
+        throw badUserInput(
+          `Keep it under ${SIGNUP_SOURCE_DETAIL_MAX_LENGTH} characters.`,
+          { field: "sourceDetail" },
+        );
+      }
+
+      // Resolved and authorized before the transaction opens. These are reads,
+      // and the permission chain takes no `trx`, so running them inside would
+      // reach for a second pooled connection while this request already holds
+      // one — the hazard `resolveAccountSlug` documents.
+      const autoJoinTeamId = autoJoinTeamSlug
+        ? await resolveAutoJoinTeamId({
+            slug: autoJoinTeamSlug,
+            user: auth.user,
+          })
+        : null;
+
+      // The writes go together: opening a team is a privilege grant, so it must
+      // not outlive a failure of the write that records the answer. Without the
+      // transaction, a patch that throws left the team open to a whole email
+      // domain while the client was told the mutation failed.
+      await transaction(async (trx) => {
+        if (autoJoinTeamId) {
+          const domain = await enableTeamDomainAutoJoin({
+            userId: auth.user.id,
+            teamId: autoJoinTeamId,
+            expectedDomain: autoJoinDomain,
+            trx,
+          });
+          if (!domain) {
+            throw badUserInput(
+              autoJoinDomain
+                ? `@${autoJoinDomain} is no longer one of your verified company domains, so the team was not opened.`
+                : "You need a verified email address on your organization's domain to let others join automatically.",
+            );
+          }
+        }
+
+        await auth.user.$query(trx).patch({
+          signupSource: source ?? null,
+          // The predefined sources speak for themselves, so the free-text
+          // answer is only kept for `other` — and a blank one is not an answer.
+          signupSourceDetail:
+            source === ISignupSource.Other
+              ? sourceDetail?.trim() || null
+              : null,
+          signupSourceAskedAt: new Date().toISOString(),
+        });
+      });
+
+      return auth.account;
+    },
   },
   User: {
     ...commonAccountResolvers,
@@ -555,6 +684,16 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
       return ctx.auth.user.staff;
+    },
+    eligibleAutoJoinDomain: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      // Which domains someone has verified says where they work — theirs to
+      // know, nobody else's. It throws for the same reason `staff` does: a null
+      // would be indistinguishable from having no eligible domain.
+      if (!ctx.auth || ctx.auth.user.id !== account.userId) {
+        throw forbidden();
+      }
+      return getEligibleAutoJoinDomain({ userId: account.userId });
     },
     lastSeenAt: async (account, _args, ctx) => {
       if (!account.userId) {

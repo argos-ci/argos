@@ -12,8 +12,24 @@ import { TeamInvite } from "./TeamInvite";
 import { UserAccessToken } from "./UserAccessToken";
 import { UserEmail } from "./UserEmail";
 
+export type SignupSource = (typeof User.signupSources)[number];
+
+/** Matches the `varchar(255)` column, so oversized input fails validation
+ * rather than reaching Postgres and raising a 500. */
+export const SIGNUP_SOURCE_DETAIL_MAX_LENGTH = 255;
+
 export class User extends Model {
   static override tableName = "users";
+
+  /** Where a user says they found Argos, asked once on the welcome page. */
+  static signupSources = [
+    "search_engine",
+    "ai_assistant",
+    "social_media",
+    "github",
+    "word_of_mouth",
+    "other",
+  ] as const;
 
   static override jsonSchema = {
     allOf: [
@@ -29,6 +45,15 @@ export class User extends Model {
           staff: { type: "boolean" },
           deletedAt: { type: ["string", "null"] },
           type: { type: "string", enum: ["user", "bot"] },
+          signupSource: {
+            type: ["string", "null"],
+            enum: [...User.signupSources, null],
+          },
+          signupSourceDetail: {
+            type: ["string", "null"],
+            maxLength: SIGNUP_SOURCE_DETAIL_MAX_LENGTH,
+          },
+          signupSourceAskedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -40,6 +65,11 @@ export class User extends Model {
   staff!: boolean;
   deletedAt!: string | null;
   type!: "user" | "bot";
+  signupSource!: SignupSource | null;
+  /** Free-text answer, only set alongside the `other` source. */
+  signupSourceDetail!: string | null;
+  /** When the welcome page asked, whether or not the question was answered. */
+  signupSourceAskedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

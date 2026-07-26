@@ -30,6 +30,7 @@ import {
 import { createAccount } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
 import {
+  enableTeamDomainAutoJoin,
   findVerifiedEmailForDomain,
   getAutoInvitesForUser,
   hasAutoInviteForTeam,
@@ -49,6 +50,7 @@ import {
   stripe,
 } from "@/stripe";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
+import { checkIsPublicEmailDomain } from "@/util/public-email-domains";
 
 import {
   ITeamMembersOrderBy,
@@ -266,6 +268,8 @@ export const typeDefs = gql`
 
   input CreateTeamInput {
     name: String!
+    "Domain to open the team to, so anyone with a verified address on it joins automatically. Refused if it is not one of the creator's verified company domains, so the team is never opened to a domain other than the one they were shown."
+    autoJoinDomain: String
   }
 
   input LeaveTeamInput {
@@ -403,6 +407,20 @@ export const typeDefs = gql`
     ): ImportTeamSamlMetadataResult!
   }
 `;
+
+/**
+ * URL of the welcome page for a team that was just created, sending the user on
+ * to the team once the questions are answered or skipped.
+ *
+ * The slug is carried explicitly so the page knows which team to offer
+ * email-domain auto-join for, rather than guessing from the user's memberships.
+ */
+function getWelcomeUrl(input: { teamSlug: string }): string {
+  const url = new URL("/~/welcome", config.get("server.url"));
+  url.searchParams.set("team", input.teamSlug);
+  url.searchParams.set("r", `/${input.teamSlug}`);
+  return url.href;
+}
 
 /**
  * Whether add-ons can be billed onto this subscription.
@@ -951,6 +969,21 @@ export const resolvers: IResolvers = {
         ownerId: auth.user.id,
       });
 
+      if (args.input.autoJoinDomain) {
+        invariant(teamAccount.teamId, "team account has no teamId");
+        const domain = await enableTeamDomainAutoJoin({
+          userId: auth.user.id,
+          teamId: teamAccount.teamId,
+          expectedDomain: args.input.autoJoinDomain,
+        });
+        if (!domain) {
+          throw badUserInput(
+            `@${args.input.autoJoinDomain} is not one of your verified company domains.`,
+            { field: "autoJoinDomain" },
+          );
+        }
+      }
+
       const [hasSubscribedToTrial, plan] = await Promise.all([
         auth.account.$checkHasSubscribedToTrial(),
         getStripeProPlanOrThrow(),
@@ -958,6 +991,12 @@ export const resolvers: IResolvers = {
 
       const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
         .href;
+      // A user who has not been through the welcome page yet lands there first:
+      // it asks how they found Argos and offers to open the team to their email
+      // domain, which needs the team to exist already.
+      const doneUrl = auth.user.signupSourceAskedAt
+        ? teamUrl
+        : getWelcomeUrl({ teamSlug: teamAccount.slug });
 
       const redirectToStripe = async ({ trial }: { trial: boolean }) => {
         const session = await createStripeCheckoutSession({
@@ -965,7 +1004,7 @@ export const resolvers: IResolvers = {
           plan,
           subscriberAccount: auth.account,
           trial,
-          successUrl: teamUrl,
+          successUrl: doneUrl,
           cancelUrl: `${teamUrl}?checkout=cancel`,
         });
 
@@ -1013,7 +1052,7 @@ export const resolvers: IResolvers = {
 
       return {
         team: teamAccount,
-        redirectUrl: teamUrl,
+        redirectUrl: doneUrl,
       };
     },
     extendTrial: async (_root, args, ctx) => {
@@ -1804,6 +1843,18 @@ export const resolvers: IResolvers = {
           throw badUserInput("Invalid domain", { field: "domain" });
         }
       })();
+
+      // The same rule the welcome page and team creation apply. Without it here
+      // an owner whose address is `x@gmail.com` could add `gmail.com`, and
+      // `getAutoInvitesForUser` would then offer this team to every Gmail user
+      // who signs up — the outcome the domain list exists to prevent, reachable
+      // through the one write path that skipped the check.
+      if (await checkIsPublicEmailDomain(domain)) {
+        throw badUserInput(
+          "This is a public email provider, so anyone could join. Use a domain your organization owns.",
+          { field: "domain" },
+        );
+      }
 
       const verifiedEmail = await findVerifiedEmailForDomain({
         userId: ctx.auth.user.id,

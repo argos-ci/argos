@@ -52,6 +52,10 @@ export const typeDefs = gql`
     id: ID!
     name: String
     email: String
+    "Where the owner said they found Argos. Null when never asked, or skipped."
+    signupSource: SignupSource
+    "Free-text answer given alongside the \`other\` source."
+    signupSourceDetail: String
   }
 
   "Trace of a staff member reaching out to a team."

@@ -70,6 +70,7 @@
     "dotenv": "^17.4.2",
     "express": "catalog:",
     "express-rate-limit": "^8.6.0",
+    "free-email-domains": "^1.9.74",
     "google-auth-library": "^10.9.0",
     "graphql": "17.0.2",
     "graphql-scalars": "^1.25.0",

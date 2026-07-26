@@ -234,6 +234,14 @@ export const router: ReturnType<typeof createBrowserRouter> =
           lazy: () => import("./pages/ConfirmAccountDeletion"),
         },
         {
+          // Outside the app layout: the first screen after signup owns the whole
+          // viewport, with no nav to click away into. Under `~/` so the path can
+          // never collide with an account slug.
+          path: "/~/welcome",
+          HydrateFallback,
+          lazy: () => import("./pages/Welcome"),
+        },
+        {
           path: "/",
           HydrateFallback,
           lazy: () => import("./pages/Home"),

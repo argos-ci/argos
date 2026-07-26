@@ -11,12 +11,12 @@ import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { APIError, fetchApi } from "@/util/api";
-import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import {
   AuthProvider,
   checkIsAuthProvider,
   getRedirectFromState,
 } from "@/util/oauth";
+import { getPostAuthURL } from "@/util/welcome";
 
 import { NotFound } from "./NotFound";
 
@@ -67,13 +67,15 @@ function AuthCallback(props: { provider: AuthProvider }) {
       },
     )
       .then((data) => {
-        const target =
-          data.creation && data.hasAutoInvite
-            ? getAutoInviteTeamsURL(redirectUri)
-            : redirectUri;
         // The server set the session cookie on the response. Do a full
         // navigation so the app re-bootstraps as the logged-in user.
-        window.location.replace(target);
+        window.location.replace(
+          getPostAuthURL({
+            creation: data.creation,
+            hasAutoInvite: data.hasAutoInvite,
+            redirect: redirectUri,
+          }),
+        );
       })
       .catch((error) => {
         setAuthError(error);
