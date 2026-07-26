@@ -47,6 +47,23 @@ describe("resolveWelcomeRedirect", () => {
     expect(resolveWelcomeRedirect("//evil.test")).toBe("/");
     expect(resolveWelcomeRedirect("/\\evil.test")).toBe("/");
     expect(resolveWelcomeRedirect("javascript:alert(1)")).toBe("/");
-    expect(resolveWelcomeRedirect("acme")).toBe("/");
+  });
+
+  it("refuses control characters the URL parser strips before resolving", () => {
+    // Each of these leaves the origin once the parser removes the control
+    // character: `/<TAB>/evil.test` resolves as `//evil.test`. A prefix check on
+    // the raw string sees a path and lets them through.
+    expect(resolveWelcomeRedirect("/\t/evil.test")).toBe("/");
+    expect(resolveWelcomeRedirect("/\n/evil.test")).toBe("/");
+    expect(resolveWelcomeRedirect("/\r/evil.test")).toBe("/");
+    expect(resolveWelcomeRedirect("/\t\\evil.test")).toBe("/");
+    expect(resolveWelcomeRedirect("/\t//evil.test")).toBe("/");
+  });
+
+  it("normalizes what it keeps, so the caller navigates to a parsed path", () => {
+    expect(resolveWelcomeRedirect("/acme/../other")).toBe("/other");
+    expect(resolveWelcomeRedirect("/acme#top")).toBe("/acme#top");
+    // A bare reference is same-origin, so it is kept — as an absolute path.
+    expect(resolveWelcomeRedirect("acme")).toBe("/acme");
   });
 });

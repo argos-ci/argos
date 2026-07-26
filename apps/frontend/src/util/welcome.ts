@@ -46,20 +46,29 @@ export function getPostSignupURL(redirect: string | null | undefined): string {
 /**
  * The path the welcome page forwards to, read from its `r` parameter.
  *
- * Only same-origin paths are honoured. The parameter travels in a URL anyone can
- * hand to a freshly signed-up user, so accepting an absolute one would turn the
- * page into an open redirect. A protocol-relative `//host` names another origin,
- * and browsers normalise the backslash in `/\host` to a slash — both are refused
- * up front rather than left to `URL` parsing to catch.
+ * Only same-origin destinations are honoured: the parameter travels in a URL
+ * anyone can hand to a freshly signed-up user, so one that leaves the origin
+ * would make this an open redirect.
+ *
+ * The check resolves the value with the same parser the browser will use and
+ * requires the result to stay on the origin, rather than pattern-matching the
+ * string. Pattern-matching cannot see what the parser does before it resolves a
+ * reference: it strips tab, LF and CR first, so a value that looks like a path
+ * can become `//evil.test` and leave the origin. Only the parsed parts are
+ * returned, so the caller navigates to something already normalised.
  */
 export function resolveWelcomeRedirect(param: string | null): string {
-  if (
-    !param ||
-    !param.startsWith("/") ||
-    param.startsWith("//") ||
-    param.startsWith("/\\")
-  ) {
+  if (!param) {
     return "/";
   }
-  return param;
+  let url: URL;
+  try {
+    url = new URL(param, PARSE_BASE);
+  } catch {
+    return "/";
+  }
+  if (url.origin !== PARSE_BASE) {
+    return "/";
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
