@@ -19,6 +19,7 @@
     "lint:root": "eslint . --max-warnings 0",
     "check-types": "turbo run check-types",
     "check-format": "turbo run check-format",
+    "static-checks": "turbo run static-checks",
     "format": "prettier --write .",
     "clean-deps": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
     "build-production": "BUILD_MODE=production pnpm run build && pnpm run clean-deps && pnpm install --prod",
