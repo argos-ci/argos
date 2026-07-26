@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/node";
-import type { Channel } from "amqplib";
+import type { Channel, Options } from "amqplib";
 import pRetry from "p-retry";
 
 import config from "@/config";
@@ -8,6 +8,13 @@ import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 import { connect } from "./amqp";
+import {
+  DEFAULT_RETRY_LADDER,
+  getRetryQueueName,
+  getRetryQueueOptions,
+  getRetryTier,
+  type RetryTier,
+} from "./backoff";
 
 interface Payload<TValue> {
   args: [TValue];
@@ -61,6 +68,13 @@ export interface JobParams {
    * @default 20000 (20 seconds)
    */
   timeout?: number;
+
+  /**
+   * Delay applied before each retry. One delay queue is declared per tier, so
+   * prefer reusing the shared tiers over inventing new delays.
+   * @default DEFAULT_RETRY_LADDER (10s, 1m, 5m)
+   */
+  retryLadder?: RetryTier[];
 }
 
 type JobContext = {
@@ -121,7 +135,11 @@ function getSharedChannel(direction: ChannelDirection): Promise<Channel> {
 // new channel naturally re-asserts.
 const assertedQueues = new WeakMap<Channel, Map<string, Promise<void>>>();
 
-function ensureQueueAsserted(channel: Channel, queue: string): Promise<void> {
+function ensureQueueAsserted(
+  channel: Channel,
+  queue: string,
+  options: Options.AssertQueue = { durable: true },
+): Promise<void> {
   let queues = assertedQueues.get(channel);
   if (!queues) {
     queues = new Map();
@@ -131,9 +149,7 @@ function ensureQueueAsserted(channel: Channel, queue: string): Promise<void> {
   if (existing) {
     return existing;
   }
-  const promise = channel
-    .assertQueue(queue, { durable: true })
-    .then(() => undefined);
+  const promise = channel.assertQueue(queue, options).then(() => undefined);
   queues.set(queue, promise);
   promise.catch(() => {
     queues!.delete(queue);
@@ -197,7 +213,11 @@ export const createJob = <TValue extends string | number>(
       ctx: JobContext,
     ) => void | Promise<void>;
   },
-  { prefetch = 1, timeout = 20_000 }: JobParams = {},
+  {
+    prefetch = 1,
+    timeout = 20_000,
+    retryLadder = DEFAULT_RETRY_LADDER,
+  }: JobParams = {},
 ): Job<TValue> => {
   queue = config.get("amqp.queuePrefix") + queue;
   const logger = parentLogger.child({ module: "job", queue });
@@ -258,6 +278,18 @@ export const createJob = <TValue extends string | number>(
 
           const channel = await getSharedChannel("consumer");
           await ensureQueueAsserted(channel, queue);
+          // Retries are published from this channel, so the delay queues have
+          // to exist here. Asserting them during setup surfaces a bad
+          // declaration at startup instead of when a job first fails.
+          await Promise.all(
+            retryLadder.map((tier) =>
+              ensureQueueAsserted(
+                channel,
+                getRetryQueueName(queue, tier),
+                getRetryQueueOptions(queue, tier),
+              ),
+            ),
+          );
 
           let consumerTag: string | null = null;
 
@@ -300,14 +332,23 @@ export const createJob = <TValue extends string | number>(
                     await this.run(id, ctx);
                     channel.ack(msg);
                   } catch (error) {
-                    if (checkIsRetryable(error) && payload.attempts < 2) {
+                    const tier = getRetryTier(retryLadder, payload.attempts);
+
+                    if (checkIsRetryable(error) && tier) {
                       consumeLogger.info(
-                        { error },
-                        "Error while processing job",
+                        {
+                          error,
+                          attempts: payload.attempts,
+                          delay: tier.delay,
+                        },
+                        "Retrying job after backoff",
                       );
 
+                      // Published to the delay queue rather than back to the
+                      // job queue: it waits there for the tier's TTL, then
+                      // RabbitMQ dead-letters it onto the job queue.
                       channel.sendToQueue(
-                        queue,
+                        getRetryQueueName(queue, tier),
                         serializeMessage({
                           args: payload.args,
                           attempts: payload.attempts + 1,
