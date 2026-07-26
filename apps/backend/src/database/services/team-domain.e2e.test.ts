@@ -20,7 +20,6 @@ const withUserAndTeam = test.extend<{
   userId: string;
   teamId: string;
 }>({
-  // eslint-disable-next-line no-empty-pattern
   userId: async ({}, use) => {
     await setupDatabase();
     const userAccount = await factory.UserAccount.create();

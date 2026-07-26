@@ -43,7 +43,6 @@ type Fixtures = {
 };
 
 const welcomeTest = test.extend<Fixtures>({
-  // eslint-disable-next-line no-empty-pattern
   user: async ({}, use) => {
     await setupDatabase();
     const account = await factory.UserAccount.create();
