@@ -1,11 +1,18 @@
 const WELCOME_PATH = "/~/welcome";
 
 /**
- * Base used only to parse a relative redirect into its parts. Never navigated
- * to, and deliberately not the real origin: an absolute redirect keeps its own
- * host, which is what makes the check below see it as "not the team page".
+ * Origin a redirect is resolved against, and the only one a redirect may land
+ * on.
+ *
+ * The app's own origin rather than a sentinel, because callers legitimately pass
+ * absolute same-origin URLs: `AuthCLI` and `OAuthAuthorize` both send
+ * `?r=${encodeURIComponent(window.location.href)}` so they can be returned to
+ * after login. Resolving those against a sentinel would classify them as
+ * off-origin and drop them.
  */
-const PARSE_BASE = "http://parse.invalid";
+function getOrigin(): string {
+  return window.location.origin;
+}
 
 /**
  * Whether a post-signup target creates a team on its own.
@@ -17,9 +24,9 @@ const PARSE_BASE = "http://parse.invalid";
  */
 function checkCreatesTeam(redirect: string): boolean {
   try {
-    const url = new URL(redirect, PARSE_BASE);
+    const url = new URL(redirect, getOrigin());
     return (
-      url.origin === PARSE_BASE &&
+      url.origin === getOrigin() &&
       url.pathname === "/teams/new" &&
       url.searchParams.get("autoSubmit") === "true"
     );
@@ -63,11 +70,11 @@ export function resolveWelcomeRedirect(param: string | null): string {
   }
   let url: URL;
   try {
-    url = new URL(param, PARSE_BASE);
+    url = new URL(param, getOrigin());
   } catch {
     return "/";
   }
-  if (url.origin !== PARSE_BASE) {
+  if (url.origin !== getOrigin()) {
     return "/";
   }
   return `${url.pathname}${url.search}${url.hash}`;

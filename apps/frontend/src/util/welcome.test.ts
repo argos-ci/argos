@@ -1,6 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPostSignupURL, resolveWelcomeRedirect } from "./welcome";
+
+const ORIGIN = "https://app.argos-ci.com";
+
+beforeAll(() => {
+  // The module reads `window.location.origin` to decide what counts as
+  // same-origin. There is no DOM in the unit environment, so stub the one
+  // property it touches rather than pull in jsdom for a pure function.
+  Object.defineProperty(globalThis, "window", {
+    value: { location: { origin: ORIGIN } },
+    configurable: true,
+  });
+});
 
 describe("getPostSignupURL", () => {
   it("wraps the destination in the welcome page", () => {
@@ -65,5 +77,22 @@ describe("resolveWelcomeRedirect", () => {
     expect(resolveWelcomeRedirect("/acme#top")).toBe("/acme#top");
     // A bare reference is same-origin, so it is kept — as an absolute path.
     expect(resolveWelcomeRedirect("acme")).toBe("/acme");
+  });
+
+  it("keeps a same-origin absolute destination", () => {
+    // `AuthCLI` and `OAuthAuthorize` pass `window.location.href`, so dropping
+    // absolute URLs stranded first-time CLI logins on the dashboard.
+    expect(
+      resolveWelcomeRedirect(`${ORIGIN}/auth/cli?port=1234&state=abc`),
+    ).toBe("/auth/cli?port=1234&state=abc");
+  });
+});
+
+describe("the CLI login round trip", () => {
+  it("returns the user to the CLI callback after the welcome page", () => {
+    const cliUrl = `${ORIGIN}/auth/cli?port=1234&state=abc`;
+    const welcomeUrl = getPostSignupURL(cliUrl);
+    const r = new URL(welcomeUrl, ORIGIN).searchParams.get("r");
+    expect(resolveWelcomeRedirect(r)).toBe("/auth/cli?port=1234&state=abc");
   });
 });
