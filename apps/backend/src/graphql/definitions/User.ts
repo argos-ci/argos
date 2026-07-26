@@ -81,18 +81,23 @@ async function resolveAutoJoinTeamId(args: {
   slug: string;
   user: User;
 }): Promise<string> {
+  // One error for every way this can fail — unknown slug, someone else's team,
+  // a personal account. Distinguishing them turned the mutation into an
+  // existence oracle for any account slug, which `Query.account` deliberately
+  // avoids by returning null in both cases.
+  const refuse = () => forbidden("You can't open this team to a domain");
+
   const account = await Account.query().findOne({ slug: args.slug });
   if (!account) {
-    throw badUserInput("Team not found");
+    throw refuse();
   }
-  const teamAccount = await getAdminAccount({
-    id: account.id,
-    user: args.user,
-  });
-  if (!teamAccount.teamId) {
-    throw badUserInput("Account is not a team");
+
+  const permissions = await account.$getPermissions(args.user);
+  if (!permissions.includes("admin") || !account.teamId) {
+    throw refuse();
   }
-  return teamAccount.teamId;
+
+  return account.teamId;
 }
 
 export const typeDefs = gql`

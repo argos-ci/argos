@@ -215,6 +215,9 @@ describe("completeWelcome", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toHaveLength(1);
+      expect(res.body.errors[0].extensions).toMatchObject({
+        code: "FORBIDDEN",
+      });
       await expect(listDomains(otherTeamAccount.teamId)).resolves.toEqual([]);
     },
   );
@@ -277,9 +280,9 @@ describe("completeWelcome", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.errors).toHaveLength(1);
-    expect(res.body.errors[0].extensions).toMatchObject({
-      code: "BAD_USER_INPUT",
-    });
+    // Same code and message as a team the user does not administer, so the
+    // response cannot be used to learn which slugs exist.
+    expect(res.body.errors[0].extensions).toMatchObject({ code: "FORBIDDEN" });
     const updated = await User.query().findById(user.userId).throwIfNotFound();
     expect(updated.signupSourceAskedAt).toBeNull();
   });
