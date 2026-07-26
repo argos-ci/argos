@@ -178,11 +178,17 @@ function useAutoJoinOffer(): {
   const isAdministered =
     account?.__typename === "Team" &&
     account.permissions.includes(AccountPermission.Admin);
+  // Nothing to ask once the team is already open to a domain. `createTeam`
+  // accepts the same choice on `/teams/new`, so a user who ticked it there was
+  // otherwise asked again here — with the box unchecked, which reads as "off"
+  // for a team where it is on, and unticking it does not close anything.
+  const isAlreadyOpen =
+    account?.__typename === "Team" && account.teamDomains.length > 0;
 
   return {
     isLoading: loading,
     offer:
-      teamSlug && domain && isAdministered
+      teamSlug && domain && isAdministered && !isAlreadyOpen
         ? { domain, teamSlug, teamName: account.name || account.slug }
         : null,
   };
