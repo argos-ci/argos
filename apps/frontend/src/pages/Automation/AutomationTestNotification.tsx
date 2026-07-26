@@ -82,7 +82,9 @@ function useTestAutomation(props: UseTestAutomationProps) {
               actions: data.actions,
             },
           });
-          toast.success("Test notification sent");
+          toast.success("Test notification sent", {
+            id: "automation-test-notification",
+          });
         } catch (error) {
           handleFormError(form, error);
         }

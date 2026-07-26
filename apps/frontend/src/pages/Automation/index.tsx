@@ -1,15 +1,19 @@
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { BoxesIcon, PlusCircleIcon } from "lucide-react";
+import { FilterIcon, PlusCircleIcon, SendIcon, ZapIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { useParams } from "react-router-dom";
 
+import { AutomationsIllustration } from "@/containers/EmptyStateIllustrations";
 import { DocumentType, graphql } from "@/gql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import {
   EmptyState,
   EmptyStateActions,
-  EmptyStateIcon,
+  EmptyStateIllustration,
+  EmptyStateLearnMore,
+  EmptyStateStep,
+  EmptyStateSteps,
   Page,
   PageContainer,
   PageHeader,
@@ -126,16 +130,44 @@ function PageContentFound(props: { project: ProjectDocument }) {
     <>
       {project.automationRules.pageInfo.totalCount === 0 ? (
         <EmptyState>
-          <EmptyStateIcon>
-            <BoxesIcon strokeWidth={1} />
-          </EmptyStateIcon>
-          <Heading>No automations</Heading>
+          <EmptyStateIllustration>
+            <AutomationsIllustration />
+          </EmptyStateIllustration>
+          <Heading>No automations yet</Heading>
           <Text slot="description">
-            There are no automations yet on this project.
+            An automation watches for something happening on this project and
+            reacts to it, so nobody has to notice and relay it by hand.
           </Text>
           <EmptyStateActions>
             <AddAutomationButton />
           </EmptyStateActions>
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/review-workflow/automations" />
+          <EmptyStateSteps>
+            <EmptyStateStep
+              icon={<ZapIcon />}
+              step="When"
+              title="Pick a trigger"
+            >
+              Start from a build event — a review submitted, a build failing, an
+              auto-approved build finishing.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<FilterIcon />}
+              step="If"
+              title="Narrow it down"
+            >
+              Add conditions so the rule only fires on the branches or build
+              names you actually care about.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<SendIcon />}
+              step="Then"
+              title="Send it somewhere"
+            >
+              Post to Slack or Microsoft Teams, so the right channel hears about
+              it the moment it happens.
+            </EmptyStateStep>
+          </EmptyStateSteps>
         </EmptyState>
       ) : (
         <>

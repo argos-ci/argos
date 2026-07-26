@@ -331,6 +331,11 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   element: <Navigate to=".." replace={true} />,
                 },
                 {
+                  path: "ignored",
+                  HydrateFallback,
+                  lazy: () => import("./pages/Project/IgnoredChanges"),
+                },
+                {
                   path: "deployments",
                   HydrateFallback,
                   lazy: () => import("./pages/Project/Deployments"),

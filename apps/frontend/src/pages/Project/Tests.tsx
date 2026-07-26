@@ -14,7 +14,13 @@ import {
 import { invariant } from "@argos/util/invariant";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { FileImageIcon, SearchIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  CameraIcon,
+  FileImageIcon,
+  GitCompareArrowsIcon,
+  SearchIcon,
+} from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
@@ -25,16 +31,21 @@ import {
   DiffCard,
   SingleImage,
 } from "@/containers/Build/BuildDiffListPrimitives";
+import { TestsIllustration } from "@/containers/EmptyStateIllustrations";
 import { PeriodSelect } from "@/containers/PeriodSelect";
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { useTestPeriodState } from "@/containers/Test/Period";
 import { SeenChange } from "@/containers/Test/SeenChange";
 import { graphql, type DocumentType } from "@/gql";
-import { Button, LinkButton } from "@/ui/Button";
+import { Button } from "@/ui/Button";
 import {
   EmptyState,
   EmptyStateActions,
   EmptyStateIcon,
+  EmptyStateIllustration,
+  EmptyStateLearnMore,
+  EmptyStateStep,
+  EmptyStateSteps,
   Page,
   PageContainer,
   PageHeader,
@@ -199,16 +210,42 @@ function PageContent(props: {
     return (
       <PageContainer>
         <EmptyState>
-          <EmptyStateIcon>
-            <FileImageIcon strokeWidth={1} />
-          </EmptyStateIcon>
-          <Heading>No tests</Heading>
+          <EmptyStateIllustration>
+            <TestsIllustration />
+          </EmptyStateIllustration>
+          <Heading>No tests yet</Heading>
           <Text slot="description">
-            There are no tests yet on this project.
+            A test is one screenshot name, followed across builds. Once your
+            suite uploads its first build, every screenshot shows up here with
+            the metrics that tell you which ones you can trust.
           </Text>
-          <EmptyStateActions>
-            <LinkButton href="/">Back to home</LinkButton>
-          </EmptyStateActions>
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/reliability-and-flakiness/tests-dashboard" />
+          <EmptyStateSteps>
+            <EmptyStateStep
+              icon={<CameraIcon />}
+              step="In your suite"
+              title="Take a screenshot"
+            >
+              Call Argos from Playwright, Cypress, Storybook or the CLI. The
+              name you give each screenshot becomes the test.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<GitCompareArrowsIcon />}
+              step="On every build"
+              title="Argos compares it"
+            >
+              Each run is diffed against the baseline, so a test accumulates a
+              history of when it changed and when it stayed put.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<ActivityIcon />}
+              step="Back here"
+              title="Spot the flaky ones"
+            >
+              Flakiness, stability and consistency are scored per test, so the
+              noisiest ones sort to the top.
+            </EmptyStateStep>
+          </EmptyStateSteps>
         </EmptyState>
       </PageContainer>
     );
@@ -308,11 +345,22 @@ function TestsList(props: {
       lastItem &&
       lastItem.index === displayCount &&
       !isFetchingMore &&
-      hasNextPage
+      hasNextPage &&
+      // While the filters are mid-change the rendered list still belongs to the
+      // previous ones, so `edges.length` is the wrong offset: paging here would
+      // append the old query's second page to the new query's first.
+      !isUpdating
     ) {
       fetchNextPage();
     }
-  }, [lastItem, displayCount, isFetchingMore, hasNextPage, fetchNextPage]);
+  }, [
+    lastItem,
+    displayCount,
+    isFetchingMore,
+    hasNextPage,
+    isUpdating,
+    fetchNextPage,
+  ]);
 
   return (
     <List

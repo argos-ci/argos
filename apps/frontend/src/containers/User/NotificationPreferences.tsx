@@ -8,6 +8,12 @@ import { Switch } from "@/ui/Switch";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
+/**
+ * Shared by every preference switch: flipping several in a row should emphasize
+ * one toast rather than stack a column of identical ones.
+ */
+const PREFERENCES_TOAST_ID = "notification-preferences-updated";
+
 const _AccountFragment = graphql(`
   fragment UserNotificationPreferences_Account on User {
     id
@@ -84,10 +90,14 @@ export function UserNotificationPreferences(props: {
                       },
                     })
                     .then(() => {
-                      toast.success("Notification preferences updated.");
+                      toast.success("Notification preferences updated.", {
+                        id: PREFERENCES_TOAST_ID,
+                      });
                     })
                     .catch((error) => {
-                      toast.error(getErrorMessage(error));
+                      toast.error(getErrorMessage(error), {
+                        id: PREFERENCES_TOAST_ID,
+                      });
                     })
                     .finally(() => {
                       setPendingIds((ids) => {

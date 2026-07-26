@@ -1,6 +1,6 @@
 import { UniqueViolationError } from "objection";
 
-import { transaction } from "@/database";
+import { knex, transaction } from "@/database";
 import {
   AuditTrail,
   IgnoredChange,
@@ -117,4 +117,55 @@ export async function unignoreChange(input: ChangeIdentity): Promise<void> {
       }),
     ]);
   });
+}
+
+/** Identity of a change currently ignored in a project. */
+export type IgnoredChangeRow = {
+  testId: string;
+  fingerprint: string;
+};
+
+/**
+ * List the changes currently ignored in a project, most recently ignored first.
+ *
+ * The order can only come from `audit_trails`: `ignored_changes` is keyed by
+ * (projectId, testId, fingerprint) and holds no date. A change can be ignored,
+ * unignored, then ignored again, so we order on the latest `files.ignored`
+ * entry. Rows with no matching entry sort last rather than dropping out.
+ */
+export async function queryIgnoredChanges(input: {
+  projectId: string;
+  after: number;
+  first: number;
+}): Promise<{ total: number; results: IgnoredChangeRow[] }> {
+  const { projectId, after, first } = input;
+
+  const [total, result] = await Promise.all([
+    IgnoredChange.query().where("projectId", projectId).resultSize(),
+    knex.raw<{ rows: IgnoredChangeRow[] }>(
+      `
+      SELECT
+        ic."testId"::text as "testId",
+        ic.fingerprint
+      FROM ignored_changes ic
+      LEFT JOIN LATERAL (
+        SELECT atr.date
+        FROM audit_trails atr
+        WHERE atr."projectId" = ic."projectId"
+          AND atr."testId" = ic."testId"
+          AND atr.fingerprint = ic.fingerprint
+          AND atr.action = 'files.ignored'
+        ORDER BY atr.date DESC, atr.id DESC
+        LIMIT 1
+      ) trail ON true
+      WHERE ic."projectId" = :projectId
+      ORDER BY trail.date DESC NULLS LAST, ic."testId" DESC, ic.fingerprint DESC
+      OFFSET :after
+      LIMIT :first
+      `,
+      { projectId, after, first },
+    ),
+  ]);
+
+  return { total, results: result.rows };
 }

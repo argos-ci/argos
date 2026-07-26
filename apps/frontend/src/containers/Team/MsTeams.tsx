@@ -123,7 +123,9 @@ export function TeamMsTeams(props: { account: Account }) {
       },
     });
     form.reset({ name: "", url: "" });
-    toast.success("Microsoft Teams channel connected");
+    toast.success("Microsoft Teams channel connected", {
+      id: "ms-teams-connected",
+    });
   };
 
   return (
@@ -232,10 +234,13 @@ function WebhookActionsMenu(props: { webhook: MsTeamsWebhook }) {
   const [testWebhook, { loading }] = useMutation(TestMsTeamsWebhookMutation, {
     variables: { input: { id: webhook.id } },
     onCompleted: () => {
-      toast.success(`Test message sent to ${webhook.name}`);
+      toast.success(`Test message sent to ${webhook.name}`, {
+        id: `ms-teams-test:${webhook.id}`,
+      });
     },
     onError: (error) => {
-      toast.error(error.message);
+      // Same id as the success case, so retrying replaces the failure notice.
+      toast.error(error.message, { id: `ms-teams-test:${webhook.id}` });
     },
   });
   const label = `Actions for ${webhook.name}`;
@@ -263,7 +268,9 @@ function WebhookActionsMenu(props: { webhook: MsTeamsWebhook }) {
             <MenuItem
               onAction={() => {
                 clipboard.copy(webhook.url);
-                toast.success("Webhook URL copied to clipboard");
+                toast.success("Webhook URL copied to clipboard", {
+                  id: "ms-teams-webhook-copied",
+                });
               }}
             >
               <MenuItemIcon>
@@ -302,7 +309,9 @@ function DeleteWebhookDialog(props: { webhook: MsTeamsWebhook }) {
       variables: { input: { id: webhook.id } },
       onCompleted: () => {
         state.close();
-        toast.success("Microsoft Teams channel removed");
+        toast.success("Microsoft Teams channel removed", {
+          id: "ms-teams-removed",
+        });
       },
     },
   );

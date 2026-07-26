@@ -2,19 +2,20 @@
 
 ## Rules
 
-Before finishing any change:
+While iterating, use the fast local checks on what you touched:
 
-- Format: `prettier` on modified files
+- `prettier --write <target>`
+- `tsc --noEmit <target>`
+- `eslint <target>`
 
-- If **local**:
-  - `tsc --noEmit <target>`
-  - `eslint <target>`
+**Before finishing any change, run `pnpm run static-checks`.** It is the same
+turbo task CI runs (`check-types`, `check-format`, `lint`, `lint:root`, `knip`),
+so it is the only thing that tells you CI will pass. Fix everything it reports,
+including unused code found by knip.
 
-- If **global**:
-  - `pnpm run check-types`
-  - `pnpm run knip` (fix unused code)
-
-All checks must pass.
+Do not substitute an ad-hoc `prettier --check` from the repository root: each
+workspace runs prettier from its own directory with its own ignore paths, so a
+root-level invocation is not equivalent and will miss files that CI rejects.
 
 ## TypeScript
 

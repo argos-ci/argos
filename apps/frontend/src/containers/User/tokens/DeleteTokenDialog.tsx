@@ -48,7 +48,7 @@ export function DeleteTokenDialog(props: DeleteTokenDialogProps) {
       variables: { input: { id: props.id } },
       onCompleted: () => {
         state.close();
-        toast.success("Token deleted");
+        toast.success("Token deleted", { id: "token-deleted" });
       },
     },
   );

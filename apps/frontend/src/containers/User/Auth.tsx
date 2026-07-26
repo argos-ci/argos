@@ -81,6 +81,9 @@ const RevokeAllSessionsMutation = graphql(`
 
 type Session = DocumentType<typeof _SessionFragment>;
 
+const SESSION_REVOKED_TOAST_ID = "session-revoked";
+const SESSIONS_REVOKED_TOAST_ID = "sessions-revoked";
+
 function getDeviceName(session: Session) {
   return session.deviceLabel ?? "Unknown device";
 }
@@ -133,7 +136,7 @@ function RevokeSessionDialog(props: { session: Session }) {
       variables: { id: session.id },
       onCompleted: () => {
         state.close();
-        toast.success("Session revoked");
+        toast.success("Session revoked", { id: SESSION_REVOKED_TOAST_ID });
       },
     },
   );
@@ -195,7 +198,9 @@ function RevokeAllSessionsDialog(props: { count: number }) {
     {
       onCompleted: () => {
         state.close();
-        toast.success("Sessions revoked");
+        toast.success("Sessions revoked", {
+          id: SESSIONS_REVOKED_TOAST_ID,
+        });
       },
     },
   );

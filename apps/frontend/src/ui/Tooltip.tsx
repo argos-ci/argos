@@ -15,7 +15,9 @@ type TooltipVariant = "default" | "info";
 
 const variantClassNames: Record<TooltipVariant, string> = {
   default: clsx("text-xs py-1 px-2 max-w-sm"),
-  info: "text-sm p-2 [&_strong]:font-medium",
+  // Same measure as `default`: without it a paragraph of content stretches to
+  // whatever the viewport allows.
+  info: "text-sm p-2 max-w-sm [&_strong]:font-medium",
 };
 
 export type TooltipProps = {
