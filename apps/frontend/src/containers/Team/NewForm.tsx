@@ -11,10 +11,8 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 
 const CreateTeamMutation = graphql(`
-  mutation NewTeam_createTeam($name: String!, $enableDomainAutoJoin: Boolean) {
-    createTeam(
-      input: { name: $name, enableDomainAutoJoin: $enableDomainAutoJoin }
-    ) {
+  mutation NewTeam_createTeam($name: String!, $autoJoinDomain: String) {
+    createTeam(input: { name: $name, autoJoinDomain: $autoJoinDomain }) {
       redirectUrl
     }
   }
@@ -38,12 +36,13 @@ const MeQuery = graphql(`
 
 export function useCreateTeamAndRedirect() {
   const client = useApolloClient();
-  return async (data: { name: string; enableDomainAutoJoin?: boolean }) => {
+  return async (data: { name: string; autoJoinDomain?: string | null }) => {
     const result = await client.mutate({
       mutation: CreateTeamMutation,
       variables: {
         name: data.name,
-        enableDomainAutoJoin: data.enableDomainAutoJoin ?? false,
+        // The domain the checkbox showed, so the server opens that one or none.
+        autoJoinDomain: data.autoJoinDomain ?? null,
       },
     });
     invariant(result.data, "missing data");
@@ -74,13 +73,16 @@ export function TeamNewForm(props: {
       enableDomainAutoJoin: false,
     },
   });
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    await createTeamAndRedirect(data);
-  };
   // Null while the query is in flight, and for anyone whose verified addresses
   // are all on consumer providers — a domain shared with strangers is no basis
   // for letting them into a team.
   const autoJoinDomain = data?.me?.eligibleAutoJoinDomain ?? null;
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    await createTeamAndRedirect({
+      name: data.name,
+      autoJoinDomain: data.enableDomainAutoJoin ? autoJoinDomain : null,
+    });
+  };
   return (
     <Form form={form} onSubmit={onSubmit}>
       <FormTextInput

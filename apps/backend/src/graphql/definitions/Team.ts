@@ -267,8 +267,8 @@ export const typeDefs = gql`
 
   input CreateTeamInput {
     name: String!
-    "Let anyone with a verified address on the creator's email domain join the team automatically."
-    enableDomainAutoJoin: Boolean
+    "Domain to open the team to, so anyone with a verified address on it joins automatically. Refused if it is not one of the creator's verified company domains, so the team is never opened to a domain other than the one they were shown."
+    autoJoinDomain: String
   }
 
   input LeaveTeamInput {
@@ -968,12 +968,19 @@ export const resolvers: IResolvers = {
         ownerId: auth.user.id,
       });
 
-      if (args.input.enableDomainAutoJoin) {
+      if (args.input.autoJoinDomain) {
         invariant(teamAccount.teamId, "team account has no teamId");
-        await enableTeamDomainAutoJoin({
+        const domain = await enableTeamDomainAutoJoin({
           userId: auth.user.id,
           teamId: teamAccount.teamId,
+          expectedDomain: args.input.autoJoinDomain,
         });
+        if (!domain) {
+          throw badUserInput(
+            `@${args.input.autoJoinDomain} is not one of your verified company domains.`,
+            { field: "autoJoinDomain" },
+          );
+        }
       }
 
       const [hasSubscribedToTrial, plan] = await Promise.all([

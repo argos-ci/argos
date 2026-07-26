@@ -147,8 +147,14 @@ export async function getEligibleAutoJoinDomain(args: {
  * Let anyone with a verified address on the user's own email domain join the
  * team automatically.
  *
- * Returns the domain that was opened, or null when the user has no eligible
- * one. Idempotent, so re-running it on an already-open team is a no-op.
+ * Returns the domain that was opened, or null when there is none to open.
+ * Idempotent, so re-running it on an already-open team is a no-op.
+ *
+ * `expectedDomain` is the domain the user was shown when they agreed. Passing it
+ * is what keeps consent and effect the same thing: without it the domain is
+ * re-derived here, so verifying or re-primarying an address between the offer and
+ * the submit would open the team to a domain the user never saw. Omitted only by
+ * callers that never displayed one.
  *
  * The caller owns the permission check on the team; this only guarantees the
  * domain is the user's to offer.
@@ -156,10 +162,14 @@ export async function getEligibleAutoJoinDomain(args: {
 export async function enableTeamDomainAutoJoin(args: {
   userId: string;
   teamId: string;
+  expectedDomain?: string | null | undefined;
   trx?: TransactionOrKnex;
 }): Promise<string | null> {
   const domain = await getEligibleAutoJoinDomain(args);
   if (!domain) {
+    return null;
+  }
+  if (args.expectedDomain && args.expectedDomain !== domain) {
     return null;
   }
 

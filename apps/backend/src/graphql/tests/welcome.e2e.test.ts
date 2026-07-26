@@ -243,6 +243,32 @@ describe("completeWelcome", () => {
     },
   );
 
+  welcomeTest(
+    "refuses a domain other than the one the user was shown",
+    async ({ user, teamAccount, post }) => {
+      await factory.UserEmail.create({
+        userId: user.userId,
+        email: "jane@acme.com",
+        verified: true,
+      });
+
+      const res = await post({
+        query: CompleteWelcomeMutation,
+        variables: {
+          input: {
+            autoJoinTeamSlug: teamAccount.slug,
+            // What the label said before the user's addresses changed.
+            autoJoinDomain: "old-employer.com",
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toHaveLength(1);
+      await expect(listDomains(teamAccount.teamId)).resolves.toEqual([]);
+    },
+  );
+
   welcomeTest("refuses an unknown team slug", async ({ user, post }) => {
     const res = await post({
       query: CompleteWelcomeMutation,

@@ -221,6 +221,8 @@ export const typeDefs = gql`
     sourceDetail: String
     "Slug of the team to open to email-domain auto-join. Null to leave it closed. Taken as a slug rather than an id so the welcome page can act on what its URL carries, without first resolving the team."
     autoJoinTeamSlug: String
+    "The domain the user was shown when they agreed. Refused if it is no longer one of their verified company domains, so the team is never opened to a domain other than the one consented to."
+    autoJoinDomain: String
   }
 
   extend type Mutation {
@@ -453,7 +455,8 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { source, sourceDetail, autoJoinTeamSlug } = args.input;
+      const { source, sourceDetail, autoJoinTeamSlug, autoJoinDomain } =
+        args.input;
 
       // Checked here rather than left to the column: a `varchar(255)` overflow
       // surfaces as a Postgres error the user cannot act on.
@@ -487,11 +490,14 @@ export const resolvers: IResolvers = {
           const domain = await enableTeamDomainAutoJoin({
             userId: auth.user.id,
             teamId: autoJoinTeamId,
+            expectedDomain: autoJoinDomain,
             trx,
           });
           if (!domain) {
             throw badUserInput(
-              "You need a verified email address on your organization's domain to let others join automatically.",
+              autoJoinDomain
+                ? `@${autoJoinDomain} is no longer one of your verified company domains, so the team was not opened.`
+                : "You need a verified email address on your organization's domain to let others join automatically.",
             );
           }
         }

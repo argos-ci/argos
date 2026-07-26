@@ -298,6 +298,12 @@ function WelcomeForm() {
               answers?.autoJoinDomain && autoJoin.offer
                 ? autoJoin.offer.teamSlug
                 : null,
+            // The domain the label showed, so the server opens that one or
+            // nothing.
+            autoJoinDomain:
+              answers?.autoJoinDomain && autoJoin.offer
+                ? autoJoin.offer.domain
+                : null,
           },
         },
       });
