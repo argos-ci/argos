@@ -30,6 +30,7 @@ import {
 import { createAccount } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
 import {
+  enableTeamDomainAutoJoin,
   findVerifiedEmailForDomain,
   getAutoInvitesForUser,
   hasAutoInviteForTeam,
@@ -266,6 +267,8 @@ export const typeDefs = gql`
 
   input CreateTeamInput {
     name: String!
+    "Let anyone with a verified address on the creator's email domain join the team automatically."
+    enableDomainAutoJoin: Boolean
   }
 
   input LeaveTeamInput {
@@ -403,6 +406,20 @@ export const typeDefs = gql`
     ): ImportTeamSamlMetadataResult!
   }
 `;
+
+/**
+ * URL of the welcome page for a team that was just created, sending the user on
+ * to the team once the questions are answered or skipped.
+ *
+ * The slug is carried explicitly so the page knows which team to offer
+ * email-domain auto-join for, rather than guessing from the user's memberships.
+ */
+function getWelcomeUrl(input: { teamSlug: string }): string {
+  const url = new URL("/~/welcome", config.get("server.url"));
+  url.searchParams.set("team", input.teamSlug);
+  url.searchParams.set("r", `/${input.teamSlug}`);
+  return url.href;
+}
 
 /**
  * Whether add-ons can be billed onto this subscription.
@@ -951,6 +968,14 @@ export const resolvers: IResolvers = {
         ownerId: auth.user.id,
       });
 
+      if (args.input.enableDomainAutoJoin) {
+        invariant(teamAccount.teamId, "team account has no teamId");
+        await enableTeamDomainAutoJoin({
+          userId: auth.user.id,
+          teamId: teamAccount.teamId,
+        });
+      }
+
       const [hasSubscribedToTrial, plan] = await Promise.all([
         auth.account.$checkHasSubscribedToTrial(),
         getStripeProPlanOrThrow(),
@@ -958,6 +983,12 @@ export const resolvers: IResolvers = {
 
       const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
         .href;
+      // A user who has not been through the welcome page yet lands there first:
+      // it asks how they found Argos and offers to open the team to their email
+      // domain, which needs the team to exist already.
+      const doneUrl = auth.user.signupSourceAskedAt
+        ? teamUrl
+        : getWelcomeUrl({ teamSlug: teamAccount.slug });
 
       const redirectToStripe = async ({ trial }: { trial: boolean }) => {
         const session = await createStripeCheckoutSession({
@@ -965,7 +996,7 @@ export const resolvers: IResolvers = {
           plan,
           subscriberAccount: auth.account,
           trial,
-          successUrl: teamUrl,
+          successUrl: doneUrl,
           cancelUrl: `${teamUrl}?checkout=cancel`,
         });
 
@@ -1013,7 +1044,7 @@ export const resolvers: IResolvers = {
 
       return {
         team: teamAccount,
-        redirectUrl: teamUrl,
+        redirectUrl: doneUrl,
       };
     },
     extendTrial: async (_root, args, ctx) => {

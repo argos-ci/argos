@@ -5,13 +5,16 @@ import { SubmitHandler, useForm } from "react-hook-form";
 
 import { graphql } from "@/gql";
 import { Form } from "@/ui/Form";
+import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 
 const CreateTeamMutation = graphql(`
-  mutation NewTeam_createTeam($name: String!) {
-    createTeam(input: { name: $name }) {
+  mutation NewTeam_createTeam($name: String!, $enableDomainAutoJoin: Boolean) {
+    createTeam(
+      input: { name: $name, enableDomainAutoJoin: $enableDomainAutoJoin }
+    ) {
       redirectUrl
     }
   }
@@ -19,6 +22,7 @@ const CreateTeamMutation = graphql(`
 
 type Inputs = {
   name: string;
+  enableDomainAutoJoin: boolean;
 };
 
 const MeQuery = graphql(`
@@ -27,17 +31,19 @@ const MeQuery = graphql(`
       id
       stripeCustomerId
       hasSubscribedToTrial
+      eligibleAutoJoinDomain
     }
   }
 `);
 
 export function useCreateTeamAndRedirect() {
   const client = useApolloClient();
-  return async (data: { name: string }) => {
+  return async (data: { name: string; enableDomainAutoJoin?: boolean }) => {
     const result = await client.mutate({
       mutation: CreateTeamMutation,
       variables: {
         name: data.name,
+        enableDomainAutoJoin: data.enableDomainAutoJoin ?? false,
       },
     });
     invariant(result.data, "missing data");
@@ -63,11 +69,18 @@ export function TeamNewForm(props: {
   const form = useForm<Inputs>({
     defaultValues: {
       name: props.defaultTeamName ?? "",
+      // Opt-in: opening a team to a whole email domain should be a decision,
+      // not a default someone clicks past.
+      enableDomainAutoJoin: false,
     },
   });
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await createTeamAndRedirect(data);
   };
+  // Null while the query is in flight, and for anyone whose verified addresses
+  // are all on consumer providers — a domain shared with strangers is no basis
+  // for letting them into a team.
+  const autoJoinDomain = data?.me?.eligibleAutoJoinDomain ?? null;
   return (
     <Form form={form} onSubmit={onSubmit}>
       <FormTextInput
@@ -83,6 +96,19 @@ export function TeamNewForm(props: {
         autoFocus
         autoComplete="off"
       />
+      {autoJoinDomain ? (
+        <FormCheckbox
+          control={form.control}
+          name="enableDomainAutoJoin"
+          className="mt-4"
+          label={
+            <>
+              Let <strong>@{autoJoinDomain}</strong> emails join this team
+            </>
+          }
+          description={`Anyone who verifies an @${autoJoinDomain} address will see this team when they sign up and can join without an invite. You can change this later in the team settings.`}
+        />
+      ) : null}
       <p
         className={clsx(
           "text-default mt-4 text-sm font-medium",

@@ -247,6 +247,9 @@ importers:
       express-rate-limit:
         specifier: ^8.6.0
         version: 8.6.0(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
+      free-email-domains:
+        specifier: ^1.9.74
+        version: 1.9.74
       google-auth-library:
         specifier: ^10.9.0
         version: 10.9.0(supports-color@10.2.2)
@@ -5908,6 +5911,10 @@ packages:
         optional: true
       react-dom:
         optional: true
+
+  free-email-domains@1.9.74:
+    resolution: {integrity: sha512-itB+JA9z0MCF1YImYJoL1BQ0AlVZcj3zFoRLo0xQEwJKXzHVoNB0NmlHuW3YExnVKrrNuHnlHtojggAHRR4C+Q==}
+    engines: {node: '>= 18'}
 
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
@@ -13931,6 +13938,8 @@ snapshots:
     optionalDependencies:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
+
+  free-email-domains@1.9.74: {}
 
   fresh@2.0.0: {}
 

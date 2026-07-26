@@ -51,7 +51,7 @@ import {
 } from "@/github";
 import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
 
-import { ITestStatus } from "./__generated__/resolver-types";
+import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -722,6 +722,8 @@ type TeamOwner = {
   id: string;
   name: string | null;
   email: string | null;
+  signupSource: ISignupSource | null;
+  signupSourceDetail: string | null;
 };
 
 function createTeamOwnersByTeamIdLoader() {
@@ -737,6 +739,8 @@ function createTeamOwnersByTeamIdLoader() {
         "team_users.teamId",
         "users.id as userId",
         "users.email",
+        "users.signupSource",
+        "users.signupSourceDetail",
         "accounts.name",
       )
       .whereIn("team_users.teamId", teamIds as string[])
@@ -747,6 +751,8 @@ function createTeamOwnersByTeamIdLoader() {
       teamId: string | number;
       userId: string | number;
       email: string | null;
+      signupSource: string | null;
+      signupSourceDetail: string | null;
       name: string | null;
     }>) {
       const teamId = String(row.teamId);
@@ -755,6 +761,8 @@ function createTeamOwnersByTeamIdLoader() {
         id: String(row.userId),
         name: row.name,
         email: row.email,
+        signupSource: row.signupSource as ISignupSource | null,
+        signupSourceDetail: row.signupSourceDetail,
       });
       ownersByTeamId.set(teamId, owners);
     }

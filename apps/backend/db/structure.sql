@@ -2,10 +2,8 @@
 -- PostgreSQL database dump
 --
 
-\restrict AznTjDfEgUR3XLwOlFUgpq4P6iqRiyUfFZNqJSeUNfuOq3mThLogeOc4Fwa26WE
-
--- Dumped from database version 17.9
--- Dumped by pg_dump version 17.9 (Homebrew)
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1895,12 +1893,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
-    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
+    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -2696,6 +2694,10 @@ CREATE TABLE public.users (
     "googleUserId" bigint,
     "deletedAt" timestamp with time zone,
     type text DEFAULT 'user'::text NOT NULL,
+    "signupSource" text,
+    "signupSourceDetail" character varying(255),
+    "signupSourceAskedAt" timestamp with time zone,
+    CONSTRAINT "users_signupSource_check" CHECK (("signupSource" = ANY (ARRAY['search_engine'::text, 'ai_assistant'::text, 'social_media'::text, 'github'::text, 'word_of_mouth'::text, 'other'::text]))),
     CONSTRAINT users_type_check CHECK ((type = ANY (ARRAY['user'::text, 'bot'::text])))
 );
 
@@ -4539,6 +4541,13 @@ CREATE INDEX screenshot_diffs_testid_createdat_desc_cmp_notnull_idx ON public.sc
 
 
 --
+-- Name: screenshot_diffs_testid_fingerprint_id_desc_notnull_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_testid_fingerprint_id_desc_notnull_idx ON public.screenshot_diffs USING btree ("testId", fingerprint, id DESC) WHERE ("fileId" IS NOT NULL);
+
+
+--
 -- Name: screenshots_buildshardid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5608,8 +5617,6 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict AznTjDfEgUR3XLwOlFUgpq4P6iqRiyUfFZNqJSeUNfuOq3mThLogeOc4Fwa26WE
-
 -- Knex migrations
 
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
@@ -5838,3 +5845,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723130000_github-repository-installation-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260724120000_ms-teams-webhooks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260725120000_screenshot-base-names.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726130000_screenshot-diffs-fingerprint-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726140000_signup-source.js', 1, NOW());

@@ -1,30 +1,27 @@
 import { FlagOffIcon, GitBranchIcon, LockIcon } from "lucide-react";
 
-/**
- * Feature illustrations for empty states.
- *
- * They share one visual language: neutral "surfaces" that read as product
- * chrome, violet for whatever the feature acts on, and one supporting hue per
- * scene. Every colour is a Radix CSS variable, which the `.dark` class
- * re-points at the dark scale — so these follow the colour mode without a
- * second set of assets.
- */
+import {
+  ACCENT,
+  ACCENT_DEEP,
+  ACCENT_LINE,
+  ACCENT_MID,
+  ACCENT_SOFT,
+  CONTENT,
+  CONTENT_STRONG,
+  LINE,
+  LINE_SOFT,
+  SUCCESS,
+  SUCCESS_SOFT,
+  SURFACE,
+  SURFACE_RAISED,
+  SURFACE_SUNKEN,
+  WARNING,
+} from "./illustration-tokens";
 
-const SURFACE = "var(--gray-1)";
-const SURFACE_RAISED = "var(--gray-2)";
-const SURFACE_SUNKEN = "var(--gray-3)";
-const LINE = "var(--gray-6)";
-const LINE_SOFT = "var(--gray-4)";
-const CONTENT = "var(--gray-5)";
-const CONTENT_STRONG = "var(--gray-8)";
-const ACCENT = "var(--violet-9)";
-const ACCENT_DEEP = "var(--violet-10)";
-const ACCENT_SOFT = "var(--violet-3)";
-const ACCENT_MID = "var(--violet-5)";
-const ACCENT_LINE = "var(--violet-8)";
-const SUCCESS = "var(--grass-9)";
-const SUCCESS_SOFT = "var(--grass-4)";
-const WARNING = "var(--orange-9)";
+/**
+ * Feature illustrations for empty states, drawn in the shared visual language
+ * described in `./illustration-tokens`.
+ */
 
 type IllustrationProps = { className?: string };
 

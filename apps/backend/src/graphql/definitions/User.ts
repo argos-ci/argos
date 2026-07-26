@@ -19,6 +19,10 @@ import {
   sendAccountDeletionRequestEmail,
 } from "@/database/services/account-deletion";
 import {
+  enableTeamDomainAutoJoin,
+  getEligibleAutoJoinDomain,
+} from "@/database/services/team-domain";
+import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
@@ -27,6 +31,7 @@ import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 import {
+  ISignupSource,
   type IResolvers,
   type ITeamUserLevel,
   type IUserType,
@@ -131,11 +136,23 @@ export const typeDefs = gql`
     type: UserType!
     "Whether the user has staff privileges. Readable only by the user themselves — selecting it on anyone else is an error."
     staff: Boolean
+    "Email domain the user can open a team to, so that anyone with a verified address on it joins automatically. Null when they have none. Readable only by the user themselves — selecting it on anyone else is an error."
+    eligibleAutoJoinDomain: String
   }
 
   enum UserType {
     user
     bot
+  }
+
+  "Where a user found Argos, asked once on the welcome page."
+  enum SignupSource {
+    search_engine
+    ai_assistant
+    social_media
+    github
+    word_of_mouth
+    other
   }
 
   type UserPresenceChangeEvent {
@@ -170,6 +187,15 @@ export const typeDefs = gql`
     token: String!
   }
 
+  input CompleteWelcomeInput {
+    "How the user found Argos. Null when they skipped the question."
+    source: SignupSource
+    "Free-text answer, only read alongside the \`other\` source."
+    sourceDetail: String
+    "Slug of the team to open to email-domain auto-join. Null to leave it closed. Taken as a slug rather than an id so the welcome page can act on what its URL carries, without first resolving the team."
+    autoJoinTeamSlug: String
+  }
+
   extend type Mutation {
     "Request the deletion of a user account. Sends a confirmation email."
     requestAccountDeletion(input: RequestAccountDeletionInput!): Boolean!
@@ -185,6 +211,8 @@ export const typeDefs = gql`
     setPrimaryEmail(email: String!): User!
     "Verify email, returns true if success, false if failed"
     verifyEmail(email: String!, token: String!): Boolean!
+    "Record the answers given on the post-signup welcome page"
+    completeWelcome(input: CompleteWelcomeInput!): User!
   }
 `;
 
@@ -392,6 +420,56 @@ export const resolvers: IResolvers = {
 
       return markEmailAsVerified({ email, token });
     },
+    completeWelcome: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const { source, sourceDetail, autoJoinTeamSlug } = args.input;
+
+      // Opening the team comes first: it is the part that can be refused, and
+      // failing after the answers were stored would leave the page with nothing
+      // to retry — it only asks while `signupSourceAskedAt` is null.
+      if (autoJoinTeamSlug) {
+        const account = await Account.query().findOne({
+          slug: autoJoinTeamSlug,
+        });
+        if (!account) {
+          throw badUserInput("Team not found");
+        }
+        // Resolved by slug, so the admin check is what makes this safe: it is
+        // the same gate as adding a domain from the team settings.
+        const teamAccount = await getAdminAccount({
+          id: account.id,
+          user: ctx.auth.user,
+        });
+        if (!teamAccount.teamId) {
+          throw badUserInput("Account is not a team");
+        }
+        const domain = await enableTeamDomainAutoJoin({
+          userId: ctx.auth.user.id,
+          teamId: teamAccount.teamId,
+        });
+        if (!domain) {
+          throw badUserInput(
+            "You need a verified email address on your organization's domain to let others join automatically.",
+          );
+        }
+      }
+
+      await ctx.auth.user.$query().patch({
+        signupSource: source ?? null,
+        // The predefined sources speak for themselves, so the free-text answer
+        // is only kept for `other` — and a blank one is not an answer.
+        signupSourceDetail:
+          source === ISignupSource.Other ? sourceDetail?.trim() || null : null,
+        // Stamped whether or not the question was answered: it is what stops
+        // the welcome page from asking a second time.
+        signupSourceAskedAt: new Date().toISOString(),
+      });
+
+      return ctx.auth.account;
+    },
   },
   User: {
     ...commonAccountResolvers,
@@ -555,6 +633,16 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
       return ctx.auth.user.staff;
+    },
+    eligibleAutoJoinDomain: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      // Which domains someone has verified says where they work — theirs to
+      // know, nobody else's. It throws for the same reason `staff` does: a null
+      // would be indistinguishable from having no eligible domain.
+      if (!ctx.auth || ctx.auth.user.id !== account.userId) {
+        throw forbidden();
+      }
+      return getEligibleAutoJoinDomain({ userId: account.userId });
     },
     lastSeenAt: async (account, _args, ctx) => {
       if (!account.userId) {

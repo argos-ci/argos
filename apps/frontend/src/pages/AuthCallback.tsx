@@ -17,6 +17,7 @@ import {
   checkIsAuthProvider,
   getRedirectFromState,
 } from "@/util/oauth";
+import { getPostSignupURL } from "@/util/welcome";
 
 import { NotFound } from "./NotFound";
 
@@ -67,10 +68,15 @@ function AuthCallback(props: { provider: AuthProvider }) {
       },
     )
       .then((data) => {
-        const target =
+        const destination =
           data.creation && data.hasAutoInvite
             ? getAutoInviteTeamsURL(redirectUri)
             : redirectUri;
+        // A brand-new account goes through the welcome page first, which then
+        // forwards to wherever it was headed.
+        const target = data.creation
+          ? getPostSignupURL(destination)
+          : destination;
         // The server set the session cookie on the response. Do a full
         // navigation so the app re-bootstraps as the logged-in user.
         window.location.replace(target);
