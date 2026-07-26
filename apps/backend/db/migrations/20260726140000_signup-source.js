@@ -19,6 +19,15 @@ export const up = async (knex) => {
     // a second time.
     table.dateTime("signupSourceAskedAt");
   });
+
+  // Backfilled, because the column is read as "has this user been through the
+  // welcome page". Leaving existing users null would make every one of them
+  // eligible for a first-run screen the next time they create a team — including
+  // on the way back from Stripe checkout. Their signup predates the question, so
+  // the honest value is "asked, unanswered", dated to when they signed up.
+  await knex.raw(
+    `UPDATE users SET "signupSourceAskedAt" = "createdAt" WHERE "signupSourceAskedAt" IS NULL`,
+  );
 };
 
 /**
