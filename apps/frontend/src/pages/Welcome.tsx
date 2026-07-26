@@ -208,26 +208,30 @@ function AutoJoinField(props: {
   isLoading: boolean;
 }) {
   const { control, offer, isLoading } = props;
-  const domain = offer?.domain;
   return (
     <div className="bg-subtle mt-6 min-h-25 rounded-xl border p-4">
-      {domain ? (
+      {offer ? (
         <>
           <FormCheckbox
             control={control}
             name="autoJoinDomain"
             label={
+              // The team is named, not called "this team": the page can be
+              // reached with any `team` in its URL, and this control grants a
+              // whole email domain access to whichever one that is. The user has
+              // to be able to see which.
               <>
-                Let <strong>@{domain}</strong> emails join this team
+                Let <strong>@{offer.domain}</strong> emails join{" "}
+                <strong>{offer.teamName}</strong>
               </>
             }
           />
           {/* "verified" moves down here: the label states the offer, the line
               under it states the condition. */}
           <p className="text-low mt-2 pl-6 text-xs">
-            Anyone who verifies an @{domain} address will see this team when
-            they sign up and can join without an invite. You can change this
-            later in the team settings.
+            Anyone who verifies an @{offer.domain} address will see this team
+            when they sign up and can join without an invite. You can change
+            this later in the team settings.
           </p>
         </>
       ) : isLoading ? (
