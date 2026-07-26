@@ -4,6 +4,7 @@ import gqlTag from "graphql-tag";
 import { type UserPresence } from "@/auth/presence";
 import { subscribeToUserPresenceChanges } from "@/auth/presenceEvents";
 import { listActiveSessions } from "@/auth/session";
+import { transaction } from "@/database";
 import {
   Account,
   ProjectUser,
@@ -67,6 +68,31 @@ async function loadVisiblePresence(
     return null;
   }
   return ctx.loaders.Presence.load(targetUserId);
+}
+
+/**
+ * The team id behind a slug the caller may open to email-domain auto-join.
+ *
+ * Taken as a slug because that is what the welcome page's URL carries, so the
+ * admin check is what makes it safe — the same gate as adding a domain from the
+ * team settings.
+ */
+async function resolveAutoJoinTeamId(args: {
+  slug: string;
+  user: User;
+}): Promise<string> {
+  const account = await Account.query().findOne({ slug: args.slug });
+  if (!account) {
+    throw badUserInput("Team not found");
+  }
+  const teamAccount = await getAdminAccount({
+    id: account.id,
+    user: args.user,
+  });
+  if (!teamAccount.teamId) {
+    throw badUserInput("Account is not a team");
+  }
+  return teamAccount.teamId;
 }
 
 export const typeDefs = gql`
@@ -422,7 +448,8 @@ export const resolvers: IResolvers = {
       return markEmailAsVerified({ email, token });
     },
     completeWelcome: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const { auth } = ctx;
+      if (!auth) {
         throw unauthenticated();
       }
 
@@ -440,48 +467,48 @@ export const resolvers: IResolvers = {
         );
       }
 
-      // Opening the team comes first: it is the part that can be refused, and
-      // failing after the answers were stored would leave the page with nothing
-      // to retry — it only asks while `signupSourceAskedAt` is null.
-      if (autoJoinTeamSlug) {
-        const account = await Account.query().findOne({
-          slug: autoJoinTeamSlug,
-        });
-        if (!account) {
-          throw badUserInput("Team not found");
-        }
-        // Resolved by slug, so the admin check is what makes this safe: it is
-        // the same gate as adding a domain from the team settings.
-        const teamAccount = await getAdminAccount({
-          id: account.id,
-          user: ctx.auth.user,
-        });
-        if (!teamAccount.teamId) {
-          throw badUserInput("Account is not a team");
-        }
-        const domain = await enableTeamDomainAutoJoin({
-          userId: ctx.auth.user.id,
-          teamId: teamAccount.teamId,
-        });
-        if (!domain) {
-          throw badUserInput(
-            "You need a verified email address on your organization's domain to let others join automatically.",
-          );
-        }
-      }
+      // Resolved and authorized before the transaction opens. These are reads,
+      // and the permission chain takes no `trx`, so running them inside would
+      // reach for a second pooled connection while this request already holds
+      // one — the hazard `resolveAccountSlug` documents.
+      const autoJoinTeamId = autoJoinTeamSlug
+        ? await resolveAutoJoinTeamId({
+            slug: autoJoinTeamSlug,
+            user: auth.user,
+          })
+        : null;
 
-      await ctx.auth.user.$query().patch({
-        signupSource: source ?? null,
-        // The predefined sources speak for themselves, so the free-text answer
-        // is only kept for `other` — and a blank one is not an answer.
-        signupSourceDetail:
-          source === ISignupSource.Other ? sourceDetail?.trim() || null : null,
-        // Stamped whether or not the question was answered: it is what stops
-        // the welcome page from asking a second time.
-        signupSourceAskedAt: new Date().toISOString(),
+      // The writes go together: opening a team is a privilege grant, so it must
+      // not outlive a failure of the write that records the answer. Without the
+      // transaction, a patch that throws left the team open to a whole email
+      // domain while the client was told the mutation failed.
+      await transaction(async (trx) => {
+        if (autoJoinTeamId) {
+          const domain = await enableTeamDomainAutoJoin({
+            userId: auth.user.id,
+            teamId: autoJoinTeamId,
+            trx,
+          });
+          if (!domain) {
+            throw badUserInput(
+              "You need a verified email address on your organization's domain to let others join automatically.",
+            );
+          }
+        }
+
+        await auth.user.$query(trx).patch({
+          signupSource: source ?? null,
+          // The predefined sources speak for themselves, so the free-text
+          // answer is only kept for `other` — and a blank one is not an answer.
+          signupSourceDetail:
+            source === ISignupSource.Other
+              ? sourceDetail?.trim() || null
+              : null,
+          signupSourceAskedAt: new Date().toISOString(),
+        });
       });
 
-      return ctx.auth.account;
+      return auth.account;
     },
   },
   User: {
