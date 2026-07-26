@@ -1849,7 +1849,7 @@ export const resolvers: IResolvers = {
       // `getAutoInvitesForUser` would then offer this team to every Gmail user
       // who signs up — the outcome the domain list exists to prevent, reachable
       // through the one write path that skipped the check.
-      if (checkIsPublicEmailDomain(domain)) {
+      if (await checkIsPublicEmailDomain(domain)) {
         throw badUserInput(
           "This is a public email provider, so anyone could join. Use a domain your organization owns.",
           { field: "domain" },

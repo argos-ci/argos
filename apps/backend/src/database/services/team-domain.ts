@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
 import { sanitizeEmail } from "@/util/email";
-import { checkIsPublicEmailDomain } from "@/util/public-email-domains";
+import { filterOutPublicEmailDomains } from "@/util/public-email-domains";
 
 import { TeamDomain } from "../models/TeamDomain";
 import { TeamUser } from "../models/TeamUser";
@@ -126,10 +126,15 @@ export async function getEligibleAutoJoinDomain(args: {
   trx?: TransactionOrKnex;
 }): Promise<string | null> {
   const emailByDomain = await getVerifiedEmailByDomain(args);
-  const eligibleDomains = [...emailByDomain.keys()].filter(
-    (domain) => !checkIsPublicEmailDomain(domain),
-  );
+  // Returned before the provider list is consulted: a user with no verified
+  // address has nothing to offer either way, and this saves loading it.
+  if (emailByDomain.size === 0) {
+    return null;
+  }
 
+  const eligibleDomains = await filterOutPublicEmailDomains([
+    ...emailByDomain.keys(),
+  ]);
   if (eligibleDomains.length === 0) {
     return null;
   }

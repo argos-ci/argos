@@ -1,5 +1,3 @@
-import freeEmailDomains from "free-email-domains";
-
 /**
  * Providers `free-email-domains` does not list yet.
  *
@@ -35,17 +33,45 @@ const EXTRA_PUBLIC_EMAIL_DOMAINS = [
  * itself to every stranger using that provider, so these are never eligible for
  * team auto-join.
  *
- * Built once at module load, since the lookup runs on every eligibility check.
+ * Loaded on first use, not at module load: the package ships a 250 KB JSON array
+ * of ~13k domains, and this is only consulted during signup and team creation —
+ * so every web and worker process was parsing it, and holding the result, to
+ * serve requests that never ask. The promise is cached rather than the set, so
+ * concurrent callers share one import.
  */
-const PUBLIC_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
-  ...freeEmailDomains.map((domain) => domain.toLowerCase()),
-  ...EXTRA_PUBLIC_EMAIL_DOMAINS,
-]);
+let loading: Promise<ReadonlySet<string>> | null = null;
+
+function loadPublicEmailDomains(): Promise<ReadonlySet<string>> {
+  loading ??= import("free-email-domains").then(
+    // No lowercasing pass: every entry in the published list is already
+    // lowercase, and the argument is lowercased on lookup anyway.
+    (mod) => new Set([...mod.default, ...EXTRA_PUBLIC_EMAIL_DOMAINS]),
+  );
+  return loading;
+}
 
 /**
  * Whether the domain belongs to an email provider anyone can sign up with,
  * rather than to an organization.
  */
-export function checkIsPublicEmailDomain(domain: string): boolean {
-  return PUBLIC_EMAIL_DOMAINS.has(domain.trim().toLowerCase());
+export async function checkIsPublicEmailDomain(
+  domain: string,
+): Promise<boolean> {
+  const publicEmailDomains = await loadPublicEmailDomains();
+  return publicEmailDomains.has(domain.trim().toLowerCase());
+}
+
+/**
+ * The domains in `domains` that no one can just sign up to.
+ *
+ * Offered alongside the single-domain check so a caller with a list pays one
+ * await instead of one per entry.
+ */
+export async function filterOutPublicEmailDomains(
+  domains: string[],
+): Promise<string[]> {
+  const publicEmailDomains = await loadPublicEmailDomains();
+  return domains.filter(
+    (domain) => !publicEmailDomains.has(domain.trim().toLowerCase()),
+  );
 }
