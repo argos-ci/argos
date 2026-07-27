@@ -1,4 +1,4 @@
-import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
+import { NuqsAdapter } from "nuqs/adapters/react-router/v8";
 import { Helmet } from "react-helmet";
 import { RouterProvider } from "react-router";
 
