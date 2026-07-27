@@ -11,7 +11,7 @@ import {
   MailCheckIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";

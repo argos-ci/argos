@@ -2,7 +2,7 @@ import { useId } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { SLUG_REGEX } from "@argos/util/slug";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";

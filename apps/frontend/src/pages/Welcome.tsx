@@ -18,7 +18,7 @@ import {
   type Control,
   type SubmitHandler,
 } from "react-hook-form";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import { AuthGuard } from "@/containers/AuthGuard";
 import { WelcomeIllustration } from "@/containers/WelcomeIllustration";

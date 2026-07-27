@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/react";
 import { Helmet } from "react-helmet";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";

@@ -23,7 +23,7 @@
   "devDependencies": {
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
-    "@types/node": "catalog:",
+    "@types/node": "^26.1.1",
     "eslint": "catalog:"
   },
   "dependencies": {

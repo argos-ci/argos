@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@apollo/client/react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router";
 
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";

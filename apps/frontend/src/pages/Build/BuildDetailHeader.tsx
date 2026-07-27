@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
 import { AriaSnapshotToggle } from "@/containers/Build/toolbar/AriaSnapshotToggle";

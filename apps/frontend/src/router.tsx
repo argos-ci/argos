@@ -12,7 +12,7 @@ import {
   useNavigate,
   useParams,
   useRouteError,
-} from "react-router-dom";
+} from "react-router";
 
 import { Layout } from "@/containers/Layout";
 

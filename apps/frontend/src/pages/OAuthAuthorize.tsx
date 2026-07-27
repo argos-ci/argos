@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useIsLoggedIn } from "@/containers/Auth";

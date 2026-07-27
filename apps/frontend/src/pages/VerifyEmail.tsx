@@ -1,6 +1,6 @@
 import { useMutation } from "@apollo/client/react";
 import { Helmet } from "react-helmet";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import { Layout } from "@/containers/Layout";
 import { graphql } from "@/gql";

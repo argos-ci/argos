@@ -1,6 +1,6 @@
 import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
-import { NavLink as RouterNavLink, type NavLinkProps } from "react-router-dom";
+import { NavLink as RouterNavLink, type NavLinkProps } from "react-router";
 
 export function Nav(props: ComponentPropsWithRef<"nav">) {
   return <nav {...props} />;

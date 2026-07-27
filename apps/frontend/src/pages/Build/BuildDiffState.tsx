@@ -13,7 +13,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import {
   checkIsDiffGroupName,

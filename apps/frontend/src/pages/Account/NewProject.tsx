@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";

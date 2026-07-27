@@ -6,7 +6,7 @@ import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
 import { DialogTrigger, Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { SettingsPage } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";

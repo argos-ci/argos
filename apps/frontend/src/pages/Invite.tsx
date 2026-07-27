@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import {

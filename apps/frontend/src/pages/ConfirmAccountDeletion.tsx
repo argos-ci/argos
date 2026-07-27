@@ -1,6 +1,6 @@
 import { useMutation } from "@apollo/client/react";
 import { Helmet } from "react-helmet";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 
 import { logout } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";

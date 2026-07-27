@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client/react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";

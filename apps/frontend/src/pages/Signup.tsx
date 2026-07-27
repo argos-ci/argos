@@ -13,7 +13,7 @@ import {
   type Path,
   type SubmitHandler,
 } from "react-hook-form";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router";
 
 import { PRO_PLAN_PRICING } from "@/constants";
 import { useIsLoggedIn } from "@/containers/Auth";

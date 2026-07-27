@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client/react";
 import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
-import { matchPath, useLocation } from "react-router-dom";
+import { matchPath, useLocation } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";

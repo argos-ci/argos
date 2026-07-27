@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { CheckCircleIcon, TerminalIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";

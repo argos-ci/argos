@@ -1,5 +1,5 @@
 import { TabPanel, Tabs } from "react-aria-components";
-import { useHref, useLocation, useResolvedPath } from "react-router-dom";
+import { useHref, useLocation, useResolvedPath } from "react-router";
 
 import { Tab } from "./Tab";
 

@@ -9,7 +9,7 @@ import {
   SquareTerminalIcon,
 } from "lucide-react";
 import { RadioButton, RadioField, RadioGroup } from "react-aria-components";
-import { useResolvedPath } from "react-router-dom";
+import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";

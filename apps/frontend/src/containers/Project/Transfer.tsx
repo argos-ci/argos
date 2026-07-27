@@ -3,7 +3,7 @@ import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
