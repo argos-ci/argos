@@ -168,7 +168,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: pnpm run test:integration --shard=${{ matrix.shard }}/2
+        run: pnpm run test:integration --shard=${{ matrix.shard }}/4
 
   e2e-test:
     runs-on: ubuntu-latest
@@ -229,7 +229,7 @@ jobs:
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500
-          args: env HOME=/root npm run test:e2e -- --shard=${{ matrix.shard }}/2
+          args: env HOME=/root npm run test:e2e -- --shard=${{ matrix.shard }}/3
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
