@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router";
 
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";

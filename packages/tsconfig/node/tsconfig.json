@@ -1,11 +1,27 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": [
-    "@tsconfig/strictest/tsconfig.json",
-    "@tsconfig/node26/tsconfig.json",
-    "../base/tsconfig.json"
-  ],
+  "extends": "../base/tsconfig.json",
   "compilerOptions": {
+    // Inlined from @tsconfig/strictest and @tsconfig/node26: Playwright resolves
+    // "extends" by looking only in `<config dir>/node_modules`, so bare package
+    // specifiers cannot be resolved from this linked workspace package.
+    "strict": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "lib": ["es2025", "ESNext.Collection", "ESNext.Temporal"],
+    "target": "es2025",
+
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,

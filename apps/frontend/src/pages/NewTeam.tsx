@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent } from "react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import { AuthGuard } from "@/containers/AuthGuard";
 import {

@@ -50,6 +50,10 @@ const config = defineConfig({
     trace: "on-first-retry",
     /* Capture screenshot after each test */
     screenshot: "only-on-failure",
+    // Stabilize text rendering so screenshots match across macOS and CI.
+    launchOptions: {
+      args: ["--disable-lcd-text", "--font-render-hinting=none"],
+    },
   },
   /* Configure projects for major browsers */
   projects: [

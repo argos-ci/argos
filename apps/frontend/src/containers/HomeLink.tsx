@@ -1,4 +1,4 @@
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router";
 
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { HeadlessLink, HeadlessLinkProps } from "@/ui/Link";

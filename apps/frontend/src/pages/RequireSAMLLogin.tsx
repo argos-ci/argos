@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { LockIcon } from "@primer/octicons-react";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 
 import { BrandShield } from "@/ui/BrandShield";
 import { ButtonIcon, LinkButton } from "@/ui/Button";

@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";

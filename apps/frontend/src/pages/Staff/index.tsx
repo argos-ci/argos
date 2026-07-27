@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 
 import { PageLoader } from "@/ui/PageLoader";
 import { TabList } from "@/ui/Tab";

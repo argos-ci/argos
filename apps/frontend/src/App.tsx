@@ -1,6 +1,6 @@
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { Helmet } from "react-helmet";
-import { RouterProvider } from "react-router-dom";
+import { RouterProvider } from "react-router";
 
 import { ColorModeProvider } from "@/ui/ColorMode";
 

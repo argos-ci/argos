@@ -24,7 +24,7 @@ import {
 import { parseAsString, useQueryStates } from "nuqs";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
-import { useResolvedPath } from "react-router-dom";
+import { useResolvedPath } from "react-router";
 
 import {
   constraintSize,

@@ -1,5 +1,5 @@
 import { Suspense, type ComponentProps } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 
 import { BrandLogo } from "@/ui/BrandLogo";
 import { BreadcrumbSeparator } from "@/ui/Breadcrumb";

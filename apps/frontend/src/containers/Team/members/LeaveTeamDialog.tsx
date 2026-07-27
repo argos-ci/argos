@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useMutation } from "@apollo/client/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { graphql } from "@/gql";

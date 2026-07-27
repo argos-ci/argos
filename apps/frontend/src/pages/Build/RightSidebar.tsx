@@ -10,7 +10,7 @@ import {
   Tabs,
   type TabPanelProps,
 } from "react-aria-components";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";

@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FilterIcon, PlusCircleIcon, SendIcon, ZapIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 
 import { AutomationsIllustration } from "@/containers/EmptyStateIllustrations";
 import { DocumentType, graphql } from "@/gql";

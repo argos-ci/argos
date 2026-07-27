@@ -1,6 +1,6 @@
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ButtonGroup } from "@/ui/ButtonGroup";

@@ -1,6 +1,6 @@
 import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";

@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
 import { ShieldUserIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
-import { useMatch, useParams } from "react-router-dom";
+import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AccountPlanChip } from "@/containers/AccountPlanChip";

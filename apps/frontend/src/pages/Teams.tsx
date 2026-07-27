@@ -2,7 +2,7 @@ import { useMutation, useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard, RedirectToWebsite } from "@/containers/AuthGuard";

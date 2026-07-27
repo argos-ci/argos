@@ -15,7 +15,7 @@ import {
   SunIcon,
 } from "lucide-react";
 import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";

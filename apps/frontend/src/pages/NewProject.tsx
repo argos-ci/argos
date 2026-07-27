@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import { getLatestVisitedAccount } from "@/containers/AccountHistory";
 import { AuthGuard } from "@/containers/AuthGuard";

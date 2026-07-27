@@ -17,7 +17,7 @@ import { clsx } from "clsx";
 import { BoxesIcon, SearchIcon } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { Heading, Text } from "react-aria-components";
-import { useResolvedPath } from "react-router-dom";
+import { useResolvedPath } from "react-router";
 
 import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";

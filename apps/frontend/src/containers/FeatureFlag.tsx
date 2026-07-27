@@ -6,7 +6,7 @@ import {
   type CompanyContext,
   type Flags,
 } from "@reflag/react-sdk";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router";
 
 import { config } from "@/config";
 import { graphql } from "@/gql";

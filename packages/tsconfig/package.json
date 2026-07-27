@@ -7,9 +7,5 @@
   },
   "scripts": {
     "check-format": "prettier --check ."
-  },
-  "dependencies": {
-    "@tsconfig/node26": "^26.0.0",
-    "@tsconfig/strictest": "^2.0.8"
   }
 }

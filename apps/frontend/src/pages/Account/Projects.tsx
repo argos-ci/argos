@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 
 import { CheckoutStatusDialog } from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";

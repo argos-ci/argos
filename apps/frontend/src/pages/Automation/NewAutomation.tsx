@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { SettingsPage } from "@/containers/Layout";
 import { graphql, type DocumentType } from "@/gql";

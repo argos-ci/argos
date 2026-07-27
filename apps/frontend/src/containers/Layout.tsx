@@ -1,6 +1,6 @@
 import { ComponentPropsWithRef, Suspense } from "react";
 import { clsx } from "clsx";
-import { useMatch } from "react-router-dom";
+import { useMatch } from "react-router";
 
 import { PageLoader } from "@/ui/PageLoader";
 

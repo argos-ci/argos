@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAtom } from "jotai/react";
 import { MailIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { z } from "zod";
 
 import { GitHubLoginButton } from "@/containers/GitHub";
