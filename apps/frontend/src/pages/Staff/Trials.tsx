@@ -13,6 +13,7 @@ import {
   MailIcon,
   MinusIcon,
   SearchIcon,
+  TriangleAlertIcon,
   UsersIcon,
   XIcon,
   type LucideIcon,
@@ -342,6 +343,21 @@ function StatusCell(props: { team: PipelineTeam }) {
     );
   }
 
+  // A failed payment is the one state that has to be caught at a glance. The
+  // team is still on a paid plan and still building, so nothing else on the row
+  // looks wrong — only the money stopped arriving. Printed in the default color
+  // like every other status, it disappears into the list.
+  if (subscriptionStatus === AccountSubscriptionStatus.PastDue) {
+    return (
+      <Tooltip content="Payment failed. The subscription is still running while Stripe retries the charge.">
+        <span className="text-danger-low inline-flex items-center gap-1 font-medium whitespace-nowrap">
+          <TriangleAlertIcon className="size-4 shrink-0" />
+          past due
+        </span>
+      </Tooltip>
+    );
+  }
+
   return (
     <span
       className={clsx(
@@ -425,7 +441,7 @@ function ScreenshotsCell(props: { team: PipelineTeam }) {
       </div>
       {ratio !== null && ratio >= 0.01 ? (
         <Tooltip
-          content={`${periodUsage?.storybookScreenshotsCount.toLocaleString()} Storybook screenshots, billed at the Storybook rate`}
+          content={`${periodUsage?.storybookScreenshotsCount.toLocaleString()} Storybook screenshots since signup. Storybook bills at its own, lower rate, which is why a large volume can still cost little.`}
         >
           <div className="text-low text-xs">
             {Math.round(ratio * 100)}% Storybook
@@ -817,7 +833,14 @@ function getEstimatedMrr(teams: PipelineTeam[]): {
       if (price === null) {
         return acc;
       }
-      return { total: acc.total + price, billedTeams: acc.billedTeams + 1 };
+      // Rounded per team, exactly as each cell rounds itself. Summing the exact
+      // amounts and rounding once at the end would be marginally more accurate
+      // and would break the promise above: three teams at $100.50 would print
+      // $101 three times over a total of $302.
+      return {
+        total: acc.total + Math.round(price),
+        billedTeams: acc.billedTeams + 1,
+      };
     },
     { total: 0, billedTeams: 0 },
   );

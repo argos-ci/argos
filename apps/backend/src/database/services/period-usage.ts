@@ -143,6 +143,13 @@ export async function getAccountPeriodUsages(
     return result;
   }
 
+  // Deliberately not filtered on `plan.usageBased`: this has to pick the same
+  // subscription as `Account.getActiveSubscription()`, which selects on
+  // `includedScreenshots` alone. Narrowing to usage-based plans before the
+  // `DISTINCT ON` would let an account holding both a flat and a usage-based
+  // active subscription resolve one subscription here and the other there —
+  // pricing the row against a plan it is not billed on. The plan is checked
+  // below instead, once the same winner has been picked.
   const subscriptions = await Subscription.query()
     .select("subscriptions.*")
     .withGraphFetched("plan")
@@ -151,7 +158,6 @@ export async function getAccountPeriodUsages(
       "subscriptions.accountId",
       subscribedAccounts.map((account) => account.id),
     )
-    .where("plan.usageBased", true)
     .whereRaw("?? < now()", "subscriptions.startDate")
     .whereIn("subscriptions.status", ["active", "trialing", "past_due"])
     .where((query) =>
@@ -172,7 +178,7 @@ export async function getAccountPeriodUsages(
 
   for (const account of subscribedAccounts) {
     const subscription = subscriptionByAccountId.get(account.id);
-    if (!subscription?.plan) {
+    if (!subscription?.plan?.usageBased) {
       result.set(account.id, null);
       continue;
     }

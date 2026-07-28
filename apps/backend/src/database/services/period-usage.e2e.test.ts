@@ -70,6 +70,40 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(grantedAccount.id)).toBeNull();
   });
 
+  it("resolves the same subscription as the account manager does", async () => {
+    // Two active subscriptions at once: the manager picks on
+    // `includedScreenshots` alone, so the flat one wins and the account is not
+    // billed by usage. Picking the usage-based one here would price the row
+    // against a plan it is not billed on.
+    await createUsageBasedSubscription();
+    const flatPlan = await factory.Plan.create({
+      usageBased: false,
+      interval: "month",
+      includedScreenshots: 1_000_000,
+    });
+    const flatUser = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: account.id,
+      planId: flatPlan.id,
+      includedScreenshots: 1_000_000,
+      currency: "usd",
+      provider: "github",
+      subscriberId: flatUser.id,
+      startDate: new Date("2021-01-01").toISOString(),
+      status: "active",
+    });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() + 1000).toISOString(),
+      screenshotCount: 5000,
+      storybookScreenshotCount: 0,
+    });
+
+    const usages = await getAccountPeriodUsages([account]);
+
+    expect(usages.get(account.id)).toBeNull();
+  });
+
   it("returns zero cost when the account stays inside its quota", async () => {
     await createUsageBasedSubscription();
     await factory.ScreenshotBucket.create({
