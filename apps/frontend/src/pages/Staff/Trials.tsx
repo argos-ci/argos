@@ -6,6 +6,7 @@ import clsx from "clsx";
 import {
   CheckIcon,
   CircleCheckIcon,
+  CircleDollarSignIcon,
   CircleXIcon,
   CreditCardIcon,
   ImagesIcon,
@@ -65,6 +66,11 @@ const TrialPipelineQuery = graphql(`
         buildsCount
         screenshotsCount
         firstComparisonAt
+        periodUsage {
+          additionalScreenshotsCost
+          storybookRatio
+          storybookScreenshotsCount
+        }
         owners {
           id
           name
@@ -165,7 +171,65 @@ type SortKey =
   | "checkBuild"
   | "builds"
   | "screenshots"
+  | "estimatedPrice"
   | "contacted";
+
+/**
+ * Flat monthly price of the Pro plan, in dollars.
+ *
+ * Hardcoded because the flat price is the one part of the pricing that is not
+ * persisted: the Stripe sync keeps `includedScreenshots` and the per-screenshot
+ * prices on the subscription, but not the plan's own amount. Pro is the only
+ * usage-based plan a self-serve trial can land on, so the constant holds for
+ * this page — it does not for a negotiated enterprise subscription, nor for a
+ * customer billed in euros. Hence "estimated".
+ */
+const PRO_FLAT_PRICE = 100;
+
+const PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+/**
+ * What the team would be invoiced if its period closed right now, or null when
+ * it would be invoiced nothing at all.
+ *
+ * What is owed depends on where the team sits in its lifecycle, not only on
+ * what it consumed:
+ *
+ * - Active: billing has started, so the flat price plus the overage accrued
+ *   since the period opened. The period opened when the subscription did, which
+ *   for a converted trial is the conversion itself, so that overage is real.
+ * - Trialing with a card: Stripe never bills usage consumed during a trial, and
+ *   a trial that goes over quota with a card on file is converted to active on
+ *   the next build. Whatever it consumed, it owes the flat price and no more.
+ * - Trialing with no card: committed to nothing, and a build would be rejected
+ *   before it could owe anything.
+ * - Anything else: canceled, expired, or never subscribed.
+ *
+ * A team off a usage-based plan is null throughout — there is no flat price of
+ * ours to quote for it.
+ */
+function getEstimatedPrice(team: PipelineTeam): number | null {
+  const { periodUsage } = team.staff;
+
+  if (!periodUsage) {
+    return null;
+  }
+
+  switch (team.subscriptionStatus) {
+    case AccountSubscriptionStatus.Active:
+      return PRO_FLAT_PRICE + periodUsage.additionalScreenshotsCost;
+
+    case AccountSubscriptionStatus.TrialingWithPaymentMethod:
+      return PRO_FLAT_PRICE;
+
+    default:
+      return null;
+  }
+}
 
 /**
  * Sortable value per column. Booleans and dates collapse to numbers so a single
@@ -193,6 +257,10 @@ function getSortValue(team: PipelineTeam, key: SortKey): string | number {
       return team.staff.buildsCount;
     case "screenshots":
       return team.staff.screenshotsCount;
+    // Teams with nothing to bill sort below every paying one rather than tying
+    // with a $0 estimate, which no billed team can have.
+    case "estimatedPrice":
+      return getEstimatedPrice(team) ?? -1;
     case "contacted":
       return team.staff.contact ? 1 : 0;
   }
@@ -261,15 +329,14 @@ function StatusCell(props: { team: PipelineTeam }) {
         )}
 
         {daysRemaining != null && (
-          <span
+          <div
             className={clsx(
               "text-xs",
               isEndingUnpaid ? "text-warning-low" : "text-low",
             )}
           >
-            {" "}
-            • {daysRemaining}d left
-          </span>
+            {daysRemaining}d left
+          </div>
         )}
       </div>
     );
@@ -330,6 +397,56 @@ function CheckBuildCell(props: { team: PipelineTeam }) {
     <div className="flex justify-center">
       {hint ? <Tooltip content={hint}>{icon}</Tooltip> : icon}
     </div>
+  );
+}
+
+/**
+ * Screenshots uploaded, with the Storybook share of them underneath.
+ *
+ * The share is what explains an overage that looks too cheap for its volume:
+ * Storybook screenshots bill at their own, lower rate. It is a property of the
+ * mix rather than a slice of the number above it — the total counts build
+ * stats, the share is measured on the buckets that billing actually reads — so
+ * it is shown as a percentage, which invites no subtraction.
+ *
+ * Silent below one percent: a team with a handful of Storybook screenshots is
+ * not a Storybook team, and rounding it to `0%` would say the opposite of what
+ * a blank line says.
+ */
+function ScreenshotsCell(props: { team: PipelineTeam }) {
+  const { team } = props;
+  const { periodUsage } = team.staff;
+  const ratio = periodUsage?.storybookRatio ?? null;
+
+  return (
+    <div className="inline-block text-right">
+      <div className="text-low">
+        {team.staff.screenshotsCount.toLocaleString()}
+      </div>
+      {ratio !== null && ratio >= 0.01 ? (
+        <Tooltip
+          content={`${periodUsage?.storybookScreenshotsCount.toLocaleString()} Storybook screenshots, billed at the Storybook rate`}
+        >
+          <div className="text-low text-xs">
+            {Math.round(ratio * 100)}% Storybook
+          </div>
+        </Tooltip>
+      ) : null}
+    </div>
+  );
+}
+
+function EstimatedPriceCell(props: { team: PipelineTeam }) {
+  const price = getEstimatedPrice(props.team);
+
+  if (price === null) {
+    return <span className="text-low">—</span>;
+  }
+
+  return (
+    <Tooltip content="Flat Pro plan, plus the overage accrued this period once billing has started. A running trial owes the flat price only: trial usage is never billed.">
+      <span className="font-medium">{PRICE_FORMAT.format(price)}</span>
+    </Tooltip>
   );
 }
 
@@ -493,7 +610,7 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
 
   return (
     <tr className={clsx("border-b", index % 2 === 0 ? "bg-app" : "bg-subtle")}>
-      <td className="p-4 text-sm">
+      <td className="p-2 text-sm">
         <div className="flex min-w-0 items-center gap-3">
           <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
           <div className="min-w-0">
@@ -507,25 +624,28 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
           </div>
         </div>
       </td>
-      <td className="truncate p-4 text-sm">
+      <td className="truncate p-2 text-sm">
         <Time date={team.createdAt} />
       </td>
-      <td className="truncate p-4 text-sm">
+      <td className="truncate p-2 text-sm">
         {team.lastBuildDate && <Time date={team.lastBuildDate} />}
       </td>
-      <td className="p-4 text-sm">
+      <td className="p-2 text-sm">
         <StatusCell team={team} />
       </td>
-      <td className="text-low p-4 text-right text-sm tabular-nums">
+      <td className="text-low p-2 text-right text-sm tabular-nums">
         {team.staff.buildsCount.toLocaleString()}
       </td>
-      <td className="p-4 text-right">
+      <td className="p-2 text-right">
         <CheckBuildCell team={team} />
       </td>
-      <td className="text-low p-4 text-right text-sm tabular-nums">
-        {team.staff.screenshotsCount.toLocaleString()}
+      <td className="p-2 text-right text-sm tabular-nums">
+        <ScreenshotsCell team={team} />
       </td>
-      <td className="p-4">
+      <td className="p-2 text-right text-sm tabular-nums">
+        <EstimatedPriceCell team={team} />
+      </td>
+      <td className="p-2">
         <ContactCell team={team} />
       </td>
     </tr>
@@ -542,8 +662,16 @@ const ALIGN_CLASS_NAMES = {
 
 /**
  * Widths are fixed rather than left to the content: the two date columns render
- * a formatted date, so their natural width follows the calendar — every column
- * after them would shift on the day a month name gets longer.
+ * a relative time, so their natural width follows how long ago it was — every
+ * column after them would shift as rows age.
+ *
+ * They add up to 100 on purpose. `table-fixed` splits whatever the table is
+ * wide between them, so a total under 100 does not shrink the table, it only
+ * hands the remainder back out — which makes the numbers read as if they were
+ * doing something they are not. The table's real width is its `min-w`.
+ *
+ * `status` gets the widest slice of the narrow ones: it is the only cell with
+ * `whitespace-nowrap` text, so it overflows rather than wraps when squeezed.
  */
 const COLUMNS: {
   key: SortKey;
@@ -551,29 +679,35 @@ const COLUMNS: {
   align: keyof typeof ALIGN_CLASS_NAMES;
   width: string;
 }[] = [
-  { key: "team", label: "Team", align: "left", width: "w-[20%]" },
-  { key: "createdAt", label: "Created", align: "left", width: "w-[12%]" },
+  { key: "team", label: "Team", align: "left", width: "w-[25%]" },
+  { key: "createdAt", label: "Created", align: "left", width: "w-[9%]" },
   {
     key: "lastActivity",
     label: "Last activity",
     align: "left",
-    width: "w-[12%]",
+    width: "w-[9%]",
   },
-  { key: "status", label: "Status", align: "left", width: "w-[9%]" },
-  { key: "builds", label: "Builds", align: "right", width: "w-[9%]" },
+  { key: "status", label: "Status", align: "left", width: "w-[12%]" },
+  { key: "builds", label: "Builds", align: "right", width: "w-[7%]" },
   {
     key: "checkBuild",
     label: "Check build",
     align: "center",
-    width: "w-[8%]",
+    width: "w-[6%]",
   },
   {
     key: "screenshots",
     label: "Screenshots",
     align: "right",
-    width: "w-[9%]",
+    width: "w-[11%]",
   },
-  { key: "contacted", label: "Contacted", align: "center", width: "w-[9%]" },
+  {
+    key: "estimatedPrice",
+    label: "Est. price",
+    align: "right",
+    width: "w-[10%]",
+  },
+  { key: "contacted", label: "Contacted", align: "center", width: "w-[11%]" },
 ];
 
 function PipelineTable(props: {
@@ -662,11 +796,39 @@ function DecidedTrialsHint() {
   );
 }
 
+/**
+ * What the window is worth per month: the Est. price column, added up.
+ *
+ * Deliberately nothing more than that sum — no separate notion of who counts.
+ * The rule for who owes what lives in `getEstimatedPrice` alone, so the tile
+ * and the column cannot drift into disagreeing, and the tile stays a figure a
+ * reader can check by adding up what is on screen.
+ *
+ * The overage half is usage to date rather than a settled month, so the total
+ * is a floor: it can only be revised upwards as the periods close.
+ */
+function getEstimatedMrr(teams: PipelineTeam[]): {
+  total: number;
+  billedTeams: number;
+} {
+  return teams.reduce(
+    (acc, team) => {
+      const price = getEstimatedPrice(team);
+      if (price === null) {
+        return acc;
+      }
+      return { total: acc.total + price, billedTeams: acc.billedTeams + 1 };
+    },
+    { total: 0, billedTeams: 0 },
+  );
+}
+
 function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
   const activated = teams.filter((team) => team.staff.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
   const converted = teams.filter(checkIsConverted).length;
+  const estimatedMrr = getEstimatedMrr(teams);
 
   // Teams whose outcome is still open would drag both rates down for no reason
   // other than being recent — the rates only mean something over decided
@@ -674,7 +836,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const decided = converted + lost;
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
       <StatTile
         data-visual-test="transparent"
         icon={UsersIcon}
@@ -716,6 +878,21 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
           <>
             {formatShare(lost, decided)} <DecidedTrialsHint />
           </>
+        }
+      />
+      <StatTile
+        data-visual-test="transparent"
+        icon={CircleDollarSignIcon}
+        color="success"
+        label="Est. MRR"
+        value={estimatedMrr.total}
+        format="currency"
+        hint={
+          <Tooltip content="The Est. price column added up. Active teams count their overage, running trials count the flat price only, and everything else counts nothing. Periods are still open, so this is a floor.">
+            <span className="underline decoration-dotted underline-offset-2">
+              from {estimatedMrr.billedTeams} billed
+            </span>
+          </Tooltip>
         }
       />
     </div>

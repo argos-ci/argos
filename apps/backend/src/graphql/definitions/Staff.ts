@@ -65,6 +65,19 @@ export const typeDefs = gql`
     user: User!
   }
 
+  "What a team is consuming, as needed to explain what it is about to pay."
+  type TeamStaffPeriodUsage {
+    "Cost of the screenshots consumed beyond the included quota, this period."
+    additionalScreenshotsCost: Float!
+    """
+    Share of Storybook screenshots in everything the team ever uploaded, between
+    0 and 1. Null when it never uploaded a screenshot at all.
+    """
+    storybookRatio: Float
+    "Storybook screenshots uploaded since the team was created."
+    storybookScreenshotsCount: Int!
+  }
+
   """
   Team data reserved to Argos staff.
 
@@ -82,6 +95,8 @@ export const typeDefs = gql`
     owners: [TeamStaffOwner!]!
     "When a staff member reached out to the team, null if never"
     contact: TeamStaffContact
+    "Billing usage. Null when the team is not on a usage-based plan."
+    periodUsage: TeamStaffPeriodUsage
   }
 
   extend type Team {
@@ -131,6 +146,19 @@ export const resolvers: IResolvers = {
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.StaffTeamContactByTeamId.load(account.teamId);
+    },
+    periodUsage: async (account, _args, ctx) => {
+      const usage = await ctx.loaders.AccountPeriodUsageByAccountId.load(
+        account.id,
+      );
+      if (!usage) {
+        return null;
+      }
+      return {
+        additionalScreenshotsCost: usage.additionalScreenshotCost,
+        storybookRatio: usage.storybookRatio,
+        storybookScreenshotsCount: usage.storybookCount,
+      };
     },
   },
   TeamStaffContact: {
