@@ -18,7 +18,11 @@ self.onmessage = (event) => {
       self.postMessage(rects satisfies MessageData);
     },
     { retries: 3 },
-  );
+  ).catch((error) => {
+    console.error(error);
+    // Always answer, else the consumer stays in a loading state forever.
+    self.postMessage(null satisfies MessageData);
+  });
 };
 
 /**
