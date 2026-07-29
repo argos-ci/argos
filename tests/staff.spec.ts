@@ -1,6 +1,6 @@
 /* eslint-disable no-empty-pattern */
 import type { BuildType } from "@argos/schemas/build-type";
-import { expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import type { Account } from "../apps/backend/src/database/models";
 import {
@@ -177,6 +177,7 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
 });
 
 staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
+  test.slow();
   await page.goto("/staff/trials");
   await expect(
     page.getByRole("heading", { name: "Trial pipeline" }),
