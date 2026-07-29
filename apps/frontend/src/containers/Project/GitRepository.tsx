@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
@@ -9,6 +10,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
+import { Loader } from "@/ui/Loader";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -295,10 +297,20 @@ export const ProjectGitRepository = (props: {
           </div>
         ) : (
           <Card className="p-4">
-            <LinkRepository
-              projectId={project.id}
-              accountSlug={project.account.slug}
-            />
+            {/* `LinkRepository` fetches the Git providers with a suspense query,
+                keep it contained so it does not blow away the settings page. */}
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-2">
+                  <Loader className="size-6" />
+                </div>
+              }
+            >
+              <LinkRepository
+                projectId={project.id}
+                accountSlug={project.account.slug}
+              />
+            </Suspense>
           </Card>
         )}
       </CardBody>
