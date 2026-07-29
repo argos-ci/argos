@@ -741,7 +741,7 @@ function PipelineTable(props: {
   }
 
   return (
-    <div className="overflow-x-auto rounded-sm border">
+    <div className="relative overflow-x-auto rounded-sm border">
       <table className="w-full min-w-300 table-fixed border-collapse">
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
