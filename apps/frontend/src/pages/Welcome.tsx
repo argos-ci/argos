@@ -25,6 +25,7 @@ import { WelcomeIllustration } from "@/containers/WelcomeIllustration";
 import { graphql } from "@/gql";
 import { AccountPermission, SignupSource } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
+import { FieldError } from "@/ui/FieldError";
 import { Form } from "@/ui/Form";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormRootError } from "@/ui/FormRootError";
@@ -64,9 +65,9 @@ const CompleteWelcomeMutation = graphql(`
 `);
 
 /**
- * The answers, in the order they are offered: the channels people arrive
- * through most, and `other` last so its free-text field opens at the bottom of
- * the grid instead of pushing the remaining tiles around.
+ * The answers, in the order they are offered: the channels people hear about
+ * Argos through most, and `other` last so its free-text field opens at the
+ * bottom of the grid instead of pushing the remaining tiles around.
  */
 const SOURCES: {
   value: SignupSource;
@@ -86,7 +87,7 @@ const SOURCES: {
   { value: SignupSource.SocialMedia, label: "Social media", Icon: AtSignIcon },
   { value: SignupSource.Github, label: "GitHub", Icon: MarkGithubIcon },
   { value: SignupSource.WordOfMouth, label: "Word of mouth", Icon: UsersIcon },
-  { value: SignupSource.Other, label: "Somewhere else", Icon: EllipsisIcon },
+  { value: SignupSource.Other, label: "Something else", Icon: EllipsisIcon },
 ];
 
 type Inputs = {
@@ -105,11 +106,21 @@ type Inputs = {
  * it stays a real radio group for keyboard and screen-reader users.
  */
 function SourceField(props: { control: Control<Inputs> }) {
-  const { field } = useController({ control: props.control, name: "source" });
+  const { field, fieldState } = useController({
+    control: props.control,
+    name: "source",
+    rules: {
+      // Continuing with nothing picked is a miss far more often than it is an
+      // answer, so it is worth a word rather than a silent null. People who
+      // would rather not say have Skip, which the message points at.
+      required: "Pick an answer, or Skip if you’d rather not say.",
+    },
+  });
   // Destructured before the JSX: `react-hooks/refs` reads `field.ref` in render
   // position as a ref access, which it forbids. Same shape as the signup page's
   // use-case field.
   const { ref, value, onChange, onBlur, disabled } = field;
+  const error = fieldState.error?.message;
   return (
     <RadioGroup
       className="w-full"
@@ -118,9 +129,14 @@ function SourceField(props: { control: Control<Inputs> }) {
       onChange={onChange}
       onBlur={onBlur}
       isDisabled={disabled}
+      // React Hook Form owns the validation: `aria` keeps the group's invalid
+      // state and its message wired up for assistive tech without the browser
+      // running a second, native round of its own on submit.
+      validationBehavior="aria"
+      isInvalid={Boolean(error)}
     >
-      <Label>Where did you find Argos?</Label>
-      <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+      <Label invalid={Boolean(error)}>How did you hear about us?</Label>
+      <div className="mt-1 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {SOURCES.map(({ value, label, Icon }) => (
           <Radio
             key={value}
@@ -150,6 +166,9 @@ function SourceField(props: { control: Control<Inputs> }) {
           </Radio>
         ))}
       </div>
+      {/* Under the grid rather than under the label: it answers the Continue
+          that was just pressed, and that is where the eye is. */}
+      <FieldError className="mt-3">{error}</FieldError>
     </RadioGroup>
   );
 }
@@ -198,6 +217,11 @@ function useAutoJoinOffer(): {
 /**
  * The auto-join question, and the space it occupies while its answer loads.
  *
+ * A rule and a title of its own, because a panel tucked under the grid read as
+ * a footnote to the question above it: anyone scanning the page went straight
+ * from the tiles to Continue and never registered that they were being asked a
+ * second thing.
+ *
  * The slot is claimed from the first render whenever the URL names a team —
  * which is the case where a domain is usually found — so the answers above it do
  * not move when the domain arrives. `min-h` rather than a fixed height: it
@@ -210,43 +234,50 @@ function AutoJoinField(props: {
 }) {
   const { control, offer, isLoading } = props;
   return (
-    <div className="bg-subtle mt-6 min-h-25 rounded-xl border p-4">
-      {offer ? (
-        <>
-          <FormCheckbox
-            control={control}
-            name="autoJoinDomain"
-            label={
-              // The team is named, not called "this team": the page can be
-              // reached with any `team` in its URL, and this control grants a
-              // whole email domain access to whichever one that is. The user has
-              // to be able to see which.
-              <>
-                Let <strong>@{offer.domain}</strong> emails join{" "}
-                <strong>{offer.teamName}</strong>
-              </>
-            }
-          />
-          {/* "verified" moves down here: the label states the offer, the line
-              under it states the condition. */}
-          <p className="text-low mt-2 pl-6 text-xs">
-            Anyone who verifies an @{offer.domain} address will see this team
-            when they sign up and can join without an invite. You can change
-            this later in the team settings.
-          </p>
-        </>
-      ) : isLoading ? (
-        <div className="animate-pulse" aria-hidden="true">
-          <div className="flex items-center gap-2">
-            <div className="bg-ui size-4 shrink-0 rounded-sm" />
-            <div className="bg-ui h-3.5 flex-1 rounded" />
+    <div className="mt-8 border-t pt-8">
+      {/* Styled like the question above rather than marked up as a heading: the
+          checkbox carries its own label, so this is the eye's cue and not the
+          control's name. The team is not named here — the title has to read the
+          same before and after the domain lands. */}
+      <div className="mb-2 text-sm font-medium">Who can join your team?</div>
+      <div className="bg-subtle min-h-25 rounded-xl border p-4">
+        {offer ? (
+          <>
+            <FormCheckbox
+              control={control}
+              name="autoJoinDomain"
+              label={
+                // The team is named, not called "this team": the page can be
+                // reached with any `team` in its URL, and this control grants a
+                // whole email domain access to whichever one that is. The user
+                // has to be able to see which.
+                <>
+                  Let <strong>@{offer.domain}</strong> emails join{" "}
+                  <strong>{offer.teamName}</strong>
+                </>
+              }
+            />
+            {/* "verified" moves down here: the label states the offer, the line
+                under it states the condition. */}
+            <p className="text-low mt-2 pl-6 text-xs">
+              Anyone who verifies an @{offer.domain} address will see this team
+              when they sign up and can join without an invite. You can change
+              this later in the team settings.
+            </p>
+          </>
+        ) : isLoading ? (
+          <div className="animate-pulse" aria-hidden="true">
+            <div className="flex items-center gap-2">
+              <div className="bg-ui size-4 shrink-0 rounded-sm" />
+              <div className="bg-ui h-3.5 flex-1 rounded" />
+            </div>
+            <div className="mt-3 space-y-2 pl-6">
+              <div className="bg-ui h-2.5 w-full rounded" />
+              <div className="bg-ui h-2.5 w-2/3 rounded" />
+            </div>
           </div>
-          <div className="mt-3 space-y-2 pl-6">
-            <div className="bg-ui h-2.5 w-full rounded" />
-            <div className="bg-ui h-2.5 w-2/3 rounded" />
-          </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -334,10 +365,13 @@ function WelcomeForm() {
 
   return (
     <>
+      {/* The questions are not called optional any more — Continue asks for the
+          first one before it moves on. Skip is what makes them optional, so the
+          line points at it instead. */}
       <p className="text-low mt-2 mb-10 text-balance">
         {hasAutoJoinQuestion
-          ? "Two questions before you start, both optional."
-          : "One question before you start, and it's optional."}
+          ? "Two quick questions before you start, or skip them."
+          : "One quick question before you start, or skip it."}
       </p>
       <Form form={form} onSubmit={onSubmit} className="w-full">
         <SourceField control={form.control} />
@@ -353,7 +387,8 @@ function WelcomeForm() {
                 message: "Keep it under 255 characters",
               },
             })}
-            label="Where, exactly?"
+            label="Tell us more"
+            placeholder="A conference talk, a newsletter…"
             className="mt-4"
             autoFocus
             autoComplete="off"
