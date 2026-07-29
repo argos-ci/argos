@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   CircleCheckIcon,
+  FlagOffIcon,
   PartyPopperIcon,
   TriangleAlertIcon,
 } from "lucide-react";
@@ -39,8 +40,11 @@ import {
 import { SeenChange } from "@/containers/Test/SeenChange";
 import { TestStatusIndicator } from "@/containers/TestStatusIndicator";
 import { graphql, type DocumentType } from "@/gql";
+import { Button } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
+  EmptyStateActions,
   EmptyStateIcon,
   Page,
   PageContainer,
@@ -53,6 +57,12 @@ import useViewportSize from "@/ui/useViewportSize";
 
 import { NotFound } from "../NotFound";
 import { ChangesChart } from "./ChangesChart";
+import {
+  ChangesFilterToggle,
+  getChangesFilterIgnored,
+  useChangesFilterState,
+  type ChangesFilterState,
+} from "./ChangesFilter";
 import { Counter, CounterLabel, CounterValue } from "./Counter";
 import { useTestParams, type TestSearchParams } from "./TestParams";
 import {
@@ -69,6 +79,7 @@ const TestQuery = graphql(`
     $projectName: String!
     $testId: ID!
     $period: MetricsPeriod!
+    $ignored: Boolean
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
@@ -86,7 +97,7 @@ const TestQuery = graphql(`
         lastSeenDiff {
           ...ScreenChange_ScreenshotDiff
         }
-        changes(period: $period, after: 0, first: 30) {
+        changes(period: $period, after: 0, first: 30, ignored: $ignored) {
           edges {
             ...TestChangeFragment
           }
@@ -122,8 +133,13 @@ export function Component() {
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
   const periodState = useTestPeriodState();
+  const filterState = useChangesFilterState();
   const deferredPeriodValue = useDeferredValue(periodState.value);
-  const isPending = periodState.value !== deferredPeriodValue;
+  const deferredFilterValue = useDeferredValue(filterState.value);
+  const isPeriodPending = periodState.value !== deferredPeriodValue;
+  // The filter only narrows the changes list, so it leaves the metrics alone.
+  const areChangesPending =
+    isPeriodPending || filterState.value !== deferredFilterValue;
   const period = periodState.definition[deferredPeriodValue];
   const { data } = useSuspenseQuery(TestQuery, {
     variables: {
@@ -131,6 +147,7 @@ export function Component() {
       projectName: params.projectName,
       testId: params.testId,
       period: deferredPeriodValue,
+      ignored: getChangesFilterIgnored(deferredFilterValue),
     },
   });
 
@@ -166,7 +183,7 @@ export function Component() {
             <div
               className={clsx(
                 "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
-                isPending && "animate-pulse",
+                isPeriodPending && "animate-pulse",
               )}
             >
               <div className="flex items-center gap-6">
@@ -211,21 +228,27 @@ export function Component() {
           <div
             className={clsx(
               "flex flex-col gap-2",
-              isPending && "animate-pulse",
+              areChangesPending && "animate-pulse",
             )}
           >
-            <Heading level={2} className="pl-4 font-medium">
-              Changes{" "}
-              <span className="text-low">
-                over the{" "}
-                {periodState.definition[periodState.value].label.toLowerCase()}
-              </span>
-            </Heading>
+            <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
+              <Heading level={2} className="font-medium">
+                {filterState.value === "ignored"
+                  ? "Ignored changes"
+                  : "Changes"}{" "}
+                <span className="text-low">over the {periodLabel}</span>
+              </Heading>
+              <ChangesFilterToggle state={filterState} />
+            </div>
             <ProjectPermissionsContext value={project.permissions}>
               <ProjectIgnoreEnabledProvider
                 enabled={project.ignoreConfig.enabled}
               >
-                <ChangesExplorer test={test} periodState={periodState} />
+                <ChangesExplorer
+                  test={test}
+                  periodState={periodState}
+                  filterState={filterState}
+                />
               </ProjectIgnoreEnabledProvider>
             </ProjectPermissionsContext>
           </div>
@@ -242,6 +265,7 @@ type TestDocument = NonNullable<
 const _ChangesFragment = graphql(`
   fragment TestChangeFragment on TestChange {
     id
+    ignored
     stats(period: $period) {
       totalOccurrences
       lastSeenDiff {
@@ -296,24 +320,49 @@ function useActiveChange(props: { test: TestDocument }) {
 function ChangesExplorer(props: {
   test: TestDocument;
   periodState: TestMetricPeriodState;
+  filterState: ChangesFilterState;
 }) {
-  const { test, periodState } = props;
+  const { test, periodState, filterState } = props;
   const [activeChange, setActiveChangeId] = useActiveChange({ test });
   const viewportSize = useViewportSize();
   const height = viewportSize.height - 160;
+  const periodLabel =
+    periodState.definition[periodState.value].label.toLowerCase();
   if (test.changes.edges.length === 0) {
     return (
       <div className="bg-app rounded-lg border">
-        <EmptyState>
-          <EmptyStateIcon>
-            <PartyPopperIcon />
-          </EmptyStateIcon>
-          <Heading>No changes</Heading>
-          <Text slot="description">
-            This test remained unchanged over the{" "}
-            {periodState.definition[periodState.value].label.toLowerCase()}.
-          </Text>
-        </EmptyState>
+        {filterState.value === "ignored" ? (
+          <EmptyState>
+            <EmptyStateIcon>
+              <FlagOffIcon strokeWidth={1} />
+            </EmptyStateIcon>
+            <Heading>No ignored changes</Heading>
+            <Text slot="description">
+              No ignored change showed up in this test over the {periodLabel}.
+              Widen the period to look further back, or ignore a change from its
+              toolbar when it keeps coming back without anything really
+              changing.
+            </Text>
+            <EmptyStateActions>
+              <Button
+                variant="secondary"
+                onPress={() => filterState.setValue("all")}
+              >
+                See all changes
+              </Button>
+            </EmptyStateActions>
+          </EmptyState>
+        ) : (
+          <EmptyState>
+            <EmptyStateIcon>
+              <PartyPopperIcon />
+            </EmptyStateIcon>
+            <Heading>No changes</Heading>
+            <Text slot="description">
+              This test remained unchanged over the {periodLabel}.
+            </Text>
+          </EmptyState>
+        )}
       </div>
     );
   }
@@ -455,7 +504,11 @@ function ChangesList(props: {
     notation: "compact",
   });
   return (
-    <div className="group/sidebar flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
+    <div
+      role="region"
+      aria-label="Changes"
+      className="group/sidebar flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4"
+    >
       {test.changes.edges.map((change) => {
         const isActive = activeChange?.id === change.id;
         return (
@@ -465,6 +518,20 @@ function ChangesList(props: {
                 diff={change.stats.lastSeenDiff}
                 config={DIFF_IMAGE_CONFIG}
               />
+              {/* Always visible, unlike the footer: whether a change is ignored
+                  has to be readable while scanning the list, not on hover. */}
+              {change.ignored ? (
+                <Tooltip content="Ignored change: Argos skips it when it reappears in a build.">
+                  <Chip
+                    color="neutral"
+                    scale="xs"
+                    icon={FlagOffIcon}
+                    className="absolute top-1.5 left-1.5 z-10"
+                  >
+                    Ignored
+                  </Chip>
+                </Tooltip>
+              ) : null}
               <DiffCardFooter>
                 <DiffCardFooterText>
                   {change.stats.totalOccurrences > 1 ? (

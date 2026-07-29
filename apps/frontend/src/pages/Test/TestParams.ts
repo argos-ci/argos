@@ -30,6 +30,7 @@ export function useTestParams(): TestParams | null {
 export interface TestSearchParams {
   period?: string | null;
   change?: string | null;
+  changes?: string | null;
 }
 
 export function getTestURL(
