@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { ScreenshotDiff } from "@/database/models";
+import { IgnoredChange, ScreenshotDiff } from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 import { formatTestId } from "@/util/test-id";
 
@@ -60,6 +60,11 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       after: Int!
       first: Int!
+      """
+      Restrict the changes to the ones currently ignored (\`true\`) or to the ones
+      still under review (\`false\`). Null returns both.
+      """
+      ignored: Boolean
     ): TestChangesConnection!
     metrics(period: MetricsPeriod): TestMetrics!
     trails: [AuditTrail!]!
@@ -103,7 +108,7 @@ export const resolvers: IResolvers = {
       return res.last;
     },
     changes: async (test, args, ctx) => {
-      const { period, after, first } = args;
+      const { period, after, first, ignored } = args;
       const from = getStartDateFromPeriod(period);
 
       const totalOccurrencesQuery = `
@@ -129,6 +134,22 @@ export const resolvers: IResolvers = {
         .whereIn("id", diffQuery.clone())
         .orderByRaw(`(${totalOccurrencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
+
+      if (ignored != null) {
+        // A change is ignored per project + test + fingerprint, and both the
+        // test and the project are fixed here, so matching on the fingerprint
+        // alone is enough.
+        const ignoredFingerprints = IgnoredChange.query()
+          .select("fingerprint")
+          .where("projectId", test.projectId)
+          .where("testId", test.id);
+
+        if (ignored) {
+          query.whereIn("screenshot_diffs.fingerprint", ignoredFingerprints);
+        } else {
+          query.whereNotIn("screenshot_diffs.fingerprint", ignoredFingerprints);
+        }
+      }
 
       const [project, result] = await Promise.all([
         ctx.loaders.Project.load(test.projectId),

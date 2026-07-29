@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { createTestChangeScenario } from "../apps/backend/src/database/seeds";
+import {
+  createIgnoredChangeScenario,
+  createTestChangeScenario,
+} from "../apps/backend/src/database/seeds";
 import { formatTestId } from "../apps/backend/src/util/test-id";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
@@ -72,3 +75,57 @@ loggedTest("test view with a change", async ({ page, team, project }) => {
 
   await screenshot(page, "test-view-change");
 });
+
+loggedTest(
+  "test view flags ignored changes and filters on them",
+  async ({ page, team, project, auth }) => {
+    const { test } = await createIgnoredChangeScenario({
+      projectId: project.id,
+      userId: auth.user.id,
+    });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+    // The badge is on the card in the list, without hovering it.
+    const badge = page
+      .getByRole("region", { name: "Changes" })
+      .getByText("Ignored", { exact: true });
+    await expect(badge).toBeVisible();
+
+    // Ignored changes are part of the default view, and the filter narrows it
+    // down to them.
+    await expect(page.getByRole("heading", { name: /^Changes/ })).toBeVisible();
+    await page.getByRole("button", { name: "Ignored", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: /^Ignored changes/ }),
+    ).toBeVisible();
+    await expect(badge).toBeVisible();
+    // The filter is in the URL, so the view survives a reload and can be shared.
+    await expect(page).toHaveURL(/changes=ignored/);
+
+    await screenshot(page, "test-view-ignored-changes");
+  },
+);
+
+loggedTest(
+  "test view explains an empty ignored list",
+  async ({ page, team, project }) => {
+    const { test } = await createTestChangeScenario({ projectId: project.id });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/tests/${testId}?changes=ignored`,
+    );
+
+    // The test has a change, but none of them is ignored.
+    await expect(
+      page.getByRole("heading", { name: "No ignored changes" }),
+    ).toBeVisible();
+
+    // The empty state hands back the unfiltered list.
+    await page.getByRole("button", { name: "See all changes" }).click();
+    await expect(page.getByRole("heading", { name: /^Changes/ })).toBeVisible();
+    await expect(page.getByText("Occurrences")).toBeVisible();
+  },
+);
