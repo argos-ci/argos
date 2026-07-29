@@ -326,59 +326,72 @@ function WelcomeForm() {
     await complete(answers);
   };
 
+  // The auto-join question is only asked for a team the viewer administers, so
+  // most people see one question and not two. Keyed off the same condition that
+  // claims the slot below, so the count never contradicts what is on screen —
+  // including while the domain is still loading.
+  const hasAutoJoinQuestion = autoJoin.isLoading || Boolean(autoJoin.offer);
+
   return (
-    <Form form={form} onSubmit={onSubmit} className="w-full">
-      <SourceField control={form.control} />
+    <>
+      <p className="text-low mt-2 mb-10 text-balance">
+        {hasAutoJoinQuestion
+          ? "Two questions before you start, both optional."
+          : "One question before you start, and it's optional."}
+      </p>
+      <Form form={form} onSubmit={onSubmit} className="w-full">
+        <SourceField control={form.control} />
 
-      {source === SignupSource.Other ? (
-        <FormTextInput
-          control={form.control}
-          {...form.register("sourceDetail", {
-            // Matches the column, so the answer cannot be rejected after the
-            // user has typed it.
-            maxLength: {
-              value: 255,
-              message: "Keep it under 255 characters",
-            },
-          })}
-          label="Where, exactly?"
-          className="mt-4"
-          autoFocus
-          autoComplete="off"
-        />
-      ) : null}
+        {source === SignupSource.Other ? (
+          <FormTextInput
+            control={form.control}
+            {...form.register("sourceDetail", {
+              // Matches the column, so the answer cannot be rejected after the
+              // user has typed it.
+              maxLength: {
+                value: 255,
+                message: "Keep it under 255 characters",
+              },
+            })}
+            label="Where, exactly?"
+            className="mt-4"
+            autoFocus
+            autoComplete="off"
+          />
+        ) : null}
 
-      {autoJoin.isLoading || autoJoin.offer ? (
-        <AutoJoinField
-          control={form.control}
-          offer={autoJoin.offer}
-          isLoading={autoJoin.isLoading}
-        />
-      ) : null}
+        {hasAutoJoinQuestion ? (
+          <AutoJoinField
+            control={form.control}
+            offer={autoJoin.offer}
+            isLoading={autoJoin.isLoading}
+          />
+        ) : null}
 
-      <div className="mt-8 flex items-center justify-between gap-4">
-        <LinkButton
-          className="text-sm"
-          isDisabled={isSkipping || form.formState.isSubmitting}
-          onPress={() => {
-            setIsSkipping(true);
-            complete(null).catch(() => {
-              // The answers are optional, so a failure here is no reason to
-              // trap the user on this page.
-              window.location.replace(redirect);
-            });
-          }}
-        >
-          Skip
-        </LinkButton>
-        <div className="flex items-center gap-4">
-          <FormRootError control={form.control} />
-          <FormSubmit control={form.control} size="large">
-            Continue
-          </FormSubmit>
+        <div className="mt-8 flex items-center justify-between gap-4">
+          <LinkButton
+            className="text-sm"
+            isDisabled={isSkipping || form.formState.isSubmitting}
+            onPress={() => {
+              setIsSkipping(true);
+              complete(null).catch(() => {
+                // The answers are optional, so a failure here is no reason to
+                // trap the user on this page.
+                window.location.replace(redirect);
+              });
+            }}
+          >
+            Skip
+          </LinkButton>
+          <div className="flex items-center gap-4">
+            <FormRootError control={form.control} />
+            <FormSubmit control={form.control} size="large">
+              Continue
+            </FormSubmit>
+          </div>
         </div>
-      </div>
-    </Form>
+      </Form>
+    </>
   );
 }
 
@@ -417,11 +430,8 @@ export function Component() {
           <Heading level={1} className="text-3xl font-semibold tracking-tight">
             Welcome to Argos
           </Heading>
-          <p className="text-low mt-2 mb-10 text-balance">
-            Two questions before you start, both optional.
-          </p>
-          {/* Nothing here waits on a request: the page reads everything it needs
-              from the auth bootstrap and the URL, so it paints once. */}
+          {/* The line under the heading counts the questions, so it lives with
+              the form that knows how many there are. */}
           <AuthGuard>{() => <WelcomeForm />}</AuthGuard>
         </div>
       </div>
