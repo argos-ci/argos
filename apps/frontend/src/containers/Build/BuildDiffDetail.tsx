@@ -1153,7 +1153,7 @@ function RectHighlights(props: {
   const color = useAtomValue(overlayColorAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const transform = useZoomTransform();
-  const rects = useColoredRects({ url, blockSize: 24 });
+  const { rects } = useColoredRects({ url, blockSize: 24 });
   const [imgScale] = useScaleContext();
   const realScale = imgScale ? imgScale * transform.scale : null;
   // Convert image coordinates to pane coordinates.
@@ -1288,7 +1288,7 @@ const DiffIndicator = memo(function DiffIndicator(props: {
 }) {
   const { imgSize, url } = props;
   const [imgScale] = useScaleContext();
-  const rects = useColoredRects({ url, blockSize: 5 });
+  const { rects, loading } = useColoredRects({ url, blockSize: 5 });
   const color = useAtomValue(overlayColorAtom);
   const transform = useZoomTransform();
   const [containerSize, setContainerSize] = useState<{
@@ -1324,7 +1324,13 @@ const DiffIndicator = memo(function DiffIndicator(props: {
       )}
       <div
         ref={containerRef}
-        className="bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm"
+        // Detecting the changed areas is asynchronous, `aria-busy` tells Argos
+        // to wait for it before screenshotting, else the indicator is empty.
+        aria-busy={loading}
+        className={clsx(
+          "bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm",
+          loading && "animate-pulse",
+        )}
       >
         {(() => {
           if (!rects || !imgScale || !containerSize) {
