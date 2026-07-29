@@ -136,7 +136,7 @@ function SourceField(props: { control: Control<Inputs> }) {
       isInvalid={Boolean(error)}
     >
       <Label invalid={Boolean(error)}>How did you hear about us?</Label>
-      <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+      <div className="mt-1 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {SOURCES.map(({ value, label, Icon }) => (
           <Radio
             key={value}
