@@ -629,15 +629,22 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
       <td className="p-2 text-sm">
         <div className="flex min-w-0 items-center gap-3">
           <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
-          <div className="min-w-0">
+          {/* `flex-1` is what pushes the Stripe link to the cell edge: this
+              wrapper takes the width the link does not, so the link lands at
+              the same offset on every row whatever the name is. */}
+          <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-3">
               <Link href={teamURL} className="truncate font-medium">
                 {team.name || team.slug}
               </Link>
-              <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
             </div>
             <FoundViaLine owners={team.staff.owners} />
           </div>
+          {/* A sibling of the name block rather than part of it, so the row's
+              `items-center` centers it against the whole cell. Nested next to
+              the name it sat on the first line, riding up whenever the team
+              had a "Found via" line under it. */}
+          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
         </div>
       </td>
       <td className="truncate p-2 text-sm">
