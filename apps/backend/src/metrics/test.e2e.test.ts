@@ -1,10 +1,15 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { knex } from "@/database";
 import type { File, Test } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getChangesTotalOccurrences, upsertTestStats } from "./test";
+import {
+  getChangesTotalOccurrences,
+  getTestAllMetrics,
+  upsertTestStats,
+} from "./test";
 
 describe("upsertTestStats", () => {
   let test: Test;
@@ -195,5 +200,101 @@ describe("getChangesTotalOccurrences", () => {
       { from: new Date("2025-06-05T00:00:00.000Z") },
     );
     expect(result).toEqual([1, 1]);
+  });
+});
+
+describe("getTestAllMetrics", () => {
+  let test: Test;
+  let otherTest: Test;
+
+  beforeEach(async () => {
+    await setupDatabase();
+    [test, otherTest] = await Promise.all([
+      factory.Test.create(),
+      factory.Test.create(),
+    ]);
+
+    // 10 builds saw the test over two days.
+    await knex("test_stats_builds").insert([
+      {
+        testId: test.id,
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        value: 6,
+      },
+      {
+        testId: test.id,
+        date: new Date("2025-06-02T00:00:00.000Z"),
+        value: 4,
+      },
+    ]);
+
+    // "aa" recurs across two days (not unique), "bb" only shows up on one.
+    await knex("test_stats_fingerprints").insert([
+      {
+        testId: test.id,
+        fingerprint: "aa",
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        value: 2,
+      },
+      {
+        testId: test.id,
+        fingerprint: "aa",
+        date: new Date("2025-06-02T00:00:00.000Z"),
+        value: 1,
+      },
+      {
+        testId: test.id,
+        fingerprint: "bb",
+        date: new Date("2025-06-02T00:00:00.000Z"),
+        value: 1,
+      },
+    ]);
+  });
+
+  const period = {
+    from: new Date("2025-06-01T00:00:00.000Z"),
+    to: new Date("2025-06-03T00:00:00.000Z"),
+  };
+
+  it("counts a fingerprint as a unique change only when it appears on one day", async () => {
+    const [metrics] = await getTestAllMetrics([test.id], period);
+    invariant(metrics);
+
+    expect(metrics.total).toBe(10);
+    expect(metrics.changes).toBe(4);
+    // "bb" only — "aa" spans two days.
+    expect(metrics.uniqueChanges).toBe(1);
+    expect(metrics.stability).toBe(0.6);
+    expect(metrics.consistency).toBe(0.25);
+    // 1 - (0.6 + 0.25) / 2 is exactly 0.575, which in binary floating point
+    // sits just under the midpoint and rounds down.
+    expect(metrics.flakiness).toBe(0.57);
+  });
+
+  it("returns zeroed metrics aligned to the input order", async () => {
+    const results = await getTestAllMetrics([otherTest.id, test.id], period);
+
+    expect(results[0]).toEqual({
+      total: 0,
+      changes: 0,
+      uniqueChanges: 0,
+      stability: 1,
+      consistency: 1,
+      flakiness: 0,
+    });
+    expect(results[1]?.changes).toBe(4);
+  });
+
+  it("only counts stats within the period", async () => {
+    const [metrics] = await getTestAllMetrics([test.id], {
+      from: new Date("2025-06-02T00:00:00.000Z"),
+      to: new Date("2025-06-03T00:00:00.000Z"),
+    });
+    invariant(metrics);
+
+    expect(metrics.total).toBe(4);
+    expect(metrics.changes).toBe(2);
+    // Restricted to one day, both fingerprints now appear exactly once.
+    expect(metrics.uniqueChanges).toBe(2);
   });
 });

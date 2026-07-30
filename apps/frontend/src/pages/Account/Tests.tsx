@@ -73,7 +73,6 @@ const AccountTestsQuery = graphql(`
           id
           name
           buildName
-          status
           project {
             id
             name

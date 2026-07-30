@@ -39,7 +39,7 @@ import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
 import { getVisibleProjectIds } from "../services/project";
-import { queryActiveTests } from "../services/test";
+import { primeActiveTestMetrics, queryActiveTests } from "../services/test";
 import { badUserInput, toGraphQLError, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -325,6 +325,11 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       filters: filters ?? null,
       after,
       first,
+    });
+    primeActiveTestMetrics({
+      loaders: ctx.loaders,
+      results: result.results,
+      period,
     });
     return paginateResult({ result, first, after });
   },

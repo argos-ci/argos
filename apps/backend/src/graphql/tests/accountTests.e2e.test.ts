@@ -4,8 +4,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { upsertTestStats } from "@/metrics/test";
+import {
+  getStartDateFromPeriod,
+  getTestAllMetrics,
+  upsertTestStats,
+} from "@/metrics/test";
 
+import { IMetricsPeriod } from "../__generated__/resolver-types";
 import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
@@ -25,6 +30,11 @@ const ACCOUNT_TESTS_QUERY = `
           }
           metrics(period: $period) {
             all {
+              total
+              changes
+              uniqueChanges
+              stability
+              consistency
               flakiness
             }
           }
@@ -158,5 +168,78 @@ describe("GraphQL Account.tests", () => {
     expectNoGraphQLError(result);
     expect(result.body.data.account.tests.pageInfo.totalCount).toBe(0);
     expect(result.body.data.account.tests.edges).toEqual([]);
+  });
+
+  // The list orders rows by a flakiness computed in SQL, then serves each row's
+  // metrics from the counts that same pass produced. If the SQL formula and
+  // `computeTestMetrics` ever drift, a row is sorted by one number and displays
+  // another — so pin the served values against an independent computation.
+  it("serves metrics that match the flakiness it sorts by", async () => {
+    const user = await factory.User.create();
+    const account = await factory.TeamAccount.create();
+    invariant(account.teamId, "team account should have a team");
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: user.id,
+      userLevel: "owner",
+    });
+    const project = await factory.Project.create({ accountId: account.id });
+    const test = await createActiveTest(project, "partly-flaky-test");
+
+    const file = await factory.File.create({
+      type: "screenshotDiff",
+      fingerprint: "recurring",
+    });
+
+    // A mix that exercises every branch of the formula: some builds with no
+    // change, one fingerprint recurring across days, one seen a single day.
+    const today = new Date();
+    for (let i = 0; i < 4; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      await upsertTestStats({
+        testId: test.id,
+        date,
+        change: i < 2 ? { fileId: file.id, fingerprint: "recurring" } : null,
+      });
+    }
+    await upsertTestStats({
+      testId: test.id,
+      date: today,
+      change: { fileId: file.id, fingerprint: "one-off" },
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user, account },
+    );
+
+    const result = await request(app)
+      .post("/graphql")
+      .send({
+        query: ACCOUNT_TESTS_QUERY,
+        variables: { accountSlug: account.slug, period: "LAST_7_DAYS" },
+      });
+
+    expectNoGraphQLError(result);
+
+    const [edge] = result.body.data.account.tests.edges;
+    const [expected] = await getTestAllMetrics([test.id], {
+      from: getStartDateFromPeriod(IMetricsPeriod.Last_7Days),
+    });
+    invariant(expected);
+
+    expect(edge.metrics.all).toEqual({
+      total: expected.total,
+      changes: expected.changes,
+      uniqueChanges: expected.uniqueChanges,
+      stability: expected.stability,
+      consistency: expected.consistency,
+      flakiness: expected.flakiness,
+    });
+    // Guard against the assertion passing on an all-zero row.
+    expect(expected.changes).toBeGreaterThan(0);
+    expect(expected.flakiness).toBeGreaterThan(0);
   });
 });

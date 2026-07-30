@@ -48,7 +48,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
-import { queryActiveTests } from "../services/test";
+import { primeActiveTestMetrics, queryActiveTests } from "../services/test";
 import {
   badUserInput,
   forbidden,
@@ -679,13 +679,18 @@ export const resolvers: IResolvers = {
         after,
       });
     },
-    tests: async (project, { first, after, period, filters }) => {
+    tests: async (project, { first, after, period, filters }, ctx) => {
       const result = await queryActiveTests({
         projectIds: [project.id],
         period,
         filters: filters ?? null,
         after,
         first,
+      });
+      primeActiveTestMetrics({
+        loaders: ctx.loaders,
+        results: result.results,
+        period,
       });
       return paginateResult({ result, first, after });
     },

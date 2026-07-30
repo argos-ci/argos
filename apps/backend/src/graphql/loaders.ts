@@ -1,5 +1,6 @@
 import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 import DataLoader from "dataloader";
 import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
@@ -56,6 +57,7 @@ import {
 import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
+import { getLatestReferenceBuildIds } from "./services/test";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -1132,7 +1134,17 @@ function createTestAllMetricsLoader() {
       // Return results in the same order as inputs
       return inputs.map((_, idx) => groupResults.get(idx));
     },
-    { cacheKeyFn: (input) => JSON.stringify(input) },
+    {
+      // Spelled out rather than `JSON.stringify(input)` so the key does not
+      // depend on property order — `queryActiveTests` primes this loader and
+      // has to produce the exact same key as the `Test.metrics` resolver.
+      cacheKeyFn: (input) =>
+        [
+          input.testId,
+          input.from?.toISOString() ?? "",
+          input.to?.toISOString() ?? "",
+        ].join("|"),
+    },
   );
 }
 
@@ -1389,6 +1401,15 @@ function createTestAuditTrailLoader() {
   );
 }
 
+/**
+ * A test is "ongoing" when it still appears in the latest reference build of its
+ * build name, and "removed" otherwise.
+ *
+ * The latest reference builds come from the skip scan in `queryActiveTests`.
+ * Resolving them here with `DISTINCT ON (projectId, name)` instead meant reading
+ * every reference build of every project on the way — the exact scan that
+ * `getLatestReferenceBuildIds` exists to avoid.
+ */
 function createTestStatusLoader() {
   return new DataLoader<
     {
@@ -1405,35 +1426,47 @@ function createTestStatusLoader() {
       const projectIds = Array.from(new Set(pairs.map((p) => p.projectId)));
       const testIds = Array.from(new Set(pairs.map((p) => p.testId)));
 
-      const rows = (await ScreenshotDiff.query()
-        .join(
-          Build.query()
-            .select("id", "projectId", "name")
-            .distinctOn(["projectId", "name"])
-            .where("type", "reference")
-            .whereIn("projectId", projectIds)
-            .orderBy("projectId")
-            .orderBy("name")
-            .orderBy("createdAt", "desc")
-            .as("latest_reference_build"),
-          "latest_reference_build.id",
-          "screenshot_diffs.buildId",
-        )
-        .whereIn("testId", testIds)
-        .select("latest_reference_build.projectId", "screenshot_diffs.testId")
-        .distinct()) as unknown as { projectId: string; testId: string }[];
+      return Sentry.startSpan(
+        {
+          name: "TestStatusLoader",
+          attributes: {
+            "argos.project.count": projectIds.length,
+            "argos.test.count": testIds.length,
+          },
+        },
+        async () => {
+          const latestBuilds = await getLatestReferenceBuildIds(projectIds);
+          if (latestBuilds.length === 0) {
+            return pairs.map(() => ITestStatus.Removed);
+          }
+          const projectIdByBuildId = new Map(
+            latestBuilds.map((build) => [build.id, build.projectId]),
+          );
 
-      const activeKeySet = new Set(
-        rows.map((r) => `${r.projectId}:${r.testId}`),
-      );
+          const rows = (await ScreenshotDiff.query()
+            .distinct("buildId", "testId")
+            .whereRaw(`"buildId" = any(:buildIds::bigint[])`, {
+              buildIds: latestBuilds.map((build) => build.id),
+            })
+            .whereRaw(`"testId" = any(:testIds::bigint[])`, {
+              testIds,
+            })) as unknown as { buildId: string; testId: string }[];
 
-      return pairs.map(({ projectId, testId }) =>
-        activeKeySet.has(`${projectId}:${testId}`)
-          ? ITestStatus.Ongoing
-          : ITestStatus.Removed,
+          const activeKeySet = new Set(
+            rows.map(
+              (row) => `${projectIdByBuildId.get(row.buildId)}:${row.testId}`,
+            ),
+          );
+
+          return pairs.map(({ projectId, testId }) =>
+            activeKeySet.has(`${projectId}:${testId}`)
+              ? ITestStatus.Ongoing
+              : ITestStatus.Removed,
+          );
+        },
       );
     },
-    { cacheKeyFn: (input) => JSON.stringify(input) },
+    { cacheKeyFn: (input) => `${input.projectId}:${input.testId}` },
   );
 }
 
@@ -1447,61 +1480,71 @@ function createSeenDiffsLoader() {
       return [];
     }
 
-    const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
+    return Sentry.startSpan(
+      {
+        name: "SeenDiffsLoader",
+        attributes: { "argos.test.count": testIds.length },
+      },
+      () => loadSeenDiffs(testIds),
+    );
+  });
+}
 
-    const rows = await ScreenshotDiff.query()
-      .from(ScreenshotDiff.raw(`(values ${valuesSql}) as t("testId")`, testIds))
-      .joinRaw(
-        `
-        join lateral (
-          (
-            select sd.id, 'first' as kind
-            from screenshot_diffs sd
-            where sd."testId" = t."testId"
-              and sd."fileId" is not null
-            order by sd.id asc
-            limit 1
-          )
-          union all
-          (
-            select sd.id, 'last' as kind
-            from screenshot_diffs sd
-            where sd."testId" = t."testId"
-              and sd."fileId" is not null
-            order by sd.id desc
-            limit 1
-          )
-        ) pick on true
-        `,
-      )
-      .join("screenshot_diffs", "screenshot_diffs.id", "pick.id")
-      .select(
-        ScreenshotDiff.raw(`t."testId"::text as "testId"`),
-        "pick.kind",
-        "screenshot_diffs.*",
-      );
+async function loadSeenDiffs(testIds: readonly string[]): Promise<SeenDiffs[]> {
+  const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
 
-    const map = new Map<string, SeenDiffs>();
-    for (const testId of testIds) {
-      map.set(testId, { first: null, last: null });
-    }
+  const rows = await ScreenshotDiff.query()
+    .from(ScreenshotDiff.raw(`(values ${valuesSql}) as t("testId")`, testIds))
+    .joinRaw(
+      `
+      join lateral (
+        (
+          select sd.id, 'first' as kind
+          from screenshot_diffs sd
+          where sd."testId" = t."testId"
+            and sd."fileId" is not null
+          order by sd.id asc
+          limit 1
+        )
+        union all
+        (
+          select sd.id, 'last' as kind
+          from screenshot_diffs sd
+          where sd."testId" = t."testId"
+            and sd."fileId" is not null
+          order by sd.id desc
+          limit 1
+        )
+      ) pick on true
+      `,
+    )
+    .join("screenshot_diffs", "screenshot_diffs.id", "pick.id")
+    .select(
+      ScreenshotDiff.raw(`t."testId"::text as "testId"`),
+      "pick.kind",
+      "screenshot_diffs.*",
+    );
 
-    for (const row of rows as any[]) {
-      const entry = map.get(String(row.testId))!;
-      switch (row.kind) {
-        case "first": {
-          entry.first = row;
-          break;
-        }
-        case "last": {
-          entry.last = row;
-          break;
-        }
+  const map = new Map<string, SeenDiffs>();
+  for (const testId of testIds) {
+    map.set(testId, { first: null, last: null });
+  }
+
+  for (const row of rows as any[]) {
+    const entry = map.get(String(row.testId))!;
+    switch (row.kind) {
+      case "first": {
+        entry.first = row;
+        break;
+      }
+      case "last": {
+        entry.last = row;
+        break;
       }
     }
+  }
 
-    return testIds.map((id) => map.get(id)!);
-  });
+  return testIds.map((id) => map.get(id)!);
 }
 
 type LatestCompareScreenshot = Screenshot | null;
@@ -1512,13 +1555,26 @@ function createLatestCompareScreenshotLoader() {
       return [];
     }
 
-    const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
+    return Sentry.startSpan(
+      {
+        name: "LatestCompareScreenshotLoader",
+        attributes: { "argos.test.count": testIds.length },
+      },
+      () => loadLatestCompareScreenshots(testIds),
+    );
+  });
+}
 
-    const rows = await Screenshot.query()
-      .select(Screenshot.raw(`t."testId" as "testId"`), "screenshots.*")
-      .from(Screenshot.raw(`(values ${valuesSql}) as t("testId")`, testIds))
-      .joinRaw(
-        `
+async function loadLatestCompareScreenshots(
+  testIds: readonly string[],
+): Promise<LatestCompareScreenshot[]> {
+  const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
+
+  const rows = await Screenshot.query()
+    .select(Screenshot.raw(`t."testId" as "testId"`), "screenshots.*")
+    .from(Screenshot.raw(`(values ${valuesSql}) as t("testId")`, testIds))
+    .joinRaw(
+      `
     join lateral (
       select sd."compareScreenshotId"
       from "screenshot_diffs" sd
@@ -1528,22 +1584,21 @@ function createLatestCompareScreenshotLoader() {
       limit 1
     ) as sd on true
     `,
-      )
-      .join("screenshots", "screenshots.id", "sd.compareScreenshotId");
+    )
+    .join("screenshots", "screenshots.id", "sd.compareScreenshotId");
 
-    const index = new Map(testIds.map((testId, i) => [testId, i]));
-    const results: LatestCompareScreenshot[] = testIds.map(() => null);
+  const index = new Map(testIds.map((testId, i) => [testId, i]));
+  const results: LatestCompareScreenshot[] = testIds.map(() => null);
 
-    for (const row of rows as any[]) {
-      const i = index.get(row.testId);
-      if (i === undefined) {
-        continue;
-      }
-      results[i] = row;
+  for (const row of rows as any[]) {
+    const i = index.get(row.testId);
+    if (i === undefined) {
+      continue;
     }
+    results[i] = row;
+  }
 
-    return results;
-  });
+  return results;
 }
 
 function createPresenceLoader() {

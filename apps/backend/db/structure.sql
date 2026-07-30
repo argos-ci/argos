@@ -4492,17 +4492,17 @@ CREATE INDEX screenshot_diffs_basescreenshotid_index ON public.screenshot_diffs 
 
 
 --
+-- Name: screenshot_diffs_buildid_active_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_buildid_active_idx ON public.screenshot_diffs USING btree ("buildId") INCLUDE ("testId", "compareScreenshotId") WHERE ("testId" IS NOT NULL);
+
+
+--
 -- Name: screenshot_diffs_buildid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshot_diffs_buildid_index ON public.screenshot_diffs USING btree ("buildId");
-
-
---
--- Name: screenshot_diffs_buildid_notnull_include_testid_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX screenshot_diffs_buildid_notnull_include_testid_idx ON public.screenshot_diffs USING btree ("buildId") INCLUDE ("testId") WHERE ("testId" IS NOT NULL);
 
 
 --
@@ -4545,6 +4545,13 @@ CREATE INDEX screenshot_diffs_testid_createdat_desc_cmp_notnull_idx ON public.sc
 --
 
 CREATE INDEX screenshot_diffs_testid_fingerprint_id_desc_notnull_idx ON public.screenshot_diffs USING btree ("testId", fingerprint, id DESC) WHERE ("fileId" IS NOT NULL);
+
+
+--
+-- Name: screenshot_diffs_testid_id_with_file_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_testid_id_with_file_idx ON public.screenshot_diffs USING btree ("testId", id) WHERE ("fileId" IS NOT NULL);
 
 
 --
@@ -4657,6 +4664,13 @@ CREATE INDEX team_users_userid_index ON public.team_users USING btree ("userId")
 --
 
 CREATE INDEX teams_ssogithubaccountid_index ON public.teams USING btree ("ssoGithubAccountId");
+
+
+--
+-- Name: test_stats_fingerprints_testid_date_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX test_stats_fingerprints_testid_date_idx ON public.test_stats_fingerprints USING btree ("testId", date) INCLUDE (fingerprint, value);
 
 
 --
@@ -5847,3 +5861,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260725120000_screenshot-base-names.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726130000_screenshot-diffs-fingerprint-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726140000_signup-source.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730120000_tests-list-indexes.js', 1, NOW());
