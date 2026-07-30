@@ -13,7 +13,7 @@ import {
 } from "@/ui/Dialog";
 import { toast } from "@/ui/Toaster";
 
-import { useBuildDiffState } from "./BuildDiffState";
+import { getReviewableCount, useBuildDiffState } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
   useBuildReviewAPI,
@@ -116,7 +116,7 @@ function ReapplyPreviousApprovalsButton(props: {
         }));
         const count = branchApprovedDiffs.length;
         const total = stats
-          ? stats.added + stats.changed + (isSubsetBuild ? 0 : stats.removed)
+          ? getReviewableCount(stats, { isSubsetBuild })
           : null;
         const remaining = total !== null ? Math.max(0, total - count) : null;
         toast.success(

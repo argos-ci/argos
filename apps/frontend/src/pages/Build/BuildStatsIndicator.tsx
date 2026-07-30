@@ -164,7 +164,13 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator(props: {
     if (count === 0) {
       return null;
     }
-    const def = getDiffGroupDefinition(group, { isSubsetBuild });
+    // Subset builds ignore removals: a missing snapshot comes from a skipped
+    // test, not a deletion. Counting them here would read as a regression. The
+    // diffs stay listed in their own group in the sidebar.
+    if (isSubsetBuild && group === ScreenshotDiffStatus.Removed) {
+      return null;
+    }
+    const def = getDiffGroupDefinition(group);
     return (
       <Fragment key={group}>
         {onClickGroup ? (

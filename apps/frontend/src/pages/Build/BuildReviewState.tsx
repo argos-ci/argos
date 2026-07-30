@@ -23,6 +23,7 @@ import { useLiveRef } from "@/ui/useLiveRef";
 import {
   checkDiffCanBeReviewed,
   Diff,
+  getReviewableCount,
   useBuildDiffState,
   useGetNextDiff,
   type UseGetNextDiffOptions,
@@ -86,8 +87,7 @@ function useReviewStatus(): "initializing" | "pending" | "complete" | null {
     if (!stats) {
       return "initializing";
     }
-    const expected =
-      stats.added + stats.changed + (isSubsetBuild ? 0 : stats.removed);
+    const expected = getReviewableCount(stats, { isSubsetBuild });
     const reviewed = Object.values(diffStatuses).filter(
       (status) => status !== EvaluationStatus.Pending,
     ).length;

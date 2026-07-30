@@ -47,6 +47,7 @@ const buildExamples: {
     name: "stable with removed screenshots",
     getNumber: (b) => b.removedBuild.number,
   },
+  { name: "subset", getNumber: (b) => b.subsetBuild.number },
 ];
 
 buildExamples.forEach((build) => {
@@ -82,6 +83,32 @@ buildExamples.forEach((build) => {
     });
   });
 });
+
+loggedTest(
+  "subset build ignores removed snapshots",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { number } = builds.subsetBuild;
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${number}/overview`,
+    );
+
+    // The build has 3 unchanged, 1 changed and 2 removed snapshots. Because it
+    // only uploaded a subset, the removals mean "test not run", not "snapshot
+    // deleted": they must not show up as something to review.
+    await expect(page.getByText("A single visual change")).toBeVisible();
+    await expect(page.getByText("2 removed")).toHaveCount(0);
+
+    // The total only counts the snapshots the build actually uploaded.
+    await page.getByRole("tab", { name: "Info" }).click();
+    await expect(page.locator("dt:has-text('Scope') + dd")).toContainText(
+      "Subset",
+    );
+    await expect(
+      page.locator("dt:has-text('Total screenshots') + dd"),
+    ).toHaveText("4");
+  },
+);
 
 loggedTest(
   "snapshot compared against a fallback baseline",

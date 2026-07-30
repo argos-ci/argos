@@ -40,6 +40,7 @@ const _BuildFragment = graphql(`
     status
     stats {
       total
+      removed
     }
     baseScreenshotBucket {
       id
@@ -149,6 +150,21 @@ function Description(props: { children: React.ReactNode }) {
 function Duration({ start, end }: { start: string; end: string }) {
   const duration = moment.duration(moment(end).diff(moment(start)));
   return duration.humanize();
+}
+
+/**
+ * Number of screenshots the build actually uploaded. Removed diffs come from
+ * the baseline, not from the build: counting them in a subset build — where
+ * they only reflect tests that were not run — inflates the total.
+ */
+function getUploadedScreenshotCount(
+  build: DocumentType<typeof _BuildFragment>,
+): number {
+  const { stats } = build;
+  if (!stats) {
+    return 0;
+  }
+  return build.subset ? stats.total - stats.removed : stats.total;
 }
 
 export function BuildInfos(props: {
@@ -299,7 +315,7 @@ export function BuildInfos(props: {
       )}
 
       <Dt>Total screenshots</Dt>
-      <Dd>{build.stats ? build.stats.total : "-"}</Dd>
+      <Dd>{build.stats ? getUploadedScreenshotCount(build) : "-"}</Dd>
 
       {build.subset ? (
         <>

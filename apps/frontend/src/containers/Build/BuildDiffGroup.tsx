@@ -103,18 +103,6 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
 
 export function getDiffGroupDefinition(
   diffGroupName: DiffGroupName,
-  options?: {
-    /**
-     * Indicates if the build is marked as subset.
-     */
-    isSubsetBuild?: boolean;
-  },
 ): DiffGroupDefinition {
-  const def = DiffGroupDefinitions[diffGroupName];
-  if (options?.isSubsetBuild) {
-    if (diffGroupName === ScreenshotDiffStatus.Removed) {
-      return { ...def, color: "neutral" };
-    }
-  }
-  return def;
+  return DiffGroupDefinitions[diffGroupName];
 }

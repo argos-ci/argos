@@ -247,6 +247,29 @@ export function checkDiffCanBeReviewed(
   );
 }
 
+/**
+ * Number of removals to account for. Subset builds only upload part of the
+ * snapshots, so a missing snapshot means a skipped test, not a deletion: they
+ * are ignored everywhere changes are counted or described.
+ */
+export function getRemovedCount(
+  stats: { removed: number },
+  context: { isSubsetBuild: boolean },
+): number {
+  return context.isSubsetBuild ? 0 : stats.removed;
+}
+
+/**
+ * Number of snapshots up for review, mirroring `checkDiffCanBeReviewed` at the
+ * stats level.
+ */
+export function getReviewableCount(
+  stats: { changed: number; added: number; removed: number },
+  context: { isSubsetBuild: boolean },
+): number {
+  return stats.changed + stats.added + getRemovedCount(stats, context);
+}
+
 export function useBuildDiffState() {
   const context = use(BuildDiffContext);
   invariant(

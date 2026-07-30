@@ -19,7 +19,11 @@ import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { lowTextColorClassNames, UIColor } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
-import { useBuildDiffState } from "../BuildDiffState";
+import {
+  getRemovedCount,
+  getReviewableCount,
+  useBuildDiffState,
+} from "../BuildDiffState";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 
 const _BuildFragment = graphql(`
@@ -270,7 +274,7 @@ function ChangeSummaryPanel(props: { children: React.ReactNode }) {
  */
 export function ChangeSummary(props: { build: Build }) {
   const analysis = props.build.impactAnalysis;
-  const { stats } = useBuildDiffState();
+  const { stats, isSubsetBuild } = useBuildDiffState();
 
   // No analysis to summarize: don't render an insights card at all — the build
   // description already prompts the reviewer.
@@ -279,9 +283,9 @@ export function ChangeSummary(props: { build: Build }) {
   }
 
   const added = stats?.added ?? 0;
-  const removed = stats?.removed ?? 0;
+  const removed = stats ? getRemovedCount(stats, { isSubsetBuild }) : 0;
   const reviewableCount = stats
-    ? stats.changed + stats.added + stats.removed
+    ? getReviewableCount(stats, { isSubsetBuild })
     : 0;
   // Clamp: the approval count is fingerprint-based and should never read as
   // more than the snapshots actually up for review.
