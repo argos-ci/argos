@@ -1,13 +1,14 @@
 services:
   postgres:
-    # Last time I have checked, production is running 14.10
-    image: postgres:17-alpine
+    # Production runs AWS RDS for PostgreSQL 17.9. Dev/CI are intentionally
+    # ahead on 18, to validate the 18.4 major upgrade before it ships to RDS.
+    image: postgres:18-alpine
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
       interval: 10s
