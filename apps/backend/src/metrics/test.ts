@@ -86,6 +86,50 @@ export async function upsertTestStats(input: {
   );
 }
 
+export type TestMetricsCounts = {
+  total: number;
+  changes: number;
+  uniqueChanges: number;
+};
+
+export type TestAllMetrics = TestMetricsCounts & {
+  stability: number;
+  consistency: number;
+  flakiness: number;
+};
+
+/**
+ * Derive the rates displayed on the Tests pages from the raw counts.
+ *
+ * This is the single definition of the formula: every flakiness a client sees
+ * comes from here, and `queryActiveTests` mirrors it in SQL to sort by flakiness
+ * (see `TEST_METRICS_LATERAL`). Keep the two in sync — including the
+ * intermediate rounding, otherwise a list can be ordered by a flakiness that
+ * differs from the one shown on the row.
+ *
+ * They still part ways on exact midpoints: Postgres rounds `numeric` half away
+ * from zero, while a value like 0.575 is not representable in binary floating
+ * point and lands just under. That is a one-cent difference in the sort key of
+ * tied rows, not in the value served.
+ */
+export function computeTestMetrics(counts: TestMetricsCounts): TestAllMetrics {
+  const { total, changes, uniqueChanges } = counts;
+
+  const stability =
+    changes > 0 ? Math.round((1 - changes / total) * 100) / 100 : 1;
+
+  const consistency =
+    changes > 0
+      ? uniqueChanges > 0
+        ? Math.round((uniqueChanges / changes) * 100) / 100
+        : 0
+      : 1;
+
+  const flakiness = Math.round((1 - (stability + consistency) / 2) * 100) / 100;
+
+  return { total, changes, uniqueChanges, stability, consistency, flakiness };
+}
+
 /**
  * Get the changes metrics for a test.
  */
@@ -95,16 +139,23 @@ export async function getTestAllMetrics(
     from?: Date | undefined;
     to?: Date | undefined;
   },
-): Promise<
-  {
-    total: number;
-    changes: number;
-    uniqueChanges: number;
-    stability: number;
-    consistency: number;
-    flakiness: number;
-  }[]
-> {
+): Promise<TestAllMetrics[]> {
+  return Sentry.startSpan(
+    {
+      name: "getTestAllMetrics",
+      attributes: { "argos.test.count": testIds.length },
+    },
+    () => queryTestAllMetrics(testIds, options),
+  );
+}
+
+async function queryTestAllMetrics(
+  testIds: string[],
+  options: {
+    from?: Date | undefined;
+    to?: Date | undefined;
+  },
+): Promise<TestAllMetrics[]> {
   const { from = new Date(), to = new Date() } = options;
 
   const totalQuery = `
@@ -115,25 +166,29 @@ export async function getTestAllMetrics(
     group by "testId"
   `;
 
+  // Aggregating per fingerprint first, then per test, keeps this to a single
+  // pass over the period. The previous shape ran a correlated `count(*)` for
+  // every `(testId, fingerprint, date)` row just to learn whether that
+  // fingerprint appeared on exactly one day — one extra index scan per row.
   const changesQuery = `
-   select
-      tsf."testId",
-      sum(tsf.value) as changes,
-      count(*) filter (
-        where (
-          select count(*) 
-          from test_stats_fingerprints t2
-          where t2."testId" = tsf."testId"
-            and t2."fingerprint" = tsf."fingerprint"
-            and t2."date" >= :from::timestamp
-            and t2."date" < :to::timestamp
-        ) = 1
-      ) as "uniqueChanges"
-    from test_stats_fingerprints tsf
-    where tsf."testId" = any(:testIds)
-      and tsf."date" >= :from::timestamp
-      and tsf."date" < :to::timestamp
-    group by tsf."testId"
+    with fp_agg as (
+      select
+        tsf."testId",
+        tsf."fingerprint",
+        sum(tsf.value) as changes_value,
+        count(*) as fp_count
+      from test_stats_fingerprints tsf
+      where tsf."testId" = any(:testIds)
+        and tsf."date" >= :from::timestamp
+        and tsf."date" < :to::timestamp
+      group by tsf."testId", tsf."fingerprint"
+    )
+    select
+      "testId",
+      sum(changes_value) as changes,
+      count(*) filter (where fp_count = 1) as "uniqueChanges"
+    from fp_agg
+    group by "testId"
   `;
 
   const fromISOString = from.toISOString();
@@ -180,36 +235,17 @@ export async function getTestAllMetrics(
   // Keep result order same as input
   return testIds.map((testId) => {
     const data = {
-      testId,
       changes: 0,
       total: 0,
       uniqueChanges: 0,
       ...totalRowsByTestId[testId],
       ...changesRowsByTestId[testId],
     };
-    const stability =
-      data.changes > 0
-        ? Math.round((1 - data.changes / data.total) * 100) / 100
-        : 1;
-
-    const consistency =
-      data.changes > 0
-        ? data.uniqueChanges > 0
-          ? Math.round((data.uniqueChanges / data.changes) * 100) / 100
-          : 0
-        : 1;
-
-    const flakiness =
-      Math.round((1 - (stability + consistency) / 2) * 100) / 100;
-
-    return {
+    return computeTestMetrics({
       total: Number(data.total),
       changes: Number(data.changes),
       uniqueChanges: Number(data.uniqueChanges),
-      stability,
-      consistency,
-      flakiness,
-    };
+    });
   });
 }
 
