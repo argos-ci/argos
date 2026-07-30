@@ -14,68 +14,30 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
+import {
+  commentResponses,
+  serializeComment,
+  ThreadCommentId,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z
-  .string()
-  .meta({ description: "ID of any comment in the thread" });
 
 const BuildPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   buildNumber: BuildNumber,
-  commentId: CommentId,
+  commentId: ThreadCommentId,
 });
 
 const TestPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   testId: TestId,
-  commentId: CommentId,
+  commentId: ThreadCommentId,
 });
-
-const errorResponses = {
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
-};
-
-const subscribedResponses = {
-  "200": {
-    description: "Subscribed — returns the root comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  ...errorResponses,
-};
-
-const unsubscribedResponses = {
-  "200": {
-    description: "Unsubscribed — returns the root comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  ...errorResponses,
-};
 
 export const subscribeBuildCommentThreadOperation = {
   operationId: "subscribeBuildCommentThread",
@@ -85,7 +47,7 @@ export const subscribeBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: subscribedResponses,
+  responses: commentResponses("Subscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unsubscribeBuildCommentThreadOperation = {
@@ -96,7 +58,7 @@ export const unsubscribeBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: unsubscribedResponses,
+  responses: commentResponses("Unsubscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const subscribeTestCommentThreadOperation = {
@@ -107,7 +69,7 @@ export const subscribeTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: subscribedResponses,
+  responses: commentResponses("Subscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unsubscribeTestCommentThreadOperation = {
@@ -118,7 +80,7 @@ export const unsubscribeTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: unsubscribedResponses,
+  responses: commentResponses("Unsubscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /**
@@ -129,7 +91,7 @@ async function setTargetThreadSubscription(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
   subscribed: boolean;
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,

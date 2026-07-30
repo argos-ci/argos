@@ -14,68 +14,30 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
+import {
+  commentResponses,
+  serializeComment,
+  ThreadCommentId,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z
-  .string()
-  .meta({ description: "ID of any comment in the thread" });
 
 const BuildPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   buildNumber: BuildNumber,
-  commentId: CommentId,
+  commentId: ThreadCommentId,
 });
 
 const TestPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   testId: TestId,
-  commentId: CommentId,
+  commentId: ThreadCommentId,
 });
-
-const errorResponses = {
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
-};
-
-const resolvedResponses = {
-  "200": {
-    description: "Thread resolved — returns the root comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  ...errorResponses,
-};
-
-const reopenedResponses = {
-  "200": {
-    description: "Thread reopened — returns the root comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  ...errorResponses,
-};
 
 export const resolveBuildCommentThreadOperation = {
   operationId: "resolveBuildCommentThread",
@@ -84,7 +46,7 @@ export const resolveBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: resolvedResponses,
+  responses: commentResponses("Thread resolved — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unresolveBuildCommentThreadOperation = {
@@ -94,7 +56,7 @@ export const unresolveBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: reopenedResponses,
+  responses: commentResponses("Thread reopened — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const resolveTestCommentThreadOperation = {
@@ -104,7 +66,7 @@ export const resolveTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: resolvedResponses,
+  responses: commentResponses("Thread resolved — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unresolveTestCommentThreadOperation = {
@@ -114,7 +76,7 @@ export const unresolveTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: reopenedResponses,
+  responses: commentResponses("Thread reopened — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /**
@@ -125,7 +87,7 @@ async function setTargetThreadResolution(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
   resolved: boolean;
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { resolved } = input;
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,

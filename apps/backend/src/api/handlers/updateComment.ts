@@ -15,22 +15,15 @@ import {
 import { BuildNumber } from "../schema/primitives/build";
 import {
   CommentBodyInputSchema,
-  CommentSchema,
+  CommentId,
+  commentResponses,
   serializeComment,
+  type CommentPayload,
 } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z.string().meta({ description: "The ID of the comment" });
 
 const UpdateCommentBodySchema = z.object({
   body: CommentBodyInputSchema,
@@ -43,22 +36,6 @@ const requestBody = {
       schema: UpdateCommentBodySchema,
     },
   },
-};
-
-const responses = {
-  "200": {
-    description: "Comment updated successfully — returns the comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
 };
 
 export const updateBuildCommentOperation = {
@@ -77,7 +54,9 @@ export const updateBuildCommentOperation = {
     }),
   },
   requestBody,
-  responses,
+  responses: commentResponses(
+    "Comment updated successfully — returns the comment",
+  ),
 } satisfies ZodOpenApiOperationObject;
 
 export const updateTestCommentOperation = {
@@ -96,7 +75,9 @@ export const updateTestCommentOperation = {
     }),
   },
   requestBody,
-  responses,
+  responses: commentResponses(
+    "Comment updated successfully — returns the comment",
+  ),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped update endpoints. */
@@ -104,7 +85,7 @@ async function updateTargetComment(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
   body: z.infer<typeof UpdateCommentBodySchema>;
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,

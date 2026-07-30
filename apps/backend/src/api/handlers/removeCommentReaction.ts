@@ -11,40 +11,20 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
+import {
+  CommentId,
+  commentResponses,
+  serializeComment,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z.string().meta({ description: "The ID of the comment" });
 
 const RemoveReactionQuerySchema = z.object({
   emoji: z.string().meta({ description: "The emoji reaction to remove." }),
 });
-
-const responses = {
-  "200": {
-    description: "Reaction removed — returns the comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
-};
 
 export const removeBuildCommentReactionOperation = {
   operationId: "removeBuildCommentReaction",
@@ -62,7 +42,7 @@ export const removeBuildCommentReactionOperation = {
     }),
     query: RemoveReactionQuerySchema,
   },
-  responses,
+  responses: commentResponses("Reaction removed — returns the comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const removeTestCommentReactionOperation = {
@@ -81,7 +61,7 @@ export const removeTestCommentReactionOperation = {
     }),
     query: RemoveReactionQuerySchema,
   },
-  responses,
+  responses: commentResponses("Reaction removed — returns the comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped remove-reaction endpoints. */
@@ -89,7 +69,7 @@ async function removeTargetCommentReaction(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
   query: z.infer<typeof RemoveReactionQuerySchema>;
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,

@@ -11,20 +11,16 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
+import {
+  CommentId,
+  commentResponses,
+  serializeComment,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z.string().meta({ description: "The ID of the comment" });
 
 const AddReactionBodySchema = z.object({
   emoji: z.string().meta({ description: "The emoji to react with." }),
@@ -37,22 +33,6 @@ const requestBody = {
       schema: AddReactionBodySchema,
     },
   },
-};
-
-const responses = {
-  "200": {
-    description: "Reaction added — returns the comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
 };
 
 export const addBuildCommentReactionOperation = {
@@ -71,7 +51,7 @@ export const addBuildCommentReactionOperation = {
     }),
   },
   requestBody,
-  responses,
+  responses: commentResponses("Reaction added — returns the comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const addTestCommentReactionOperation = {
@@ -90,7 +70,7 @@ export const addTestCommentReactionOperation = {
     }),
   },
   requestBody,
-  responses,
+  responses: commentResponses("Reaction added — returns the comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped add-reaction endpoints. */
@@ -98,7 +78,7 @@ async function addTargetCommentReaction(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
   body: z.infer<typeof AddReactionBodySchema>;
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,

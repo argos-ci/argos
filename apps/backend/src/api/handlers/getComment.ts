@@ -12,36 +12,16 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
+import {
+  CommentId,
+  commentResponses,
+  serializeComment,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
-
-const CommentId = z.string().meta({ description: "The ID of the comment" });
-
-const responses = {
-  "200": {
-    description: "Comment",
-    content: {
-      "application/json": {
-        schema: CommentSchema,
-      },
-    },
-  },
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
-};
 
 export const getBuildCommentOperation = {
   operationId: "getBuildComment",
@@ -57,7 +37,7 @@ export const getBuildCommentOperation = {
       commentId: CommentId,
     }),
   },
-  responses,
+  responses: commentResponses("Comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const getTestCommentOperation = {
@@ -74,14 +54,14 @@ export const getTestCommentOperation = {
       commentId: CommentId,
     }),
   },
-  responses,
+  responses: commentResponses("Comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped get endpoints. */
 async function getTargetCommentPayload(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams & { commentId: string };
-}): Promise<z.infer<typeof CommentSchema>> {
+}): Promise<CommentPayload> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,

@@ -10,16 +10,14 @@ import {
   type CommentRouteParams,
 } from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComments } from "../schema/primitives/comment";
+import {
+  commentErrorResponses,
+  CommentSchema,
+  serializeComments,
+  type CommentPayload,
+} from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
-import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
@@ -33,11 +31,7 @@ const responses = {
       },
     },
   },
-  "400": invalidParameters,
-  "401": unauthorized,
-  "403": forbidden,
-  "404": notFound,
-  "500": serverError,
+  ...commentErrorResponses,
 };
 
 export const listBuildCommentsOperation = {
@@ -76,7 +70,7 @@ export const listTestCommentsOperation = {
 async function listTargetComments(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams;
-}): Promise<z.infer<typeof CommentSchema>[]> {
+}): Promise<CommentPayload[]> {
   const { auth, target } = await loadCommentTargetForUserAuth(
     input.authPromise,
     input.params,
