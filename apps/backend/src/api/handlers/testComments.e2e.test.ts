@@ -7,89 +7,28 @@ import { knex } from "@/database";
 import {
   Comment,
   CommentNotificationSubscription,
-  Project,
   Test as TestModel,
-  User,
   UserAccessTokenScope,
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory } from "@/database/testing";
 import { formatTestId } from "@/util/test-id";
 
-import { createTestHandlerApp } from "../test-util";
-import { addCommentReaction } from "./addCommentReaction";
-import { createComment } from "./createComment";
-import { deleteComment } from "./deleteComment";
-import { getComment } from "./getComment";
-import { listComments } from "./listComments";
-import { removeCommentReaction } from "./removeCommentReaction";
 import {
-  resolveCommentThread,
-  unresolveCommentThread,
-} from "./resolveCommentThread";
-import {
-  subscribeCommentThread,
-  unsubscribeCommentThread,
-} from "./subscribeCommentThread";
-import { updateComment } from "./updateComment";
+  authHeader as auth,
+  commentApiFixtures,
+  createCommentApiApp,
+  commentDoc as DOC,
+  type CommentApiFixtures,
+} from "./comments.test-util";
 
-const app = createTestHandlerApp((ctx) => {
-  createComment(ctx);
-  listComments(ctx);
-  getComment(ctx);
-  updateComment(ctx);
-  deleteComment(ctx);
-  addCommentReaction(ctx);
-  removeCommentReaction(ctx);
-  resolveCommentThread(ctx);
-  unresolveCommentThread(ctx);
-  subscribeCommentThread(ctx);
-  unsubscribeCommentThread(ctx);
-});
+const app = createCommentApiApp();
 
-const DOC = (text: string) => ({
-  type: "doc",
-  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
-});
-
-const test = base.extend<{
-  user: User;
-  otherUser: User;
-  project: Project;
+const test = base.extend<CommentApiFixtures>(commentApiFixtures).extend<{
   test: TestModel;
   /** Public identifier of `test`, as it appears in the route. */
   testId: string;
-  scopedPatToken: string;
 }>({
-  user: async ({}, use) => {
-    await setupDatabase();
-    const user = await factory.User.create();
-    await use(user);
-  },
-  otherUser: async ({ user }, use) => {
-    const otherUser = await factory.User.create();
-    await factory.UserAccount.create({ userId: otherUser.id });
-    await use(otherUser);
-    void user;
-  },
-  project: async ({ user }, use) => {
-    const [userAccount, teamAccount] = await Promise.all([
-      factory.UserAccount.create({ userId: user.id }),
-      factory.TeamAccount.create({ slug: "acme" }),
-    ]);
-    const project = await factory.Project.create({
-      accountId: teamAccount.id,
-      name: "web",
-      token: "the-awesome-token",
-    });
-    await factory.TeamUser.create({
-      teamId: teamAccount.teamId,
-      userId: user.id,
-      userLevel: "owner",
-    });
-    await use(project);
-    void userAccount;
-  },
   test: async ({ project }, use) => {
     const testModel = await factory.Test.create({
       projectId: project.id,
@@ -102,21 +41,7 @@ const test = base.extend<{
       formatTestId({ projectName: project.name, testId: testModel.id }),
     );
   },
-  scopedPatToken: async ({ user, project }, use) => {
-    const token = `arp_${"e".repeat(36)}`;
-    const userAccessToken = await factory.UserAccessToken.create({
-      userId: user.id,
-      token: hashToken(token),
-    });
-    await UserAccessTokenScope.query().insert({
-      userAccessTokenId: userAccessToken.id,
-      accountId: project.accountId,
-    });
-    await use(token);
-  },
 });
-
-const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
 describe("test comments API", () => {
   beforeAll(() => {
