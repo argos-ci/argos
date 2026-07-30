@@ -78,8 +78,8 @@ const responses = {
   "500": serverError,
 };
 
-export const createCommentOperation = {
-  operationId: "createComment",
+export const createBuildCommentOperation = {
+  operationId: "createBuildComment",
   summary: "Post a comment (or reply) on a build",
   description:
     "Post a comment on a build. Start a new thread, reply to an existing one with `threadId`, optionally anchor the comment to a screenshot diff, or attach it to your pending review with `addToReview`.",

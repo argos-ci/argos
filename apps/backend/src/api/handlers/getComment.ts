@@ -43,8 +43,8 @@ const responses = {
   "500": serverError,
 };
 
-export const getCommentOperation = {
-  operationId: "getComment",
+export const getBuildCommentOperation = {
+  operationId: "getBuildComment",
   summary: "Get a single comment on a build",
   description: "Retrieve a single comment on a build by its ID.",
   tags: ["Comments"],

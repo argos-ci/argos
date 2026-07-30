@@ -43,8 +43,8 @@ const responses = {
   "500": serverError,
 };
 
-export const deleteCommentOperation = {
-  operationId: "deleteComment",
+export const deleteBuildCommentOperation = {
+  operationId: "deleteBuildComment",
   summary: "Delete a comment on a build",
   description:
     "Delete a comment on a build. Only the comment's author can delete it.",

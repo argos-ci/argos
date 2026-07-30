@@ -46,8 +46,8 @@ const responses = {
   "500": serverError,
 };
 
-export const removeCommentReactionOperation = {
-  operationId: "removeCommentReaction",
+export const removeBuildCommentReactionOperation = {
+  operationId: "removeBuildCommentReaction",
   summary: "Remove an emoji reaction from a comment on a build",
   description:
     "Remove an emoji reaction previously added by the authenticated user from a comment on a build.",

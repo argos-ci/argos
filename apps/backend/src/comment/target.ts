@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { Build, Comment, Project, Test } from "@/database/models";
@@ -24,6 +25,8 @@ export function getCommentTargetColumns(target: CommentTarget): {
       return { buildId: target.build.id, testId: null };
     case "test":
       return { buildId: null, testId: target.test.id };
+    default:
+      assertNever(target);
   }
 }
 
@@ -66,6 +69,8 @@ export async function getCommentTargetProject(
       invariant(test.project?.account, "Test project account not found");
       return test.project;
     }
+    default:
+      assertNever(target);
   }
 }
 
@@ -101,6 +106,8 @@ export async function getCommentTargetUrl(
       return target.build.getUrl();
     case "test":
       return target.test.getUrl();
+    default:
+      assertNever(target);
   }
 }
 
@@ -122,5 +129,7 @@ export function getCommentTargetNotificationFields(target: CommentTarget): {
       };
     case "test":
       return { testName: target.test.name };
+    default:
+      assertNever(target);
   }
 }

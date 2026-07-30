@@ -55,8 +55,8 @@ const responses = {
   "500": serverError,
 };
 
-export const addCommentReactionOperation = {
-  operationId: "addCommentReaction",
+export const addBuildCommentReactionOperation = {
+  operationId: "addBuildCommentReaction",
   summary: "Add an emoji reaction to a comment on a build",
   description:
     "Add an emoji reaction to a comment on a build, on behalf of the authenticated user.",

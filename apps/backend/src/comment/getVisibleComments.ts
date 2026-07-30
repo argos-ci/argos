@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import type { QueryBuilder } from "objection";
 
 import { BuildReview, Comment } from "@/database/models";
@@ -81,5 +82,7 @@ export async function getVisibleTargetComments(input: {
       });
     case "test":
       return getVisibleTestComments({ testId: target.test.id, viewerUserId });
+    default:
+      assertNever(target);
   }
 }

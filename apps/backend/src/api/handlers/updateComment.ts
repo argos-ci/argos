@@ -61,8 +61,8 @@ const responses = {
   "500": serverError,
 };
 
-export const updateCommentOperation = {
-  operationId: "updateComment",
+export const updateBuildCommentOperation = {
+  operationId: "updateBuildComment",
   summary: "Update a comment on a build",
   description:
     "Update the body of a comment on a build. Only the comment's author can edit it.",

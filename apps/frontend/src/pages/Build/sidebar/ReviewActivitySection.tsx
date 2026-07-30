@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import type { Reference } from "@apollo/client";
 import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
@@ -11,13 +11,14 @@ import {
   MailCheckIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
+import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -33,7 +34,6 @@ import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
-import { useLiveRef } from "@/ui/useLiveRef";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
@@ -201,45 +201,6 @@ function getActivityEntryKey(entry: ActivityEntry): string {
     case "comment":
       return `comment-${entry.thread.root.id}`;
   }
-}
-
-/**
- * Reads a `#comment-…` hash from the URL and, when it matches a loaded comment,
- * returns its id so the comment can be highlighted. The highlight clears on the
- * next click anywhere, after 3 seconds, or when the component unmounts.
- */
-function useHighlightedCommentId(commentIds: string[]): string | null {
-  const { hash } = useLocation();
-  const navigate = useNavigate();
-  const hashId = hash.slice(1);
-  const matchedId = hashId && commentIds.includes(hashId) ? hashId : null;
-  const matchedIdRef = useLiveRef(matchedId);
-  const clear = useCallback(() => {
-    if (matchedIdRef.current) {
-      navigate({ hash: "" }, { replace: true });
-    }
-  }, [navigate, matchedIdRef]);
-  // Clear when we click outside.
-  useEffect(() => {
-    if (!matchedId) {
-      return;
-    }
-    document.addEventListener("click", clear, { once: true, capture: true });
-    return () => {
-      document.removeEventListener("click", clear, { capture: true });
-    };
-  }, [matchedId, clear]);
-  // Clear after 3s.
-  useEffect(() => {
-    if (!matchedId) {
-      return;
-    }
-    const id = window.setTimeout(clear, 3000);
-    return () => window.clearTimeout(id);
-  }, [matchedId, clear]);
-  // Clear at unmount.
-  useEffect(() => clear, [clear]);
-  return matchedId;
 }
 
 function toMentionUsers(members: Build["members"]): MentionUser[] {

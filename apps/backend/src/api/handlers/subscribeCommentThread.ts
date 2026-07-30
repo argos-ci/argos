@@ -77,8 +77,8 @@ const unsubscribedResponses = {
   ...errorResponses,
 };
 
-export const subscribeCommentThreadOperation = {
-  operationId: "subscribeCommentThread",
+export const subscribeBuildCommentThreadOperation = {
+  operationId: "subscribeBuildCommentThread",
   summary: "Subscribe to a build comment thread's notifications",
   description:
     "Subscribe the authenticated user to a comment thread on a build to receive notifications about new replies.",
@@ -88,8 +88,8 @@ export const subscribeCommentThreadOperation = {
   responses: subscribedResponses,
 } satisfies ZodOpenApiOperationObject;
 
-export const unsubscribeCommentThreadOperation = {
-  operationId: "unsubscribeCommentThread",
+export const unsubscribeBuildCommentThreadOperation = {
+  operationId: "unsubscribeBuildCommentThread",
   summary: "Unsubscribe from a build comment thread's notifications",
   description:
     "Unsubscribe the authenticated user from a build comment thread's notifications.",

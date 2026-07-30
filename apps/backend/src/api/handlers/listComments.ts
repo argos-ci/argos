@@ -40,8 +40,8 @@ const responses = {
   "500": serverError,
 };
 
-export const listCommentsOperation = {
-  operationId: "listComments",
+export const listBuildCommentsOperation = {
+  operationId: "listBuildComments",
   summary: "List the comments on a build",
   description: "List the comments on a build.",
   tags: ["Comments"],

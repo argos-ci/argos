@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import type { JSONContent } from "@tiptap/core";
 
 import { Comment, Project } from "@/database/models";
@@ -185,6 +186,8 @@ async function autoSubscribeUserToTarget(input: {
     case "test":
       await autoSubscribeUserToTest({ testId: target.test.id, userId });
       return;
+    default:
+      assertNever(target);
   }
 }
 
@@ -197,6 +200,8 @@ async function getTargetSubscribedUserIds(
       return getBuildSubscribedUserIds(target.build.id);
     case "test":
       return getTestSubscribedUserIds(target.test.id);
+    default:
+      assertNever(target);
   }
 }
 

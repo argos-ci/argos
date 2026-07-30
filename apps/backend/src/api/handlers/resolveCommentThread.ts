@@ -77,8 +77,8 @@ const reopenedResponses = {
   ...errorResponses,
 };
 
-export const resolveCommentThreadOperation = {
-  operationId: "resolveCommentThread",
+export const resolveBuildCommentThreadOperation = {
+  operationId: "resolveBuildCommentThread",
   summary: "Mark a build comment thread as resolved",
   description: "Mark a comment thread on a build as resolved.",
   tags: ["Comments"],
@@ -87,8 +87,8 @@ export const resolveCommentThreadOperation = {
   responses: resolvedResponses,
 } satisfies ZodOpenApiOperationObject;
 
-export const unresolveCommentThreadOperation = {
-  operationId: "unresolveCommentThread",
+export const unresolveBuildCommentThreadOperation = {
+  operationId: "unresolveBuildCommentThread",
   summary: "Reopen a resolved build comment thread",
   description: "Reopen a previously resolved comment thread on a build.",
   tags: ["Comments"],
