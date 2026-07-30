@@ -1,11 +1,15 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model";
+import {
+  NotificationSubscription,
+  notificationSubscriptionSchema,
+} from "../util/notification-subscription";
 import { timestampsSchema } from "../util/schemas";
 import { Test } from "./Test";
 import { User } from "./User";
 
-export class TestNotificationSubscription extends Model {
+export class TestNotificationSubscription extends NotificationSubscription {
   static override tableName = "test_notification_subscriptions";
 
   static override get idColumn() {
@@ -15,49 +19,19 @@ export class TestNotificationSubscription extends Model {
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
+      notificationSubscriptionSchema,
       {
         type: "object",
         required: ["testId", "userId"],
         properties: {
           testId: { type: "string" },
           userId: { type: "string" },
-          subscribedAt: { type: ["string", "null"] },
-          unsubscribedAt: { type: ["string", "null"] },
         },
       },
     ],
   };
 
   testId!: string;
-  userId!: string;
-  subscribedAt!: string | null;
-  unsubscribedAt!: string | null;
-
-  /**
-   * Whether the user is currently subscribed.
-   */
-  isSubscribed(): boolean {
-    if (!this.subscribedAt) {
-      return false;
-    }
-    if (!this.unsubscribedAt) {
-      return true;
-    }
-    return this.subscribedAt > this.unsubscribedAt;
-  }
-
-  /**
-   * Whether the user has intentionally unsubscribed.
-   */
-  isIntentionallyUnsubscribed(): boolean {
-    if (!this.unsubscribedAt) {
-      return false;
-    }
-    if (!this.subscribedAt) {
-      return true;
-    }
-    return this.unsubscribedAt >= this.subscribedAt;
-  }
 
   static override get relationMappings(): RelationMappings {
     return {
