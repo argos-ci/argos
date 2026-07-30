@@ -9,15 +9,17 @@ import {
   Paragraph,
 } from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
-import { commentTargetSchema, getCommentTargetLabel } from "./commentTarget";
+import {
+  commentNotificationSchema,
+  getCommentTargetLabel,
+} from "./commentTarget";
 
 export const handler = defineNotificationHandler({
   type: "comment_reaction",
   category: "review",
-  schema: z.object({
+  schema: commentNotificationSchema({
     accountSlug: z.string(),
     projectName: z.string(),
-    ...commentTargetSchema,
     commentUrl: z.url(),
     /** Author of the reacted-to comment; used to say "your comment" to them. */
     commentAuthorId: z.string(),
