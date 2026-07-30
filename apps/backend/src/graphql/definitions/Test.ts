@@ -1,7 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { IgnoredChange, ScreenshotDiff } from "@/database/models";
+import {
+  IgnoredChange,
+  ScreenshotDiff,
+  TestNotificationSubscription,
+} from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 import { getProjectMemberIds } from "@/project/members";
 import { formatTestId } from "@/util/test-id";
@@ -71,6 +75,8 @@ export const typeDefs = gql`
     trails: [AuditTrail!]!
     "Comments posted on this test"
     comments: [Comment!]!
+    "Whether the current user is subscribed to this test's notifications"
+    subscribed: Boolean!
     "Users with access to this test's project (can be mentioned in comments)"
     members: [User!]!
   }
@@ -209,6 +215,16 @@ export const resolvers: IResolvers = {
         testId: test.id,
         viewerUserId: ctx.auth?.user.id ?? null,
       });
+    },
+    subscribed: async (test, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const subscription = await TestNotificationSubscription.query().findOne({
+        testId: test.id,
+        userId: ctx.auth.user.id,
+      });
+      return subscription?.isSubscribed() ?? false;
     },
     members: async (test, _args, ctx) => {
       if (!ctx.auth) {

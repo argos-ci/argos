@@ -123,6 +123,9 @@ loggedTest(
     await expect(activity).toBeVisible();
     await expect(page.getByText("Test created")).toBeVisible();
 
+    // Nobody follows the test until they engage with it.
+    await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
+
     // Posting a comment adds it to the feed.
     const editor = page.getByLabel("Add a comment");
     await editor.click();
@@ -132,7 +135,15 @@ loggedTest(
       page.getByText("This test keeps flapping on CI."),
     ).toBeVisible();
 
+    // Commenting subscribes the author, so the bell flips to "Unsubscribe".
+    const unsubscribe = page.getByRole("button", { name: "Unsubscribe" });
+    await expect(unsubscribe).toBeVisible();
+
     await screenshot(page, "test-view-comment");
+
+    // And the toggle opts back out.
+    await unsubscribe.click();
+    await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
   },
 );
 

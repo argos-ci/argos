@@ -10,8 +10,13 @@ import {
   CommentNotificationSubscription,
   Project,
   Test as TestModel,
+  TestNotificationSubscription,
 } from "@/database/models";
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
+import {
+  subscribeUserToTest,
+  unsubscribeUserFromTest,
+} from "@/database/services/test-notification-subscription";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 import { formatTestId } from "@/util/test-id";
@@ -30,6 +35,7 @@ const MUTATION = `
   mutation AddTestComment($input: AddTestCommentInput!) {
     addTestComment(input: $input) {
       id
+      subscribed
       comments {
         id
         content
@@ -39,6 +45,24 @@ const MUTATION = `
           id
         }
       }
+    }
+  }
+`;
+
+const SUBSCRIBE_MUTATION = `
+  mutation SubscribeToTest($input: SubscribeToTestInput!) {
+    subscribeToTest(input: $input) {
+      id
+      subscribed
+    }
+  }
+`;
+
+const UNSUBSCRIBE_MUTATION = `
+  mutation UnsubscribeFromTest($input: UnsubscribeFromTestInput!) {
+    unsubscribeFromTest(input: $input) {
+      id
+      subscribed
     }
   }
 `;
@@ -170,6 +194,117 @@ describe("GraphQL addTestComment mutation", () => {
         userId,
       });
     expect(threadSubscription?.isSubscribed()).toBe(true);
+
+    // …and to the test itself, like commenting on a build does.
+    expect(res.body.data.addTestComment.subscribed).toBe(true);
+    const testSubscription = await TestNotificationSubscription.query().findOne(
+      { testId: fixture.test.id, userId },
+    );
+    expect(testSubscription?.isSubscribed()).toBe(true);
+  });
+
+  test("notifies the test subscribers", async ({ fixture }) => {
+    const subscriberAccount = await factory.UserAccount.create();
+    await subscriberAccount.$fetchGraph("user");
+    const subscriberUserId = getAccountUserId(subscriberAccount);
+    await subscribeUserToTest({
+      testId: fixture.test.id,
+      userId: subscriberUserId,
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: MUTATION,
+        variables: {
+          input: {
+            testId: fixture.testId,
+            body: commentBody("Still flaky, worth a look."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    const call = mockSendNotification.mock.calls[0]?.[0];
+    invariant(call);
+    expect(call.type).toBe("comment_added");
+    // The author is excluded, the subscriber is notified.
+    expect(call.recipients).toEqual([subscriberUserId]);
+  });
+
+  test("does not re-subscribe an author who opted out", async ({ fixture }) => {
+    const userId = getAccountUserId(fixture.userAccount);
+    await unsubscribeUserFromTest({ testId: fixture.test.id, userId });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: MUTATION,
+        variables: {
+          input: { testId: fixture.testId, body: commentBody("One more note") },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.addTestComment.subscribed).toBe(false);
+    const subscription = await TestNotificationSubscription.query().findOne({
+      testId: fixture.test.id,
+      userId,
+    });
+    expect(subscription?.isSubscribed()).toBe(false);
+  });
+
+  test("subscribes and unsubscribes from a test", async ({ fixture }) => {
+    const userId = getAccountUserId(fixture.userAccount);
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+
+    const subscribeRes = await request(app)
+      .post("/graphql")
+      .send({
+        query: SUBSCRIBE_MUTATION,
+        variables: { input: { testId: fixture.testId } },
+      });
+    expectNoGraphQLError(subscribeRes);
+    expect(subscribeRes.body.data.subscribeToTest.subscribed).toBe(true);
+
+    const unsubscribeRes = await request(app)
+      .post("/graphql")
+      .send({
+        query: UNSUBSCRIBE_MUTATION,
+        variables: { input: { testId: fixture.testId } },
+      });
+    expectNoGraphQLError(unsubscribeRes);
+    expect(unsubscribeRes.body.data.unsubscribeFromTest.subscribed).toBe(false);
+
+    const subscription = await TestNotificationSubscription.query().findOne({
+      testId: fixture.test.id,
+      userId,
+    });
+    expect(subscription?.isSubscribed()).toBe(false);
   });
 
   test("posts a reply and notifies the thread subscribers", async ({

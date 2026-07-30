@@ -2,6 +2,7 @@
 -- PostgreSQL database dump
 --
 
+
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
 
@@ -2447,6 +2448,22 @@ ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
 
 
 --
+-- Name: test_notification_subscriptions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_notification_subscriptions (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "testId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "subscribedAt" timestamp with time zone,
+    "unsubscribedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.test_notification_subscriptions OWNER TO postgres;
+
+--
 -- Name: test_stats_builds; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3887,6 +3904,14 @@ ALTER TABLE ONLY public.teams
 
 
 --
+-- Name: test_notification_subscriptions test_notification_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_notification_subscriptions
+    ADD CONSTRAINT test_notification_subscriptions_pkey PRIMARY KEY ("testId", "userId");
+
+
+--
 -- Name: test_stats_builds test_stats_builds_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4674,6 +4699,13 @@ CREATE INDEX team_users_userid_index ON public.team_users USING btree ("userId")
 --
 
 CREATE INDEX teams_ssogithubaccountid_index ON public.teams USING btree ("ssoGithubAccountId");
+
+
+--
+-- Name: test_notification_subscriptions_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX test_notification_subscriptions_userid_index ON public.test_notification_subscriptions USING btree ("userId");
 
 
 --
@@ -5558,6 +5590,22 @@ ALTER TABLE ONLY public.teams
 
 
 --
+-- Name: test_notification_subscriptions test_notification_subscriptions_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_notification_subscriptions
+    ADD CONSTRAINT test_notification_subscriptions_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id) ON DELETE CASCADE;
+
+
+--
+-- Name: test_notification_subscriptions test_notification_subscriptions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_notification_subscriptions
+    ADD CONSTRAINT test_notification_subscriptions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: test_stats_builds test_stats_builds_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5882,3 +5930,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726140000_signup-source.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730120000_tests-list-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730130000_comment-test.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730140000_test-notification-subscriptions.js', 1, NOW());

@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
 import { Comment, Project } from "@/database/models";
@@ -11,6 +10,10 @@ import {
   getCommentThreadSubscribedUserIds,
   subscribeUserToCommentThread,
 } from "@/database/services/comment-notification-subscription";
+import {
+  autoSubscribeUserToTest,
+  getTestSubscribedUserIds,
+} from "@/database/services/test-notification-subscription";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
@@ -102,15 +105,15 @@ export async function createComment(input: {
   // even for draft comments so submission knows whom to notify.
   const mentionedUserIds = await syncCommentMentions({ comment, project });
 
-  // Subscribe the author so they receive updates on this thread (and, on a
-  // build, on the build itself), whether the comment is live now or once the
-  // review is submitted.
+  // Subscribe the author so they receive updates on this thread and on the
+  // build or test it lives on, whether the comment is live now or once the
+  // review is submitted. The auto-subscribe respects an earlier intentional
+  // unsubscription, so commenting again never silently re-subscribes someone
+  // who opted out.
   const authorSubscriptions = threadId
     ? [subscribeUserToCommentThread({ commentId: threadId, userId })]
     : [
-        ...(target.type === "build"
-          ? [autoSubscribeUserToBuild({ buildId: target.build.id, userId })]
-          : []),
+        autoSubscribeUserToTarget({ target, userId }),
         subscribeUserToCommentThread({ commentId: comment.id, userId }),
       ];
 
@@ -151,17 +154,14 @@ export async function createComment(input: {
   } else {
     await Promise.all([
       ...authorSubscriptions,
-      // Only builds carry a subscriber list; a new root comment on a test
-      // reaches the users it mentions, and its replies then reach the thread.
-      target.type === "build"
-        ? notifyBuildSubscribers({
-            target,
-            project,
-            comment,
-            userId,
-            excludeUserIds: mentionedUserIds,
-          })
-        : null,
+      notifyTargetSubscribers({
+        target,
+        project,
+        comment,
+        userId,
+        // Mentioned users get a dedicated notification, don't double-notify.
+        excludeUserIds: mentionedUserIds,
+      }),
       notifyMentioned,
     ]);
   }
@@ -172,7 +172,35 @@ export async function createComment(input: {
   return comment;
 }
 
-async function notifyBuildSubscribers(input: {
+/** Follow a build or a test, whichever the comment was posted on. */
+async function autoSubscribeUserToTarget(input: {
+  target: CommentTarget;
+  userId: string;
+}): Promise<void> {
+  const { target, userId } = input;
+  switch (target.type) {
+    case "build":
+      await autoSubscribeUserToBuild({ buildId: target.build.id, userId });
+      return;
+    case "test":
+      await autoSubscribeUserToTest({ testId: target.test.id, userId });
+      return;
+  }
+}
+
+/** The users following a build or a test. */
+async function getTargetSubscribedUserIds(
+  target: CommentTarget,
+): Promise<string[]> {
+  switch (target.type) {
+    case "build":
+      return getBuildSubscribedUserIds(target.build.id);
+    case "test":
+      return getTestSubscribedUserIds(target.test.id);
+  }
+}
+
+async function notifyTargetSubscribers(input: {
   target: CommentTarget;
   project: Project;
   comment: Comment;
@@ -180,8 +208,7 @@ async function notifyBuildSubscribers(input: {
   excludeUserIds: string[];
 }): Promise<void> {
   const { target, project, comment, userId, excludeUserIds } = input;
-  invariant(target.type === "build", "Only builds have subscribers");
-  const subscribedUserIds = await getBuildSubscribedUserIds(target.build.id);
+  const subscribedUserIds = await getTargetSubscribedUserIds(target);
   const excluded = new Set([userId, ...excludeUserIds]);
   const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
   if (recipients.length === 0) {

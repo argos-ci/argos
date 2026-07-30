@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import type { Reference } from "@apollo/client";
 import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { FileUpIcon } from "lucide-react";
+import { BellIcon, BellOffIcon, FileUpIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router";
 
@@ -15,9 +15,11 @@ import { CommentChangeType, ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { IconButton } from "@/ui/IconButton";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
+import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
@@ -28,6 +30,7 @@ const _TestFragment = graphql(`
   fragment TestActivity_Test on Test {
     id
     createdAt
+    subscribed
     members {
       ...UserCard_user
     }
@@ -48,9 +51,28 @@ const AddTestCommentMutation = graphql(`
   ) {
     addTestComment(input: $input) {
       id
+      subscribed
       comments {
         ...CommentCard_Comment
       }
+    }
+  }
+`);
+
+const SubscribeToTestMutation = graphql(`
+  mutation TestActivity_subscribeToTest($input: SubscribeToTestInput!) {
+    subscribeToTest(input: $input) {
+      id
+      subscribed
+    }
+  }
+`);
+
+const UnsubscribeFromTestMutation = graphql(`
+  mutation TestActivity_unsubscribeFromTest($input: UnsubscribeFromTestInput!) {
+    unsubscribeFromTest(input: $input) {
+      id
+      subscribed
     }
   }
 `);
@@ -217,6 +239,7 @@ export function ActivitySection(props: { test: Test }) {
       <Panel>
         <PanelHeader>
           <PanelTitle>Activity</PanelTitle>
+          <SubscribeToggleButton test={test} />
         </PanelHeader>
         <div className="px-3 select-none">
           <Activity gap={false}>
@@ -258,6 +281,73 @@ export function ActivitySection(props: { test: Test }) {
         </div>
       </Panel>
     </MentionableUsersProvider>
+  );
+}
+
+/**
+ * Follow or unfollow the test's comments. Commenting subscribes you already, so
+ * this is mostly how you opt out — or opt in without saying anything.
+ */
+function SubscribeToggleButton(props: { test: Test }) {
+  const { test } = props;
+  const client = useApolloClient();
+  const subscribeToTest = () =>
+    client.mutate({
+      mutation: SubscribeToTestMutation,
+      variables: { input: { testId: test.id } },
+      optimisticResponse: {
+        subscribeToTest: {
+          __typename: "Test",
+          id: test.id,
+          subscribed: true,
+        },
+      },
+    });
+  const unsubscribeFromTest = () =>
+    client.mutate({
+      mutation: UnsubscribeFromTestMutation,
+      variables: { input: { testId: test.id } },
+      optimisticResponse: {
+        unsubscribeFromTest: {
+          __typename: "Test",
+          id: test.id,
+          subscribed: false,
+        },
+      },
+    });
+  const { subscribed } = test;
+  const label = subscribed ? "Unsubscribe" : "Subscribe";
+  const toastId = `test-subscription:${test.id}`;
+  const handlePress = () => {
+    if (subscribed) {
+      unsubscribeFromTest()
+        .then(() => {
+          toast.success(
+            "You will no longer receive notifications for this test.",
+            { id: toastId },
+          );
+        })
+        .catch((error: unknown) => {
+          toast.error(getErrorMessage(error), { id: toastId });
+        });
+    } else {
+      subscribeToTest()
+        .then(() => {
+          toast.success("You will receive notifications for this test.", {
+            id: toastId,
+          });
+        })
+        .catch((error: unknown) => {
+          toast.error(getErrorMessage(error), { id: toastId });
+        });
+    }
+  };
+  return (
+    <Tooltip content={label}>
+      <IconButton rounded size="small" aria-label={label} onPress={handlePress}>
+        {subscribed ? <BellOffIcon /> : <BellIcon />}
+      </IconButton>
+    </Tooltip>
   );
 }
 
