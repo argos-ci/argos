@@ -204,9 +204,15 @@ describe("GraphQL addTestComment mutation", () => {
   });
 
   test("notifies the test subscribers", async ({ fixture }) => {
+    invariant(fixture.teamAccount.teamId);
     const subscriberAccount = await factory.UserAccount.create();
     await subscriberAccount.$fetchGraph("user");
     const subscriberUserId = getAccountUserId(subscriberAccount);
+    await factory.TeamUser.create({
+      teamId: fixture.teamAccount.teamId,
+      userId: subscriberUserId,
+      userLevel: "member",
+    });
     await subscribeUserToTest({
       testId: fixture.test.id,
       userId: subscriberUserId,
@@ -239,6 +245,43 @@ describe("GraphQL addTestComment mutation", () => {
     expect(call.type).toBe("comment_added");
     // The author is excluded, the subscriber is notified.
     expect(call.recipients).toEqual([subscriberUserId]);
+  });
+
+  // A test is followed for as long as it exists, so a subscription long outlives
+  // the access that created it. The email carries the comment body, so losing
+  // access has to stop the notifications.
+  test("does not notify a subscriber who lost project access", async ({
+    fixture,
+  }) => {
+    const outsiderAccount = await factory.UserAccount.create();
+    await outsiderAccount.$fetchGraph("user");
+    await subscribeUserToTest({
+      testId: fixture.test.id,
+      userId: getAccountUserId(outsiderAccount),
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: MUTATION,
+        variables: {
+          input: {
+            testId: fixture.testId,
+            body: commentBody("Only the team should hear about this."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(mockSendNotification).not.toHaveBeenCalled();
   });
 
   test("does not re-subscribe an author who opted out", async ({ fixture }) => {
@@ -316,9 +359,15 @@ describe("GraphQL addTestComment mutation", () => {
       userId,
       content: commentBody("Anyone looking at this?"),
     });
+    invariant(fixture.teamAccount.teamId);
     const subscriberAccount = await factory.UserAccount.create();
     await subscriberAccount.$fetchGraph("user");
     const subscriberUserId = getAccountUserId(subscriberAccount);
+    await factory.TeamUser.create({
+      teamId: fixture.teamAccount.teamId,
+      userId: subscriberUserId,
+      userLevel: "member",
+    });
     await subscribeUserToCommentThread({
       commentId: rootComment.id,
       userId: subscriberUserId,

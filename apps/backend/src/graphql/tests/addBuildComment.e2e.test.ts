@@ -215,9 +215,15 @@ describe("GraphQL addBuildComment mutation", () => {
   });
 
   test("notifies the build subscribers", async ({ fixture }) => {
+    invariant(fixture.teamAccount.teamId);
     const subscriberAccount = await factory.UserAccount.create();
     await subscriberAccount.$fetchGraph("user");
     const subscriberUserId = getAccountUserId(subscriberAccount);
+    await factory.TeamUser.create({
+      teamId: fixture.teamAccount.teamId,
+      userId: subscriberUserId,
+      userLevel: "member",
+    });
     await subscribeUserToBuild({
       buildId: fixture.build.id,
       userId: subscriberUserId,
@@ -259,9 +265,15 @@ describe("GraphQL addBuildComment mutation", () => {
       userId: fixture.userAccount.userId,
       content: commentBody("Can we tweak this?"),
     });
+    invariant(fixture.teamAccount.teamId);
     const subscriberAccount = await factory.UserAccount.create();
     await subscriberAccount.$fetchGraph("user");
     invariant(subscriberAccount.userId);
+    await factory.TeamUser.create({
+      teamId: fixture.teamAccount.teamId,
+      userId: subscriberAccount.userId,
+      userLevel: "member",
+    });
     await subscribeUserToCommentThread({
       commentId: rootComment.id,
       userId: subscriberAccount.userId,

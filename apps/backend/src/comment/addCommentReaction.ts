@@ -7,6 +7,7 @@ import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
+import { getCommentRecipients } from "./commentNotifications";
 import { getCommentUrl } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
@@ -71,14 +72,25 @@ async function notifyCommentThreadSubscribers(input: {
   // via `threadId`. Subscriptions are keyed on the root comment.
   const threadId = comment.threadId ?? comment.id;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
-  const recipients = subscribedUserIds.filter((id) => id !== userId);
-  if (recipients.length === 0) {
+  // Cheap pre-check: a thread nobody but the reactor follows costs no further
+  // queries. Narrowing to who may still read the comment needs the project, so
+  // it happens once the target is resolved below.
+  if (subscribedUserIds.every((id) => id === userId)) {
     return;
   }
 
   const target = await resolveCommentTarget(comment);
   const project = await getCommentTargetProject(target);
   invariant(project.account, "project account not found");
+
+  const recipients = await getCommentRecipients({
+    project,
+    userIds: subscribedUserIds,
+    excludeUserIds: [userId],
+  });
+  if (recipients.length === 0) {
+    return;
+  }
 
   const [reactor, commentUrl] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),

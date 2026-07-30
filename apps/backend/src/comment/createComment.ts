@@ -21,6 +21,7 @@ import { boom } from "@/util/error";
 import { publishCommentChange } from "./commentEvents";
 import {
   getCommentNotificationData,
+  getCommentRecipients,
   notifyMentionedUsers,
 } from "./commentNotifications";
 import { syncCommentMentions } from "./mentions";
@@ -214,8 +215,11 @@ async function notifyTargetSubscribers(input: {
 }): Promise<void> {
   const { target, project, comment, userId, excludeUserIds } = input;
   const subscribedUserIds = await getTargetSubscribedUserIds(target);
-  const excluded = new Set([userId, ...excludeUserIds]);
-  const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
+  const recipients = await getCommentRecipients({
+    project,
+    userIds: subscribedUserIds,
+    excludeUserIds: [userId, ...excludeUserIds],
+  });
   if (recipients.length === 0) {
     return;
   }
@@ -238,8 +242,11 @@ async function notifyCommentThreadSubscribers(input: {
 }): Promise<void> {
   const { target, project, comment, userId, threadId, excludeUserIds } = input;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
-  const excluded = new Set([userId, ...excludeUserIds]);
-  const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
+  const recipients = await getCommentRecipients({
+    project,
+    userIds: subscribedUserIds,
+    excludeUserIds: [userId, ...excludeUserIds],
+  });
   if (recipients.length === 0) {
     return;
   }
