@@ -311,6 +311,20 @@ function useActiveChange(props: { test: TestDocument }) {
   return [activeChange, setActiveChangeId] as const;
 }
 
+/**
+ * Vertical space the explorer has to leave to what sits above it: the page
+ * header, the panel header, and the vertical padding of the panel it is nested
+ * in.
+ */
+const EXPLORER_TOP_OFFSET = 184;
+
+/**
+ * Floor for the explorer's height, so a viewport shorter than the offset (a
+ * short split pane, a phone with the keyboard up) still leaves the two columns
+ * something to scroll rather than collapsing them to nothing.
+ */
+const EXPLORER_MIN_HEIGHT = 240;
+
 function ChangesExplorer(props: {
   test: TestDocument;
   periodState: TestMetricPeriodState;
@@ -319,9 +333,10 @@ function ChangesExplorer(props: {
   const { test, periodState, filterState } = props;
   const [activeChange, setActiveChangeId] = useActiveChange({ test });
   const viewportSize = useViewportSize();
-  // Leaves room for what sits above the explorer, including the vertical
-  // padding of the panel it is now nested in.
-  const height = viewportSize.height - 184;
+  const height = Math.max(
+    EXPLORER_MIN_HEIGHT,
+    viewportSize.height - EXPLORER_TOP_OFFSET,
+  );
   const periodLabel =
     periodState.definition[periodState.value].label.toLowerCase();
   if (test.changes.edges.length === 0) {
