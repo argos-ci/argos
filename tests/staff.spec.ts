@@ -183,6 +183,12 @@ staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
     page.getByRole("heading", { name: "Trial pipeline" }),
   ).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
+  // The page lists every team the suite created, and the trial labels below are
+  // not unique among them — several fixtures seed the same spread. The count
+  // only renders once the search has been applied (it runs through
+  // `useDeferredValue`, so it lands a render late), which makes it the signal
+  // that the table is down to this test's three teams.
+  await expect(page.getByText(/^Showing 3 of \d+ teams$/)).toBeVisible();
   await expect(page.getByText("2d left")).toBeVisible();
   await expect(page.getByText("11d left")).toBeVisible();
 
