@@ -134,6 +134,7 @@ export type BuildScenario = {
   stableBuild: Build;
   emptyBuild: Build;
   removedBuild: Build;
+  subsetBuild: Build;
 };
 
 /**
@@ -364,6 +365,7 @@ export async function createBuildScenario(input: {
     stableBuild,
     emptyBuild,
     removedBuild,
+    subsetBuild,
   ] = await Build.query().insertAndFetch([
     { ...buildBase, number: 1, type: "orphan", baseScreenshotBucketId: null },
     { ...buildBase, number: 2, type: "reference" },
@@ -379,6 +381,7 @@ export async function createBuildScenario(input: {
     { ...buildBase, number: 12 }, // Stable
     { ...buildBase, number: 13 }, // Empty
     { ...buildBase, number: 14 }, // Removed
+    { ...buildBase, number: 15, subset: true }, // Subset, with removals
   ]);
 
   const defaultScreenshotDiff = {
@@ -476,6 +479,13 @@ export async function createBuildScenario(input: {
       ...duplicate(stableScreenshotDiff, 3),
       ...duplicate(removedScreenshotDiff, 2),
     ],
+    // Subset build: the removals only reflect tests that were not run, so the
+    // review surfaces must ignore them and only account for the change.
+    [subsetBuild!.id]: [
+      ...duplicate(stableScreenshotDiff, 3),
+      ...duplicate(removedScreenshotDiff, 2),
+      { ...updatedScreenshotDiff },
+    ],
   };
 
   await BuildReview.query().insert([
@@ -523,6 +533,7 @@ export async function createBuildScenario(input: {
     stableBuild,
     emptyBuild,
     removedBuild,
+    subsetBuild,
   ].filter((b): b is Build => b?.jobStatus === "complete");
 
   for (const b of completeBuilds) {
@@ -544,6 +555,7 @@ export async function createBuildScenario(input: {
     stableBuild: stableBuild!,
     emptyBuild: emptyBuild!,
     removedBuild: removedBuild!,
+    subsetBuild: subsetBuild!,
   };
 }
 

@@ -6,7 +6,11 @@ import { Button } from "@/ui/Button";
 import { Kbd } from "@/ui/Kbd";
 import { ShortcutHint } from "@/ui/ShortcutHint";
 
-import { useBuildDiffState, useGoToNextDiff } from "../BuildDiffState";
+import {
+  getReviewableCount,
+  useBuildDiffState,
+  useGoToNextDiff,
+} from "../BuildDiffState";
 import { useCanReviewBuild } from "../BuildReviewability";
 import { BuildSummaryDescription } from "./BuildSummaryDescription";
 import { ChangeSummary } from "./ChangeSummary";
@@ -86,10 +90,10 @@ function PerfectMatchIllustration() {
 
 export function BuildSummary(props: { build: Build }) {
   const { build } = props;
-  const { stats } = useBuildDiffState();
+  const { stats, isSubsetBuild } = useBuildDiffState();
   const hasFailures = Boolean(stats?.failure);
   const reviewableCount = stats
-    ? stats.changed + stats.added + stats.removed
+    ? getReviewableCount(stats, { isSubsetBuild })
     : 0;
   const canReview = useCanReviewBuild(build);
   // Failing tests take precedence over the visual review, so the change summary
