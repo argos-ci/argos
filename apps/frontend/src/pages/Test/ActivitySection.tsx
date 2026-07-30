@@ -1,25 +1,24 @@
 import { useMemo } from "react";
-import type { Reference } from "@apollo/client";
 import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { BellIcon, BellOffIcon, FileUpIcon } from "lucide-react";
+import { FileUpIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { CommentCard } from "@/containers/Comment/CommentCard";
+import { applyCommentChange } from "@/containers/Comment/commentChangeCache";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
+import { SubscribeToggleButton } from "@/containers/Comment/SubscribeToggleButton";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
-import { CommentChangeType, ProjectPermission } from "@/gql/graphql";
+import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
-import { IconButton } from "@/ui/IconButton";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
-import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
@@ -116,47 +115,12 @@ export function ActivitySection(props: { test: Test }) {
       if (!event) {
         return;
       }
-      const { comment } = event;
-      switch (event.type) {
-        case CommentChangeType.Added: {
-          client.cache.modify({
-            id: client.cache.identify({ __typename: "Test", id: test.id }),
-            fields: {
-              comments(
-                existingRefs: readonly Reference[] = [],
-                { readField, toReference },
-              ) {
-                const ref = toReference(comment);
-                if (
-                  !ref ||
-                  existingRefs.some(
-                    (existing) => readField("id", existing) === comment.id,
-                  )
-                ) {
-                  return existingRefs;
-                }
-                return [...existingRefs, ref];
-              },
-            },
-          });
-          break;
-        }
-        case CommentChangeType.Deleted: {
-          // Evicting the comment drops it from the test's list (the dangling
-          // ref is garbage-collected), so `AnimatePresence` plays its exit
-          // animation — matching a local delete.
-          const cacheId = client.cache.identify({
-            __typename: "Comment",
-            id: comment.id,
-          });
-          if (cacheId) {
-            client.cache.evict({ id: cacheId });
-            client.cache.gc();
-          }
-          break;
-        }
-        // CommentChangeType.Updated needs no manual cache work.
-      }
+      applyCommentChange({
+        cache: client.cache,
+        parent: { __typename: "Test", id: test.id },
+        type: event.type,
+        commentId: event.comment.id,
+      });
     },
   });
 
@@ -199,7 +163,7 @@ export function ActivitySection(props: { test: Test }) {
       <Panel>
         <PanelHeader>
           <PanelTitle>Activity</PanelTitle>
-          <SubscribeToggleButton test={test} />
+          <TestSubscribeToggle test={test} />
         </PanelHeader>
         <div className="px-3 select-none">
           <Activity gap={false}>
@@ -244,70 +208,42 @@ export function ActivitySection(props: { test: Test }) {
   );
 }
 
-/**
- * Follow or unfollow the test's comments. Commenting subscribes you already, so
- * this is mostly how you opt out — or opt in without saying anything.
- */
-function SubscribeToggleButton(props: { test: Test }) {
+/** Follow or unfollow the test's comments. */
+function TestSubscribeToggle(props: { test: Test }) {
   const { test } = props;
   const client = useApolloClient();
-  const subscribeToTest = () =>
-    client.mutate({
-      mutation: SubscribeToTestMutation,
-      variables: { input: { testId: test.id } },
-      optimisticResponse: {
-        subscribeToTest: {
-          __typename: "Test",
-          id: test.id,
-          subscribed: true,
-        },
-      },
-    });
-  const unsubscribeFromTest = () =>
-    client.mutate({
-      mutation: UnsubscribeFromTestMutation,
-      variables: { input: { testId: test.id } },
-      optimisticResponse: {
-        unsubscribeFromTest: {
-          __typename: "Test",
-          id: test.id,
-          subscribed: false,
-        },
-      },
-    });
-  const { subscribed } = test;
-  const label = subscribed ? "Unsubscribe" : "Subscribe";
-  const toastId = `test-subscription:${test.id}`;
-  const handlePress = () => {
-    if (subscribed) {
-      unsubscribeFromTest()
-        .then(() => {
-          toast.success(
-            "You will no longer receive notifications for this test.",
-            { id: toastId },
-          );
+  const handleToggle = (subscribed: boolean) =>
+    subscribed
+      ? client.mutate({
+          mutation: SubscribeToTestMutation,
+          variables: { input: { testId: test.id } },
+          optimisticResponse: {
+            subscribeToTest: {
+              __typename: "Test",
+              id: test.id,
+              subscribed: true,
+            },
+          },
         })
-        .catch((error: unknown) => {
-          toast.error(getErrorMessage(error), { id: toastId });
+      : client.mutate({
+          mutation: UnsubscribeFromTestMutation,
+          variables: { input: { testId: test.id } },
+          optimisticResponse: {
+            unsubscribeFromTest: {
+              __typename: "Test",
+              id: test.id,
+              subscribed: false,
+            },
+          },
         });
-    } else {
-      subscribeToTest()
-        .then(() => {
-          toast.success("You will receive notifications for this test.", {
-            id: toastId,
-          });
-        })
-        .catch((error: unknown) => {
-          toast.error(getErrorMessage(error), { id: toastId });
-        });
-    }
-  };
   return (
-    <Tooltip content={label}>
-      <IconButton rounded size="small" aria-label={label} onPress={handlePress}>
-        {subscribed ? <BellOffIcon /> : <BellIcon />}
-      </IconButton>
-    </Tooltip>
+    <SubscribeToggleButton
+      subscribed={test.subscribed}
+      onToggle={handleToggle}
+      toastId={`test-subscription:${test.id}`}
+      subscribedMessage="You will receive notifications for this test."
+      unsubscribedMessage="You will no longer receive notifications for this test."
+    />
   );
 }
 

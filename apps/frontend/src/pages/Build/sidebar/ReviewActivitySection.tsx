@@ -3,40 +3,28 @@ import type { Reference } from "@apollo/client";
 import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import {
-  BanIcon,
-  BellIcon,
-  BellOffIcon,
-  FileUpIcon,
-  MailCheckIcon,
-} from "lucide-react";
+import { BanIcon, FileUpIcon, MailCheckIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useParams } from "react-router";
 
+import { applyCommentChange } from "@/containers/Comment/commentChangeCache";
 import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
+import { SubscribeToggleButton } from "@/containers/Comment/SubscribeToggleButton";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
-import {
-  CommentChangeType,
-  ProjectPermission,
-  ReviewChangeType,
-} from "@/gql/graphql";
+import { ProjectPermission, ReviewChangeType } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { MentionUser } from "@/ui/Editor/mention";
-import { IconButton } from "@/ui/IconButton";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
-import { toast } from "@/ui/Toaster";
-import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
-import { getErrorMessage } from "@/util/error";
 
 import { AddCommentForm } from "./AddCommentForm";
 
@@ -213,10 +201,7 @@ export function ReviewActivitySection(props: { build: Build }) {
   // the project, so the operation needs the project's slug/name from the route.
   const { accountSlug, projectName } = useParams();
   invariant(accountSlug && projectName, "Missing project route params");
-  // Keep the activity feed live. Added comments are inserted into the build's
-  // comment list and deleted ones are evicted; updates (edits, reactions,
-  // resolve/reopen) need no handling here — the normalized cache merges the
-  // changed fields in place by comment id.
+  // Keep the activity feed live.
   useSubscription(BuildCommentChangedSubscription, {
     variables: { buildId: build.id, accountSlug, projectName },
     onData: ({ client, data }) => {
@@ -224,47 +209,12 @@ export function ReviewActivitySection(props: { build: Build }) {
       if (!event) {
         return;
       }
-      const { comment } = event;
-      switch (event.type) {
-        case CommentChangeType.Added: {
-          client.cache.modify({
-            id: client.cache.identify({ __typename: "Build", id: build.id }),
-            fields: {
-              comments(
-                existingRefs: readonly Reference[] = [],
-                { readField, toReference },
-              ) {
-                const ref = toReference(comment);
-                if (
-                  !ref ||
-                  existingRefs.some(
-                    (existing) => readField("id", existing) === comment.id,
-                  )
-                ) {
-                  return existingRefs;
-                }
-                return [...existingRefs, ref];
-              },
-            },
-          });
-          break;
-        }
-        case CommentChangeType.Deleted: {
-          // Evicting the comment drops it from the build's list (the dangling
-          // ref is garbage-collected), so `AnimatePresence` plays its exit
-          // animation — matching a local delete.
-          const cacheId = client.cache.identify({
-            __typename: "Comment",
-            id: comment.id,
-          });
-          if (cacheId) {
-            client.cache.evict({ id: cacheId });
-            client.cache.gc();
-          }
-          break;
-        }
-        // CommentChangeType.Updated needs no manual cache work.
-      }
+      applyCommentChange({
+        cache: client.cache,
+        parent: { __typename: "Build", id: build.id },
+        type: event.type,
+        commentId: event.comment.id,
+      });
     },
   });
   // Same for reviews: a submitted review is inserted into the build's review
@@ -337,7 +287,7 @@ export function ReviewActivitySection(props: { build: Build }) {
       <Panel>
         <PanelHeader>
           <PanelTitle>Activity</PanelTitle>
-          <SubscribeToggleButton build={build} />
+          <BuildSubscribeToggle build={build} />
         </PanelHeader>
         <div className="px-3 select-none">{body}</div>
       </Panel>
@@ -345,66 +295,42 @@ export function ReviewActivitySection(props: { build: Build }) {
   );
 }
 
-function SubscribeToggleButton(props: { build: Build }) {
+/** Follow or unfollow the build's comments. */
+function BuildSubscribeToggle(props: { build: Build }) {
   const { build } = props;
   const client = useApolloClient();
-  const subscribeToBuild = () =>
-    client.mutate({
-      mutation: SubscribeToBuildMutation,
-      variables: { input: { buildId: build.id } },
-      optimisticResponse: {
-        subscribeToBuild: {
-          __typename: "Build",
-          id: build.id,
-          subscribed: true,
-        },
-      },
-    });
-  const unsubscribeFromBuild = () =>
-    client.mutate({
-      mutation: UnsubscribeFromBuildMutation,
-      variables: { input: { buildId: build.id } },
-      optimisticResponse: {
-        unsubscribeFromBuild: {
-          __typename: "Build",
-          id: build.id,
-          subscribed: false,
-        },
-      },
-    });
-  const subscribed = build.subscribed;
-  const label = subscribed ? "Unsubscribe" : "Subscribe";
-  const subscriptionToastId = `build-subscription:${build.id}`;
-  const handlePress = () => {
-    if (subscribed) {
-      unsubscribeFromBuild()
-        .then(() => {
-          toast.success(
-            "You will no longer receive notifications for this build.",
-            { id: subscriptionToastId },
-          );
+  const handleToggle = (subscribed: boolean) =>
+    subscribed
+      ? client.mutate({
+          mutation: SubscribeToBuildMutation,
+          variables: { input: { buildId: build.id } },
+          optimisticResponse: {
+            subscribeToBuild: {
+              __typename: "Build",
+              id: build.id,
+              subscribed: true,
+            },
+          },
         })
-        .catch((error) => {
-          toast.error(getErrorMessage(error), { id: subscriptionToastId });
+      : client.mutate({
+          mutation: UnsubscribeFromBuildMutation,
+          variables: { input: { buildId: build.id } },
+          optimisticResponse: {
+            unsubscribeFromBuild: {
+              __typename: "Build",
+              id: build.id,
+              subscribed: false,
+            },
+          },
         });
-    } else {
-      subscribeToBuild()
-        .then(() => {
-          toast.success("You will receive notifications for this build.", {
-            id: subscriptionToastId,
-          });
-        })
-        .catch((error) => {
-          toast.error(getErrorMessage(error), { id: subscriptionToastId });
-        });
-    }
-  };
   return (
-    <Tooltip content={label}>
-      <IconButton rounded size="small" aria-label={label} onPress={handlePress}>
-        {subscribed ? <BellOffIcon /> : <BellIcon />}
-      </IconButton>
-    </Tooltip>
+    <SubscribeToggleButton
+      subscribed={build.subscribed}
+      onToggle={handleToggle}
+      toastId={`build-subscription:${build.id}`}
+      subscribedMessage="You will receive notifications for this build."
+      unsubscribedMessage="You will no longer receive notifications for this build."
+    />
   );
 }
 
