@@ -35,6 +35,11 @@ export const up = async (knex) => {
 };
 
 /**
+ * Destructive: restoring `buildId NOT NULL` means there can be no test comments,
+ * so every comment posted on a test is deleted — along with its reactions,
+ * mentions and thread subscriptions, which cascade. Re-running `up` does not
+ * bring them back, so export the rows first if they matter.
+ *
  * @param {import('knex').Knex} knex
  */
 export const down = async (knex) => {
