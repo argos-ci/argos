@@ -9,7 +9,12 @@ loggedTest.beforeEach(async ({ auth, team }) => {
 });
 
 loggedTest("deployments", async ({ page, team, project, builds }) => {
-  void builds;
+  // A deployment links to the most recent build sharing its commit — every
+  // build of the scenario does — so the expected number follows the scenario
+  // rather than being pinned to whichever build happens to come last.
+  const latestBuildNumber = Math.max(
+    ...Object.values(builds).map((build) => build.number),
+  );
 
   await createDeploymentScenario({
     projectId: project.id,
@@ -22,10 +27,13 @@ loggedTest("deployments", async ({ page, team, project, builds }) => {
   await expect(
     page.getByRole("heading", { name: "Deployments" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Build #14" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Build #14" })).toHaveAttribute(
+  const buildLink = page.getByRole("link", {
+    name: `Build #${latestBuildNumber}`,
+  });
+  await expect(buildLink).toBeVisible();
+  await expect(buildLink).toHaveAttribute(
     "href",
-    `/${team.account.slug}/${project.name}/builds/14`,
+    `/${team.account.slug}/${project.name}/builds/${latestBuildNumber}`,
   );
   await expect(page.getByText("preview-main", { exact: true })).toBeVisible();
   await expect(page.getByText("Production", { exact: true })).toBeVisible();
