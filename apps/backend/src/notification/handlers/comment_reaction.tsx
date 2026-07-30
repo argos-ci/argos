@@ -9,6 +9,7 @@ import {
   Paragraph,
 } from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
+import { commentTargetSchema, getCommentTargetLabel } from "./commentTarget";
 
 export const handler = defineNotificationHandler({
   type: "comment_reaction",
@@ -16,8 +17,7 @@ export const handler = defineNotificationHandler({
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
-    buildNumber: z.number(),
-    buildName: z.string().nullish(),
+    ...commentTargetSchema,
     commentUrl: z.url(),
     /** Author of the reacted-to comment; used to say "your comment" to them. */
     commentAuthorId: z.string(),
@@ -41,8 +41,6 @@ export const handler = defineNotificationHandler({
     const {
       accountSlug,
       projectName,
-      buildNumber,
-      buildName,
       commentUrl,
       commentAuthorId,
       reactorName,
@@ -50,9 +48,7 @@ export const handler = defineNotificationHandler({
       bodyHtml,
       ctx,
     } = props;
-    const buildLabel = buildName
-      ? `${buildName} #${buildNumber}`
-      : `#${buildNumber}`;
+    const targetLabel = getCommentTargetLabel(props);
     const reactor = reactorName || "Someone";
     // The notification goes to every thread subscriber, but only its author
     // owns the reacted-to comment.
@@ -62,17 +58,16 @@ export const handler = defineNotificationHandler({
       subject: `[${accountSlug}/${projectName}] ${reactor} reacted ${emoji} to ${commentRef}`,
       body: (
         <EmailLayout
-          preview={`${reactor} reacted ${emoji} to ${commentRef} on build ${buildLabel} in ${accountSlug}/${projectName}.`}
+          preview={`${reactor} reacted ${emoji} to ${commentRef} on ${targetLabel} in ${accountSlug}/${projectName}.`}
           preferencesUrl={ctx.preferencesUrl}
         >
           <H1>New reaction</H1>
           <Hi name={ctx.user.name} />
           <Paragraph>
             <strong>{reactor}</strong> reacted{" "}
-            <span style={{ fontSize: "18px" }}>{emoji}</span> to {commentRef} on
-            build{" "}
+            <span style={{ fontSize: "18px" }}>{emoji}</span> to {commentRef} on{" "}
             <Link href={commentUrl}>
-              {accountSlug}/{projectName} {buildLabel}
+              {accountSlug}/{projectName} {targetLabel}
             </Link>
             .
           </Paragraph>

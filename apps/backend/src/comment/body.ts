@@ -22,8 +22,8 @@ import { validateCommentJson } from "./validate";
  * Note: `@mentions` are stored by user id and therefore can't be expressed in
  * Markdown — use the raw-JSON form to mention users.
  *
- * Length/empty/sanitize limits are enforced downstream by `createBuildComment`,
- * `updateBuildComment` and `createBuildReview`; this only produces the document.
+ * Length/empty/sanitize limits are enforced downstream by `createComment`,
+ * `updateComment` and `createBuildReview`; this only produces the document.
  */
 export async function resolveCommentBody(
   input: string | object,

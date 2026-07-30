@@ -56,6 +56,8 @@ import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
 
 import { NotFound } from "../NotFound";
+import { ActivitySection } from "./ActivitySection";
+import { ChangeHistorySection } from "./ChangeHistorySection";
 import { ChangesChart } from "./ChangesChart";
 import {
   ChangesFilterToggle,
@@ -91,12 +93,8 @@ const TestQuery = graphql(`
         id
         name
         status
-        firstSeenDiff {
-          ...ScreenChange_ScreenshotDiff
-        }
-        lastSeenDiff {
-          ...ScreenChange_ScreenshotDiff
-        }
+        ...ChangeHistorySection_Test
+        ...TestActivity_Test
         changes(period: $period, after: 0, first: 30, ignored: $ignored) {
           edges {
             ...TestChangeFragment
@@ -177,82 +175,75 @@ export function Component() {
             </div>
           </PageHeaderContent>
         </PageHeader>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-start gap-2">
-            <PeriodSelect state={periodState} />
-            <div
-              className={clsx(
-                "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
-                isPeriodPending && "animate-pulse",
-              )}
-            >
-              <div className="flex items-center gap-6">
-                <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
-                  <FlakinessGauge value={test.metrics.all.flakiness} />
-                  <div className="flex flex-col justify-between self-stretch">
-                    <BuildsCounter
-                      value={test.metrics.all.total}
-                      periodLabel={periodLabel}
-                    />
-                    <ChangesCounter
-                      value={test.metrics.all.changes}
-                      periodLabel={periodLabel}
+        <ProjectPermissionsContext value={project.permissions}>
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
+            <div className="flex min-w-0 flex-1 flex-col gap-6">
+              <div className="flex flex-col items-start gap-2">
+                <PeriodSelect state={periodState} />
+                <div
+                  className={clsx(
+                    "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
+                    isPeriodPending && "animate-pulse",
+                  )}
+                >
+                  <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
+                    <FlakinessGauge value={test.metrics.all.flakiness} />
+                    <div className="flex flex-col justify-between self-stretch">
+                      <BuildsCounter
+                        value={test.metrics.all.total}
+                        periodLabel={periodLabel}
+                      />
+                      <ChangesCounter
+                        value={test.metrics.all.changes}
+                        periodLabel={periodLabel}
+                      />
+                    </div>
+                    <div className="flex flex-col justify-between self-stretch">
+                      <StabilityCounter value={test.metrics.all.stability} />
+                      <ConsistencyCounter
+                        value={test.metrics.all.consistency}
+                      />
+                    </div>
+                    <ChangesChart
+                      className="max-w- h-22 min-w-0 flex-1"
+                      series={test.metrics.series}
+                      from={period.from}
                     />
                   </div>
-                  <div className="flex flex-col justify-between self-stretch">
-                    <StabilityCounter value={test.metrics.all.stability} />
-                    <ConsistencyCounter value={test.metrics.all.consistency} />
-                  </div>
-                  <ChangesChart
-                    className="max-w- h-22 min-w-0 flex-1"
-                    series={test.metrics.series}
-                    from={period.from}
-                  />
-                </div>
-                <Separator className="self-stretch" orientation="vertical" />
-                <div className="flex flex-col gap-2">
-                  <SeenChange
-                    title="First change"
-                    params={params}
-                    diff={test.firstSeenDiff ?? null}
-                  />
-                  <SeenChange
-                    title="Last change"
-                    params={params}
-                    diff={test.lastSeenDiff ?? null}
-                  />
                 </div>
               </div>
-            </div>
-          </div>
-          <div
-            className={clsx(
-              "flex flex-col gap-2",
-              areChangesPending && "animate-pulse",
-            )}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
-              <Heading level={2} className="font-medium">
-                {filterState.value === "ignored"
-                  ? "Ignored changes"
-                  : "Changes"}{" "}
-                <span className="text-low">over the {periodLabel}</span>
-              </Heading>
-              <ChangesFilterToggle state={filterState} />
-            </div>
-            <ProjectPermissionsContext value={project.permissions}>
-              <ProjectIgnoreEnabledProvider
-                enabled={project.ignoreConfig.enabled}
+              <div
+                className={clsx(
+                  "flex flex-col gap-2",
+                  areChangesPending && "animate-pulse",
+                )}
               >
-                <ChangesExplorer
-                  test={test}
-                  periodState={periodState}
-                  filterState={filterState}
-                />
-              </ProjectIgnoreEnabledProvider>
-            </ProjectPermissionsContext>
+                <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
+                  <Heading level={2} className="font-medium">
+                    {filterState.value === "ignored"
+                      ? "Ignored changes"
+                      : "Changes"}{" "}
+                    <span className="text-low">over the {periodLabel}</span>
+                  </Heading>
+                  <ChangesFilterToggle state={filterState} />
+                </div>
+                <ProjectIgnoreEnabledProvider
+                  enabled={project.ignoreConfig.enabled}
+                >
+                  <ChangesExplorer
+                    test={test}
+                    periodState={periodState}
+                    filterState={filterState}
+                  />
+                </ProjectIgnoreEnabledProvider>
+              </div>
+            </div>
+            <div className="flex w-full shrink-0 flex-col gap-2 xl:w-80">
+              <ChangeHistorySection test={test} params={params} />
+              <ActivitySection test={test} />
+            </div>
           </div>
-        </div>
+        </ProjectPermissionsContext>
       </PageContainer>
     </Page>
   );

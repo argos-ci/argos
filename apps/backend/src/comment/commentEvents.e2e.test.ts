@@ -43,7 +43,7 @@ describe("publishCommentChange", () => {
       buildReviewId: review.id,
       content: content("draft"),
     });
-    await publishCommentChange({ buildId: build.id, type: "UPDATED", comment });
+    await publishCommentChange({ type: "UPDATED", comment });
     expect(mockPublish).not.toHaveBeenCalled();
   });
 
@@ -52,7 +52,7 @@ describe("publishCommentChange", () => {
       buildId: build.id,
       content: content("live"),
     });
-    await publishCommentChange({ buildId: build.id, type: "UPDATED", comment });
+    await publishCommentChange({ type: "UPDATED", comment });
     expect(mockPublish).toHaveBeenCalledTimes(1);
   });
 
@@ -68,7 +68,7 @@ describe("publishCommentChange", () => {
       buildReviewId: review.id,
       content: content("now live"),
     });
-    await publishCommentChange({ buildId: build.id, type: "ADDED", comment });
+    await publishCommentChange({ type: "ADDED", comment });
     expect(mockPublish).toHaveBeenCalledTimes(1);
   });
 });

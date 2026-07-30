@@ -9,6 +9,7 @@ import {
   Paragraph,
 } from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
+import { commentTargetSchema, getCommentTargetLabel } from "./commentTarget";
 
 export const handler = defineNotificationHandler({
   type: "comment_added",
@@ -16,8 +17,7 @@ export const handler = defineNotificationHandler({
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
-    buildNumber: z.number(),
-    buildName: z.string().nullish(),
+    ...commentTargetSchema,
     commentUrl: z.url(),
     authorName: z.string().nullish(),
     bodyHtml: z.string(),
@@ -33,33 +33,23 @@ export const handler = defineNotificationHandler({
     bodyHtml: "<p>Could you double-check the header spacing?</p>",
   },
   email: (props) => {
-    const {
-      accountSlug,
-      projectName,
-      buildNumber,
-      buildName,
-      commentUrl,
-      authorName,
-      bodyHtml,
-      ctx,
-    } = props;
-    const buildLabel = buildName
-      ? `${buildName} #${buildNumber}`
-      : `#${buildNumber}`;
+    const { accountSlug, projectName, commentUrl, authorName, bodyHtml, ctx } =
+      props;
+    const targetLabel = getCommentTargetLabel(props);
     const author = authorName || "Someone";
     return {
-      subject: `[${accountSlug}/${projectName}] New comment on build ${buildLabel}`,
+      subject: `[${accountSlug}/${projectName}] New comment on ${targetLabel}`,
       body: (
         <EmailLayout
-          preview={`${author} commented on build ${buildLabel} in ${accountSlug}/${projectName}.`}
+          preview={`${author} commented on ${targetLabel} in ${accountSlug}/${projectName}.`}
           preferencesUrl={ctx.preferencesUrl}
         >
           <H1>New comment</H1>
           <Hi name={ctx.user.name} />
           <Paragraph>
-            <strong>{author}</strong> commented on build{" "}
+            <strong>{author}</strong> commented on{" "}
             <Link href={commentUrl}>
-              {accountSlug}/{projectName} {buildLabel}
+              {accountSlug}/{projectName} {targetLabel}
             </Link>
             .
           </Paragraph>

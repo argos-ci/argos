@@ -37,11 +37,6 @@ import {
   CommentAddReactionButton,
   CommentReactionList,
 } from "./CommentReactions";
-import {
-  CommentScreenshotReference,
-  useGoToCommentDiff,
-  type CommentAnchor,
-} from "./CommentScreenshotReference";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
 import { useMentionableUsers } from "./MentionableUsersContext";
 import { useCollapsedThread } from "./useCollapsedThread";
@@ -92,20 +87,6 @@ const _CommentFragment = graphql(`
     mentionedUsers {
       ...UserCard_user
     }
-    screenshotDiff {
-      ...CommentScreenshotReference_ScreenshotDiff
-    }
-    anchor {
-      __typename
-      ... on CommentPointAnchor {
-        x
-        y
-      }
-      ... on CommentLinesAnchor {
-        from
-        to
-      }
-    }
     ...CommentReactions_Comment
   }
 `);
@@ -121,21 +102,6 @@ const UpdateCommentMutation = graphql(`
     updateComment(input: $input) {
       id
       ...CommentCard_Comment
-    }
-  }
-`);
-
-const AddReplyMutation = graphql(`
-  mutation CommentCard_addBuildComment(
-    $input: AddBuildCommentInput!
-    $accountSlug: String!
-    $projectName: String!
-  ) {
-    addBuildComment(input: $input) {
-      id
-      comments {
-        ...CommentCard_Comment
-      }
     }
   }
 `);
@@ -184,17 +150,35 @@ const UnresolveCommentThreadMutation = graphql(`
   }
 `);
 
+/**
+ * A comment thread — its root comment, its replies and a reply composer.
+ *
+ * The card is agnostic about what the thread hangs off: build and test pages
+ * both render it, supplying how to post a reply and (on a build) the snapshot
+ * the thread points at.
+ */
 export function CommentCard(props: {
-  buildId: string;
   comment: Comment;
   replies?: Comment[];
   highlightedCommentId: string | null;
   canReply: boolean;
+  /** Posts a reply in this thread. Only called when `canReply` is set. */
+  onReply: (body: EditorValue) => Promise<void>;
   /**
-   * Hide the snapshot-reference header. Used when the thread is rendered
-   * directly on the screenshot it points to, where the reference is redundant.
+   * Identifies the thread's owner (e.g. `build.42`), so the locally-persisted
+   * reply draft never leaks from one build or test to another.
    */
-  hideScreenshotReference?: boolean;
+  draftKeyPrefix: string;
+  /**
+   * The snapshot the thread points at: a header quoting it, and how to navigate
+   * there — the whole card shares that navigation. Only build comments reference
+   * a snapshot, and the reference is left out when the thread is rendered
+   * directly on the screenshot it points to (where it would be redundant).
+   */
+  screenshotReference?: {
+    node: React.ReactNode;
+    onNavigate: () => void;
+  } | null;
   /**
    * Drop the card's own border/background/rounding so a surrounding container
    * (e.g. a floating popover on the screenshot) can provide that chrome.
@@ -207,17 +191,16 @@ export function CommentCard(props: {
   autoFocusReply?: boolean;
 }) {
   const {
-    buildId,
     comment,
     replies = [],
     highlightedCommentId,
     canReply,
-    hideScreenshotReference = false,
+    onReply,
+    draftKeyPrefix,
+    screenshotReference = null,
     embedded = false,
     autoFocusReply = false,
   } = props;
-  const projectParams = useProjectParams();
-  invariant(projectParams);
   const client = useApolloClient();
   const subscribeToCommentThread = () =>
     client.mutate({
@@ -268,16 +251,11 @@ export function CommentCard(props: {
       },
     });
 
-  const anchor = (comment.anchor as CommentAnchor | null) ?? null;
-  const goToDiff = useGoToCommentDiff({
-    commentId: comment.id,
-    screenshotDiff: comment.screenshotDiff ?? null,
-    anchor,
-  });
+  const goToDiff = screenshotReference?.onNavigate ?? null;
   // The whole card navigates to the referenced snapshot, not just the
   // reference header — but only where that header is shown; on the screenshot
-  // itself (`hideScreenshotReference`) there is nowhere to go.
-  const cardNavigates = !hideScreenshotReference && goToDiff != null;
+  // itself there is nowhere to go.
+  const cardNavigates = goToDiff != null;
   // Whether a text selection existed at mousedown: the browser collapses the
   // selection before `click` fires, and a click that merely dismisses a
   // selection must not also navigate.
@@ -323,14 +301,7 @@ export function CommentCard(props: {
 
   const handleReplySubmit = async (body: EditorValue) => {
     try {
-      await client.mutate({
-        mutation: AddReplyMutation,
-        variables: {
-          input: { buildId, threadId: comment.id, body },
-          accountSlug: projectParams.accountSlug,
-          projectName: projectParams.projectName,
-        },
-      });
+      await onReply(body);
     } catch (error) {
       toast.error(getErrorMessage(error));
       // Rethrow so the editor keeps the content and the user can retry.
@@ -401,14 +372,8 @@ export function CommentCard(props: {
           "hover:ring-primary-hover cursor-pointer hover:ring-1 **:data-no-card-nav:cursor-auto",
       )}
     >
-      {!hideScreenshotReference && comment.screenshotDiff ? (
-        <div className="border-b-thin">
-          <CommentScreenshotReference
-            commentId={comment.id}
-            screenshotDiff={comment.screenshotDiff}
-            anchor={anchor}
-          />
-        </div>
+      {screenshotReference ? (
+        <div className="border-b-thin">{screenshotReference.node}</div>
       ) : null}
       {resolved ? (
         <ResolvedThreadHeader
@@ -464,7 +429,7 @@ export function CommentCard(props: {
             </AnimatePresence>
             {canReply ? (
               <ReplyComposer
-                draftKey={`build.${buildId}.thread.${comment.id}.reply`}
+                draftKey={`${draftKeyPrefix}.thread.${comment.id}.reply`}
                 onSubmit={handleReplySubmit}
                 autoFocus={autoFocusReply}
               />

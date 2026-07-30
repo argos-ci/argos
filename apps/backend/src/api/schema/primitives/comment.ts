@@ -55,7 +55,14 @@ export const CommentAnchorSchema = z
 export const CommentSchema = z
   .object({
     id: z.string(),
-    buildId: z.string(),
+    buildId: z.string().nullable().meta({
+      description:
+        "Build this comment is posted on, null when it is posted on a test.",
+    }),
+    testId: z.string().nullable().meta({
+      description:
+        "Test this comment is posted on, null when it is posted on a build.",
+    }),
     threadId: z
       .string()
       .nullable()
@@ -88,7 +95,10 @@ export const CommentSchema = z
     createdAt: z.string().meta({ description: "Date the comment was posted." }),
     reactions: z.array(CommentReactionGroupSchema),
   })
-  .meta({ description: "A comment posted on a build.", id: "Comment" });
+  .meta({
+    description: "A comment posted on a build or on a test.",
+    id: "Comment",
+  });
 
 /** Best-effort plain-text rendering of a stored rich-text comment. */
 function commentText(content: unknown): string {
@@ -163,6 +173,7 @@ export async function serializeComments(
     return {
       id: comment.id,
       buildId: comment.buildId,
+      testId: comment.testId,
       threadId: comment.threadId,
       body: comment.content,
       text: commentText(comment.content),

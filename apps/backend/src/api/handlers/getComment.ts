@@ -5,13 +5,16 @@ import { BuildReview } from "@/database/models";
 import { boom } from "@/util/error";
 
 import {
-  assertBuildPermission,
-  getBuildComment,
-  loadBuildForUserAuth,
-} from "../auth/build";
+  assertCommentTargetPermission,
+  getTargetComment,
+  loadCommentTargetForUserAuth,
+  type CommentAuth,
+  type CommentRouteParams,
+} from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
+import { TestId } from "../schema/primitives/test";
 import {
   forbidden,
   invalidParameters,
@@ -21,6 +24,24 @@ import {
 } from "../schema/util/error";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
+
+const CommentId = z.string().meta({ description: "The ID of the comment" });
+
+const responses = {
+  "200": {
+    description: "Comment",
+    content: {
+      "application/json": {
+        schema: CommentSchema,
+      },
+    },
+  },
+  "400": invalidParameters,
+  "401": unauthorized,
+  "403": forbidden,
+  "404": notFound,
+  "500": serverError,
+};
 
 export const getCommentOperation = {
   operationId: "getComment",
@@ -33,64 +54,91 @@ export const getCommentOperation = {
       owner: AccountSlug,
       project: ProjectName,
       buildNumber: BuildNumber,
-      commentId: z.string().meta({ description: "The ID of the comment" }),
+      commentId: CommentId,
     }),
   },
-  responses: {
-    "200": {
-      description: "Comment",
-      content: {
-        "application/json": {
-          schema: CommentSchema,
-        },
-      },
-    },
-    "400": invalidParameters,
-    "401": unauthorized,
-    "403": forbidden,
-    "404": notFound,
-    "500": serverError,
-  },
+  responses,
 } satisfies ZodOpenApiOperationObject;
+
+export const getTestCommentOperation = {
+  operationId: "getTestComment",
+  summary: "Get a single comment on a test",
+  description: "Retrieve a single comment on a test by its ID.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:read"]),
+  requestParams: {
+    path: z.object({
+      owner: AccountSlug,
+      project: ProjectName,
+      testId: TestId,
+      commentId: CommentId,
+    }),
+  },
+  responses,
+} satisfies ZodOpenApiOperationObject;
+
+/** Shared by the build- and test-scoped get endpoints. */
+async function getTargetCommentPayload(input: {
+  authPromise: Promise<CommentAuth>;
+  params: CommentRouteParams & { commentId: string };
+}): Promise<z.infer<typeof CommentSchema>> {
+  const { auth, target } = await loadCommentTargetForUserAuth(
+    input.authPromise,
+    input.params,
+  );
+
+  await assertCommentTargetPermission({
+    target,
+    user: auth.user,
+    permission: "view",
+    message: `You do not have permission to view this ${target.type}`,
+  });
+
+  const comment = await getTargetComment({
+    commentId: input.params.commentId,
+    target,
+  });
+
+  // Deleted comments are no longer visible.
+  if (comment.deletedAt) {
+    throw boom(404, "Comment not found");
+  }
+
+  // A draft comment on a pending review is visible only to its author.
+  if (comment.buildReviewId) {
+    const review = await BuildReview.query()
+      .findById(comment.buildReviewId)
+      .select("state", "userId");
+    if (review?.state === "pending" && review.userId !== auth.user.id) {
+      throw boom(404, "Comment not found");
+    }
+  }
+
+  return serializeComment(comment);
+}
 
 export const getComment: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
-      const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(
-        req.ctx.auth(),
-        params,
+      res.send(
+        await getTargetCommentPayload({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+        }),
       );
+    },
+  );
 
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this build",
-      });
-
-      const comment = await getBuildComment({
-        commentId: params.commentId,
-        buildId: build.id,
-      });
-
-      // Deleted comments are no longer visible.
-      if (comment.deletedAt) {
-        throw boom(404, "Comment not found");
-      }
-
-      // A draft comment on a pending review is visible only to its author.
-      if (comment.buildReviewId) {
-        const review = await BuildReview.query()
-          .findById(comment.buildReviewId)
-          .select("state", "userId");
-        if (review?.state === "pending" && review.userId !== auth.user.id) {
-          throw boom(404, "Comment not found");
-        }
-      }
-
-      res.send(await serializeComment(comment));
+  get(
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}",
+    async (req, res) => {
+      res.send(
+        await getTargetCommentPayload({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+        }),
+      );
     },
   );
 };

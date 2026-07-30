@@ -6,11 +6,13 @@ import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
 import {
-  subscribeToCommentChanges,
+  subscribeToBuildCommentChanges,
+  subscribeToTestCommentChanges,
+  type CommentChange,
   type CommentChangeType,
 } from "@/comment/commentEvents";
-import { createBuildComment } from "@/comment/createBuildComment";
-import { deleteBuildComment } from "@/comment/deleteBuildComment";
+import { createComment } from "@/comment/createComment";
+import { deleteComment } from "@/comment/deleteComment";
 import { formatCommentId, parseCommentId } from "@/comment/id";
 import { getCommentPermissions } from "@/comment/permissions";
 import { groupCommentReactions } from "@/comment/reactions";
@@ -19,8 +21,14 @@ import {
   resolveCommentThread,
   unresolveCommentThread,
 } from "@/comment/resolveCommentThread";
+import {
+  getCommentTargetProject,
+  isCommentOnTarget,
+  resolveCommentTarget,
+  type CommentTarget,
+} from "@/comment/target";
 import { getCommentThreadRoot } from "@/comment/thread";
-import { updateBuildComment } from "@/comment/updateBuildComment";
+import { updateComment } from "@/comment/updateComment";
 import { Build } from "@/database/models/Build";
 import { BuildReview } from "@/database/models/BuildReview";
 import {
@@ -45,6 +53,8 @@ import {
   type IResolvers,
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
+import type { Context } from "../context";
+import { getTestForUser } from "../testAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
@@ -94,17 +104,16 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
 
 /**
  * Ensure the user is allowed to react to a comment. Reacting requires the same
- * "review" permission on the build's project as posting a comment does.
+ * "review" permission on the project of whatever the comment was posted on (a
+ * build or a test) as posting a comment does.
  */
 async function assertCanReactToComment(
   comment: Comment,
   user: User,
 ): Promise<void> {
-  const build = await comment
-    .$relatedQuery("build")
-    .withGraphFetched("project.account");
-  invariant(build?.project?.account, "Build project account not found");
-  const permissions = await build.project.$getPermissions(user);
+  const target = await resolveCommentTarget(comment);
+  const project = await getCommentTargetProject(target);
+  const permissions = await project.$getPermissions(user);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot react to this comment");
   }
@@ -130,24 +139,27 @@ async function assertCanAccessCommentThread(input: {
   permission: "view" | "review";
 }): Promise<void> {
   const { thread, user, permission } = input;
-  const build = await thread
-    .$relatedQuery("build")
-    .withGraphFetched("project.account");
-  invariant(build?.project?.account, "Build project account not found");
-  const permissions = await build.project.$getPermissions(user);
+  const target = await resolveCommentTarget(thread);
+  const project = await getCommentTargetProject(target);
+  const permissions = await project.$getPermissions(user);
   if (!permissions.includes(permission)) {
     throw forbidden("You cannot access this thread");
   }
 }
 
+/**
+ * Resolve the root comment of a thread the user may access. When a `target` is
+ * given, the thread must belong to it — so a comment id can never be operated
+ * on through another build or test.
+ */
 async function getCommentThreadForUser(input: {
   id: string;
   user: User;
   permission: "view" | "review";
-  buildId?: string;
+  target?: CommentTarget;
 }): Promise<Comment> {
   const thread = await getCommentThreadByGraphqlId(input.id);
-  if (input.buildId && thread.buildId !== input.buildId) {
+  if (input.target && !isCommentOnTarget(thread, input.target)) {
     throw notFound("Thread not found");
   }
   await assertCanAccessCommentThread({
@@ -201,7 +213,7 @@ export const typeDefs = gql`
   union CommentAnchor = CommentPointAnchor | CommentLinesAnchor
 
   """
-  A comment posted on a build.
+  A comment posted on a build or on a test.
   """
   type Comment implements Node {
     id: ID!
@@ -266,6 +278,14 @@ export const typeDefs = gql`
     addToReview: Boolean
   }
 
+  input AddTestCommentInput {
+    testId: ID!
+    "Root comment ID to reply to"
+    threadId: ID
+    "Rich-text JSON content of the comment"
+    body: JSONObject!
+  }
+
   input UpdateCommentInput {
     id: ID!
     "Rich-text JSON content of the comment"
@@ -301,6 +321,8 @@ export const typeDefs = gql`
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
+    "Post a comment on a test"
+    addTestComment(input: AddTestCommentInput!): Test!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
     "Delete an existing comment"
@@ -332,8 +354,8 @@ export const typeDefs = gql`
   }
 
   """
-  A comment that was added to, updated on, or deleted from a build, pushed live
-  to subscribers.
+  A comment that was added to, updated on, or deleted from a build or a test,
+  pushed live to subscribers.
   """
   type CommentChangeEvent {
     "How the comment changed"
@@ -345,6 +367,8 @@ export const typeDefs = gql`
   type Subscription {
     "Emitted when a comment is added to, updated on, or deleted from the given build"
     buildCommentChanged(buildId: ID!): CommentChangeEvent!
+    "Emitted when a comment is added to, updated on, or deleted from the given test"
+    testCommentChanged(testId: ID!): CommentChangeEvent!
   }
 `;
 
@@ -487,12 +511,14 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot comment on this build");
       }
 
+      const target: CommentTarget = { type: "build", build };
+
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
             user: auth.user,
             permission: "review",
-            buildId: build.id,
+            target,
           })
         : null;
 
@@ -553,8 +579,8 @@ export const resolvers: IResolvers = {
         }
       }
 
-      await createBuildComment({
-        build,
+      await createComment({
+        target,
         userId: auth.user.id,
         body: input.body as JSONContent,
         threadId: thread?.id ?? null,
@@ -565,6 +591,41 @@ export const resolvers: IResolvers = {
       });
 
       return build;
+    },
+    addTestComment: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const test = await getTestForUser({
+        id: input.testId,
+        user: auth.user,
+        permission: "review",
+        message: "You cannot comment on this test",
+      });
+
+      const target: CommentTarget = { type: "test", test };
+
+      const thread = input.threadId
+        ? await getCommentThreadForUser({
+            id: input.threadId,
+            user: auth.user,
+            permission: "review",
+            target,
+          })
+        : null;
+
+      await createComment({
+        target,
+        userId: auth.user.id,
+        body: input.body as JSONContent,
+        threadId: thread?.id ?? null,
+      });
+
+      return test;
     },
     updateComment: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -582,7 +643,7 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot edit this comment");
       }
 
-      return updateBuildComment({
+      return updateComment({
         comment,
         body: input.body as JSONContent,
       });
@@ -603,7 +664,7 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot delete this comment");
       }
 
-      return deleteBuildComment({ comment });
+      return deleteComment({ comment });
     },
     addCommentReaction: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -704,26 +765,59 @@ export const resolvers: IResolvers = {
       // rejected upfront rather than after the first event.
       subscribe: async (_root, args, ctx) => {
         await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
-        return (async function* () {
-          for await (const change of subscribeToCommentChanges(args.buildId)) {
-            // Field resolvers below run with the connection's shared loaders,
-            // whose per-comment caches would otherwise pin the reactions and
-            // mentions seen on the first event. Those relations live in their
-            // own tables (not the comment row that travels through Redis), so
-            // drop the changed comment's cached entries to resolve each event
-            // against the current state — this is what makes live reactions and
-            // edited mentions reflect reality across successive events.
-            ctx.loaders.CommentReactions.clear(change.comment.id);
-            ctx.loaders.CommentMentionedUserIds.clear(change.comment.id);
-            yield {
-              buildCommentChanged: {
-                type: COMMENT_CHANGE_EVENT_TYPE[change.type],
-                comment: change.comment,
-              },
-            };
-          }
-        })();
+        return mapCommentChanges(
+          subscribeToBuildCommentChanges(args.buildId),
+          ctx.loaders,
+          (event) => ({ buildCommentChanged: event }),
+        );
+      },
+    },
+    testCommentChanged: {
+      subscribe: async (_root, args, ctx) => {
+        const test = await getTestForUser({
+          id: args.testId,
+          user: ctx.auth?.user ?? null,
+          permission: "view",
+          message: "You cannot view this test",
+        });
+        return mapCommentChanges(
+          subscribeToTestCommentChanges(test.id),
+          ctx.loaders,
+          (event) => ({ testCommentChanged: event }),
+        );
       },
     },
   },
 };
+
+/**
+ * Turn a stream of comment changes into the payloads a GraphQL subscription
+ * yields, dropping the per-comment loader caches on the way.
+ *
+ * Field resolvers run with the connection's shared loaders, whose per-comment
+ * caches would otherwise pin the reactions and mentions seen on the first event.
+ * Those relations live in their own tables (not the comment row that travels
+ * through Redis), so dropping the changed comment's cached entries resolves each
+ * event against the current state — this is what makes live reactions and edited
+ * mentions reflect reality across successive events.
+ */
+async function* mapCommentChanges<TPayload>(
+  changes: AsyncGenerator<CommentChange>,
+  loaders: Pick<
+    Context["loaders"],
+    "CommentReactions" | "CommentMentionedUserIds"
+  >,
+  toPayload: (event: {
+    type: ICommentChangeType;
+    comment: Comment;
+  }) => TPayload,
+): AsyncGenerator<TPayload> {
+  for await (const change of changes) {
+    loaders.CommentReactions.clear(change.comment.id);
+    loaders.CommentMentionedUserIds.clear(change.comment.id);
+    yield toPayload({
+      type: COMMENT_CHANGE_EVENT_TYPE[change.type],
+      comment: change.comment,
+    });
+  }
+}

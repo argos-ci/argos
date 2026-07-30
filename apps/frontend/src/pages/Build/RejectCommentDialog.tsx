@@ -65,7 +65,7 @@ const AddBuildCommentMutation = graphql(`
     addBuildComment(input: $input) {
       id
       comments {
-        ...CommentCard_Comment
+        ...BuildCommentCard_Comment
       }
     }
   }

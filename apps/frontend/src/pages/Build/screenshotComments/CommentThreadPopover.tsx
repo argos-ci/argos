@@ -1,8 +1,9 @@
-import { CommentCard } from "../sidebar/CommentCard";
+import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
+
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
 import type { ScreenPoint } from "./geometry";
 
-type CommentCardProps = React.ComponentProps<typeof CommentCard>;
+type CommentCardProps = React.ComponentProps<typeof BuildCommentCard>;
 
 /**
  * The full comment thread, shown as a floating card beside its pin once opened.
@@ -32,7 +33,7 @@ export function CommentThreadPopover(props: {
       {/* No horizontal padding so the thread (and its full-width reply divider)
           spans the whole card; the card's sections carry their own insets. */}
       <div className="bg-app border-thin max-h-96 w-full overflow-y-auto rounded-xl shadow-xl">
-        <CommentCard
+        <BuildCommentCard
           buildId={buildId}
           comment={comment}
           replies={replies}

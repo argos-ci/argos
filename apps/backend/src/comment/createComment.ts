@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
-import { Build, Comment, Project } from "@/database/models";
+import { Comment, Project } from "@/database/models";
 import type { CommentAnchor } from "@/database/models/Comment";
 import {
   autoSubscribeUserToBuild,
@@ -21,6 +21,11 @@ import {
 } from "./commentNotifications";
 import { syncCommentMentions } from "./mentions";
 import {
+  getCommentTargetColumns,
+  getCommentTargetProject,
+  type CommentTarget,
+} from "./target";
+import {
   isCommentEmpty,
   isCommentTooLarge,
   sanitizeCommentJson,
@@ -28,8 +33,12 @@ import {
 } from "./validate";
 
 /**
- * Post a comment on a build, auto-subscribe the author and notify the other
- * subscribers.
+ * Post a comment on a build or a test, auto-subscribe the author and notify the
+ * other subscribers.
+ *
+ * The review options (`buildReviewId`, `pending`) and the diff anchoring
+ * (`screenshotDiffId`, `anchor`) only apply to build targets; the database
+ * rejects them on a test comment.
  *
  * When `pending` is set, the comment belongs to a review still in the `pending`
  * state — it is a draft, visible only to its author until the review is
@@ -39,8 +48,8 @@ import {
  * already knows the review state, so it passes `pending` rather than us
  * re-reading the review.
  */
-export async function createBuildComment(input: {
-  build: Build;
+export async function createComment(input: {
+  target: CommentTarget;
   userId: string;
   body: JSONContent;
   threadId?: string | null;
@@ -50,7 +59,7 @@ export async function createBuildComment(input: {
   pending?: boolean;
 }): Promise<Comment> {
   const {
-    build,
+    target,
     userId,
     threadId = null,
     screenshotDiffId = null,
@@ -78,28 +87,30 @@ export async function createBuildComment(input: {
   const [comment, project] = await Promise.all([
     Comment.query().insert({
       userId,
-      buildId: build.id,
+      ...getCommentTargetColumns(target),
       buildReviewId,
       threadId,
       screenshotDiffId,
       anchor,
       content: body,
     }),
-    build.$relatedQuery("project").withGraphFetched("account"),
+    getCommentTargetProject(target),
   ]);
-  invariant(project?.account, "Build project account not found");
 
   // Persist the user mentions found in the comment and resolve them to the
   // users that may actually be notified (members of the project's team). Done
   // even for draft comments so submission knows whom to notify.
   const mentionedUserIds = await syncCommentMentions({ comment, project });
 
-  // Subscribe the author so they receive updates on this thread/build, whether
-  // the comment is live now or once the review is submitted.
+  // Subscribe the author so they receive updates on this thread (and, on a
+  // build, on the build itself), whether the comment is live now or once the
+  // review is submitted.
   const authorSubscriptions = threadId
     ? [subscribeUserToCommentThread({ commentId: threadId, userId })]
     : [
-        autoSubscribeUserToBuild({ buildId: build.id, userId }),
+        ...(target.type === "build"
+          ? [autoSubscribeUserToBuild({ buildId: target.build.id, userId })]
+          : []),
         subscribeUserToCommentThread({ commentId: comment.id, userId }),
       ];
 
@@ -115,7 +126,7 @@ export async function createBuildComment(input: {
   // subscribers (those already exclude the mentioned users by id), so let it
   // run alongside them.
   const notifyMentioned = notifyMentionedUsers({
-    build,
+    target,
     project,
     comment,
     userId,
@@ -127,7 +138,7 @@ export async function createBuildComment(input: {
     await Promise.all([
       ...authorSubscriptions,
       notifyCommentThreadSubscribers({
-        build,
+        target,
         project,
         comment,
         userId,
@@ -140,39 +151,44 @@ export async function createBuildComment(input: {
   } else {
     await Promise.all([
       ...authorSubscriptions,
-      notifyBuildSubscribers({
-        build,
-        project,
-        comment,
-        userId,
-        excludeUserIds: mentionedUserIds,
-      }),
+      // Only builds carry a subscriber list; a new root comment on a test
+      // reaches the users it mentions, and its replies then reach the thread.
+      target.type === "build"
+        ? notifyBuildSubscribers({
+            target,
+            project,
+            comment,
+            userId,
+            excludeUserIds: mentionedUserIds,
+          })
+        : null,
       notifyMentioned,
     ]);
   }
 
-  // Notify clients watching this build so the new comment appears live.
-  await publishCommentChange({ buildId: build.id, type: "ADDED", comment });
+  // Notify clients watching this target so the new comment appears live.
+  await publishCommentChange({ type: "ADDED", comment });
 
   return comment;
 }
 
 async function notifyBuildSubscribers(input: {
-  build: Build;
+  target: CommentTarget;
   project: Project;
   comment: Comment;
   userId: string;
   excludeUserIds: string[];
 }): Promise<void> {
-  const { build, project, comment, userId, excludeUserIds } = input;
-  const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
+  const { target, project, comment, userId, excludeUserIds } = input;
+  invariant(target.type === "build", "Only builds have subscribers");
+  const subscribedUserIds = await getBuildSubscribedUserIds(target.build.id);
   const excluded = new Set([userId, ...excludeUserIds]);
   const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
   if (recipients.length === 0) {
     return;
   }
   const data = await getCommentNotificationData({
-    build,
+    target,
     project,
     comment,
     userId,
@@ -181,14 +197,14 @@ async function notifyBuildSubscribers(input: {
 }
 
 async function notifyCommentThreadSubscribers(input: {
-  build: Build;
+  target: CommentTarget;
   project: Project;
   comment: Comment;
   userId: string;
   threadId: string;
   excludeUserIds: string[];
 }): Promise<void> {
-  const { build, project, comment, userId, threadId, excludeUserIds } = input;
+  const { target, project, comment, userId, threadId, excludeUserIds } = input;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
   const excluded = new Set([userId, ...excludeUserIds]);
   const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
@@ -196,7 +212,7 @@ async function notifyCommentThreadSubscribers(input: {
     return;
   }
   const data = await getCommentNotificationData({
-    build,
+    target,
     project,
     comment,
     userId,

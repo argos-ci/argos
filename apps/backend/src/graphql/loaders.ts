@@ -6,7 +6,7 @@ import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
 import { getPresences, type UserPresence } from "@/auth/presence";
-import { filterVisibleComments } from "@/comment/getVisibleBuildComments";
+import { filterVisibleComments } from "@/comment/getVisibleComments";
 import { knex } from "@/database";
 import {
   Account,
@@ -933,6 +933,7 @@ function createBuildPublishedCommentsLoader() {
       ).orderBy("createdAt", "asc");
       const commentsMap = comments.reduce<Record<string, Comment[]>>(
         (map, comment) => {
+          invariant(comment.buildId, "Build comments have a buildId");
           const array = map[comment.buildId] ?? [];
           array.push(comment);
           map[comment.buildId] = array;
@@ -944,6 +945,42 @@ function createBuildPublishedCommentsLoader() {
     },
     {
       cacheKeyFn: (input) => `${input.buildId}:${input.viewerUserId ?? ""}`,
+    },
+  );
+}
+
+/**
+ * Loads the comments posted on a test. Test comments never belong to a review,
+ * so the shared visibility filter only excludes the soft-deleted ones.
+ */
+function createTestCommentsLoader() {
+  return new DataLoader<
+    { testId: string; viewerUserId: string | null },
+    Comment[],
+    string
+  >(
+    async (inputs) => {
+      const testIds = inputs.map((input) => input.testId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId ?? null;
+      const comments = await filterVisibleComments(
+        Comment.query().whereIn("testId", testIds),
+        viewerUserId,
+      ).orderBy("createdAt", "asc");
+      const commentsMap = comments.reduce<Record<string, Comment[]>>(
+        (map, comment) => {
+          invariant(comment.testId, "Test comments have a testId");
+          const array = map[comment.testId] ?? [];
+          array.push(comment);
+          map[comment.testId] = array;
+          return map;
+        },
+        {},
+      );
+      return inputs.map((input) => commentsMap[input.testId] ?? []);
+    },
+    {
+      cacheKeyFn: (input) => `${input.testId}:${input.viewerUserId ?? ""}`,
     },
   );
 }
@@ -1674,6 +1711,7 @@ export const createLoaders = () => ({
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
+  TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
   BuildReview: createModelLoader(BuildReview),

@@ -6,14 +6,14 @@ import { createPortal } from "react-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "@/containers/Build/Zoomer";
+import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
 
-import { CommentCard } from "../sidebar/CommentCard";
 import type { ScreenPoint } from "./geometry";
 
-type CommentCardProps = React.ComponentProps<typeof CommentCard>;
+type CommentCardProps = React.ComponentProps<typeof BuildCommentCard>;
 type Comment = CommentCardProps["comment"];
 
 /** Pin badge size: a size-7 (28px) avatar with 4px (`p-1`) padding all around. */

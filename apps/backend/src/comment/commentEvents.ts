@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { BuildReview } from "@/database/models/BuildReview";
@@ -16,15 +17,32 @@ export type CommentChange = {
   comment: Comment;
 };
 
-function getCommentChannel(buildId: string): string {
+function getBuildCommentChannel(buildId: string): string {
   return `build-comment-change:${buildId}`;
 }
 
+function getTestCommentChannel(testId: string): string {
+  return `test-comment-change:${testId}`;
+}
+
+/** The channel a comment's changes are broadcast on, from its own target. */
+function getCommentChannel(comment: Comment): string {
+  if (comment.buildId) {
+    return getBuildCommentChannel(comment.buildId);
+  }
+  invariant(comment.testId, "Comment has no target");
+  return getTestCommentChannel(comment.testId);
+}
+
 /**
- * Publish a comment change so every client subscribed to the build receives it
- * live. Only the comment row travels through Redis; relations (author,
- * mentions, reactions) are loaded per subscriber by the GraphQL field
+ * Publish a comment change so every client watching the comment's target
+ * receives it live. Only the comment row travels through Redis; relations
+ * (author, mentions, reactions) are loaded per subscriber by the GraphQL field
  * resolvers from the rehydrated comment.
+ *
+ * The channel is derived from the comment itself, so every operation on a
+ * comment broadcasts to the right audience without having to know whether it
+ * lives on a build or on a test.
  *
  * Comments belonging to a pending (unsubmitted) review are drafts visible only
  * to their author, so they are never broadcast — the channel reaches every
@@ -35,34 +53,35 @@ function getCommentChannel(buildId: string): string {
  * `notifyReviewCommentsWentLive`).
  */
 export async function publishCommentChange(input: {
-  buildId: string;
   type: CommentChangeType;
   comment: Comment;
 }): Promise<void> {
-  if (input.comment.buildReviewId) {
+  const { comment } = input;
+  if (comment.buildReviewId) {
     const review = await BuildReview.query()
-      .findById(input.comment.buildReviewId)
+      .findById(comment.buildReviewId)
       .select("state");
     if (review?.state === "pending") {
       return;
     }
   }
-  await redisPubSub.publish(getCommentChannel(input.buildId), {
+  const channel = getCommentChannel(comment);
+  await redisPubSub.publish(channel, {
     type: input.type,
-    comment: input.comment.toJSON(),
+    comment: comment.toJSON(),
   });
 }
 
 /**
- * Yield every comment change published for a build until the iterator is closed
- * (when the GraphQL subscription ends). Each payload is validated then
+ * Yield every comment change published on a channel until the iterator is
+ * closed (when the GraphQL subscription ends). Each payload is validated then
  * rehydrated into a {@link Comment} model so the existing field resolvers can
  * resolve it.
  */
-export async function* subscribeToCommentChanges(
-  buildId: string,
+async function* subscribeToChannel(
+  channel: string,
 ): AsyncGenerator<CommentChange> {
-  const iterator = redisPubSub.subscribe(getCommentChannel(buildId));
+  const iterator = redisPubSub.subscribe(channel);
   for await (const raw of iterator) {
     const payload = commentChangeSchema.parse(raw);
     yield {
@@ -70,4 +89,18 @@ export async function* subscribeToCommentChanges(
       comment: Comment.fromJson(payload.comment, { skipValidation: true }),
     };
   }
+}
+
+/** Yield every comment change published for a build. */
+export function subscribeToBuildCommentChanges(
+  buildId: string,
+): AsyncGenerator<CommentChange> {
+  return subscribeToChannel(getBuildCommentChannel(buildId));
+}
+
+/** Yield every comment change published for a test. */
+export function subscribeToTestCommentChanges(
+  testId: string,
+): AsyncGenerator<CommentChange> {
+  return subscribeToChannel(getTestCommentChannel(testId));
 }

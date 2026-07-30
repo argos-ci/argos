@@ -10,29 +10,32 @@ import {
   getCommentMentionedUserIds,
   renderCommentHtmlWithMentions,
 } from "./mentions";
+import {
+  getCommentTargetNotificationFields,
+  type CommentTarget,
+} from "./target";
 
 /**
- * Build the data shared by every comment notification email (author name and
- * the URL pointing at the comment).
+ * Build the data shared by every comment notification email (what the comment
+ * was posted on, its author's name and the URL pointing at it).
  */
 export async function getCommentNotificationData(input: {
-  build: Build;
+  target: CommentTarget;
   project: Project;
   comment: Comment;
   userId: string;
 }) {
-  const { build, project, comment, userId } = input;
-  invariant(project.account, "Build project account not found");
+  const { target, project, comment, userId } = input;
+  invariant(project.account, "Project account not found");
   const [author, commentUrl, bodyHtml] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
-    getCommentUrl({ build, comment }),
+    getCommentUrl({ target, comment }),
     renderCommentHtmlWithMentions(comment),
   ]);
   return {
     accountSlug: project.account.slug,
     projectName: project.name,
-    buildNumber: build.number,
-    buildName: build.name,
+    ...getCommentTargetNotificationFields(target),
     commentUrl,
     authorName: author?.account?.displayName ?? null,
     bodyHtml,
@@ -45,14 +48,15 @@ export async function getCommentNotificationData(input: {
  * users are notified regardless of their existing subscription state.
  */
 export async function notifyMentionedUsers(input: {
-  build: Build;
+  target: CommentTarget;
   project: Project;
   comment: Comment;
   userId: string;
   mentionedUserIds: string[];
   threadId: string;
 }): Promise<void> {
-  const { build, project, comment, userId, mentionedUserIds, threadId } = input;
+  const { target, project, comment, userId, mentionedUserIds, threadId } =
+    input;
   const recipients = mentionedUserIds.filter((id) => id !== userId);
   if (recipients.length === 0) {
     return;
@@ -67,7 +71,7 @@ export async function notifyMentionedUsers(input: {
     ),
   );
   const data = await getCommentNotificationData({
-    build,
+    target,
     project,
     comment,
     userId,
@@ -95,14 +99,15 @@ export async function notifyReviewCommentsWentLive(input: {
   if (comments.length === 0) {
     return;
   }
+  const target: CommentTarget = { type: "build", build };
   await Promise.all(
     comments.map(async (comment) => {
       invariant(comment.userId, "comment should have a userId");
       const mentionedUserIds = await getCommentMentionedUserIds(comment.id);
       await Promise.all([
-        publishCommentChange({ buildId: build.id, type: "ADDED", comment }),
+        publishCommentChange({ type: "ADDED", comment }),
         notifyMentionedUsers({
-          build,
+          target,
           project,
           comment,
           userId: comment.userId,

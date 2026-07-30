@@ -8,6 +8,7 @@ import { BuildReview } from "./BuildReview";
 import { CommentMention } from "./CommentMention";
 import { CommentReaction } from "./CommentReaction";
 import { ScreenshotDiff } from "./ScreenshotDiff";
+import { Test } from "./Test";
 import { User } from "./User";
 
 const COORDINATE_MESSAGE = "Comment anchor coordinates must be between 0 and 1";
@@ -71,10 +72,11 @@ export class Comment extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: ["userId", "buildId", "content"],
+        required: ["userId", "content"],
         properties: {
           userId: { type: "string" },
-          buildId: { type: "string" },
+          buildId: { type: ["string", "null"] },
+          testId: { type: ["string", "null"] },
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
@@ -98,7 +100,13 @@ export class Comment extends Model {
   };
 
   userId!: string;
-  buildId!: string;
+  /**
+   * The build this comment is posted on. Exactly one of `buildId` / `testId` is
+   * set — see the `comments_target_xor` constraint.
+   */
+  buildId!: string | null;
+  /** The test this comment is posted on, when it isn't posted on a build. */
+  testId!: string | null;
   buildReviewId!: string | null;
   threadId!: string | null;
   /** The screenshot diff this comment is anchored to, if any. */
@@ -130,6 +138,14 @@ export class Comment extends Model {
         join: {
           from: "comments.buildId",
           to: "builds.id",
+        },
+      },
+      test: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Test,
+        join: {
+          from: "comments.testId",
+          to: "tests.id",
         },
       },
       buildReview: {
@@ -184,7 +200,8 @@ export class Comment extends Model {
   }
 
   user?: User;
-  build?: Build;
+  build?: Build | null;
+  test?: Test | null;
   buildReview?: BuildReview | null;
   thread?: Comment | null;
   replies?: Comment[];

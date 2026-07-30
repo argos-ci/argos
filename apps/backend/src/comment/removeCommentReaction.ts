@@ -30,13 +30,9 @@ export async function removeCommentReaction(input: {
     return comment;
   }
 
-  // Notify clients watching this build so the reaction disappears live. The
+  // Notify clients watching this target so the reaction disappears live. The
   // comment row is unchanged; subscribers re-resolve its `reactions` field.
-  await publishCommentChange({
-    buildId: comment.buildId,
-    type: "UPDATED",
-    comment,
-  });
+  await publishCommentChange({ type: "UPDATED", comment });
 
   return comment;
 }

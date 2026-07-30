@@ -25,6 +25,11 @@ import { ListMenu } from "./ListMenu";
 import { MarkButton } from "./MarkButton";
 
 export interface EditorToolbarProps {
+  /**
+   * The editor to act on, or null while there is none to act on yet. Must be
+   * mounted: the toolbar reads commands and the editor's DOM node, neither of
+   * which exists before the view is created (see `Editor`).
+   */
   editor: Editor | null;
 }
 

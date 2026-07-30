@@ -1,14 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 
 import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
-import { getCommentThreadRoot } from "@/comment/thread";
-import { Build, Comment, type User } from "@/database/models";
+import { Build, type User } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { assertProjectAccess } from "./project";
 
 /** Project permissions checked by the review/comment endpoints. */
-type BuildActionPermission = "view" | "review" | "review_dismiss";
+export type BuildActionPermission = "view" | "review" | "review_dismiss";
 
 /**
  * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` for a
@@ -67,38 +66,4 @@ export async function assertBuildPermission(input: {
   if (!permissions.includes(permission)) {
     throw boom(403, message);
   }
-}
-
-/**
- * Load a comment by id, scoped to a build: a comment whose id is unknown or
- * belongs to a different build surfaces as a clean 404 rather than leaking
- * across builds. Soft-deleted comments are returned as-is — callers decide
- * whether a deleted comment is meaningful for their action (mirroring the
- * GraphQL resolvers).
- */
-export async function getBuildComment(input: {
-  commentId: string;
-  buildId: string;
-}): Promise<Comment> {
-  const comment = await Comment.query().findById(input.commentId);
-  if (!comment || comment.buildId !== input.buildId) {
-    throw boom(404, "Comment not found");
-  }
-  return comment;
-}
-
-/**
- * Resolve the (non-deleted) root comment of the thread a comment belongs to,
- * scoped to a build. Thread-level actions (resolve, subscribe) operate on the
- * root regardless of which comment in the thread the caller referenced.
- */
-export async function getBuildCommentThread(input: {
-  commentId: string;
-  buildId: string;
-}): Promise<Comment> {
-  const thread = await getCommentThreadRoot(input.commentId);
-  if (!thread || thread.buildId !== input.buildId) {
-    throw boom(404, "Thread not found");
-  }
-  return thread;
 }

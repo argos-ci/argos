@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5 (Homebrew)
+-- Dumped from database version 18.4
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -687,7 +687,7 @@ CREATE TABLE public.comments (
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "userId" bigint NOT NULL,
-    "buildId" bigint NOT NULL,
+    "buildId" bigint,
     "buildReviewId" bigint,
     "threadId" bigint,
     content jsonb NOT NULL,
@@ -696,7 +696,10 @@ CREATE TABLE public.comments (
     "resolvedAt" timestamp with time zone,
     "screenshotDiffId" bigint,
     anchor jsonb,
-    CONSTRAINT comments_anchor_requires_diff CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL)))
+    "testId" bigint,
+    CONSTRAINT comments_anchor_requires_diff CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL))),
+    CONSTRAINT comments_target_xor CHECK ((num_nonnulls("buildId", "testId") = 1)),
+    CONSTRAINT comments_test_target_scope CHECK ((("testId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL))))
 );
 
 
@@ -4226,6 +4229,13 @@ CREATE INDEX comments_screenshotdiffid_index ON public.comments USING btree ("sc
 
 
 --
+-- Name: comments_testid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comments_testid_createdat_index ON public.comments USING btree ("testId", "createdAt");
+
+
+--
 -- Name: deployment_aliases_deploymentid_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5052,6 +5062,14 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: comments comments_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id) ON DELETE CASCADE;
+
+
+--
 -- Name: comments comments_threadid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5631,6 +5649,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
+
 -- Knex migrations
 
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
@@ -5862,3 +5881,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726130000_screenshot-diffs-fingerprint-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260726140000_signup-source.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730120000_tests-list-indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730130000_comment-test.js', 1, NOW());

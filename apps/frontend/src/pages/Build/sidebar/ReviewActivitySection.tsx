@@ -13,6 +13,11 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate, useParams } from "react-router";
 
+import {
+  getCommentThreads,
+  type CommentThread,
+} from "@/containers/Comment/commentThreads";
+import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -20,6 +25,7 @@ import {
   ProjectPermission,
   ReviewChangeType,
 } from "@/gql/graphql";
+import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
@@ -33,9 +39,6 @@ import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 
 import { AddCommentForm } from "./AddCommentForm";
-import { CommentCard } from "./CommentCard";
-import { getCommentThreads, type CommentThread } from "./commentThreads";
-import { MentionableUsersProvider } from "./MentionableUsersContext";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
@@ -60,7 +63,7 @@ const _BuildFragment = graphql(`
       }
     }
     comments {
-      ...CommentCard_Comment
+      ...BuildCommentCard_Comment
     }
   }
 `);
@@ -98,7 +101,7 @@ const BuildCommentChangedSubscription = graphql(`
       comment {
         id
         threadId
-        ...CommentCard_Comment
+        ...BuildCommentCard_Comment
       }
     }
   }
@@ -469,7 +472,7 @@ function ActivityEntryRow(props: {
           opacity: { duration: 0.15 },
         }}
       >
-        <CommentCard
+        <BuildCommentCard
           buildId={buildId}
           comment={entry.thread.root}
           replies={entry.thread.replies}

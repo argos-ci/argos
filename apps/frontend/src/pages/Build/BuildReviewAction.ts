@@ -37,7 +37,7 @@ const _BuildFragment = graphql(`
     # Ensure the comment added by the review (if any) lands in the cache,
     # so it appears in the review activity section.
     comments {
-      ...CommentCard_Comment
+      ...BuildCommentCard_Comment
     }
   }
 `);
