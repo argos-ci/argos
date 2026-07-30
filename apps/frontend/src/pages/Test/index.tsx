@@ -51,6 +51,7 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Panel, PanelHeader } from "@/ui/Panel";
 import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
@@ -176,49 +177,51 @@ export function Component() {
           </PageHeaderContent>
         </PageHeader>
         <ProjectPermissionsContext value={project.permissions}>
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-6">
-              <div className="flex flex-col items-start gap-2">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+            <div className="flex min-w-0 flex-1 flex-col gap-4">
+              <div className="flex flex-col items-start gap-4 self-stretch">
                 <PeriodSelect state={periodState} />
+                {/* The counters size to their content and the chart takes the
+                    rest, so the chart keeps as much width as the column has to
+                    spare. */}
                 <div
                   className={clsx(
-                    "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
+                    "flex flex-col gap-4 self-stretch lg:flex-row",
                     isPeriodPending && "animate-pulse",
                   )}
                 >
-                  <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
-                    <FlakinessGauge value={test.metrics.all.flakiness} />
-                    <div className="flex flex-col justify-between self-stretch">
-                      <BuildsCounter
-                        value={test.metrics.all.total}
-                        periodLabel={periodLabel}
-                      />
-                      <ChangesCounter
-                        value={test.metrics.all.changes}
-                        periodLabel={periodLabel}
-                      />
+                  <Panel>
+                    <div className="flex flex-wrap items-center gap-3 gap-y-6 px-4">
+                      <FlakinessGauge value={test.metrics.all.flakiness} />
+                      <div className="flex flex-col justify-between self-stretch">
+                        <BuildsCounter
+                          value={test.metrics.all.total}
+                          periodLabel={periodLabel}
+                        />
+                        <ChangesCounter
+                          value={test.metrics.all.changes}
+                          periodLabel={periodLabel}
+                        />
+                      </div>
+                      <div className="flex flex-col justify-between self-stretch">
+                        <StabilityCounter value={test.metrics.all.stability} />
+                        <ConsistencyCounter
+                          value={test.metrics.all.consistency}
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col justify-between self-stretch">
-                      <StabilityCounter value={test.metrics.all.stability} />
-                      <ConsistencyCounter
-                        value={test.metrics.all.consistency}
-                      />
-                    </div>
+                  </Panel>
+                  <Panel className="flex min-w-0 flex-1 items-center">
                     <ChangesChart
-                      className="max-w- h-22 min-w-0 flex-1"
+                      className="h-22 min-w-0 flex-1 px-4"
                       series={test.metrics.series}
                       from={period.from}
                     />
-                  </div>
+                  </Panel>
                 </div>
               </div>
-              <div
-                className={clsx(
-                  "flex flex-col gap-2",
-                  areChangesPending && "animate-pulse",
-                )}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
+              <Panel className={clsx(areChangesPending && "animate-pulse")}>
+                <PanelHeader>
                   <Heading level={2} className="font-medium">
                     {filterState.value === "ignored"
                       ? "Ignored changes"
@@ -226,7 +229,7 @@ export function Component() {
                     <span className="text-low">over the {periodLabel}</span>
                   </Heading>
                   <ChangesFilterToggle state={filterState} />
-                </div>
+                </PanelHeader>
                 <ProjectIgnoreEnabledProvider
                   enabled={project.ignoreConfig.enabled}
                 >
@@ -236,9 +239,9 @@ export function Component() {
                     filterState={filterState}
                   />
                 </ProjectIgnoreEnabledProvider>
-              </div>
+              </Panel>
             </div>
-            <div className="flex w-full shrink-0 flex-col gap-2 xl:w-80">
+            <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
               <ChangeHistorySection test={test} params={params} />
               <ActivitySection test={test} />
             </div>
@@ -316,12 +319,14 @@ function ChangesExplorer(props: {
   const { test, periodState, filterState } = props;
   const [activeChange, setActiveChangeId] = useActiveChange({ test });
   const viewportSize = useViewportSize();
-  const height = viewportSize.height - 160;
+  // Leaves room for what sits above the explorer, including the vertical
+  // padding of the panel it is now nested in.
+  const height = viewportSize.height - 184;
   const periodLabel =
     periodState.definition[periodState.value].label.toLowerCase();
   if (test.changes.edges.length === 0) {
     return (
-      <div className="bg-app rounded-lg border">
+      <>
         {filterState.value === "ignored" ? (
           <EmptyState>
             <EmptyStateIcon>
@@ -354,14 +359,13 @@ function ChangesExplorer(props: {
             </Text>
           </EmptyState>
         )}
-      </div>
+      </>
     );
   }
   return (
-    <div
-      className="bg-app border-thin flex rounded-lg shadow-xs"
-      style={{ height }}
-    >
+    // The surrounding panel provides the card; this only lays the two sides out
+    // and gives the scrollable columns a height to work against.
+    <div className="flex" style={{ height }}>
       <div className="border-r-thin flex min-w-60">
         <ChangesList
           test={test}
