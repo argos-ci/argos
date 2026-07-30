@@ -2,6 +2,8 @@ import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
+import { TEST_COMMENTS_LIMIT } from "@/comment/getVisibleComments";
+import { knex } from "@/database";
 import {
   Comment,
   CommentNotificationSubscription,
@@ -224,6 +226,42 @@ describe("test comments API", () => {
       .set(auth(scopedPatToken))
       .expect(200);
     expect(single.body.id).toBe(first.body.id);
+  });
+
+  // A test is commented on for as long as it exists, so the feed is capped at
+  // its newest comments rather than growing without end.
+  test("serves at most the newest TEST_COMMENTS_LIMIT comments", async ({
+    user,
+    test: testModel,
+    testId,
+    scopedPatToken,
+  }) => {
+    const total = TEST_COMMENTS_LIMIT + 2;
+    const start = Date.UTC(2026, 0, 1);
+    await knex("comments").insert(
+      Array.from({ length: total }, (_, index) => {
+        // Distinct, increasing dates so "newest" is unambiguous.
+        const date = new Date(start + index * 1000).toISOString();
+        return {
+          userId: user.id,
+          testId: testModel.id,
+          content: DOC(`Comment ${index}`),
+          createdAt: date,
+          updatedAt: date,
+        };
+      }),
+    );
+
+    const list = await request(app)
+      .get(`/projects/acme/web/tests/${testId}/comments`)
+      .set(auth(scopedPatToken))
+      .expect(200);
+
+    const texts = list.body.map((comment: { text: string }) => comment.text);
+    expect(texts).toHaveLength(TEST_COMMENTS_LIMIT);
+    // Still oldest first, with the two oldest left outside the window.
+    expect(texts.at(0)).toBe("Comment 2");
+    expect(texts.at(-1)).toBe(`Comment ${total - 1}`);
   });
 
   test("updates and deletes a comment", async ({ testId, scopedPatToken }) => {

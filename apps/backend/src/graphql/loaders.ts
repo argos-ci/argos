@@ -6,7 +6,10 @@ import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
 import { getPresences, type UserPresence } from "@/auth/presence";
-import { filterVisibleComments } from "@/comment/getVisibleComments";
+import {
+  filterVisibleComments,
+  getVisibleTestCommentsQuery,
+} from "@/comment/getVisibleComments";
 import { knex } from "@/database";
 import {
   Account,
@@ -19,6 +22,7 @@ import {
   BuildReview,
   Comment,
   CommentMention,
+  CommentNotificationSubscription,
   CommentReaction,
   Deployment,
   DeploymentAlias,
@@ -950,8 +954,8 @@ function createBuildPublishedCommentsLoader() {
 }
 
 /**
- * Loads the comments posted on a test. Test comments never belong to a review,
- * so the shared visibility filter only excludes the soft-deleted ones.
+ * Loads the comments posted on a test, capped per test — see
+ * {@link getVisibleTestCommentsQuery}, shared with the REST endpoint.
  */
 function createTestCommentsLoader() {
   return new DataLoader<
@@ -963,10 +967,10 @@ function createTestCommentsLoader() {
       const testIds = inputs.map((input) => input.testId);
       // A single request carries one viewer, so all inputs share it.
       const viewerUserId = inputs[0]?.viewerUserId ?? null;
-      const comments = await filterVisibleComments(
-        Comment.query().whereIn("testId", testIds),
+      const comments = await getVisibleTestCommentsQuery({
+        testIds,
         viewerUserId,
-      ).orderBy("createdAt", "asc");
+      });
       const commentsMap = comments.reduce<Record<string, Comment[]>>(
         (map, comment) => {
           invariant(comment.testId, "Test comments have a testId");
@@ -1021,6 +1025,42 @@ function createCommentMentionedUserIdsLoader() {
     }, {});
     return commentIds.map((id) => map[id] ?? []);
   });
+}
+
+/**
+ * Loads whether the request's viewer follows a comment thread, keyed by root
+ * comment id.
+ *
+ * `Comment.threadSubscribed` is resolved for every comment an activity feed
+ * renders, so without batching a feed costs one subscription query per comment.
+ * Replies share their root's key, which also collapses a whole thread to a
+ * single entry.
+ */
+function createCommentThreadSubscribedLoader() {
+  return new DataLoader<
+    { threadId: string; viewerUserId: string },
+    boolean,
+    string
+  >(
+    async (inputs) => {
+      const threadIds = inputs.map((input) => input.threadId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId;
+      invariant(viewerUserId, "Loader called without a viewer");
+      const subscriptions = await CommentNotificationSubscription.query()
+        .whereIn("commentId", threadIds)
+        .where("userId", viewerUserId);
+      const subscribed = new Set(
+        subscriptions
+          .filter((subscription) => subscription.isSubscribed())
+          .map((subscription) => subscription.commentId),
+      );
+      return inputs.map((input) => subscribed.has(input.threadId));
+    },
+    {
+      cacheKeyFn: (input) => `${input.threadId}:${input.viewerUserId}`,
+    },
+  );
 }
 
 function createBuildReviewsLoader() {
@@ -1714,6 +1754,7 @@ export const createLoaders = () => ({
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
+  CommentThreadSubscribed: createCommentThreadSubscribedLoader(),
   BuildReview: createModelLoader(BuildReview),
   BuildReviews: createBuildReviewsLoader(),
   BuildRequestedReviewers: createBuildRequestedReviewersLoader(),

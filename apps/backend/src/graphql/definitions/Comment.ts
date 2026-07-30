@@ -36,7 +36,6 @@ import {
   CommentAnchorSchema,
   type CommentAnchor,
 } from "@/database/models/Comment";
-import { CommentNotificationSubscription } from "@/database/models/CommentNotificationSubscription";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff";
 import type { User } from "@/database/models/User";
 import {
@@ -434,12 +433,11 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         return false;
       }
-      const subscription =
-        await CommentNotificationSubscription.query().findOne({
-          commentId: comment.threadId ?? comment.id,
-          userId: ctx.auth.user.id,
-        });
-      return subscription?.isSubscribed() ?? false;
+      // Subscriptions live on the thread root, which a reply points at.
+      return ctx.loaders.CommentThreadSubscribed.load({
+        threadId: comment.threadId ?? comment.id,
+        viewerUserId: ctx.auth.user.id,
+      });
     },
     pending: async (comment, _args, ctx) => {
       if (!comment.buildReviewId) {
