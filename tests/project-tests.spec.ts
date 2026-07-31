@@ -150,16 +150,22 @@ loggedTest(
 
 loggedTest(
   "test view hands out a prompt to fix the flakiness with an agent",
-  async ({ page, team, project }) => {
+  async ({ page, team, project, browserName }) => {
     const { test } = await createFlakyTestScenario({ projectId: project.id });
     const testId = formatTestId({ projectName: project.name, testId: test.id });
 
+    // Reading back what was copied needs the clipboard permissions, and only
+    // Chromium exposes them to Playwright — Firefox rejects the names outright.
+    const canReadClipboard = browserName === "chromium";
+
     await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
-    await page
-      .context()
-      .grantPermissions(["clipboard-read", "clipboard-write"], {
-        origin: new URL(page.url()).origin,
-      });
+    if (canReadClipboard) {
+      await page
+        .context()
+        .grantPermissions(["clipboard-read", "clipboard-write"], {
+          origin: new URL(page.url()).origin,
+        });
+    }
 
     // The test is flaky, so the section opens itself: the button is reachable
     // without expanding anything.
@@ -184,13 +190,16 @@ loggedTest(
     await expect(prompt).toContainText(`/tests/${testId}/changes`);
     await expect(prompt).toContainText("listTestChanges");
 
-    // Copying puts the prompt on the clipboard and confirms itself, so the user
-    // knows it landed.
+    // Copying puts the prompt on the clipboard.
     await page.getByRole("button", { name: "Copy prompt" }).click();
-    await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
-    await expect
-      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toContain(`Test id: ${testId}`);
+    if (canReadClipboard) {
+      // The button only confirms itself once the write resolved, so it stands in
+      // for the copy having landed.
+      await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+      await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toContain(`Test id: ${testId}`);
+    }
   },
 );
 
