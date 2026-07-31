@@ -1,11 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import {
-  IgnoredChange,
-  ScreenshotDiff,
-  TestNotificationSubscription,
-} from "@/database/models";
+import { TestNotificationSubscription } from "@/database/models";
+import { queryTestChanges } from "@/database/services/test";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 import { getProjectMemberIds } from "@/project/members";
 import { formatTestId } from "@/util/test-id";
@@ -122,49 +119,16 @@ export const resolvers: IResolvers = {
       const { period, after, first, ignored } = args;
       const from = getStartDateFromPeriod(period);
 
-      const totalOccurrencesQuery = `
-        SELECT sum(tsf.value) FROM test_stats_fingerprints tsf
-          WHERE tsf."testId" = screenshot_diffs."testId"
-          AND tsf.fingerprint = screenshot_diffs.fingerprint
-          AND tsf.date >= :from
-      `;
-
-      const diffQuery = ScreenshotDiff.query()
-        .select("screenshot_diffs.id")
-        .distinctOn("screenshot_diffs.fingerprint")
-        .joinRelated("build")
-        .where("screenshot_diffs.testId", test.id)
-        .where("screenshot_diffs.score", ">", 0)
-        .where("build.type", "reference")
-        .where("build.createdAt", ">", from)
-        .whereNotNull("screenshot_diffs.fingerprint")
-        .orderBy("screenshot_diffs.fingerprint");
-
-      const query = ScreenshotDiff.query()
-        .select("screenshot_diffs.fingerprint")
-        .whereIn("id", diffQuery.clone())
-        .orderByRaw(`(${totalOccurrencesQuery}) DESC`, { from })
-        .range(after, after + first - 1);
-
-      if (ignored != null) {
-        // A change is ignored per project + test + fingerprint, and both the
-        // test and the project are fixed here, so matching on the fingerprint
-        // alone is enough.
-        const ignoredFingerprints = IgnoredChange.query()
-          .select("fingerprint")
-          .where("projectId", test.projectId)
-          .where("testId", test.id);
-
-        if (ignored) {
-          query.whereIn("screenshot_diffs.fingerprint", ignoredFingerprints);
-        } else {
-          query.whereNotIn("screenshot_diffs.fingerprint", ignoredFingerprints);
-        }
-      }
-
       const [project, result] = await Promise.all([
         ctx.loaders.Project.load(test.projectId),
-        query,
+        queryTestChanges({
+          projectId: test.projectId,
+          testId: test.id,
+          from,
+          ignored: ignored ?? null,
+          offset: after,
+          limit: first,
+        }),
       ]);
 
       invariant(project);
@@ -172,17 +136,11 @@ export const resolvers: IResolvers = {
       return paginateResult({
         result: {
           total: result.total,
-          results: result.results.map((screenshotDiff): TestChangeObject => {
-            invariant(
-              screenshotDiff.fingerprint,
-              "Diffs without a fingerprint are filtered out by the query",
-            );
-            return {
-              project,
-              testId: test.id,
-              fingerprint: screenshotDiff.fingerprint,
-            };
-          }),
+          results: result.fingerprints.map((fingerprint): TestChangeObject => ({
+            project,
+            testId: test.id,
+            fingerprint,
+          })),
         },
         first,
         after,

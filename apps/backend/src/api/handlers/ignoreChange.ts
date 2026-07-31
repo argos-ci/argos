@@ -9,17 +9,16 @@ import {
   ignoreChange as ignoreTestChange,
   unignoreChange as unignoreTestChange,
 } from "@/database/services/ignored-change";
-import { IMetricsPeriod } from "@/graphql/__generated__/resolver-types";
-import {
-  getChangesTotalOccurrences,
-  getStartDateFromPeriod,
-} from "@/metrics/test";
+import { getChangesTotalOccurrences } from "@/metrics/test";
 import { boom } from "@/util/error";
 import { formatTestChangeId, safeParseTestChangeId } from "@/util/test-id";
 
 import { getProjectForAuth } from "../auth/project";
 import { ChangeSchema } from "../schema/primitives/change";
-import { MetricsPeriodSchema } from "../schema/primitives/metrics";
+import {
+  getMetricsPeriodStartDate,
+  MetricsPeriodSchema,
+} from "../schema/primitives/metrics";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
@@ -51,7 +50,7 @@ export const ignoreChangeOperation = {
   summary: "Ignore a test change",
   description:
     "Ignore a test change so its diffs no longer require review and are automatically approved on future builds. Use it to silence a change that has been identified as flaky.",
-  tags: ["Changes"],
+  tags: ["Tests"],
   security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: IgnorePathParams,
@@ -79,7 +78,7 @@ export const unignoreChangeOperation = {
   summary: "Unignore a test change",
   description:
     "Stop ignoring a test change so its diffs require review again on future builds.",
-  tags: ["Changes"],
+  tags: ["Tests"],
   security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: IgnorePathParams,
@@ -190,9 +189,7 @@ export const ignoreChange: CreateAPIHandler = ({ post }) => {
         await serializeChange({
           ...resolved,
           ignored: true,
-          metricsFrom: getStartDateFromPeriod(
-            req.ctx.query.metricsPeriod as IMetricsPeriod,
-          ),
+          metricsFrom: getMetricsPeriodStartDate(req.ctx.query.metricsPeriod),
         }),
       );
     },
@@ -219,9 +216,7 @@ export const unignoreChange: CreateAPIHandler = ({ post }) => {
         await serializeChange({
           ...resolved,
           ignored: false,
-          metricsFrom: getStartDateFromPeriod(
-            req.ctx.query.metricsPeriod as IMetricsPeriod,
-          ),
+          metricsFrom: getMetricsPeriodStartDate(req.ctx.query.metricsPeriod),
         }),
       );
     },

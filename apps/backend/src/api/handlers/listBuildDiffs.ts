@@ -4,13 +4,14 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Build, ScreenshotDiff } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
-import { IMetricsPeriod } from "@/graphql/__generated__/resolver-types";
-import { getStartDateFromPeriod } from "@/metrics/test";
 import { boom } from "@/util/error";
 
 import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
-import { MetricsPeriodSchema } from "../schema/primitives/metrics";
+import {
+  getMetricsPeriodStartDate,
+  MetricsPeriodSchema,
+} from "../schema/primitives/metrics";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
@@ -148,7 +149,7 @@ export const listBuildDiffs: CreateAPIHandler = ({ get }) => {
 
       const results = await serializeSnapshotDiffs(diffs.results, {
         project: build.project,
-        metricsFrom: getStartDateFromPeriod(metricsPeriod as IMetricsPeriod),
+        metricsFrom: getMetricsPeriodStartDate(metricsPeriod),
       });
 
       res.send({

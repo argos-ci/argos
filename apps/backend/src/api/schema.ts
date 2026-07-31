@@ -37,6 +37,7 @@ import {
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getMeOperation } from "./handlers/getMe";
 import { getProjectOperation } from "./handlers/getProject";
+import { getTestOperation } from "./handlers/getTest";
 import {
   ignoreChangeOperation,
   unignoreChangeOperation,
@@ -49,6 +50,7 @@ import {
 } from "./handlers/listComments";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
+import { listTestChangesOperation } from "./handlers/listTestChanges";
 import {
   removeBuildCommentReactionOperation,
   removeTestCommentReactionOperation,
@@ -134,6 +136,12 @@ export const zodSchema = {
       description:
         "Submit, list, and dismiss reviews to approve or reject the changes captured in a build.",
       "x-page-icon": "clipboard-check",
+    },
+    {
+      name: "Tests",
+      description:
+        "Inspect a test's flakiness — how often it changed and how erratically — list the changes that keep coming back, and ignore the ones that are only noise.",
+      "x-page-icon": "flask",
     },
     {
       name: "Comments",
@@ -254,6 +262,12 @@ export const zodSchema = {
         post: subscribeBuildCommentThreadOperation,
         delete: unsubscribeBuildCommentThreadOperation,
       },
+    "/projects/{owner}/{project}/tests/{testId}": {
+      get: getTestOperation,
+    },
+    "/projects/{owner}/{project}/tests/{testId}/changes": {
+      get: listTestChangesOperation,
+    },
     "/projects/{owner}/{project}/tests/{testId}/comments": {
       get: listTestCommentsOperation,
       post: createTestCommentOperation,
