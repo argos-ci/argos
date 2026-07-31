@@ -67,6 +67,7 @@ import {
   type ChangesFilterState,
 } from "./ChangesFilter";
 import { Counter, CounterLabel, CounterValue } from "./Counter";
+import { FixFlakinessSection } from "./FixFlakinessSection";
 import { useTestParams, type TestSearchParams } from "./TestParams";
 import {
   BuildsCounter,
@@ -95,6 +96,7 @@ const TestQuery = graphql(`
         name
         status
         ...ChangeHistorySection_Test
+        ...FixFlakinessSection_Test
         ...TestActivity_Test
         changes(period: $period, after: 0, first: 30, ignored: $ignored) {
           edges {
@@ -252,6 +254,13 @@ export function Component() {
             </div>
             <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
               <ChangeHistorySection test={test} params={params} />
+              {/* The prompt quotes the metrics, so it labels itself with the
+                  period they were fetched for, not the one being switched to. */}
+              <FixFlakinessSection
+                test={test}
+                period={deferredPeriodValue}
+                periodLabel={period.label.toLowerCase()}
+              />
               <ActivitySection test={test} />
             </div>
           </div>

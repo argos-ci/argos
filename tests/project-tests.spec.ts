@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 
 import {
+  createFlakyTestScenario,
   createIgnoredChangeScenario,
   createTestChangeScenario,
 } from "../apps/backend/src/database/seeds";
@@ -144,6 +145,85 @@ loggedTest(
     // And the toggle opts back out.
     await unsubscribe.click();
     await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
+  },
+);
+
+loggedTest(
+  "test view hands out a prompt to fix the flakiness with an agent",
+  async ({ page, team, project, browserName }) => {
+    const { test } = await createFlakyTestScenario({ projectId: project.id });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    // Reading back what was copied needs the clipboard permissions, and only
+    // Chromium exposes them to Playwright — Firefox rejects the names outright.
+    const canReadClipboard = browserName === "chromium";
+
+    await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+    if (canReadClipboard) {
+      await page
+        .context()
+        .grantPermissions(["clipboard-read", "clipboard-write"], {
+          origin: new URL(page.url()).origin,
+        });
+    }
+
+    // The test is flaky, so the section opens itself: the button is reachable
+    // without expanding anything.
+    await expect(
+      page.getByRole("heading", { name: "Fix with AI" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Copy prompt" }),
+    ).toBeVisible();
+
+    // The prompt is previewable, so nobody has to copy it blind, and it names
+    // the test and the API endpoints the agent has to call.
+    await page.getByText("Preview the prompt").click();
+    const prompt = page
+      .getByRole("code")
+      .filter({ hasText: "Fix the flaky Argos visual test" });
+    await expect(prompt).toContainText("penelope-argos.jpg");
+    await expect(prompt).toContainText(`Test id: ${testId}`);
+    await expect(prompt).toContainText(
+      `/projects/${team.account.slug}/${project.name}/tests/${testId}?metricsPeriod=LAST_7_DAYS`,
+    );
+    await expect(prompt).toContainText(`/tests/${testId}/changes`);
+    await expect(prompt).toContainText("listTestChanges");
+
+    // Copying puts the prompt on the clipboard.
+    await page.getByRole("button", { name: "Copy prompt" }).click();
+    if (canReadClipboard) {
+      // The button only confirms itself once the write resolved, so it stands in
+      // for the copy having landed.
+      await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+      await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toContain(`Test id: ${testId}`);
+    }
+  },
+);
+
+loggedTest(
+  "test view folds the AI prompt away on a stable test",
+  async ({ page, team, project }) => {
+    const { test } = await createTestChangeScenario({ projectId: project.id });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+    // Nothing to fix here, so the section is folded into its header: still
+    // there, but not competing with the metrics saying the test is fine.
+    const heading = page.getByRole("heading", { name: "Fix with AI" });
+    await expect(heading).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Copy prompt" }),
+    ).toBeHidden();
+
+    // And opening it hands out the same prompt.
+    await heading.click();
+    await expect(
+      page.getByRole("button", { name: "Copy prompt" }),
+    ).toBeVisible();
   },
 );
 

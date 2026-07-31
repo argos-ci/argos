@@ -1,7 +1,8 @@
 import * as Sentry from "@sentry/node";
 import type { QueryBuilder } from "objection";
 
-import { Build, Screenshot, ScreenshotDiff, Test } from "@/database/models";
+import { Screenshot, ScreenshotDiff, Test } from "@/database/models";
+import { getLatestReferenceBuildIds } from "@/database/services/test";
 import {
   computeTestMetrics,
   getStartDateFromPeriod,
@@ -92,85 +93,6 @@ const FLAKINESS_ORDER_BY = `
     "tests"."createdAt" desc,
     "tests"."id" desc
 `;
-
-export type LatestReferenceBuild = { id: string; projectId: string };
-
-/**
- * Resolve the id of the latest reference build for each distinct build name of
- * each project.
- *
- * Teams can accumulate a massive reference-build history under only a handful of
- * build names (millions of builds, a few names). A plain `DISTINCT ON (name)`
- * has to read every reference build to dedupe — which is what made this step
- * take seconds. Instead we emulate a loose index scan ("skip scan") with a
- * recursive CTE: jump to the first build name, then to each next name via the
- * `(projectId, type, name, createdAt desc)` index, and grab that name's latest
- * build. That's ~2 index probes per build name instead of scanning the whole
- * history, so it no longer scales with the number of builds.
- *
- * The walk carries the project along so every project is covered by one
- * statement. Fanning it out per project instead meant `projectIds.length`
- * round-trips racing for a connection pool that is 6 wide by default — an
- * account with dozens of projects serialized into waves and starved every other
- * request on the process.
- */
-export async function getLatestReferenceBuildIds(
-  projectIds: string[],
-): Promise<LatestReferenceBuild[]> {
-  if (projectIds.length === 0) {
-    return [];
-  }
-  return Sentry.startSpan(
-    {
-      name: "getLatestReferenceBuildIds",
-      attributes: { "argos.project.count": projectIds.length },
-    },
-    async () => {
-      const result = (await Build.knex().raw(
-        `WITH RECURSIVE build_names AS (
-           SELECT
-             p.id AS "projectId",
-             (
-               SELECT min(b.name)
-               FROM builds b
-               WHERE b."projectId" = p.id AND b."type" = 'reference'
-             ) AS name
-           FROM unnest(:projectIds::bigint[]) AS p(id)
-           UNION ALL
-           SELECT
-             build_names."projectId",
-             (
-               SELECT min(b.name)
-               FROM builds b
-               WHERE b."projectId" = build_names."projectId"
-                 AND b."type" = 'reference'
-                 AND b.name > build_names.name
-             )
-           FROM build_names
-           WHERE build_names.name IS NOT NULL
-         )
-         SELECT
-           build_names."projectId"::text AS "projectId",
-           (
-             SELECT b.id
-             FROM builds b
-             WHERE b."projectId" = build_names."projectId"
-               AND b."type" = 'reference'
-               AND b.name = build_names.name
-             ORDER BY b."createdAt" DESC
-             LIMIT 1
-           )::text AS id
-         FROM build_names
-         WHERE build_names.name IS NOT NULL`,
-        { projectIds },
-      )) as { rows: { id: string | null; projectId: string }[] };
-
-      return result.rows.filter(
-        (row): row is LatestReferenceBuild => row.id !== null,
-      );
-    },
-  );
-}
 
 /**
  * Query the "active" tests for a set of projects, sorted by flakiness.

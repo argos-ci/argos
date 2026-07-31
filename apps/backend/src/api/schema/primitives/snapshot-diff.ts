@@ -61,7 +61,7 @@ const TestMetricsSchema = z
     id: "TestMetrics",
   });
 
-const TestSchema = z
+export const TestSchema = z
   .object({
     id: z.string().meta({
       description: "Unique identifier of the test",
@@ -162,7 +162,10 @@ async function serializeSnapshot(
   };
 }
 
-async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
+/**
+ * Public URL of a diff's image, or null when the diff carries none.
+ */
+export async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
   const file = diff.file as FileModel | null | undefined;
   if (file) {
     return getPublicFileUrl(file);

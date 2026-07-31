@@ -560,6 +560,28 @@ export async function createBuildScenario(input: {
 }
 
 /**
+ * Point a scenario at one of the shared image fixtures already hosted on the CDN
+ * (`files.argos-ci.com/<env>/<key>`) so its screenshots actually render.
+ *
+ * A `files.key` is globally unique and the fixtures are shared, so this has to
+ * be insert-or-fetch rather than check-then-insert: the DB is not truncated
+ * between a spec's retries, and specs seeding the same fixture run in parallel —
+ * a plain `findOne` + `insert` races on `files_key_unique`.
+ */
+async function ensureFile(props: {
+  type: "screenshot" | "screenshotDiff";
+  width: number;
+  height: number;
+  key: string;
+  contentType: string;
+}): Promise<File> {
+  await File.query().insert(props).onConflict("key").ignore();
+  const file = await File.query().findOne({ key: props.key });
+  invariant(file, `File should exist after being seeded: ${props.key}`);
+  return file;
+}
+
+/**
  * Seeds a single test that has a detected change within the default metrics
  * period (last 7 days), so the test trends page renders its snapshot diff
  * viewer.
@@ -598,24 +620,6 @@ export async function createTestChangeScenario(input: {
     { name: "penelope-argos.jpg", buildName: "default", projectId },
   ]);
   invariant(test);
-
-  // Point at the shared image fixtures already hosted on the CDN
-  // (`files.argos-ci.com/<env>/<key>`) so the screenshots actually render. Each
-  // `key` is globally unique, so reuse an existing row when present — the DB
-  // isn't truncated between a test's retries.
-  const ensureFile = async (props: {
-    type: "screenshot" | "screenshotDiff";
-    width: number;
-    height: number;
-    key: string;
-    contentType: string;
-  }): Promise<File> => {
-    const existing = await File.query().findOne({ key: props.key });
-    if (existing) {
-      return existing;
-    }
-    return File.query().insertAndFetch(props);
-  };
 
   const [baseFile, compareFile, diffFile] = await Promise.all([
     ensureFile({
@@ -714,6 +718,59 @@ async function getSeedArgosBotUserId(): Promise<string> {
 }
 
 /**
+ * A test Argos scores as flaky: it changed in more than half of the builds that
+ * ran it, and one of those changes kept coming back on several days.
+ *
+ * Flakiness is derived at read time from the daily stats the diff pipeline fills
+ * on reference builds, so the scenario seeds those rows directly. Kept separate
+ * from {@link createTestChangeScenario} so the pages that only need *a* change
+ * keep their current, non-flaky numbers.
+ */
+export async function createFlakyTestScenario(input: {
+  projectId: string;
+}): Promise<{ test: Test; build: Build }> {
+  const { projectId } = input;
+  const { test, build } = await createTestChangeScenario({ projectId });
+
+  const startOfDay = (daysAgo: number) => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - daysAgo);
+    return date;
+  };
+
+  // 6 changes over 10 builds (low stability), 5 of them the same recurring
+  // fingerprint spread over two days (low consistency).
+  await knex("test_stats_builds").insert({
+    testId: test.id,
+    date: startOfDay(0),
+    value: 10,
+  });
+  await knex("test_stats_fingerprints").insert([
+    {
+      testId: test.id,
+      fingerprint: "flaky-recurring",
+      date: startOfDay(1),
+      value: 3,
+    },
+    {
+      testId: test.id,
+      fingerprint: "flaky-recurring",
+      date: startOfDay(0),
+      value: 2,
+    },
+    {
+      testId: test.id,
+      fingerprint: "flaky-one-off",
+      date: startOfDay(0),
+      value: 1,
+    },
+  ]);
+
+  return { test, build };
+}
+
+/**
  * A change that has been ignored and kept reappearing afterwards, so the ignore
  * ledger has a row with an author, a date and a non-zero occurrence count.
  */
@@ -783,21 +840,6 @@ export async function createFallbackBaselineScenario(input: {
       { ...bucketProps, commit: "ac7d1a6a6b0ea1a2d2b4bd0f4c6b6f5b0e3f8a1c" },
     ]);
   invariant(baseBucket && compareBucket);
-
-  // Reuse the CDN-hosted fixtures so the images actually render.
-  const ensureFile = async (props: {
-    type: "screenshot" | "screenshotDiff";
-    width: number;
-    height: number;
-    key: string;
-    contentType: string;
-  }): Promise<File> => {
-    const existing = await File.query().findOne({ key: props.key });
-    if (existing) {
-      return existing;
-    }
-    return File.query().insertAndFetch(props);
-  };
 
   const [baseFile, compareFile, diffFile] = await Promise.all([
     ensureFile({

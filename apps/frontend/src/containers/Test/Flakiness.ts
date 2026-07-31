@@ -9,3 +9,12 @@ export function getFlakinessUIColor(value: number) {
     return "danger" satisfies UIColor;
   }
 }
+
+/**
+ * Whether a flakiness score is worth acting on. Derived from the gauge's colors
+ * so "flaky" means exactly what the page already shows: anything the gauge does
+ * not paint green.
+ */
+export function isFlaky(value: number): boolean {
+  return getFlakinessUIColor(value) !== "success";
+}

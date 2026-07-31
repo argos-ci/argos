@@ -24,12 +24,14 @@ import { getComment } from "./handlers/getComment";
 import { getDeployment } from "./handlers/getDeployment";
 import { getMe } from "./handlers/getMe";
 import { getProject } from "./handlers/getProject";
+import { getTest } from "./handlers/getTest";
 import { ignoreChange, unignoreChange } from "./handlers/ignoreChange";
 import { listBuildDiffs } from "./handlers/listBuildDiffs";
 import { listBuilds } from "./handlers/listBuilds";
 import { listComments } from "./handlers/listComments";
 import { listProjects } from "./handlers/listProjects";
 import { listReviews } from "./handlers/listReviews";
+import { listTestChanges } from "./handlers/listTestChanges";
 import { removeCommentReaction } from "./handlers/removeCommentReaction";
 import {
   resolveCommentThread,
@@ -102,6 +104,8 @@ registerHandler(router, listBuildDiffs);
 registerHandler(router, ignoreChange);
 registerHandler(router, unignoreChange);
 registerHandler(router, getProject);
+registerHandler(router, getTest);
+registerHandler(router, listTestChanges);
 registerHandler(router, listBuilds);
 registerHandler(router, listProjects);
 registerHandler(router, resolveDeploymentDomain);

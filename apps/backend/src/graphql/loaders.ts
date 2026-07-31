@@ -54,14 +54,19 @@ import {
   type AccountPeriodUsage,
 } from "@/database/services/period-usage";
 import {
+  getLatestReferenceBuildIds,
+  getTestChangesStats,
+  getTestsSeenDiffs,
+  type TestChangeStats,
+} from "@/database/services/test";
+import {
   checkOctokitErrorStatus,
   getAppOctokit,
   GhApiInstallation,
 } from "@/github";
-import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
+import { getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
-import { getLatestReferenceBuildIds } from "./services/test";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -1228,86 +1233,26 @@ function createTestAllMetricsLoader() {
 function createTestChangeStatsLoader(): (
   from: string,
   testId: string,
-) => DataLoader<
-  { fingerprint: string },
-  {
-    totalOccurrences: number;
-    lastSeenDiff: ScreenshotDiff;
-    firstSeenDiff: ScreenshotDiff;
-  },
-  string
-> {
+) => DataLoader<{ fingerprint: string }, TestChangeStats, string> {
   return memoize((from: string, testId: string) => {
-    return new DataLoader<
-      {
-        fingerprint: string;
-      },
-      {
-        totalOccurrences: number;
-        lastSeenDiff: ScreenshotDiff;
-        firstSeenDiff: ScreenshotDiff;
-      },
-      string
-    >(
+    return new DataLoader<{ fingerprint: string }, TestChangeStats, string>(
       async (pairs) => {
         const fingerprints = [...new Set(pairs.map((p) => p.fingerprint))];
-
-        const totalOccurrencesQuery = getChangesTotalOccurrences(
-          fingerprints.map((fingerprint) => ({ testId, fingerprint })),
-          { from: new Date(from) },
-        );
-
-        const diffQuery = ScreenshotDiff.query()
-          .select("screenshot_diffs.*")
-          .distinctOn("screenshot_diffs.fingerprint")
-          .joinRelated("build")
-          .where("screenshot_diffs.testId", testId)
-          .whereIn("screenshot_diffs.fingerprint", fingerprints)
-          .where("screenshot_diffs.score", ">", 0)
-          .where("build.type", "reference")
-          .where("build.createdAt", ">=", from)
-          .whereNotNull("screenshot_diffs.fingerprint")
-          .orderBy("screenshot_diffs.fingerprint");
-
-        const lastSeenQuery = diffQuery
-          .clone()
-          .orderBy("screenshot_diffs.createdAt", "desc");
-
-        const firstSeenQuery = diffQuery
-          .clone()
-          .orderBy("screenshot_diffs.createdAt", "asc");
-
-        const [lastSeenRows, firstSeenRows, totalOccurrences] =
-          await Promise.all([
-            lastSeenQuery,
-            firstSeenQuery,
-            totalOccurrencesQuery,
-          ]);
-
-        const totalOccurrencesMap = new Map(
+        const stats = await getTestChangesStats({
+          testId,
+          fingerprints,
+          from: new Date(from),
+        });
+        const statsByFingerprint = new Map(
           fingerprints.map((fingerprint, index) => [
             fingerprint,
-            totalOccurrences[index] ?? 0,
+            stats[index] ?? null,
           ]),
         );
-        const lastSeenMap = new Map(
-          lastSeenRows.map((diff) => [diff.fingerprint, diff]),
-        );
-        const firstSeenMap = new Map(
-          firstSeenRows.map((diff) => [diff.fingerprint, diff]),
-        );
         return pairs.map((pair) => {
-          const totalOccurrences =
-            totalOccurrencesMap.get(pair.fingerprint) ?? 0;
-          const lastSeenDiff = lastSeenMap.get(pair.fingerprint) ?? null;
-          const firstSeenDiff = firstSeenMap.get(pair.fingerprint) ?? null;
-          invariant(lastSeenDiff, "Last seen diff should not be null");
-          invariant(firstSeenDiff, "First seen diff should not be null");
-          return {
-            totalOccurrences,
-            lastSeenDiff,
-            firstSeenDiff,
-          };
+          const pairStats = statsByFingerprint.get(pair.fingerprint) ?? null;
+          invariant(pairStats, "Stats should be loaded for every fingerprint");
+          return pairStats;
         });
       },
       { cacheKeyFn: (input) => JSON.stringify(input) },
@@ -1547,81 +1492,8 @@ function createTestStatusLoader() {
   );
 }
 
-type SeenDiffs = {
-  first: ScreenshotDiff | null;
-  last: ScreenshotDiff | null;
-};
 function createSeenDiffsLoader() {
-  return new DataLoader<string, SeenDiffs>(async (testIds) => {
-    if (testIds.length === 0) {
-      return [];
-    }
-
-    return Sentry.startSpan(
-      {
-        name: "SeenDiffsLoader",
-        attributes: { "argos.test.count": testIds.length },
-      },
-      () => loadSeenDiffs(testIds),
-    );
-  });
-}
-
-async function loadSeenDiffs(testIds: readonly string[]): Promise<SeenDiffs[]> {
-  const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
-
-  const rows = await ScreenshotDiff.query()
-    .from(ScreenshotDiff.raw(`(values ${valuesSql}) as t("testId")`, testIds))
-    .joinRaw(
-      `
-      join lateral (
-        (
-          select sd.id, 'first' as kind
-          from screenshot_diffs sd
-          where sd."testId" = t."testId"
-            and sd."fileId" is not null
-          order by sd.id asc
-          limit 1
-        )
-        union all
-        (
-          select sd.id, 'last' as kind
-          from screenshot_diffs sd
-          where sd."testId" = t."testId"
-            and sd."fileId" is not null
-          order by sd.id desc
-          limit 1
-        )
-      ) pick on true
-      `,
-    )
-    .join("screenshot_diffs", "screenshot_diffs.id", "pick.id")
-    .select(
-      ScreenshotDiff.raw(`t."testId"::text as "testId"`),
-      "pick.kind",
-      "screenshot_diffs.*",
-    );
-
-  const map = new Map<string, SeenDiffs>();
-  for (const testId of testIds) {
-    map.set(testId, { first: null, last: null });
-  }
-
-  for (const row of rows as any[]) {
-    const entry = map.get(String(row.testId))!;
-    switch (row.kind) {
-      case "first": {
-        entry.first = row;
-        break;
-      }
-      case "last": {
-        entry.last = row;
-        break;
-      }
-    }
-  }
-
-  return testIds.map((id) => map.get(id)!);
+  return new DataLoader(getTestsSeenDiffs);
 }
 
 type LatestCompareScreenshot = Screenshot | null;
