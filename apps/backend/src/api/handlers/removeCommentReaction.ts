@@ -4,28 +4,33 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { removeCommentReaction as removeCommentReactionService } from "@/comment/removeCommentReaction";
 
 import {
-  assertBuildPermission,
-  getBuildComment,
-  loadBuildForUserAuth,
-} from "../auth/build";
+  assertCommentTargetPermission,
+  getTargetComment,
+  loadCommentTargetForUserAuth,
+  type CommentAuth,
+  type CommentRouteParams,
+} from "../auth/comment";
 import { BuildNumber } from "../schema/primitives/build";
-import { CommentSchema, serializeComment } from "../schema/primitives/comment";
-import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
-  forbidden,
-  invalidParameters,
-  notFound,
-  serverError,
-  unauthorized,
-} from "../schema/util/error";
+  CommentId,
+  commentResponses,
+  serializeComment,
+  type CommentPayload,
+} from "../schema/primitives/comment";
+import { AccountSlug, ProjectName } from "../schema/primitives/project";
+import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
-export const removeCommentReactionOperation = {
-  operationId: "removeCommentReaction",
-  summary: "Remove an emoji reaction from a comment",
+const RemoveReactionQuerySchema = z.object({
+  emoji: z.string().meta({ description: "The emoji reaction to remove." }),
+});
+
+export const removeBuildCommentReactionOperation = {
+  operationId: "removeBuildCommentReaction",
+  summary: "Remove an emoji reaction from a comment on a build",
   description:
-    "Remove an emoji reaction previously added by the authenticated user from a comment.",
+    "Remove an emoji reaction previously added by the authenticated user from a comment on a build.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
@@ -33,58 +38,88 @@ export const removeCommentReactionOperation = {
       owner: AccountSlug,
       project: ProjectName,
       buildNumber: BuildNumber,
-      commentId: z.string().meta({ description: "The ID of the comment" }),
+      commentId: CommentId,
     }),
-    query: z.object({
-      emoji: z.string().meta({ description: "The emoji reaction to remove." }),
-    }),
+    query: RemoveReactionQuerySchema,
   },
-  responses: {
-    "200": {
-      description: "Reaction removed — returns the comment",
-      content: {
-        "application/json": {
-          schema: CommentSchema,
-        },
-      },
-    },
-    "400": invalidParameters,
-    "401": unauthorized,
-    "403": forbidden,
-    "404": notFound,
-    "500": serverError,
-  },
+  responses: commentResponses("Reaction removed — returns the comment"),
 } satisfies ZodOpenApiOperationObject;
+
+export const removeTestCommentReactionOperation = {
+  operationId: "removeTestCommentReaction",
+  summary: "Remove an emoji reaction from a comment on a test",
+  description:
+    "Remove an emoji reaction previously added by the authenticated user from a comment on a test.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: {
+    path: z.object({
+      owner: AccountSlug,
+      project: ProjectName,
+      testId: TestId,
+      commentId: CommentId,
+    }),
+    query: RemoveReactionQuerySchema,
+  },
+  responses: commentResponses("Reaction removed — returns the comment"),
+} satisfies ZodOpenApiOperationObject;
+
+/** Shared by the build- and test-scoped remove-reaction endpoints. */
+async function removeTargetCommentReaction(input: {
+  authPromise: Promise<CommentAuth>;
+  params: CommentRouteParams & { commentId: string };
+  query: z.infer<typeof RemoveReactionQuerySchema>;
+}): Promise<CommentPayload> {
+  const { auth, target } = await loadCommentTargetForUserAuth(
+    input.authPromise,
+    input.params,
+  );
+
+  await assertCommentTargetPermission({
+    target,
+    user: auth.user,
+    permission: "review",
+    message: "You do not have permission to react to this comment",
+  });
+
+  const comment = await getTargetComment({
+    commentId: input.params.commentId,
+    target,
+  });
+
+  const updated = await removeCommentReactionService({
+    comment,
+    userId: auth.user.id,
+    emoji: input.query.emoji,
+  });
+
+  return serializeComment(updated);
+}
 
 export const removeCommentReaction: CreateAPIHandler = ({ delete: del }) => {
   del(
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
-      const { params, query } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(
-        req.ctx.auth(),
-        params,
+      res.send(
+        await removeTargetCommentReaction({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+          query: req.ctx.query,
+        }),
       );
+    },
+  );
 
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "review",
-        message: "You do not have permission to react to this comment",
-      });
-
-      const comment = await getBuildComment({
-        commentId: params.commentId,
-        buildId: build.id,
-      });
-
-      const updated = await removeCommentReactionService({
-        comment,
-        userId: auth.user.id,
-        emoji: query.emoji,
-      });
-
-      res.send(await serializeComment(updated));
+  del(
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/reactions",
+    async (req, res) => {
+      res.send(
+        await removeTargetCommentReaction({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+          query: req.ctx.query,
+        }),
+      );
     },
   );
 };

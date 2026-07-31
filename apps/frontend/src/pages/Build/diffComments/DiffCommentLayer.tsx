@@ -12,9 +12,15 @@ import { useAuthTokenPayload } from "@/containers/Auth";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import { commentsVisibleAtom } from "@/containers/Build/CommentTool";
 import { DiffEditor } from "@/containers/Build/DiffEditor";
+import {
+  getCommentThreads,
+  type CommentThread,
+} from "@/containers/Comment/commentThreads";
+import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
+import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { toast } from "@/ui/Toaster";
@@ -22,12 +28,6 @@ import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { useCanAddToReview } from "../ReviewCommentSubmitButton";
-import { CommentCard } from "../sidebar/CommentCard";
-import {
-  getCommentThreads,
-  type CommentThread,
-} from "../sidebar/commentThreads";
-import { MentionableUsersProvider } from "../sidebar/MentionableUsersContext";
 import { DiffCommentDraft } from "./DiffCommentDraft";
 
 const _BuildFragment = graphql(`
@@ -38,7 +38,7 @@ const _BuildFragment = graphql(`
       ...UserCard_user
     }
     comments {
-      ...CommentCard_Comment
+      ...BuildCommentCard_Comment
     }
     ...ReviewCommentSubmitButton_Build
   }
@@ -56,7 +56,7 @@ const AddBuildCommentMutation = graphql(`
     addBuildComment(input: $input) {
       id
       comments {
-        ...CommentCard_Comment
+        ...BuildCommentCard_Comment
       }
     }
   }
@@ -256,7 +256,7 @@ export function DiffCommentLayer(props: {
               onMouseEnter={() => setHoveredThreadId(thread.root.id)}
               onMouseLeave={() => setHoveredThreadId(null)}
             >
-              <CommentCard
+              <BuildCommentCard
                 buildId={build.id}
                 comment={thread.root}
                 replies={thread.replies}

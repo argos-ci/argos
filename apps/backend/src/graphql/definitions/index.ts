@@ -43,6 +43,7 @@ import * as Staff from "./Staff";
 import * as Team from "./Team";
 import * as Test from "./Test";
 import * as TestChange from "./TestChange";
+import * as TestNotificationSubscription from "./TestNotificationSubscription";
 import * as TimeSeries from "./TimeSeries";
 import * as User from "./User";
 import * as UserAccessToken from "./UserAccessToken";
@@ -93,6 +94,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Team,
   Test,
   TestChange,
+  TestNotificationSubscription,
   TimeSeries,
   User,
   UserAccessToken,

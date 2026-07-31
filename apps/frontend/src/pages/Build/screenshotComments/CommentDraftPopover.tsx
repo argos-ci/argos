@@ -1,12 +1,12 @@
 import { useId, useState } from "react";
 
+import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
 import { ReviewCommentSubmitButton } from "../ReviewCommentSubmitButton";
-import { useMentionableUsers } from "../sidebar/MentionableUsersContext";
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
 import type { ScreenPoint } from "./geometry";
 

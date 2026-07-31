@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { AllSelection, Plugin, TextSelection } from "@tiptap/pm/state";
 import {
@@ -233,6 +233,28 @@ export function Editor(props: EditorProps) {
     },
   });
 
+  // `useEditor` hands back the instance before `EditorContent` has mounted it,
+  // and until the view exists the editor has no commands and no DOM node —
+  // reading either throws. `isInitialized` flips once the view is created (the
+  // `create` event), so anything that needs a live editor (the toolbar, the
+  // `ref` forwarding) waits for `mountedEditor` rather than for `editor`.
+  const isMounted = useSyncExternalStore(
+    useCallback(
+      (onStoreChange) => {
+        if (!editor) {
+          return () => {};
+        }
+        editor.on("create", onStoreChange);
+        return () => {
+          editor.off("create", onStoreChange);
+        };
+      },
+      [editor],
+    ),
+    () => Boolean(editor?.isInitialized),
+  );
+  const mountedEditor = isMounted ? editor : null;
+
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
@@ -253,10 +275,10 @@ export function Editor(props: EditorProps) {
   }, [editor, value]);
 
   useEffect(() => {
-    if (!editor || !ref) {
+    if (!mountedEditor || !ref) {
       return;
     }
-    const dom = editor.view.dom as HTMLElement;
+    const dom = mountedEditor.view.dom as HTMLElement;
     if (typeof ref === "function") {
       ref(dom);
       return () => {
@@ -268,7 +290,7 @@ export function Editor(props: EditorProps) {
     return () => {
       refObject.current = null;
     };
-  }, [editor, ref]);
+  }, [mountedEditor, ref]);
 
   const handleContainerMouseDown = (
     event: React.MouseEvent<HTMLDivElement>,
@@ -317,7 +339,7 @@ export function Editor(props: EditorProps) {
         className,
       )}
     >
-      {isBoxed ? <EditorToolbar editor={editor} /> : null}
+      {isBoxed ? <EditorToolbar editor={mountedEditor} /> : null}
       <EditorContent editor={editor} />
       {footer}
     </div>

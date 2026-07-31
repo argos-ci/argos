@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import { EyeOffIcon } from "lucide-react";
 import { Button } from "react-aria-components";
 
+import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
@@ -19,7 +20,6 @@ import {
   ReviewCommentSubmitButton,
   useCanAddToReview,
 } from "../ReviewCommentSubmitButton";
-import { useMentionableUsers } from "./MentionableUsersContext";
 import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
 
 const _BuildFragment = graphql(`
@@ -39,7 +39,7 @@ const AddBuildCommentMutation = graphql(`
       id
       subscribed
       comments {
-        ...CommentCard_Comment
+        ...BuildCommentCard_Comment
       }
     }
   }

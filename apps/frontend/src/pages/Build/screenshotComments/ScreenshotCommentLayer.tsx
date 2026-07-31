@@ -22,6 +22,8 @@ import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   type PaneSize,
 } from "@/containers/Build/Zoomer";
+import { getCommentThreads } from "@/containers/Comment/commentThreads";
+import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -32,8 +34,6 @@ import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { useCanAddToReview } from "../ReviewCommentSubmitButton";
-import { getCommentThreads } from "../sidebar/commentThreads";
-import { MentionableUsersProvider } from "../sidebar/MentionableUsersContext";
 import { CommentDraftPopover } from "./CommentDraftPopover";
 import { CommentMarker } from "./CommentMarker";
 import { CommentPin } from "./CommentPin";
@@ -53,7 +53,7 @@ const _BuildFragment = graphql(`
       ...UserCard_user
     }
     comments {
-      ...CommentCard_Comment
+      ...BuildCommentCard_Comment
     }
     ...ReviewCommentSubmitButton_Build
   }
@@ -70,7 +70,7 @@ const AddBuildCommentMutation = graphql(`
     addBuildComment(input: $input) {
       id
       comments {
-        ...CommentCard_Comment
+        ...BuildCommentCard_Comment
       }
     }
   }

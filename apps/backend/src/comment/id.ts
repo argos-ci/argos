@@ -1,5 +1,7 @@
-import type { Build, Comment } from "@/database/models";
+import type { Comment } from "@/database/models";
 import { sqids } from "@/util/sqids";
+
+import { getCommentTargetUrl, type CommentTarget } from "./target";
 
 const COMMENT_ID_PREFIX = "comment-";
 
@@ -29,13 +31,14 @@ export function parseCommentId(input: string): string {
 }
 
 /**
- * Build the shareable URL pointing at a specific comment, i.e. the comment's
- * build page with the comment ID as the fragment so the page scrolls to it.
+ * Build the shareable URL pointing at a specific comment, i.e. the page of the
+ * build or test it was posted on, with the comment ID as the fragment so the
+ * page scrolls to it.
  */
 export async function getCommentUrl(input: {
-  build: Build;
+  target: CommentTarget;
   comment: Comment;
 }): Promise<string> {
-  const buildUrl = await input.build.getUrl();
-  return `${buildUrl}#${formatCommentId(input.comment.id)}`;
+  const targetUrl = await getCommentTargetUrl(input.target);
+  return `${targetUrl}#${formatCommentId(input.comment.id)}`;
 }

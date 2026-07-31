@@ -308,6 +308,16 @@ export const Test = defineFactory(models.Test, () => ({
   buildName: "default",
 }));
 
+/**
+ * A comment posted on a test. Separate from {@link Comment} (which targets a
+ * build) because a comment carries exactly one target.
+ */
+export const TestComment = defineFactory(models.Comment, () => ({
+  userId: User.associate("id") as unknown as string,
+  testId: Test.associate("id") as unknown as string,
+  content: { type: "doc", content: [] },
+}));
+
 export const Screenshot = defineFactory(models.Screenshot, () => ({
   name: FactoryGirl.sequence("repository.name", (n) => `screen-${n}`),
   s3Id: "test-s3-id",

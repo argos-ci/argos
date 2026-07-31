@@ -109,6 +109,45 @@ loggedTest(
 );
 
 loggedTest(
+  "test view lets a reviewer comment on the test",
+  async ({ page, team, project }) => {
+    const { test } = await createTestChangeScenario({ projectId: project.id });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+    // The right column carries the change history and the activity feed.
+    await expect(page.getByText("First change")).toBeVisible();
+    await expect(page.getByText("Last change")).toBeVisible();
+    const activity = page.getByRole("heading", { name: "Activity" });
+    await expect(activity).toBeVisible();
+    await expect(page.getByText("Test created")).toBeVisible();
+
+    // Nobody follows the test until they engage with it.
+    await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
+
+    // Posting a comment adds it to the feed.
+    const editor = page.getByLabel("Add a comment");
+    await editor.click();
+    await editor.fill("This test keeps flapping on CI.");
+    await page.getByRole("button", { name: "Submit the comment" }).click();
+    await expect(
+      page.getByText("This test keeps flapping on CI."),
+    ).toBeVisible();
+
+    // Commenting subscribes the author, so the bell flips to "Unsubscribe".
+    const unsubscribe = page.getByRole("button", { name: "Unsubscribe" });
+    await expect(unsubscribe).toBeVisible();
+
+    await screenshot(page, "test-view-comment");
+
+    // And the toggle opts back out.
+    await unsubscribe.click();
+    await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
+  },
+);
+
+loggedTest(
   "test view explains an empty ignored list",
   async ({ page, team, project }) => {
     const { test } = await createTestChangeScenario({ projectId: project.id });

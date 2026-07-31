@@ -3,6 +3,13 @@ import { z } from "zod";
 import { schema as proseMirrorSchema } from "@/comment/schema";
 import { BuildReview, Comment, CommentReaction } from "@/database/models";
 
+import {
+  forbidden,
+  invalidParameters,
+  notFound,
+  serverError,
+  unauthorized,
+} from "../util/error";
 import { getUserAccountsByUserId, serializeUser, UserSchema } from "./user";
 
 /**
@@ -55,7 +62,14 @@ export const CommentAnchorSchema = z
 export const CommentSchema = z
   .object({
     id: z.string(),
-    buildId: z.string(),
+    buildId: z.string().nullable().meta({
+      description:
+        "Build this comment is posted on, null when it is posted on a test.",
+    }),
+    testId: z.string().nullable().meta({
+      description:
+        "Test this comment is posted on, null when it is posted on a build.",
+    }),
     threadId: z
       .string()
       .nullable()
@@ -88,7 +102,56 @@ export const CommentSchema = z
     createdAt: z.string().meta({ description: "Date the comment was posted." }),
     reactions: z.array(CommentReactionGroupSchema),
   })
-  .meta({ description: "A comment posted on a build.", id: "Comment" });
+  .meta({
+    description: "A comment posted on a build or on a test.",
+    id: "Comment",
+  });
+
+/** A serialized comment, as every comment endpoint answers with. */
+export type CommentPayload = z.infer<typeof CommentSchema>;
+
+/** Path parameter addressing one comment. */
+export const CommentId = z.string().meta({
+  description: "The ID of the comment",
+  id: "CommentId",
+});
+
+/**
+ * Path parameter addressing a comment thread. Thread-level actions operate on the
+ * root, so any comment in the thread identifies it.
+ */
+export const ThreadCommentId = z.string().meta({
+  description: "ID of any comment in the thread",
+  id: "ThreadCommentId",
+});
+
+/** The errors every comment endpoint can answer with. */
+export const commentErrorResponses = {
+  "400": invalidParameters,
+  "401": unauthorized,
+  "403": forbidden,
+  "404": notFound,
+  "500": serverError,
+};
+
+/**
+ * The responses of a comment endpoint that answers `200` with the comment it
+ * acted on. Only the wording differs between them, so it is all the caller
+ * passes.
+ */
+export function commentResponses(description: string) {
+  return {
+    "200": {
+      description,
+      content: {
+        "application/json": {
+          schema: CommentSchema,
+        },
+      },
+    },
+    ...commentErrorResponses,
+  };
+}
 
 /** Best-effort plain-text rendering of a stored rich-text comment. */
 function commentText(content: unknown): string {
@@ -163,6 +226,7 @@ export async function serializeComments(
     return {
       id: comment.id,
       buildId: comment.buildId,
+      testId: comment.testId,
       threadId: comment.threadId,
       body: comment.content,
       text: commentText(comment.content),

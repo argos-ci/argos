@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import type { Comment } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { updateBuildComment } from "./updateBuildComment";
+import { updateComment } from "./updateComment";
 
 const body = {
   type: "doc",
@@ -26,7 +26,7 @@ const it = test.extend<{ comment: Comment }>({
   },
 });
 
-describe("updateBuildComment", () => {
+describe("updateComment", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
@@ -34,7 +34,7 @@ describe("updateBuildComment", () => {
   it("updates the content and stamps editedAt", async ({ comment }) => {
     expect(comment.editedAt).toBeNull();
 
-    const updated = await updateBuildComment({ comment, body });
+    const updated = await updateComment({ comment, body });
 
     expect(updated.content).toEqual(body);
     expect(updated.editedAt).not.toBeNull();
@@ -42,7 +42,7 @@ describe("updateBuildComment", () => {
 
   it("rejects an empty comment", async ({ comment }) => {
     await expect(
-      updateBuildComment({
+      updateComment({
         comment,
         body: { type: "doc", content: [{ type: "paragraph" }] },
       }),
@@ -51,7 +51,7 @@ describe("updateBuildComment", () => {
 
   it("rejects an invalid comment body", async ({ comment }) => {
     await expect(
-      updateBuildComment({
+      updateComment({
         comment,
         body: { type: "not-a-doc" },
       }),

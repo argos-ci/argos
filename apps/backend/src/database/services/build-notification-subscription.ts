@@ -6,6 +6,13 @@ import {
   User,
 } from "@/database/models";
 
+import {
+  autoSubscribeUser,
+  getSubscribedUserIds,
+  subscribeUser,
+  unsubscribeUser,
+} from "./notification-subscription";
+
 /**
  * Get the Argos User linked to a GitHub account, if any.
  */
@@ -30,19 +37,7 @@ export async function subscribeUserToBuild(input: {
   buildId: string;
   userId: string;
 }): Promise<void> {
-  const now = new Date().toISOString();
-  await BuildNotificationSubscription.query()
-    .insert({
-      buildId: input.buildId,
-      userId: input.userId,
-      subscribedAt: now,
-    })
-    .onConflict(["buildId", "userId"])
-    .merge({
-      subscribedAt: now,
-      unsubscribedAt: null,
-      updatedAt: now,
-    });
+  await subscribeUser(BuildNotificationSubscription, input);
 }
 
 /**
@@ -53,18 +48,7 @@ export async function unsubscribeUserFromBuild(input: {
   buildId: string;
   userId: string;
 }): Promise<void> {
-  const now = new Date().toISOString();
-  await BuildNotificationSubscription.query()
-    .insert({
-      buildId: input.buildId,
-      userId: input.userId,
-      unsubscribedAt: now,
-    })
-    .onConflict(["buildId", "userId"])
-    .merge({
-      unsubscribedAt: now,
-      updatedAt: now,
-    });
+  await unsubscribeUser(BuildNotificationSubscription, input);
 }
 
 /**
@@ -75,32 +59,19 @@ export async function autoSubscribeUserToBuild(input: {
   buildId: string;
   userId: string;
 }): Promise<void> {
-  const existing = await BuildNotificationSubscription.query().findOne({
-    buildId: input.buildId,
-    userId: input.userId,
-  });
-  if (existing?.isIntentionallyUnsubscribed()) {
-    return;
-  }
-  await subscribeUserToBuild(input);
+  await autoSubscribeUser(BuildNotificationSubscription, input);
 }
 
 /**
  * Get the user IDs currently subscribed to a build's notifications.
+ *
+ * These are the users who asked to be told, not the users who may still read
+ * what they would be told about — see `getCommentRecipients`.
  */
 export async function getBuildSubscribedUserIds(
   buildId: string,
 ): Promise<string[]> {
-  const subscriptions = await BuildNotificationSubscription.query()
-    .select("userId")
-    .where({ buildId })
-    .whereNotNull("subscribedAt")
-    .where((qb) =>
-      qb
-        .whereNull("unsubscribedAt")
-        .orWhereRaw('"subscribedAt" > "unsubscribedAt"'),
-    );
-  return subscriptions.map((s) => s.userId);
+  return getSubscribedUserIds(BuildNotificationSubscription, { buildId });
 }
 
 /**

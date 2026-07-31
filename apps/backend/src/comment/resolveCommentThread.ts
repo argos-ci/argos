@@ -20,12 +20,8 @@ export async function resolveCommentThread(input: {
     resolvedAt: new Date().toISOString(),
   });
 
-  // Notify clients watching this build so the thread collapses live.
-  await publishCommentChange({
-    buildId: resolvedThread.buildId,
-    type: "UPDATED",
-    comment: resolvedThread,
-  });
+  // Notify clients watching this target so the thread collapses live.
+  await publishCommentChange({ type: "UPDATED", comment: resolvedThread });
 
   return resolvedThread;
 }
@@ -48,12 +44,8 @@ export async function unresolveCommentThread(input: {
     resolvedAt: null,
   });
 
-  // Notify clients watching this build so the thread reopens live.
-  await publishCommentChange({
-    buildId: reopenedThread.buildId,
-    type: "UPDATED",
-    comment: reopenedThread,
-  });
+  // Notify clients watching this target so the thread reopens live.
+  await publishCommentChange({ type: "UPDATED", comment: reopenedThread });
 
   return reopenedThread;
 }

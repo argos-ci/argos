@@ -4,13 +4,22 @@ import config from "@/config";
 import { isMcpEligible } from "@/mcp/eligibility";
 import { getMcpResourceUrl } from "@/oauth/metadata";
 
-import { addCommentReactionOperation } from "./handlers/addCommentReaction";
+import {
+  addBuildCommentReactionOperation,
+  addTestCommentReactionOperation,
+} from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
-import { createCommentOperation } from "./handlers/createComment";
+import {
+  createBuildCommentOperation,
+  createTestCommentOperation,
+} from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
 import { createProjectOperation } from "./handlers/createProject";
 import { createReviewOperation } from "./handlers/createReview";
-import { deleteCommentOperation } from "./handlers/deleteComment";
+import {
+  deleteBuildCommentOperation,
+  deleteTestCommentOperation,
+} from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitHubActionsOidcToken";
@@ -21,7 +30,10 @@ import { findBaselineOperation } from "./handlers/findBaseline";
 import { getAccountAnalyticsOperation } from "./handlers/getAccountAnalytics";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
-import { getCommentOperation } from "./handlers/getComment";
+import {
+  getBuildCommentOperation,
+  getTestCommentOperation,
+} from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getMeOperation } from "./handlers/getMe";
 import { getProjectOperation } from "./handlers/getProject";
@@ -31,21 +43,34 @@ import {
 } from "./handlers/ignoreChange";
 import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
-import { listCommentsOperation } from "./handlers/listComments";
+import {
+  listBuildCommentsOperation,
+  listTestCommentsOperation,
+} from "./handlers/listComments";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
-import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
 import {
-  resolveCommentThreadOperation,
-  unresolveCommentThreadOperation,
+  removeBuildCommentReactionOperation,
+  removeTestCommentReactionOperation,
+} from "./handlers/removeCommentReaction";
+import {
+  resolveBuildCommentThreadOperation,
+  resolveTestCommentThreadOperation,
+  unresolveBuildCommentThreadOperation,
+  unresolveTestCommentThreadOperation,
 } from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
 import {
-  subscribeCommentThreadOperation,
-  unsubscribeCommentThreadOperation,
+  subscribeBuildCommentThreadOperation,
+  subscribeTestCommentThreadOperation,
+  unsubscribeBuildCommentThreadOperation,
+  unsubscribeTestCommentThreadOperation,
 } from "./handlers/subscribeCommentThread";
 import { updateBuildOperation } from "./handlers/updateBuild";
-import { updateCommentOperation } from "./handlers/updateComment";
+import {
+  updateBuildCommentOperation,
+  updateTestCommentOperation,
+} from "./handlers/updateComment";
 import { securitySchemes } from "./security";
 
 export const zodSchema = {
@@ -203,31 +228,57 @@ export const zodSchema = {
         post: dismissReviewOperation,
       },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments": {
-      get: listCommentsOperation,
-      post: createCommentOperation,
+      get: listBuildCommentsOperation,
+      post: createBuildCommentOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}": {
-      get: getCommentOperation,
-      patch: updateCommentOperation,
-      delete: deleteCommentOperation,
+      get: getBuildCommentOperation,
+      patch: updateBuildCommentOperation,
+      delete: deleteBuildCommentOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions":
       {
-        post: addCommentReactionOperation,
-        delete: removeCommentReactionOperation,
+        post: addBuildCommentReactionOperation,
+        delete: removeBuildCommentReactionOperation,
       },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/resolve":
       {
-        post: resolveCommentThreadOperation,
+        post: resolveBuildCommentThreadOperation,
       },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/unresolve":
       {
-        post: unresolveCommentThreadOperation,
+        post: unresolveBuildCommentThreadOperation,
       },
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription":
       {
-        post: subscribeCommentThreadOperation,
-        delete: unsubscribeCommentThreadOperation,
+        post: subscribeBuildCommentThreadOperation,
+        delete: unsubscribeBuildCommentThreadOperation,
+      },
+    "/projects/{owner}/{project}/tests/{testId}/comments": {
+      get: listTestCommentsOperation,
+      post: createTestCommentOperation,
+    },
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}": {
+      get: getTestCommentOperation,
+      patch: updateTestCommentOperation,
+      delete: deleteTestCommentOperation,
+    },
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/reactions":
+      {
+        post: addTestCommentReactionOperation,
+        delete: removeTestCommentReactionOperation,
+      },
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/resolve": {
+      post: resolveTestCommentThreadOperation,
+    },
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/unresolve":
+      {
+        post: unresolveTestCommentThreadOperation,
+      },
+    "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/subscription":
+      {
+        post: subscribeTestCommentThreadOperation,
+        delete: unsubscribeTestCommentThreadOperation,
       },
   },
 } satisfies ZodOpenApiObject;

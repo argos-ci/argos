@@ -7,9 +7,15 @@ import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
+import { getCommentRecipients } from "./commentNotifications";
 import { getCommentUrl } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
+import {
+  getCommentTargetNotificationFields,
+  getCommentTargetProject,
+  resolveCommentTarget,
+} from "./target";
 
 /**
  * Add an emoji reaction from a user to a comment and notify the comment thread
@@ -44,13 +50,9 @@ export async function addCommentReaction(input: {
 
   await notifyCommentThreadSubscribers({ comment, userId, emoji });
 
-  // Notify clients watching this build so the reaction appears live. The
+  // Notify clients watching this target so the reaction appears live. The
   // comment row is unchanged; subscribers re-resolve its `reactions` field.
-  await publishCommentChange({
-    buildId: comment.buildId,
-    type: "UPDATED",
-    comment,
-  });
+  await publishCommentChange({ type: "UPDATED", comment });
 
   return comment;
 }
@@ -70,21 +72,29 @@ async function notifyCommentThreadSubscribers(input: {
   // via `threadId`. Subscriptions are keyed on the root comment.
   const threadId = comment.threadId ?? comment.id;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
-  const recipients = subscribedUserIds.filter((id) => id !== userId);
+  // Cheap pre-check: a thread nobody but the reactor follows costs no further
+  // queries. Narrowing to who may still read the comment needs the project, so
+  // it happens once the target is resolved below.
+  if (subscribedUserIds.every((id) => id === userId)) {
+    return;
+  }
+
+  const target = await resolveCommentTarget(comment);
+  const project = await getCommentTargetProject(target);
+  invariant(project.account, "project account not found");
+
+  const recipients = await getCommentRecipients({
+    project,
+    userIds: subscribedUserIds,
+    excludeUserIds: [userId],
+  });
   if (recipients.length === 0) {
     return;
   }
 
-  const build = await comment
-    .$relatedQuery("build")
-    .withGraphFetched("project.account");
-  invariant(build, "build not found");
-  invariant(build.project, "project not found");
-  invariant(build.project.account, "project account not found");
-
   const [reactor, commentUrl] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
-    getCommentUrl({ build, comment }),
+    getCommentUrl({ target, comment }),
   ]);
 
   const reactorName = reactor?.account?.displayName ?? null;
@@ -92,10 +102,9 @@ async function notifyCommentThreadSubscribers(input: {
   await sendNotification({
     type: "comment_reaction",
     data: {
-      accountSlug: build.project.account.slug,
-      projectName: build.project.name,
-      buildNumber: build.number,
-      buildName: build.name,
+      accountSlug: project.account.slug,
+      projectName: project.name,
+      ...getCommentTargetNotificationFields(target),
       commentUrl,
       commentAuthorId: comment.userId,
       reactorName,

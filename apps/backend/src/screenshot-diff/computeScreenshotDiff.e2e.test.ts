@@ -40,7 +40,12 @@ type Fixtures = {
   };
 };
 
-vi.setConfig({ testTimeout: 8_000 });
+// These tests decode and compare real images and round-trip them through
+// storage, so their wall time tracks how loaded the machine is far more than
+// what the code does: around a second locally, but several times that on a busy
+// CI runner. The budget is sized for that worst case rather than for the usual
+// cost — it is here to catch a hang, not to police a few hundred milliseconds.
+vi.setConfig({ testTimeout: 30_000 });
 
 const test = base.extend<Fixtures>({
   fixture: async ({}, use) => {

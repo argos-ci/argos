@@ -1,8 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { IgnoredChange, ScreenshotDiff } from "@/database/models";
+import {
+  IgnoredChange,
+  ScreenshotDiff,
+  TestNotificationSubscription,
+} from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
+import { getProjectMemberIds } from "@/project/members";
 import { formatTestId } from "@/util/test-id";
 
 import {
@@ -68,6 +73,12 @@ export const typeDefs = gql`
     ): TestChangesConnection!
     metrics(period: MetricsPeriod): TestMetrics!
     trails: [AuditTrail!]!
+    "Comments posted on this test"
+    comments: [Comment!]!
+    "Whether the current user is subscribed to this test's notifications"
+    subscribed: Boolean!
+    "Users with access to this test's project (can be mentioned in comments)"
+    members: [User!]!
   }
 
   type AuditTrail implements Node {
@@ -198,6 +209,36 @@ export const resolvers: IResolvers = {
         projectId: test.projectId,
         testId: test.id,
       });
+    },
+    comments: async (test, _args, ctx) => {
+      return ctx.loaders.TestComments.load({
+        testId: test.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
+    },
+    subscribed: async (test, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const subscription = await TestNotificationSubscription.query().findOne({
+        testId: test.id,
+        userId: ctx.auth.user.id,
+      });
+      return subscription?.isSubscribed() ?? false;
+    },
+    members: async (test, _args, ctx) => {
+      if (!ctx.auth) {
+        return [];
+      }
+      const project = await ctx.loaders.Project.load(test.projectId);
+      invariant(project, "Project not found");
+      const userIds = await getProjectMemberIds(project);
+      const accounts = await Promise.all(
+        userIds.map((userId) =>
+          ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
+      );
+      return accounts.filter((account) => account !== null);
     },
   },
   AuditTrail: {

@@ -51,11 +51,14 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Panel } from "@/ui/Panel";
 import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
 
 import { NotFound } from "../NotFound";
+import { ActivitySection } from "./ActivitySection";
+import { ChangeHistorySection } from "./ChangeHistorySection";
 import { ChangesChart } from "./ChangesChart";
 import {
   ChangesFilterToggle,
@@ -91,12 +94,8 @@ const TestQuery = graphql(`
         id
         name
         status
-        firstSeenDiff {
-          ...ScreenChange_ScreenshotDiff
-        }
-        lastSeenDiff {
-          ...ScreenChange_ScreenshotDiff
-        }
+        ...ChangeHistorySection_Test
+        ...TestActivity_Test
         changes(period: $period, after: 0, first: 30, ignored: $ignored) {
           edges {
             ...TestChangeFragment
@@ -177,82 +176,86 @@ export function Component() {
             </div>
           </PageHeaderContent>
         </PageHeader>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-start gap-2">
-            <PeriodSelect state={periodState} />
-            <div
-              className={clsx(
-                "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
-                isPeriodPending && "animate-pulse",
-              )}
-            >
-              <div className="flex items-center gap-6">
-                <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
-                  <FlakinessGauge value={test.metrics.all.flakiness} />
-                  <div className="flex flex-col justify-between self-stretch">
-                    <BuildsCounter
-                      value={test.metrics.all.total}
-                      periodLabel={periodLabel}
+        <ProjectPermissionsContext value={project.permissions}>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+            <div className="flex min-w-0 flex-1 flex-col gap-4">
+              <div className="flex flex-col items-start gap-4 self-stretch">
+                <PeriodSelect state={periodState} />
+                {/* The counters size to their content and the chart takes the
+                    rest, so the chart keeps as much width as the column has to
+                    spare. */}
+                <div
+                  className={clsx(
+                    "flex flex-col gap-4 self-stretch lg:flex-row",
+                    isPeriodPending && "animate-pulse",
+                  )}
+                >
+                  <Panel>
+                    <div className="flex flex-wrap items-center gap-3 gap-y-6 px-4">
+                      <FlakinessGauge value={test.metrics.all.flakiness} />
+                      <div className="flex flex-col justify-between self-stretch">
+                        <BuildsCounter
+                          value={test.metrics.all.total}
+                          periodLabel={periodLabel}
+                        />
+                        <ChangesCounter
+                          value={test.metrics.all.changes}
+                          periodLabel={periodLabel}
+                        />
+                      </div>
+                      <div className="flex flex-col justify-between self-stretch">
+                        <StabilityCounter value={test.metrics.all.stability} />
+                        <ConsistencyCounter
+                          value={test.metrics.all.consistency}
+                        />
+                      </div>
+                    </div>
+                  </Panel>
+                  <Panel className="flex min-w-0 flex-1 items-center">
+                    <ChangesChart
+                      className="h-22 min-w-0 flex-1 px-4"
+                      series={test.metrics.series}
+                      from={period.from}
                     />
-                    <ChangesCounter
-                      value={test.metrics.all.changes}
-                      periodLabel={periodLabel}
-                    />
-                  </div>
-                  <div className="flex flex-col justify-between self-stretch">
-                    <StabilityCounter value={test.metrics.all.stability} />
-                    <ConsistencyCounter value={test.metrics.all.consistency} />
-                  </div>
-                  <ChangesChart
-                    className="max-w- h-22 min-w-0 flex-1"
-                    series={test.metrics.series}
-                    from={period.from}
-                  />
-                </div>
-                <Separator className="self-stretch" orientation="vertical" />
-                <div className="flex flex-col gap-2">
-                  <SeenChange
-                    title="First change"
-                    params={params}
-                    diff={test.firstSeenDiff ?? null}
-                  />
-                  <SeenChange
-                    title="Last change"
-                    params={params}
-                    diff={test.lastSeenDiff ?? null}
-                  />
+                  </Panel>
                 </div>
               </div>
-            </div>
-          </div>
-          <div
-            className={clsx(
-              "flex flex-col gap-2",
-              areChangesPending && "animate-pulse",
-            )}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
-              <Heading level={2} className="font-medium">
-                {filterState.value === "ignored"
-                  ? "Ignored changes"
-                  : "Changes"}{" "}
-                <span className="text-low">over the {periodLabel}</span>
-              </Heading>
-              <ChangesFilterToggle state={filterState} />
-            </div>
-            <ProjectPermissionsContext value={project.permissions}>
-              <ProjectIgnoreEnabledProvider
-                enabled={project.ignoreConfig.enabled}
+              {/* The title and the filter label the card rather than sit in it,
+                  so `px-4` keeps both ends aligned with its content. */}
+              <div
+                className={clsx(
+                  "flex flex-col gap-2",
+                  areChangesPending && "animate-pulse",
+                )}
               >
-                <ChangesExplorer
-                  test={test}
-                  periodState={periodState}
-                  filterState={filterState}
-                />
-              </ProjectIgnoreEnabledProvider>
-            </ProjectPermissionsContext>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4">
+                  <Heading level={2} className="font-medium">
+                    {filterState.value === "ignored"
+                      ? "Ignored changes"
+                      : "Changes"}{" "}
+                    <span className="text-low">over the {periodLabel}</span>
+                  </Heading>
+                  <ChangesFilterToggle state={filterState} />
+                </div>
+                <Panel>
+                  <ProjectIgnoreEnabledProvider
+                    enabled={project.ignoreConfig.enabled}
+                  >
+                    <ChangesExplorer
+                      test={test}
+                      periodState={periodState}
+                      filterState={filterState}
+                    />
+                  </ProjectIgnoreEnabledProvider>
+                </Panel>
+              </div>
+            </div>
+            <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
+              <ChangeHistorySection test={test} params={params} />
+              <ActivitySection test={test} />
+            </div>
           </div>
-        </div>
+        </ProjectPermissionsContext>
       </PageContainer>
     </Page>
   );
@@ -317,6 +320,20 @@ function useActiveChange(props: { test: TestDocument }) {
   return [activeChange, setActiveChangeId] as const;
 }
 
+/**
+ * Vertical space the explorer has to leave to what sits above it: the page
+ * header, the section title above the card, and the vertical padding of the card
+ * itself.
+ */
+const EXPLORER_TOP_OFFSET = 180;
+
+/**
+ * Floor for the explorer's height, so a viewport shorter than the offset (a
+ * short split pane, a phone with the keyboard up) still leaves the two columns
+ * something to scroll rather than collapsing them to nothing.
+ */
+const EXPLORER_MIN_HEIGHT = 240;
+
 function ChangesExplorer(props: {
   test: TestDocument;
   periodState: TestMetricPeriodState;
@@ -325,12 +342,15 @@ function ChangesExplorer(props: {
   const { test, periodState, filterState } = props;
   const [activeChange, setActiveChangeId] = useActiveChange({ test });
   const viewportSize = useViewportSize();
-  const height = viewportSize.height - 160;
+  const height = Math.max(
+    EXPLORER_MIN_HEIGHT,
+    viewportSize.height - EXPLORER_TOP_OFFSET,
+  );
   const periodLabel =
     periodState.definition[periodState.value].label.toLowerCase();
   if (test.changes.edges.length === 0) {
     return (
-      <div className="bg-app rounded-lg border">
+      <>
         {filterState.value === "ignored" ? (
           <EmptyState>
             <EmptyStateIcon>
@@ -363,14 +383,13 @@ function ChangesExplorer(props: {
             </Text>
           </EmptyState>
         )}
-      </div>
+      </>
     );
   }
   return (
-    <div
-      className="bg-app border-thin flex rounded-lg shadow-xs"
-      style={{ height }}
-    >
+    // The surrounding panel provides the card; this only lays the two sides out
+    // and gives the scrollable columns a height to work against.
+    <div className="flex" style={{ height }}>
       <div className="border-r-thin flex min-w-60">
         <ChangesList
           test={test}

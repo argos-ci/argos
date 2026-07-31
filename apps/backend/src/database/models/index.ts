@@ -56,6 +56,7 @@ export * from "./TeamInvite";
 export * from "./TeamSamlConfig";
 export * from "./TeamUser";
 export * from "./Test";
+export * from "./TestNotificationSubscription";
 export * from "./UserAccessToken";
 export * from "./UserAccessTokenScope";
 export * from "./User";
