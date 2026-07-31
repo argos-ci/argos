@@ -3,7 +3,7 @@ import { atomWithStorage } from "jotai/utils";
 import { Chip } from "@/ui/Chip";
 
 export const lastLoginMethodAtom = atomWithStorage<
-  "email" | "google" | "github" | "gitlab" | null
+  "email" | "google" | "github" | "gitlab" | "passkey" | null
 >("lastLoginMethod", null);
 
 export function LastUsedIndicator(props: {

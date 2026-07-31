@@ -29,6 +29,7 @@ import { EmailAuth } from "./providers/EmailAuth";
 import { GitHubAuth } from "./providers/GitHubAuth";
 import { GitLabAuth } from "./providers/GitLabAuth";
 import { GoogleAuth } from "./providers/GoogleAuth";
+import { PasskeyAuth } from "./providers/PasskeyAuth";
 
 const _SessionFragment = graphql(`
   fragment UserAuth_Session on UserSession {
@@ -50,6 +51,7 @@ const _AccountFragment = graphql(`
       ...GitLabAuth_Account
       ...GoogleAuth_Account
       ...EmailAuth_Account
+      ...PasskeyAuth_Account
       sessions {
         ...UserAuth_Session
       }
@@ -344,6 +346,7 @@ export function UserAuth(props: {
           </CardParagraph>
           <div className="flex flex-col gap-2">
             <EmailAuth account={account} />
+            <PasskeyAuth account={account} />
             <GitHubAuth account={account} />
             <GitLabAuth account={account} />
             <GoogleAuth account={account} />

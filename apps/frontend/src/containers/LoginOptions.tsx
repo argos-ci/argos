@@ -11,6 +11,10 @@ import { z } from "zod";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { GoogleLoginButton } from "@/containers/Google";
+import {
+  checkPasskeysSupported,
+  PasskeyLoginButton,
+} from "@/containers/Passkey";
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Form } from "@/ui/Form";
@@ -37,6 +41,7 @@ export function LoginOptions(props: {
   const redirect = props.redirect ?? location.pathname + location.search;
   const [screen, setScreen] = useState<Screen>("providers");
   const [lastLoginMethod, setLastLoginMethod] = useAtom(lastLoginMethodAtom);
+  const isPasskeySupported = checkPasskeysSupported();
   switch (screen) {
     case "providers": {
       return (
@@ -93,6 +98,17 @@ export function LoginOptions(props: {
             >
               Continue with SAML SSO
             </Button>
+            {isPasskeySupported ? (
+              <LastUsedIndicator isEnabled={lastLoginMethod === "passkey"}>
+                <PasskeyLoginButton
+                  redirect={redirect}
+                  size="large"
+                  className="w-full justify-center"
+                  isDisabled={props.isDisabled}
+                  onSuccess={() => setLastLoginMethod("passkey")}
+                />
+              </LastUsedIndicator>
+            ) : null}
           </div>
         </div>
       );

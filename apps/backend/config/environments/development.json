@@ -5,5 +5,8 @@
   },
   "session": {
     "domain": ".argos-ci.dev"
+  },
+  "webauthn": {
+    "rpId": "argos-ci.dev"
   }
 }

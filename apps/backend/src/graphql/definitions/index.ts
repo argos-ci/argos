@@ -47,6 +47,7 @@ import * as TestNotificationSubscription from "./TestNotificationSubscription";
 import * as TimeSeries from "./TimeSeries";
 import * as User from "./User";
 import * as UserAccessToken from "./UserAccessToken";
+import * as UserPasskey from "./UserPasskey";
 import * as UserSession from "./UserSession";
 import * as ValidationStatus from "./ValidationStatus";
 
@@ -98,6 +99,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   TimeSeries,
   User,
   UserAccessToken,
+  UserPasskey,
   UserSession,
   ValidationStatus,
 ];

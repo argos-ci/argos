@@ -14,6 +14,7 @@ import {
   User,
   UserAccessToken,
   UserEmail,
+  UserPasskey,
 } from "@/database/models";
 import {
   consumeAccountDeletionToken,
@@ -158,6 +159,8 @@ export const typeDefs = gql`
     userAccessTokens: [UserAccessToken!]!
     "List of active login sessions for the user, most recently seen first"
     sessions: [UserSession!]!
+    "Passkeys the user can sign in with, most recently created first"
+    passkeys: [UserPasskey!]!
     "Last activity timestamp, for presence. Null unless the viewer shares a team with the user."
     lastSeenAt: DateTime
     "IANA timezone, for rendering the user's local time. Null unless the viewer shares a team with the user."
@@ -672,6 +675,16 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
       return listActiveSessions(account.userId);
+    },
+    passkeys: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      // Which credentials protect an account is only its owner's business.
+      if (ctx.auth?.user.id !== account.userId) {
+        throw forbidden();
+      }
+      return UserPasskey.query()
+        .where("userId", account.userId)
+        .orderBy("createdAt", "desc");
     },
     staff: (account, _args, ctx) => {
       // Who works at Argos is not public: staff accounts hold elevated
