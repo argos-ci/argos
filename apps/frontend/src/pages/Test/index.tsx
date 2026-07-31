@@ -51,7 +51,7 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { Panel, PanelHeader } from "@/ui/Panel";
+import { Panel } from "@/ui/Panel";
 import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
@@ -220,8 +220,15 @@ export function Component() {
                   </Panel>
                 </div>
               </div>
-              <Panel className={clsx(areChangesPending && "animate-pulse")}>
-                <PanelHeader>
+              {/* The title and the filter label the card rather than sit in it,
+                  so `px-4` keeps both ends aligned with its content. */}
+              <div
+                className={clsx(
+                  "flex flex-col gap-2",
+                  areChangesPending && "animate-pulse",
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4">
                   <Heading level={2} className="font-medium">
                     {filterState.value === "ignored"
                       ? "Ignored changes"
@@ -229,17 +236,19 @@ export function Component() {
                     <span className="text-low">over the {periodLabel}</span>
                   </Heading>
                   <ChangesFilterToggle state={filterState} />
-                </PanelHeader>
-                <ProjectIgnoreEnabledProvider
-                  enabled={project.ignoreConfig.enabled}
-                >
-                  <ChangesExplorer
-                    test={test}
-                    periodState={periodState}
-                    filterState={filterState}
-                  />
-                </ProjectIgnoreEnabledProvider>
-              </Panel>
+                </div>
+                <Panel>
+                  <ProjectIgnoreEnabledProvider
+                    enabled={project.ignoreConfig.enabled}
+                  >
+                    <ChangesExplorer
+                      test={test}
+                      periodState={periodState}
+                      filterState={filterState}
+                    />
+                  </ProjectIgnoreEnabledProvider>
+                </Panel>
+              </div>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
               <ChangeHistorySection test={test} params={params} />
@@ -313,10 +322,10 @@ function useActiveChange(props: { test: TestDocument }) {
 
 /**
  * Vertical space the explorer has to leave to what sits above it: the page
- * header, the panel header, and the vertical padding of the panel it is nested
- * in.
+ * header, the section title above the card, and the vertical padding of the card
+ * itself.
  */
-const EXPLORER_TOP_OFFSET = 184;
+const EXPLORER_TOP_OFFSET = 180;
 
 /**
  * Floor for the explorer's height, so a viewport shorter than the offset (a
