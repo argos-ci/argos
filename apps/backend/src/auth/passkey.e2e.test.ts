@@ -65,12 +65,16 @@ async function authenticate(input: {
  */
 async function expectRejection(
   promise: Promise<unknown>,
-): Promise<{ statusCode: number; code: string | null }> {
+): Promise<{ statusCode: number; code: string | null; message: string }> {
   try {
     await promise;
   } catch (error) {
     invariant(error instanceof HTTPError, "Expected an HTTPError");
-    return { statusCode: error.statusCode, code: error.code };
+    return {
+      statusCode: error.statusCode,
+      code: error.code,
+      message: error.message,
+    };
   }
   throw new Error("Expected the ceremony to be rejected");
 }
@@ -149,7 +153,7 @@ describe("passkey", () => {
       const rejection = await expectRejection(
         register({ userId: other.id, authenticator }),
       );
-      expect(rejection).toEqual({
+      expect(rejection).toMatchObject({
         statusCode: 400,
         code: "PASSKEY_ALREADY_REGISTERED",
       });
@@ -171,6 +175,13 @@ describe("passkey", () => {
         registerPasskey({ userId, response, deviceLabel: null }),
       );
       expect(rejection.statusCode).toBe(400);
+      // The verifier names the expected origin in its own message; the client
+      // must never see it.
+      expect(rejection.message).toBe(
+        "This passkey could not be verified. Please try again.",
+      );
+      expect(rejection.message).not.toContain("evil.test");
+      expect(rejection.message).not.toContain(ORIGIN);
       expect(await UserPasskey.query().resultSize()).toBe(0);
     });
 
@@ -184,7 +195,7 @@ describe("passkey", () => {
       const rejection = await expectRejection(
         registerPasskey({ userId, response, deviceLabel: null }),
       );
-      expect(rejection).toEqual({
+      expect(rejection).toMatchObject({
         statusCode: 400,
         code: "PASSKEY_CHALLENGE_EXPIRED",
       });
@@ -198,7 +209,7 @@ describe("passkey", () => {
           deviceLabel: null,
         }),
       );
-      expect(rejection).toEqual({
+      expect(rejection).toMatchObject({
         statusCode: 400,
         code: "PASSKEY_VERIFICATION_FAILED",
       });
@@ -241,7 +252,7 @@ describe("passkey", () => {
       const rejection = await expectRejection(
         verifyPasskeyAuthentication({ challengeId, response }),
       );
-      expect(rejection).toEqual({
+      expect(rejection).toMatchObject({
         statusCode: 400,
         code: "PASSKEY_CHALLENGE_EXPIRED",
       });
@@ -251,7 +262,7 @@ describe("passkey", () => {
       const rejection = await expectRejection(
         authenticate({ authenticator: new FakeAuthenticator() }),
       );
-      expect(rejection).toEqual({
+      expect(rejection).toMatchObject({
         statusCode: 400,
         code: "PASSKEY_UNKNOWN_CREDENTIAL",
       });

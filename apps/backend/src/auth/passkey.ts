@@ -17,6 +17,7 @@ import { z } from "zod";
 import config from "@/config";
 import { isUniqueViolationError } from "@/database/error";
 import { UserPasskey } from "@/database/models";
+import logger from "@/logger";
 import { boom } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
@@ -89,19 +90,26 @@ function expiredCeremony(): never {
 }
 
 /**
- * Wrap a verification failure. `verifyRegistrationResponse` and
- * `verifyAuthenticationResponse` throw on every mismatch (origin, RP id,
- * challenge, signature…), and none of those are server faults — they are a
- * rejected credential, so they must not surface as a 500.
+ * Reject a credential the verifier refused.
+ *
+ * `verifyRegistrationResponse` and `verifyAuthenticationResponse` throw on every
+ * mismatch (origin, RP id, challenge, signature, counter…), and none of those
+ * are server faults — they are a rejected credential, so they must not surface
+ * as a 500.
+ *
+ * The library's own message never reaches the client. It is templated with
+ * server-side values (`expected "https://app.argos-ci.com"`, `expected counter
+ * 42`), and this path is reachable unauthenticated, so forwarding it both
+ * discloses internals — the counter check runs before the signature is verified,
+ * so a garbage-signed assertion would read back a credential's counter — and
+ * shows the user a string they cannot act on. It goes to the logs instead.
  */
 function rejected(error: unknown): never {
-  throw boom(
-    400,
-    error instanceof Error
-      ? error.message
-      : "The passkey could not be verified",
-    { code: "PASSKEY_VERIFICATION_FAILED", cause: error },
-  );
+  logger.warn({ error }, "passkey verification failed");
+  throw boom(400, "This passkey could not be verified. Please try again.", {
+    code: "PASSKEY_VERIFICATION_FAILED",
+    cause: error,
+  });
 }
 
 /**
@@ -275,9 +283,7 @@ export async function registerPasskey(input: {
   }
 
   if (!verification.verified) {
-    throw boom(400, "The passkey could not be verified", {
-      code: "PASSKEY_VERIFICATION_FAILED",
-    });
+    rejected(new Error("verification returned verified: false"));
   }
 
   const { credential, credentialDeviceType, credentialBackedUp, aaguid } =
@@ -389,9 +395,7 @@ export async function verifyPasskeyAuthentication(input: {
   }
 
   if (!verification.verified) {
-    throw boom(400, "The passkey could not be verified", {
-      code: "PASSKEY_VERIFICATION_FAILED",
-    });
+    rejected(new Error("verification returned verified: false"));
   }
 
   // Move the replay counter forward. Authenticators that keep one report a
