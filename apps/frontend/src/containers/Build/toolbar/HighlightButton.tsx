@@ -19,7 +19,7 @@ export const HighlightButton = memo(() => {
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
       <Button
-        variant="surface"
+        variant="secondary"
         iconOnly
         onPress={highlight}
         isDisabled={!enabled}

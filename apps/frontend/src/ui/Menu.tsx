@@ -22,7 +22,7 @@ import {
 import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
-  return <Separator className="border-t-thin -mx-1 my-1" />;
+  return <Separator className="border-t-thin -mx-1.5 my-1.5" />;
 }
 
 export { MenuTrigger, SubmenuTrigger } from "react-aria-components";
@@ -36,7 +36,7 @@ export function Menu<T extends object>(
     <RACMenu<T>
       {...props}
       className={clsx(
-        "overflow-auto p-1 outline-hidden select-none",
+        "overflow-auto p-1.5 outline-hidden select-none",
         props.className,
       )}
     />
@@ -51,7 +51,7 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
 };
 
 const menuItemClassName =
-  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
+  "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-2 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
 
 type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
   variant?: MenuItemVariant;

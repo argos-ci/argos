@@ -33,7 +33,6 @@ function OverviewButton(props: { params: BuildParams }) {
         iconOnly
         aria-label="Overview"
         aria-current={selected ? "page" : undefined}
-        className="aria-[current=page]:bg-active aria-[current=page]:text-default"
       >
         <HomeIcon />
       </LinkButton>
@@ -163,7 +162,6 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                   variant="ghost"
                   iconOnly
                   onPress={() => enterSearchMode()}
-                  aria-pressed={searchMode}
                   size="small"
                 >
                   <SearchIcon />

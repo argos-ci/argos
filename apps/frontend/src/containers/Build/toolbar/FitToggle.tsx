@@ -1,6 +1,6 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ShrinkIcon } from "lucide-react";
+import { ExpandIcon, ShrinkIcon } from "lucide-react";
 
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
@@ -26,13 +26,10 @@ export const FitToggle = memo(() => {
       description={contained ? "Expand the screenshot" : "Fit the screenshot"}
       keys={hotkey.displayKeys}
     >
-      <Button
-        variant="secondary"
-        iconOnly
-        aria-pressed={contained}
-        onPress={toggle}
-      >
-        <ShrinkIcon />
+      {/* The icon says which way the button goes, so it needs no pressed
+          state on top: shrink to fit, expand back to full size. */}
+      <Button variant="secondary" iconOnly onPress={toggle}>
+        {contained ? <ExpandIcon /> : <ShrinkIcon />}
       </Button>
     </HotkeyTooltip>
   );

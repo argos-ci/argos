@@ -24,7 +24,7 @@ export const CommentToolToggle = memo(() => {
     <ButtonGroup>
       <Tooltip content="Move tool — drag to pan, scroll to zoom">
         <Button
-          variant="surface"
+          variant="secondary"
           iconOnly
           aria-pressed={mode === "hand"}
           aria-label="Move tool"
@@ -39,7 +39,7 @@ export const CommentToolToggle = memo(() => {
         keysEnabled={mode !== "comment"}
       >
         <Button
-          variant="surface"
+          variant="secondary"
           iconOnly
           aria-pressed={mode === "comment"}
           aria-label="Comment tool"

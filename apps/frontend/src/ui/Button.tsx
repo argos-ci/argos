@@ -49,6 +49,17 @@ type ButtonOptions = {
  */
 const ICON_STEPS_BACK = "*:text-low data-hovered:*:text-default";
 
+/**
+ * Hovering darkens the edge, which is the clearest signal a quiet button has —
+ * except inside a `ButtonGroup`, where the group reads as one control and a
+ * hovered segment would draw a box around itself, seams and all. There the fill
+ * carries the hover on its own.
+ */
+const HOVER_EDGE = clsx(
+  "data-hovered:border-hover",
+  "group-[*]/button-group:data-hovered:border-default",
+);
+
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
@@ -58,41 +69,48 @@ const variantClassNames: Record<ButtonVariant, string> = {
   // the label and come forward on hover, so a row of icon buttons stays quiet
   // until it is pointed at.
   secondary: clsx(
-    "text-default bg-raised data-hovered:bg-raised-hover data-hovered:border-hover data-pressed:bg-raised-active",
+    "text-default bg-raised data-hovered:bg-raised-hover data-pressed:bg-raised-active",
+    HOVER_EDGE,
     ICON_STEPS_BACK,
-    // Pressed, hovering goes darker rather than lighter: a control that is
-    // already on should not look like it is about to turn on.
-    "aria-pressed:bg-raised-active aria-pressed:text-default aria-pressed:data-hovered:bg-raised-active-hover",
+    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // the fill as well made a control that is already on look like it was
+    // about to change.
+    "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
     "aria-expanded:bg-raised-active",
   ),
   // `secondary` with an opaque fill, for the controls that float over content
   // (the zoomer, the toolbars over a screenshot) where a wash would not hold.
   surface: clsx(
-    "text-default bg-ui data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+    "text-default bg-ui data-hovered:bg-hover data-pressed:bg-active",
+    HOVER_EDGE,
     ICON_STEPS_BACK,
-    // Pressed, hovering goes darker rather than lighter: a control that is
-    // already on should not look like it is about to turn on.
-    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
+    // Pressed, the fill stays put and only the icon brightens on hover.
+    "aria-pressed:bg-active aria-pressed:data-hovered:bg-active aria-pressed:text-default",
     "aria-expanded:bg-active",
   ),
+  // No fill at rest, and the same "on" fill as `secondary` once it has one, so
+  // a toolbar mixing the two never shows the state two shades apart.
   ghost: clsx(
-    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active",
+    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-raised-active",
     ICON_STEPS_BACK,
-    // Pressed, hovering goes darker rather than lighter: a control that is
-    // already on should not look like it is about to turn on.
-    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
-    "aria-expanded:bg-active",
+    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // the fill as well made a control that is already on look like it was
+    // about to change.
+    "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
+    "aria-expanded:bg-raised-active",
   ),
   // The quiet colored actions — approve, reject, delete — as opposed to
   // `destructive`, which is a solid call to action. The color is in the icon and
   // the label, and only fills in on hover.
   danger: clsx(
-    "text-danger-low bg-raised data-hovered:border-danger-hover data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
-    "aria-pressed:bg-danger-active aria-pressed:data-hovered:bg-danger-active-hover",
+    "text-danger-low bg-raised data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
+    "data-hovered:border-danger-hover group-[*]/button-group:data-hovered:border-default",
+    "aria-pressed:bg-danger-active aria-pressed:data-hovered:bg-danger-active aria-pressed:data-hovered:text-danger",
   ),
   success: clsx(
-    "text-success-low bg-raised data-hovered:border-success-hover data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
-    "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active-hover",
+    "text-success-low bg-raised data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
+    "data-hovered:border-success-hover group-[*]/button-group:data-hovered:border-default",
+    "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active aria-pressed:data-hovered:text-success",
   ),
   destructive:
     "text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",

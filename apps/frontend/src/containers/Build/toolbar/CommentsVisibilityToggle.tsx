@@ -12,10 +12,10 @@ export const CommentsVisibilityToggle = memo(() => {
   const label = visible ? "Hide comments" : "Show comments";
   return (
     <Tooltip content={label}>
+      {/* No pressed state: the icon already carries it. */}
       <Button
         variant="secondary"
         iconOnly
-        aria-pressed={visible}
         aria-label={label}
         onPress={() => setCommentsVisible(!visible)}
       >
