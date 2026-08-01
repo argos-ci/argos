@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
+\restrict Ivk5kSu7HHeKeaIzkDrOSxkNc9H2c9lQGXyfvpcQgxDjJtd0nLlOZNdHcaRseoE
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -844,6 +844,44 @@ ALTER SEQUENCE public.deployments_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.deployments_id_seq OWNED BY public.deployments.id;
+
+
+--
+-- Name: discord_webhooks; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.discord_webhooks (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    url text NOT NULL,
+    "connectedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE public.discord_webhooks OWNER TO postgres;
+
+--
+-- Name: discord_webhooks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.discord_webhooks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.discord_webhooks_id_seq OWNER TO postgres;
+
+--
+-- Name: discord_webhooks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.discord_webhooks_id_seq OWNED BY public.discord_webhooks.id;
 
 
 --
@@ -2895,6 +2933,13 @@ ALTER TABLE ONLY public.deployments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: discord_webhooks id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_webhooks ALTER COLUMN id SET DEFAULT nextval('public.discord_webhooks_id_seq'::regclass);
+
+
+--
 -- Name: files id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3440,6 +3485,22 @@ ALTER TABLE ONLY public.deployments
 
 ALTER TABLE ONLY public.deployments
     ADD CONSTRAINT deployments_slug_unique UNIQUE (slug);
+
+
+--
+-- Name: discord_webhooks discord_webhooks_accountid_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_webhooks
+    ADD CONSTRAINT discord_webhooks_accountid_name_unique UNIQUE ("accountId", name);
+
+
+--
+-- Name: discord_webhooks discord_webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_webhooks
+    ADD CONSTRAINT discord_webhooks_pkey PRIMARY KEY (id);
 
 
 --
@@ -5224,6 +5285,14 @@ ALTER TABLE ONLY public.deployments
 
 
 --
+-- Name: discord_webhooks discord_webhooks_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_webhooks
+    ADD CONSTRAINT discord_webhooks_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: github_account_members github_account_members_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5779,7 +5848,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
+\unrestrict Ivk5kSu7HHeKeaIzkDrOSxkNc9H2c9lQGXyfvpcQgxDjJtd0nLlOZNdHcaRseoE
 
 -- Knex migrations
 
@@ -6015,3 +6084,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026073
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730130000_comment-test.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730140000_test-notification-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260731120000_user-passkeys.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801120000_discord-webhooks.js', 1, NOW());

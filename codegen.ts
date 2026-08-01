@@ -54,6 +54,7 @@ const config: CodegenConfig = {
           CommentReactionGroup:
             "../../comment/reactions.js#CommentReactionGroup",
           Deployment: "../../database/models/index.js#Deployment",
+          DiscordWebhook: "../../database/models/index.js#DiscordWebhook",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
           GithubAccount: "../../database/models/index.js#GithubAccount",

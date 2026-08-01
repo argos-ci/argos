@@ -6,12 +6,14 @@ import { z } from "zod";
 
 import { testAutomation } from "@/automation";
 import type { AutomationActionTypeDef } from "@/automation/actions";
+import { automationAction as discordAutomationAction } from "@/automation/actions/sendDiscordMessage";
 import { automationAction as msTeamsAutomationAction } from "@/automation/actions/sendMsTeamsMessage";
 import { automationAction } from "@/automation/actions/sendSlackMessage";
 import {
   AutomationActionRun,
   AutomationRule,
   BuildReview,
+  DiscordWebhook,
   MsTeamsWebhook,
   Project,
   SlackChannel,
@@ -157,7 +159,8 @@ async function getActionsFromInput(args: {
     }),
   });
 
-  const MsTeamsPayload = z.object({
+  // Both webhook-based integrations reference their target the same way.
+  const WebhookPayload = z.object({
     webhookId: z.string().min(1, { message: "Required" }),
   });
 
@@ -184,7 +187,7 @@ async function getActionsFromInput(args: {
   for (const action of args.input) {
     switch (action.type) {
       case "sendMsTeamsMessage": {
-        const payload = MsTeamsPayload.parse(action.payload);
+        const payload = WebhookPayload.parse(action.payload);
         // Scope the lookup to the project account so a rule can't target
         // another account's webhook.
         const webhook = await MsTeamsWebhook.query().findOne({
@@ -200,6 +203,27 @@ async function getActionsFromInput(args: {
 
         actions.push({
           action: "sendMsTeamsMessage",
+          actionPayload: { webhookId: webhook.id },
+        });
+        break;
+      }
+      case "sendDiscordMessage": {
+        const payload = WebhookPayload.parse(action.payload);
+        // Scope the lookup to the project account so a rule can't target
+        // another account's webhook.
+        const webhook = await DiscordWebhook.query().findOne({
+          id: payload.webhookId,
+          accountId: project.accountId,
+        });
+
+        if (!webhook) {
+          throw badUserInput(
+            "Discord webhook not found for the project account.",
+          );
+        }
+
+        actions.push({
+          action: "sendDiscordMessage",
           actionPayload: { webhookId: webhook.id },
         });
         break;
@@ -451,6 +475,21 @@ export const resolvers: IResolvers = {
             action.actionPayload,
           );
           const webhook = await MsTeamsWebhook.query().findById(
+            payload.webhookId,
+          );
+          if (!webhook) {
+            // Keep the dangling id: the form schema requires a non-empty
+            // `webhookId`, so blanking it here would make the edit page throw
+            // and leave the rule unrepairable from the UI.
+            return { webhookId: payload.webhookId, name: "deleted" };
+          }
+          return { webhookId: webhook.id, name: webhook.name };
+        }
+        case "sendDiscordMessage": {
+          const payload = discordAutomationAction.payloadSchema.parse(
+            action.actionPayload,
+          );
+          const webhook = await DiscordWebhook.query().findById(
             payload.webhookId,
           );
           if (!webhook) {

@@ -13,6 +13,7 @@ export * from "./BuildShard";
 export * from "./Deployment";
 export * from "./DeploymentAlias";
 export * from "./DeploymentNotification";
+export * from "./DiscordWebhook";
 export * from "./Comment";
 export * from "./CommentMention";
 export * from "./CommentNotificationSubscription";

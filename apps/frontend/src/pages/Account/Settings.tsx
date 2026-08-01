@@ -20,6 +20,7 @@ import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamAddOns } from "@/containers/Team/AddOns";
 import { TeamDelete } from "@/containers/Team/Delete";
+import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
@@ -64,6 +65,7 @@ const AccountQuery = graphql(`
 
       ...TeamSlack_Account
       ...TeamMsTeams_Account
+      ...TeamDiscord_Account
       ...TeamMembers_Team
       ...TeamDelete_Team
       ...AccountChangeName_Account
@@ -260,6 +262,7 @@ function PageContent() {
         <>
           {isTeam && <TeamSlack account={account} />}
           {isTeam && <TeamMsTeams account={account} />}
+          {isTeam && <TeamDiscord account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
         </>

@@ -181,6 +181,7 @@ export const typeDefs = gql`
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
     msTeamsWebhooks: [MsTeamsWebhook!]!
+    discordWebhooks: [DiscordWebhook!]!
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
@@ -426,6 +427,9 @@ export const commonAccountResolvers: IResolvers["Team"] = {
   },
   msTeamsWebhooks: async (account, _args, ctx) => {
     return ctx.loaders.MsTeamsWebhooksByAccountId.load(account.id);
+  },
+  discordWebhooks: async (account, _args, ctx) => {
+    return ctx.loaders.DiscordWebhooksByAccountId.load(account.id);
   },
   githubAccount: async (account, _args, ctx) => {
     if (!account.githubAccountId) {

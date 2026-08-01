@@ -8,6 +8,7 @@ import type { Pojo, RelationMappings } from "objection";
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
+import { DiscordWebhook } from "./DiscordWebhook";
 import { GithubAccount } from "./GithubAccount";
 import { GithubInstallation } from "./GithubInstallation";
 import { MsTeamsWebhook } from "./MsTeamsWebhook";
@@ -261,6 +262,14 @@ export class Account extends Model {
           to: "ms_teams_webhooks.accountId",
         },
       },
+      discordWebhooks: {
+        relation: Model.HasManyRelation,
+        modelClass: DiscordWebhook,
+        join: {
+          from: "accounts.id",
+          to: "discord_webhooks.accountId",
+        },
+      },
     };
   }
 
@@ -273,6 +282,7 @@ export class Account extends Model {
   githubLightInstallation?: GithubInstallation | null;
   teamSamlConfig?: TeamSamlConfig | null;
   msTeamsWebhooks?: MsTeamsWebhook[];
+  discordWebhooks?: DiscordWebhook[];
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 

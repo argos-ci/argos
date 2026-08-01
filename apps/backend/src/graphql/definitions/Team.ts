@@ -110,6 +110,7 @@ export const typeDefs = gql`
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
     msTeamsWebhooks: [MsTeamsWebhook!]!
+    discordWebhooks: [DiscordWebhook!]!
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int

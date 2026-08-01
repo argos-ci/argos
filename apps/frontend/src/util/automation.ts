@@ -1,4 +1,5 @@
 import {
+  AutomationDiscordActionTypeSchema,
   AutomationMsTeamsActionTypeSchema,
   AutomationSlackActionTypeSchema,
 } from "@argos/schemas/automation-action";
@@ -64,9 +65,17 @@ const AutomationMsTeamsActionSchema = z.object({
   }),
 });
 
+const AutomationDiscordActionSchema = z.object({
+  type: AutomationDiscordActionTypeSchema,
+  payload: z.object({
+    webhookId: z.string().min(1, { message: "Please select a channel" }),
+  }),
+});
+
 export const AutomationActionSchema = z.discriminatedUnion("type", [
   AutomationSlackActionSchema,
   AutomationMsTeamsActionSchema,
+  AutomationDiscordActionSchema,
 ]);
 
 /**
