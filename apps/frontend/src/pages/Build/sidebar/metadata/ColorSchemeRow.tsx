@@ -17,15 +17,20 @@ import {
   useGetDiffPath,
 } from "./utils";
 
-function getColorSchemeLabel(colorScheme: ScreenshotMetadataColorScheme) {
+/** Chip label. Short: the row is a column of chips in a narrow sidebar. */
+function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
   switch (colorScheme) {
     case ScreenshotMetadataColorScheme.Light:
-      return "Light color scheme";
+      return "Light";
     case ScreenshotMetadataColorScheme.Dark:
-      return "Dark color scheme";
+      return "Dark";
     default:
       assertNever(colorScheme, `Unknown color scheme: ${colorScheme}`);
   }
+}
+
+function getColorSchemeLabel(colorScheme: ScreenshotMetadataColorScheme) {
+  return `${getColorSchemeName(colorScheme)} color scheme`;
 }
 
 export function ColorSchemeRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
@@ -42,11 +47,12 @@ export function ColorSchemeRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
     const colorScheme = colorSchemes[0]!;
     return (
       <MetadataRow>
+        {/* Named, not just an icon: with nothing to switch to, a lone moon is a
+            symbol the reader has to decode. */}
         <Tooltip content={getColorSchemeLabel(colorScheme)}>
-          <Chip
-            icon={colorSchemeIcons[colorScheme]}
-            className="cursor-default"
-          />
+          <Chip icon={colorSchemeIcons[colorScheme]} className="cursor-default">
+            {getColorSchemeName(colorScheme)}
+          </Chip>
         </Tooltip>
       </MetadataRow>
     );
@@ -74,7 +80,9 @@ export function ColorSchemeRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
                 className="cursor-default"
                 aria-current={isActive ? "page" : undefined}
                 href={getDiffPath(resolvedDiff.id) ?? ""}
-              />
+              >
+                {getColorSchemeName(colorScheme)}
+              </ChipLink>
             </Tooltip>
           );
         })}
