@@ -9,7 +9,7 @@ import {
   verifyPasskeyAuthentication,
 } from "@/auth/passkey";
 import { parseDeviceLabel } from "@/auth/session";
-import { Account, UserPasskey } from "@/database/models";
+import { UserPasskey } from "@/database/models";
 import { markUserLastAuthMethod } from "@/database/services/account";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 
@@ -165,16 +165,15 @@ export const resolvers: IResolvers = {
 
       // A passkey belongs to an account that already exists, so a login can
       // never be a signup — hence no `creation` and no auto-invite to check.
-      const account = await Account.query()
-        .findOne({ userId: passkey.userId })
-        .throwIfNotFound();
-      invariant(account.userId, "Expected account to have userId");
-
+      // The credential itself carries the owner, and account deletion removes
+      // the passkey along with the other credentials, so there is nothing left
+      // to look up: reading `accounts` here would only re-derive the `userId`
+      // we already hold, and would throw on a row this login cannot reach.
       await markUserLastAuthMethod({
-        userId: account.userId,
+        userId: passkey.userId,
         method: "passkey",
       });
-      await startSession(ctx.req, ctx.res, account.userId);
+      await startSession(ctx.req, ctx.res, passkey.userId);
 
       return { creation: false, hasAutoInvite: false };
     },

@@ -1,7 +1,8 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Account, User } from "@/database/models";
+import { Account, User, UserPasskey } from "@/database/models";
+import { createPasskeys } from "@/database/seeds";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 import { getRedisClient } from "@/util/redis/client";
@@ -249,6 +250,15 @@ describe("GraphQL confirmAccountDeletion", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
+    // A passkey outlives the `users` row, which is only soft-deleted, so the
+    // table's ON DELETE CASCADE never fires — deletion has to remove it
+    // explicitly or the credential keeps signing in to a deleted account.
+    await createPasskeys({
+      userId: userAccount.userId!,
+      names: ["1Password"],
+      keyPrefix: "deletion-",
+    });
+
     await seedDeletionToken({
       token: "good-token",
       accountId: userAccount.id,
@@ -279,6 +289,13 @@ describe("GraphQL confirmAccountDeletion", () => {
     const user = await User.query().findById(userAccount.userId!);
     expect(user?.deletedAt).not.toBeNull();
     expect(user?.email).toBeNull();
+
+    // Every credential has to go, not just the ones the FK reaches.
+    const passkeys = await UserPasskey.query().where(
+      "userId",
+      userAccount.userId!,
+    );
+    expect(passkeys).toEqual([]);
 
     // Token must be consumed after a successful deletion.
     expect(await getStoredDeletionToken("good-token")).toBeNull();

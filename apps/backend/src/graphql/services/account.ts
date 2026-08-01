@@ -16,6 +16,7 @@ import {
   UserAccessToken,
   UserAccessTokenScope,
   UserEmail,
+  UserPasskey,
 } from "@/database/models";
 import { resolveAccountSlug } from "@/database/services/account";
 import { transaction } from "@/database/transaction";
@@ -207,6 +208,12 @@ export async function deleteAccount(args: {
 
           // Remove all user emails
           UserEmail.query(trx).where("userId", userId).delete(),
+
+          // Remove all passkeys. The `users` row is only soft-deleted below, so
+          // the table's ON DELETE CASCADE never fires — without this the
+          // credential stays in the user's authenticator and stays a valid way
+          // to sign in to an account that no longer exists.
+          UserPasskey.query(trx).where("userId", userId).delete(),
 
           // Remove user from all its subscriptions
           Subscription.query(trx)
