@@ -220,6 +220,29 @@ describe("passkey", () => {
       });
     });
 
+    test("refuses an authenticator that did not verify the user", async () => {
+      // A PIN-less security key: present, but nobody proved who they are. A
+      // passkey is a whole login here, so possession alone is not enough.
+      const { challengeId, options } = await createPasskeyRegistrationOptions({
+        userId,
+        userName: "jane@example.com",
+        userDisplayName: "Jane",
+      });
+      const { response } = new FakeAuthenticator({
+        userVerified: false,
+      }).create({
+        challenge: options.challenge,
+        origin: ORIGIN,
+        rpId: RP_ID,
+      });
+
+      const rejection = await expectRejection(
+        registerPasskey({ userId, challengeId, response, deviceLabel: null }),
+      );
+      expect(rejection.statusCode).toBe(400);
+      expect(await UserPasskey.query().resultSize()).toBe(0);
+    });
+
     test("refuses a ceremony performed on another origin", async () => {
       const { challengeId, options } = await createPasskeyRegistrationOptions({
         userId,
@@ -386,6 +409,22 @@ describe("passkey", () => {
         credentialId: authenticator.credentialId.toString("base64url"),
       });
       expect(stored?.counter).toBe("2");
+    });
+
+    test("refuses a sign-in that did not verify the user", async () => {
+      const authenticator = new FakeAuthenticator();
+      await register({ userId, authenticator });
+
+      // Same credential, but this time the authenticator reports no
+      // verification — a stolen PIN-less key must not open a session.
+      const unverified = new FakeAuthenticator({
+        credentialId: authenticator.credentialId,
+        userVerified: false,
+      });
+      const rejection = await expectRejection(
+        authenticate({ authenticator: unverified }),
+      );
+      expect(rejection.statusCode).toBe(400);
     });
 
     test("refuses a credential that is not registered", async () => {

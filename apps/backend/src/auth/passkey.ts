@@ -270,7 +270,11 @@ export async function createPasskeyRegistrationOptions(input: {
       // Discoverable, so "Continue with Passkey" can resolve the account from
       // the credential alone — no email typed first.
       residentKey: "required",
-      userVerification: "preferred",
+      // A passkey is a whole login here, not one factor of two, so the
+      // authenticator has to actually verify the person: biometric, PIN, or
+      // screen lock. `preferred` would let a PIN-less security key register a
+      // credential that anyone holding it could then sign in with.
+      userVerification: "required",
     },
   });
 
@@ -313,9 +317,10 @@ export async function registerPasskey(input: {
       expectedChallenge,
       expectedOrigin: getExpectedOrigins(),
       expectedRPID: getRpID(),
-      // Paired with the `preferred` we asked for: a security key without a PIN
-      // is still a legitimate passkey, it just did not verify the user.
-      requireUserVerification: false,
+      // Enforced, not merely requested: `userVerification` in the options is a
+      // hint to the client, and only this check makes the authenticator's `uv`
+      // flag binding.
+      requireUserVerification: true,
     });
   } catch (error) {
     rejected(error);
@@ -374,7 +379,7 @@ export async function createPasskeyAuthenticationOptions(): Promise<{
     timeout: CEREMONY_TIMEOUT_MS,
     // No `allowCredentials`: the credentials are discoverable, so the
     // authenticator offers the accounts it holds and the user picks one.
-    userVerification: "preferred",
+    userVerification: "required",
   });
 
   const challengeId = generateChallengeId();
@@ -428,7 +433,7 @@ export async function verifyPasskeyAuthentication(input: {
         counter: Number(passkey.counter),
         ...(passkey.transports ? { transports: passkey.transports } : {}),
       },
-      requireUserVerification: false,
+      requireUserVerification: true,
     });
   } catch (error) {
     rejected(error);

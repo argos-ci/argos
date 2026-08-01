@@ -106,6 +106,11 @@ export type FakeAuthenticatorOptions = {
   /** Whether the credential reports itself as synced. */
   backedUp?: boolean;
   /**
+   * Whether the authenticator verified the user (biometric, PIN, screen lock).
+   * A PIN-less security key does not.
+   */
+  userVerified?: boolean;
+  /**
    * Whether each assertion advances the signature counter.
    *
    * Security keys do; most synced providers report a permanent 0, which is why
@@ -119,6 +124,7 @@ export class FakeAuthenticator {
   readonly credentialId: Buffer;
   readonly aaguid: string;
   private readonly backedUp: boolean;
+  private readonly userVerified: boolean;
   private readonly incrementsCounter: boolean;
   private readonly privateKey: KeyObject;
   private readonly publicKey: KeyObject;
@@ -128,6 +134,7 @@ export class FakeAuthenticator {
     this.credentialId = options.credentialId ?? randomBytes(32);
     this.aaguid = options.aaguid ?? "bada5566-a7aa-401f-bd96-45619a55120d";
     this.backedUp = options.backedUp ?? true;
+    this.userVerified = options.userVerified ?? true;
     this.incrementsCounter = options.incrementsCounter ?? false;
     const { privateKey, publicKey } = generateKeyPairSync("ec", {
       namedCurve: "prime256v1",
@@ -139,7 +146,7 @@ export class FakeAuthenticator {
   private get flags(): number {
     return (
       FLAG_USER_PRESENT |
-      FLAG_USER_VERIFIED |
+      (this.userVerified ? FLAG_USER_VERIFIED : 0) |
       (this.backedUp ? FLAG_BACKUP_ELIGIBLE | FLAG_BACKED_UP : 0)
     );
   }
