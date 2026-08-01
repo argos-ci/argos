@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { MessageSquareIcon, MessageSquareOffIcon } from "lucide-react";
 
-import { IconButton } from "@/ui/IconButton";
+import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useCommentTool } from "../CommentTool";
@@ -12,13 +12,15 @@ export const CommentsVisibilityToggle = memo(() => {
   const label = visible ? "Hide comments" : "Show comments";
   return (
     <Tooltip content={label}>
-      <IconButton
+      <Button
+        variant="secondary"
+        iconOnly
         aria-pressed={visible}
         aria-label={label}
         onPress={() => setCommentsVisible(!visible)}
       >
         {visible ? <MessageSquareIcon /> : <MessageSquareOffIcon />}
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 });

@@ -10,13 +10,14 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { AnimatePresence, motion } from "motion/react";
-import { Button } from "react-aria-components";
+import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { Button } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
@@ -24,7 +25,6 @@ import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { useEditorDraft } from "@/ui/Editor/useEditorDraft";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
@@ -449,7 +449,7 @@ function ResolvedThreadHeader(props: {
 }) {
   const { collapsed, commentCount, authorName, onToggle } = props;
   return (
-    <Button
+    <RACButton
       onPress={onToggle}
       aria-label={collapsed ? "Expand thread" : "Collapse thread"}
       className="text-low hover:text-default flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs transition select-none"
@@ -469,7 +469,7 @@ function ResolvedThreadHeader(props: {
           <ChevronsDownUpIcon className="size-3.5 shrink-0" />
         </>
       )}
-    </Button>
+    </RACButton>
   );
 }
 
@@ -609,14 +609,14 @@ function CommentMessage(props: {
                   </div>
                 }
               >
-                <Button
+                <RACButton
                   onPress={copyLink}
                   aria-label="Copy link to comment"
                   className="text-low hover:text-default shrink-0 text-left text-xs transition"
                 >
                   <Time date={comment.date} tooltip="none" />
                   {isEdited ? " (edited)" : null}
-                </Button>
+                </RACButton>
               </Tooltip>
               {comment.pending ? <PendingCommentBadge /> : null}
             </div>
@@ -751,8 +751,9 @@ function ReplyComposer(props: {
           keys={[MOD, "Enter"]}
           placement="top"
         >
-          <IconButton
-            variant="contained"
+          <Button
+            variant="surface"
+            iconOnly
             size="small"
             aria-label="Submit the reply"
             aria-disabled={isEmpty}
@@ -761,7 +762,7 @@ function ReplyComposer(props: {
             className="mt-0.5 shrink-0"
           >
             <ArrowUpIcon />
-          </IconButton>
+          </Button>
         </HotkeyTooltip>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { LocateFixedIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useBuildDiffHighlighterContext } from "../BuildDiffHighlighterContext";
@@ -18,9 +18,14 @@ export const HighlightButton = memo(() => {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton variant="contained" onPress={highlight} isDisabled={!enabled}>
+      <Button
+        variant="surface"
+        iconOnly
+        onPress={highlight}
+        isDisabled={!enabled}
+      >
         <LocateFixedIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 });

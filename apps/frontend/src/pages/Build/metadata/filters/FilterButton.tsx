@@ -4,8 +4,8 @@ import { createHideableComponent } from "@react-aria/collections";
 import { FilterIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
@@ -36,9 +36,9 @@ const InnerFilterButton = createHideableComponent(
           keys={filterHotKey.displayKeys}
           description={filterHotKey.description}
         >
-          <IconButton size="small">
+          <Button variant="secondary" iconOnly size="small">
             <FilterIcon />
-          </IconButton>
+          </Button>
         </HotkeyTooltip>
 
         <Popover placement="bottom start" className="bg-app min-w-40">

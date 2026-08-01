@@ -16,7 +16,6 @@ import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { DialogTrigger } from "@/ui/Dialog";
-import { IconButton } from "@/ui/IconButton";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
@@ -148,9 +147,9 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
 
                 {props.amOwner ? (
                   <MenuTrigger>
-                    <IconButton>
+                    <Button variant="secondary" iconOnly>
                       <MoreVerticalIcon />
-                    </IconButton>
+                    </Button>
                     <Popover>
                       <Menu aria-label="Actions">
                         <MenuItem

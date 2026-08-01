@@ -1,6 +1,6 @@
 import { BellIcon, BellOffIcon } from "lucide-react";
 
-import { IconButton } from "@/ui/IconButton";
+import { Button } from "@/ui/Button";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
@@ -44,9 +44,15 @@ export function SubscribeToggleButton(props: {
   };
   return (
     <Tooltip content={label}>
-      <IconButton size="small" aria-label={label} onPress={handlePress}>
+      <Button
+        variant="secondary"
+        iconOnly
+        size="small"
+        aria-label={label}
+        onPress={handlePress}
+      >
         {subscribed ? <BellOffIcon /> : <BellIcon />}
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 }

@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { HandIcon, MessageSquarePlusIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildHotkey } from "../BuildHotkeys";
@@ -23,28 +23,30 @@ export const CommentToolToggle = memo(() => {
   return (
     <ButtonGroup>
       <Tooltip content="Move tool — drag to pan, scroll to zoom">
-        <IconButton
-          variant="contained"
+        <Button
+          variant="surface"
+          iconOnly
           aria-pressed={mode === "hand"}
           aria-label="Move tool"
           onPress={activateHand}
         >
           <HandIcon />
-        </IconButton>
+        </Button>
       </Tooltip>
       <HotkeyTooltip
         description="Comment tool — click the image to comment"
         keys={hotkey.displayKeys}
         keysEnabled={mode !== "comment"}
       >
-        <IconButton
-          variant="contained"
+        <Button
+          variant="surface"
+          iconOnly
           aria-pressed={mode === "comment"}
           aria-label="Comment tool"
           onPress={activateComment}
         >
           <MessageSquarePlusIcon />
-        </IconButton>
+        </Button>
       </HotkeyTooltip>
     </ButtonGroup>
   );

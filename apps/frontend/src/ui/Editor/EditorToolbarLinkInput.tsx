@@ -4,7 +4,8 @@ import { clsx } from "clsx";
 import { ExternalLinkIcon, Trash2Icon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
+
+import { Button } from "../Button";
 
 export interface EditorToolbarLinkInputProps {
   editor: Editor;
@@ -113,24 +114,28 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
       />
       <div className="mx-1 h-4 w-px shrink-0 bg-(--gray-6)" />
       <HotkeyTooltip description="Open link" keys={[]}>
-        <IconButton
+        <Button
+          variant="secondary"
+          iconOnly
           size="small"
           aria-label="Open link"
           isDisabled={!normalized}
           onPress={open}
         >
           <ExternalLinkIcon />
-        </IconButton>
+        </Button>
       </HotkeyTooltip>
       <HotkeyTooltip description="Remove link" keys={[]}>
-        <IconButton
+        <Button
+          variant="secondary"
+          iconOnly
           size="small"
           aria-label="Remove link"
           isDisabled={!hasLink}
           onPress={remove}
         >
           <Trash2Icon />
-        </IconButton>
+        </Button>
       </HotkeyTooltip>
     </form>
   );

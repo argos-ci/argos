@@ -1,7 +1,7 @@
 import { cloneElement } from "react";
 import { MoreVerticalIcon } from "lucide-react";
 
-import { IconButton } from "@/ui/IconButton";
+import { Button } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 
 export function ProviderCard(props: {
@@ -48,8 +48,8 @@ export function ProviderLastLoggedAt(props: { date: string }) {
 
 export function ProviderMenuButton() {
   return (
-    <IconButton className="shrink-0">
+    <Button variant="secondary" iconOnly className="shrink-0">
       <MoreVerticalIcon />
-    </IconButton>
+    </Button>
   );
 }

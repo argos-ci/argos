@@ -2,8 +2,8 @@ import { memo, useEffect } from "react";
 import clsx from "clsx";
 import { XIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
-import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { isMacOS } from "@/util/os";
@@ -468,13 +468,15 @@ const BuildHotkeysDialogWithState = memo(
         <Dialog>
           <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
-            <IconButton
+            <Button
+              variant="secondary"
+              iconOnly
               slot="close"
               aria-label="Close"
               className="absolute top-3 right-3 z-10"
             >
               <XIcon />
-            </IconButton>
+            </Button>
             <div className={clsx("gap-12 space-y-6 pb-4 md:columns-2")}>
               {plainHotkeyGroups.map((group, index) => {
                 const entries = Object.entries(group.hotkeys).filter(

@@ -15,7 +15,10 @@ import { Loader } from "./Loader";
 export type ButtonVariant =
   | "primary"
   | "secondary"
+  | "surface"
   | "ghost"
+  | "danger"
+  | "success"
   | "destructive"
   | "github"
   | "gitlab"
@@ -39,16 +42,58 @@ type ButtonOptions = {
   showFocusRing?: boolean;
 };
 
+/**
+ * Icons a step back from the label, forward again on hover. `*:` reaches the
+ * icon because `ButtonIcon` clones it as a direct child, and an `iconOnly`
+ * button's icon is its only child.
+ */
+const ICON_STEPS_BACK = "*:text-low data-hovered:*:text-default";
+
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
   // A wash rather than a fill: `bg-ui` at half opacity lifts the button off
   // whatever it sits on — the app background, a panel, an image — without
-  // reading as a filled button next to `primary`.
-  secondary:
+  // reading as a filled button next to `primary`. Icons sit one step back from
+  // the label and come forward on hover, so a row of icon buttons stays quiet
+  // until it is pointed at.
+  secondary: clsx(
     "text-default bg-ui/50 data-hovered:bg-hover/60 data-hovered:border-hover data-pressed:bg-active/70",
-  ghost:
-    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
+    ICON_STEPS_BACK,
+    // Pressed, hovering goes darker rather than lighter: a control that is
+    // already on should not look like it is about to turn on.
+    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
+    "aria-expanded:bg-active",
+  ),
+  // `secondary` with an opaque fill, for the controls that float over content
+  // (the zoomer, the toolbars over a screenshot) where a wash would not hold.
+  surface: clsx(
+    "text-default bg-ui data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+    ICON_STEPS_BACK,
+    // Pressed, hovering goes darker rather than lighter: a control that is
+    // already on should not look like it is about to turn on.
+    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
+    "aria-expanded:bg-active",
+  ),
+  ghost: clsx(
+    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active",
+    ICON_STEPS_BACK,
+    // Pressed, hovering goes darker rather than lighter: a control that is
+    // already on should not look like it is about to turn on.
+    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
+    "aria-expanded:bg-active",
+  ),
+  // The quiet colored actions — approve, reject, delete — as opposed to
+  // `destructive`, which is a solid call to action. The color is in the icon and
+  // the label, and only fills in on hover.
+  danger: clsx(
+    "text-danger-low bg-ui/50 data-hovered:border-danger-hover data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
+    "aria-pressed:bg-danger-active aria-pressed:data-hovered:bg-danger-active-hover",
+  ),
+  success: clsx(
+    "text-success-low bg-ui/50 data-hovered:border-success-hover data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
+    "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active-hover",
+  ),
   destructive:
     "text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
   github:
@@ -65,18 +110,18 @@ const sizeClassNames: Record<ButtonSize, string> = {
   large: "py-3 px-8 text-base",
 };
 
-// An iconOnly button is a square that matches the height of a text button of the
-// same size, so the two line up side by side (in a ButtonGroup or just next to
-// each other). Its content is the `size-[1em]` icon rather than a line of text,
-// so the padding makes up the difference: half of (line-height − 1em) on top of
-// the text size's own padding.
+// An iconOnly button is a circle as tall as a text button of the same size, so
+// the two line up side by side (in a ButtonGroup or just next to each other).
+// Its icon is a step larger than the label's `1em` — an icon carrying a meaning
+// on its own needs the room — and the padding makes up the rest of the height:
+// `(text height − 1) / 2 − icon / 2`.
 const iconOnlySizeClassNames: Record<ButtonSize, string> = {
-  // text-xs: 1rem line-height, 0.75rem icon, py-1 → 0.25rem + 0.125rem
-  small: "py-1.5 px-1.5 text-xs",
-  // text-sm: 1.25rem line-height, 0.875rem icon, py-[calc(0.375rem-1px)]
-  medium: "py-[calc(0.5625rem-1px)] px-[calc(0.5625rem-1px)] text-sm",
-  // text-base: 1.5rem line-height, 1rem icon, py-3 → 0.75rem + 0.25rem
-  large: "py-4 px-4 text-base",
+  // 25px tall: 14px icon + 2×5px
+  small: "p-1.25 *:size-3.5 text-xs",
+  // 31px tall: 16px icon + 2×7px
+  medium: "p-1.75 *:size-4 text-sm",
+  // 49px tall: 20px icon + 2×14px
+  large: "p-3.5 *:size-5 text-base",
 };
 
 // Ring color per variant, the single source of truth for both the
@@ -96,9 +141,21 @@ const ringClassNames: Record<
     focusVisible: "data-focus-visible:ring-default",
     focused: "data-focused:ring-default",
   },
+  surface: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
   ghost: {
     focusVisible: "data-focus-visible:ring-default",
     focused: "data-focused:ring-default",
+  },
+  danger: {
+    focusVisible: "data-focus-visible:ring-danger",
+    focused: "data-focused:ring-danger",
+  },
+  success: {
+    focusVisible: "data-focus-visible:ring-success",
+    focused: "data-focused:ring-success",
   },
   destructive: {
     focusVisible: "data-focus-visible:ring-danger",
@@ -152,7 +209,7 @@ export function getButtonClassName(options: {
     "group-[*]/button-group:not-first:rounded-l-none",
     "group-[*]/button-group:not-last:rounded-r-none",
     "group-[*]/button-group:not-first:-ml-thin",
-    iconOnly && "*:size-[1em] justify-center",
+    iconOnly && "justify-center",
     "focus:outline-hidden data-focus-visible:ring-4",
     // A hairline rather than a border: it draws the button's edge without
     // framing it.

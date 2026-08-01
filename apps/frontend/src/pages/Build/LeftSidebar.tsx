@@ -5,9 +5,8 @@ import { TabList as RACTabList, TabPanel, Tabs } from "react-aria-components";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
-import { LinkButton } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { PillTab } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -130,9 +129,14 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 keys={leaveSearchModeHotKey.displayKeys}
                 description="Exit search mode"
               >
-                <IconButton size="small" onPress={() => setSearchMode(false)}>
+                <Button
+                  variant="secondary"
+                  iconOnly
+                  size="small"
+                  onPress={() => setSearchMode(false)}
+                >
                   <XIcon />
-                </IconButton>
+                </Button>
               </HotkeyTooltip>
             </>
           ) : (
@@ -148,13 +152,15 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 keys={searchModeHotKey.displayKeys}
                 description="Find"
               >
-                <IconButton
+                <Button
+                  variant="secondary"
+                  iconOnly
                   onPress={() => enterSearchMode()}
                   aria-pressed={searchMode}
                   size="small"
                 >
                   <SearchIcon />
-                </IconButton>
+                </Button>
               </HotkeyTooltip>
             </>
           )}

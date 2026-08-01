@@ -8,7 +8,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 
-import { IconButton } from "@/ui/IconButton";
+import { Button } from "@/ui/Button";
 import {
   Menu,
   MenuItem,
@@ -44,9 +44,14 @@ export function CommentActionsMenu(props: {
   } = props;
   return (
     <MenuTrigger>
-      <IconButton size="small" aria-label="Comment actions">
+      <Button
+        variant="secondary"
+        iconOnly
+        size="small"
+        aria-label="Comment actions"
+      >
         <MoreHorizontalIcon />
-      </IconButton>
+      </Button>
       <Popover placement="bottom end">
         <Menu aria-label="Comment actions">
           {onEdit ? (

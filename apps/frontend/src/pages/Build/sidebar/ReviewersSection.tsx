@@ -24,6 +24,7 @@ import { useProjectPermissions } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { Button } from "@/ui/Button";
 import {
   Dialog,
   DialogActionButton,
@@ -35,7 +36,6 @@ import {
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
@@ -351,9 +351,14 @@ function RequestReviewersMenu(props: { build: Build }) {
   return (
     <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <HotkeyTooltip description="Add reviewer" keys={hotkey.displayKeys}>
-        <IconButton size="small" aria-label="Add reviewer">
+        <Button
+          variant="secondary"
+          iconOnly
+          size="small"
+          aria-label="Add reviewer"
+        >
           <PlusIcon />
-        </IconButton>
+        </Button>
       </HotkeyTooltip>
       <Popover placement="bottom end" className="bg-app min-w-56">
         <Autocomplete filter={contains}>
@@ -413,9 +418,15 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
   return (
     <MenuTrigger>
-      <IconButton data-actions-menu="" size="small" aria-label="Review actions">
+      <Button
+        variant="secondary"
+        iconOnly
+        data-actions-menu=""
+        size="small"
+        aria-label="Review actions"
+      >
         <MoreHorizontalIcon />
-      </IconButton>
+      </Button>
       <Popover placement="bottom end">
         <Menu aria-label="Review actions">
           <MenuItem variant="danger" onAction={props.onDismiss}>

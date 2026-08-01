@@ -1,8 +1,8 @@
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 export function NextButton(props: {
   onPress: () => void;
@@ -16,9 +16,14 @@ export function NextButton(props: {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton isDisabled={isDisabled} onPress={onPress}>
+      <Button
+        variant="secondary"
+        iconOnly
+        isDisabled={isDisabled}
+        onPress={onPress}
+      >
         <ArrowDownIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }
@@ -44,9 +49,14 @@ export function PreviousButton(props: {
       description={toOverview ? "Go to overview" : hotkey.description}
       keys={hotkey.displayKeys}
     >
-      <IconButton isDisabled={isDisabled} onPress={onPress}>
+      <Button
+        variant="secondary"
+        iconOnly
+        isDisabled={isDisabled}
+        onPress={onPress}
+      >
         <ArrowUpIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

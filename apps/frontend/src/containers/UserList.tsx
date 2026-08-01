@@ -2,7 +2,7 @@ import { MoreVerticalIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
-import { IconButton } from "@/ui/IconButton";
+import { Button } from "@/ui/Button";
 import { ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemTooltip, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
@@ -18,9 +18,9 @@ export function RemoveMenu(props: {
 }) {
   return (
     <MenuTrigger>
-      <IconButton>
+      <Button variant="secondary" iconOnly>
         <MoreVerticalIcon />
-      </IconButton>
+      </Button>
       <Popover>
         <Menu aria-label={props.label}>
           <MenuItem

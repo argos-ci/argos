@@ -35,7 +35,6 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { Link } from "@/ui/Link";
 import { List, ListRow } from "@/ui/List";
 import {
@@ -247,9 +246,9 @@ function WebhookActionsMenu(props: { webhook: DiscordWebhook }) {
   return (
     <>
       <MenuTrigger>
-        <IconButton aria-label={label}>
+        <Button variant="secondary" iconOnly aria-label={label}>
           <MoreVerticalIcon />
-        </IconButton>
+        </Button>
         <Popover placement="bottom end">
           <Menu aria-label={label}>
             <MenuItem

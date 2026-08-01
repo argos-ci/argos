@@ -2,8 +2,8 @@ import { memo } from "react";
 import { useAtom } from "jotai/react";
 import { EyeIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 import { useBuildHotkey } from "../BuildHotkeys";
 import { overlayVisibleAtom } from "../OverlayStyle";
@@ -19,9 +19,9 @@ export const OverlayToggle = memo(() => {
       description={visible ? "Hide changes overlay" : "Show changes overlay"}
       keys={hotkey.displayKeys}
     >
-      <IconButton color="danger" aria-pressed={visible} onPress={toggle}>
+      <Button variant="danger" iconOnly aria-pressed={visible} onPress={toggle}>
         <EyeIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 });

@@ -2,8 +2,8 @@ import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
 import { ShrinkIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 import { buildDiffFitContainedAtom } from "../BuildDiffFit";
 import { useBuildHotkey } from "../BuildHotkeys";
@@ -26,9 +26,14 @@ export const FitToggle = memo(() => {
       description={contained ? "Expand the screenshot" : "Fit the screenshot"}
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={contained} onPress={toggle}>
+      <Button
+        variant="secondary"
+        iconOnly
+        aria-pressed={contained}
+        onPress={toggle}
+      >
         <ShrinkIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 });

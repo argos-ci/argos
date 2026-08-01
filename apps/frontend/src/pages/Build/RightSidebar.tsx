@@ -12,8 +12,8 @@ import { useLocation } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Sidebar } from "@/ui/Sidebar";
 import { PillTab } from "@/ui/Tab";
 
@@ -145,9 +145,9 @@ export function RightSidebarToggle() {
       description={open ? "Hide sidebar" : "Show sidebar"}
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={open} onPress={toggle}>
+      <Button variant="secondary" iconOnly aria-pressed={open} onPress={toggle}>
         <PanelRightIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

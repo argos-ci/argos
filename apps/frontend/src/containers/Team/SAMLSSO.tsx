@@ -47,7 +47,6 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { Label } from "@/ui/Label";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
@@ -211,9 +210,9 @@ export function TeamSAMLSSO(props: {
                   </Tooltip>
                 )}
                 <MenuTrigger>
-                  <IconButton className="shrink-0">
+                  <Button variant="secondary" iconOnly className="shrink-0">
                     <MoreVerticalIcon />
-                  </IconButton>
+                  </Button>
                   <Popover>
                     <Menu aria-label="SAML options">
                       <MenuItem href={getReAuthenticateURL(team.samlSsoUrl)}>

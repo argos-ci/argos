@@ -17,7 +17,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { IconButton } from "@/ui/IconButton";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
@@ -83,9 +82,9 @@ export function TeamSlack(props: {
                 Connected <Time date={account.slackInstallation.connectedAt} />
               </div>
               <MenuTrigger>
-                <IconButton className="shrink-0">
+                <Button variant="secondary" iconOnly className="shrink-0">
                   <MoreVerticalIcon />
-                </IconButton>
+                </Button>
                 <Popover>
                   <Menu aria-label="Slack options">
                     <MenuItem

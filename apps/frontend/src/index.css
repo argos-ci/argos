@@ -70,6 +70,13 @@
   --background-color-ui: var(--gray-3);
   --background-color-hover: var(--gray-4);
   --background-color-active: var(--gray-5);
+  /* Hovering a control that is already pressed: the fill goes a step darker,
+     not lighter, so the feedback still reads as "on". */
+  --background-color-active-hover: color-mix(
+    in srgb,
+    var(--background-color-active) 88%,
+    black
+  );
   --background-color-solid: var(--gray-9);
   --background-color-solid-hover: var(--gray-10);
   --background-color-solid-active: var(--gray-11);
@@ -88,6 +95,11 @@
   --background-color-danger-ui: var(--tomato-3);
   --background-color-danger-hover: var(--tomato-4);
   --background-color-danger-active: var(--tomato-5);
+  --background-color-danger-active-hover: color-mix(
+    in srgb,
+    var(--background-color-danger-active) 88%,
+    black
+  );
   --background-color-danger-solid: var(--tomato-9);
   --background-color-danger-solid-hover: var(--tomato-10);
   --background-color-danger-solid-active: var(--tomato-11);
@@ -124,6 +136,11 @@
   --background-color-success-ui: var(--grass-3);
   --background-color-success-hover: var(--grass-4);
   --background-color-success-active: var(--grass-5);
+  --background-color-success-active-hover: color-mix(
+    in srgb,
+    var(--background-color-success-active) 88%,
+    black
+  );
   --background-color-success-solid: var(--grass-9);
   --background-color-success-solid-hover: var(--grass-10);
   --background-color-success-solid-active: var(--grass-11);

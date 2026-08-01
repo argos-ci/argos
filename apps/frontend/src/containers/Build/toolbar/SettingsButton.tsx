@@ -4,13 +4,13 @@ import { useAtom } from "jotai/react";
 import { PaintbrushIcon } from "lucide-react";
 import { Heading } from "react-aria-components";
 
+import { Button } from "@/ui/Button";
 import {
   ColorSwatch,
   ColorSwatchPicker,
   ColorSwatchPickerItem,
 } from "@/ui/ColorPicker";
 import { Dialog, DialogBody, DialogTrigger } from "@/ui/Dialog";
-import { IconButton } from "@/ui/IconButton";
 import { Label } from "@/ui/Label";
 import { Popover } from "@/ui/Popover";
 import { Slider, SliderOutput, SliderThumb, SliderTrack } from "@/ui/Slider";
@@ -22,9 +22,9 @@ export const SettingsButton = memo(() => {
   return (
     <DialogTrigger>
       <Tooltip content="Customize overlay color and opacity">
-        <IconButton>
+        <Button variant="secondary" iconOnly>
           <PaintbrushIcon />
-        </IconButton>
+        </Button>
       </Tooltip>
       <Popover placement="bottom end">
         <OverlaySettingsDialog />

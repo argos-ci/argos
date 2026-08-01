@@ -14,7 +14,6 @@ import {
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
-import { IconButton } from "@/ui/IconButton";
 import { List, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemTooltip } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
@@ -112,9 +111,9 @@ export function UserEmails(props: {
                     <SendUserEmailVerificationButton email={email.email} />
                   ) : null}
                   <MenuTrigger>
-                    <IconButton>
+                    <Button variant="secondary" iconOnly>
                       <MoreVerticalIcon />
-                    </IconButton>
+                    </Button>
                     <Popover>
                       <Menu aria-label="Actions">
                         {!isPrimary && (

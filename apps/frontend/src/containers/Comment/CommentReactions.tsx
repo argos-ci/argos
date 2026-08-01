@@ -1,13 +1,13 @@
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
 import { SmilePlusIcon } from "lucide-react";
-import { Button } from "react-aria-components";
+import { Button as RACButton } from "react-aria-components";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import { EmojiPickerPopover, EmojiPickerTrigger } from "@/ui/EmojiPicker";
-import { IconButton } from "@/ui/IconButton";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
@@ -124,9 +124,14 @@ export function CommentAddReactionButton(props: { comment: Comment }) {
   return (
     <EmojiPickerTrigger>
       <Tooltip content="Add reaction">
-        <IconButton size="small" aria-label="Add reaction">
+        <Button
+          variant="secondary"
+          iconOnly
+          size="small"
+          aria-label="Add reaction"
+        >
           <SmilePlusIcon />
-        </IconButton>
+        </Button>
       </Tooltip>
       <EmojiPickerPopover
         placement="bottom end"
@@ -153,7 +158,7 @@ export function CommentReactionList(props: { comment: Comment }) {
     <div className="flex flex-wrap items-center gap-1 px-2 pb-2">
       {comment.reactions.map((group) => (
         <Tooltip key={group.emoji} content={getReactionTooltip(group)}>
-          <Button
+          <RACButton
             isDisabled={!canReact}
             onPress={() => toggle(group)}
             className={clsx(
@@ -167,7 +172,7 @@ export function CommentReactionList(props: { comment: Comment }) {
           >
             <span className="text-sm leading-none">{group.emoji}</span>
             <span className="tabular-nums">{group.count}</span>
-          </Button>
+          </RACButton>
         </Tooltip>
       ))}
       <CommentAddReactionButton comment={comment} />

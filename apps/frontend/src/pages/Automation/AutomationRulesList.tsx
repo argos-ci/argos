@@ -12,6 +12,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { DialogTrigger } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
@@ -23,7 +24,6 @@ import { getAutomationEventLabel } from "@/util/automation";
 
 import { AutomationRule } from ".";
 import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
-import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { useProjectParams } from "../Project/ProjectParams";
@@ -68,14 +68,16 @@ function LastTriggerStatusIcon({
   return (
     <DialogTrigger>
       <Tooltip content="View latest automation runs">
-        <IconButton
+        <Button
+          variant="secondary"
+          iconOnly
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
           <AutomationRunStatusIcon status={automationRun.status} />
-        </IconButton>
+        </Button>
       </Tooltip>
       <Popover className="bg-app">
         <div className="flex flex-col gap-2 p-3">
@@ -150,9 +152,9 @@ function AutomationRow(props: AutomationRowProps) {
       </div>
       <div className="w-8 shrink-0 py-2">
         <MenuTrigger>
-          <IconButton>
+          <Button variant="secondary" iconOnly>
             <MoreVerticalIcon />
-          </IconButton>
+          </Button>
           <Popover>
             <Menu>
               <MenuItem href={url}>

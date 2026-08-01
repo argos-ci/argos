@@ -6,7 +6,6 @@ import { toast } from "@/ui/Toaster";
 
 import { Button } from "../Button";
 import { HotkeyTooltip } from "../HotkeyTooltip";
-import { IconButton } from "../IconButton";
 import { Editor, type EditorValue, type EditorVariant } from "./Editor";
 import { MOD } from "./EditorToolbar.shortcuts";
 import { type MentionUser } from "./mention";
@@ -218,8 +217,9 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 keys={[MOD, "Enter"]}
                 placement="top"
               >
-                <IconButton
-                  variant="contained"
+                <Button
+                  variant="surface"
+                  iconOnly
                   size="small"
                   aria-label={submitLabel}
                   // Truly disabled (not focusable/clickable) while submitting or when
@@ -232,7 +232,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                   className="ml-auto"
                 >
                   <ArrowUpIcon />
-                </IconButton>
+                </Button>
               </HotkeyTooltip>
             )}
           </div>
