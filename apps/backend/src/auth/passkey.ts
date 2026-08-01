@@ -84,8 +84,14 @@ function getExpectedOrigins(): string[] {
   return origins;
 }
 
-function getRegistrationChallengeKey(userId: string): string {
-  return `passkey_registration_challenge:${userId}`;
+function getRegistrationChallengeKey(challengeId: string): string {
+  return `passkey_registration_challenge:${challengeId}`;
+}
+
+/** An opaque handle to a stored challenge. Grants nothing on its own — only the
+ * holder of the private key can sign the challenge it points at. */
+function generateChallengeId(): string {
+  return randomBytes(32).toString("base64url");
 }
 
 function getAuthenticationChallengeKey(challengeId: string): string {
@@ -224,15 +230,20 @@ function toStoredTransports(
 /**
  * Start a passkey registration for a signed-in user.
  *
- * The challenge is stored server-side under the user's id: registration always
- * happens inside an authenticated session, so the session itself says which
- * challenge the response must match.
+ * The challenge is keyed by a fresh handle rather than by the user, so two
+ * ceremonies running at once — two tabs, two windows — do not overwrite each
+ * other. Keying by user meant the second `create` clobbered the first's
+ * challenge and both ceremonies then failed, one on a mismatch and one on a
+ * missing key, even though the user had approved both prompts.
  */
 export async function createPasskeyRegistrationOptions(input: {
   userId: string;
   userName: string;
   userDisplayName: string;
-}): Promise<PublicKeyCredentialCreationOptionsJSON> {
+}): Promise<{
+  challengeId: string;
+  options: PublicKeyCredentialCreationOptionsJSON;
+}> {
   const existingPasskeys = await UserPasskey.query()
     .select("credentialId", "transports")
     .where("userId", input.userId);
@@ -263,12 +274,13 @@ export async function createPasskeyRegistrationOptions(input: {
     },
   });
 
+  const challengeId = generateChallengeId();
   await storeChallenge(
-    getRegistrationChallengeKey(input.userId),
+    getRegistrationChallengeKey(challengeId),
     options.challenge,
   );
 
-  return options;
+  return { challengeId, options };
 }
 
 /**
@@ -278,6 +290,7 @@ export async function createPasskeyRegistrationOptions(input: {
  */
 export async function registerPasskey(input: {
   userId: string;
+  challengeId: string;
   response: unknown;
   deviceLabel: string | null;
 }): Promise<UserPasskey> {
@@ -287,7 +300,7 @@ export async function registerPasskey(input: {
   }
 
   const expectedChallenge = await consumeChallenge(
-    getRegistrationChallengeKey(input.userId),
+    getRegistrationChallengeKey(input.challengeId),
   );
   if (!expectedChallenge) {
     expiredCeremony();
@@ -364,7 +377,7 @@ export async function createPasskeyAuthenticationOptions(): Promise<{
     userVerification: "preferred",
   });
 
-  const challengeId = randomBytes(32).toString("base64url");
+  const challengeId = generateChallengeId();
   await storeChallenge(
     getAuthenticationChallengeKey(challengeId),
     options.challenge,

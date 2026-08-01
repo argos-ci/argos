@@ -78,13 +78,19 @@ const AuthenticateWithPasskeyMutation = graphql(`
 
 const CreateRegistrationOptionsMutation = graphql(`
   mutation Passkey_createPasskeyRegistrationOptions {
-    createPasskeyRegistrationOptions
+    createPasskeyRegistrationOptions {
+      challengeId
+      options
+    }
   }
 `);
 
 const RegisterPasskeyMutation = graphql(`
-  mutation Passkey_registerPasskey($response: JSONObject!) {
-    registerPasskey(input: { response: $response }) {
+  mutation Passkey_registerPasskey(
+    $challengeId: String!
+    $response: JSONObject!
+  ) {
+    registerPasskey(input: { challengeId: $challengeId, response: $response }) {
       id
       name
       createdAt
@@ -111,12 +117,11 @@ export function useRegisterPasskey(): () => Promise<void> {
     if (!data) {
       throw new Error("Failed to start the passkey registration");
     }
-    const response = await startRegistration({
-      optionsJSON: data.createPasskeyRegistrationOptions,
-    });
+    const { challengeId, options } = data.createPasskeyRegistrationOptions;
+    const response = await startRegistration({ optionsJSON: options });
     await client.mutate({
       mutation: RegisterPasskeyMutation,
-      variables: { response },
+      variables: { challengeId, response },
       refetchQueries: ["AccountSettings_account"],
       awaitRefetchQueries: true,
     });

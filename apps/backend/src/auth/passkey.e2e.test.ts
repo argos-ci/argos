@@ -28,7 +28,7 @@ async function register(input: {
   userId: string;
   authenticator: FakeAuthenticator;
 }): Promise<UserPasskey> {
-  const options = await createPasskeyRegistrationOptions({
+  const { challengeId, options } = await createPasskeyRegistrationOptions({
     userId: input.userId,
     userName: "jane@example.com",
     userDisplayName: "Jane",
@@ -40,6 +40,7 @@ async function register(input: {
   });
   return registerPasskey({
     userId: input.userId,
+    challengeId,
     response,
     deviceLabel: "Chrome on macOS",
   });
@@ -108,7 +109,7 @@ describe("passkey", () => {
     });
 
     test("gives the browser a deadline the server outlives", async () => {
-      const options = await createPasskeyRegistrationOptions({
+      const { options } = await createPasskeyRegistrationOptions({
         userId,
         userName: "jane@example.com",
         userDisplayName: "Jane",
@@ -144,7 +145,7 @@ describe("passkey", () => {
       const authenticator = new FakeAuthenticator();
       const passkey = await register({ userId, authenticator });
 
-      const options = await createPasskeyRegistrationOptions({
+      const { options } = await createPasskeyRegistrationOptions({
         userId,
         userName: "jane@example.com",
         userDisplayName: "Jane",
@@ -156,6 +157,51 @@ describe("passkey", () => {
           transports: ["internal", "hybrid"],
         },
       ]);
+    });
+
+    test("lets two registrations run at once without clobbering each other", async () => {
+      // Two tabs. Keying the challenge by user meant the second `create`
+      // overwrote the first's, and then both ceremonies failed.
+      const [first, second] = await Promise.all([
+        createPasskeyRegistrationOptions({
+          userId,
+          userName: "jane@example.com",
+          userDisplayName: "Jane",
+        }),
+        createPasskeyRegistrationOptions({
+          userId,
+          userName: "jane@example.com",
+          userDisplayName: "Jane",
+        }),
+      ]);
+
+      const authenticatorA = new FakeAuthenticator();
+      const authenticatorB = new FakeAuthenticator();
+
+      // Oldest first — the order that used to lose both.
+      const a = await registerPasskey({
+        userId,
+        challengeId: first.challengeId,
+        response: authenticatorA.create({
+          challenge: first.options.challenge,
+          origin: ORIGIN,
+          rpId: RP_ID,
+        }).response,
+        deviceLabel: null,
+      });
+      const b = await registerPasskey({
+        userId,
+        challengeId: second.challengeId,
+        response: authenticatorB.create({
+          challenge: second.options.challenge,
+          origin: ORIGIN,
+          rpId: RP_ID,
+        }).response,
+        deviceLabel: null,
+      });
+
+      expect(a.id).not.toBe(b.id);
+      expect(await UserPasskey.query().resultSize()).toBe(2);
     });
 
     test("refuses a credential already registered on another account", async () => {
@@ -175,7 +221,7 @@ describe("passkey", () => {
     });
 
     test("refuses a ceremony performed on another origin", async () => {
-      const options = await createPasskeyRegistrationOptions({
+      const { challengeId, options } = await createPasskeyRegistrationOptions({
         userId,
         userName: "jane@example.com",
         userDisplayName: "Jane",
@@ -187,7 +233,7 @@ describe("passkey", () => {
       });
 
       const rejection = await expectRejection(
-        registerPasskey({ userId, response, deviceLabel: null }),
+        registerPasskey({ userId, challengeId, response, deviceLabel: null }),
       );
       expect(rejection.statusCode).toBe(400);
       // The verifier names the expected origin in its own message; the client
@@ -206,11 +252,13 @@ describe("passkey", () => {
       const otherOrigin = "https://app2.argos-ci.test";
       config.set("webauthn.origins", [otherOrigin]);
       try {
-        const options = await createPasskeyRegistrationOptions({
-          userId,
-          userName: "jane@example.com",
-          userDisplayName: "Jane",
-        });
+        const { challengeId, options } = await createPasskeyRegistrationOptions(
+          {
+            userId,
+            userName: "jane@example.com",
+            userDisplayName: "Jane",
+          },
+        );
         const { response } = new FakeAuthenticator().create({
           challenge: options.challenge,
           origin: otherOrigin,
@@ -218,6 +266,7 @@ describe("passkey", () => {
         });
         const passkey = await registerPasskey({
           userId,
+          challengeId,
           response,
           deviceLabel: null,
         });
@@ -235,7 +284,12 @@ describe("passkey", () => {
       });
 
       const rejection = await expectRejection(
-        registerPasskey({ userId, response, deviceLabel: null }),
+        registerPasskey({
+          userId,
+          challengeId: "never-issued",
+          response,
+          deviceLabel: null,
+        }),
       );
       expect(rejection).toMatchObject({
         statusCode: 400,
@@ -247,6 +301,7 @@ describe("passkey", () => {
       const rejection = await expectRejection(
         registerPasskey({
           userId,
+          challengeId: "irrelevant",
           response: { id: "nope" },
           deviceLabel: null,
         }),

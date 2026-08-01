@@ -42,7 +42,16 @@ export const typeDefs = gql`
     options: JSONObject!
   }
 
+  type PasskeyRegistrationChallenge {
+    "Opaque handle to the server-side challenge, handed back to \`registerPasskey\`."
+    challengeId: String!
+    "\`PublicKeyCredentialCreationOptions\` to pass to \`navigator.credentials.create()\`."
+    options: JSONObject!
+  }
+
   input RegisterPasskeyInput {
+    "The \`challengeId\` from \`createPasskeyRegistrationOptions\`."
+    challengeId: String!
     "The \`RegistrationResponseJSON\` returned by \`navigator.credentials.create()\`."
     response: JSONObject!
   }
@@ -64,8 +73,8 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    "Start the registration of a passkey for the current user. Returns \`PublicKeyCredentialCreationOptions\`."
-    createPasskeyRegistrationOptions: JSONObject!
+    "Start the registration of a passkey for the current user"
+    createPasskeyRegistrationOptions: PasskeyRegistrationChallenge!
     "Finish the registration of a passkey for the current user"
     registerPasskey(input: RegisterPasskeyInput!): UserPasskey!
     "Rename one of the current user's passkeys"
@@ -128,6 +137,7 @@ export const resolvers: IResolvers = {
       try {
         return await registerPasskey({
           userId: ctx.auth.user.id,
+          challengeId: args.input.challengeId,
           response: args.input.response,
           deviceLabel: parseDeviceLabel(ctx.req?.get("user-agent") ?? null),
         });
