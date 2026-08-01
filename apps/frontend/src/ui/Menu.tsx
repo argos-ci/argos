@@ -51,7 +51,7 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
 };
 
 const menuItemClassName =
-  "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-2 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
+  "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-1.5 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
 
 type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
   variant?: MenuItemVariant;
