@@ -270,9 +270,12 @@ export function PasskeyAuth(props: {
   const editing = useDialogValueState<Passkey | null>(null);
   const deleting = useDialogValueState<Passkey | null>(null);
 
-  // A browser without WebAuthn can neither create nor use a passkey, so the row
-  // would only offer something that cannot work.
-  if (!isSupported) {
+  // Only *adding* needs WebAuthn. Listing and revoking are plain GraphQL, and
+  // hiding them would strand a credential the user may urgently want gone —
+  // they registered it elsewhere, and this browser is the one they have.
+  // Dropping the card entirely would also misreport the account's auth surface,
+  // showing every other method and silently omitting passkeys.
+  if (!isSupported && passkeys.length === 0) {
     return null;
   }
 
@@ -319,17 +322,23 @@ export function PasskeyAuth(props: {
             <div className="text-low">No passkeys registered</div>
           )}
         </ProviderContent>
-        <DialogTrigger>
-          <Button variant="secondary" className="shrink-0">
-            <ButtonIcon>
-              <PlusIcon />
-            </ButtonIcon>
-            Add
-          </Button>
-          <Modal>
-            <CreatePasskeyDialog />
-          </Modal>
-        </DialogTrigger>
+        {isSupported ? (
+          <DialogTrigger>
+            <Button variant="secondary" className="shrink-0">
+              <ButtonIcon>
+                <PlusIcon />
+              </ButtonIcon>
+              Add
+            </Button>
+            <Modal>
+              <CreatePasskeyDialog />
+            </Modal>
+          </DialogTrigger>
+        ) : (
+          <div className="text-low shrink-0 text-xs">
+            This browser can’t add passkeys
+          </div>
+        )}
       </ProviderCard>
 
       {editing.value ? (
