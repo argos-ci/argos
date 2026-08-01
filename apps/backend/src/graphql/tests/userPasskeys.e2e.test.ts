@@ -68,4 +68,53 @@ describe("GraphQL User.passkeys", () => {
       ).toEqual(["newer", "older"]);
     }
   });
+
+  it("refuses an over-long name with a field error, not a 500", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const { user } = userAccount;
+    invariant(user, "user not fetched");
+
+    const passkey = await UserPasskey.query().insertAndFetch({
+      userId: user.id,
+      credentialId: "rename-me",
+      publicKey: "key",
+      counter: "0",
+      transports: null,
+      deviceType: "multiDevice" as const,
+      backedUp: true,
+      aaguid: null,
+      name: "1Password",
+      lastUsedAt: null,
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user, account: userAccount },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation UpdatePasskey($input: UpdatePasskeyInput!) {
+            updatePasskey(input: $input) {
+              id
+              name
+            }
+          }
+        `,
+        variables: { input: { id: passkey.id, name: "x".repeat(256) } },
+      });
+
+    // Without the explicit bound this is an Objection ValidationError that
+    // nothing maps: INTERNAL_SERVER_ERROR plus a Sentry page.
+    expect(res.body.errors).toHaveLength(1);
+    expect(res.body.errors[0].extensions.code).toBe("BAD_USER_INPUT");
+    expect(res.body.errors[0].extensions.field).toBe("name");
+
+    const unchanged = await passkey.$query();
+    expect(unchanged.name).toBe("1Password");
+  });
 });

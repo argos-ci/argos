@@ -4,6 +4,10 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { User } from "./User";
 
+/** Matches the `varchar(255)` column, so an oversized name fails validation
+ * rather than reaching Postgres and raising a 500. */
+export const PASSKEY_NAME_MAX_LENGTH = 255;
+
 export class UserPasskey extends Model {
   static override tableName = "user_passkeys";
 
@@ -55,7 +59,11 @@ export class UserPasskey extends Model {
           deviceType: { type: "string", enum: [...UserPasskey.deviceTypes] },
           backedUp: { type: "boolean" },
           aaguid: { type: ["string", "null"] },
-          name: { type: "string", minLength: 1, maxLength: 255 },
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: PASSKEY_NAME_MAX_LENGTH,
+          },
           lastUsedAt: { type: ["string", "null"] },
         },
       },

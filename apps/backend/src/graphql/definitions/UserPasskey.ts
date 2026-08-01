@@ -9,7 +9,7 @@ import {
   verifyPasskeyAuthentication,
 } from "@/auth/passkey";
 import { parseDeviceLabel } from "@/auth/session";
-import { UserPasskey } from "@/database/models";
+import { PASSKEY_NAME_MAX_LENGTH, UserPasskey } from "@/database/models";
 import { markUserLastAuthMethod } from "@/database/services/account";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 
@@ -140,6 +140,15 @@ export const resolvers: IResolvers = {
       const name = args.input.name.trim();
       if (!name) {
         throw badUserInput("Passkey name cannot be empty", { field: "name" });
+      }
+      // Checked here rather than left to the column: an oversized name would
+      // otherwise fail the model's validation as an Objection error nothing
+      // maps, which Apollo reports as INTERNAL_SERVER_ERROR and Sentry pages on.
+      if (name.length > PASSKEY_NAME_MAX_LENGTH) {
+        throw badUserInput(
+          `Keep the name under ${PASSKEY_NAME_MAX_LENGTH} characters.`,
+          { field: "name" },
+        );
       }
       return passkey.$query().patchAndFetch({ name });
     },

@@ -40,6 +40,7 @@ import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
+import { PASSKEY_NAME_MAX_LENGTH } from "@/util/passkey";
 
 import { ProviderCard, ProviderContent, ProviderIcon } from "../ui";
 
@@ -157,6 +158,10 @@ function EditPasskeyDialog(props: { passkey: Passkey }) {
             control={form.control}
             {...form.register("name", {
               required: "Device name is required",
+              maxLength: {
+                value: PASSKEY_NAME_MAX_LENGTH,
+                message: `Device name must be ${PASSKEY_NAME_MAX_LENGTH} characters or less`,
+              },
             })}
             autoFocus
             label="Device Name"
