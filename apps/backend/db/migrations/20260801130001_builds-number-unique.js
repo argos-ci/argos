@@ -27,3 +27,5 @@ export const up = async (knex) => {
 export const down = async (knex) => {
   await knex.raw(`DROP INDEX IF EXISTS builds_projectid_number_unique`);
 };
+
+export const config = { transaction: false };
