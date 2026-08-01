@@ -141,6 +141,7 @@ export class Project extends Model {
             enum: ["public", "domain-private", "private"],
           },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+          buildNumber: { type: "integer", minimum: 0 },
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
           },
@@ -189,6 +190,12 @@ export class Project extends Model {
   defaultUserLevel!: UserLevel | null;
   ignoreConfig!: ProjectIgnoreConfig | null;
   deploymentProdBranchGlob!: string | null;
+  /**
+   * Last build number allocated for this project. Incremented atomically by
+   * `Build.$allocateNumber`; never decremented, so a deleted build's number is
+   * not handed out again.
+   */
+  buildNumber!: number;
 
   /**
    * Resolve the effective ignore configuration of the project.

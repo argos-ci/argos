@@ -33,6 +33,38 @@ describe("models/Build", () => {
       });
       expect(build.number).toBe(0);
     });
+
+    it("should reject a duplicated number", async () => {
+      const build = await factory.Build.create();
+      const bucket = await factory.ScreenshotBucket.create({
+        projectId: build.projectId,
+      });
+      // The atomic counter is what prevents two builds from racing onto the
+      // same number; `builds_projectid_number_unique` is the backstop that
+      // keeps a regression from silently corrupting data again.
+      await expect(
+        Build.query().insert({
+          jobStatus: "pending",
+          projectId: build.projectId,
+          compareScreenshotBucketId: bucket.id,
+          number: build.number,
+        }),
+      ).rejects.toThrow("builds_projectid_number_unique");
+    });
+
+    it("should not reuse the number of a deleted build", async () => {
+      const build = await factory.Build.create();
+      expect(build.number).toBe(1);
+      await build.$query().delete();
+      const next = await factory.Build.create({ projectId: build.projectId });
+      expect(next.number).toBe(2);
+    });
+
+    it("should push the counter past an explicitly numbered build", async () => {
+      const build = await factory.Build.create({ number: 42 });
+      const next = await factory.Build.create({ projectId: build.projectId });
+      expect(next.number).toBe(43);
+    });
   });
 
   describe("patch build", () => {

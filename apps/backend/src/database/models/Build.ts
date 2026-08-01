@@ -260,22 +260,42 @@ export class Build extends Model {
     }
   }
 
-  override $beforeInsert(queryContext: QueryContext) {
+  override async $beforeInsert(queryContext: QueryContext) {
     super.$beforeInsert(queryContext);
-    if (this.number === undefined) {
-      this.number = -1;
-    }
+    await this.$allocateNumber(queryContext);
   }
 
-  override $formatDatabaseJson(json: Pojo): Pojo {
-    json = super.$formatDatabaseJson(json);
-    if (json["number"] === -1) {
-      json["number"] = this.$knex().raw(
-        '(select coalesce(max(number),0) + 1 as number from builds where "projectId" = ?)',
-        this.projectId,
+  /**
+   * Allocate the build number from the project's counter.
+   *
+   * The number is user-facing — it is the build's URL — and unique per project
+   * (`builds_projectid_number_unique`). It used to be allocated inline with
+   * `max(number) + 1`, which two concurrent inserts could resolve to the same
+   * value. `UPDATE ... RETURNING` is atomic: the row lock on the project
+   * serializes concurrent allocations, and the counter never goes backwards
+   * when the most recent build is deleted.
+   *
+   * A caller that sets `number` itself (seeds, fixtures) pushes the counter
+   * forward instead, so a later allocation cannot collide with it.
+   */
+  private async $allocateNumber(queryContext: QueryContext) {
+    const knex = queryContext.transaction;
+
+    if (this.number !== undefined) {
+      await knex.raw(
+        'UPDATE projects SET "buildNumber" = GREATEST("buildNumber", ?) WHERE id = ?',
+        [this.number, this.projectId],
       );
+      return;
     }
-    return json;
+
+    const result = await knex.raw<{ rows: { buildNumber: number }[] }>(
+      'UPDATE projects SET "buildNumber" = "buildNumber" + 1 WHERE id = ? RETURNING "buildNumber"',
+      [this.projectId],
+    );
+    const row = result.rows[0];
+    invariant(row, `Project ${this.projectId} not found, cannot number build`);
+    this.number = row.buildNumber;
   }
 
   override $afterInsert(queryContext: QueryContext) {
