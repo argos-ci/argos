@@ -167,30 +167,59 @@ loggedTest(
         });
     }
 
-    // The test is flaky, so the section opens itself: the button is reachable
-    // without expanding anything.
+    // The test is flaky, so the section opens itself: the actions are reachable
+    // without expanding anything. Claude Code is the agent offered by default.
     await expect(
       page.getByRole("heading", { name: "Fix with AI" }),
     ).toBeVisible();
+    const openInClaudeCode = page.getByRole("link", {
+      name: "Open in Claude Code",
+    });
+    await expect(openInClaudeCode).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Copy prompt" }),
     ).toBeVisible();
 
-    // The prompt is previewable, so nobody has to copy it blind, and it names
-    // the test and the API endpoints the agent has to call.
-    await page.getByText("Preview the prompt").click();
-    const prompt = page
-      .getByRole("code")
-      .filter({ hasText: "Fix the flaky Argos visual test" });
-    await expect(prompt).toContainText("penelope-argos.jpg");
-    await expect(prompt).toContainText(`Test id: ${testId}`);
-    await expect(prompt).toContainText(
+    // The agent is opened through its own deep link, which carries the prompt:
+    // it names the test and the API endpoints the agent has to call.
+    const href = (await openInClaudeCode.getAttribute("href")) ?? "";
+    expect(href).toMatch(/^claude-cli:\/\/open\?q=/);
+    const prompt = new URLSearchParams(href.split("?")[1]).get("q") ?? "";
+    expect(prompt).toContain("Fix the flaky Argos visual test");
+    expect(prompt).toContain("penelope-argos.jpg");
+    expect(prompt).toContain(`Test id: ${testId}`);
+    expect(prompt).toContain(
       `/projects/${team.account.slug}/${project.name}/tests/${testId}?metricsPeriod=LAST_7_DAYS`,
     );
-    await expect(prompt).toContainText(`/tests/${testId}/changes`);
-    await expect(prompt).toContainText("listTestChanges");
+    expect(prompt).toContain(`/tests/${testId}/changes`);
+    expect(prompt).toContain("listTestChanges");
 
-    // Copying puts the prompt on the clipboard.
+    // The other agents are one menu away, each with its own deep link.
+    await page.getByRole("button", { name: "Open in another agent" }).click();
+    await expect(
+      page.getByRole("menuitem", { name: "Open in Codex" }),
+    ).toHaveAttribute("href", /^codex:\/\/new\?prompt=/);
+    const cursorItem = page.getByRole("menuitem", { name: "Open in Cursor" });
+    await expect(cursorItem).toHaveAttribute(
+      "href",
+      /^cursor:\/\/anysphere\.cursor-deeplink\/prompt\?text=/,
+    );
+
+    // Picking one is remembered, so the next flaky test offers that agent
+    // instead of asking again. Only Chromium ignores the unknown scheme the
+    // click navigates to; the others would stop on a dialog.
+    if (browserName === "chromium") {
+      await cursorItem.click();
+      await page.reload();
+      await expect(
+        page.getByRole("link", { name: "Open in Cursor" }),
+      ).toBeVisible();
+    } else {
+      await page.keyboard.press("Escape");
+    }
+
+    // Copying puts the prompt on the clipboard, for the agents Argos cannot
+    // open by itself.
     await page.getByRole("button", { name: "Copy prompt" }).click();
     if (canReadClipboard) {
       // The button only confirms itself once the write resolved, so it stands in

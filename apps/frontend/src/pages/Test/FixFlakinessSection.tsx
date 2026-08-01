@@ -1,20 +1,26 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { CheckIcon, CopyIcon, SparklesIcon } from "lucide-react";
+import { useAtom } from "jotai";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
 import { config } from "@/config";
-import {
-  ClaudeCodeLogo,
-  CodexLogo,
-  CursorLogo,
-} from "@/containers/oauth-logos";
 import { isFlaky } from "@/containers/Test/Flakiness";
 import { graphql, type DocumentType } from "@/gql";
 import { MetricsPeriod } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
+import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Details, Summary } from "@/ui/Details";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Panel, PanelTitle } from "@/ui/Panel";
+import { Popover } from "@/ui/Popover";
+import { Tooltip } from "@/ui/Tooltip";
+import { AI_AGENTS, aiAgentIdAtom, getAiAgent } from "@/util/ai-agents";
 
 import { getTestURL, useTestParams } from "./TestParams";
 
@@ -35,13 +41,6 @@ const _TestFragment = graphql(`
 `);
 
 type Test = DocumentType<typeof _TestFragment>;
-
-/** Agents the prompt is written for, shown so the panel says what it is for. */
-const AGENT_LOGOS = [
-  { name: "Claude Code", Logo: ClaudeCodeLogo },
-  { name: "Codex", Logo: CodexLogo },
-  { name: "Cursor", Logo: CursorLogo },
-];
 
 /**
  * A prompt to hand to a coding agent so it fixes this test's flakiness on its
@@ -87,8 +86,10 @@ A visual test is flaky when it keeps capturing a different screenshot while noth
 }
 
 /**
- * A prompt to copy into a coding agent so it investigates and fixes this test's
+ * A prompt to hand to a coding agent so it investigates and fixes this test's
  * flakiness from the API, without anyone having to describe the test to it.
+ * Either the agent opens with the prompt already typed in, or the prompt goes to
+ * the clipboard for an agent Argos does not know how to open.
  *
  * The section is a disclosure that only opens itself when the test actually
  * looks flaky. On a stable test there is nothing to fix, so it stays folded into
@@ -104,7 +105,8 @@ export function FixFlakinessSection(props: {
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
   const clipboard = useClipboard({ copiedTimeout: 2000 });
-  const [previewing, setPreviewing] = useState(false);
+  const [agentId, setAgentId] = useAtom(aiAgentIdAtom);
+  const agent = getAiAgent(agentId);
   const flaky = isFlaky(test.metrics.all.flakiness);
 
   const prompt = useMemo(
@@ -128,14 +130,13 @@ export function FixFlakinessSection(props: {
       {/* `open` seeds the initial state only: from there `Summary` toggles the
           attribute on the element itself. */}
       <Details open={flaky}>
-        <Summary className="mx-3">
-          <PanelTitle icon={SparklesIcon} className="flex-1">
-            Fix with AI
-          </PanelTitle>
-          {/* Each logo names itself through the `<title>` in its own SVG. */}
-          <span className="flex items-center gap-1.5">
-            {AGENT_LOGOS.map(({ name, Logo }) => (
-              <Logo key={name} className="size-4" />
+        <Summary className="mx-3" icon={SparklesIcon}>
+          <PanelTitle className="flex-1">Fix with AI</PanelTitle>
+          {/* Each logo names itself through the `<title>` in its own SVG, and
+              takes the color it is given. */}
+          <span className="text-low flex items-center gap-1.5">
+            {AI_AGENTS.map(({ id, Icon }) => (
+              <Icon key={id} className="size-4" />
             ))}
           </span>
         </Summary>
@@ -145,35 +146,57 @@ export function FixFlakinessSection(props: {
             reads this test's stats and its recurring changes from the Argos
             API, then fixes what makes the screenshot unstable.
           </p>
-          <Button
-            variant="secondary"
-            className="self-start"
-            onPress={() => clipboard.copy(prompt)}
-          >
-            <ButtonIcon>
-              {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-            </ButtonIcon>
-            {clipboard.copied ? "Copied" : "Copy prompt"}
-          </Button>
-          {/* The prompt is only mounted once asked for: it is a page of text
-              that mentions field names ("occurrences", "baseline") the rest of
-              the page shows too, and leaving it in the DOM makes every text
-              query on the test page ambiguous. */}
-          <Details
-            className="text-low text-sm"
-            onToggle={(event) => setPreviewing(event.currentTarget.open)}
-          >
-            <Summary>Preview the prompt</Summary>
-            {previewing ? (
-              // Not `Pre`: the button it overlays would sit on top of the first
-              // line, and the copy affordance is already right above. The prompt
-              // embeds long URLs, so it breaks inside words rather than letting
-              // the column scroll sideways.
-              <pre className="bg-ui max-h-64 overflow-y-auto rounded-sm p-3 text-xs break-words whitespace-pre-wrap">
-                <code>{prompt}</code>
-              </pre>
-            ) : null}
-          </Details>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* A split button: the last agent picked, and a menu for the others.
+                Both halves are links to the agent's own deep link, so the prompt
+                is filled in on the machine and never sent on its own. */}
+            <ButtonGroup>
+              <LinkButton variant="secondary" href={agent.getURL(prompt)}>
+                <ButtonIcon>
+                  <agent.Icon />
+                </ButtonIcon>
+                Open in {agent.name}
+              </LinkButton>
+              <MenuTrigger>
+                <Button
+                  variant="secondary"
+                  iconOnly
+                  aria-label="Open in another agent"
+                >
+                  <ChevronDownIcon />
+                </Button>
+                <Popover>
+                  <Menu aria-label="Agents">
+                    {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
+                      <MenuItem
+                        key={id}
+                        href={getURL(prompt)}
+                        textValue={name}
+                        onAction={() => setAgentId(id)}
+                      >
+                        <MenuItemIcon>
+                          <Icon />
+                        </MenuItemIcon>
+                        Open in {name}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Popover>
+              </MenuTrigger>
+            </ButtonGroup>
+            {/* Icon-only so the row still fits the sidebar next to the agent
+                button, and kept for the agents Argos cannot open by itself. */}
+            <Tooltip content={clipboard.copied ? "Copied" : "Copy prompt"}>
+              <Button
+                variant="secondary"
+                iconOnly
+                aria-label={clipboard.copied ? "Copied" : "Copy prompt"}
+                onPress={() => clipboard.copy(prompt)}
+              >
+                {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
+              </Button>
+            </Tooltip>
+          </div>
         </div>
       </Details>
     </Panel>
