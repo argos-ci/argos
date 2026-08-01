@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { startSession } from "@/auth/login";
+import { completeLogin } from "@/auth/login";
 import {
   createPasskeyAuthenticationOptions,
   createPasskeyRegistrationOptions,
@@ -10,7 +10,6 @@ import {
 } from "@/auth/passkey";
 import { parseDeviceLabel } from "@/auth/session";
 import { PASSKEY_NAME_MAX_LENGTH, UserPasskey } from "@/database/models";
-import { markUserLastAuthMethod } from "@/database/services/account";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 
 import type { IResolvers } from "../__generated__/resolver-types";
@@ -183,18 +182,16 @@ export const resolvers: IResolvers = {
       }
 
       // A passkey belongs to an account that already exists, so a login can
-      // never be a signup — hence no `creation` and no auto-invite to check.
-      // The credential itself carries the owner, and account deletion removes
-      // the passkey along with the other credentials, so there is nothing left
-      // to look up: reading `accounts` here would only re-derive the `userId`
-      // we already hold, and would throw on a row this login cannot reach.
-      await markUserLastAuthMethod({
+      // never be a signup. The credential carries the owner, and account
+      // deletion removes the passkey with the other credentials, so there is
+      // no account row left to look up.
+      return completeLogin({
+        req: ctx.req,
+        res: ctx.res,
         userId: passkey.userId,
         method: "passkey",
+        creation: false,
       });
-      await startSession(ctx.req, ctx.res, passkey.userId);
-
-      return { creation: false, hasAutoInvite: false };
     },
   },
 };

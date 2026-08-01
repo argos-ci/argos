@@ -3,7 +3,7 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { startSession } from "@/auth/login";
+import { completeLogin, startSession, type AuthMethod } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
@@ -15,12 +15,10 @@ import {
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
   joinSSOTeams,
-  markUserLastAuthMethod,
 } from "@/database/services/account";
 import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser";
 import { getOrCreateGoogleUser } from "@/database/services/googleUser";
-import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import {
   getTokenOctokit,
   retrieveOAuthToken as retrieveGithubOAuthToken,
@@ -57,6 +55,7 @@ type OAuthResult = {
  * Create an OAuth handler.
  */
 function withOAuth(
+  method: AuthMethod,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -76,15 +75,16 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
-        const hasAutoInvite =
-          !auth && creation
-            ? await hasAutoInviteForUser({ userId: account.userId })
-            : false;
-        await startSession(req, res, account.userId);
-        res.send({
-          creation,
-          hasAutoInvite,
-        });
+        res.send(
+          await completeLogin({
+            req,
+            res,
+            userId: account.userId,
+            method,
+            creation,
+            alreadySignedIn: Boolean(auth),
+          }),
+        );
       } catch (error) {
         if (error instanceof axios.AxiosError && error.response) {
           res.status(error.response.status);
@@ -98,7 +98,7 @@ function withOAuth(
 
 router.use(
   "/auth/github",
-  withOAuth(async (body, auth) => {
+  withOAuth("github", async (body, auth) => {
     const result = await retrieveGithubOAuthToken({
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
@@ -132,19 +132,13 @@ router.use(
       githubAccountId: ghAccount.id,
       userId: account.userId,
     });
-    if (!auth) {
-      await markUserLastAuthMethod({
-        userId: account.userId,
-        method: "github",
-      });
-    }
     return { account, creation };
   }),
 );
 
 router.use(
   "/auth/gitlab",
-  withOAuth(async (body, auth) => {
+  withOAuth("gitlab", async (body, auth) => {
     const response = await retrieveGitlabOAuthToken({
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
@@ -165,19 +159,13 @@ router.use(
       attachToAccount: auth?.account ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
-    if (!auth) {
-      await markUserLastAuthMethod({
-        userId: account.userId,
-        method: "gitlab",
-      });
-    }
     return { account, creation };
   }),
 );
 
 router.use(
   "/auth/google",
-  withOAuth(async (body, auth) => {
+  withOAuth("google", async (body, auth) => {
     const client = await getGoogleAuthenticatedClient({
       code: body.code,
       clientId: config.get("google.clientId"),
@@ -193,12 +181,6 @@ router.use(
       attachToAccount: auth?.account ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
-    if (!auth) {
-      await markUserLastAuthMethod({
-        userId: account.userId,
-        method: "google",
-      });
-    }
     return { account, creation };
   }),
 );
@@ -224,6 +206,9 @@ router.use(
       .findById(payload.accountId)
       .throwIfNotFound();
     invariant(account.userId, "Expected account to have userId");
+    // Not `completeLogin`: SAML answers with a redirect rather than an
+    // AuthPayload, and `lastAuthMethod` is already recorded as "saml" when the
+    // assertion is consumed.
     await startSession(req, res, account.userId);
     res.send({
       redirect: payload.redirect,

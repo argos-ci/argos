@@ -1,4 +1,5 @@
 import { useApolloClient } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import {
   browserSupportsWebAuthn,
   startAuthentication,
@@ -114,9 +115,7 @@ export function useRegisterPasskey(): () => Promise<void> {
     const { data } = await client.mutate({
       mutation: CreateRegistrationOptionsMutation,
     });
-    if (!data) {
-      throw new Error("Failed to start the passkey registration");
-    }
+    invariant(data, "Expected passkey registration options");
     const { challengeId, options } = data.createPasskeyRegistrationOptions;
     const response = await startRegistration({ optionsJSON: options });
     await client.mutate({
@@ -151,9 +150,7 @@ export function PasskeyLoginButton(
         const { data } = await client.mutate({
           mutation: CreateAuthenticationOptionsMutation,
         });
-        if (!data) {
-          throw new Error("Failed to start the passkey login");
-        }
+        invariant(data, "Expected passkey authentication options");
         const { challengeId, options } =
           data.createPasskeyAuthenticationOptions;
 
@@ -173,20 +170,21 @@ export function PasskeyLoginButton(
           throw error;
         }
 
-        await client.mutate({
+        const result = await client.mutate({
           mutation: AuthenticateWithPasskeyMutation,
           variables: { challengeId, response },
         });
+        invariant(result.data, "Expected an authentication payload");
 
         onSuccess?.();
         // The server set the session cookie on the mutation response. Navigate
         // for real so the app re-bootstraps as the logged-in user.
+        //
+        // The payload is read rather than assumed: `getPostAuthURL` exists so
+        // this decision lives in one place, and hardcoding what the server just
+        // told us would put it back in two.
         window.location.replace(
-          getPostAuthURL({
-            creation: false,
-            hasAutoInvite: false,
-            redirect,
-          }),
+          getPostAuthURL({ ...result.data.authenticateWithPasskey, redirect }),
         );
       }}
     >
