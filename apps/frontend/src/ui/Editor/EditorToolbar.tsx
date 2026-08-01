@@ -44,8 +44,15 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const { editor } = props;
   const state = useEditorState({
     editor,
-    selector: ({ editor }): ToolbarState | null => {
-      if (!editor) {
+    selector: ({ editor: snapshotEditor }): ToolbarState | null => {
+      // `useEditorState` keeps its own reference to the editor and only
+      // re-points it in a layout effect, so a render that happens right after
+      // the editor was torn down (`useEditor` destroys the instance a tick
+      // after the effects are cleaned up, then hands back `null`) still passes
+      // the previous instance to the selector. A destroyed editor keeps
+      // answering `state` and `isActive()` from its cached state, but its
+      // command manager is gone, so `can()` throws.
+      if (snapshotEditor !== editor || !editor || editor.isDestroyed) {
         return null;
       }
       const { selection } = editor.state;
@@ -90,7 +97,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
     : null;
 
   useEffect(() => {
-    if (!editor) {
+    // A destroyed editor has no view — reading `view.dom` off it throws.
+    if (!editor || editor.isDestroyed) {
       return;
     }
     const dom = editor.view.dom;
