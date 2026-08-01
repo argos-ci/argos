@@ -11,6 +11,7 @@ import { Button as RACButton } from "react-aria-components";
 import { useForm } from "react-hook-form";
 
 import {
+  CEREMONY_CANCELLED_MESSAGE,
   checkIsCeremonyCancelled,
   checkPasskeysSupported,
   PasskeyIcon,
@@ -112,12 +113,12 @@ function CreatePasskeyDialog() {
             try {
               await registerPasskey();
             } catch (caught) {
-              // The user dismissing the OS prompt is not an error to report —
-              // they can press Continue again.
+              // A dismissed or timed-out prompt is not a failure of ours, but
+              // the dialog is still open and the user needs to know why nothing
+              // happened — so it is shown here rather than swallowed, with the
+              // same wording the login button uses.
               if (checkIsCeremonyCancelled(caught)) {
-                setError(
-                  "Passkey registration took too long or was canceled. Try again.",
-                );
+                setError(CEREMONY_CANCELLED_MESSAGE);
                 return;
               }
               setError(getErrorMessage(caught));

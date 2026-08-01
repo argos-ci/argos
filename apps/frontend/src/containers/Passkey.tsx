@@ -9,7 +9,16 @@ import { KeyRoundIcon } from "lucide-react";
 
 import { graphql } from "@/gql";
 import { Button, ButtonIcon, type ButtonProps } from "@/ui/Button";
+import { toast } from "@/ui/Toaster";
 import { getPostAuthURL } from "@/util/welcome";
+
+/**
+ * Shown when a ceremony ends without a credential. Deliberate dismissal, the
+ * browser's own timeout and "no passkey on this device" all surface as the same
+ * error, so one message has to cover all three.
+ */
+export const CEREMONY_CANCELLED_MESSAGE =
+  "Passkey prompt canceled or timed out. Please try again.";
 
 export function PasskeyIcon(props: React.SVGProps<SVGSVGElement>) {
   return <KeyRoundIcon {...props} />;
@@ -24,11 +33,12 @@ export function checkPasskeysSupported(): boolean {
 }
 
 /**
- * Whether the user backed out of the browser/OS prompt (cancelled it, let it
- * time out, or has no usable passkey for this site).
+ * Whether the ceremony ended without a credential because the browser/OS prompt
+ * was dismissed, timed out, or had no usable passkey for this site.
  *
- * Not a failure worth reporting: the user already knows they dismissed it, so
- * the caller returns to its idle state silently.
+ * Not our failure, so it is never thrown or logged as one — but it is still
+ * reported, because the alternative is a control that acts and then goes quiet.
+ * Callers surface `CEREMONY_CANCELLED_MESSAGE` wherever the user is looking.
  */
 export function checkIsCeremonyCancelled(error: unknown): boolean {
   if (error instanceof WebAuthnError) {
@@ -147,6 +157,12 @@ export function PasskeyLoginButton(
           response = await startAuthentication({ optionsJSON: options });
         } catch (error) {
           if (checkIsCeremonyCancelled(error)) {
+            // The same condition covers a deliberate dismissal, the browser's
+            // own timeout, and "this device holds no Argos passkey" — they are
+            // indistinguishable from here. Saying nothing leaves the button
+            // spinning and stopping with no explanation, so the message names
+            // the cases the user can act on.
+            toast(CEREMONY_CANCELLED_MESSAGE, { id: "passkey-cancelled" });
             return;
           }
           throw error;
