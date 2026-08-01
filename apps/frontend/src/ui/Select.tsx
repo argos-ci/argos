@@ -113,7 +113,7 @@ export function SelectButton({
       {...rest}
       className={clsx(
         /* Appearance */
-        "bg-app cursor-default appearance-none rounded-sm border select-none",
+        "bg-app cursor-default appearance-none rounded-lg border select-none",
         /* Layout */
         "flex items-center justify-between",
         /* Focus */

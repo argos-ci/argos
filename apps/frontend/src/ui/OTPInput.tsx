@@ -42,7 +42,7 @@ function Slot(props: SlotProps) {
         "relative size-16 text-2xl",
         "flex items-center justify-center",
         "transition-all",
-        "border-y border-r first:rounded-l-md first:border-l last:rounded-r-md",
+        "border-y border-r first:rounded-l-lg first:border-l last:rounded-r-lg",
         "group-hover:border-hover group-focus-within:border-hover",
         "group-has-[input[aria-invalid=true]]:border-danger",
         props.isActive && "outline-primary group-focus-within:outline-2",

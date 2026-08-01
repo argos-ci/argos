@@ -10,8 +10,8 @@ export interface TextInputProps
 }
 
 const sizeClassNames: Record<TextInputScale, string> = {
-  sm: "text-sm px-3 py-1.5 rounded-sm leading-tight",
-  md: "text-base px-3 py-2 rounded-sm leading-tight",
+  sm: "text-sm px-3 py-1.5 rounded-lg leading-tight",
+  md: "text-base px-3 py-2 rounded-lg leading-tight",
   lg: "text-base p-3 rounded-xl",
 };
 
@@ -83,7 +83,7 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
       {...props}
       className={clsx(
         "addon bg-ui text-low flex items-center justify-center border px-2 text-sm whitespace-nowrap select-none",
-        "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
+        "first:rounded-l-lg first:border-r-0 last:rounded-r-lg last:border-l-0",
         props.className,
       )}
     />

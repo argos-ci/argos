@@ -74,7 +74,7 @@ export function DateRangePicker({
     >
       <Group
         className={clsx(
-          "bg-app flex w-full appearance-none items-center rounded border",
+          "bg-app flex w-full appearance-none items-center rounded-lg border",
           "data-focus-within:border-active data-focus-within:data-hovered:border-active",
           "group-data-open/date-range-picker:border-active",
           "data-hovered:border-hover",
@@ -107,7 +107,7 @@ export function DateRangePicker({
         </DateInput>
         <Button
           className={clsx(
-            "rounded-r border-l px-2.5 py-2",
+            "rounded-r-lg border-l px-2.5 py-2",
             "data-hovered:bg-hover",
             "data-pressed:bg-active",
             "outline-hidden",
