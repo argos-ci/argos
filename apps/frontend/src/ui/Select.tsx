@@ -21,7 +21,7 @@ export { SelectValue } from "react-aria-components";
 
 function SelectArrow() {
   return (
-    <span aria-hidden="true">
+    <span aria-hidden="true" className="shrink-0">
       <ChevronDownIcon className="size-4" />
     </span>
   );
@@ -133,7 +133,13 @@ export function SelectButton({
         rest.className,
       )}
     >
-      {children}
+      {/* The value gets its own shrinkable box — `*:min-w-0` so the value inside
+          it may shrink too. On a fixed-width select, a value wider than the
+          button (a long channel name, say) used to push the arrow out through
+          the right padding instead of being ellipsized. */}
+      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden *:min-w-0">
+        {children}
+      </span>
       <SelectArrow />
     </Button>
   );

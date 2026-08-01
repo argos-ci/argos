@@ -43,7 +43,9 @@ export function ListBoxItem(
       {...restProps}
     >
       <CheckIcon className="size-4 shrink-0 opacity-0 not-in-[[role=listbox]]:hidden group-aria-selected/item:opacity-100" />
-      <div className="flex items-center whitespace-nowrap has-[[slot=description]]:flex-wrap">
+      {/* The label ellipsizes rather than overflow: the same markup renders as
+          the value of a select, where the available width is the button's. */}
+      <div className="flex min-w-0 items-center whitespace-nowrap has-[[slot=description]]:flex-wrap [&_[slot=label]]:truncate">
         {children}
       </div>
     </RACListBoxItem>

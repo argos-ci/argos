@@ -204,7 +204,9 @@ function SendWebhookMessageAction(props: {
         aria-label={`${productName} channel`}
         placeholder="Select a channel…"
       >
-        <SelectButton className="w-52">
+        {/* Wide enough for a typical channel name next to the product's logo;
+            longer ones ellipsize rather than push the arrow out. */}
+        <SelectButton className="w-60">
           <SelectValue />
         </SelectButton>
         <FieldError />
