@@ -384,6 +384,16 @@ export const MsTeamsWebhook = defineFactory(models.MsTeamsWebhook, () => ({
   connectedAt: new Date().toISOString(),
 }));
 
+export const DiscordWebhook = defineFactory(models.DiscordWebhook, () => ({
+  accountId: TeamAccount.associate("id") as unknown as string,
+  name: FactoryGirl.sequence("discordWebhook.name", (n) => `channel-${n}`),
+  url: FactoryGirl.sequence(
+    "discordWebhook.url",
+    (n) => `https://discord.com/api/webhooks/10000000000000000${n}/token-${n}`,
+  ),
+  connectedAt: new Date().toISOString(),
+}));
+
 export const AutomationRule = defineFactory(models.AutomationRule, () => ({
   active: true,
   name: FactoryGirl.sequence("automationRule.name", (n) => `rule-${n}`),

@@ -13,5 +13,14 @@ export type AutomationMsTeamsActionType = z.infer<
   typeof AutomationMsTeamsActionTypeSchema
 >;
 
+export const AutomationDiscordActionTypeSchema =
+  z.literal("sendDiscordMessage");
+
+export type AutomationDiscordActionType = z.infer<
+  typeof AutomationDiscordActionTypeSchema
+>;
+
 export type AutomationActionType =
-  AutomationSlackActionType | AutomationMsTeamsActionType;
+  | AutomationSlackActionType
+  | AutomationMsTeamsActionType
+  | AutomationDiscordActionType;

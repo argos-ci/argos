@@ -5,12 +5,14 @@ import type { AutomationActionRun } from "@/database/models/AutomationActionRun"
 
 import type { AutomationAction } from "../defineAutomationAction";
 import type { AutomationMessage } from "../types/events";
+import * as sendDiscordMessage from "./sendDiscordMessage";
 import * as sendMsTeamsMessage from "./sendMsTeamsMessage";
 import * as sendSlackMessage from "./sendSlackMessage";
 
 const AUTOMATION_ACTIONS = [
   sendSlackMessage.automationAction,
   sendMsTeamsMessage.automationAction,
+  sendDiscordMessage.automationAction,
 ] satisfies AutomationAction<string, any>[];
 
 export const AutomationActionSchema = z.discriminatedUnion("action", [
@@ -21,6 +23,10 @@ export const AutomationActionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal(sendMsTeamsMessage.automationAction.name),
     actionPayload: sendMsTeamsMessage.automationAction.payloadSchema,
+  }),
+  z.object({
+    action: z.literal(sendDiscordMessage.automationAction.name),
+    actionPayload: sendDiscordMessage.automationAction.payloadSchema,
   }),
 ]);
 

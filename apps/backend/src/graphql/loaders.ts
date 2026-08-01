@@ -26,6 +26,7 @@ import {
   CommentReaction,
   Deployment,
   DeploymentAlias,
+  DiscordWebhook,
   File,
   GithubAccount,
   GithubAccountMember,
@@ -461,6 +462,22 @@ function createMsTeamsWebhooksByAccountIdLoader() {
       .whereIn("accountId", accountIds as string[])
       .orderBy("name");
     const webhooksMap = webhooks.reduce<Record<string, MsTeamsWebhook[]>>(
+      (map, webhook) => ({
+        ...map,
+        [webhook.accountId]: [...(map[webhook.accountId] || []), webhook],
+      }),
+      {},
+    );
+    return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
+}
+
+function createDiscordWebhooksByAccountIdLoader() {
+  return new DataLoader<string, DiscordWebhook[]>(async (accountIds) => {
+    const webhooks = await DiscordWebhook.query()
+      .whereIn("accountId", accountIds as string[])
+      .orderBy("name");
+    const webhooksMap = webhooks.reduce<Record<string, DiscordWebhook[]>>(
       (map, webhook) => ({
         ...map,
         [webhook.accountId]: [...(map[webhook.accountId] || []), webhook],
@@ -1607,6 +1624,7 @@ export const createLoaders = () => ({
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
+  DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),

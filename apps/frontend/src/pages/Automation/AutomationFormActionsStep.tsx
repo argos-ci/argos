@@ -7,6 +7,7 @@ import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
 import { useRefetchWhenActive } from "@/containers/Apollo";
+import { DiscordLogo } from "@/containers/DiscordLogo";
 import { MsTeamsLogo } from "@/containers/MsTeamsLogo";
 import { SlackColoredLogo } from "@/containers/Slack";
 import { graphql } from "@/gql";
@@ -37,6 +38,10 @@ const SlackInstallationQuery = graphql(`
         isUpToDate
       }
       msTeamsWebhooks {
+        id
+        name
+      }
+      discordWebhooks {
         id
         name
       }
@@ -139,20 +144,36 @@ function SendSlackMessageAction(props: {
   );
 }
 
-function SendMsTeamsMessageAction(props: {
+/**
+ * Channel picker for the webhook-based integrations.
+ *
+ * Teams and Discord differ only in wording and branding: both register one
+ * opaque webhook URL per channel on the account, and the action payload is the
+ * webhook id in each case.
+ */
+function SendWebhookMessageAction(props: {
   form: AutomationForm;
   name: `actions.${number}`;
+  /** Product name, as it reads mid-sentence. */
+  productName: string;
+  /** Anchor of the product's card on the integrations settings page. */
+  settingsHash: string;
+  logo: React.ComponentType;
+  webhooks: readonly { id: string; name: string }[];
+  /** Called when the account has no webhook yet, to pick one up on focus. */
+  refetch: () => void;
 }) {
-  const { name, form } = props;
+  const {
+    name,
+    form,
+    productName,
+    settingsHash,
+    logo: Logo,
+    webhooks,
+    refetch,
+  } = props;
   const params = useAccountParams();
-  invariant(params, "Account params are required for Microsoft Teams webhooks");
-  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
-    variables: { accountSlug: params.accountSlug },
-  });
-
-  invariant(data.account, "Account data is required for Microsoft Teams");
-
-  const webhooks = data.account.msTeamsWebhooks;
+  invariant(params, `Account params are required for ${productName} webhooks`);
 
   // A webhook may have been added in another tab; pick it up on focus.
   useRefetchWhenActive({ refetch, skip: webhooks.length > 0 });
@@ -161,14 +182,14 @@ function SendMsTeamsMessageAction(props: {
     return (
       <div className="flex flex-col items-start gap-3 p-2">
         <p>
-          To post to a Microsoft Teams channel, you need to connect a channel
+          To post to a {productName} channel, you need to connect a channel
           webhook first.
         </p>
         <LinkButton
-          href={`/${params.accountSlug}/settings/integrations#ms-teams`}
+          href={`/${params.accountSlug}/settings/integrations#${settingsHash}`}
           target="_blank"
         >
-          Connect Microsoft Teams
+          Connect {productName}
         </LinkButton>
       </div>
     );
@@ -176,11 +197,11 @@ function SendMsTeamsMessageAction(props: {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      Send notification to the Microsoft Teams channel
+      Send notification to the {productName} channel
       <SelectField
         control={form.control}
         name={`${name}.payload.webhookId`}
-        aria-label="Microsoft Teams channel"
+        aria-label={`${productName} channel`}
         placeholder="Select a channel…"
       >
         <SelectButton className="w-52">
@@ -196,7 +217,7 @@ function SendMsTeamsMessageAction(props: {
                 textValue={webhook.name}
               >
                 <ListBoxItemIcon>
-                  <MsTeamsLogo />
+                  <Logo />
                 </ListBoxItemIcon>
                 <Text slot="label">{webhook.name}</Text>
               </ListBoxItem>
@@ -205,6 +226,54 @@ function SendMsTeamsMessageAction(props: {
         </Popover>
       </SelectField>
     </div>
+  );
+}
+
+function SendMsTeamsMessageAction(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const params = useAccountParams();
+  invariant(params, "Account params are required for Microsoft Teams webhooks");
+  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
+    variables: { accountSlug: params.accountSlug },
+  });
+
+  invariant(data.account, "Account data is required for Microsoft Teams");
+
+  return (
+    <SendWebhookMessageAction
+      {...props}
+      productName="Microsoft Teams"
+      settingsHash="ms-teams"
+      logo={MsTeamsLogo}
+      webhooks={data.account.msTeamsWebhooks}
+      refetch={refetch}
+    />
+  );
+}
+
+function SendDiscordMessageAction(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const params = useAccountParams();
+  invariant(params, "Account params are required for Discord webhooks");
+  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
+    variables: { accountSlug: params.accountSlug },
+  });
+
+  invariant(data.account, "Account data is required for Discord");
+
+  return (
+    <SendWebhookMessageAction
+      {...props}
+      productName="Discord"
+      settingsHash="discord"
+      logo={DiscordLogo}
+      webhooks={data.account.discordWebhooks}
+      refetch={refetch}
+    />
   );
 }
 
@@ -219,6 +288,8 @@ function ActionDetail(props: {
       return <SendSlackMessageAction form={form} name={name} />;
     case "sendMsTeamsMessage":
       return <SendMsTeamsMessageAction form={form} name={name} />;
+    case "sendDiscordMessage":
+      return <SendDiscordMessageAction form={form} name={name} />;
     default:
       assertNever(field, "Unknown action type");
   }
@@ -234,6 +305,11 @@ export const ACTIONS = [
     type: "sendMsTeamsMessage",
     label: "Post in Microsoft Teams channel",
     icon: MsTeamsLogo,
+  },
+  {
+    type: "sendDiscordMessage",
+    label: "Post in Discord channel",
+    icon: DiscordLogo,
   },
 ];
 
@@ -282,6 +358,13 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
               case "sendMsTeamsMessage": {
                 append({
                   type: "sendMsTeamsMessage",
+                  payload: { webhookId: "" },
+                });
+                return;
+              }
+              case "sendDiscordMessage": {
+                append({
+                  type: "sendDiscordMessage",
                   payload: { webhookId: "" },
                 });
                 return;

@@ -37,6 +37,7 @@
       "BuildReview",
       "Comment",
       "Deployment",
+      "DiscordWebhook",
       "GhApiInstallation",
       "GhApiInstallationAccount",
       "GhApiRepository",
