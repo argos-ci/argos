@@ -30,10 +30,20 @@ import { getDefaultPasskeyName } from "./passkey-authenticators";
 const RP_NAME = "Argos";
 
 /**
- * How long a ceremony may stay unfinished. Matches the `timeout` handed to the
- * browser, plus a margin for a user who takes their time in the OS prompt.
+ * How long the browser gives the user to complete a prompt.
+ *
+ * Sent explicitly rather than left to the library's 60s default, which is not
+ * enough for the cross-device flow — scan a QR code, unlock the phone, confirm.
  */
-const CHALLENGE_TTL_MS = 5 * 60 * 1000;
+const CEREMONY_TIMEOUT_MS = 3 * 60 * 1000;
+
+/**
+ * How long the server keeps an unfinished ceremony's challenge. Exceeds
+ * `CEREMONY_TIMEOUT_MS` so the browser is always the one to give up first: a
+ * challenge that expired underneath a still-open prompt would fail the user at
+ * the very end, with nothing to distinguish it from a rejected credential.
+ */
+const CHALLENGE_TTL_MS = CEREMONY_TIMEOUT_MS + 2 * 60 * 1000;
 
 /**
  * The Relying Party id: the domain a credential is bound to.
@@ -230,6 +240,7 @@ export async function createPasskeyRegistrationOptions(input: {
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: getRpID(),
+    timeout: CEREMONY_TIMEOUT_MS,
     // The user handle. Our own id rather than the email, so that changing an
     // email address never orphans a credential.
     userID: new TextEncoder().encode(input.userId),
@@ -347,6 +358,7 @@ export async function createPasskeyAuthenticationOptions(): Promise<{
 }> {
   const options = await generateAuthenticationOptions({
     rpID: getRpID(),
+    timeout: CEREMONY_TIMEOUT_MS,
     // No `allowCredentials`: the credentials are discoverable, so the
     // authenticator offers the accounts it holds and the user picks one.
     userVerification: "preferred",

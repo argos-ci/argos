@@ -107,6 +107,21 @@ describe("passkey", () => {
       expect(passkey.publicKey).toMatch(/^[\w-]+$/);
     });
 
+    test("gives the browser a deadline the server outlives", async () => {
+      const options = await createPasskeyRegistrationOptions({
+        userId,
+        userName: "jane@example.com",
+        userDisplayName: "Jane",
+      });
+      const { options: authOptions } =
+        await createPasskeyAuthenticationOptions();
+
+      // Both ceremonies must carry one, or the browser falls back to a 60s
+      // default that is shorter than the cross-device flow needs.
+      expect(options.timeout).toBeGreaterThan(60_000);
+      expect(authOptions.timeout).toBe(options.timeout);
+    });
+
     test("names the passkey after the authenticator it came from", async () => {
       const passkey = await register({
         userId,
