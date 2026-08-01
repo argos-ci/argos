@@ -682,9 +682,18 @@ export const resolvers: IResolvers = {
       if (ctx.auth?.user.id !== account.userId) {
         throw forbidden();
       }
-      return UserPasskey.query()
-        .where("userId", account.userId)
-        .orderBy("createdAt", "desc");
+      return (
+        UserPasskey.query()
+          .where("userId", account.userId)
+          // `createdAt` is stamped in JS at millisecond precision, so two
+          // passkeys registered in the same tick tie and Postgres is free to
+          // return them in either order. The id breaks the tie in the same
+          // direction, which keeps the list — and its visual baseline — stable.
+          .orderBy([
+            { column: "createdAt", order: "desc" },
+            { column: "id", order: "desc" },
+          ])
+      );
     },
     staff: (account, _args, ctx) => {
       // Who works at Argos is not public: staff accounts hold elevated
