@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8QrFS9KeX8VQxMOlAzmE9kP5GmIWNjBr7F4BWHcLKxgeHJylQTVtQ4BGD1d97Du
+\restrict gJndbV9WGjjDvCk8JaWCAB4cOq01ct7AAVpL3bJxIFjkLZREPjRPhqa7dUiOgDm
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2665,7 +2665,7 @@ CREATE TABLE public.user_passkeys (
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "userId" bigint NOT NULL,
-    "credentialId" character varying(255) NOT NULL,
+    "credentialId" text NOT NULL,
     "publicKey" text NOT NULL,
     counter bigint DEFAULT '0'::bigint NOT NULL,
     transports jsonb,
@@ -5780,7 +5780,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8QrFS9KeX8VQxMOlAzmE9kP5GmIWNjBr7F4BWHcLKxgeHJylQTVtQ4BGD1d97Du
+\unrestrict gJndbV9WGjjDvCk8JaWCAB4cOq01ct7AAVpL3bJxIFjkLZREPjRPhqa7dUiOgDm
 
 -- Knex migrations
 

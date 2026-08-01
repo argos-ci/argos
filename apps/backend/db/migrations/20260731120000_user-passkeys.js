@@ -15,7 +15,12 @@ export const up = async (knex) => {
     // Base64URL-encoded credential id. Unique across every account: a
     // discoverable credential is resolved to its owner from this alone, which is
     // what lets "Continue with Passkey" work without an email being typed first.
-    table.string("credentialId").notNullable().unique();
+    //
+    // `text`, not `string`: WebAuthn allows credential ids up to 1023 bytes,
+    // which is 1364 base64url characters — a varchar(255) would truncate at 191
+    // bytes and surface as a Postgres error after the user already approved the
+    // prompt. Well within the ~2704-byte btree limit the unique index needs.
+    table.text("credentialId").notNullable().unique();
     // Base64URL-encoded COSE public key. Public by nature — the private key
     // never leaves the authenticator.
     table.text("publicKey").notNullable();
