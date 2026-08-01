@@ -330,7 +330,7 @@ export async function registerPasskey(input: {
     rejected(new Error("verification returned verified: false"));
   }
 
-  const { credential, credentialDeviceType, credentialBackedUp, aaguid } =
+  const { credential, credentialBackedUp, aaguid } =
     verification.registrationInfo;
 
   // Read after verification so the extra query only runs for a credential we
@@ -346,7 +346,6 @@ export async function registerPasskey(input: {
       publicKey: isoBase64URL.fromBuffer(credential.publicKey),
       counter: String(credential.counter),
       transports: toStoredTransports(credential.transports),
-      deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
       aaguid,
       name: getDefaultPasskeyName({

@@ -101,7 +101,6 @@ export async function createPasskeys(input: {
       publicKey: `${input.keyPrefix}public-key-${index}`,
       counter: "0",
       transports: ["internal" as const, "hybrid" as const],
-      deviceType: "multiDevice" as const,
       backedUp: true,
       aaguid: null,
       name,

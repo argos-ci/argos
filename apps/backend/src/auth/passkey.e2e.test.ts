@@ -98,7 +98,6 @@ describe("passkey", () => {
         userId,
         credentialId: authenticator.credentialId.toString("base64url"),
         aaguid: authenticator.aaguid,
-        deviceType: "multiDevice",
         backedUp: true,
         counter: "0",
         lastUsedAt: null,

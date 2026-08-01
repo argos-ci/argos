@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict gJndbV9WGjjDvCk8JaWCAB4cOq01ct7AAVpL3bJxIFjkLZREPjRPhqa7dUiOgDm
+\restrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2669,7 +2669,6 @@ CREATE TABLE public.user_passkeys (
     "publicKey" text NOT NULL,
     counter bigint DEFAULT '0'::bigint NOT NULL,
     transports jsonb,
-    "deviceType" character varying(255) NOT NULL,
     "backedUp" boolean NOT NULL,
     aaguid character varying(255),
     name character varying(255) NOT NULL,
@@ -5780,7 +5779,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gJndbV9WGjjDvCk8JaWCAB4cOq01ct7AAVpL3bJxIFjkLZREPjRPhqa7dUiOgDm
+\unrestrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
 
 -- Knex migrations
 

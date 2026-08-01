@@ -26,21 +26,12 @@ export class UserPasskey extends Model {
     "usb",
   ] as const;
 
-  static deviceTypes = ["singleDevice", "multiDevice"] as const;
-
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
       {
         type: "object",
-        required: [
-          "userId",
-          "credentialId",
-          "publicKey",
-          "deviceType",
-          "backedUp",
-          "name",
-        ],
+        required: ["userId", "credentialId", "publicKey", "backedUp", "name"],
         properties: {
           userId: { type: "string" },
           credentialId: { type: "string" },
@@ -56,7 +47,6 @@ export class UserPasskey extends Model {
               { type: "null" },
             ],
           },
-          deviceType: { type: "string", enum: [...UserPasskey.deviceTypes] },
           backedUp: { type: "boolean" },
           aaguid: { type: ["string", "null"] },
           name: {
@@ -78,7 +68,6 @@ export class UserPasskey extends Model {
   /** Signature counter, for replay detection. Synced providers keep it at 0. */
   counter!: string;
   transports!: (typeof UserPasskey.transports)[number][] | null;
-  deviceType!: (typeof UserPasskey.deviceTypes)[number];
   /** Whether the provider backs the credential up (i.e. syncs it). */
   backedUp!: boolean;
   /** Authenticator Attestation GUID: identifies the passkey provider. */

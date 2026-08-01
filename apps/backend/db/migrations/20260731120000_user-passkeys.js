@@ -28,9 +28,8 @@ export const up = async (knex) => {
     table.bigInteger("counter").notNullable().defaultTo(0);
     // Transports the authenticator reported, replayed as a browser hint.
     table.jsonb("transports");
-    // "singleDevice" | "multiDevice", and whether the credential is backed up by
-    // its provider. Both are recommended to persist for later reference.
-    table.string("deviceType").notNullable();
+    // Whether the provider backs the credential up, i.e. syncs it across the
+    // user's devices. Surfaced in the settings list.
     table.boolean("backedUp").notNullable();
     // Authenticator Attestation GUID: identifies the provider (1Password,
     // iCloud Keychain, a YubiKey model…), used to name the passkey on creation.
