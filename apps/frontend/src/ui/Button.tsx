@@ -64,14 +64,18 @@ const sizeClassNames: Record<ButtonSize, string> = {
   large: "py-3 px-8 text-base",
 };
 
-// Keep the same vertical padding as the regular sizes so an iconOnly button
-// matches the height of a text button (e.g. when placed in a ButtonGroup), and
-// mirror it horizontally so the button stays a perfect square around the
-// `size-[1em]` icon.
+// An iconOnly button is a square that matches the height of a text button of the
+// same size, so the two line up side by side (in a ButtonGroup or just next to
+// each other). Its content is the `size-[1em]` icon rather than a line of text,
+// so the padding makes up the difference: half of (line-height − 1em) on top of
+// the text size's own padding.
 const iconOnlySizeClassNames: Record<ButtonSize, string> = {
-  small: "py-1 px-1 text-xs",
-  medium: "py-[calc(0.375rem-1px)] px-[calc(0.375rem-1px)] text-sm",
-  large: "py-3 px-3 text-base",
+  // text-xs: 1rem line-height, 0.75rem icon, py-1 → 0.25rem + 0.125rem
+  small: "py-1.5 px-1.5 text-xs",
+  // text-sm: 1.25rem line-height, 0.875rem icon, py-[calc(0.375rem-1px)]
+  medium: "py-[calc(0.5625rem-1px)] px-[calc(0.5625rem-1px)] text-sm",
+  // text-base: 1.5rem line-height, 1rem icon, py-3 → 0.75rem + 0.25rem
+  large: "py-4 px-4 text-base",
 };
 
 // Ring color per variant, the single source of truth for both the
