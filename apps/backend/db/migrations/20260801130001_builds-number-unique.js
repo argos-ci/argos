@@ -1,5 +1,3 @@
-const INDEX_NAME = "builds_projectid_number_unique";
-
 /**
  * Make a duplicate build number impossible.
  *
@@ -12,19 +10,12 @@ const INDEX_NAME = "builds_projectid_number_unique";
  * Created concurrently: `builds` is large in production and a plain
  * `CREATE UNIQUE INDEX` would lock out writes for the duration.
  *
- * The drop before the create is deliberate. A failed `CREATE INDEX
- * CONCURRENTLY` leaves an INVALID index behind; dropping first means a retry
- * rebuilds it instead of finding the broken one and skipping. If the create
- * fails because duplicates exist in the target database, resolve them (renumber
- * or delete) and run the migration again.
- *
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
 export const up = async (knex) => {
-  await knex.raw(`DROP INDEX IF EXISTS ${INDEX_NAME}`);
   await knex.raw(
-    `CREATE UNIQUE INDEX CONCURRENTLY ${INDEX_NAME}
+    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS builds_projectid_number_unique
        ON builds ("projectId", number)`,
   );
 };
@@ -34,7 +25,5 @@ export const up = async (knex) => {
  * @returns { Promise<void> }
  */
 export const down = async (knex) => {
-  await knex.raw(`DROP INDEX IF EXISTS ${INDEX_NAME}`);
+  await knex.raw(`DROP INDEX IF EXISTS builds_projectid_number_unique`);
 };
-
-export const config = { transaction: false };
