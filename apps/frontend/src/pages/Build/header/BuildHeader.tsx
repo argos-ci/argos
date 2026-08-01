@@ -175,7 +175,12 @@ function BuildReviewPromptButton(props: {
   });
 
   return (
-    <AiPromptButton prompt={prompt} promptName="review prompt" size="small" />
+    <AiPromptButton
+      prompt={prompt}
+      promptName="review prompt"
+      size="small"
+      iconOnly
+    />
   );
 }
 

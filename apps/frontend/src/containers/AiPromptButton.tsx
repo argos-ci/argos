@@ -32,6 +32,26 @@ type Target = AiAgentId | typeof COPY;
 const targetAtom = atomWithStorage<Target>("aiPromptTarget", AI_AGENTS[0].id);
 
 /**
+ * Content of the button that performs the remembered action. An `iconOnly`
+ * button takes its icon as its only child, a labelled one wraps it.
+ */
+function PrimaryContent(props: {
+  iconOnly: boolean;
+  icon: React.ReactElement<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  if (props.iconOnly) {
+    return props.icon;
+  }
+  return (
+    <>
+      <ButtonIcon>{props.icon}</ButtonIcon>
+      {props.children}
+    </>
+  );
+}
+
+/**
  * Hands a prompt to the coding agent the user works with: a split button that
  * opens the one picked last, and a menu for the others and for the clipboard.
  *
@@ -46,8 +66,13 @@ export function AiPromptButton(props: {
    */
   promptName?: string;
   size?: ButtonSize;
+  /**
+   * Drop the label and keep the target's icon, for rows with no room for a
+   * sentence. The tooltip still says where the prompt goes.
+   */
+  iconOnly?: boolean;
 }) {
-  const { prompt, promptName = "prompt", size } = props;
+  const { prompt, promptName = "prompt", size, iconOnly = false } = props;
   const [target, setTarget] = useAtom(targetAtom);
   const clipboard = useClipboard({ copiedTimeout: 2000 });
   const copy = () => clipboard.copy(prompt);
@@ -63,21 +88,34 @@ export function AiPromptButton(props: {
           <LinkButton
             variant="secondary"
             size={size}
+            iconOnly={iconOnly}
+            aria-label={iconOnly ? `Open in ${agent.name}` : undefined}
             href={agent.getURL(prompt)}
           >
-            <ButtonIcon>
-              <agent.Icon />
-            </ButtonIcon>
-            Open in {agent.name}
+            <PrimaryContent iconOnly={iconOnly} icon={<agent.Icon />}>
+              Open in {agent.name}
+            </PrimaryContent>
           </LinkButton>
         </Tooltip>
       ) : (
-        <Button variant="secondary" size={size} onPress={copy}>
-          <ButtonIcon>
-            {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-          </ButtonIcon>
-          {clipboard.copied ? "Copied" : copyLabel}
-        </Button>
+        <Tooltip content={copyLabel}>
+          <Button
+            variant="secondary"
+            size={size}
+            iconOnly={iconOnly}
+            aria-label={
+              iconOnly ? (clipboard.copied ? "Copied" : copyLabel) : undefined
+            }
+            onPress={copy}
+          >
+            <PrimaryContent
+              iconOnly={iconOnly}
+              icon={clipboard.copied ? <CheckIcon /> : <CopyIcon />}
+            >
+              {clipboard.copied ? "Copied" : copyLabel}
+            </PrimaryContent>
+          </Button>
+        </Tooltip>
       )}
       <MenuTrigger>
         <Button
