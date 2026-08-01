@@ -53,10 +53,25 @@ function getRpID(): string {
 }
 
 /**
- * The only origin a ceremony may have been performed on.
+ * The origins a ceremony may have been performed on.
+ *
+ * The RP id and this list have to be kept in step. Scoping the RP id to the
+ * parent domain makes the authenticator willing to release a credential to any
+ * subdomain under it — but the server still pins the origin, so a subdomain
+ * missing from this list is refused after the user has already approved the
+ * prompt. `server.url` is always allowed; `webauthn.origins` is how a second
+ * subdomain gets added, and is what makes the parent-domain RP id actually
+ * deliver the portability it is chosen for.
  */
-function getExpectedOrigin(): string {
-  return new URL(config.get("server.url")).origin;
+function getExpectedOrigins(): string[] {
+  const origins = [new URL(config.get("server.url")).origin];
+  for (const origin of config.get("webauthn.origins")) {
+    const parsed = new URL(origin).origin;
+    if (!origins.includes(parsed)) {
+      origins.push(parsed);
+    }
+  }
+  return origins;
 }
 
 function getRegistrationChallengeKey(userId: string): string {
@@ -272,7 +287,7 @@ export async function registerPasskey(input: {
     verification = await verifyRegistrationResponse({
       response,
       expectedChallenge,
-      expectedOrigin: getExpectedOrigin(),
+      expectedOrigin: getExpectedOrigins(),
       expectedRPID: getRpID(),
       // Paired with the `preferred` we asked for: a security key without a PIN
       // is still a legitimate passkey, it just did not verify the user.
@@ -380,7 +395,7 @@ export async function verifyPasskeyAuthentication(input: {
     verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge,
-      expectedOrigin: getExpectedOrigin(),
+      expectedOrigin: getExpectedOrigins(),
       expectedRPID: getRpID(),
       credential: {
         id: passkey.credentialId,

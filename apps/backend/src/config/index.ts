@@ -132,6 +132,12 @@ export function createConfig() {
         default: "",
         env: "WEBAUTHN_RP_ID",
       },
+      origins: {
+        doc: "Origins a passkey ceremony may be performed on, beyond `server.url` which is always allowed. Only useful alongside a parent-domain `rpId`: the authenticator will release a credential to any subdomain the rpId covers, so every subdomain the app is actually served from has to be listed here or the server rejects it.",
+        format: "string-array",
+        default: [] as string[],
+        env: "WEBAUTHN_ORIGINS",
+      },
     },
     encryption: {
       key: {

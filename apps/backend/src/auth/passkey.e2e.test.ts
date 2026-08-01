@@ -185,6 +185,33 @@ describe("passkey", () => {
       expect(await UserPasskey.query().resultSize()).toBe(0);
     });
 
+    test("accepts a ceremony from another configured origin", async () => {
+      // A parent-domain rpId lets the authenticator release the credential to
+      // any subdomain under it; the server only agrees if the origin is listed.
+      const otherOrigin = "https://app2.argos-ci.test";
+      config.set("webauthn.origins", [otherOrigin]);
+      try {
+        const options = await createPasskeyRegistrationOptions({
+          userId,
+          userName: "jane@example.com",
+          userDisplayName: "Jane",
+        });
+        const { response } = new FakeAuthenticator().create({
+          challenge: options.challenge,
+          origin: otherOrigin,
+          rpId: RP_ID,
+        });
+        const passkey = await registerPasskey({
+          userId,
+          response,
+          deviceLabel: null,
+        });
+        expect(passkey.userId).toBe(userId);
+      } finally {
+        config.set("webauthn.origins", []);
+      }
+    });
+
     test("refuses a challenge that was never issued", async () => {
       const { response } = new FakeAuthenticator().create({
         challenge: "a-challenge-we-never-issued",
