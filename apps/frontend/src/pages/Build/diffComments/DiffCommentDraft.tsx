@@ -91,7 +91,6 @@ export function DiffCommentDraft(props: {
         <div className="mt-2 flex justify-end gap-1.5">
           <Button
             variant="ghost"
-            rounded
             size="small"
             onPress={onCancel}
             isDisabled={isPending}
@@ -118,7 +117,6 @@ export function DiffCommentDraft(props: {
           >
             <Button
               variant="secondary"
-              rounded
               size="small"
               onPress={submit}
               // Stays clickable while empty so the press can surface the toast;

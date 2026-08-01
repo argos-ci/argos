@@ -1,20 +1,14 @@
 import { memo, startTransition, useCallback, useRef } from "react";
-import clsx from "clsx";
 import { HomeIcon, SearchIcon, XIcon } from "lucide-react";
-import {
-  Tab as RACTab,
-  TabList as RACTabList,
-  TabPanel,
-  TabProps,
-  Tabs,
-} from "react-aria-components";
+import { TabList as RACTabList, TabPanel, Tabs } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
+import { LinkButton } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { HeadlessLink } from "@/ui/Link";
+import { PillTab } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { BuildDiffList } from "./BuildDiffList";
@@ -24,41 +18,26 @@ import { BuildParams, getBuildOverviewURL } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
 
-const tabItemClassName = clsx(
-  "text-low rac-focus cursor-default rounded-sm px-2 text-sm leading-6 font-medium",
-  "data-hovered:bg-ui",
-  "data-selected:text-default data-selected:bg-ui",
-);
-
-function Tab(
-  props: TabProps & {
-    ref?: React.Ref<HTMLDivElement>;
-  },
-) {
-  return <RACTab className={tabItemClassName} {...props} />;
-}
-
 /**
- * Link to the build overview, styled to match — and sit alongside — the sidebar
- * tabs (same pill style and height).
+ * Link to the build overview: a button next to the sidebar's tabs, filled in
+ * while the overview is the page being shown.
  */
 function OverviewButton(props: { params: BuildParams }) {
   const { params } = props;
   const selected = params.diffId == null;
   return (
     <Tooltip content="Overview">
-      <HeadlessLink
+      <LinkButton
         href={getBuildOverviewURL(params)}
+        variant="secondary"
+        size="small"
+        iconOnly
         aria-label="Overview"
         aria-current={selected ? "page" : undefined}
-        className={clsx(
-          tabItemClassName,
-          "flex h-6 items-center",
-          selected && "bg-ui text-default",
-        )}
+        className="aria-[current=page]:bg-active aria-[current=page]:text-default"
       >
-        <HomeIcon className="size-4" />
-      </HeadlessLink>
+        <HomeIcon />
+      </LinkButton>
     </Tooltip>
   );
 }
@@ -162,8 +141,8 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 className="flex flex-1 shrink-0 gap-2 py-3"
                 aria-label="Build details"
               >
-                <Tab id="snapshots">Snapshots</Tab>
-                <Tab id="info">Info</Tab>
+                <PillTab id="snapshots">Snapshots</PillTab>
+                <PillTab id="info">Info</PillTab>
               </RACTabList>
               <HotkeyTooltip
                 keys={searchModeHotKey.displayKeys}

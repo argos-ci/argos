@@ -351,7 +351,7 @@ function RequestReviewersMenu(props: { build: Build }) {
   return (
     <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <HotkeyTooltip description="Add reviewer" keys={hotkey.displayKeys}>
-        <IconButton rounded size="small" aria-label="Add reviewer">
+        <IconButton size="small" aria-label="Add reviewer">
           <PlusIcon />
         </IconButton>
       </HotkeyTooltip>
@@ -413,12 +413,7 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
   return (
     <MenuTrigger>
-      <IconButton
-        rounded
-        data-actions-menu=""
-        size="small"
-        aria-label="Review actions"
-      >
+      <IconButton data-actions-menu="" size="small" aria-label="Review actions">
         <MoreHorizontalIcon />
       </IconButton>
       <Popover placement="bottom end">

@@ -44,7 +44,7 @@ export function CommentActionsMenu(props: {
   } = props;
   return (
     <MenuTrigger>
-      <IconButton rounded size="small" aria-label="Comment actions">
+      <IconButton size="small" aria-label="Comment actions">
         <MoreHorizontalIcon />
       </IconButton>
       <Popover placement="bottom end">

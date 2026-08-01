@@ -3,10 +3,8 @@ import clsx from "clsx";
 import { useAtom } from "jotai";
 import { PanelRightIcon } from "lucide-react";
 import {
-  Tab as RACTab,
   TabList as RACTabList,
   TabPanel,
-  TabProps,
   Tabs,
   type TabPanelProps,
 } from "react-aria-components";
@@ -17,6 +15,7 @@ import { DocumentType, graphql } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { Sidebar } from "@/ui/Sidebar";
+import { PillTab } from "@/ui/Tab";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
@@ -55,23 +54,6 @@ const _BuildFragment = graphql(`
     ...ReviewActivitySection_Build
   }
 `);
-
-function PillTab(
-  props: TabProps & {
-    ref?: React.Ref<HTMLDivElement>;
-  },
-) {
-  return (
-    <RACTab
-      {...props}
-      className={clsx(
-        "border-thin text-low rac-focus cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition",
-        "data-hovered:text-default data-hovered:bg-hover",
-        "data-selected:bg-active data-selected:text-default data-selected:cursor-default",
-      )}
-    />
-  );
-}
 
 type Context = Omit<MetadataSectionProps, "diff" | "siblingDiffs">;
 

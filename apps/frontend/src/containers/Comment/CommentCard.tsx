@@ -754,7 +754,6 @@ function ReplyComposer(props: {
           <IconButton
             variant="contained"
             size="small"
-            rounded
             aria-label="Submit the reply"
             aria-disabled={isEmpty}
             isDisabled={isPending}

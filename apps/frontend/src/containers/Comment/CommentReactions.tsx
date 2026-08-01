@@ -124,7 +124,7 @@ export function CommentAddReactionButton(props: { comment: Comment }) {
   return (
     <EmojiPickerTrigger>
       <Tooltip content="Add reaction">
-        <IconButton rounded size="small" aria-label="Add reaction">
+        <IconButton size="small" aria-label="Add reaction">
           <SmilePlusIcon />
         </IconButton>
       </Tooltip>

@@ -12,7 +12,7 @@ import { getErrorMessage } from "@/util/error";
 
 import { Loader } from "./Loader";
 
-type ButtonVariant =
+export type ButtonVariant =
   | "primary"
   | "secondary"
   | "ghost"
@@ -26,13 +26,11 @@ type ButtonOptions = {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /**
-   * Render the button as a square containing only an icon.
+   * Render the button as a circle containing only an icon.
    * When using `iconOnly`, pass the icon directly as `children`
    * (do not wrap it in `ButtonIcon`).
    */
   iconOnly?: boolean;
-  /** Fully round the edges (pill shape) instead of the default rounded corners. */
-  rounded?: boolean;
   /**
    * Show the focus ring whenever the button is focused, not only when it is
    * `focus-visible`. Use it to make an autofocused default action visible even
@@ -44,8 +42,11 @@ type ButtonOptions = {
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
+  // A wash rather than a fill: `bg-ui` at half opacity lifts the button off
+  // whatever it sits on — the app background, a panel, an image — without
+  // reading as a filled button next to `primary`.
   secondary:
-    "text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+    "text-default bg-ui/50 data-hovered:bg-hover/60 data-hovered:border-hover data-pressed:bg-active/70",
   ghost:
     "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
   destructive:
@@ -117,21 +118,23 @@ const ringClassNames: Record<
   },
 };
 
-// Default corner rounding per size (overridden by `rounded` for a pill shape).
-const roundingClassNames: Record<ButtonSize, string> = {
-  small: "rounded-sm",
-  medium: "rounded-lg",
-  large: "rounded-xl",
-};
-
-function getButtonClassName(options: {
-  variant: ButtonVariant;
-  size: ButtonSize;
-  iconOnly: boolean;
-  rounded: boolean;
-  showFocusRing: boolean;
+/**
+ * The button surface — shape, hairline, fill, focus ring. Exported for the
+ * controls that must read as buttons without being one, such as the pill tabs:
+ * they share this so a row of them lines up with a row of buttons.
+ */
+export function getButtonClassName(options: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  iconOnly?: boolean;
+  showFocusRing?: boolean;
 }) {
-  const { variant, size, iconOnly, rounded, showFocusRing } = options;
+  const {
+    variant = "primary",
+    size = "medium",
+    iconOnly = false,
+    showFocusRing = false,
+  } = options;
   const variantClassName = variantClassNames[variant];
   const ring = ringClassNames[variant];
   const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
@@ -143,15 +146,17 @@ function getButtonClassName(options: {
     sizeClassName,
     ring.focusVisible,
     showFocusRing && ["data-focused:ring-4", ring.focused],
-    rounded ? "rounded-full" : roundingClassNames[size],
-    // ButtonGroup integration: drop the inner rounded corners and overlap
-    // adjacent borders so each variant's `border-l-*` acts as the separator.
+    "rounded-full",
+    // ButtonGroup integration: drop the inner rounded ends and overlap adjacent
+    // borders so each variant's `border-l-*` acts as the separator.
     "group-[*]/button-group:not-first:rounded-l-none",
     "group-[*]/button-group:not-last:rounded-r-none",
-    "group-[*]/button-group:not-first:-ml-px",
+    "group-[*]/button-group:not-first:-ml-thin",
     iconOnly && "*:size-[1em] justify-center",
     "focus:outline-hidden data-focus-visible:ring-4",
-    "items-center inline-flex select-none whitespace-nowrap border font-sans font-medium",
+    // A hairline rather than a border: it draws the button's edge without
+    // framing it.
+    "items-center inline-flex select-none whitespace-nowrap border-thin font-sans font-medium",
     "aria-disabled:opacity-disabled aria-disabled:cursor-not-allowed",
     "disabled:opacity-disabled disabled:cursor-not-allowed",
   );
@@ -162,7 +167,6 @@ function getButtonProps(options: ButtonOptions) {
     variant = "primary",
     size = "medium",
     iconOnly = false,
-    rounded = false,
     showFocusRing = false,
   } = options;
   return {
@@ -170,7 +174,6 @@ function getButtonProps(options: ButtonOptions) {
       variant,
       size,
       iconOnly,
-      rounded,
       showFocusRing,
     }),
     "data-size": size ?? "medium",
@@ -204,7 +207,6 @@ export function Button({
   variant,
   size,
   iconOnly,
-  rounded,
   showFocusRing,
   children,
   onAction,
@@ -215,7 +217,6 @@ export function Button({
     variant,
     size,
     iconOnly,
-    rounded,
     showFocusRing,
   });
   const [isPending, setIsPending] = useState(false);
@@ -271,7 +272,6 @@ export function LinkButton({
   variant,
   size,
   iconOnly,
-  rounded,
   showFocusRing,
   ...props
 }: LinkButtonProps) {
@@ -279,7 +279,6 @@ export function LinkButton({
     variant,
     size,
     iconOnly,
-    rounded,
     showFocusRing,
   });
   return (

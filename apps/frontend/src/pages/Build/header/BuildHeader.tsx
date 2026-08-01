@@ -174,14 +174,7 @@ function BuildReviewPromptButton(props: {
     pullRequest: props.build.pullRequest,
   });
 
-  return (
-    <AiPromptButton
-      prompt={prompt}
-      promptName="review prompt"
-      size="small"
-      iconOnly
-    />
-  );
+  return <AiPromptButton prompt={prompt} promptName="review prompt" iconOnly />;
 }
 
 export const BuildHeader = memo(

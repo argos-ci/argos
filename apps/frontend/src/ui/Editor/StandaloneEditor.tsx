@@ -170,7 +170,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
           <div className="flex justify-end gap-1.5 p-1 pt-2">
             <Button
               variant="ghost"
-              rounded
               size="small"
               onPress={onCancel}
               isDisabled={isPending}
@@ -184,7 +183,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             >
               <Button
                 variant="secondary"
-                rounded
                 size="small"
                 onPress={submit}
                 // Truly disabled (not focusable/clickable) while submitting or
@@ -223,7 +221,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 <IconButton
                   variant="contained"
                   size="small"
-                  rounded
                   aria-label={submitLabel}
                   // Truly disabled (not focusable/clickable) while submitting or when
                   // disabled by the parent. When the editor is merely empty it only

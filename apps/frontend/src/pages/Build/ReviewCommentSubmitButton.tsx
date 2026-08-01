@@ -94,7 +94,6 @@ export function ReviewCommentSubmitButton(props: {
       <IconButton
         variant="contained"
         size="small"
-        rounded
         aria-label={label}
         // Truly disabled (not focusable/clickable) while submitting or when
         // disabled by the parent. When merely empty it only *looks* disabled but

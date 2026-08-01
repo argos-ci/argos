@@ -33,22 +33,24 @@ export const Default: Story = {
         <Button size="large">Large</Button>
       </div>
 
-      <StoryTitle>Rounded</StoryTitle>
+      <StoryTitle>Icon only</StoryTitle>
       <div className="flex flex-wrap items-center gap-4">
-        <Button rounded size="small">
-          Small
+        <Button size="small" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded size="medium">
-          Medium
+        <Button size="medium" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded size="large">
-          Large
+        <Button size="large" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded variant="primary">
-          <ButtonIcon>
-            <DownloadIcon />
-          </ButtonIcon>
-          Download
+        <Button
+          size="medium"
+          variant="secondary"
+          iconOnly
+          aria-label="Download"
+        >
+          <DownloadIcon />
         </Button>
       </div>
 
