@@ -333,6 +333,12 @@ export async function registerPasskey(input: {
   const { credential, credentialDeviceType, credentialBackedUp, aaguid } =
     verification.registrationInfo;
 
+  // Read after verification so the extra query only runs for a credential we
+  // are actually going to store.
+  const existingNames = (
+    await UserPasskey.query().select("name").where("userId", input.userId)
+  ).map((passkey) => passkey.name);
+
   try {
     return await UserPasskey.query().insertAndFetch({
       userId: input.userId,
@@ -343,7 +349,11 @@ export async function registerPasskey(input: {
       deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
       aaguid,
-      name: getDefaultPasskeyName({ aaguid, deviceLabel: input.deviceLabel }),
+      name: getDefaultPasskeyName({
+        aaguid,
+        deviceLabel: input.deviceLabel,
+        existingNames,
+      }),
       lastUsedAt: null,
     });
   } catch (error) {

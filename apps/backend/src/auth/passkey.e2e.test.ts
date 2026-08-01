@@ -131,6 +131,22 @@ describe("passkey", () => {
       expect(passkey.name).toBe("1Password");
     });
 
+    test("numbers a second passkey from the same provider", async () => {
+      // The AAGUID names the provider, not the credential — two 1Password
+      // vaults, or iCloud Keychain on a phone and a laptop, collide.
+      const first = await register({
+        userId,
+        authenticator: new FakeAuthenticator(),
+      });
+      const second = await register({
+        userId,
+        authenticator: new FakeAuthenticator(),
+      });
+
+      expect(first.name).toBe("1Password");
+      expect(second.name).toBe("1Password (2)");
+    });
+
     test("falls back to the device when the authenticator is anonymous", async () => {
       const passkey = await register({
         userId,

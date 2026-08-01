@@ -52,8 +52,32 @@ const EMPTY_AAGUID = "00000000-0000-0000-0000-000000000000";
  * Falls back to the device the browser is running on (e.g. "Chrome on macOS")
  * when the authenticator is unknown or anonymous, so the row still says
  * something useful about where the passkey lives.
+ *
+ * The AAGUID identifies the *provider*, not the credential, so two passkeys
+ * from the same one would otherwise be named identically — and the rows show
+ * nothing else that tells them apart, so neither the user nor a screen reader
+ * could say which was about to be revoked. `existingNames` is used to append a
+ * counter in that case.
  */
 export function getDefaultPasskeyName(input: {
+  aaguid: string | null;
+  deviceLabel: string | null;
+  existingNames: readonly string[];
+}): string {
+  const base = getBaseName(input);
+  const taken = new Set(input.existingNames);
+  if (!taken.has(base)) {
+    return base;
+  }
+  for (let suffix = 2; ; suffix++) {
+    const candidate = `${base} (${suffix})`;
+    if (!taken.has(candidate)) {
+      return candidate;
+    }
+  }
+}
+
+function getBaseName(input: {
   aaguid: string | null;
   deviceLabel: string | null;
 }): string {
