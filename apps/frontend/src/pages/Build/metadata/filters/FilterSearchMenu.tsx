@@ -139,7 +139,7 @@ export const FilterSearchMenu = (props: { state: FilterState }) => {
           <div className="relative flex items-center px-3 py-1.5">
             <SearchIcon className="text-placeholder mr-2 size-4 shrink-0" />
             <Input
-              className="placeholder:text-placeholder w-full text-sm outline-none"
+              className="placeholder:text-placeholder text-menu w-full outline-none"
               placeholder="Search filters…"
             />
             {searchActive && (

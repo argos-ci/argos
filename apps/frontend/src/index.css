@@ -37,6 +37,11 @@
   --text-xxs: 0.6875rem;
   --text-xxs--line-height: 1rem;
 
+  /* The step between `xs` and `sm`, for the dense rows in menus and select
+     popovers: `sm` makes them feel like body copy, `xs` like fine print. */
+  --text-menu: 0.8125rem;
+  --text-menu--line-height: 1.125rem;
+
   --color-progress-from: var(--violet-8);
   --color-progress-to: var(--violet-10);
 
