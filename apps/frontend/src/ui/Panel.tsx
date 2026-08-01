@@ -1,6 +1,18 @@
 import clsx from "clsx";
 
 /**
+ * The surface that groups related content: a hairline edge, soft corners and a
+ * shadow to lift it off the page. Shared with `Card`, so the panels in the build
+ * sidebar and the cards in settings cannot drift apart.
+ *
+ * @param elevation Shadow depth: 1 (default) casts a subtle shadow, 0 is flat.
+ */
+export function getSurfaceClassName(options?: { elevation?: 0 | 1 }): string {
+  const { elevation = 1 } = options ?? {};
+  return clsx("bg-app border-thin rounded-xl", elevation === 1 && "shadow-xs");
+}
+
+/**
  * A bordered surface grouping related content. Used for the cards in the build
  * sidebar and overview.
  */
@@ -13,11 +25,7 @@ export function Panel(props: {
   const { children, className, elevation = 1 } = props;
   return (
     <div
-      className={clsx(
-        "bg-app border-thin rounded-xl py-3",
-        elevation === 1 && "shadow-xs",
-        className,
-      )}
+      className={clsx(getSurfaceClassName({ elevation }), "py-3", className)}
     >
       {children}
     </div>

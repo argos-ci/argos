@@ -1,6 +1,8 @@
 import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
+import { getSurfaceClassName } from "./Panel";
+
 export function Card(
   props: ComponentPropsWithRef<"div"> & {
     intent?: "danger";
@@ -11,7 +13,10 @@ export function Card(
     <div
       {...rest}
       className={clsx(
-        "bg-app w-full overflow-hidden rounded-sm border border-(--card-border) shadow-xs",
+        // The same surface as the sidebar's panels; `--card-border` only tints
+        // the hairline, so a danger card keeps the shape.
+        getSurfaceClassName(),
+        "w-full overflow-hidden border-(--card-border)",
         intent === "danger"
           ? "[--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
           : "[--card-border:var(--border-color-default)]",
@@ -30,7 +35,7 @@ export function CardFooter(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "border-t border-(--card-border) bg-(--card-footer-bg,var(--background-color-app)) p-4 text-sm",
+        "border-t-thin border-(--card-border) bg-(--card-footer-bg,var(--background-color-app)) p-4 text-sm",
         props.className,
       )}
     />
@@ -58,7 +63,7 @@ export function CardSeparator(
       {...props}
       role="separator"
       aria-orientation="horizontal"
-      className={clsx(props.className, "border-t")}
+      className={clsx(props.className, "border-t-thin")}
     />
   );
 }

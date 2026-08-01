@@ -81,6 +81,18 @@
   --background-color-solid-hover: var(--gray-10);
   --background-color-solid-active: var(--gray-11);
 
+  /* The wash under a `secondary` control, a step above the page it sits on. It
+     goes the opposite way per theme — white in light mode, a light gray in dark
+     mode — so the values live in `@layer base` where the theme can flip them. */
+  --background-color-raised: var(--raised);
+  --background-color-raised-hover: var(--raised-hover);
+  --background-color-raised-active: var(--raised-active);
+  --background-color-raised-active-hover: color-mix(
+    in srgb,
+    var(--raised-active) 88%,
+    black
+  );
+
   --background-color-primary-app: var(--violet-1);
   --background-color-primary-subtle: var(--violet-2);
   --background-color-primary-ui: var(--violet-3);
@@ -404,6 +416,21 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--border-color-default, currentColor);
+  }
+
+  /* A raised control is lighter than the page in both themes, which means white
+     on light and a gray wash on dark. Pressed stays close to the resting fill:
+     the shape and the label already say which one is on. */
+  :root {
+    --raised: color-mix(in srgb, white 70%, transparent);
+    --raised-hover: white;
+    --raised-active: var(--gray-3);
+  }
+
+  html.dark {
+    --raised: color-mix(in srgb, var(--gray-3) 50%, transparent);
+    --raised-hover: color-mix(in srgb, var(--gray-4) 60%, transparent);
+    --raised-active: var(--gray-5);
   }
 
   html,

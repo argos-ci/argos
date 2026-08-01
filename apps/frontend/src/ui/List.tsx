@@ -11,14 +11,16 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
       {...props}
       role="table"
       className={clsx(
-        "flex flex-col overflow-auto rounded-sm border",
+        // The same corners and hairline as a card: it is the same kind of
+        // surface, holding rows instead of prose.
+        "border-thin flex flex-col overflow-auto rounded-xl",
         props.className,
       )}
     />
   );
 }
 
-const listRowClassName = "bg-app min-w-0 border-b last:border-b-0";
+const listRowClassName = "bg-app min-w-0 border-b-thin last:border-b-0";
 
 export function ListRowLink(props: Omit<HeadlessLinkProps, "external">) {
   return (

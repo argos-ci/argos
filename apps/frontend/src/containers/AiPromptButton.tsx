@@ -126,7 +126,10 @@ export function AiPromptButton(props: {
         >
           <ChevronDownIcon />
         </Button>
-        <Popover>
+        {/* Anchored on its right edge: the menu is much wider than the button,
+            and the button sits at the right of a header, so aligning it the
+            other way only to be pushed back in reads as a stutter. */}
+        <Popover placement="bottom end">
           <Menu aria-label={promptName}>
             {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
               <MenuItem

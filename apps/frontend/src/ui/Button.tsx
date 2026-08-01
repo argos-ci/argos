@@ -58,12 +58,12 @@ const variantClassNames: Record<ButtonVariant, string> = {
   // the label and come forward on hover, so a row of icon buttons stays quiet
   // until it is pointed at.
   secondary: clsx(
-    "text-default bg-ui/50 data-hovered:bg-hover/60 data-hovered:border-hover data-pressed:bg-active/70",
+    "text-default bg-raised data-hovered:bg-raised-hover data-hovered:border-hover data-pressed:bg-raised-active",
     ICON_STEPS_BACK,
     // Pressed, hovering goes darker rather than lighter: a control that is
     // already on should not look like it is about to turn on.
-    "aria-pressed:bg-active aria-pressed:text-default aria-pressed:data-hovered:bg-active-hover",
-    "aria-expanded:bg-active",
+    "aria-pressed:bg-raised-active aria-pressed:text-default aria-pressed:data-hovered:bg-raised-active-hover",
+    "aria-expanded:bg-raised-active",
   ),
   // `secondary` with an opaque fill, for the controls that float over content
   // (the zoomer, the toolbars over a screenshot) where a wash would not hold.
@@ -87,11 +87,11 @@ const variantClassNames: Record<ButtonVariant, string> = {
   // `destructive`, which is a solid call to action. The color is in the icon and
   // the label, and only fills in on hover.
   danger: clsx(
-    "text-danger-low bg-ui/50 data-hovered:border-danger-hover data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
+    "text-danger-low bg-raised data-hovered:border-danger-hover data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
     "aria-pressed:bg-danger-active aria-pressed:data-hovered:bg-danger-active-hover",
   ),
   success: clsx(
-    "text-success-low bg-ui/50 data-hovered:border-success-hover data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
+    "text-success-low bg-raised data-hovered:border-success-hover data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
     "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active-hover",
   ),
   destructive:

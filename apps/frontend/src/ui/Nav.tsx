@@ -21,7 +21,7 @@ export function NavLink(props: NavLinkProps) {
     <RouterNavLink
       {...props}
       className={clsx(
-        "hover:bg-hover text-low aria-[current=page]:text-default flex rounded px-3 py-2.5 text-sm aria-[current=page]:font-medium",
+        "hover:bg-hover text-low aria-[current=page]:text-default flex rounded-lg px-3 py-2.5 text-sm aria-[current=page]:font-medium",
         props.className,
       )}
     />
