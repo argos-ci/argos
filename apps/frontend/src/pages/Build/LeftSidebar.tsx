@@ -28,7 +28,7 @@ function OverviewButton(props: { params: BuildParams }) {
     <Tooltip content="Overview">
       <LinkButton
         href={getBuildOverviewURL(params)}
-        variant="secondary"
+        variant="ghost"
         size="small"
         iconOnly
         aria-label="Overview"
@@ -121,7 +121,11 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
     >
       {build.type !== BuildType.Skipped ? (
         <div className="border-b-thin flex shrink-0 items-center gap-1 px-2">
-          {hasOverview ? <OverviewButton params={props.params} /> : null}
+          {/* Search takes the row over: the field starts at the left edge, with
+              nothing before it to read past. */}
+          {hasOverview && !searchMode ? (
+            <OverviewButton params={props.params} />
+          ) : null}
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
@@ -130,7 +134,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 description="Exit search mode"
               >
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   iconOnly
                   size="small"
                   onPress={() => setSearchMode(false)}
@@ -153,7 +157,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 description="Find"
               >
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   iconOnly
                   onPress={() => enterSearchMode()}
                   aria-pressed={searchMode}

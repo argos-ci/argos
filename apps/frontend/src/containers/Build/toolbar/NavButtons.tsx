@@ -17,7 +17,7 @@ export function NextButton(props: {
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         isDisabled={isDisabled}
         onPress={onPress}
@@ -50,7 +50,7 @@ export function PreviousButton(props: {
       keys={hotkey.displayKeys}
     >
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         isDisabled={isDisabled}
         onPress={onPress}

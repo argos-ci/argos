@@ -36,7 +36,7 @@ const InnerFilterButton = createHideableComponent(
           keys={filterHotKey.displayKeys}
           description={filterHotKey.description}
         >
-          <Button variant="secondary" iconOnly size="small">
+          <Button variant="ghost" iconOnly size="small">
             <FilterIcon />
           </Button>
         </HotkeyTooltip>
