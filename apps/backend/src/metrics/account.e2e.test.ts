@@ -241,10 +241,13 @@ describe("getAccountMetrics", () => {
       total: 2,
       projects: { [project.id]: 2 },
     });
-    expect(metrics.screenshots.projects).toEqual([project]);
+    // Creating the builds above bumped `projects."buildNumber"`, so the factory
+    // instance is stale — compare against the current row.
+    const currentProject = await project.$query();
+    expect(metrics.screenshots.projects).toEqual([currentProject]);
     expect(metrics.builds.all.total).toBe(1);
     expect(metrics.builds.all.projects).toEqual({ [project.id]: 1 });
-    expect(metrics.builds.projects).toEqual([project]);
+    expect(metrics.builds.projects).toEqual([currentProject]);
   });
 
   it("returns no metrics when no project names match", async () => {

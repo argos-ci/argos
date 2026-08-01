@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Ivk5kSu7HHeKeaIzkDrOSxkNc9H2c9lQGXyfvpcQgxDjJtd0nLlOZNdHcaRseoE
+\restrict NCWaxg9ST6yzu49EdXJQgn0VVLYuBuCa1kVx30782FUnwQbDu43cyD2URwP6Qg7
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1943,6 +1943,7 @@ CREATE TABLE public.projects (
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
     "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
+    "buildNumber" integer DEFAULT 0 NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
@@ -4326,6 +4327,13 @@ CREATE INDEX builds_projectid_name_createdat_idx ON public.builds USING btree ("
 
 
 --
+-- Name: builds_projectid_number_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX builds_projectid_number_unique ON public.builds USING btree ("projectId", number);
+
+
+--
 -- Name: builds_projectid_prheadcommit_name_createdat_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5848,7 +5856,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Ivk5kSu7HHeKeaIzkDrOSxkNc9H2c9lQGXyfvpcQgxDjJtd0nLlOZNdHcaRseoE
+\unrestrict NCWaxg9ST6yzu49EdXJQgn0VVLYuBuCa1kVx30782FUnwQbDu43cyD2URwP6Qg7
 
 -- Knex migrations
 
@@ -6085,3 +6093,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026073
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730140000_test-notification-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260731120000_user-passkeys.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801120000_discord-webhooks.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801130000_builds-number-counter.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801130001_builds-number-unique.js', 1, NOW());
