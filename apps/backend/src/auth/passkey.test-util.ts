@@ -105,12 +105,21 @@ export type FakeAuthenticatorOptions = {
   aaguid?: string;
   /** Whether the credential reports itself as synced. */
   backedUp?: boolean;
+  /**
+   * Whether each assertion advances the signature counter.
+   *
+   * Security keys do; most synced providers report a permanent 0, which is why
+   * this defaults to off. Turning it on is what exercises the replay check —
+   * the library only compares counters when at least one side is non-zero.
+   */
+  incrementsCounter?: boolean;
 };
 
 export class FakeAuthenticator {
   readonly credentialId: Buffer;
   readonly aaguid: string;
   private readonly backedUp: boolean;
+  private readonly incrementsCounter: boolean;
   private readonly privateKey: KeyObject;
   private readonly publicKey: KeyObject;
   private signCount = 0;
@@ -119,6 +128,7 @@ export class FakeAuthenticator {
     this.credentialId = options.credentialId ?? randomBytes(32);
     this.aaguid = options.aaguid ?? "bada5566-a7aa-401f-bd96-45619a55120d";
     this.backedUp = options.backedUp ?? true;
+    this.incrementsCounter = options.incrementsCounter ?? false;
     const { privateKey, publicKey } = generateKeyPairSync("ec", {
       namedCurve: "prime256v1",
     });
@@ -186,12 +196,24 @@ export class FakeAuthenticator {
     };
   }
 
+  /**
+   * Re-sign an earlier assertion's counter value, the way a cloned authenticator
+   * would: the clone kept signing from the count it was copied at, so its
+   * assertion carries a counter the server has already seen.
+   */
+  rewindCounter(to: number): void {
+    this.signCount = to;
+  }
+
   /** The value `navigator.credentials.get()` would resolve to. */
   get(input: {
     challenge: string;
     origin: string;
     rpId: string;
   }): AuthenticationResponseJSON {
+    if (this.incrementsCounter) {
+      this.signCount += 1;
+    }
     const clientDataJSON = buildClientDataJSON({
       type: "webauthn.get",
       challenge: input.challenge,

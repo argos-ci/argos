@@ -355,6 +355,39 @@ describe("passkey", () => {
       });
     });
 
+    test("advances the stored signature counter", async () => {
+      const authenticator = new FakeAuthenticator({ incrementsCounter: true });
+      await register({ userId, authenticator });
+
+      const first = await authenticate({ authenticator });
+      expect(first.counter).toBe("1");
+      const second = await authenticate({ authenticator });
+      expect(second.counter).toBe("2");
+    });
+
+    test("refuses an assertion whose counter went backwards", async () => {
+      // What a cloned authenticator produces: a valid signature over a counter
+      // the server has already seen. The challenge is fresh, so single-use
+      // challenges do not catch this — only the counter does.
+      const authenticator = new FakeAuthenticator({ incrementsCounter: true });
+      await register({ userId, authenticator });
+      await authenticate({ authenticator });
+      await authenticate({ authenticator });
+
+      authenticator.rewindCounter(0);
+      const rejection = await expectRejection(authenticate({ authenticator }));
+      expect(rejection).toMatchObject({
+        statusCode: 400,
+        code: "PASSKEY_VERIFICATION_FAILED",
+      });
+
+      // The rejected assertion must not have moved the counter.
+      const stored = await UserPasskey.query().findOne({
+        credentialId: authenticator.credentialId.toString("base64url"),
+      });
+      expect(stored?.counter).toBe("2");
+    });
+
     test("refuses a credential that is not registered", async () => {
       const rejection = await expectRejection(
         authenticate({ authenticator: new FakeAuthenticator() }),
