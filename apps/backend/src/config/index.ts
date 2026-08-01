@@ -125,6 +125,20 @@ export function createConfig() {
         env: "SERVER_SESSION_SECRET",
       },
     },
+    webauthn: {
+      rpId: {
+        doc: "WebAuthn Relying Party id passkeys are bound to. Empty derives it from the hostname of `server.url`, which is what you want unless the app is served from a subdomain and passkeys should be scoped to the parent domain.",
+        format: String,
+        default: "",
+        env: "WEBAUTHN_RP_ID",
+      },
+      origins: {
+        doc: "Origins a passkey ceremony may be performed on, beyond `server.url` which is always allowed. Only useful alongside a parent-domain `rpId`: the authenticator will release a credential to any subdomain the rpId covers, so every subdomain the app is actually served from has to be listed here or the server rejects it.",
+        format: "string-array",
+        default: [] as string[],
+        env: "WEBAUTHN_ORIGINS",
+      },
+    },
     encryption: {
       key: {
         doc: "32-byte (64 hex characters) key used to encrypt sensitive columns at rest. Must be overridden in production.",

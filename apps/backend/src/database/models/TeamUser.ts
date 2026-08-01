@@ -10,7 +10,14 @@ import { User } from "./User";
 export class TeamUser extends Model {
   static override tableName = "team_users";
 
-  static authMethods = ["email", "google", "github", "gitlab", "saml"] as const;
+  static authMethods = [
+    "email",
+    "google",
+    "github",
+    "gitlab",
+    "saml",
+    "passkey",
+  ] as const;
 
   static override jsonSchema = {
     allOf: [

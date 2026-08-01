@@ -2,6 +2,7 @@
 -- PostgreSQL database dump
 --
 
+\restrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2380,7 +2381,7 @@ CREATE TABLE public.team_users (
     "ssoSubject" character varying(255),
     "ssoVerifiedAt" timestamp with time zone,
     "lastAuthMethod" text,
-    CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text]))),
+    CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
     CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
 
@@ -2653,6 +2654,49 @@ ALTER SEQUENCE public.user_notification_preferences_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.user_notification_preferences_id_seq OWNED BY public.user_notification_preferences.id;
+
+
+--
+-- Name: user_passkeys; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_passkeys (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "userId" bigint NOT NULL,
+    "credentialId" text NOT NULL,
+    "publicKey" text NOT NULL,
+    counter bigint DEFAULT '0'::bigint NOT NULL,
+    transports jsonb,
+    "backedUp" boolean NOT NULL,
+    aaguid character varying(255),
+    name character varying(255) NOT NULL,
+    "lastUsedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.user_passkeys OWNER TO postgres;
+
+--
+-- Name: user_passkeys_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_passkeys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_passkeys_id_seq OWNER TO postgres;
+
+--
+-- Name: user_passkeys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_passkeys_id_seq OWNED BY public.user_passkeys.id;
 
 
 --
@@ -3135,6 +3179,13 @@ ALTER TABLE ONLY public.user_access_tokens ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.user_notification_preferences ALTER COLUMN id SET DEFAULT nextval('public.user_notification_preferences_id_seq'::regclass);
+
+
+--
+-- Name: user_passkeys id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_passkeys ALTER COLUMN id SET DEFAULT nextval('public.user_passkeys_id_seq'::regclass);
 
 
 --
@@ -3992,6 +4043,22 @@ ALTER TABLE ONLY public.user_notification_preferences
 
 
 --
+-- Name: user_passkeys user_passkeys_credentialid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_passkeys
+    ADD CONSTRAINT user_passkeys_credentialid_unique UNIQUE ("credentialId");
+
+
+--
+-- Name: user_passkeys user_passkeys_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_passkeys
+    ADD CONSTRAINT user_passkeys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4741,6 +4808,13 @@ CREATE INDEX user_access_tokens_userid_index ON public.user_access_tokens USING 
 --
 
 CREATE INDEX user_notification_preferences_userid_index ON public.user_notification_preferences USING btree ("userId");
+
+
+--
+-- Name: user_passkeys_user; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_passkeys_user ON public.user_passkeys USING btree ("userId");
 
 
 --
@@ -5670,6 +5744,14 @@ ALTER TABLE ONLY public.user_notification_preferences
 
 
 --
+-- Name: user_passkeys user_passkeys_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_passkeys
+    ADD CONSTRAINT user_passkeys_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_sessions user_sessions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5697,6 +5779,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
+\unrestrict hTEzddYiuOaNmo9pgxo63RhZLcf2Xr6j2khFHgLmQJlFwn1T4Rk8LZ0SaSoP8D0
 
 -- Knex migrations
 
@@ -5931,3 +6014,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026072
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730120000_tests-list-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730130000_comment-test.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260730140000_test-notification-subscriptions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260731120000_user-passkeys.js', 1, NOW());

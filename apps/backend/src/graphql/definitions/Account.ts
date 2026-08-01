@@ -7,7 +7,7 @@ import type { PartialModelObject } from "objection";
 import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
-import { startSession } from "@/auth/login";
+import { completeLogin } from "@/auth/login";
 import { Account } from "@/database/models";
 import {
   authenticateWithEmail,
@@ -17,7 +17,6 @@ import {
 } from "@/database/services/account";
 import { queryAccountProjects } from "@/database/services/project";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
-import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
@@ -686,19 +685,15 @@ export const resolvers: IResolvers = {
         });
 
         invariant(account.userId, "Expected account to have userId");
-        const hasAutoInvite = creation
-          ? await hasAutoInviteForUser({
-              userId: account.userId,
-            })
-          : false;
-
         invariant(ctx.req && ctx.res, "Login is only available over HTTP");
-        await startSession(ctx.req, ctx.res, account.userId);
 
-        return {
+        return completeLogin({
+          req: ctx.req,
+          res: ctx.res,
+          userId: account.userId,
+          method: "email",
           creation,
-          hasAutoInvite,
-        };
+        });
       } catch (error) {
         if (error instanceof HTTPError) {
           if (error.code === "ACCOUNT_LOCKED") {

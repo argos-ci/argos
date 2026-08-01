@@ -11,6 +11,7 @@ import { Team } from "./Team";
 import { TeamInvite } from "./TeamInvite";
 import { UserAccessToken } from "./UserAccessToken";
 import { UserEmail } from "./UserEmail";
+import { UserPasskey } from "./UserPasskey";
 
 export type SignupSource = (typeof User.signupSources)[number];
 
@@ -147,6 +148,14 @@ export class User extends Model {
           to: "user_access_tokens.userId",
         },
       },
+      passkeys: {
+        relation: Model.HasManyRelation,
+        modelClass: UserPasskey,
+        join: {
+          from: "users.id",
+          to: "user_passkeys.userId",
+        },
+      },
       comments: {
         relation: Model.HasManyRelation,
         modelClass: Comment,
@@ -174,6 +183,7 @@ export class User extends Model {
   googleUser?: GoogleUser;
   emails?: UserEmail[];
   userAccessTokens?: UserAccessToken[];
+  passkeys?: UserPasskey[];
   comments?: Comment[];
   commentReactions?: CommentReaction[];
 

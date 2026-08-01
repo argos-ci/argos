@@ -62,5 +62,6 @@ export * from "./UserAccessTokenScope";
 export * from "./User";
 export * from "./UserEmail";
 export * from "./UserNotificationPreference";
+export * from "./UserPasskey";
 export * from "./UserSession";
 export type { Model } from "../util/model";

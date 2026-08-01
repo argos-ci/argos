@@ -31,6 +31,9 @@
   "session": {
     "domain": ".argos-ci.com"
   },
+  "webauthn": {
+    "rpId": "argos-ci.com"
+  },
   "sentry": {
     "tracesSampleRate": 0.003
   }

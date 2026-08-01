@@ -26,6 +26,7 @@ import { Team } from "./models/Team";
 import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
 import { User } from "./models/User";
+import { UserPasskey } from "./models/UserPasskey";
 import { ignoreChange } from "./services/ignored-change";
 
 function duplicate<T>(obj: T, count: number): T[] {
@@ -81,6 +82,31 @@ export async function createUserAccount(input: {
   });
 
   return { user, account };
+}
+
+/**
+ * Register passkeys on a user, so the settings list can be rendered without
+ * running a WebAuthn ceremony. The credential material is fake: nothing here
+ * signs anything, it only has to satisfy the columns.
+ */
+export async function createPasskeys(input: {
+  userId: string;
+  names: string[];
+  keyPrefix: string;
+}): Promise<UserPasskey[]> {
+  return UserPasskey.query().insertAndFetch(
+    input.names.map((name, index) => ({
+      userId: input.userId,
+      credentialId: `${input.keyPrefix}passkey-${index}`,
+      publicKey: `${input.keyPrefix}public-key-${index}`,
+      counter: "0",
+      transports: ["internal" as const, "hybrid" as const],
+      backedUp: true,
+      aaguid: null,
+      name,
+      lastUsedAt: new Date("2026-06-15T10:00:00Z").toISOString(),
+    })),
+  );
 }
 
 export async function createTeamAccount(input: {
