@@ -1,5 +1,3 @@
-import { atomWithStorage } from "jotai/utils";
-
 import {
   ClaudeCodeIcon,
   ClaudeIcon,
@@ -54,21 +52,4 @@ export const AI_AGENTS = [
   },
 ] as const;
 
-export type AiAgent = (typeof AI_AGENTS)[number];
-export type AiAgentId = AiAgent["id"];
-
-/**
- * The agent picked last, so a prompt is offered to the one this user actually
- * works with instead of asking again every time.
- */
-export const aiAgentIdAtom = atomWithStorage<AiAgentId>(
-  "fixWithAiAgent",
-  "claude-code",
-);
-
-/**
- * Resolve a stored id, which may name an agent this build no longer has.
- */
-export function getAiAgent(id: AiAgentId): AiAgent {
-  return AI_AGENTS.find((agent) => agent.id === id) ?? AI_AGENTS[0];
-}
+export type AiAgentId = (typeof AI_AGENTS)[number]["id"];

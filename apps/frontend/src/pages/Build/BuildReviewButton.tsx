@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { ChevronDownIcon } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button } from "@/ui/Button";
 import { Dialog } from "@/ui/Dialog";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
@@ -41,13 +40,11 @@ function BaseReviewButton(props: {
     <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button
         className="shrink-0"
+        size="small"
         isDisabled={props.disabled}
         autoFocus={props.autoFocus}
       >
         {props.children ?? "Submit review"}
-        <ButtonIcon position="right">
-          <ChevronDownIcon />
-        </ButtonIcon>
       </Button>
       <Popover placement="bottom end" className="overflow-hidden">
         <Dialog aria-label="Submit review">
@@ -68,7 +65,9 @@ export function DisabledBuildReviewButton(props: { tooltip: React.ReactNode }) {
   return (
     <Tooltip content={props.tooltip}>
       <div>
-        <Button isDisabled>Submit review</Button>
+        <Button size="small" isDisabled>
+          Submit review
+        </Button>
       </div>
     </Tooltip>
   );

@@ -176,9 +176,6 @@ loggedTest(
       name: "Open in Claude Code",
     });
     await expect(openInClaudeCode).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Copy prompt" }),
-    ).toBeVisible();
 
     // The agent is opened through its own deep link, which carries the prompt:
     // it names the test and the API endpoints the agent has to call.
@@ -194,8 +191,12 @@ loggedTest(
     expect(prompt).toContain(`/tests/${testId}/changes`);
     expect(prompt).toContain("listTestChanges");
 
-    // The other agents are one menu away, each with its own deep link.
-    await page.getByRole("button", { name: "Open in another agent" }).click();
+    // The other agents, and the clipboard, are one menu away.
+    const openMenu = () =>
+      page
+        .getByRole("button", { name: "Choose what to do with the prompt" })
+        .click();
+    await openMenu();
     await expect(
       page.getByRole("menuitem", { name: "Open in Codex" }),
     ).toHaveAttribute("href", /^codex:\/\/new\?prompt=/);
@@ -205,22 +206,11 @@ loggedTest(
       /^cursor:\/\/anysphere\.cursor-deeplink\/prompt\?text=/,
     );
 
-    // Picking one is remembered, so the next flaky test offers that agent
-    // instead of asking again. Only Chromium ignores the unknown scheme the
-    // click navigates to; the others would stop on a dialog.
-    if (browserName === "chromium") {
-      await cursorItem.click();
-      await page.reload();
-      await expect(
-        page.getByRole("link", { name: "Open in Cursor" }),
-      ).toBeVisible();
-    } else {
-      await page.keyboard.press("Escape");
-    }
-
-    // Copying puts the prompt on the clipboard, for the agents Argos cannot
-    // open by itself.
-    await page.getByRole("button", { name: "Copy prompt" }).click();
+    // Copying is an action like opening an agent, so it puts the prompt on the
+    // clipboard and becomes the one the button offers.
+    await page.getByRole("menuitem", { name: "Copy prompt" }).click();
+    const copyButton = page.getByRole("button", { name: /Cop(y prompt|ied)/ });
+    await expect(copyButton).toBeVisible();
     if (canReadClipboard) {
       // The button only confirms itself once the write resolved, so it stands in
       // for the copy having landed.
@@ -228,6 +218,23 @@ loggedTest(
       await expect
         .poll(() => page.evaluate(() => navigator.clipboard.readText()))
         .toContain(`Test id: ${testId}`);
+    }
+
+    // And the choice is remembered, so the next flaky test starts there.
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: "Copy prompt" }),
+    ).toBeVisible();
+
+    // Picking an agent moves the button back to it. Only Chromium ignores the
+    // unknown scheme the click navigates to; the others would stop on a dialog.
+    if (browserName === "chromium") {
+      await openMenu();
+      await page.getByRole("menuitem", { name: "Open in Cursor" }).click();
+      await page.reload();
+      await expect(
+        page.getByRole("link", { name: "Open in Cursor" }),
+      ).toBeVisible();
     }
   },
 );
@@ -244,15 +251,14 @@ loggedTest(
     // there, but not competing with the metrics saying the test is fine.
     const heading = page.getByRole("heading", { name: "Fix with AI" });
     await expect(heading).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Copy prompt" }),
-    ).toBeHidden();
+    const openInClaudeCode = page.getByRole("link", {
+      name: "Open in Claude Code",
+    });
+    await expect(openInClaudeCode).toBeHidden();
 
     // And opening it hands out the same prompt.
     await heading.click();
-    await expect(
-      page.getByRole("button", { name: "Copy prompt" }),
-    ).toBeVisible();
+    await expect(openInClaudeCode).toBeVisible();
   },
 );
 

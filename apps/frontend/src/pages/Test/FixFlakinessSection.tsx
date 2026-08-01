@@ -1,26 +1,15 @@
 import { useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { useAtom } from "jotai";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  CopyIcon,
-  SparklesIcon,
-} from "lucide-react";
-import { useClipboard } from "use-clipboard-copy";
+import { SparklesIcon } from "lucide-react";
 
 import { config } from "@/config";
+import { AiPromptButton } from "@/containers/AiPromptButton";
 import { isFlaky } from "@/containers/Test/Flakiness";
 import { graphql, type DocumentType } from "@/gql";
 import { MetricsPeriod } from "@/gql/graphql";
-import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
-import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Details, Summary } from "@/ui/Details";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Panel, PanelTitle } from "@/ui/Panel";
-import { Popover } from "@/ui/Popover";
-import { Tooltip } from "@/ui/Tooltip";
-import { AI_AGENTS, aiAgentIdAtom, getAiAgent } from "@/util/ai-agents";
+import { AI_AGENTS } from "@/util/ai-agents";
 
 import { getTestURL, useTestParams } from "./TestParams";
 
@@ -104,9 +93,6 @@ export function FixFlakinessSection(props: {
   const { test, period, periodLabel } = props;
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
-  const clipboard = useClipboard({ copiedTimeout: 2000 });
-  const [agentId, setAgentId] = useAtom(aiAgentIdAtom);
-  const agent = getAiAgent(agentId);
   const flaky = isFlaky(test.metrics.all.flakiness);
 
   const prompt = useMemo(
@@ -146,57 +132,7 @@ export function FixFlakinessSection(props: {
             reads this test's stats and its recurring changes from the Argos
             API, then fixes what makes the screenshot unstable.
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* A split button: the last agent picked, and a menu for the others.
-                Both halves are links to the agent's own deep link, so the prompt
-                is filled in on the machine and never sent on its own. */}
-            <ButtonGroup>
-              <LinkButton variant="secondary" href={agent.getURL(prompt)}>
-                <ButtonIcon>
-                  <agent.Icon />
-                </ButtonIcon>
-                Open in {agent.name}
-              </LinkButton>
-              <MenuTrigger>
-                <Button
-                  variant="secondary"
-                  iconOnly
-                  aria-label="Open in another agent"
-                >
-                  <ChevronDownIcon />
-                </Button>
-                <Popover>
-                  <Menu aria-label="Agents">
-                    {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
-                      <MenuItem
-                        key={id}
-                        href={getURL(prompt)}
-                        textValue={name}
-                        onAction={() => setAgentId(id)}
-                      >
-                        <MenuItemIcon>
-                          <Icon />
-                        </MenuItemIcon>
-                        Open in {name}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </Popover>
-              </MenuTrigger>
-            </ButtonGroup>
-            {/* Icon-only so the row still fits the sidebar next to the agent
-                button, and kept for the agents Argos cannot open by itself. */}
-            <Tooltip content={clipboard.copied ? "Copied" : "Copy prompt"}>
-              <Button
-                variant="secondary"
-                iconOnly
-                aria-label={clipboard.copied ? "Copied" : "Copy prompt"}
-                onPress={() => clipboard.copy(prompt)}
-              >
-                {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-              </Button>
-            </Tooltip>
-          </div>
+          <AiPromptButton prompt={prompt} />
         </div>
       </Details>
     </Panel>
