@@ -45,7 +45,7 @@ export function SubscribeToggleButton(props: {
   return (
     <Tooltip content={label}>
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         size="small"
         aria-label={label}

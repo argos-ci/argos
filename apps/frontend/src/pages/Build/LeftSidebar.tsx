@@ -54,14 +54,17 @@ const _BuildFragment = graphql(`
 function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   const { search, setSearch } = useSearchState();
   return (
-    <div className="relative flex-1">
-      <SearchIcon className="text-low pointer-events-none absolute my-4 size-4" />
+    // `pl-1.375` is the overview button's hairline plus its padding, so the
+    // magnifier lands exactly where the home icon was and the row does not
+    // shift when search takes it over.
+    <div className="relative flex-1 pl-[calc(0.3125rem+0.5px)]">
+      <SearchIcon className="text-low pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2" />
       <input
         ref={ref}
         type="text"
         autoFocus
         placeholder="Find..."
-        className="text-default placeholder:text-low w-full bg-transparent py-3 pr-2 pl-6 text-xs leading-6 outline-hidden"
+        className="text-default placeholder:text-low w-full bg-transparent py-3 pr-2 pl-5 text-xs leading-6 outline-hidden"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {

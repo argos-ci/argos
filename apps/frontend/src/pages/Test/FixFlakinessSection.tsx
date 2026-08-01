@@ -118,9 +118,10 @@ export function FixFlakinessSection(props: {
       <Details open={flaky}>
         <Summary className="mx-3" icon={SparklesIcon}>
           <PanelTitle className="flex-1">Fix with AI</PanelTitle>
-          {/* Each logo names itself through the `<title>` in its own SVG, and
-              takes the color it is given. */}
-          <span className="text-low flex items-center gap-1.5">
+          {/* Branding, not information: the menu below names every agent in
+              text, so the marks stay out of the accessibility tree rather than
+              repeating themselves. */}
+          <span aria-hidden className="text-low flex items-center gap-1.5">
             {AI_AGENTS.map(({ id, Icon }) => (
               <Icon key={id} className="size-4" />
             ))}
