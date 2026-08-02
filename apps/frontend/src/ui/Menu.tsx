@@ -47,8 +47,8 @@ export function Menu<T extends object>(
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: clsx("text-default/90 data-focused:bg-hover/80"),
-  danger: "text-danger-low/90 data-focused:bg-danger-hover/80",
+  default: clsx("text-default/90 data-focused:bg-hover/70"),
+  danger: "text-danger-low/90 data-focused:bg-danger-hover/70",
 };
 
 /**
@@ -67,7 +67,7 @@ export function getMenuItemClassName(options: {
     "group/menu-item font-[450]",
     menuItemVariantClasses[variant],
     href ? "cursor-pointer" : "cursor-default",
-    "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-1.5 text-menu focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active/80",
+    "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-1.5 text-menu focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active/70",
   );
 }
 

@@ -234,6 +234,9 @@
   --shadow-control:
     var(--shadow-control-color, lch(0 0 0 / 0.09)) 0px 0px 0px 0.5px,
     lch(0 0 0 / 0.02) 0px 3px 6px -2px, lch(0 0 0 / 0.04) 0px 1px 1px 0px;
+  --shadow-menu:
+    0 6px 18px lch(0% 0 0 / 0.02), 0 3px 9px lch(0% 0 0 / 0.04),
+    0 1px 1px lch(0% 0 0 / 0.04);
 
   /* The same edge with the lift taken out, for a control that is on: it stays
      drawn, it just stops standing off the surface. */

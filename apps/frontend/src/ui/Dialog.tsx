@@ -25,7 +25,7 @@ export function DialogFooter(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "bg-subtle flex items-center gap-4 border-t p-4",
+        "bg-subtle border-t-thin flex items-center gap-4 p-4",
         role === "alertdialog"
           ? "flex-wrap justify-center *:[[role=alert]]:basis-full *:[[role=alert]]:text-center"
           : "justify-end",

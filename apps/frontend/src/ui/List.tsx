@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import { Button } from "./Button";
 import { HeadlessLink, type HeadlessLinkProps } from "./Link";
 import { Loader, useDelayedVisible } from "./Loader";
+import { getSurfaceClassName } from "./Panel";
 
 export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
   return (
@@ -13,7 +14,8 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
       className={clsx(
         // The same corners and hairline as a card: it is the same kind of
         // surface, holding rows instead of prose.
-        "border-thin flex flex-col overflow-auto rounded-xl",
+        "flex flex-col overflow-auto",
+        getSurfaceClassName(),
         props.className,
       )}
     />

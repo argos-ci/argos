@@ -18,7 +18,7 @@ export function Card(
         getSurfaceClassName(),
         "w-full overflow-hidden border-(--card-border)",
         intent === "danger"
-          ? "[--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
+          ? "shadow-(color:--red-12) [--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
           : "[--card-border:var(--border-color-default)]",
         rest.className,
       )}

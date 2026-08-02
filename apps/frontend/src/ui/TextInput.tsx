@@ -28,10 +28,15 @@ export function TextInput(props: TextInputProps) {
         "placeholder:text-placeholder",
         /* Hover */
         "not-disabled:hover:border-hover",
-        /* Focus */
-        "focus:border-active focus-visible:ring-primary-active focus:outline-hidden focus-visible:ring-2",
-        /* Invalid */
-        "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:hover:border-danger-hover",
+        /* Focus: the border marks the field however it was reached, the ring
+           only when it was reached by keyboard. CSS `:focus-visible` cannot
+           draw that line — a text input matches it on a plain click too — so
+           the ring keys off react-aria's own modality tracking instead. */
+        "focus:border-active focus:outline-hidden",
+        "data-focus-visible:ring-primary-active data-focus-visible:ring-2",
+        /* Invalid: red all the way through, ring included. */
+        "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:not-disabled:hover:border-danger-hover",
+        "aria-invalid:data-focus-visible:ring-danger-active",
         /* Disabled */
         "disabled:opacity-disabled",
         /* Addon  */
