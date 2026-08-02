@@ -218,7 +218,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 placement="top"
               >
                 <Button
-                  variant="surface"
                   iconOnly
                   size="small"
                   aria-label={submitLabel}

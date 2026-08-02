@@ -268,7 +268,7 @@ function ScreenshotActionsMenu(props: {
   return (
     <MenuTrigger>
       <Tooltip placement="left" content={props.tooltip}>
-        <Button variant="surface" iconOnly>
+        <Button variant="secondary" iconOnly>
           <EllipsisVerticalIcon />
         </Button>
       </Tooltip>

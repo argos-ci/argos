@@ -15,7 +15,6 @@ import { Loader } from "./Loader";
 export type ButtonVariant =
   | "primary"
   | "secondary"
-  | "surface"
   | "ghost"
   | "danger"
   | "success"
@@ -77,16 +76,6 @@ const variantClassNames: Record<ButtonVariant, string> = {
     // about to change.
     "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
     "aria-expanded:bg-raised-active",
-  ),
-  // `secondary` with an opaque fill, for the controls that float over content
-  // (the zoomer, the toolbars over a screenshot) where a wash would not hold.
-  surface: clsx(
-    "text-default bg-ui data-hovered:bg-hover data-pressed:bg-active",
-    HOVER_EDGE,
-    ICON_STEPS_BACK,
-    // Pressed, the fill stays put and only the icon brightens on hover.
-    "aria-pressed:bg-active aria-pressed:data-hovered:bg-active aria-pressed:text-default",
-    "aria-expanded:bg-active",
   ),
   // No fill at rest, and the same "on" fill as `secondary` once it has one, so
   // a toolbar mixing the two never shows the state two shades apart.
@@ -156,10 +145,6 @@ const ringClassNames: Record<
     focused: "data-focused:ring-primary",
   },
   secondary: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
-  },
-  surface: {
     focusVisible: "data-focus-visible:ring-default",
     focused: "data-focused:ring-default",
   },

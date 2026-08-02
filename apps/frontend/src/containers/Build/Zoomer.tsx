@@ -371,7 +371,7 @@ const FitViewButton = memo(() => {
       description="Fit view"
       keys={hotkey.displayKeys}
     >
-      <Button variant="surface" iconOnly onPress={reset}>
+      <Button variant="secondary" iconOnly onPress={reset}>
         <MaximizeIcon />
       </Button>
     </HotkeyTooltip>
@@ -383,7 +383,7 @@ const ZoomInButton = memo((props: { disabled: boolean }) => {
   return (
     <Tooltip placement="left" content="Zoom in">
       <Button
-        variant="surface"
+        variant="secondary"
         iconOnly
         onPress={zoomIn}
         isDisabled={props.disabled}
@@ -399,7 +399,7 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
   return (
     <Tooltip placement="left" content="Zoom out">
       <Button
-        variant="surface"
+        variant="secondary"
         iconOnly
         onPress={zoomOut}
         isDisabled={props.disabled}

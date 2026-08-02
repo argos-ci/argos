@@ -17,13 +17,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <div className="flex flex-col">
-      <StoryTitle>With icon buttons</StoryTitle>
-      <ButtonGroup>
-        <Button variant="surface">Left</Button>
-        <Button variant="surface">Center</Button>
-        <Button variant="surface">Right</Button>
-      </ButtonGroup>
-
       <StoryTitle>With Chips</StoryTitle>
       <ButtonGroup>
         <Chip>Default</Chip>
