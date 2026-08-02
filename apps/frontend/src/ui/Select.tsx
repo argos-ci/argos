@@ -126,6 +126,8 @@ export function SelectButton({
         "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-hover group-data-invalid/select:data-hovered:border-danger-hover",
         /* Placeholder */
         "has-data-placeholder:text-low",
+        /* Expanded */
+        "aria-expanded:shadow-none",
         {
           md: "gap-2 px-3 py-1.5 text-base leading-5",
           sm: "gap-2 px-2 py-1 text-sm leading-4",

@@ -214,8 +214,6 @@
   --ring-color-neutral-hover: var(--gray-8);
   --ring-color-neutral-active: var(--gray-9);
 
-  --ring-color-google: var(--gray-6);
-
   --outline-color-primary: var(--violet-6);
 
   --stroke-low: var(--border-color-low);
@@ -228,6 +226,19 @@
 
   --border-width-thin: 0.5px;
   --spacing-thin: 0.5px;
+
+  /* A control's edge and the lift under it, both drawn in shadow so neither
+     takes up layout: a hairline first, then two soft layers. The hairline has
+     its own color, `--shadow-control-color`, so a control can tint its edge
+     through the `edge-*` utility and leave the lift alone. */
+  --shadow-control:
+    var(--shadow-control-color, lch(0 0 0 / 0.09)) 0px 0px 0px 0.5px,
+    lch(0 0 0 / 0.02) 0px 3px 6px -2px, lch(0 0 0 / 0.04) 0px 1px 1px 0px;
+
+  /* The same edge with the lift taken out, for a control that is on: it stays
+     drawn, it just stops standing off the surface. */
+  --shadow-control-flat: var(--shadow-control-color, lch(0 0 0 / 0.09)) 0px 0px
+    0px 0.5px;
 
   --animate-caret-blink: caret-blink 1.2s ease-out infinite;
 
@@ -320,6 +331,13 @@
 
 @utility underline-link {
   @apply underline decoration-1 underline-offset-2;
+}
+
+/* Tints the hairline `shadow-control` draws, from the border palette:
+   `edge-default`, `edge-hover`, `edge-danger-hover`. It is what `border-*` was
+   to a control that owned a border. */
+@utility edge-* {
+  --shadow-control-color: --value(--border-color-*);
 }
 
 @utility no-scrollbar {

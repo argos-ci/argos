@@ -219,6 +219,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
               >
                 <Button
                   iconOnly
+                  variant="secondary"
                   size="small"
                   aria-label={submitLabel}
                   // Truly disabled (not focusable/clickable) while submitting or when
