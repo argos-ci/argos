@@ -97,7 +97,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
       className="group/sidebar flex min-h-0 flex-1 shrink-0 flex-col"
     >
       {build.type !== BuildType.Skipped ? (
-        <div className="border-b-thin flex shrink-0 items-center gap-1 p-2.75 px-2">
+        <div className="border-b-thin flex shrink-0 items-center gap-1 p-3 px-2">
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
