@@ -3,10 +3,8 @@ import clsx from "clsx";
 import { useAtom } from "jotai";
 import { PanelRightIcon } from "lucide-react";
 import {
-  Tab as RACTab,
   TabList as RACTabList,
   TabPanel,
-  TabProps,
   Tabs,
   type TabPanelProps,
 } from "react-aria-components";
@@ -14,9 +12,10 @@ import { useLocation } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Sidebar } from "@/ui/Sidebar";
+import { PillTab } from "@/ui/Tab";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
@@ -55,23 +54,6 @@ const _BuildFragment = graphql(`
     ...ReviewActivitySection_Build
   }
 `);
-
-function PillTab(
-  props: TabProps & {
-    ref?: React.Ref<HTMLDivElement>;
-  },
-) {
-  return (
-    <RACTab
-      {...props}
-      className={clsx(
-        "border-thin text-low rac-focus cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition",
-        "data-hovered:text-default data-hovered:bg-hover",
-        "data-selected:bg-active data-selected:text-default data-selected:cursor-default",
-      )}
-    />
-  );
-}
 
 type Context = Omit<MetadataSectionProps, "diff" | "siblingDiffs">;
 
@@ -163,9 +145,9 @@ export function RightSidebarToggle() {
       description={open ? "Hide sidebar" : "Show sidebar"}
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={open} onPress={toggle}>
+      <Button variant="secondary" iconOnly aria-pressed={open} onPress={toggle}>
         <PanelRightIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

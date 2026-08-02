@@ -5,8 +5,8 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Kbd } from "@/ui/Kbd";
 import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { ToolbarMenuButton } from "@/ui/Toolbar";
 
+import { Button } from "../Button";
 import { MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 
@@ -43,13 +43,15 @@ export function ListMenu(props: { editor: Editor; state: ToolbarState }) {
         description={selectedOption?.label ?? "List"}
         keys={tooltipKeys}
       >
-        <ToolbarMenuButton
+        <Button
+          size="small"
+          variant="ghost"
           aria-label="Lists"
           aria-pressed={selectedKey !== null}
         >
           <ListIcon className="size-4" />
           <ChevronDownIcon className="size-3" />
-        </ToolbarMenuButton>
+        </Button>
       </HotkeyTooltip>
       <Popover>
         <Menu

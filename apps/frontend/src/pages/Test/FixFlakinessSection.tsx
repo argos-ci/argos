@@ -1,20 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { CheckIcon, CopyIcon, SparklesIcon } from "lucide-react";
-import { useClipboard } from "use-clipboard-copy";
+import { SparklesIcon } from "lucide-react";
 
 import { config } from "@/config";
-import {
-  ClaudeCodeLogo,
-  CodexLogo,
-  CursorLogo,
-} from "@/containers/oauth-logos";
+import { AiPromptButton } from "@/containers/AiPromptButton";
 import { isFlaky } from "@/containers/Test/Flakiness";
 import { graphql, type DocumentType } from "@/gql";
 import { MetricsPeriod } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
 import { Details, Summary } from "@/ui/Details";
 import { Panel, PanelTitle } from "@/ui/Panel";
+import { AI_AGENTS } from "@/util/ai-agents";
 
 import { getTestURL, useTestParams } from "./TestParams";
 
@@ -35,13 +30,6 @@ const _TestFragment = graphql(`
 `);
 
 type Test = DocumentType<typeof _TestFragment>;
-
-/** Agents the prompt is written for, shown so the panel says what it is for. */
-const AGENT_LOGOS = [
-  { name: "Claude Code", Logo: ClaudeCodeLogo },
-  { name: "Codex", Logo: CodexLogo },
-  { name: "Cursor", Logo: CursorLogo },
-];
 
 /**
  * A prompt to hand to a coding agent so it fixes this test's flakiness on its
@@ -87,8 +75,10 @@ A visual test is flaky when it keeps capturing a different screenshot while noth
 }
 
 /**
- * A prompt to copy into a coding agent so it investigates and fixes this test's
+ * A prompt to hand to a coding agent so it investigates and fixes this test's
  * flakiness from the API, without anyone having to describe the test to it.
+ * Either the agent opens with the prompt already typed in, or the prompt goes to
+ * the clipboard for an agent Argos does not know how to open.
  *
  * The section is a disclosure that only opens itself when the test actually
  * looks flaky. On a stable test there is nothing to fix, so it stays folded into
@@ -103,8 +93,6 @@ export function FixFlakinessSection(props: {
   const { test, period, periodLabel } = props;
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
-  const clipboard = useClipboard({ copiedTimeout: 2000 });
-  const [previewing, setPreviewing] = useState(false);
   const flaky = isFlaky(test.metrics.all.flakiness);
 
   const prompt = useMemo(
@@ -128,14 +116,14 @@ export function FixFlakinessSection(props: {
       {/* `open` seeds the initial state only: from there `Summary` toggles the
           attribute on the element itself. */}
       <Details open={flaky}>
-        <Summary className="mx-3">
-          <PanelTitle icon={SparklesIcon} className="flex-1">
-            Fix with AI
-          </PanelTitle>
-          {/* Each logo names itself through the `<title>` in its own SVG. */}
-          <span className="flex items-center gap-1.5">
-            {AGENT_LOGOS.map(({ name, Logo }) => (
-              <Logo key={name} className="size-4" />
+        <Summary className="mx-3" icon={SparklesIcon}>
+          <PanelTitle className="flex-1">Fix with AI</PanelTitle>
+          {/* Branding, not information: the menu below names every agent in
+              text, so the marks stay out of the accessibility tree rather than
+              repeating themselves. */}
+          <span aria-hidden className="text-low/80 flex items-center gap-1.5">
+            {AI_AGENTS.map(({ id, Icon }) => (
+              <Icon key={id} className="size-4" />
             ))}
           </span>
         </Summary>
@@ -145,35 +133,7 @@ export function FixFlakinessSection(props: {
             reads this test's stats and its recurring changes from the Argos
             API, then fixes what makes the screenshot unstable.
           </p>
-          <Button
-            variant="secondary"
-            className="self-start"
-            onPress={() => clipboard.copy(prompt)}
-          >
-            <ButtonIcon>
-              {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-            </ButtonIcon>
-            {clipboard.copied ? "Copied" : "Copy prompt"}
-          </Button>
-          {/* The prompt is only mounted once asked for: it is a page of text
-              that mentions field names ("occurrences", "baseline") the rest of
-              the page shows too, and leaving it in the DOM makes every text
-              query on the test page ambiguous. */}
-          <Details
-            className="text-low text-sm"
-            onToggle={(event) => setPreviewing(event.currentTarget.open)}
-          >
-            <Summary>Preview the prompt</Summary>
-            {previewing ? (
-              // Not `Pre`: the button it overlays would sit on top of the first
-              // line, and the copy affordance is already right above. The prompt
-              // embeds long URLs, so it breaks inside words rather than letting
-              // the column scroll sideways.
-              <pre className="bg-ui max-h-64 overflow-y-auto rounded-sm p-3 text-xs break-words whitespace-pre-wrap">
-                <code>{prompt}</code>
-              </pre>
-            ) : null}
-          </Details>
+          <AiPromptButton prompt={prompt} />
         </div>
       </Details>
     </Panel>

@@ -10,6 +10,7 @@ import { clsx } from "clsx";
 import {
   ChevronDownIcon,
   CornerDownRightIcon,
+  HomeIcon,
   ImagesIcon,
   SquareStackIcon,
 } from "lucide-react";
@@ -39,7 +40,7 @@ import {
 import { NoScreenshotsBuildEmptyState } from "@/containers/Build/BuildEmptyStates";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Badge } from "@/ui/Badge";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
 import { Tooltip } from "@/ui/Tooltip";
@@ -52,6 +53,7 @@ import {
   useBuildDiffState,
   useSearchModeState,
 } from "./BuildDiffState";
+import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
 import {
   useGetDiffGroupEvaluationStatus,
   useGetDiffStatus,
@@ -789,16 +791,19 @@ const InternalBuildDiffList = memo(() => {
 
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
   const getDiffStatus = useGetDiffStatus();
+  const hasOverview = (stats?.total ?? 0) > 0;
 
   return (
     <>
       {stats && !searchMode && (
-        <BuildStatsIndicator
-          className="no-scrollbar border-b-thin shrink-0 overflow-x-auto px-2"
-          stats={stats}
-          onClickGroup={openGroup}
-          isSubsetBuild={isSubsetBuild}
-        />
+        <div className="no-scrollbar border-b-thin flex shrink-0 items-center gap-2 overflow-x-auto px-2">
+          {hasOverview && <OverviewButton />}
+          <BuildStatsIndicator
+            stats={stats}
+            onClickGroup={openGroup}
+            isSubsetBuild={isSubsetBuild}
+          />
+        </div>
       )}
       <div ref={containerRef} className="min-h-0 flex-1 overflow-y-auto">
         <div
@@ -911,4 +916,30 @@ export function BuildDiffList() {
     return null;
   }
   return <InternalBuildDiffList />;
+}
+
+/**
+ * Link to the build overview: a button next to the sidebar's tabs, filled in
+ * while the overview is the page being shown.
+ */
+function OverviewButton() {
+  const params = useBuildParams();
+  if (!params) {
+    return null;
+  }
+  const selected = params.diffId == null;
+  return (
+    <Tooltip content="Overview">
+      <LinkButton
+        href={getBuildOverviewURL(params)}
+        variant="ghost"
+        size="small"
+        iconOnly
+        aria-label="Overview"
+        aria-current={selected ? "page" : undefined}
+      >
+        <HomeIcon />
+      </LinkButton>
+    </Tooltip>
+  );
 }

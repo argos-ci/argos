@@ -37,6 +37,11 @@
   --text-xxs: 0.6875rem;
   --text-xxs--line-height: 1rem;
 
+  /* The step between `xs` and `sm`, for the dense rows in menus and select
+     popovers: `sm` makes them feel like body copy, `xs` like fine print. */
+  --text-menu: 0.8125rem;
+  --text-menu--line-height: 1.125rem;
+
   --color-progress-from: var(--violet-8);
   --color-progress-to: var(--violet-10);
 
@@ -73,6 +78,13 @@
   --background-color-solid: var(--gray-9);
   --background-color-solid-hover: var(--gray-10);
   --background-color-solid-active: var(--gray-11);
+
+  /* The wash under a `secondary` control, a step above the page it sits on. It
+     goes the opposite way per theme — white in light mode, a light gray in dark
+     mode — so the values live in `@layer base` where the theme can flip them. */
+  --background-color-raised: var(--raised);
+  --background-color-raised-hover: var(--raised-hover);
+  --background-color-raised-active: var(--raised-active);
 
   --background-color-primary-app: var(--violet-1);
   --background-color-primary-subtle: var(--violet-2);
@@ -202,8 +214,6 @@
   --ring-color-neutral-hover: var(--gray-8);
   --ring-color-neutral-active: var(--gray-9);
 
-  --ring-color-google: var(--gray-6);
-
   --outline-color-primary: var(--violet-6);
 
   --stroke-low: var(--border-color-low);
@@ -216,6 +226,22 @@
 
   --border-width-thin: 0.5px;
   --spacing-thin: 0.5px;
+
+  /* A control's edge and the lift under it, both drawn in shadow so neither
+     takes up layout: a hairline first, then two soft layers. The hairline has
+     its own color, `--shadow-control-color`, so a control can tint its edge
+     through the `edge-*` utility and leave the lift alone. */
+  --shadow-control:
+    var(--shadow-control-color, lch(0 0 0 / 0.09)) 0px 0px 0px 0.5px,
+    lch(0 0 0 / 0.02) 0px 3px 6px -2px, lch(0 0 0 / 0.04) 0px 1px 1px 0px;
+  --shadow-menu:
+    0 6px 18px lch(0% 0 0 / 0.02), 0 3px 9px lch(0% 0 0 / 0.04),
+    0 1px 1px lch(0% 0 0 / 0.04);
+
+  /* The same edge with the lift taken out, for a control that is on: it stays
+     drawn, it just stops standing off the surface. */
+  --shadow-control-flat: var(--shadow-control-color, lch(0 0 0 / 0.09)) 0px 0px
+    0px 0.5px;
 
   --animate-caret-blink: caret-blink 1.2s ease-out infinite;
 
@@ -310,6 +336,13 @@
   @apply underline decoration-1 underline-offset-2;
 }
 
+/* Tints the hairline `shadow-control` draws, from the border palette:
+   `edge-default`, `edge-hover`, `edge-danger-hover`. It is what `border-*` was
+   to a control that owned a border. */
+@utility edge-* {
+  --shadow-control-color: --value(--border-color-*);
+}
+
 @utility no-scrollbar {
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
@@ -387,6 +420,21 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--border-color-default, currentColor);
+  }
+
+  /* A raised control is lighter than the page in both themes, which means white
+     on light and a gray wash on dark. Pressed stays close to the resting fill:
+     the shape and the label already say which one is on. */
+  :root {
+    --raised: color-mix(in srgb, white 70%, transparent);
+    --raised-hover: white;
+    --raised-active: var(--gray-3);
+  }
+
+  html.dark {
+    --raised: color-mix(in srgb, var(--gray-3) 50%, transparent);
+    --raised-hover: color-mix(in srgb, var(--gray-4) 60%, transparent);
+    --raised-active: var(--gray-5);
   }
 
   html,

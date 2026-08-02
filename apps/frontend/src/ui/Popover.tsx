@@ -32,7 +32,7 @@ export function Popover(
       {...props}
       className={(values) =>
         clsx(
-          "bg-subtle border-thin z-50 flex rounded-lg bg-clip-padding shadow-md",
+          "bg-app shadow-menu border-thin z-50 flex rounded-xl bg-clip-padding",
           getPopoverAnimationClassName(values),
           props.className,
         )

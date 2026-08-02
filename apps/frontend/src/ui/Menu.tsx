@@ -22,10 +22,17 @@ import {
 import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
-  return <Separator className="border-t-thin -mx-1 my-1" />;
+  return <Separator className="border-t-thin -mx-1.5 my-1.5" />;
 }
 
 export { MenuTrigger, SubmenuTrigger } from "react-aria-components";
+
+/**
+ * The surface a menu draws on. `ListBox` wears it too — a select's popover and
+ * a menu's are the same surface — so it is defined here and imported there
+ * rather than written twice.
+ */
+export const menuClassName = "overflow-auto p-1.5 outline-hidden select-none";
 
 export function Menu<T extends object>(
   props: MenuProps<T> & {
@@ -33,25 +40,36 @@ export function Menu<T extends object>(
   },
 ) {
   return (
-    <RACMenu<T>
-      {...props}
-      className={clsx(
-        "overflow-auto p-1 outline-hidden select-none",
-        props.className,
-      )}
-    />
+    <RACMenu<T> {...props} className={clsx(menuClassName, props.className)} />
   );
 }
 
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text-default data-focused:bg-hover",
-  danger: "text-danger-low data-focused:bg-danger-hover",
+  default: clsx("text-default/90 data-focused:bg-hover/70"),
+  danger: "text-danger-low/90 data-focused:bg-danger-hover/70",
 };
 
-const menuItemClassName =
-  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
+/**
+ * A row on that surface, and the source of truth for one: `ListBoxItem` is
+ * built from this, so a select's options and a menu's items stay the same row.
+ * `group/menu-item` is part of the deal — `MenuItemIcon` reaches the row
+ * through it, and it serves the list box under its own name.
+ */
+export function getMenuItemClassName(options: {
+  variant?: MenuItemVariant;
+  /** A row that navigates takes the pointer; one that acts keeps the arrow. */
+  href?: string;
+}) {
+  const { variant = "default", href } = options;
+  return clsx(
+    "group/menu-item font-[450]",
+    menuItemVariantClasses[variant],
+    href ? "cursor-pointer" : "cursor-default",
+    "aria-disabled:opacity-disabled flex items-center rounded-lg px-2.5 py-1.5 text-menu focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active/70",
+  );
+}
 
 type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
   variant?: MenuItemVariant;
@@ -64,12 +82,7 @@ export function MenuItem(props: MenuItemProps) {
   const checkboxRef = useRef<HTMLSpanElement>(null);
   return (
     <RACMenuItem
-      className={clsx(
-        "group/menu-item",
-        menuItemVariantClasses[variant],
-        props.href ? "cursor-pointer" : "cursor-default",
-        menuItemClassName,
-      )}
+      className={getMenuItemClassName({ variant, href: props.href })}
       data-variant={variant}
       {...rest}
     >
@@ -189,7 +202,7 @@ export function MenuItemSuffix(props: {
   return (
     <span
       className={clsx(
-        "text-low ml-3 flex-1 shrink-0 text-right text-xs",
+        "text-low ml-3 flex-1 shrink-0 text-right text-xs font-normal",
         className,
       )}
     >
@@ -246,7 +259,7 @@ export function UpDownMenuButton({
   return (
     <Button
       className={clsx(
-        "border-default text-low data-hovered:border-hover data-hovered:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus cursor-default rounded-md border p-0.5",
+        "text-low data-hovered:border-hover data-hovered:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus border-thin cursor-default rounded-lg p-0.5",
         className,
       )}
       {...props}

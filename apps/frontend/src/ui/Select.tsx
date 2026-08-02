@@ -21,7 +21,7 @@ export { SelectValue } from "react-aria-components";
 
 function SelectArrow() {
   return (
-    <span aria-hidden="true">
+    <span aria-hidden="true" className="shrink-0">
       <ChevronDownIcon className="size-4" />
     </span>
   );
@@ -113,27 +113,35 @@ export function SelectButton({
       {...rest}
       className={clsx(
         /* Appearance */
-        "bg-app cursor-default appearance-none rounded-sm border select-none",
+        "bg-app border-thin cursor-default appearance-none rounded-lg shadow-2xs select-none",
         /* Layout */
         "flex items-center justify-between",
         /* Focus */
-        "group-data-focused/select:border-active group-data-focused/select:outline-hidden",
+        "group-data-focused/select:border-hover group-data-focus-visible/select:ring-primary-active group-data-focus-visible/select:ring-2 group-data-focused/select:outline-hidden",
         /* Hover */
         "data-hovered:border-hover",
         /* Disabled */
         "group-data-disabled/select:opacity-disabled group-data-disabled/select:cursor-not-allowed",
         /* Invalid */
-        "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-active group-data-invalid/select:data-hovered:border-danger-hover",
+        "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-hover group-data-invalid/select:data-hovered:border-danger-hover",
         /* Placeholder */
         "has-data-placeholder:text-low",
+        /* Expanded */
+        "aria-expanded:shadow-none",
         {
           md: "gap-2 px-3 py-1.5 text-base leading-5",
-          sm: "gap-2 px-2 py-0.5 text-sm leading-4",
+          sm: "gap-2 px-2 py-1 text-sm leading-4",
         }[size],
         rest.className,
       )}
     >
-      {children}
+      {/* The value gets its own shrinkable box — `*:min-w-0` so the value inside
+          it may shrink too. On a fixed-width select, a value wider than the
+          button (a long channel name, say) used to push the arrow out through
+          the right padding instead of being ellipsized. */}
+      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden *:min-w-0">
+        {children}
+      </span>
       <SelectArrow />
     </Button>
   );

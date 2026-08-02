@@ -128,7 +128,7 @@ export const FilterSearchMenu = (props: { state: FilterState }) => {
       onInputChange={setInputValue}
       filter={filterFuzzy}
     >
-      <div className="flex w-full flex-col gap-1" data-hotkeys-disabled>
+      <div className="flex w-full flex-col" data-hotkeys-disabled>
         <SearchField
           aria-label="Search filters"
           autoFocus
@@ -136,10 +136,10 @@ export const FilterSearchMenu = (props: { state: FilterState }) => {
           value={inputValue}
           onChange={setInputValue}
         >
-          <div className="relative flex items-center px-3 py-1.5">
+          <div className="relative flex items-center px-3 py-2">
             <SearchIcon className="text-placeholder mr-2 size-4 shrink-0" />
             <Input
-              className="placeholder:text-placeholder w-full text-sm outline-none"
+              className="placeholder:text-placeholder text-menu w-full outline-none"
               placeholder="Search filters…"
             />
             {searchActive && (

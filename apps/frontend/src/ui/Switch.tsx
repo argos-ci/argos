@@ -15,7 +15,7 @@ export function Switch(props: SwitchProps) {
     <RACSwitch {...rest} className={clsx("group", rest.className)}>
       <div
         className={clsx(
-          "rac-focus-group group-data-pressed:bg-primary-active group-data-selected:bg-primary-solid group-data-selected:group-data-pressed:bg-primary-solid-active bg-ui border-low group-data-disabled:opacity-disabled box-border flex shrink-0 cursor-default rounded-full border bg-clip-padding shadow-inner transition duration-200 ease-in-out",
+          "rac-focus-group group-data-pressed:bg-primary-active group-data-selected:bg-primary-solid group-data-selected:group-data-pressed:bg-primary-solid-active bg-ui group-data-disabled:opacity-disabled border-thin box-border flex shrink-0 cursor-default rounded-full bg-clip-padding shadow-inner transition duration-200 ease-in-out",
           size === "sm" && "h-4.5 w-7.75 p-0.5",
           size === "md" && "h-6.5 w-11 p-0.75",
         )}

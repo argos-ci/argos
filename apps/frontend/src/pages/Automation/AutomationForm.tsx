@@ -6,8 +6,8 @@ import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
+import { Button } from "@/ui/Button";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 import { AutomationActionSchema } from "@/util/automation";
 
@@ -53,9 +53,14 @@ export function Task(props: { children: React.ReactNode }) {
 export function RemoveButton(props: { onPress: (e: PressEvent) => void }) {
   return (
     <Tooltip content="Remove">
-      <IconButton onPress={props.onPress} aria-label="Remove">
+      <Button
+        variant="secondary"
+        iconOnly
+        onPress={props.onPress}
+        aria-label="Remove"
+      >
         <Trash2Icon />
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 }

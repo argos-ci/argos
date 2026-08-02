@@ -47,7 +47,6 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { Label } from "@/ui/Label";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
@@ -183,7 +182,7 @@ export function TeamSAMLSSO(props: {
           policies.
         </CardParagraph>
         {team.samlSso ? (
-          <div className="rounded-sm border text-sm">
+          <div className="border-thin rounded-lg text-sm">
             <div className="flex items-center gap-4 p-4">
               <LockIcon className="size-6 shrink-0" />
               <div className="flex-1">
@@ -211,9 +210,9 @@ export function TeamSAMLSSO(props: {
                   </Tooltip>
                 )}
                 <MenuTrigger>
-                  <IconButton className="shrink-0">
+                  <Button variant="ghost" iconOnly className="shrink-0">
                     <MoreVerticalIcon />
-                  </IconButton>
+                  </Button>
                   <Popover>
                     <Menu aria-label="SAML options">
                       <MenuItem href={getReAuthenticateURL(team.samlSsoUrl)}>
@@ -250,7 +249,7 @@ export function TeamSAMLSSO(props: {
               </div>
             </div>
             {team.me?.lastAuthMethod === "saml" ? (
-              <div className="text-low flex items-center justify-between gap-4 border-t p-4">
+              <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
                 Require Team Members to login with SAML to access this Team.
                 <Switch
                   isSelected={team.samlSso.enforced}
@@ -276,7 +275,7 @@ export function TeamSAMLSSO(props: {
                 />
               </div>
             ) : (
-              <div className="text-low flex items-center justify-between gap-4 border-t p-4">
+              <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
                 Please authenticate with SAML before enforcing SAML for this
                 team.
                 <LinkButton href={getReAuthenticateURL(team.samlSsoUrl)}>
@@ -286,7 +285,7 @@ export function TeamSAMLSSO(props: {
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-4 rounded-sm border p-4 text-sm">
+          <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm">
             <LockIcon className="size-6 shrink-0" />
             <div className="flex-1">
               <div className="font-medium">SAML</div>

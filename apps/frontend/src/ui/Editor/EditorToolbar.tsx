@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
+import { Button } from "../Button";
 import { AnimatedBubbleMenu } from "./AnimatedBubbleMenu";
 import { LINK_EDIT_TRIGGER_EVENT } from "./EditorLinkEdit";
 import { ALT, LINK_KEYS, MOD, SHIFT } from "./EditorToolbar.shortcuts";
@@ -245,7 +245,9 @@ function LinkButton(props: {
   const { state, onEnterLinkMode } = props;
   return (
     <HotkeyTooltip description="Link" keys={LINK_KEYS}>
-      <IconButton
+      <Button
+        variant="ghost"
+        iconOnly
         size="small"
         aria-label="Link"
         aria-pressed={state.isLink}
@@ -253,7 +255,7 @@ function LinkButton(props: {
         onPress={onEnterLinkMode}
       >
         <LinkIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

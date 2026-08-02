@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useBuildDiffHighlighterContext } from "../BuildDiffHighlighterContext";
@@ -24,9 +24,9 @@ function GoToChangesButton(props: { direction: -1 | 1 }) {
   const Icon = direction === -1 ? ChevronLeft : ChevronRight;
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton variant="contained" onPress={go} isDisabled={!enabled}>
+      <Button variant="secondary" iconOnly onPress={go} isDisabled={!enabled}>
         <Icon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

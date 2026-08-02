@@ -4,8 +4,8 @@ import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { Diff, useBuildDiffState } from "./BuildDiffState";
@@ -79,14 +79,15 @@ function AcceptButton(props: {
       keys={hotkey.displayKeys}
       disabled={props.disabled}
     >
-      <IconButton
+      <Button
+        variant={isActive ? "success" : "secondary"}
+        iconOnly
         aria-pressed={isActive}
         onPress={toggle}
-        color={isActive ? "success" : undefined}
         isDisabled={props.disabled}
       >
         <ThumbsUpIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }
@@ -111,14 +112,15 @@ function RejectButton(props: {
       keys={hotkey.displayKeys}
       disabled={props.disabled}
     >
-      <IconButton
+      <Button
+        variant={isActive ? "danger" : "secondary"}
+        iconOnly
         aria-pressed={isActive}
         onPress={toggle}
-        color={isActive ? "danger" : undefined}
         isDisabled={props.disabled}
       >
         <ThumbsDownIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

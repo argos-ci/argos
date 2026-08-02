@@ -40,6 +40,7 @@ import {
   type AccountUsage_AccountQuery,
 } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
+import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import {
   ChartConfig,
@@ -52,7 +53,6 @@ import {
   getTimeTicks,
 } from "@/ui/Charts";
 import { DateRangePicker } from "@/ui/DateRangePicker";
-import { IconButton } from "@/ui/IconButton";
 import {
   Page,
   PageContainer,
@@ -952,9 +952,14 @@ function ChartCard(props: {
 function ExportButton(props: { isDisabled: boolean; onExport: () => void }) {
   return (
     <Tooltip content="Export to CSV">
-      <IconButton isDisabled={props.isDisabled} onPress={props.onExport}>
+      <Button
+        variant="secondary"
+        iconOnly
+        isDisabled={props.isDisabled}
+        onPress={props.onExport}
+      >
         <FileDownIcon />
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 }

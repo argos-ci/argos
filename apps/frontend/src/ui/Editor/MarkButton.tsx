@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import type { Editor } from "@tiptap/react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
+
+import { Button } from "../Button";
 
 export function MarkButton(props: {
   editor: Editor;
@@ -16,7 +17,9 @@ export function MarkButton(props: {
   const { editor, label, keys, icon, isActive, isDisabled, onPress } = props;
   return (
     <HotkeyTooltip description={label} keys={keys}>
-      <IconButton
+      <Button
+        variant="ghost"
+        iconOnly
         size="small"
         aria-label={label}
         aria-pressed={isActive}
@@ -24,7 +27,7 @@ export function MarkButton(props: {
         onPress={() => onPress(editor.chain().focus()).run()}
       >
         {icon}
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

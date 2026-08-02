@@ -1,8 +1,8 @@
-import { ComponentProps, memo, useState } from "react";
+import { ComponentProps, memo } from "react";
 import clsx from "clsx";
-import { CheckIcon, RefreshCcwIcon, SparklesIcon } from "lucide-react";
-import { useClipboard } from "use-clipboard-copy";
+import { RefreshCcwIcon } from "lucide-react";
 
+import { AiPromptButton } from "@/containers/AiPromptButton";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
@@ -19,7 +19,6 @@ import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { IconButton } from "../../../ui/IconButton";
 import { useBuildDiffState } from "../BuildDiffState";
 import { getBuildOverviewURL } from "../BuildParams";
 import { useBuildReviewability } from "../BuildReviewability";
@@ -123,9 +122,9 @@ function LoggedReviewButton(props: {
           className="w-full"
         />
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <BuildReviewButton project={props.project} />
-        <CopyBuildReviewPromptButton
+        <BuildReviewPromptButton
           build={props.build}
           buildNumber={props.build.number}
           accountSlug={props.project.account.slug}
@@ -154,14 +153,17 @@ const _ProjectFragment = graphql(`
   }
 `);
 
-function CopyBuildReviewPromptButton(props: {
+/**
+ * Hands the review prompt to the user's coding agent, so it reviews the build
+ * from the CLI and reports back — or to the clipboard, for the agents Argos
+ * cannot open.
+ */
+function BuildReviewPromptButton(props: {
   buildNumber: number;
   accountSlug: string;
   projectName: string;
   build: DocumentType<typeof _BuildFragment>;
 }) {
-  const clipboard = useClipboard({ copiedTimeout: 2000 });
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const buildPath = `${getProjectURL({
     accountSlug: props.accountSlug,
     projectName: props.projectName,
@@ -171,37 +173,8 @@ function CopyBuildReviewPromptButton(props: {
     buildUrl,
     pullRequest: props.build.pullRequest,
   });
-  const copy = () => {
-    clipboard.copy(prompt);
-  };
 
-  return (
-    <Tooltip
-      content={clipboard.copied ? "Prompt copied!" : "Copy AI review prompt"}
-      isOpen={clipboard.copied || isTooltipOpen}
-      onOpenChange={setIsTooltipOpen}
-    >
-      <IconButton
-        variant="outline"
-        aria-label="Copy AI review prompt"
-        onPress={copy}
-      >
-        <span className="relative size-4 overflow-hidden">
-          <span
-            className={clsx(
-              "text-low absolute flex flex-col transition [&>svg]:size-4",
-              clipboard.copied && "-translate-y-4",
-            )}
-          >
-            <SparklesIcon
-              className={clsx("transition", clipboard.copied && "opacity-0")}
-            />
-            <CheckIcon />
-          </span>
-        </span>
-      </IconButton>
-    </Tooltip>
-  );
+  return <AiPromptButton prompt={prompt} promptName="review prompt" iconOnly />;
 }
 
 export const BuildHeader = memo(

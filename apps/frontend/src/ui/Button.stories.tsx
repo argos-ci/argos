@@ -20,10 +20,27 @@ export const Default: Story = {
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
         <Button variant="ghost">Ghost</Button>
+        <Button variant="danger">Danger</Button>
+        <Button variant="success">Success</Button>
         <Button variant="destructive">Destructive</Button>
         <Button variant="github">GitHub</Button>
         <Button variant="gitlab">GitLab</Button>
         <Button variant="google">Google</Button>
+      </div>
+
+      {/* The toggles: the build toolbar and the editor marks stay pressed while
+          their mode is on. */}
+      <StoryTitle>Pressed</StoryTitle>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button variant="secondary" aria-pressed>
+          Secondary
+        </Button>
+        <Button variant="danger" aria-pressed iconOnly aria-label="Changes">
+          <DownloadIcon />
+        </Button>
+        <Button variant="success" aria-pressed iconOnly aria-label="Approve">
+          <DownloadIcon />
+        </Button>
       </div>
 
       <StoryTitle>Sizes</StoryTitle>
@@ -33,22 +50,24 @@ export const Default: Story = {
         <Button size="large">Large</Button>
       </div>
 
-      <StoryTitle>Rounded</StoryTitle>
+      <StoryTitle>Icon only</StoryTitle>
       <div className="flex flex-wrap items-center gap-4">
-        <Button rounded size="small">
-          Small
+        <Button size="small" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded size="medium">
-          Medium
+        <Button size="medium" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded size="large">
-          Large
+        <Button size="large" iconOnly aria-label="Download">
+          <DownloadIcon />
         </Button>
-        <Button rounded variant="primary">
-          <ButtonIcon>
-            <DownloadIcon />
-          </ButtonIcon>
-          Download
+        <Button
+          size="medium"
+          variant="secondary"
+          iconOnly
+          aria-label="Download"
+        >
+          <DownloadIcon />
         </Button>
       </div>
 

@@ -6,7 +6,6 @@ import { toast } from "@/ui/Toaster";
 
 import { Button } from "../Button";
 import { HotkeyTooltip } from "../HotkeyTooltip";
-import { IconButton } from "../IconButton";
 import { Editor, type EditorValue, type EditorVariant } from "./Editor";
 import { MOD } from "./EditorToolbar.shortcuts";
 import { type MentionUser } from "./mention";
@@ -170,7 +169,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
           <div className="flex justify-end gap-1.5 p-1 pt-2">
             <Button
               variant="ghost"
-              rounded
               size="small"
               onPress={onCancel}
               isDisabled={isPending}
@@ -184,7 +182,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             >
               <Button
                 variant="secondary"
-                rounded
                 size="small"
                 onPress={submit}
                 // Truly disabled (not focusable/clickable) while submitting or
@@ -220,10 +217,10 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 keys={[MOD, "Enter"]}
                 placement="top"
               >
-                <IconButton
-                  variant="contained"
+                <Button
+                  iconOnly
+                  variant="secondary"
                   size="small"
-                  rounded
                   aria-label={submitLabel}
                   // Truly disabled (not focusable/clickable) while submitting or when
                   // disabled by the parent. When the editor is merely empty it only
@@ -235,7 +232,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                   className="ml-auto"
                 >
                   <ArrowUpIcon />
-                </IconButton>
+                </Button>
               </HotkeyTooltip>
             )}
           </div>

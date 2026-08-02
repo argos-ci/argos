@@ -26,7 +26,6 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { toast } from "@/ui/Toaster";
@@ -105,12 +104,13 @@ export function TeamDomains(props: {
                 >
                   <span className="font-medium">{teamDomain.domain}</span>
                   <DialogTrigger>
-                    <IconButton
+                    <Button
+                      variant="danger"
+                      iconOnly
                       aria-label={`Remove ${teamDomain.domain}`}
-                      color="danger"
                     >
                       <Trash2Icon />
-                    </IconButton>
+                    </Button>
                     <Modal>
                       <RemoveTeamDomainDialog teamDomain={teamDomain} />
                     </Modal>

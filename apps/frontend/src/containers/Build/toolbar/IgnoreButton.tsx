@@ -9,7 +9,7 @@ import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { useProjectIgnoreEnabled } from "@/containers/Project/IgnoreContext";
 import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
-import { Button } from "@/ui/Button";
+import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import {
   Dialog,
@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/ui/Dialog";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton, type IconButtonProps } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import * as sessionStorage from "@/util/session-storage";
 
@@ -45,11 +44,11 @@ const UnignoreChangeMutation = graphql(`
   }
 `);
 
-function BaseIgnoreButton(props: Omit<IconButtonProps, "children">) {
+function BaseIgnoreButton(props: Omit<ButtonProps, "children">) {
   return (
-    <IconButton {...props}>
+    <Button variant="secondary" iconOnly {...props}>
       <FlagOffIcon />
-    </IconButton>
+    </Button>
   );
 }
 
@@ -165,7 +164,7 @@ function EnabledIgnoreButton(props: {
         <BaseIgnoreButton
           aria-pressed={isIgnored}
           onPress={toggle}
-          color={isIgnored ? "danger" : undefined}
+          variant={isIgnored ? "danger" : "secondary"}
         />
       </HotkeyTooltip>
       <DialogTrigger

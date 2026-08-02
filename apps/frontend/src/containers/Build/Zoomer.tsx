@@ -19,8 +19,8 @@ import { zoom, ZoomBehavior, zoomIdentity, ZoomTransform } from "d3-zoom";
 import { MaximizeIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { useObjectRef } from "react-aria";
 
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 
@@ -371,9 +371,9 @@ const FitViewButton = memo(() => {
       description="Fit view"
       keys={hotkey.displayKeys}
     >
-      <IconButton variant="contained" onPress={reset}>
+      <Button variant="secondary" iconOnly onPress={reset}>
         <MaximizeIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 });
@@ -382,13 +382,14 @@ const ZoomInButton = memo((props: { disabled: boolean }) => {
   const { zoomIn } = useZoomerSyncContext();
   return (
     <Tooltip placement="left" content="Zoom in">
-      <IconButton
-        variant="contained"
+      <Button
+        variant="secondary"
+        iconOnly
         onPress={zoomIn}
         isDisabled={props.disabled}
       >
         <PlusIcon />
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 });
@@ -397,13 +398,14 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
   const { zoomOut } = useZoomerSyncContext();
   return (
     <Tooltip placement="left" content="Zoom out">
-      <IconButton
-        variant="contained"
+      <Button
+        variant="secondary"
+        iconOnly
         onPress={zoomOut}
         isDisabled={props.disabled}
       >
         <MinusIcon />
-      </IconButton>
+      </Button>
     </Tooltip>
   );
 });

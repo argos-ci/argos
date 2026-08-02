@@ -3,9 +3,9 @@ import { ArrowUpIcon, MessageSquarePlusIcon } from "lucide-react";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 export const ReviewCommentSubmitButton_Build = graphql(`
   fragment ReviewCommentSubmitButton_Build on Build {
@@ -91,10 +91,10 @@ export function ReviewCommentSubmitButton(props: {
       keys={[MOD, "Enter"]}
       placement="top"
     >
-      <IconButton
-        variant="contained"
+      <Button
+        variant="secondary"
+        iconOnly
         size="small"
-        rounded
         aria-label={label}
         // Truly disabled (not focusable/clickable) while submitting or when
         // disabled by the parent. When merely empty it only *looks* disabled but
@@ -105,7 +105,7 @@ export function ReviewCommentSubmitButton(props: {
         className={className}
       >
         <Icon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }

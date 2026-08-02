@@ -10,8 +10,8 @@ export interface TextInputProps
 }
 
 const sizeClassNames: Record<TextInputScale, string> = {
-  sm: "text-sm px-3 py-1.5 rounded-sm leading-tight",
-  md: "text-base px-3 py-2 rounded-sm leading-tight",
+  sm: "text-sm px-3 py-1.5 rounded-lg leading-tight",
+  md: "text-base px-3 py-1.5 rounded-lg leading-tight",
   lg: "text-base p-3 rounded-xl",
 };
 
@@ -24,14 +24,19 @@ export function TextInput(props: TextInputProps) {
         rest.className,
         "peer/input",
         "search-cancel:hidden",
-        "bg-app text-default block w-full appearance-none border",
+        "bg-app text-default border-thin block w-full appearance-none",
         "placeholder:text-placeholder",
         /* Hover */
         "not-disabled:hover:border-hover",
-        /* Focus */
+        /* Focus: the border marks the field however it was reached, the ring
+           only when it was reached by keyboard. CSS `:focus-visible` cannot
+           draw that line — a text input matches it on a plain click too — so
+           the ring keys off react-aria's own modality tracking instead. */
         "focus:border-active focus:outline-hidden",
-        /* Invalid */
-        "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:hover:border-danger-hover",
+        "data-focus-visible:ring-primary-active data-focus-visible:ring-2",
+        /* Invalid: red all the way through, ring included. */
+        "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:not-disabled:hover:border-danger-hover",
+        "aria-invalid:data-focus-visible:ring-danger-active",
         /* Disabled */
         "disabled:opacity-disabled",
         /* Addon  */
@@ -82,8 +87,8 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "addon bg-ui text-low flex items-center justify-center border px-2 text-sm whitespace-nowrap select-none",
-        "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
+        "addon bg-ui text-low border-thin flex items-center justify-center px-2 text-sm whitespace-nowrap select-none",
+        "first:rounded-l-lg first:border-r-0 last:rounded-r-lg last:border-l-0",
         props.className,
       )}
     />

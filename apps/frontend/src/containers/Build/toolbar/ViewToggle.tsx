@@ -1,10 +1,10 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ColumnsIcon } from "lucide-react";
+import { ColumnsIcon, SquareIcon } from "lucide-react";
 
+import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
 import { buildViewModeAtom } from "../BuildViewMode";
@@ -64,13 +64,13 @@ function ViewButton(props: {
       keys={props.hotkey.displayKeys}
       keysEnabled={viewMode !== props.viewMode}
     >
-      <IconButton
-        variant="contained"
+      <Button
+        variant="secondary"
         aria-pressed={viewMode === props.viewMode}
         onPress={activate}
       >
         {props.children}
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }
@@ -94,9 +94,11 @@ export const SplitViewToggle = memo(() => {
       }
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={viewMode === "split"} onPress={toggleSplitView}>
-        <ColumnsIcon />
-      </IconButton>
+      {/* Two panes or one: the icon is the state, so there is no pressed
+          state on top of it. */}
+      <Button variant="secondary" iconOnly onPress={toggleSplitView}>
+        {viewMode === "split" ? <SquareIcon /> : <ColumnsIcon />}
+      </Button>
     </HotkeyTooltip>
   );
 });

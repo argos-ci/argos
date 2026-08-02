@@ -3,13 +3,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SmilePlusIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 
+import { Button } from "./Button";
 import {
   EmojiPicker,
   EmojiPickerField,
   EmojiPickerPopover,
   EmojiPickerTrigger,
 } from "./EmojiPicker";
-import { IconButton } from "./IconButton";
 import { StoryTitle } from "./StoryTitle";
 
 const meta = {
@@ -32,9 +32,9 @@ function DefaultStory() {
 
       <StoryTitle>In a Popover</StoryTitle>
       <EmojiPickerTrigger>
-        <IconButton aria-label="Add reaction">
+        <Button variant="secondary" iconOnly aria-label="Add reaction">
           <SmilePlusIcon />
-        </IconButton>
+        </Button>
         <EmojiPickerPopover onEmojiSelect={({ emoji }) => setSelected(emoji)} />
       </EmojiPickerTrigger>
     </div>

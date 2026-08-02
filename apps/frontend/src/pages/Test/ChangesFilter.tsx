@@ -1,7 +1,7 @@
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
+import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { TestSearchParams } from "./TestParams";
@@ -42,21 +42,23 @@ export function ChangesFilterToggle(props: { state: ChangesFilterState }) {
   const { state } = props;
   return (
     <ButtonGroup>
-      <IconButton
-        variant="contained"
+      <Button
+        variant="secondary"
+        size="small"
         aria-pressed={state.value === "all"}
         onPress={() => state.setValue("all")}
       >
         All
-      </IconButton>
+      </Button>
       <Tooltip content="Only the changes this test no longer asks you to review.">
-        <IconButton
-          variant="contained"
+        <Button
+          variant="secondary"
+          size="small"
           aria-pressed={state.value === "ignored"}
           onPress={() => state.setValue("ignored")}
         >
           Ignored
-        </IconButton>
+        </Button>
       </Tooltip>
     </ButtonGroup>
   );

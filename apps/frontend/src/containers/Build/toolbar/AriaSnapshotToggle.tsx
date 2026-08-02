@@ -1,10 +1,10 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ScanTextIcon } from "lucide-react";
+import { ImageIcon, ScanTextIcon } from "lucide-react";
 
 import { useBuildDiffState } from "@/pages/Build/BuildDiffState";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 import { useBuildHotkey } from "../BuildHotkeys";
 import { snapshotTypeAtom } from "../SnapshotType";
@@ -37,9 +37,11 @@ function Toggle() {
       }
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={snapshotType === "aria"} onPress={toggle}>
-        <ScanTextIcon />
-      </IconButton>
+      {/* The icon is the destination, not the state: the aria tree while looking
+          at the screenshot, the screenshot while reading the tree. */}
+      <Button variant="secondary" iconOnly onPress={toggle}>
+        {snapshotType === "aria" ? <ImageIcon /> : <ScanTextIcon />}
+      </Button>
     </HotkeyTooltip>
   );
 }

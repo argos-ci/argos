@@ -180,7 +180,7 @@ export function Component() {
         </PageHeader>
         <ProjectPermissionsContext value={project.permissions}>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-10">
               <div className="flex flex-col items-start gap-4 self-stretch">
                 <PeriodSelect state={periodState} />
                 {/* The counters size to their content and the chart takes the
@@ -230,7 +230,7 @@ export function Component() {
                   areChangesPending && "animate-pulse",
                 )}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2 px-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
                   <Heading level={2} className="font-medium">
                     {filterState.value === "ignored"
                       ? "Ignored changes"
@@ -239,7 +239,7 @@ export function Component() {
                   </Heading>
                   <ChangesFilterToggle state={filterState} />
                 </div>
-                <Panel>
+                <Panel spacing={false}>
                   <ProjectIgnoreEnabledProvider
                     enabled={project.ignoreConfig.enabled}
                   >

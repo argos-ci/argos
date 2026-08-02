@@ -35,8 +35,8 @@ import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
+import { Button } from "@/ui/Button";
 import { Code } from "@/ui/Code";
-import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import {
   Menu,
@@ -268,9 +268,9 @@ function ScreenshotActionsMenu(props: {
   return (
     <MenuTrigger>
       <Tooltip placement="left" content={props.tooltip}>
-        <IconButton variant="contained">
+        <Button variant="secondary" iconOnly>
           <EllipsisVerticalIcon />
-        </IconButton>
+        </Button>
       </Tooltip>
       <Popover placement="bottom end">
         <Menu aria-label={props.ariaLabel}>{props.children}</Menu>

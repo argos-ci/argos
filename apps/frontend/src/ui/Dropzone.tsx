@@ -36,7 +36,7 @@ export function Dropzone(props: DropzoneProps) {
     <div
       {...getRootProps({ ref, onBlur })}
       className={clsx(
-        "rounded border border-dashed p-4 text-center text-sm ring-offset-2 select-none focus:ring-2 focus:outline-none",
+        "rounded-lg border border-dashed p-4 text-center text-sm ring-offset-2 select-none focus:ring-2 focus:outline-none",
         invalid
           ? "border-danger hover:border-danger-active text-danger-low ring-danger"
           : clsx(

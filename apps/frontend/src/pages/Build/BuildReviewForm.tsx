@@ -162,7 +162,6 @@ export function BuildReviewForm(props: {
             size="small"
             iconOnly
             aria-label="Close"
-            rounded
             onPress={() => state.close()}
             isDisabled={isSubmitting}
           >
@@ -213,7 +212,6 @@ export function BuildReviewForm(props: {
                 <Button
                   key={event}
                   variant={definition.variant}
-                  rounded
                   size="small"
                   className="shrink-0"
                   isPending={pendingEvent === event}

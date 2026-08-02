@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "./Button";
 import { ButtonGroup } from "./ButtonGroup";
 import { Chip, ChipButton, ChipLink } from "./Chip";
-import { IconButton } from "./IconButton";
 import { StoryTitle } from "./StoryTitle";
 
 const meta = {
@@ -18,13 +17,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <div className="flex flex-col">
-      <StoryTitle>With IconButtons</StoryTitle>
-      <ButtonGroup>
-        <IconButton variant="contained">Left</IconButton>
-        <IconButton variant="contained">Center</IconButton>
-        <IconButton variant="contained">Right</IconButton>
-      </ButtonGroup>
-
       <StoryTitle>With Chips</StoryTitle>
       <ButtonGroup>
         <Chip>Default</Chip>

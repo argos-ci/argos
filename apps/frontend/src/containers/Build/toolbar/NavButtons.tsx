@@ -1,8 +1,8 @@
-import { ArrowDownIcon, ArrowUpIcon, HomeIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
 
 export function NextButton(props: {
   onPress: () => void;
@@ -16,9 +16,14 @@ export function NextButton(props: {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton isDisabled={isDisabled} onPress={onPress}>
+      <Button
+        variant="ghost"
+        iconOnly
+        isDisabled={isDisabled}
+        onPress={onPress}
+      >
         <ArrowDownIcon />
-      </IconButton>
+      </Button>
     </HotkeyTooltip>
   );
 }
@@ -26,7 +31,11 @@ export function NextButton(props: {
 export function PreviousButton(props: {
   onPress: () => void;
   isDisabled?: boolean;
-  /** On the first snapshot, the button returns to the build overview. */
+  /**
+   * On the first snapshot, the button returns to the build overview. Only the
+   * tooltip says so: the sidebar already has a home button for the overview, and
+   * a second one here read as a different destination.
+   */
   toOverview?: boolean;
 }) {
   const { onPress, isDisabled = false, toOverview = false } = props;
@@ -40,9 +49,14 @@ export function PreviousButton(props: {
       description={toOverview ? "Go to overview" : hotkey.description}
       keys={hotkey.displayKeys}
     >
-      <IconButton isDisabled={isDisabled} onPress={onPress}>
-        {toOverview ? <HomeIcon /> : <ArrowUpIcon />}
-      </IconButton>
+      <Button
+        variant="ghost"
+        iconOnly
+        isDisabled={isDisabled}
+        onPress={onPress}
+      >
+        <ArrowUpIcon />
+      </Button>
     </HotkeyTooltip>
   );
 }

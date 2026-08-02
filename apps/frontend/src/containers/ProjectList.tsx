@@ -74,7 +74,7 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <div
       key={project.id}
-      className="bg-app hover:border-hover relative flex min-w-0 flex-col items-start gap-2 rounded-md border p-5 pt-4"
+      className="bg-app hover:border-hover border-thin relative flex min-w-0 flex-col items-start gap-2 rounded-xl p-5 pt-4 shadow-xs hover:shadow"
     >
       <HeadlessLink
         aria-label={`Visit ${project.name}`}

@@ -27,8 +27,8 @@ import {
 
 import { mergeRefs } from "@/util/merge-refs";
 
+import { Button, type ButtonProps } from "./Button";
 import { Dialog } from "./Dialog";
-import { IconButton, type IconButtonProps } from "./IconButton";
 import { Popover } from "./Popover";
 
 export { DialogTrigger as EmojiPickerTrigger } from "react-aria-components";
@@ -601,7 +601,7 @@ export type EmojiPickerPopoverProps = Omit<PopoverProps, "children"> & {
  * @example
  * ```tsx
  * <EmojiPickerTrigger>
- *   <IconButton><SmilePlusIcon /></IconButton>
+ *   <Button variant="secondary" iconOnly><SmilePlusIcon /></Button>
  *   <EmojiPickerPopover onEmojiSelect={({ emoji }) => console.log(emoji)} />
  * </EmojiPickerTrigger>
  * ```
@@ -630,15 +630,15 @@ export type EmojiPickerFieldProps<TFieldValues extends FieldValues> = {
   name: Path<TFieldValues>;
   /** Accessible label for the trigger button. */
   "aria-label"?: string;
-  /** Props forwarded to the trigger {@link IconButton}. */
-  buttonProps?: Omit<IconButtonProps, "ref">;
+  /** Props forwarded to the trigger {@link Button}. */
+  buttonProps?: Omit<ButtonProps, "ref">;
 };
 
 /**
  * A react-hook-form compatible emoji picker field.
  *
  * It stores the selected emoji character as the field value and renders an
- * {@link IconButton} trigger that opens an {@link EmojiPickerPopover}.
+ * {@link Button} trigger that opens an {@link EmojiPickerPopover}.
  */
 export function EmojiPickerField<TFieldValues extends FieldValues>(
   props: EmojiPickerFieldProps<TFieldValues>,
@@ -654,7 +654,9 @@ export function EmojiPickerField<TFieldValues extends FieldValues>(
   const mergedRef = mergeRefs(field.ref, ref);
   return (
     <DialogTrigger>
-      <IconButton
+      <Button
+        variant="secondary"
+        iconOnly
         aria-label={ariaLabel}
         {...buttonProps}
         ref={mergedRef}
@@ -669,7 +671,7 @@ export function EmojiPickerField<TFieldValues extends FieldValues>(
         ) : (
           <SmilePlusIcon />
         )}
-      </IconButton>
+      </Button>
       <EmojiPickerPopover
         onEmojiSelect={({ emoji }) => {
           field.onChange(emoji);

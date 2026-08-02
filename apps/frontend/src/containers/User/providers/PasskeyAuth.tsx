@@ -36,7 +36,6 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
@@ -243,19 +242,22 @@ function PasskeyRow(props: {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <IconButton
+        <Button
+          variant="secondary"
+          iconOnly
           aria-label={`Rename ${passkey.name}`}
           onPress={() => onEdit(passkey)}
         >
           <PencilIcon />
-        </IconButton>
-        <IconButton
-          color="danger"
+        </Button>
+        <Button
+          variant="danger"
+          iconOnly
           aria-label={`Delete ${passkey.name}`}
           onPress={() => onDelete(passkey)}
         >
           <Trash2Icon />
-        </IconButton>
+        </Button>
       </div>
     </div>
   );
