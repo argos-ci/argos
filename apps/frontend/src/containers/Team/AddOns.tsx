@@ -70,7 +70,7 @@ export function TeamAddOns(props: {
         <CardParagraph>
           Optional features billed monthly in addition to your plan.
         </CardParagraph>
-        <div className="divide-y rounded-sm border text-sm">
+        <div className="border-thin divide-y-thin rounded-lg text-sm">
           <AddOnRow
             icon={<MarkGithubIcon className="size-6 shrink-0" />}
             title="GitHub Single Sign-On"

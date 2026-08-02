@@ -121,7 +121,7 @@ export function FixFlakinessSection(props: {
           {/* Branding, not information: the menu below names every agent in
               text, so the marks stay out of the accessibility tree rather than
               repeating themselves. */}
-          <span aria-hidden className="text-low flex items-center gap-1.5">
+          <span aria-hidden className="text-low/80 flex items-center gap-1.5">
             {AI_AGENTS.map(({ id, Icon }) => (
               <Icon key={id} className="size-4" />
             ))}

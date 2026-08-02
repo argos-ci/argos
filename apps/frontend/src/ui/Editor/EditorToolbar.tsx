@@ -246,7 +246,7 @@ function LinkButton(props: {
   return (
     <HotkeyTooltip description="Link" keys={LINK_KEYS}>
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         size="small"
         aria-label="Link"

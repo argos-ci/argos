@@ -111,7 +111,7 @@ export function UserEmails(props: {
                     <SendUserEmailVerificationButton email={email.email} />
                   ) : null}
                   <MenuTrigger>
-                    <Button variant="secondary" iconOnly>
+                    <Button variant="ghost" iconOnly>
                       <MoreVerticalIcon />
                     </Button>
                     <Popover>

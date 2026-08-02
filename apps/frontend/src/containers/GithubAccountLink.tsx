@@ -7,7 +7,7 @@ export function AccountLink(props: {
   url: string;
 }) {
   return (
-    <Link href={props.url} target="_blank" className="!text">
+    <Link href={props.url} target="_blank" variant="neutral">
       {props.name ? (
         <>
           {props.name} ({props.login})

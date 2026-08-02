@@ -21,11 +21,16 @@ export function Panel(props: {
   className?: string;
   /** Shadow depth: 1 (default) casts a subtle shadow, 0 is flat. */
   elevation?: 0 | 1;
+  spacing?: boolean;
 }) {
-  const { children, className, elevation = 1 } = props;
+  const { children, className, elevation = 1, spacing = true } = props;
   return (
     <div
-      className={clsx(getSurfaceClassName({ elevation }), "py-3", className)}
+      className={clsx(
+        getSurfaceClassName({ elevation }),
+        spacing && "py-3",
+        className,
+      )}
     >
       {children}
     </div>

@@ -43,8 +43,8 @@ export function ChangesFilterToggle(props: { state: ChangesFilterState }) {
   return (
     <ButtonGroup>
       <Button
-        variant="surface"
-        iconOnly
+        variant="secondary"
+        size="small"
         aria-pressed={state.value === "all"}
         onPress={() => state.setValue("all")}
       >
@@ -52,8 +52,8 @@ export function ChangesFilterToggle(props: { state: ChangesFilterState }) {
       </Button>
       <Tooltip content="Only the changes this test no longer asks you to review.">
         <Button
-          variant="surface"
-          iconOnly
+          variant="secondary"
+          size="small"
           aria-pressed={state.value === "ignored"}
           onPress={() => state.setValue("ignored")}
         >

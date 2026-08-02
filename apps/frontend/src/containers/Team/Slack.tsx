@@ -82,7 +82,7 @@ export function TeamSlack(props: {
                 Connected <Time date={account.slackInstallation.connectedAt} />
               </div>
               <MenuTrigger>
-                <Button variant="secondary" iconOnly className="shrink-0">
+                <Button variant="ghost" iconOnly className="shrink-0">
                   <MoreVerticalIcon />
                 </Button>
                 <Popover>

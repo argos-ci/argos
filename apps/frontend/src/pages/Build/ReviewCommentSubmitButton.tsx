@@ -92,7 +92,7 @@ export function ReviewCommentSubmitButton(props: {
       placement="top"
     >
       <Button
-        variant="surface"
+        variant="secondary"
         iconOnly
         size="small"
         aria-label={label}

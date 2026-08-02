@@ -18,7 +18,7 @@ export function MarkButton(props: {
   return (
     <HotkeyTooltip description={label} keys={keys}>
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         size="small"
         aria-label={label}

@@ -11,7 +11,7 @@ export interface TextInputProps
 
 const sizeClassNames: Record<TextInputScale, string> = {
   sm: "text-sm px-3 py-1.5 rounded-lg leading-tight",
-  md: "text-base px-3 py-2 rounded-lg leading-tight",
+  md: "text-base px-3 py-1.5 rounded-lg leading-tight",
   lg: "text-base p-3 rounded-xl",
 };
 
@@ -24,12 +24,12 @@ export function TextInput(props: TextInputProps) {
         rest.className,
         "peer/input",
         "search-cancel:hidden",
-        "bg-app text-default block w-full appearance-none border",
+        "bg-app text-default border-thin block w-full appearance-none",
         "placeholder:text-placeholder",
         /* Hover */
         "not-disabled:hover:border-hover",
         /* Focus */
-        "focus:border-active focus:outline-hidden",
+        "focus:border-active focus-visible:ring-primary-active focus:outline-hidden focus-visible:ring-2",
         /* Invalid */
         "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:hover:border-danger-hover",
         /* Disabled */
@@ -82,7 +82,7 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "addon bg-ui text-low flex items-center justify-center border px-2 text-sm whitespace-nowrap select-none",
+        "addon bg-ui text-low border-thin flex items-center justify-center px-2 text-sm whitespace-nowrap select-none",
         "first:rounded-l-lg first:border-r-0 last:rounded-r-lg last:border-l-0",
         props.className,
       )}

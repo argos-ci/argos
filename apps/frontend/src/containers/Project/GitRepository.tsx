@@ -272,11 +272,11 @@ export const ProjectGitRepository = (props: {
         </CardParagraph>
         {project.repository && RepoIcon ? (
           <div>
-            <div className="flex items-center gap-2 rounded-sm border p-4">
+            <div className="border-thin flex items-center gap-2 rounded-lg p-4">
               <RepoIcon className="size-6 shrink-0" />
               <div className="flex-1 font-semibold">
                 <Link
-                  className="!text"
+                  variant="neutral"
                   href={project.repository.url}
                   target="_blank"
                 >

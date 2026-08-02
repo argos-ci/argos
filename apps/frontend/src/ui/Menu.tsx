@@ -46,8 +46,8 @@ export function Menu<T extends object>(
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text-default data-focused:bg-hover",
-  danger: "text-danger-low data-focused:bg-danger-hover",
+  default: clsx("text-default data-focused:bg-hover/80"),
+  danger: "text-danger-low data-focused:bg-danger-hover/80",
 };
 
 const menuItemClassName =
@@ -65,7 +65,7 @@ export function MenuItem(props: MenuItemProps) {
   return (
     <RACMenuItem
       className={clsx(
-        "group/menu-item",
+        "group/menu-item font-[450]",
         menuItemVariantClasses[variant],
         props.href ? "cursor-pointer" : "cursor-default",
         menuItemClassName,
@@ -189,7 +189,7 @@ export function MenuItemSuffix(props: {
   return (
     <span
       className={clsx(
-        "text-low ml-3 flex-1 shrink-0 text-right text-xs",
+        "text-low ml-3 flex-1 shrink-0 text-right text-xs font-normal",
         className,
       )}
     >
@@ -246,7 +246,7 @@ export function UpDownMenuButton({
   return (
     <Button
       className={clsx(
-        "border-default text-low data-hovered:border-hover data-hovered:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus cursor-default rounded-md border p-0.5",
+        "text-low data-hovered:border-hover data-hovered:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus border-thin cursor-default rounded-lg p-0.5",
         className,
       )}
       {...props}

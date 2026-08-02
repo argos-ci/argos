@@ -5,8 +5,8 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Kbd } from "@/ui/Kbd";
 import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { ToolbarMenuButton } from "@/ui/Toolbar";
 
+import { Button } from "../Button";
 import { ALT, MOD } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 
@@ -37,10 +37,10 @@ export function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
   return (
     <MenuTrigger>
       <HotkeyTooltip description={selectedOption.label} keys={tooltipKeys}>
-        <ToolbarMenuButton aria-label="Text style">
+        <Button size="small" variant="ghost" aria-label="Text style">
           <span className="font-medium">Aa</span>
           <ChevronDownIcon className="size-3" />
-        </ToolbarMenuButton>
+        </Button>
       </HotkeyTooltip>
       <Popover>
         <Menu

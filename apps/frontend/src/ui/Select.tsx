@@ -113,22 +113,22 @@ export function SelectButton({
       {...rest}
       className={clsx(
         /* Appearance */
-        "bg-app cursor-default appearance-none rounded-lg border select-none",
+        "bg-app border-thin cursor-default appearance-none rounded-lg shadow-2xs select-none",
         /* Layout */
         "flex items-center justify-between",
         /* Focus */
-        "group-data-focused/select:border-active group-data-focused/select:outline-hidden",
+        "group-data-focused/select:border-hover group-data-focus-visible/select:ring-primary-active group-data-focus-visible/select:ring-2 group-data-focused/select:outline-hidden",
         /* Hover */
         "data-hovered:border-hover",
         /* Disabled */
         "group-data-disabled/select:opacity-disabled group-data-disabled/select:cursor-not-allowed",
         /* Invalid */
-        "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-active group-data-invalid/select:data-hovered:border-danger-hover",
+        "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-hover group-data-invalid/select:data-hovered:border-danger-hover",
         /* Placeholder */
         "has-data-placeholder:text-low",
         {
           md: "gap-2 px-3 py-1.5 text-base leading-5",
-          sm: "gap-2 px-2 py-0.5 text-sm leading-4",
+          sm: "gap-2 px-2 py-1 text-sm leading-4",
         }[size],
         rest.className,
       )}

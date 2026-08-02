@@ -147,7 +147,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
 
                 {props.amOwner ? (
                   <MenuTrigger>
-                    <Button variant="secondary" iconOnly>
+                    <Button variant="ghost" iconOnly>
                       <MoreVerticalIcon />
                     </Button>
                     <Popover>

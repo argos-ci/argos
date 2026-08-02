@@ -48,7 +48,7 @@ export function ProviderLastLoggedAt(props: { date: string }) {
 
 export function ProviderMenuButton() {
   return (
-    <Button variant="secondary" iconOnly className="shrink-0">
+    <Button variant="ghost" iconOnly className="shrink-0">
       <MoreVerticalIcon />
     </Button>
   );

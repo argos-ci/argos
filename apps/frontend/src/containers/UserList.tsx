@@ -18,7 +18,7 @@ export function RemoveMenu(props: {
 }) {
   return (
     <MenuTrigger>
-      <Button variant="secondary" iconOnly>
+      <Button variant="ghost" size="small" iconOnly>
         <MoreVerticalIcon />
       </Button>
       <Popover>

@@ -15,7 +15,7 @@ export function Pre({ code, copyRef, ...rest }: PreProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "bg-ui relative rounded-sm p-4 whitespace-pre-wrap",
+        "bg-ui relative truncate rounded-lg p-4 whitespace-pre-wrap",
       )}
     >
       <CopyButton

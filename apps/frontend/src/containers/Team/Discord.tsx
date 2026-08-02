@@ -246,7 +246,7 @@ function WebhookActionsMenu(props: { webhook: DiscordWebhook }) {
   return (
     <>
       <MenuTrigger>
-        <Button variant="secondary" iconOnly aria-label={label}>
+        <Button variant="ghost" iconOnly aria-label={label}>
           <MoreVerticalIcon />
         </Button>
         <Popover placement="bottom end">

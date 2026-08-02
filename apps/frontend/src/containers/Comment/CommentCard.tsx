@@ -752,7 +752,7 @@ function ReplyComposer(props: {
           placement="top"
         >
           <Button
-            variant="surface"
+            variant="secondary"
             iconOnly
             size="small"
             aria-label="Submit the reply"
