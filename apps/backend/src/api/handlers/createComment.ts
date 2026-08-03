@@ -33,10 +33,10 @@ import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
-const ThreadIdSchema = z
-  .string()
-  .optional()
-  .meta({ description: "Root comment ID to reply to." });
+const ThreadIdSchema = z.string().optional().meta({
+  description:
+    "Public ID of the root comment to reply to (e.g. `comment-xf23d`).",
+});
 
 const CreateCommentBodySchema = z.object({
   body: CommentBodyInputSchema,

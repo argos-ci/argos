@@ -3,6 +3,7 @@ import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
+import { formatCommentId, parseCommentId } from "@/comment/id";
 import {
   Account,
   Build,
@@ -90,7 +91,7 @@ describe("createComment", () => {
     expect(res.body.text).toContain("Looks broken on mobile");
     expect(JSON.stringify(res.body.body)).toContain("bold");
 
-    const comment = await Comment.query().findById(res.body.id);
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
     expect(comment?.userId).toBe(user.id);
   });
 
@@ -117,10 +118,10 @@ describe("createComment", () => {
     const res = await request(app)
       .post(`/projects/acme/web/builds/${build.number}/comments`)
       .set(auth(scopedPatToken))
-      .send({ body: "A reply", threadId: root.id })
+      .send({ body: "A reply", threadId: formatCommentId(root.id) })
       .expect(201);
 
-    expect(res.body.threadId).toBe(root.id);
+    expect(res.body.threadId).toBe(formatCommentId(root.id));
   });
 
   test("attaches to a pending review with addToReview", async ({
@@ -136,7 +137,7 @@ describe("createComment", () => {
       .expect(201);
 
     expect(res.body.pending).toBe(true);
-    const comment = await Comment.query().findById(res.body.id);
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
     expect(comment?.buildReviewId).not.toBeNull();
   });
 
@@ -226,7 +227,7 @@ describe("createComment", () => {
       .set(auth(scopedPatToken))
       .send({
         body: "reply",
-        threadId: root.id,
+        threadId: formatCommentId(root.id),
         screenshotDiffId: screenshotDiffs[0]!.id,
       })
       .expect(400)
@@ -290,11 +291,16 @@ describe("listComments / getComment", () => {
     });
 
     const res = await request(app)
-      .get(`/projects/acme/web/builds/${build.number}/comments/${comment.id}`)
+      .get(
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
+      )
       .set(auth(scopedPatToken))
       .expect(200);
 
-    expect(res.body).toMatchObject({ id: comment.id, text: "One comment" });
+    expect(res.body).toMatchObject({
+      id: formatCommentId(comment.id),
+      text: "One comment",
+    });
   });
 
   test("returns 404 for a deleted comment", async ({
@@ -310,7 +316,9 @@ describe("listComments / getComment", () => {
     });
 
     const res = await request(app)
-      .get(`/projects/acme/web/builds/${build.number}/comments/${comment.id}`)
+      .get(
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
+      )
       .set(auth(scopedPatToken))
       .expect(404);
     expect(res.body.error).toEqual(expect.any(String));
@@ -334,7 +342,9 @@ describe("listComments / getComment", () => {
     });
 
     const res = await request(app)
-      .get(`/projects/acme/web/builds/${build.number}/comments/${comment.id}`)
+      .get(
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
+      )
       .set(auth(scopedPatToken))
       .expect(404);
     expect(res.body.error).toEqual(expect.any(String));
@@ -358,7 +368,9 @@ describe("updateComment / deleteComment", () => {
     });
 
     const res = await request(app)
-      .patch(`/projects/acme/web/builds/${build.number}/comments/${comment.id}`)
+      .patch(
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
+      )
       .set(auth(scopedPatToken))
       .send({ body: "After" })
       .expect(200);
@@ -379,7 +391,9 @@ describe("updateComment / deleteComment", () => {
     });
 
     await request(app)
-      .patch(`/projects/acme/web/builds/${build.number}/comments/${comment.id}`)
+      .patch(
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
+      )
       .set(auth(scopedPatToken))
       .send({ body: "hijack" })
       .expect(403)
@@ -401,7 +415,7 @@ describe("updateComment / deleteComment", () => {
 
     await request(app)
       .delete(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
       )
       .set(auth(scopedPatToken))
       .expect(200);
@@ -423,7 +437,7 @@ describe("updateComment / deleteComment", () => {
 
     await request(app)
       .delete(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}`,
       )
       .set(auth(scopedPatToken))
       .expect(403)
@@ -451,7 +465,7 @@ describe("reactions", () => {
 
     const added = await request(app)
       .post(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/reactions`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/reactions`,
       )
       .set(auth(scopedPatToken))
       .send({ emoji: "👍" })
@@ -470,7 +484,7 @@ describe("reactions", () => {
 
     const removed = await request(app)
       .delete(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/reactions`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/reactions`,
       )
       .query({ emoji: "👍" })
       .set(auth(scopedPatToken))
@@ -488,7 +502,7 @@ describe("reactions", () => {
 
     await request(app)
       .post(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/reactions`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/reactions`,
       )
       .set(auth(scopedPatToken))
       .send({ emoji: "not-an-emoji" })
@@ -517,7 +531,7 @@ describe("thread resolve / subscription", () => {
 
     const resolved = await request(app)
       .post(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/resolve`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/resolve`,
       )
       .set(auth(scopedPatToken))
       .expect(200);
@@ -525,7 +539,7 @@ describe("thread resolve / subscription", () => {
 
     const reopened = await request(app)
       .post(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/unresolve`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/unresolve`,
       )
       .set(auth(scopedPatToken))
       .expect(200);
@@ -545,7 +559,7 @@ describe("thread resolve / subscription", () => {
 
     await request(app)
       .post(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/subscription`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/subscription`,
       )
       .set(auth(scopedPatToken))
       .expect(200);
@@ -558,7 +572,7 @@ describe("thread resolve / subscription", () => {
 
     await request(app)
       .delete(
-        `/projects/acme/web/builds/${build.number}/comments/${comment.id}/subscription`,
+        `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/subscription`,
       )
       .set(auth(scopedPatToken))
       .expect(200);

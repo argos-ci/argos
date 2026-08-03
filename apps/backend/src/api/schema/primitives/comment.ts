@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { formatCommentId } from "@/comment/id";
 import { schema as proseMirrorSchema } from "@/comment/schema";
 import { BuildReview, Comment, CommentReaction } from "@/database/models";
 
@@ -61,7 +62,10 @@ export const CommentAnchorSchema = z
 
 export const CommentSchema = z
   .object({
-    id: z.string(),
+    id: z.string().meta({
+      description:
+        "Public ID of the comment (e.g. `comment-xf23d`) — the one the app links to, and the one every endpoint taking a comment ID expects.",
+    }),
     buildId: z.string().nullable().meta({
       description:
         "Build this comment is posted on, null when it is posted on a test.",
@@ -112,7 +116,7 @@ export type CommentPayload = z.infer<typeof CommentSchema>;
 
 /** Path parameter addressing one comment. */
 export const CommentId = z.string().meta({
-  description: "The ID of the comment",
+  description: "The public ID of the comment (e.g. `comment-xf23d`)",
   id: "CommentId",
 });
 
@@ -121,7 +125,7 @@ export const CommentId = z.string().meta({
  * root, so any comment in the thread identifies it.
  */
 export const ThreadCommentId = z.string().meta({
-  description: "ID of any comment in the thread",
+  description: "Public ID of any comment in the thread (e.g. `comment-xf23d`)",
   id: "ThreadCommentId",
 });
 
@@ -224,10 +228,10 @@ export async function serializeComments(
       : false;
 
     return {
-      id: comment.id,
+      id: formatCommentId(comment.id),
       buildId: comment.buildId,
       testId: comment.testId,
-      threadId: comment.threadId,
+      threadId: comment.threadId ? formatCommentId(comment.threadId) : null,
       body: comment.content,
       text: commentText(comment.content),
       author: account ? serializeUser(account) : null,

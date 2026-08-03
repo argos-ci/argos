@@ -1,4 +1,5 @@
 import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
+import { safeParseCommentId } from "@/comment/id";
 import {
   getCommentTargetProject,
   isCommentOnTarget,
@@ -58,17 +59,18 @@ export async function assertCommentTargetPermission(input: {
 }
 
 /**
- * Load a comment by id, scoped to a target: a comment whose id is unknown or
- * belongs to a different build/test surfaces as a clean 404 rather than leaking
- * across targets. Soft-deleted comments are returned as-is — callers decide
- * whether a deleted comment is meaningful for their action (mirroring the
- * GraphQL resolvers).
+ * Load a comment by its public id, scoped to a target: a comment whose id is
+ * malformed or unknown, or which belongs to a different build/test, surfaces as
+ * a clean 404 rather than leaking across targets. Soft-deleted comments are
+ * returned as-is — callers decide whether a deleted comment is meaningful for
+ * their action (mirroring the GraphQL resolvers).
  */
 export async function getTargetComment(input: {
   commentId: string;
   target: CommentTarget;
 }): Promise<Comment> {
-  const comment = await Comment.query().findById(input.commentId);
+  const commentId = safeParseCommentId(input.commentId);
+  const comment = commentId ? await Comment.query().findById(commentId) : null;
   if (!comment || !isCommentOnTarget(comment, input.target)) {
     throw boom(404, "Comment not found");
   }
@@ -84,7 +86,8 @@ export async function getTargetCommentThread(input: {
   commentId: string;
   target: CommentTarget;
 }): Promise<Comment> {
-  const thread = await getCommentThreadRoot(input.commentId);
+  const commentId = safeParseCommentId(input.commentId);
+  const thread = commentId ? await getCommentThreadRoot(commentId) : null;
   if (!thread || !isCommentOnTarget(thread, input.target)) {
     throw boom(404, "Thread not found");
   }
