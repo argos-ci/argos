@@ -19,6 +19,7 @@ import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { createHandleCommentsPrompt } from "../BuildCommentsPrompt";
 import { useBuildDiffState } from "../BuildDiffState";
 import { getBuildOverviewURL } from "../BuildParams";
 import { useBuildReviewability } from "../BuildReviewability";
@@ -124,7 +125,7 @@ function LoggedReviewButton(props: {
       </div>
       <div className="flex items-center gap-2">
         <BuildReviewButton project={props.project} />
-        <BuildReviewPromptButton
+        <BuildPromptButton
           build={props.build}
           buildNumber={props.build.number}
           accountSlug={props.project.account.slug}
@@ -154,27 +155,45 @@ const _ProjectFragment = graphql(`
 `);
 
 /**
- * Hands the review prompt to the user's coding agent, so it reviews the build
- * from the CLI and reports back — or to the clipboard, for the agents Argos
- * cannot open.
+ * Hands one of the build's prompts to the user's coding agent — or to the
+ * clipboard, for the agents Argos cannot open.
+ *
+ * Two things can be asked of an agent about a build: to review it, and to carry
+ * out what its reviewers already wrote. Reviewing is the one the button itself
+ * performs — it applies to every build, where comments to handle are something
+ * a build only sometimes has.
  */
-function BuildReviewPromptButton(props: {
+function BuildPromptButton(props: {
   buildNumber: number;
   accountSlug: string;
   projectName: string;
   build: DocumentType<typeof _BuildFragment>;
 }) {
+  const { accountSlug, projectName, buildNumber } = props;
   const buildPath = `${getProjectURL({
-    accountSlug: props.accountSlug,
-    projectName: props.projectName,
-  })}/builds/${props.buildNumber}`;
+    accountSlug,
+    projectName,
+  })}/builds/${buildNumber}`;
   const buildUrl = new URL(buildPath, window.location.origin).toString();
-  const prompt = createBuildReviewPrompt({
-    buildUrl,
-    pullRequest: props.build.pullRequest,
-  });
+  const reviewPrompt = {
+    label: "Review build",
+    name: "review prompt",
+    prompt: createBuildReviewPrompt({
+      buildUrl,
+      pullRequest: props.build.pullRequest,
+    }),
+  };
+  const commentsPrompt = {
+    label: "Handle comments",
+    name: "comment prompt",
+    prompt: createHandleCommentsPrompt({
+      accountSlug,
+      projectName,
+      buildNumber,
+    }),
+  };
 
-  return <AiPromptButton prompt={prompt} promptName="review prompt" iconOnly />;
+  return <AiPromptButton prompts={[reviewPrompt, commentsPrompt]} iconOnly />;
 }
 
 export const BuildHeader = memo(

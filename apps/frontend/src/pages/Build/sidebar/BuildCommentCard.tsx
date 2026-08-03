@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import { DocumentType, graphql } from "@/gql";
+import { createHandleCommentsPrompt } from "@/pages/Build/BuildCommentsPrompt";
+import { useBuildParams } from "@/pages/Build/BuildParams";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import type { EditorValue } from "@/ui/Editor/Editor";
 
@@ -84,7 +87,24 @@ export function BuildCommentCard(props: {
   } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
+  const buildParams = useBuildParams();
   const client = useApolloClient();
+
+  // Threads live on the build page, but also in a popover on the screenshot,
+  // where the route still names the build — the prompt needs its number to tell
+  // the agent which build to read.
+  const threadPrompt = useMemo(
+    () =>
+      buildParams
+        ? createHandleCommentsPrompt({
+            accountSlug: buildParams.accountSlug,
+            projectName: buildParams.projectName,
+            buildNumber: buildParams.buildNumber,
+            threadId: comment.id,
+          })
+        : undefined,
+    [buildParams, comment.id],
+  );
 
   const anchor = (comment.anchor as CommentAnchor | null) ?? null;
   const screenshotDiff = comment.screenshotDiff ?? null;
@@ -110,6 +130,7 @@ export function BuildCommentCard(props: {
       {...cardProps}
       comment={comment}
       onReply={handleReply}
+      threadPrompt={threadPrompt}
       draftKeyPrefix={`build.${buildId}`}
       screenshotReference={
         !hideScreenshotReference && screenshotDiff && goToDiff

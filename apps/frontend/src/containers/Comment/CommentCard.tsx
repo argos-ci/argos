@@ -189,6 +189,12 @@ export function CommentCard(props: {
    * popover, where replying is the primary action.
    */
   autoFocusReply?: boolean;
+  /**
+   * Prompt handing this thread to a coding agent, so it carries out what the
+   * thread asks for in the repository. Only threads whose owner an agent can
+   * reach through the Argos API get one.
+   */
+  threadPrompt?: string;
 }) {
   const {
     comment,
@@ -200,6 +206,7 @@ export function CommentCard(props: {
     screenshotReference = null,
     embedded = false,
     autoFocusReply = false,
+    threadPrompt,
   } = props;
   const client = useApolloClient();
   const subscribeToCommentThread = () =>
@@ -404,6 +411,7 @@ export function CommentCard(props: {
               onSubscribeThread={subscribeThread}
               onUnsubscribeThread={unsubscribeThread}
               onToggleResolved={onToggleResolved}
+              threadPrompt={threadPrompt}
             />
             <AnimatePresence initial={false}>
               {replies.map((reply) => (
@@ -483,6 +491,12 @@ function CommentMessage(props: {
   onToggleResolved?: () => void;
   separated?: boolean;
   isReply?: boolean;
+  /**
+   * Prompt handing the whole thread to a coding agent. Thread-level like
+   * resolving is, so only the root comment carries it — a reply repeating it
+   * would offer the same work several times over.
+   */
+  threadPrompt?: string;
 }) {
   const {
     comment,
@@ -494,6 +508,7 @@ function CommentMessage(props: {
     onToggleResolved,
     separated = false,
     isReply = false,
+    threadPrompt,
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
@@ -634,6 +649,7 @@ function CommentMessage(props: {
               onDelete={
                 canDelete ? () => setIsDeleteDialogOpen(true) : undefined
               }
+              threadPrompt={threadPrompt}
             />
           </div>
         </div>

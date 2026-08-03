@@ -11,6 +11,7 @@ import {
   MenuItemIcon,
   MenuSeparator,
   MenuTrigger,
+  SubmenuTrigger,
 } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
@@ -20,16 +21,43 @@ import { AI_AGENTS, type AiAgentId } from "@/util/ai-agents";
  * Copying is a target like the agents are, so it can be the one remembered: it
  * is what someone whose agent Argos cannot open reaches for every time.
  */
-const COPY = "copy";
+const COPY_TARGET = "copy";
 
-type Target = AiAgentId | typeof COPY;
+export type AiPromptTarget = AiAgentId | typeof COPY_TARGET;
 
 /**
  * Where prompts went last, so the button offers that again instead of asking on
  * every build and every flaky test. Shared by every prompt Argos hands out: the
  * choice is about the user's tools, not about the prompt.
  */
-const targetAtom = atomWithStorage<Target>("aiPromptTarget", AI_AGENTS[0].id);
+const targetAtom = atomWithStorage<AiPromptTarget>(
+  "aiPromptTarget",
+  AI_AGENTS[0].id,
+);
+
+/**
+ * The agent prompts go to, and how to change it. Exported so the surfaces that
+ * hand out a prompt without this button — a comment thread's actions menu —
+ * still feed the one choice.
+ */
+export function useAiPromptTarget() {
+  return useAtom(targetAtom);
+}
+
+/** One thing Argos can ask a coding agent to do. */
+export interface AiPrompt {
+  /**
+   * What the prompt asks for, as the menu says it ("Review build"). Only shown
+   * when the button carries more than one.
+   */
+  label: string;
+  /**
+   * Names the prompt where it needs naming ("Copy review prompt"). Keep it
+   * short: it reads mid-label.
+   */
+  name: string;
+  prompt: string;
+}
 
 /**
  * Content of the button that performs the remembered action. An `iconOnly`
@@ -52,19 +80,70 @@ function PrimaryContent(props: {
 }
 
 /**
+ * The rows that send one prompt somewhere: every agent Argos can open, then the
+ * clipboard. Picking one is also meant to make it the remembered target, which
+ * is what `onPick` is for.
+ *
+ * Copying is left to the caller rather than done here, so the surface that owns
+ * the rows can confirm it in its own way — the button relabels itself, a menu
+ * that closes on the click has to say it another way.
+ */
+export function AiPromptTargetItems(props: {
+  entry: AiPrompt;
+  onPick: (target: AiPromptTarget) => void;
+  onCopy: (entry: AiPrompt) => void;
+}) {
+  const { entry, onPick, onCopy } = props;
+  return (
+    <>
+      {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
+        <MenuItem
+          key={id}
+          href={getURL(entry.prompt)}
+          textValue={name}
+          onAction={() => onPick(id)}
+        >
+          <MenuItemIcon>
+            <Icon />
+          </MenuItemIcon>
+          Open in {name}
+        </MenuItem>
+      ))}
+      <MenuSeparator />
+      <MenuItem
+        textValue={`Copy ${entry.name}`}
+        onAction={() => {
+          onPick(COPY_TARGET);
+          onCopy(entry);
+        }}
+      >
+        <MenuItemIcon>
+          <CopyIcon />
+        </MenuItemIcon>
+        Copy {entry.name}
+      </MenuItem>
+    </>
+  );
+}
+
+/**
  * Hands a prompt to the coding agent the user works with: a split button that
  * opens the one picked last, and a menu for the others and for the clipboard.
  *
  * The agents are opened through their own deep links, so the prompt is typed in
  * but not sent, and never leaves the machine.
+ *
+ * A button can carry several prompts — reviewing a build and acting on what its
+ * reviewers wrote are two things to ask of the same agent about the same build.
+ * The button itself performs the first one; the menu then folds each prompt's
+ * targets into a submenu of its own, rather than listing every pairing flat.
  */
 export function AiPromptButton(props: {
-  prompt: string;
   /**
-   * Names the prompt where it needs naming ("Copy review prompt"). Keep it
-   * short: it reads mid-label.
+   * What this button can hand out, most-used first: the button performs that
+   * one, and the menu reaches the rest.
    */
-  promptName?: string;
+  prompts: readonly [AiPrompt, ...AiPrompt[]];
   size?: ButtonSize;
   /**
    * Drop the label and keep the target's icon, for rows with no room for a
@@ -72,25 +151,31 @@ export function AiPromptButton(props: {
    */
   iconOnly?: boolean;
 }) {
-  const { prompt, promptName = "prompt", size, iconOnly = false } = props;
-  const [target, setTarget] = useAtom(targetAtom);
+  const { prompts, size, iconOnly = false } = props;
+  const [target, setTarget] = useAiPromptTarget();
   const clipboard = useClipboard({ copiedTimeout: 2000 });
-  const copy = () => clipboard.copy(prompt);
-  const copyLabel = `Copy ${promptName}`;
+  const [primary] = prompts;
+  const copy = (entry: AiPrompt) => clipboard.copy(entry.prompt);
+  const copyLabel = `Copy ${primary.name}`;
   // A target this build no longer offers falls back to copying, which always
   // works.
   const agent = AI_AGENTS.find(({ id }) => id === target) ?? null;
+  const targetItems = (entry: AiPrompt) => (
+    <AiPromptTargetItems entry={entry} onPick={setTarget} onCopy={copy} />
+  );
 
   return (
     <ButtonGroup>
       {agent ? (
-        <Tooltip content={`Open the ${promptName} in ${agent.name}`}>
+        <Tooltip content={`Open the ${primary.name} in ${agent.name}`}>
           <LinkButton
             variant="secondary"
             size={size}
             iconOnly={iconOnly}
-            aria-label={iconOnly ? `Open in ${agent.name}` : undefined}
-            href={agent.getURL(prompt)}
+            aria-label={
+              iconOnly ? `Open the ${primary.name} in ${agent.name}` : undefined
+            }
+            href={agent.getURL(primary.prompt)}
           >
             <PrimaryContent iconOnly={iconOnly} icon={<agent.Icon />}>
               Open in {agent.name}
@@ -106,7 +191,7 @@ export function AiPromptButton(props: {
             aria-label={
               iconOnly ? (clipboard.copied ? "Copied" : copyLabel) : undefined
             }
-            onPress={copy}
+            onPress={() => copy(primary)}
           >
             <PrimaryContent
               iconOnly={iconOnly}
@@ -122,7 +207,11 @@ export function AiPromptButton(props: {
           variant="secondary"
           size={size}
           iconOnly
-          aria-label={`Choose what to do with the ${promptName}`}
+          aria-label={
+            prompts.length > 1
+              ? "Choose what to hand to an agent"
+              : `Choose what to do with the ${primary.name}`
+          }
         >
           <ChevronDownIcon />
         </Button>
@@ -130,34 +219,20 @@ export function AiPromptButton(props: {
             and the button sits at the right of a header, so aligning it the
             other way only to be pushed back in reads as a stutter. */}
         <Popover placement="bottom end">
-          <Menu aria-label={promptName}>
-            {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
-              <MenuItem
-                key={id}
-                href={getURL(prompt)}
-                textValue={name}
-                onAction={() => setTarget(id)}
-              >
-                <MenuItemIcon>
-                  <Icon />
-                </MenuItemIcon>
-                Open in {name}
-              </MenuItem>
-            ))}
-            <MenuSeparator />
-            <MenuItem
-              textValue={copyLabel}
-              onAction={() => {
-                setTarget(COPY);
-                copy();
-              }}
-            >
-              <MenuItemIcon>
-                <CopyIcon />
-              </MenuItemIcon>
-              {copyLabel}
-            </MenuItem>
-          </Menu>
+          {prompts.length > 1 ? (
+            <Menu aria-label="Agent prompts">
+              {prompts.map((entry) => (
+                <SubmenuTrigger key={entry.label}>
+                  <MenuItem textValue={entry.label}>{entry.label}</MenuItem>
+                  <Popover>
+                    <Menu aria-label={entry.label}>{targetItems(entry)}</Menu>
+                  </Popover>
+                </SubmenuTrigger>
+              ))}
+            </Menu>
+          ) : (
+            <Menu aria-label={primary.name}>{targetItems(primary)}</Menu>
+          )}
         </Popover>
       </MenuTrigger>
     </ButtonGroup>

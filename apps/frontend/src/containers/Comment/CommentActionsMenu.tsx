@@ -5,9 +5,15 @@ import {
   LinkIcon,
   MoreHorizontalIcon,
   PencilIcon,
+  SparklesIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useClipboard } from "use-clipboard-copy";
 
+import {
+  AiPromptTargetItems,
+  useAiPromptTarget,
+} from "@/containers/AiPromptButton";
 import { Button } from "@/ui/Button";
 import {
   Menu,
@@ -15,8 +21,13 @@ import {
   MenuItemIcon,
   MenuSeparator,
   MenuTrigger,
+  SubmenuTrigger,
 } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
+import { toast } from "@/ui/Toaster";
+
+// Shared id so copying from several threads reuses one toast instead of stacking.
+const COPY_PROMPT_TOAST_ID = "thread-prompt-copied";
 
 export function CommentActionsMenu(props: {
   onCopyLink: () => void;
@@ -31,6 +42,13 @@ export function CommentActionsMenu(props: {
   onEdit?: () => void;
   /** When provided, a "Delete comment" action is shown. */
   onDelete?: () => void;
+  /**
+   * When provided, a "Handle with AI" submenu hands this prompt to a coding
+   * agent. It lives in the menu rather than next to the reactions: it acts on
+   * the whole thread, like resolving does, and a comment row has no room left
+   * for a control that only some threads would use.
+   */
+  threadPrompt?: string;
 }) {
   const {
     onCopyLink,
@@ -41,7 +59,10 @@ export function CommentActionsMenu(props: {
     onToggleResolved,
     onEdit,
     onDelete,
+    threadPrompt,
   } = props;
+  const [, setTarget] = useAiPromptTarget();
+  const clipboard = useClipboard();
   return (
     <MenuTrigger>
       <Button
@@ -74,6 +95,41 @@ export function CommentActionsMenu(props: {
               ? "Unsubscribe from thread"
               : "Subscribe to thread"}
           </MenuItem>
+          {threadPrompt ? (
+            <>
+              <MenuSeparator />
+              <SubmenuTrigger>
+                <MenuItem textValue="Handle with AI">
+                  <MenuItemIcon>
+                    <SparklesIcon />
+                  </MenuItemIcon>
+                  Handle with AI
+                </MenuItem>
+                <Popover>
+                  <Menu aria-label="Handle with AI">
+                    <AiPromptTargetItems
+                      entry={{
+                        label: "Handle this thread",
+                        name: "thread prompt",
+                        prompt: threadPrompt,
+                      }}
+                      onPick={setTarget}
+                      onCopy={(entry) => {
+                        clipboard.copy(entry.prompt);
+                        // The menu closes on the click, so the toast is the
+                        // only place left to confirm the copy.
+                        toast.success("Prompt copied", {
+                          id: COPY_PROMPT_TOAST_ID,
+                          description:
+                            "Paste it into a coding agent working in your repository.",
+                        });
+                      }}
+                    />
+                  </Menu>
+                </Popover>
+              </SubmenuTrigger>
+            </>
+          ) : null}
           {onToggleResolved ? (
             <>
               <MenuSeparator />
