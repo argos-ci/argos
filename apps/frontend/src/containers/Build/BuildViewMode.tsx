@@ -1,8 +1,50 @@
+import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-type ViewMode = "split" | "baseline" | "changes";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { checkIsImageContentType } from "@/util/content-type";
+
+export type ViewMode = "split" | "baseline" | "changes" | "onion" | "swipe";
+
+/** View modes blending baseline and changes into a single pane. */
+export type BlendViewMode = Extract<ViewMode, "onion" | "swipe">;
 
 export const buildViewModeAtom = atomWithStorage<ViewMode>(
   "preferences.diffViewMode",
   "split",
 );
+
+/** Opacity of the changes layer in onion skin view (0 = baseline, 1 = changes). */
+export const onionOpacityAtom = atom(0.5);
+
+/** Horizontal position of the swipe divider, as a fraction of the image width. */
+export const swipePositionAtom = atom(0.5);
+
+export function checkIsBlendViewMode(
+  viewMode: ViewMode,
+): viewMode is BlendViewMode {
+  return viewMode === "onion" || viewMode === "swipe";
+}
+
+/**
+ * Whether baseline and changes can be blended into a single pane (onion skin
+ * or swipe view): requires both screenshots to be images.
+ */
+export function checkDiffCanBeBlended(diff: {
+  status: ScreenshotDiffStatus;
+  baseScreenshot?: { contentType?: string | null } | null | undefined;
+  compareScreenshot?: { contentType?: string | null } | null | undefined;
+}): boolean {
+  switch (diff.status) {
+    case ScreenshotDiffStatus.Changed:
+    case ScreenshotDiffStatus.Ignored:
+      return Boolean(
+        diff.baseScreenshot &&
+        diff.compareScreenshot &&
+        checkIsImageContentType(diff.baseScreenshot.contentType ?? "") &&
+        checkIsImageContentType(diff.compareScreenshot.contentType ?? ""),
+      );
+    default:
+      return false;
+  }
+}

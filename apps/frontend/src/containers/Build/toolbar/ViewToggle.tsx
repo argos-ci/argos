@@ -7,10 +7,11 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
-import { buildViewModeAtom } from "../BuildViewMode";
+import { buildViewModeAtom, type ViewMode } from "../BuildViewMode";
 import { useZoomerSyncContext } from "../Zoomer";
 
-export const ViewToggle = memo(() => {
+export const ViewToggle = memo((props: { blendEnabled: boolean }) => {
+  const { blendEnabled } = props;
   const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
   const showBaselineHotkey = useBuildHotkey(
     "showBaseline",
@@ -30,6 +31,24 @@ export const ViewToggle = memo(() => {
     },
     { preventDefault: true },
   );
+  const showOnionHotkey = useBuildHotkey(
+    "showOnion",
+    () => {
+      startTransition(() => {
+        setViewMode("onion");
+      });
+    },
+    { preventDefault: true, enabled: blendEnabled },
+  );
+  const showSwipeHotkey = useBuildHotkey(
+    "showSwipe",
+    () => {
+      startTransition(() => {
+        setViewMode("swipe");
+      });
+    },
+    { preventDefault: true, enabled: blendEnabled },
+  );
 
   if (viewMode === "split") {
     return null;
@@ -43,12 +62,22 @@ export const ViewToggle = memo(() => {
       <ViewButton viewMode="changes" hotkey={showChangesHotkey}>
         Changes
       </ViewButton>
+      {blendEnabled && (
+        <>
+          <ViewButton viewMode="onion" hotkey={showOnionHotkey}>
+            Onion
+          </ViewButton>
+          <ViewButton viewMode="swipe" hotkey={showSwipeHotkey}>
+            Swipe
+          </ViewButton>
+        </>
+      )}
     </ButtonGroup>
   );
 });
 
 function ViewButton(props: {
-  viewMode: "baseline" | "changes";
+  viewMode: Exclude<ViewMode, "split">;
   hotkey: Hotkey;
   children: React.ReactNode;
 }) {

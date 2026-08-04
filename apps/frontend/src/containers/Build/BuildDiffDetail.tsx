@@ -14,10 +14,11 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/react";
 import { clsx } from "clsx";
-import { useAtomValue } from "jotai/react";
+import { useAtom, useAtomValue } from "jotai/react";
 import {
   BlendIcon,
   ChevronDownIcon,
+  ChevronsLeftRightIcon,
   ChevronUpIcon,
   CodeIcon,
   CopyIcon,
@@ -47,6 +48,7 @@ import {
   SubmenuTrigger,
 } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
+import { Slider, SliderThumb, SliderTrack } from "@/ui/Slider";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
@@ -69,7 +71,14 @@ import {
   NoScreenshotsBuildEmptyState,
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
-import { buildViewModeAtom } from "./BuildViewMode";
+import {
+  buildViewModeAtom,
+  checkDiffCanBeBlended,
+  checkIsBlendViewMode,
+  onionOpacityAtom,
+  swipePositionAtom,
+  type BlendViewMode,
+} from "./BuildViewMode";
 import { Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
@@ -79,7 +88,12 @@ import {
 } from "./OverlayStyle";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
-import { useZoomerSyncContext, useZoomTransform, ZoomPane } from "./Zoomer";
+import {
+  useZoomerSyncContext,
+  useZoomTransform,
+  ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+  ZoomPane,
+} from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDiffDetail_Build on Build {
@@ -915,8 +929,9 @@ function CompareScreenshotActionsMenu({
 function CompareScreenshot(props: {
   diff: BuildDiffDetailDocument;
   build: BuildFragmentDocument;
+  blendMode?: BlendViewMode | null;
 }) {
-  const { diff, build } = props;
+  const { diff, build, blendMode = null } = props;
   const buildId = build.id;
   const visible = useAtomValue(overlayVisibleAtom);
   const contained = useAtomValue(buildDiffFitContainedAtom);
@@ -1053,6 +1068,7 @@ function CompareScreenshot(props: {
           build={build}
           contained={contained}
           diffVisible={visible}
+          blendMode={blendMode}
         />
       );
     }
@@ -1068,9 +1084,12 @@ function CompareScreenshotChanged(props: {
   build: BuildFragmentDocument;
   diffVisible: boolean;
   contained: boolean;
+  blendMode: BlendViewMode | null;
 }) {
-  const { diff, build, diffVisible, contained } = props;
+  const { diff, build, diffVisible, contained, blendMode } = props;
   const buildId = build.id;
+  const onionOpacity = useAtomValue(onionOpacityAtom);
+  const swipePosition = useAtomValue(swipePositionAtom);
   const { url } = diff;
   const dimensions = useMemo(() => extractDimensions(diff), [diff]);
   invariant(url);
@@ -1110,11 +1129,35 @@ function CompareScreenshotChanged(props: {
           }
         >
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
+            {blendMode && (
+              <ScreenshotPicture
+                className={clsx(
+                  "absolute top-0 left-0 w-full",
+                  blendMode === "onion" && diffVisible && "opacity-disabled",
+                )}
+                alt="Baseline screenshot"
+                {...getScreenshotPictureProps(diff.baseScreenshot!)}
+              />
+            )}
             <ScreenshotPicture
               className={clsx(
                 "absolute top-0 left-0",
-                diffVisible && "opacity-disabled",
+                blendMode !== "onion" && diffVisible && "opacity-disabled",
               )}
+              alt={blendMode ? "Changes screenshot" : undefined}
+              style={
+                blendMode === "onion"
+                  ? {
+                      // An inline opacity overrides the `opacity-disabled`
+                      // class, so the overlay dimming is folded in here.
+                      opacity: diffVisible
+                        ? `calc(${onionOpacity} * var(--opacity-disabled))`
+                        : onionOpacity,
+                    }
+                  : blendMode === "swipe"
+                    ? { clipPath: `inset(0 0 0 ${swipePosition * 100}%)` }
+                    : undefined
+              }
               {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
             <ChangesScreenshotPicture
@@ -1123,8 +1166,17 @@ function CompareScreenshotChanged(props: {
               src={url}
               width={diff.width}
               height={diff.height}
-              style={diffVisible ? undefined : { opacity: 0 }}
+              style={{
+                opacity: diffVisible ? undefined : 0,
+                // In swipe view, the overlay only applies to the changes
+                // side of the divider.
+                clipPath:
+                  blendMode === "swipe"
+                    ? `inset(0 0 0 ${swipePosition * 100}%)`
+                    : undefined,
+              }}
             />
+            {blendMode === "swipe" && <SwipeDivider />}
           </ScreenshotContainer>
         </ZoomPane>
         {dimensions && paneSize && (
@@ -1136,11 +1188,111 @@ function CompareScreenshotChanged(props: {
             />
           </div>
         )}
+        {blendMode === "onion" && <OnionOpacityControl />}
       </div>
       {dimensions && paneSize && (
         <DiffIndicator url={jpgUrl} imgSize={dimensions} />
       )}
     </>
+  );
+}
+
+/**
+ * Draggable divider revealing the changes screenshot on its right side in
+ * swipe view. Rendered in image space, so sizes are divided by the current
+ * zoom scale to keep a constant size on screen.
+ */
+function SwipeDivider() {
+  const [position, setPosition] = useAtom(swipePositionAtom);
+  const transform = useZoomTransform();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inverseScale = 1 / transform.scale;
+
+  const moveToPointer = (event: React.PointerEvent) => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0) {
+      return;
+    }
+    const pointerPosition = (event.clientX - rect.left) / rect.width;
+    setPosition(Math.min(1, Math.max(0, pointerPosition)));
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      // Above the z-10 diff overlay, to stay visible and draggable when the
+      // overlay is shown.
+      className="pointer-events-none absolute inset-0 z-20"
+    >
+      <div
+        className={clsx(
+          ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+          "pointer-events-auto absolute inset-y-0 flex -translate-x-1/2 cursor-ew-resize items-center justify-center",
+        )}
+        style={{ left: `${position * 100}%`, width: 24 * inverseScale }}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          moveToPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            moveToPointer(event);
+          }
+        }}
+      >
+        <div
+          className="absolute inset-y-0 left-1/2 -translate-x-1/2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+          style={{ width: 2 * inverseScale }}
+        />
+        <div
+          className="relative flex items-center justify-center rounded-full bg-white text-black shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+          style={{ width: 24 * inverseScale, height: 24 * inverseScale }}
+        >
+          <ChevronsLeftRightIcon
+            style={{ width: 16 * inverseScale, height: 16 * inverseScale }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Floating slider fading the changes screenshot over the baseline in onion
+ * skin view.
+ */
+function OnionOpacityControl() {
+  const [opacity, setOpacity] = useAtom(onionOpacityAtom);
+  return (
+    // Keyboard-adjusting the slider uses arrow keys, which are also view
+    // hotkeys: disable hotkeys while the focus is inside the control.
+    <div
+      data-hotkeys-disabled=""
+      className="bg-app border-thin absolute bottom-3 left-1/2 z-10 flex w-72 -translate-x-1/2 items-center gap-3 rounded-md px-3 py-1.5 shadow-sm"
+    >
+      <span className="text-low text-xs select-none">Baseline</span>
+      <Slider
+        aria-label="Onion skin opacity"
+        className="flex-1"
+        minValue={0}
+        maxValue={100}
+        value={opacity * 100}
+        onChange={(value) => {
+          invariant(typeof value === "number", "Opacity must be a number");
+          setOpacity(value / 100);
+        }}
+      >
+        <SliderTrack>
+          <SliderThumb />
+        </SliderTrack>
+      </Slider>
+      <span className="text-low text-xs select-none">Changes</span>
+    </div>
   );
 }
 
@@ -1414,8 +1566,19 @@ const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { diff, build } = props;
     const viewMode = useAtomValue(buildViewModeAtom);
-    const showBaseline = viewMode === "split" || viewMode === "baseline";
-    const showChanges = viewMode === "split" || viewMode === "changes";
+    const canBlend = checkDiffCanBeBlended(diff);
+    const blendMode =
+      checkIsBlendViewMode(viewMode) && canBlend ? viewMode : null;
+    // Blend views only apply to comparable image diffs; fall back to the
+    // split view for the other diffs.
+    const effectiveViewMode =
+      checkIsBlendViewMode(viewMode) && !canBlend ? "split" : viewMode;
+    const showBaseline =
+      effectiveViewMode === "split" || effectiveViewMode === "baseline";
+    const showChanges =
+      blendMode !== null ||
+      effectiveViewMode === "split" ||
+      effectiveViewMode === "changes";
 
     if (
       diff.status === ScreenshotDiffStatus.Changed ||
@@ -1486,14 +1649,37 @@ const BuildScreenshots = memo(
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
           hidden={!showChanges}
         >
-          <BuildScreenshotHeader
-            label="Changes"
-            gitRef={build.branch}
-            date={build.createdAt}
-          />
+          {blendMode ? (
+            <div className="flex shrink-0 justify-center gap-6">
+              {build.baseScreenshotBucket ? (
+                <BuildScreenshotHeader
+                  label="Baseline"
+                  gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
+                  date={build.baseScreenshotBucket.createdAt}
+                />
+              ) : (
+                <BuildScreenshotHeaderPlaceholder />
+              )}
+              <BuildScreenshotHeader
+                label="Changes"
+                gitRef={build.branch}
+                date={build.createdAt}
+              />
+            </div>
+          ) : (
+            <BuildScreenshotHeader
+              label="Changes"
+              gitRef={build.branch}
+              date={build.createdAt}
+            />
+          )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <CompareScreenshot diff={diff} build={build} />
+              <CompareScreenshot
+                diff={diff}
+                build={build}
+                blendMode={blendMode}
+              />
             </ScaleProvider>
           </div>
         </div>
@@ -1585,6 +1771,9 @@ function BuildSnapshotsDiff(props: {
         </>
       );
     }
+    // Blend views don't apply to text snapshots; fall back to the split view.
+    case "onion":
+    case "swipe":
     case "split":
     case "changes": {
       if (viewMode === "changes" && !isDiffOverlayVisible) {
@@ -1595,7 +1784,7 @@ function BuildSnapshotsDiff(props: {
           </>
         );
       }
-      const isSplit = viewMode === "split";
+      const isSplit = viewMode !== "changes";
       return (
         <>
           <div className="flex shrink-0 gap-4">

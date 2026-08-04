@@ -9,6 +9,7 @@ import { Separator } from "@/ui/Separator";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
+import { checkDiffCanBeBlended } from "./BuildViewMode";
 import { CommentsEnabledContext } from "./CommentsContext";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
@@ -79,7 +80,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
-      <ViewToggle />
+      <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
       <SplitViewToggle />
       <FitToggle />
       {fitControls}
