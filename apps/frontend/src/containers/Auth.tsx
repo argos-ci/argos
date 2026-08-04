@@ -21,28 +21,30 @@ const LOGGED_IN_COOKIE = "argos_logged_in";
  *
  * `staff` is nullable in the schema but never null for `me` — the viewer owns it.
  */
-type AuthAccount = NonNullable<DocumentType<typeof MeQuery>["me"]>;
+export type AuthAccount = NonNullable<DocumentType<typeof MeQuery>["me"]>;
 
 /**
- * Shape exposed to consumers. Named `JWTData` for historical reasons (auth used
- * to be a client-readable JWT); the credential is now a server-side session.
+ * Who the viewer is.
+ *
+ * There is no loading case: the server sets the `argos_logged_in` hint alongside
+ * the session cookie, so whether *someone* is signed in is known synchronously,
+ * on the first render. Only their details have to be fetched — hence a null
+ * `account` on the `authenticated` case, meaning "signed in, details pending".
+ *
+ * That split is what keeps the app fast and correct at once. Anything deciding
+ * where to send the viewer reads `status` and gets an immediate answer, with no
+ * loader; anything needing the account itself either handles null or calls
+ * {@link useAssertAuthAccount}, and waits only for that subtree.
+ *
+ * A hint can be stale — the session may have expired or been revoked. `me` then
+ * resolves to null, this becomes `anonymous`, and the hint is cleared, so the
+ * state is self-correcting rather than merely optimistic.
  */
-export type JWTData = {
-  account: AuthAccount;
-};
+export type AuthState =
+  | { status: "anonymous" }
+  | { status: "authenticated"; account: AuthAccount | null };
 
-interface AuthContextValue {
-  account: AuthAccount | null;
-  /**
-   * True while `me` is still resolving a session the hint says exists — the
-   * account is unknown but is expected to arrive. Distinguishing this from
-   * "resolved, and there is no user" is what lets the shell render optimistically
-   * instead of flashing logged-out UI.
-   */
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthState | null>(null);
 
 function readLoggedInHint(): boolean {
   return Cookie.get(LOGGED_IN_COOKIE) === "1";
@@ -74,7 +76,7 @@ export const AuthContextProvider = ({
   const loggedInHint = readLoggedInHint();
   // Resolve the current account from the session cookie. Skipped entirely when
   // the hint says we're logged out, so anonymous pages render immediately.
-  const { data, loading } = useQuery(MeQuery, { skip: !loggedInHint });
+  const { data } = useQuery(MeQuery, { skip: !loggedInHint });
 
   // Passed through unchanged: rebuilding the object here would give the
   // context a new identity on every render.
@@ -96,34 +98,37 @@ export const AuthContextProvider = ({
     }
   }, [account]);
 
-  // Resolving only matters while we expect a user: with no hint the query never
-  // runs, so the account is authoritatively null from the first paint.
-  const resolving = loggedInHint && loading && !data;
-
-  const value = useMemo<AuthContextValue>(
-    () => ({ account, loading: resolving }),
-    [account, resolving],
-  );
+  const value = useMemo<AuthState>(() => {
+    // No hint: the query never runs, so this is authoritative immediately.
+    if (!loggedInHint) {
+      return { status: "anonymous" };
+    }
+    // Hint, but no answer yet: signed in, details still on their way.
+    if (!data) {
+      return { status: "authenticated", account: null };
+    }
+    // Derived from `data` rather than the hint alone, so a stale hint becomes
+    // anonymous on the render the answer arrives. Clearing the cookie happens in
+    // an effect, which would not re-render on its own.
+    return data.me
+      ? { status: "authenticated", account: data.me }
+      : { status: "anonymous" };
+  }, [loggedInHint, data]);
 
   // Children render immediately, before `me` resolves. Every route's data
   // fetching therefore starts on the first paint rather than one round trip
-  // later; the few components that truly need a resolved account suspend
-  // locally via `useAssertAuthTokenPayload`.
+  // later; the few components that cannot render without the viewer suspend
+  // locally via `useAssertAuthAccount`.
   return <AuthContext value={value}>{children}</AuthContext>;
 };
 
-function useAuth() {
+/**
+ * The viewer's {@link AuthState}. The single way to read who is signed in.
+ */
+export function useAuth(): AuthState {
   const value = use(AuthContext);
   invariant(value, "useAuth must be used within AuthProvider");
   return value;
-}
-
-/**
- * Account plus the "still resolving" flag, for UI that wants to render a
- * placeholder in the gap rather than either logged-in or logged-out UI.
- */
-export function useAuthState(): AuthContextValue {
-  return useAuth();
 }
 
 export class AuthenticationError extends Error {
@@ -133,52 +138,18 @@ export class AuthenticationError extends Error {
 }
 
 /**
- * The viewer, or null.
+ * The viewer, for components that cannot render without knowing them.
  *
- * Null is ambiguous here — it covers both "anonymous" and "not resolved yet" —
- * so this is only for reading *fields off* the account (an id to compare, a slug
- * to link to), where a value arriving late simply re-renders. Do not branch on
- * null itself: use {@link useAuthStatus}, which cannot hide the difference.
+ * Suspends until `me` resolves rather than blocking the whole app: Apollo
+ * deduplicates against the request the provider already has in flight, so this
+ * costs no extra round trip — only the subtree that needs the account waits.
  */
-export function useAuthTokenPayload(): JWTData | null {
-  const { account } = useAuth();
-  return account ? { account } : null;
-}
-
-/**
- * For components that cannot render without knowing the viewer. Suspends until
- * `me` resolves instead of blocking the whole app: Apollo deduplicates against
- * the request the provider already has in flight, so this costs no extra
- * round trip — only the subtree that needs the account waits for it.
- */
-export function useAssertAuthTokenPayload(): JWTData {
+export function useAssertAuthAccount(): AuthAccount {
   const { data } = useSuspenseQuery(MeQuery);
   if (!data.me) {
     throw new AuthenticationError("Invalid auth token payload");
   }
-  return { account: data.me };
-}
-
-export type AuthStatus = "loading" | "authenticated" | "anonymous";
-
-/**
- * Whether someone is logged in — with the in-between state made explicit.
- *
- * The app renders before `me` resolves, so "nobody is logged in" and "we do not
- * know yet" are genuinely different answers. This deliberately returns three
- * states rather than a boolean: a boolean collapses them, and every caller then
- * has to remember to check a separate loading flag. Forgetting sends a
- * logged-in user to /login.
- *
- * Handle `"loading"` by holding off — render a loader, withhold an action, or
- * leave an affordance out — never by treating it as anonymous.
- */
-export function useAuthStatus(): AuthStatus {
-  const { account, loading } = useAuth();
-  if (loading) {
-    return "loading";
-  }
-  return account ? "authenticated" : "anonymous";
+  return data.me;
 }
 
 export function logout(options?: { redirectTo?: string }) {

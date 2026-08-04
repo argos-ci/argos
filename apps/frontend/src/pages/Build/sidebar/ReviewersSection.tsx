@@ -17,7 +17,7 @@ import {
 } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList";
 import { useProjectPermissions } from "@/containers/Project/PermissionsContext";
@@ -259,8 +259,9 @@ function RequestReviewersMenu(props: { build: Build }) {
 
   // You can't request yourself as a reviewer, so exclude the current user from
   // the picker (the server enforces this too).
-  const authPayload = useAuthTokenPayload();
-  const currentAccountId = authPayload?.account.id;
+  const auth = useAuth();
+  const currentAccountId =
+    auth.status === "authenticated" ? auth.account?.id : undefined;
   const members = useMemo(
     () => build.members.filter((member) => member.id !== currentAccountId),
     [build.members, currentAccountId],

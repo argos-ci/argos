@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { graphql, type DocumentType } from "@/gql";
 import { UserType } from "@/gql/graphql";
 
-import type { JWTData } from "../Auth";
+import type { AuthAccount } from "../Auth";
 
 graphql(`
   fragment Test_AuditTrailUser on User {
@@ -41,11 +41,11 @@ export function addAuditTrailEntry(args: {
   cache: ApolloCache;
   action: "files.ignored" | "files.unignored";
   testId: string;
-  authPayload: JWTData;
+  account: AuthAccount;
   accountSlug: string;
   projectName: string;
 }) {
-  const { cache, action, testId, authPayload, accountSlug, projectName } = args;
+  const { cache, action, testId, account, accountSlug, projectName } = args;
   const testCacheId = cache.identify({
     __typename: "Test",
     id: testId,
@@ -56,7 +56,7 @@ export function addAuditTrailEntry(args: {
 
   const user = cache.readQuery({
     query: CurrentAccountQuery,
-    variables: { slug: authPayload.account.slug },
+    variables: { slug: account.slug },
   })?.account;
 
   if (!user) {

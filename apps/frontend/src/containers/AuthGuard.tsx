@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 import { config } from "@/config";
-import { JWTData, useAuthStatus, useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { PageLoader } from "@/ui/PageLoader";
 
 export function RedirectToWebsite() {
@@ -11,22 +11,22 @@ export function RedirectToWebsite() {
   return null;
 }
 
-export function AuthGuard(props: {
-  children: ({ authPayload }: { authPayload: JWTData }) => React.ReactNode;
-}) {
-  const status = useAuthStatus();
-  const authPayload = useAuthTokenPayload();
+/**
+ * Renders its children only for a signed-in viewer, sending anyone else to the
+ * login page.
+ *
+ * The decision comes from the `argos_logged_in` hint, so it is made on the first
+ * render with no round trip and a guarded page paints as fast as any other. The
+ * Suspense boundary is for children that go on to read the account itself via
+ * `useAssertAuthAccount`; children that don't never suspend, so they never see
+ * the fallback.
+ */
+export function AuthGuard(props: { children: () => React.ReactNode }) {
+  const auth = useAuth();
 
-  // The app renders before `me` resolves, so an absent account only means
-  // "logged out" once the query has answered. Redirecting on the first render
-  // would bounce a logged-in user straight to /login.
-  if (status === "loading") {
-    return <PageLoader />;
+  if (auth.status === "anonymous") {
+    return <RedirectToWebsite />;
   }
 
-  if (authPayload) {
-    return props.children({ authPayload }) as React.ReactElement;
-  }
-
-  return <RedirectToWebsite />;
+  return <Suspense fallback={<PageLoader />}>{props.children()}</Suspense>;
 }

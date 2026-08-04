@@ -14,7 +14,7 @@ import { Route, Routes } from "react-router";
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountGitLab } from "@/containers/Account/GitLab";
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
@@ -94,8 +94,9 @@ export function Component() {
   invariant(params, "Account params required");
   const { accountSlug } = params;
 
-  const authPayload = useAuthTokenPayload();
-  const userSlug = authPayload?.account.slug;
+  const auth = useAuth();
+  const userSlug =
+    auth.status === "authenticated" ? auth.account?.slug : undefined;
 
   if (!accountSlug) {
     return <NotFound />;

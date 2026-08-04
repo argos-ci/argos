@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { Heading, Text } from "react-aria-components";
 
-import { useAssertAuthTokenPayload } from "@/containers/Auth";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import {
   RemoveMenu,
   TeamMemberLabel,
@@ -77,7 +77,7 @@ interface TeamMembersListProps {
 }
 
 export function TeamMembersList(props: TeamMembersListProps) {
-  const authPayload = useAssertAuthTokenPayload();
+  const authAccount = useAssertAuthAccount();
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source>("everyone");
   const [level, setLevel] = useState<FilterUserLevel>("all");
@@ -125,7 +125,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
         <List className={filters !== deferredFilters ? "opacity-disabled" : ""}>
           {members.map((member) => {
             const { user } = member;
-            const isMe = authPayload.account.id === user.id;
+            const isMe = authAccount.id === user.id;
             return (
               <UserListRow key={user.id} user={user}>
                 {member.fromSSO ? (

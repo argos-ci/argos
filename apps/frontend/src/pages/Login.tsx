@@ -3,17 +3,16 @@ import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router";
 
 import { config } from "@/config";
-import { useAuthStatus } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { LoginOptions } from "@/containers/LoginOptions";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Link } from "@/ui/Link";
-import { PageLoader } from "@/ui/PageLoader";
 import { redirectToSAMLLogin } from "@/util/saml";
 
 export function Component() {
-  const status = useAuthStatus();
+  const auth = useAuth();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
   const samlTeamSlug = searchParams.get("saml");
@@ -24,13 +23,7 @@ export function Component() {
     return <RedirectToSAMLLogin teamSlug={samlTeamSlug} redirect={redirect} />;
   }
 
-  // Wait for `me` before deciding: acting on the optimistic value would send a
-  // logged-out user with a stale hint to "/", which bounces straight back here.
-  if (status === "loading") {
-    return <PageLoader />;
-  }
-
-  if (status === "authenticated") {
+  if (auth.status === "authenticated") {
     return <Navigate to="/" replace />;
   }
 

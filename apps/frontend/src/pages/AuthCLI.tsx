@@ -4,14 +4,13 @@ import { CheckCircleIcon, TerminalIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router";
 
-import { useAuthStatus } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Button } from "@/ui/Button";
 import { Card, CardBody } from "@/ui/Card";
 import { Container } from "@/ui/Container";
-import { PageLoader } from "@/ui/PageLoader";
 
 import { UserAccessTokenSource } from "../gql/graphql";
 
@@ -166,7 +165,7 @@ const InvalidRequestPage = () => (
 
 export function Component() {
   const [searchParams] = useSearchParams();
-  const status = useAuthStatus();
+  const auth = useAuth();
   const port = searchParams.get("port");
   const state = searchParams.get("state");
   const codeChallenge = searchParams.get("pkce");
@@ -175,14 +174,7 @@ export function Component() {
     return <InvalidRequestPage />;
   }
 
-  // Must not bounce to /login on the first render: `me` has not answered yet,
-  // and this page is reached mid-CLI-login, where a stray redirect loses the
-  // port and PKCE parameters.
-  if (status === "loading") {
-    return <PageLoader />;
-  }
-
-  if (status === "anonymous") {
+  if (auth.status === "anonymous") {
     return (
       <Navigate
         to={`/login?r=${encodeURIComponent(window.location.href)}`}

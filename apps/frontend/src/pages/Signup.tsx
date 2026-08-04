@@ -16,7 +16,7 @@ import {
 import { Navigate, useSearchParams } from "react-router";
 
 import { PRO_PLAN_PRICING } from "@/constants";
-import { useAuthStatus } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { SignupOptions } from "@/containers/SignupOptions";
 import { BrandShield } from "@/ui/BrandShield";
 import { Card } from "@/ui/Card";
@@ -28,7 +28,6 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
-import { PageLoader } from "@/ui/PageLoader";
 import { formatCurrency } from "@/util/intl";
 
 import mermaidImg from "./signup/mermaid.svg";
@@ -348,15 +347,9 @@ function SignupCard(props: { title: ReactNode; children: ReactNode }) {
 }
 
 export function Component() {
-  const status = useAuthStatus();
+  const auth = useAuth();
 
-  // Deciding before `me` answers would redirect a logged-out user away from the
-  // signup form, or show it to someone already signed in.
-  if (status === "loading") {
-    return <PageLoader />;
-  }
-
-  if (status === "authenticated") {
+  if (auth.status === "authenticated") {
     return <Navigate to="/" replace />;
   }
 

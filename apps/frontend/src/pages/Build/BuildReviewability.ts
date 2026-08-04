@@ -1,4 +1,4 @@
-import { useAuthStatus } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ProjectPermission } from "@/gql/graphql";
@@ -56,13 +56,11 @@ export function useBuildReviewability(build: Build): BuildReviewability {
  * under which the header shows an enabled review button.
  */
 export function useCanReviewBuild(build: Build): boolean {
-  const status = useAuthStatus();
+  const auth = useAuth();
   const hasReviewPermission = useProjectPermission(ProjectPermission.Review);
   const reviewability = useBuildReviewability(build);
-  // Not reviewable until the viewer is known — withholding the action briefly
-  // is safe, offering it to someone who turns out to be anonymous is not.
   return (
-    status === "authenticated" &&
+    auth.status === "authenticated" &&
     hasReviewPermission &&
     reviewability.reviewable
   );

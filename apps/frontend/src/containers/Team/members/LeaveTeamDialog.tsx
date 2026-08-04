@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useNavigate } from "react-router";
 
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
@@ -26,14 +26,15 @@ const LeaveTeamMutation = graphql(`
 export const LeaveTeamDialog = memo(
   (props: { teamName: string; teamAccountId: string }) => {
     const state = useOverlayTriggerState();
-    const authPayload = useAuthTokenPayload();
+    const auth = useAuth();
     const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
       variables: {
         teamAccountId: props.teamAccountId,
       },
       onCompleted() {
         state.close();
-        navigate(authPayload ? `/${authPayload.account.slug}` : "/");
+        const account = auth.status === "authenticated" ? auth.account : null;
+        navigate(account ? `/${account.slug}` : "/");
       },
     });
     const navigate = useNavigate();

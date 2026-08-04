@@ -16,7 +16,7 @@ import {
 import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
 import { useLocation } from "react-router";
 
-import { logout, useAuthState, useAuthTokenPayload } from "@/containers/Auth";
+import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import { ColorMode, useColorMode } from "@/ui/ColorMode";
@@ -98,13 +98,9 @@ function ColorModeSubmenu() {
   );
 }
 
-function UserMenu() {
-  const authPayload = useAuthTokenPayload();
+function UserMenu(props: { account: AuthAccount }) {
+  const { account } = props;
   const hotkeysDialog = useBuildHotkeysDialogState();
-
-  if (!authPayload) {
-    return null;
-  }
 
   return (
     <MenuTrigger>
@@ -115,12 +111,12 @@ function UserMenu() {
         )}
         aria-label="User settings"
       >
-        <AccountAvatar avatar={authPayload.account.avatar} className="size-7" />
+        <AccountAvatar avatar={account.avatar} className="size-7" />
       </RACButton>
       <Popover placement="bottom end">
         <Menu className="w-60">
           <MenuItem
-            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/new`}
+            href={`${getAccountURL({ accountSlug: account.slug })}/new`}
           >
             <MenuItemIcon>
               <PlusCircleIcon />
@@ -134,14 +130,14 @@ function UserMenu() {
             New Team
           </MenuItem>
           <MenuItem
-            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/settings`}
+            href={`${getAccountURL({ accountSlug: account.slug })}/settings`}
           >
             <MenuItemIcon>
               <SettingsIcon />
             </MenuItemIcon>
             Settings
           </MenuItem>
-          {authPayload.account.staff ? (
+          {account.staff ? (
             <>
               <MenuSeparator />
               <MenuItem href="/staff">
@@ -209,11 +205,16 @@ function LoginButton() {
 }
 
 export function NavUserControl() {
-  const { account, loading } = useAuthState();
-  if (loading) {
-    // The viewer is expected but not yet known. Hold the avatar's footprint so
-    // the navbar does not reflow when it arrives, and mark it busy so Argos
-    // waits for the resolved state before screenshotting.
+  const auth = useAuth();
+
+  if (auth.status === "anonymous") {
+    return <LoginButton />;
+  }
+
+  if (!auth.account) {
+    // Signed in, but the account has not arrived. Hold the avatar's footprint so
+    // the navbar does not reflow when it does, and mark it busy so Argos waits
+    // for the resolved state instead of screenshotting the gap.
     return (
       <InitialAvatar
         aria-busy
@@ -223,5 +224,6 @@ export function NavUserControl() {
       />
     );
   }
-  return account ? <UserMenu /> : <LoginButton />;
+
+  return <UserMenu account={auth.account} />;
 }

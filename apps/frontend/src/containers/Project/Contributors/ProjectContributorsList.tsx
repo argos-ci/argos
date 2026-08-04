@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
-import { useAssertAuthTokenPayload } from "@/containers/Auth";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { RemoveMenu, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -50,7 +50,7 @@ export function ProjectContributorsList(props: {
   projectName: string;
   readOnly: boolean;
 }) {
-  const authPayload = useAssertAuthTokenPayload();
+  const authAccount = useAssertAuthAccount();
   const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
   const removeModal = {
     isOpen: removedUser !== null,
@@ -89,7 +89,7 @@ export function ProjectContributorsList(props: {
               {contributors.length > 0 ? (
                 <List>
                   {contributors.map((contributor) => {
-                    const isMe = authPayload.account.id === contributor.user.id;
+                    const isMe = authAccount.id === contributor.user.id;
                     const user = contributor.user;
                     return (
                       <UserListRow key={contributor.id} user={user}>
@@ -155,7 +155,7 @@ export function ProjectContributorsList(props: {
       </div>
       <Modal {...removeModal}>
         {removedUser ? (
-          authPayload.account.id === removedUser.id ? (
+          authAccount.id === removedUser.id ? (
             <LeaveProjectDialog
               projectId={props.projectId}
               projectName={props.projectName}

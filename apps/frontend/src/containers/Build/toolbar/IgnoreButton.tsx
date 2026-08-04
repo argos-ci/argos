@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";
 
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { useProjectIgnoreEnabled } from "@/containers/Project/IgnoreContext";
 import { graphql } from "@/gql";
@@ -64,7 +64,7 @@ function EnabledIgnoreButton(props: {
   invariant(diff.change, "IgnoreButton requires a change in the diff");
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
-  const authPayload = useAuthTokenPayload();
+  const auth = useAuth();
   const client = useApolloClient();
   const changeId = diff.change.id;
 
@@ -89,11 +89,13 @@ function EnabledIgnoreButton(props: {
         },
         update: (cache) => {
           if (diff.test) {
-            invariant(authPayload, "User should be logged in");
+            const account =
+              auth.status === "authenticated" ? auth.account : null;
+            invariant(account, "User should be logged in");
             addAuditTrailEntry({
               cache,
               action: "files.ignored",
-              authPayload,
+              account,
               testId: diff.test.id,
               accountSlug: params.accountSlug,
               projectName: params.projectName,
@@ -129,11 +131,12 @@ function EnabledIgnoreButton(props: {
       },
       update: (cache) => {
         if (diff.test) {
-          invariant(authPayload, "User should be logged in");
+          const account = auth.status === "authenticated" ? auth.account : null;
+          invariant(account, "User should be logged in");
           addAuditTrailEntry({
             cache,
             action: "files.unignored",
-            authPayload,
+            account,
             testId: diff.test.id,
             accountSlug: params.accountSlug,
             projectName: params.projectName,

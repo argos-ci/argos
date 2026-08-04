@@ -3,14 +3,13 @@ import * as Sentry from "@sentry/react";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router";
 
-import { useAuthStatus } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
 import { Linkify } from "@/containers/Linkify";
 import { UniversalNavigate } from "@/containers/Redirect";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
-import { PageLoader } from "@/ui/PageLoader";
 import { APIError, fetchApi } from "@/util/api";
 import {
   AuthProvider,
@@ -102,16 +101,10 @@ function AuthCallback(props: { provider: AuthProvider }) {
 
 function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
   const { error, provider } = props;
-  const status = useAuthStatus();
+  const auth = useAuth();
   const [searchParams] = useSearchParams();
 
-  // The two branches lead somewhere different, so wait for `me` rather than
-  // guessing which error screen applies.
-  if (status === "loading") {
-    return <PageLoader />;
-  }
-
-  if (status === "authenticated") {
+  if (auth.status === "authenticated") {
     const state = searchParams.get("state");
     const redirectUri = state
       ? getRedirectFromState({ state, provider })
