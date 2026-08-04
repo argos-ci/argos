@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ClientConfig } from "@argos/config-types";
 import express, { Router, static as serveStatic } from "express";
@@ -74,13 +76,29 @@ export const installAppRouter = async (app: express.Application) => {
     },
   };
 
+  // `<` is escaped so a config value can never close the inlined <script>.
+  const clientConfigScript = `window.clientData = ${JSON.stringify({
+    config: clientConfig,
+  }).replace(/</g, "\\u003c")}`;
+
+  // Still served for development, where Vite serves its own index.html and
+  // proxies this path. Production gets the config inlined in the shell instead.
   router.get("/config.js", (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=0");
     res.setHeader("Content-Type", "application/javascript");
-    res.send(`window.clientData = ${JSON.stringify({ config: clientConfig })}`);
+    res.send(clientConfigScript);
   });
 
   const distDir = join(import.meta.dirname, "../../../frontend/dist");
+
+  // Boot the app without a round trip for its configuration: the `/config.js`
+  // request sat ahead of the entry bundle and could not be cached (the config is
+  // per-deploy), so inline it into the shell instead.
+  //
+  // Built once at startup. The config cannot change while the process runs, so
+  // the script's CSP hash is stable and can go straight into `script-src` —
+  // no per-request nonce needed.
+  const shell = buildAppShell({ distDir, configScript: clientConfigScript });
 
   if (config.get("env") !== "production") {
     router.use(
@@ -238,6 +256,8 @@ export const installAppRouter = async (app: express.Application) => {
             "'self'",
             // Script to update color classes
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
+            // Inlined client config, when the shell carries it
+            ...(shell ? [shell.configScriptCspHash] : []),
             ...config.get("csp.scriptSrc"),
           ],
           "connect-src": ["'self'", "*"],
@@ -255,19 +275,59 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
-  router.get("/{*splat}", (_req, res) => {
+  const sendAppShell: express.RequestHandler = (_req, res) => {
+    if (shell) {
+      res.type("html").send(shell.html);
+      return;
+    }
     res.sendFile(join(distDir, "index.html"));
-  });
+  };
+
+  router.get("/{*splat}", sendAppShell);
 
   // Express 5 {*splat} requires at least one path segment, so "/" does not
   // match the catch-all above. Add an explicit root handler so that "/"
   // serves the SPA shell (needed for single-domain deployments).
-  router.get("/", (_req, res) => {
-    res.sendFile(join(distDir, "index.html"));
-  });
+  router.get("/", sendAppShell);
 
   app.use(subdomain(router, "app"));
 };
+
+/**
+ * Reads the built SPA shell and swaps the `/config.js` request for the config
+ * inlined, returning the CSP hash that authorises the resulting inline script.
+ *
+ * Returns null when there is no build output — development, where Vite serves
+ * the shell itself and proxies `/config.js` to us.
+ */
+function buildAppShell(options: {
+  distDir: string;
+  configScript: string;
+}): { html: string; configScriptCspHash: string } | null {
+  const { distDir, configScript } = options;
+
+  let template: string;
+  try {
+    template = readFileSync(join(distDir, "index.html"), "utf8");
+  } catch {
+    return null;
+  }
+
+  const scriptTag = /<script defer src="\/config\.js[^"]*"><\/script>/;
+  if (!scriptTag.test(template)) {
+    // Fail loudly rather than serving a shell whose `config.ts` throws on boot.
+    throw new Error(
+      "Could not find the /config.js script tag in the built index.html, so the client config cannot be inlined. Did apps/frontend/index.html change?",
+    );
+  }
+
+  return {
+    html: template.replace(scriptTag, `<script>${configScript}</script>`),
+    configScriptCspHash: `'sha256-${createHash("sha256")
+      .update(configScript, "utf8")
+      .digest("base64")}'`,
+  };
+}
 
 function getCSPReportURI(): null | string {
   const baseURI = config.get("sentry.cspReportUri");
