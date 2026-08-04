@@ -505,9 +505,6 @@ importers:
       '@react-aria/interactions':
         specifier: ^3.28.1
         version: 3.28.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@reflag/react-sdk':
-        specifier: ^1.5.5
-        version: 1.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@sentry/react':
         specifier: ^10.68.0
         version: 10.68.0(react@19.2.8)
@@ -3284,18 +3281,6 @@ packages:
       react:
         optional: true
       react-redux:
-        optional: true
-
-  '@reflag/browser-sdk@1.5.4':
-    resolution: {integrity: sha512-85TjVE6kuZCw1fmm871d4oiWUMllbHDeEy1YPArHTitkAs+xsGJd8L497RHPP+7JB4u5V+XqSdH/xp0MUvoxKg==}
-
-  '@reflag/react-sdk@1.5.5':
-    resolution: {integrity: sha512-Q323+zZbmDy0Fjqi/AJ1srZsiU96qh5xsU7bU02svlgH/R4tZRw6ilhyThoIgTwebgAaRHY/yoUwPPbEgay4pg==}
-    peerDependencies:
-      react: ^19.2.8
-      react-dom: ^19.2.8
-    peerDependenciesMeta:
-      react-dom:
         optional: true
 
   '@repeaterjs/repeater@3.1.0':
@@ -7418,14 +7403,6 @@ packages:
     resolution: {integrity: sha512-dM0jVuXJPsDN6DvRpea484tCUaMiXWjuCn++HGTqUWzGDjv5tZkEZldAJ/UMlqRYGFrD/etByo4/xOuC/snX2A==}
     engines: {node: '>=20'}
 
-  preact@10.29.7:
-    resolution: {integrity: sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q==}
-    peerDependencies:
-      preact-render-to-string: '>=5'
-    peerDependenciesMeta:
-      preact-render-to-string:
-        optional: true
-
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -11338,24 +11315,6 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
       react-redux: 9.3.0(@types/react@19.2.17)(react@19.2.8)(redux@5.0.1)
-
-  '@reflag/browser-sdk@1.5.4':
-    dependencies:
-      '@floating-ui/dom': 1.8.0
-      fast-equals: 5.4.1
-      js-cookie: 3.0.8
-      preact: 10.29.7
-    transitivePeerDependencies:
-      - preact-render-to-string
-
-  '@reflag/react-sdk@1.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@reflag/browser-sdk': 1.5.4
-      react: 19.2.8
-    optionalDependencies:
-      react-dom: 19.2.8(react@19.2.8)
-    transitivePeerDependencies:
-      - preact-render-to-string
 
   '@repeaterjs/repeater@3.1.0': {}
 
@@ -15485,8 +15444,6 @@ snapshots:
       xtend: 4.0.2
 
   powershell-utils@0.1.0: {}
-
-  preact@10.29.7: {}
 
   prelude-ls@1.2.1: {}
 

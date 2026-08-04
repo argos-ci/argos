@@ -33,7 +33,6 @@
     "@radix-ui/colors": "^3.0.0",
     "@react-aria/collections": "^3.1.1",
     "@react-aria/interactions": "^3.28.1",
-    "@reflag/react-sdk": "^1.5.5",
     "@sentry/react": "^10.68.0",
     "@sentry/vite-plugin": "^5.4.0",
     "@simplewebauthn/browser": "^13.3.0",

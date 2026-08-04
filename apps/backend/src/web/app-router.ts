@@ -72,9 +72,6 @@ export const installAppRouter = async (app: express.Application) => {
     deployments: {
       baseDomain: config.get("deployments.baseDomain"),
     },
-    bucket: {
-      publishableKey: config.get("bucket.publishableKey"),
-    },
   };
 
   router.get("/config.js", (_req, res) => {
