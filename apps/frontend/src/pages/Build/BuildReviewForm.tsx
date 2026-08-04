@@ -144,11 +144,7 @@ export function BuildReviewForm(props: {
       // The mutation closes the dialog through `onCompleted`; keep the pending
       // state until then so the form doesn't flash back to idle and the modal
       // stays locked through the closing animation.
-      if (
-        returnToPullRequest &&
-        pullRequestUrl &&
-        event !== BuildReviewEvent.Comment
-      ) {
+      if (returnToPullRequest && pullRequestUrl) {
         window.location.assign(pullRequestUrl);
       }
     } catch (error) {
@@ -226,7 +222,7 @@ export function BuildReviewForm(props: {
             }}
             className="text-low self-start text-sm"
           >
-            Return to the pull request after approving or rejecting
+            Return to the pull request after review
           </Checkbox>
         ) : null}
         <Tooltip
