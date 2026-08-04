@@ -67,16 +67,28 @@ describe("app security headers", () => {
       expect(csp["connect-src"]).toContain("'self'");
     });
 
-    it("allows the origins the app actually talks to", () => {
-      const connectSrc = getConnectSrc();
-      // Screenshots and text snapshots are fetched, not just displayed.
+    it("allows the screenshots bucket, matched on its whole host", () => {
+      // Screenshots and text snapshots are fetched, not just displayed, so the
+      // bucket needs connect-src as well as img-src.
+      //
+      // Asserted by parsing each entry and anchoring the host, rather than
+      // searching for "amazonaws.com" as a substring: that would also pass for
+      // `https://amazonaws.com.attacker.test`, so it proves nothing about the
+      // origin actually being allowed.
+      const hosts = getConnectSrc()
+        .filter((origin) => origin.startsWith("https://"))
+        .map((origin) => new URL(origin).host);
       expect(
-        connectSrc.some((origin) => origin.includes("amazonaws.com")),
+        hosts.some((host) =>
+          /^[\w.-]+\.s3\.[\w-]+\.amazonaws\.com$/.test(host),
+        ),
       ).toBe(true);
-      // Subscriptions need an explicit WebSocket origin.
-      expect(connectSrc.some((origin) => origin.startsWith("wss://"))).toBe(
-        true,
-      );
+    });
+
+    it("allows an explicit WebSocket origin for subscriptions", () => {
+      expect(
+        getConnectSrc().some((origin) => origin.startsWith("wss://")),
+      ).toBe(true);
     });
 
     it("never emits a bare scheme or wildcard host", () => {
