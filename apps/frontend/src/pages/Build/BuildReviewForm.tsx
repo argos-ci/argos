@@ -224,14 +224,14 @@ export function BuildReviewForm(props: {
                   showFocusRing
                   onAction={() => submitReview(event)}
                 >
-                  <ButtonIcon>
-                    <Icon
-                      className={
-                        definition.iconColor
-                          ? lowTextColorClassNames[definition.iconColor]
-                          : undefined
-                      }
-                    />
+                  <ButtonIcon
+                    colorClassName={
+                      definition.iconColor
+                        ? lowTextColorClassNames[definition.iconColor]
+                        : undefined
+                    }
+                  >
+                    <Icon />
                   </ButtonIcon>
                   {definition.label}
                 </Button>
