@@ -1,35 +1,25 @@
-import {
-  ClaudeCodeIcon,
-  ClaudeIcon,
-  CodexIcon,
-  CursorIcon,
-} from "@/containers/agent-icons";
+import { ClaudeIcon, CodexIcon, CursorIcon } from "@/containers/agent-icons";
 
 /**
  * Coding agents Argos can hand a prompt to, in the order menus offer them.
  *
  * Each `getURL` is that agent's own deep link: opening it starts the agent
  * installed on the machine with the prompt typed in but not sent, so the prompt
- * never leaves the user's computer. They all cap the URL length (5,000
- * characters for the Claude Code CLI, 8,000 for Cursor), which is well above the
- * prompts Argos builds.
+ * never leaves the user's computer. Each caps how much it carries — around
+ * 14,000 characters for Claude, 8,000 for Cursor — well above the prompts Argos
+ * builds.
  *
- * Claude appears twice because the CLI and the desktop app register different
- * schemes, and only the one that is installed answers: `claude-cli://` opens a
- * terminal session, `claude://` opens the same session inside Claude Desktop.
+ * Claude Code's own `claude-cli://` scheme is deliberately absent. It opens a
+ * terminal, and on macOS it does so by having AppleScript *type* its launch
+ * command into iTerm2 or Terminal.app — a line the tty cuts at 1,024 bytes,
+ * which left roughly 650 characters of prompt and truncated the rest silently.
+ * `claude://code/new` opens the same Claude Code session inside the desktop app,
+ * where the prompt never goes near a terminal.
  */
 export const AI_AGENTS = [
   {
-    id: "claude-code",
-    name: "Claude Code",
-    Icon: ClaudeCodeIcon,
-    // https://code.claude.com/docs/en/deep-links
-    getURL: (prompt: string) =>
-      `claude-cli://open?q=${encodeURIComponent(prompt)}`,
-  },
-  {
     id: "claude-desktop",
-    name: "Claude Desktop",
+    name: "Claude",
     Icon: ClaudeIcon,
     // https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link
     getURL: (prompt: string) =>

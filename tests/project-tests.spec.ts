@@ -168,19 +168,19 @@ loggedTest(
     }
 
     // The test is flaky, so the section opens itself: the actions are reachable
-    // without expanding anything. Claude Code is the agent offered by default.
+    // without expanding anything. Claude is the agent offered by default.
     await expect(
       page.getByRole("heading", { name: "Fix with AI" }),
     ).toBeVisible();
-    const openInClaudeCode = page.getByRole("link", {
-      name: "Open in Claude Code",
+    const openInClaude = page.getByRole("link", {
+      name: "Open in Claude",
     });
-    await expect(openInClaudeCode).toBeVisible();
+    await expect(openInClaude).toBeVisible();
 
     // The agent is opened through its own deep link, which carries the prompt:
     // it names the test and the API endpoints the agent has to call.
-    const href = (await openInClaudeCode.getAttribute("href")) ?? "";
-    expect(href).toMatch(/^claude-cli:\/\/open\?q=/);
+    const href = (await openInClaude.getAttribute("href")) ?? "";
+    expect(href).toMatch(/^claude:\/\/code\/new\?q=/);
     const prompt = new URLSearchParams(href.split("?")[1]).get("q") ?? "";
     expect(prompt).toContain("Fix the flaky Argos visual test");
     expect(prompt).toContain("penelope-argos.jpg");
@@ -251,14 +251,14 @@ loggedTest(
     // there, but not competing with the metrics saying the test is fine.
     const heading = page.getByRole("heading", { name: "Fix with AI" });
     await expect(heading).toBeVisible();
-    const openInClaudeCode = page.getByRole("link", {
-      name: "Open in Claude Code",
+    const openInClaude = page.getByRole("link", {
+      name: "Open in Claude",
     });
-    await expect(openInClaudeCode).toBeHidden();
+    await expect(openInClaude).toBeHidden();
 
     // And opening it hands out the same prompt.
     await heading.click();
-    await expect(openInClaudeCode).toBeVisible();
+    await expect(openInClaude).toBeVisible();
   },
 );
 
