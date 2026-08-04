@@ -20,9 +20,6 @@
       "max": 1
     }
   },
-  "bucket": {
-    "publishableKey": "pub_test_3ntSjIQdedu1M591SRvnkE"
-  },
   "app": {
     "rateLimit": {
       "limit": 10000
