@@ -478,6 +478,9 @@ importers:
       '@argos/util':
         specifier: workspace:*
         version: link:../../packages/util
+      '@argos/vite-plugin-graphql-documents':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin-graphql-documents
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
@@ -818,6 +821,28 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)
+
+  packages/vite-plugin-graphql-documents:
+    dependencies:
+      magic-string:
+        specifier: ^1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@argos/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@argos/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)
+      vite:
+        specifier: ^8.1.5
+        version: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
 
 packages:
 
@@ -6774,6 +6799,9 @@ packages:
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
+
+  magic-string@1.1.0:
+    resolution: {integrity: sha512-kS3VHe0nEPST2saQV4Rbkchcd3UBRkVTQHo1D3h/ZTwFDhai/mfKkmtPAtD129EOI7K3HlHIsFOt0WrI2/oU9g==}
 
   make-asynchronous@1.1.0:
     resolution: {integrity: sha512-ayF7iT+44LXdxJLTrTd3TLQpFDDvPCBxXxbv+pMUSuHA5Q8zyAfwkRP6aHHwNVFBUFWtxAHqwNJxF8vMZLAbVg==}
@@ -14781,6 +14809,10 @@ snapshots:
   magic-bytes.js@1.13.1: {}
 
   magic-string@0.30.21:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
+  magic-string@1.1.0:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 

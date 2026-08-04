@@ -24,6 +24,7 @@
     "@argos/schemas": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@argos/util": "workspace:*",
+    "@argos/vite-plugin-graphql-documents": "workspace:*",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@hookform/resolvers": "^5.5.7",
     "@internationalized/date": "^3.12.2",

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { graphqlDocuments } from "@argos/vite-plugin-graphql-documents";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -12,6 +13,9 @@ export default defineConfig((args) => {
   return {
     mode,
     plugins: [
+      graphqlDocuments({
+        generatedDir: fileURLToPath(new URL("./src/gql", import.meta.url)),
+      }),
       react(),
       tailwindcss(),
       mode !== "development"
