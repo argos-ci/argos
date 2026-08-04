@@ -17,7 +17,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { Navigate, useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus } from "@/containers/Auth";
 import { OAuthAppLogo, VerifiedBadge } from "@/containers/OAuthAppLogo";
 import { graphql, type DocumentType } from "@/gql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
@@ -29,6 +29,7 @@ import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import { Container } from "@/ui/Container";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
+import { PageLoader } from "@/ui/PageLoader";
 import { Tooltip } from "@/ui/Tooltip";
 
 const ConsentQuery = graphql(`
@@ -488,7 +489,7 @@ const InvalidRequestPage = (props: { children: React.ReactNode }) => (
 
 export function Component() {
   const [searchParams] = useSearchParams();
-  const isLoggedIn = useIsLoggedIn();
+  const authStatus = useAuthStatus();
 
   const clientId = searchParams.get("client_id");
   const redirectUri = searchParams.get("redirect_uri");
@@ -526,7 +527,13 @@ export function Component() {
     );
   }
 
-  if (!isLoggedIn) {
+  // Redirecting before `me` answers would drop the OAuth parameters this
+  // consent screen was reached with, for a user who is in fact signed in.
+  if (authStatus === "loading") {
+    return <PageLoader />;
+  }
+
+  if (authStatus === "anonymous") {
     return (
       <Navigate
         to={`/login?r=${encodeURIComponent(window.location.href)}`}

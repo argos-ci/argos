@@ -4,7 +4,7 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router";
 
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus } from "@/containers/Auth";
 import {
   AlreadyJoined,
   InvalidInvite,
@@ -63,7 +63,7 @@ function AcceptInviteButton(
   props: { secret: string } & Omit<ButtonProps, "onPress">,
 ) {
   const navigate = useNavigate();
-  const isLoggedIn = useIsLoggedIn();
+  const status = useAuthStatus();
   const [accept, { data, loading }] = useMutation(AcceptInviteMutation, {
     variables: {
       secret: props.secret,
@@ -74,7 +74,7 @@ function AcceptInviteButton(
     onCompleted(data) {
       const { team } = data.acceptInvite;
       const redirectURL = getAccountURL({ accountSlug: team.slug });
-      if (isLoggedIn) {
+      if (status === "authenticated") {
         navigate(redirectURL, { replace: true });
       } else {
         // Accepting the invite as a new user established a session cookie
@@ -95,7 +95,7 @@ function AcceptInviteButton(
 }
 
 export function Component() {
-  const isLoggedIn = useIsLoggedIn();
+  const status = useAuthStatus();
   const params = useParams();
   const secret = params.inviteSecret;
   invariant(secret, "no invite secret");
@@ -140,7 +140,7 @@ export function Component() {
                     Invited by {invite.invitedBy.name || invite.invitedBy.slug}
                   </Text>
                   <AcceptInviteButton secret={secret} size="large">
-                    {isLoggedIn ? (
+                    {status === "authenticated" ? (
                       <>Join {teamName}</>
                     ) : (
                       <>Continue as {invite.email}</>

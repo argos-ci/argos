@@ -132,6 +132,14 @@ export class AuthenticationError extends Error {
   }
 }
 
+/**
+ * The viewer, or null.
+ *
+ * Null is ambiguous here — it covers both "anonymous" and "not resolved yet" —
+ * so this is only for reading *fields off* the account (an id to compare, a slug
+ * to link to), where a value arriving late simply re-renders. Do not branch on
+ * null itself: use {@link useAuthStatus}, which cannot hide the difference.
+ */
 export function useAuthTokenPayload(): JWTData | null {
   const { account } = useAuth();
   return account ? { account } : null;
@@ -151,12 +159,26 @@ export function useAssertAuthTokenPayload(): JWTData {
   return { account: data.me };
 }
 
-export function useIsLoggedIn() {
+export type AuthStatus = "loading" | "authenticated" | "anonymous";
+
+/**
+ * Whether someone is logged in — with the in-between state made explicit.
+ *
+ * The app renders before `me` resolves, so "nobody is logged in" and "we do not
+ * know yet" are genuinely different answers. This deliberately returns three
+ * states rather than a boolean: a boolean collapses them, and every caller then
+ * has to remember to check a separate loading flag. Forgetting sends a
+ * logged-in user to /login.
+ *
+ * Handle `"loading"` by holding off — render a loader, withhold an action, or
+ * leave an affordance out — never by treating it as anonymous.
+ */
+export function useAuthStatus(): AuthStatus {
   const { account, loading } = useAuth();
-  // While `me` is in flight we trust the hint, so the shell renders its
-  // authenticated form straight away instead of flashing a login button and
-  // then swapping it for an avatar.
-  return loading || account !== null;
+  if (loading) {
+    return "loading";
+  }
+  return account ? "authenticated" : "anonymous";
 }
 
 export function logout(options?: { redirectTo?: string }) {

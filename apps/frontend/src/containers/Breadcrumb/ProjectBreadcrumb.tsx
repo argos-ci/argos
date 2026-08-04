@@ -2,7 +2,7 @@ import { FolderCode } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 import { useMatch } from "react-router";
 
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus } from "@/containers/Auth";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
@@ -19,7 +19,7 @@ export function ProjectBreadcrumbItem(props: {
 }) {
   const { accountSlug, projectName } = props;
 
-  const loggedIn = useIsLoggedIn();
+  const status = useAuthStatus();
   const isCurrent = useMatch("/:accountSlug/:projectName/:any?");
 
   return (
@@ -33,7 +33,7 @@ export function ProjectBreadcrumbItem(props: {
         </BreadcrumbItemIcon>
         {projectName}
       </BreadcrumbLink>
-      {loggedIn && (
+      {status === "authenticated" && (
         <MenuTrigger>
           <BreadcrumbMenuButton />
           <Popover placement="bottom start">

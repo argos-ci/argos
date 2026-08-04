@@ -4,7 +4,7 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate, useParams } from "react-router";
 
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus } from "@/containers/Auth";
 import {
   AlreadyJoined,
   InvalidInvite,
@@ -73,7 +73,7 @@ function JoinTeamButton(props: { secret: string; children: React.ReactNode }) {
 }
 
 export function Component() {
-  const loggedIn = useIsLoggedIn();
+  const status = useAuthStatus();
   const params = useParams();
   const secret = params.inviteSecret;
   invariant(secret, "no invite secret");
@@ -100,7 +100,7 @@ export function Component() {
             const team = data.teamInvite;
             if (team) {
               const teamName = team.name || team.slug;
-              if (!loggedIn) {
+              if (status !== "authenticated") {
                 return (
                   <>
                     <InviteAccountAvatar avatar={team.avatar} />

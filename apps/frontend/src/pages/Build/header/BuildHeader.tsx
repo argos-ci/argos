@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { RefreshCcwIcon } from "lucide-react";
 
 import { AiPromptButton } from "@/containers/AiPromptButton";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus } from "@/containers/Auth";
 import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
@@ -141,8 +141,8 @@ const ConditionalBuildReviewButton = memo(
     project: ComponentProps<typeof BuildReviewButton>["project"];
     build: DocumentType<typeof _BuildFragment>;
   }) => {
-    const loggedIn = useIsLoggedIn();
-    return loggedIn ? (
+    const status = useAuthStatus();
+    return status === "authenticated" ? (
       <LoggedReviewButton project={props.project} build={props.build} />
     ) : null;
   },

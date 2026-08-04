@@ -6,7 +6,7 @@ import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
-import { useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
+import { useAuthStatus, useAuthTokenPayload } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
@@ -86,7 +86,7 @@ function StaffBreadcrumbLink() {
 
 export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
-  const loggedIn = useIsLoggedIn();
+  const status = useAuthStatus();
   const isStaffArea = Boolean(useMatch("/staff/*"));
 
   return (
@@ -98,7 +98,7 @@ export function AccountBreadcrumbItem() {
       ) : (
         <HomeBreadcrumbLink />
       )}
-      {loggedIn && (
+      {status === "authenticated" && (
         <MenuTrigger>
           <BreadcrumbMenuButton />
           <Popover placement="bottom start">
