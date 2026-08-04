@@ -85,7 +85,8 @@ export const installAppRouter = async (app: express.Application) => {
   // Still served for development, where Vite serves its own index.html and
   // proxies this path. Production gets the config inlined in the shell instead.
   router.get("/config.js", (_req, res) => {
-    res.setHeader("Cache-Control", "public, max-age=0");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Vary", "Accept-Encoding");
     res.setHeader("Content-Type", "application/javascript");
     res.send(clientConfigScript);
   });
@@ -227,6 +228,9 @@ export const installAppRouter = async (app: express.Application) => {
       etag: true,
       lastModified: false,
       maxAge: "1 year",
+      // Filenames are content-hashed, so a cached asset can never be stale.
+      // Without this some browsers still revalidate on reload.
+      immutable: true,
       index: false,
     }),
   );
@@ -239,6 +243,11 @@ export const installAppRouter = async (app: express.Application) => {
   );
 
   const sendAppShell: express.RequestHandler = (_req, res) => {
+    // The shell names content-hashed assets, so it must always be revalidated.
+    // Express's sendFile default (`public, max-age=0`) was incidental, and it
+    // came back compressed without advertising it.
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Vary", "Accept-Encoding");
     if (shell) {
       res.type("html").send(shell.html);
       return;
