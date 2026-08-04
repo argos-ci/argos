@@ -3,7 +3,13 @@ import { atomWithStorage } from "jotai/utils";
 import { CheckIcon, ChevronDownIcon, CopyIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
-import { Button, ButtonIcon, LinkButton, type ButtonSize } from "@/ui/Button";
+import {
+  Button,
+  ButtonIcon,
+  LinkButton,
+  type ButtonIconElementProps,
+  type ButtonSize,
+} from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import {
   Menu,
@@ -65,7 +71,7 @@ export interface AiPrompt {
  */
 function PrimaryContent(props: {
   iconOnly: boolean;
-  icon: React.ReactElement<{ className?: string }>;
+  icon: React.ReactElement<ButtonIconElementProps>;
   children: React.ReactNode;
 }) {
   if (props.iconOnly) {

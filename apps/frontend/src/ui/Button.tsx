@@ -46,7 +46,9 @@ type ButtonOptions = {
  * icon because `ButtonIcon` clones it as a direct child, and an `iconOnly`
  * button's icon is its only child.
  */
-const ICON_STEPS_BACK = "*:text-low data-hovered:*:text-default";
+const ICON_STEPS_BACK = clsx(
+  "*:not-data-colored-icon:text-low data-hovered:*:not-data-colored-icon:text-default",
+);
 
 /**
  * The edge of a quiet button — the hairline `shadow-control` draws, tinted
@@ -363,22 +365,29 @@ export function LinkButton({
   );
 }
 
+export type ButtonIconElementProps = {
+  className?: string;
+  "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  "data-colored-icon"?: true;
+};
+
 export function ButtonIcon({
   children,
   position = "left",
   className,
+  colorClassName,
 }: {
-  children: React.ReactElement<{
-    className?: string;
-    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
-  }>;
+  children: React.ReactElement<ButtonIconElementProps>;
   position?: "left" | "right";
   className?: string;
+  colorClassName?: string;
 }) {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
+    "data-colored-icon": colorClassName ? true : undefined,
     className: clsx(
       children.props.className,
+      colorClassName,
       "size-[1em]",
       "group-data-[size=small]/button:my-0.5",
       "group-data-[size=medium]/button:my-0.75",
