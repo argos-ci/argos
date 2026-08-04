@@ -1,12 +1,11 @@
 import { createContext, use, useEffect, useMemo } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 
 import { config } from "@/config";
 import { graphql } from "@/gql";
-import { PageLoader } from "@/ui/PageLoader";
 
 /**
  * Zero-privilege render hint set (and cleared) by the server alongside the
@@ -34,6 +33,13 @@ export type JWTData = {
 
 interface AuthContextValue {
   account: AuthAccount | null;
+  /**
+   * True while `me` is still resolving a session the hint says exists — the
+   * account is unknown but is expected to arrive. Distinguishing this from
+   * "resolved, and there is no user" is what lets the shell render optimistically
+   * instead of flashing logged-out UI.
+   */
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -87,14 +93,19 @@ export const AuthContextProvider = ({
     }
   }, [account]);
 
-  const value = useMemo<AuthContextValue>(() => ({ account }), [account]);
+  // Resolving only matters while we expect a user: with no hint the query never
+  // runs, so the account is authoritatively null from the first paint.
+  const resolving = loggedInHint && loading && !data;
 
-  // Hold rendering until we know who the user is, so consumers of
-  // `useAssertAuthTokenPayload` always observe a resolved account.
-  if (loggedInHint && loading && !data) {
-    return <PageLoader />;
-  }
+  const value = useMemo<AuthContextValue>(
+    () => ({ account, loading: resolving }),
+    [account, resolving],
+  );
 
+  // Children render immediately, before `me` resolves. Every route's data
+  // fetching therefore starts on the first paint rather than one round trip
+  // later; the few components that truly need a resolved account suspend
+  // locally via `useAssertAuthTokenPayload`.
   return <AuthContext value={value}>{children}</AuthContext>;
 };
 
@@ -102,6 +113,14 @@ function useAuth() {
   const value = use(AuthContext);
   invariant(value, "useAuth must be used within AuthProvider");
   return value;
+}
+
+/**
+ * Account plus the "still resolving" flag, for UI that wants to render a
+ * placeholder in the gap rather than either logged-in or logged-out UI.
+ */
+export function useAuthState(): AuthContextValue {
+  return useAuth();
 }
 
 export class AuthenticationError extends Error {
@@ -115,16 +134,26 @@ export function useAuthTokenPayload(): JWTData | null {
   return account ? { account } : null;
 }
 
+/**
+ * For components that cannot render without knowing the viewer. Suspends until
+ * `me` resolves instead of blocking the whole app: Apollo deduplicates against
+ * the request the provider already has in flight, so this costs no extra
+ * round trip — only the subtree that needs the account waits for it.
+ */
 export function useAssertAuthTokenPayload(): JWTData {
-  const payload = useAuthTokenPayload();
-  if (!payload) {
+  const { data } = useSuspenseQuery(MeQuery);
+  if (!data.me) {
     throw new AuthenticationError("Invalid auth token payload");
   }
-  return payload;
+  return { account: data.me };
 }
 
 export function useIsLoggedIn() {
-  return useAuth().account !== null;
+  const { account, loading } = useAuth();
+  // While `me` is in flight we trust the hint, so the shell renders its
+  // authenticated form straight away instead of flashing a login button and
+  // then swapping it for an avatar.
+  return loading || account !== null;
 }
 
 export function logout(options?: { redirectTo?: string }) {

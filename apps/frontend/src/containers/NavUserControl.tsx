@@ -17,7 +17,7 @@ import {
 import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
 import { useLocation } from "react-router";
 
-import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
+import { logout, useAuthState, useAuthTokenPayload } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
@@ -251,6 +251,19 @@ function LoginButton() {
 }
 
 export function NavUserControl() {
-  const loggedIn = useIsLoggedIn();
-  return loggedIn ? <UserMenu /> : <LoginButton />;
+  const { account, loading } = useAuthState();
+  if (loading) {
+    // The viewer is expected but not yet known. Hold the avatar's footprint so
+    // the navbar does not reflow when it arrives, and mark it busy so Argos
+    // waits for the resolved state before screenshotting.
+    return (
+      <InitialAvatar
+        aria-busy
+        initial=""
+        color="var(--gray-3)"
+        className="size-8 shrink-0"
+      />
+    );
+  }
+  return account ? <UserMenu /> : <LoginButton />;
 }
