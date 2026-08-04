@@ -23,6 +23,7 @@ import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
 import { requireCsrf } from "./middlewares/csrf";
+import { createAppSecurityHeaders } from "./security-headers";
 import { asyncHandler, subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
@@ -231,47 +232,9 @@ export const installAppRouter = async (app: express.Application) => {
   );
 
   router.use(
-    helmet({
-      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-      contentSecurityPolicy: {
-        directives: {
-          "default-src": ["'self'"],
-          "img-src": [
-            "'self'",
-            "data:",
-            "blob:",
-            "https://argos-ci.com",
-            // ImageKit images
-            "https://files.argos-ci.com",
-            // S3 images
-            `https://${config.get("s3.screenshotsBucket")}.s3.${config.get("s3.region")}.amazonaws.com`,
-            // GitHub and GitLab avatars
-            "https://github.com",
-            "https://avatars.githubusercontent.com",
-            "https://gitlab.com",
-            "https://secure.gravatar.com",
-          ],
-          "worker-src": ["'self'", "blob:"],
-          "script-src": [
-            "'self'",
-            // Script to update color classes
-            "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
-            // Inlined client config, when the shell carries it
-            ...(shell ? [shell.configScriptCspHash] : []),
-            ...config.get("csp.scriptSrc"),
-          ],
-          "connect-src": ["'self'", "*"],
-          ...(cspReportUri
-            ? { "report-to": ["csp-endpoint"], "report-uri": [cspReportUri] }
-            : {}),
-        },
-      },
-      crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: false,
-      crossOriginOpenerPolicy: false,
-      frameguard: {
-        action: "deny", // Disallow embedded iframe
-      },
+    createAppSecurityHeaders({
+      configScriptCspHash: shell?.configScriptCspHash ?? null,
+      cspReportUri,
     }),
   );
 
