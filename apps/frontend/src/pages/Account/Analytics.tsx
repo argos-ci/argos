@@ -1,5 +1,16 @@
 import { Suspense, useCallback, useEffect, useId, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
+import {
+  addDays,
+  diffInCalendarDays,
+  endOfDay,
+  endOfWeek,
+  formatISODay,
+  parseISODay,
+  startOfDay,
+  startOfWeek,
+} from "@argos/util/date";
+import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import clsx from "clsx";
@@ -11,7 +22,6 @@ import {
   SearchIcon,
   ThumbsUpIcon,
 } from "lucide-react";
-import moment from "moment";
 import { useFilter } from "react-aria";
 import {
   Autocomplete,
@@ -1233,21 +1243,17 @@ const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
 
 function formatSeriesDateLabel(ts: number, groupBy: TimeSeriesGroupBy) {
   const date = new Date(ts);
+  const locale = navigator.language;
   switch (groupBy) {
     case TimeSeriesGroupBy.Day:
-      return date.toLocaleDateString(navigator.language, {
-        month: "short",
-        day: "numeric",
-      });
+      return formatDate(date, "monthDay", { locale });
     case TimeSeriesGroupBy.Week: {
-      const startOfWeek = moment(date).startOf("week").format("MMM D");
-      const endOfWeek = moment(date).endOf("week").format("MMM D");
-      return `${startOfWeek} - ${endOfWeek}`;
+      const start = formatDate(startOfWeek(date), "monthDay", { locale });
+      const end = formatDate(endOfWeek(date), "monthDay", { locale });
+      return `${start} - ${end}`;
     }
     case TimeSeriesGroupBy.Month:
-      return date.toLocaleDateString(navigator.language, {
-        month: "short",
-      });
+      return formatDate(date, "month", { locale });
   }
 }
 
@@ -1414,22 +1420,18 @@ function PeriodSelect(props: {
 }
 
 function getDateQueryValue(date: Date): string {
-  return moment(date).format("YYYY-MM-DD");
+  return formatISODay(date);
 }
 
 function parseDateQueryValue(value: string | null): Date | null {
   if (!value) {
     return null;
   }
-  const parsed = moment(value, "YYYY-MM-DD", true);
-  if (!parsed.isValid()) {
-    return null;
-  }
-  return parsed.startOf("day").toDate();
+  return parseISODay(value);
 }
 
 function getDurationInDays(range: { from: Date; to: Date }) {
-  return moment(range.to).diff(moment(range.from), "days") + 1;
+  return diffInCalendarDays(range.to, range.from) + 1;
 }
 
 function checkIsDurationValid(range: { from: Date; to: Date }) {
@@ -1440,10 +1442,10 @@ function checkIsDurationValid(range: { from: Date; to: Date }) {
 }
 
 function getDefaultCustomPeriod() {
-  const now = moment();
+  const today = startOfDay(new Date());
   return {
-    from: now.clone().startOf("day").subtract(30, "days").toDate(),
-    to: now.clone().startOf("day").toDate(),
+    from: addDays(today, -30),
+    to: today,
   };
 }
 
@@ -1467,8 +1469,8 @@ function getPeriodSettings(
   if (period === "custom") {
     const range = customPeriod ?? getDefaultCustomPeriod();
     return {
-      from: moment(range.from).startOf("day").toDate(),
-      to: moment(range.to).endOf("day").toDate(),
+      from: startOfDay(range.from),
+      to: endOfDay(range.to),
       groupBy:
         getDurationInDays(range) <= 30
           ? TimeSeriesGroupBy.Day
@@ -1478,10 +1480,10 @@ function getPeriodSettings(
     };
   }
 
-  const today = moment().startOf("day");
+  const today = startOfDay(new Date());
   return {
-    from: today.clone().subtract(Periods[period].days, "days").toDate(),
-    to: today.clone().endOf("day").toDate(),
+    from: addDays(today, -Periods[period].days),
+    to: endOfDay(today),
     groupBy: Periods[period].groupBy,
   };
 }

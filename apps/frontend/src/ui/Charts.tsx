@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { addUnit, startOfUnit, type TimeUnit } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
-import moment from "moment";
 import * as RechartsPrimitive from "recharts";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -379,17 +379,12 @@ export function ChartLegendContent({
 /**
  * Get ticks for a given date range and unit.
  */
-export function getTimeTicks(
-  from: Date,
-  to: Date,
-  unit: moment.unitOfTime.Base,
-  step = 1,
-) {
+export function getTimeTicks(from: Date, to: Date, unit: TimeUnit, step = 1) {
   const ticks = [];
-  const current = moment(from).add(1, unit).startOf(unit);
-  while (current.isBefore(to)) {
-    ticks.push(current.toDate().getTime());
-    current.add(step, unit);
+  let current = startOfUnit(addUnit(from, 1, unit), unit);
+  while (current < to) {
+    ticks.push(current.getTime());
+    current = addUnit(current, step, unit);
   }
   return ticks;
 }

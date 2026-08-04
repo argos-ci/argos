@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { isSameYear } from "@argos/util/date";
+import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { PlusCircleIcon } from "lucide-react";
-import moment from "moment";
 
 import { config } from "@/config";
 import { CONTACT_HREF } from "@/constants";
@@ -107,7 +108,7 @@ function PlanStatus(props: {
           <CardParagraph>
             Your trial has been canceled. You can still use team features until{" "}
             <strong>
-              <Time date={account.subscription.endDate} format="LL" />
+              <Time date={account.subscription.endDate} format="longDate" />
             </strong>
             .
           </CardParagraph>
@@ -188,10 +189,13 @@ function PlanStatus(props: {
                 </CardParagraph>
               );
             }
+            if (!account.periodEndDate) {
+              return null;
+            }
             return (
               <CardParagraph className="text-low">
                 The next payment will occur on{" "}
-                {moment(account.periodEndDate).format("LL")}.
+                {formatDate(new Date(account.periodEndDate), "longDate")}.
               </CardParagraph>
             );
           })()}
@@ -353,8 +357,8 @@ function ManageSubscriptionButton({
 }
 
 function Period({ start, end }: { start: string; end: string }) {
-  const sameYear = moment(start).isSame(end, "year");
-  const format = sameYear ? "MMM DD" : "MMM D, YYYY";
+  const sameYear = isSameYear(new Date(start), new Date(end));
+  const format = sameYear ? "monthDay" : "date";
   return (
     <div className="font-medium">
       Current period ({<Time date={start} format={format} />} -{" "}

@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
+import { formatDuration } from "@argos/util/date-format";
 import clsx from "clsx";
-import moment from "moment";
 
 import {
   BuildModeDescription,
@@ -148,8 +148,7 @@ function Description(props: { children: React.ReactNode }) {
 }
 
 function Duration({ start, end }: { start: string; end: string }) {
-  const duration = moment.duration(moment(end).diff(moment(start)));
-  return duration.humanize();
+  return formatDuration(new Date(end).getTime() - new Date(start).getTime());
 }
 
 /**
@@ -177,14 +176,14 @@ export function BuildInfos(props: {
     <dl>
       <Dt>Created</Dt>
       <Dd>
-        <Time date={build.createdAt} format="LLL" />
+        <Time date={build.createdAt} format="dateTime" />
       </Dd>
 
       {build.finalizedAt ? (
         <>
           <Dt>Completed</Dt>
           <Dd>
-            <Time date={build.finalizedAt} format="LLL" />
+            <Time date={build.finalizedAt} format="dateTime" />
             <Description>
               <Duration start={build.createdAt} end={build.finalizedAt} />
             </Description>
@@ -196,7 +195,7 @@ export function BuildInfos(props: {
         <>
           <Dt>Processed</Dt>
           <Dd>
-            <Time date={build.concludedAt} format="LLL" />
+            <Time date={build.concludedAt} format="dateTime" />
             <Description>
               <Duration start={build.finalizedAt} end={build.concludedAt} />
             </Description>

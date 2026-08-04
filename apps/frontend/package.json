@@ -77,7 +77,6 @@
     "linkifyjs": "^4.3.3",
     "lucide-react": "^1.27.0",
     "memoize": "^11.0.0",
-    "moment": "^2.30.1",
     "motion": "^12.42.2",
     "nuqs": "^2.9.2",
     "p-retry": "^8.0.0",

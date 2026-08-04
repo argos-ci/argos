@@ -231,13 +231,13 @@ function PasskeyRow(props: {
           {passkey.lastUsedAt ? (
             <>
               Last used{" "}
-              <Time date={passkey.lastUsedAt} format="ll" tooltip="none" />
+              <Time date={passkey.lastUsedAt} format="date" tooltip="none" />
               {" • "}
             </>
           ) : (
             "Never used • "
           )}
-          Created <Time date={passkey.createdAt} format="ll" tooltip="none" />
+          Created <Time date={passkey.createdAt} format="date" tooltip="none" />
           {passkey.synced ? " • Synced" : null}
         </div>
       </div>

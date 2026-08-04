@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { checkIsTrialingSubscriptionStatus } from "@argos/schemas/subscription-status";
+import { addDays, startOfDay } from "@argos/util/date";
 import clsx from "clsx";
 import {
   CheckIcon,
@@ -18,7 +19,6 @@ import {
   XIcon,
   type LucideIcon,
 } from "lucide-react";
-import moment from "moment";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
@@ -157,7 +157,7 @@ function getTrialPeriods() {
     Object.entries(PERIOD_DAYS).map(([key, days]) => [
       key,
       {
-        from: moment().subtract(days, "days").startOf("day").toDate(),
+        from: startOfDay(addDays(new Date(), -days)),
         label: `Last ${days} days`,
       },
     ]),

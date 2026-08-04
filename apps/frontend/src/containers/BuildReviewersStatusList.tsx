@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
+import { formatRelativeDate } from "@argos/util/date-format";
 import clsx from "clsx";
 import { BanIcon } from "lucide-react";
-import moment from "moment";
 
 import { ReviewState } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
@@ -128,7 +128,7 @@ export function BuildReviewersStatusList<
               <span className="flex-1 truncate font-medium">Unknown user</span>
             )}
             <Tooltip
-              content={`${descriptor.label} · ${moment(review.dismissedAt ?? review.date).fromNow()}`}
+              content={`${descriptor.label} · ${formatRelativeDate(new Date(review.dismissedAt ?? review.date))}`}
             >
               <Icon
                 className={clsx("size-3.5 shrink-0", descriptor.textColor)}
