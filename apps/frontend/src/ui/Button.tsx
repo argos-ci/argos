@@ -365,17 +365,19 @@ export function LinkButton({
   );
 }
 
+export type ButtonIconElementProps = {
+  className?: string;
+  "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  "data-colored-icon"?: true;
+};
+
 export function ButtonIcon({
   children,
   position = "left",
   className,
   colorClassName,
 }: {
-  children: React.ReactElement<{
-    className?: string;
-    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
-    "data-colored-icon": true;
-  }>;
+  children: React.ReactElement<ButtonIconElementProps>;
   position?: "left" | "right";
   className?: string;
   colorClassName?: string;
