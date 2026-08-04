@@ -47,7 +47,7 @@ type ButtonOptions = {
  * button's icon is its only child.
  */
 const ICON_STEPS_BACK = clsx(
-  "*:data-colored-icon:text-low data-hovered:*:data-colored-icon:text-default",
+  "*:not-data-colored-icon:text-low data-hovered:*:not-data-colored-icon:text-default",
 );
 
 /**
@@ -384,7 +384,7 @@ export function ButtonIcon({
 }) {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
-    "data-colored-icon": colorClassName ? undefined : true,
+    "data-colored-icon": colorClassName ? true : undefined,
     className: clsx(
       children.props.className,
       colorClassName,
