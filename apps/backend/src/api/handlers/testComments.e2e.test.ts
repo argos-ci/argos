@@ -3,6 +3,7 @@ import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import { TEST_COMMENTS_LIMIT } from "@/comment/getVisibleComments";
+import { parseCommentId } from "@/comment/id";
 import { knex } from "@/database";
 import {
   Comment,
@@ -70,7 +71,7 @@ describe("test comments API", () => {
     });
     expect(res.body.text).toContain("This one is flaky");
 
-    const comment = await Comment.query().findById(res.body.id);
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
     expect(comment?.userId).toBe(user.id);
     expect(comment?.buildId).toBeNull();
     expect(comment?.testId).toBe(testModel.id);
@@ -115,7 +116,7 @@ describe("test comments API", () => {
     expect(res.body.screenshotDiffId).toBeNull();
     expect(res.body.pending).toBe(false);
 
-    const comment = await Comment.query().findById(res.body.id);
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
     expect(comment?.screenshotDiffId).toBeNull();
     expect(comment?.buildReviewId).toBeNull();
   });
@@ -209,7 +210,9 @@ describe("test comments API", () => {
       .set(auth(scopedPatToken))
       .expect(200);
 
-    const comment = await Comment.query().findById(created.body.id);
+    const comment = await Comment.query().findById(
+      parseCommentId(created.body.id),
+    );
     expect(comment?.deletedAt).not.toBeNull();
 
     await request(app)
@@ -286,7 +289,7 @@ describe("test comments API", () => {
       .expect(200);
 
     let subscription = await CommentNotificationSubscription.query().findOne({
-      commentId: created.body.id,
+      commentId: parseCommentId(created.body.id),
       userId: user.id,
     });
     expect(subscription?.isSubscribed()).toBe(false);
@@ -299,7 +302,7 @@ describe("test comments API", () => {
       .expect(200);
 
     subscription = await CommentNotificationSubscription.query().findOne({
-      commentId: created.body.id,
+      commentId: parseCommentId(created.body.id),
       userId: user.id,
     });
     expect(subscription?.isSubscribed()).toBe(true);

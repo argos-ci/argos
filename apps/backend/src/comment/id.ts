@@ -15,19 +15,32 @@ export function formatCommentId(commentId: string | number): string {
 }
 
 /**
- * Decodes a public comment identifier back to the underlying model ID.
+ * Decodes a public comment identifier back to the underlying model ID, or
+ * `null` when the input is not one. Callers that address a comment by id use
+ * this, so a malformed id reads as "no such comment" rather than an error.
  */
-export function parseCommentId(input: string): string {
+export function safeParseCommentId(input: string): string | null {
   if (!input.startsWith(COMMENT_ID_PREFIX)) {
-    throw new Error("Invalid comment ID format");
+    return null;
   }
 
   const decoded = sqids.decode(input.slice(COMMENT_ID_PREFIX.length))[0];
   if (decoded === undefined) {
-    throw new Error("Invalid comment ID format");
+    return null;
   }
 
   return String(decoded);
+}
+
+/**
+ * Decodes a public comment identifier back to the underlying model ID.
+ */
+export function parseCommentId(input: string): string {
+  const parsed = safeParseCommentId(input);
+  if (parsed === null) {
+    throw new Error("Invalid comment ID format");
+  }
+  return parsed;
 }
 
 /**

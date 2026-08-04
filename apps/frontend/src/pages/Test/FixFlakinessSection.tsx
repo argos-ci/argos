@@ -133,7 +133,9 @@ export function FixFlakinessSection(props: {
             reads this test's stats and its recurring changes from the Argos
             API, then fixes what makes the screenshot unstable.
           </p>
-          <AiPromptButton prompt={prompt} />
+          <AiPromptButton
+            prompts={[{ label: "Fix flakiness", name: "prompt", prompt }]}
+          />
         </div>
       </Details>
     </Panel>
