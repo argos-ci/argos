@@ -1,4 +1,4 @@
-import moment from "moment";
+import { addDays, addHours, startOfDay } from "@argos/util/date";
 
 import { MetricsPeriod } from "@/gql/graphql";
 
@@ -12,23 +12,23 @@ const now = new Date();
 
 const TEST_METRICS_PERIOD = {
   [MetricsPeriod.Last_24Hours]: {
-    from: moment(now).subtract(24, "hours").toDate(),
+    from: addHours(now, -24),
     label: "Last 24 hours",
   },
   [MetricsPeriod.Last_3Days]: {
-    from: moment(now).subtract(3, "days").startOf("day").toDate(),
+    from: startOfDay(addDays(now, -3)),
     label: "Last 3 days",
   },
   [MetricsPeriod.Last_7Days]: {
-    from: moment(now).subtract(7, "days").startOf("day").toDate(),
+    from: startOfDay(addDays(now, -7)),
     label: "Last 7 days",
   },
   [MetricsPeriod.Last_30Days]: {
-    from: moment(now).subtract(30, "days").startOf("day").toDate(),
+    from: startOfDay(addDays(now, -30)),
     label: "Last 30 days",
   },
   [MetricsPeriod.Last_90Days]: {
-    from: moment(now).subtract(90, "days").startOf("day").toDate(),
+    from: startOfDay(addDays(now, -90)),
     label: "Last 90 days",
   },
 } satisfies PeriodsDefinition;

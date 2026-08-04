@@ -270,7 +270,7 @@ function StaffTeamRow(props: {
           </div>
         </td>
         <td className="p-4 text-sm">
-          <Time date={team.createdAt} format="ll" tooltip="title" />
+          <Time date={team.createdAt} format="date" tooltip="title" />
         </td>
         <td className="p-4 text-sm">
           <SubscriptionLabel status={team.subscriptionStatus} />

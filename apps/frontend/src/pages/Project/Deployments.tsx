@@ -143,11 +143,7 @@ function CurrentDeploymentBadge(props: { createdAt: string }) {
             production traffic
           </div>
           <div className="text-low">
-            <Time
-              date={props.createdAt}
-              format="D MMM YYYY [at] HH:mm:ss"
-              tooltip="none"
-            />
+            <Time date={props.createdAt} format="precise" tooltip="none" />
           </div>
         </div>
       }

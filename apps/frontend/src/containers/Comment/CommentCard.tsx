@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
+import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -8,7 +9,6 @@ import {
   ChevronsUpDownIcon,
   MessageSquareCheckIcon,
 } from "lucide-react";
-import moment from "moment";
 import { AnimatePresence, motion } from "motion/react";
 import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
@@ -58,8 +58,8 @@ function isSelectionCollapsed() {
   return !selection || selection.isCollapsed;
 }
 
-// Detailed date format used in the date tooltip, e.g. "Thu May 21, 2026, 15:47:43".
-const DETAILED_DATE_FORMAT = "ddd MMM D, YYYY, HH:mm:ss";
+// Detailed date format used in the date tooltip, e.g. "Thu, May 21, 2026, 15:47:43".
+const DETAILED_DATE_FORMAT = "preciseWeekday";
 
 // Shared height/opacity transition for content that animates in and out: the
 // reply list, and the thread body collapsing when a thread is resolved. Kept in
@@ -613,12 +613,15 @@ function CommentMessage(props: {
                   <div className="flex flex-col">
                     <span>
                       Created:{" "}
-                      {moment(comment.date).format(DETAILED_DATE_FORMAT)}
+                      {formatDate(new Date(comment.date), DETAILED_DATE_FORMAT)}
                     </span>
                     {comment.editedAt ? (
                       <span>
                         Edited:{" "}
-                        {moment(comment.editedAt).format(DETAILED_DATE_FORMAT)}
+                        {formatDate(
+                          new Date(comment.editedAt),
+                          DETAILED_DATE_FORMAT,
+                        )}
                       </span>
                     ) : null}
                   </div>

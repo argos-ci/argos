@@ -1,5 +1,5 @@
+import { addDays, isSameDay } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
-import moment from "moment";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -88,15 +88,15 @@ describe("GraphQL staffTrialPipeline", () => {
 
     const old = await factory.TeamAccount.create({
       slug: "too-old",
-      createdAt: moment().subtract(45, "days").toISOString(),
+      createdAt: addDays(new Date(), -45).toISOString(),
     });
     const recent = await factory.TeamAccount.create({
       slug: "recent",
-      createdAt: moment().subtract(20, "days").toISOString(),
+      createdAt: addDays(new Date(), -20).toISOString(),
     });
     const newest = await factory.TeamAccount.create({
       slug: "newest",
-      createdAt: moment().subtract(1, "days").toISOString(),
+      createdAt: addDays(new Date(), -1).toISOString(),
     });
 
     const res = await queryPipeline(viewer, 30);
@@ -150,17 +150,17 @@ describe("GraphQL staffTrialPipeline", () => {
     await factory.Build.create({
       projectId: project.id,
       type: "orphan",
-      createdAt: moment().subtract(5, "days").toISOString(),
+      createdAt: addDays(new Date(), -5).toISOString(),
     });
     await factory.Build.create({
       projectId: project.id,
       type: "check",
-      createdAt: moment().subtract(3, "days").toISOString(),
+      createdAt: addDays(new Date(), -3).toISOString(),
     });
     await factory.Build.create({
       projectId: project.id,
       type: "check",
-      createdAt: moment().subtract(1, "days").toISOString(),
+      createdAt: addDays(new Date(), -1).toISOString(),
     });
 
     const res = await queryPipeline(viewer, 30);
@@ -171,9 +171,9 @@ describe("GraphQL staffTrialPipeline", () => {
     // The earliest *check* build wins — not the earlier orphan one, nor the
     // later check.
     expect(
-      moment(entry.staff.firstComparisonAt).isSame(
-        moment().subtract(3, "days"),
-        "day",
+      isSameDay(
+        new Date(entry.staff.firstComparisonAt),
+        addDays(new Date(), -3),
       ),
     ).toBe(true);
   });

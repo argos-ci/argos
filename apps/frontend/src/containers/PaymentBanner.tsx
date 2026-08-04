@@ -126,7 +126,8 @@ export const PaymentBanner = memo(
         <BannerTemplate color="warning">
           <p>
             Your {subscriptionTypeLabel} has been canceled. You can still use
-            team features until the <Time date={pendingCancelAt} format="LL" />.
+            team features until the{" "}
+            <Time date={pendingCancelAt} format="longDate" />.
           </p>
           {userIsAdmin && (
             <ManageStripeButton

@@ -1,11 +1,15 @@
 import { Children, useCallback, useLayoutEffect, useState } from "react";
-import moment from "moment";
+import {
+  formatDate,
+  formatRelativeDate,
+  type DateFormat,
+} from "@argos/util/date-format";
 
 import { Tooltip } from "./Tooltip";
 
 type TimeProps = React.ComponentPropsWithRef<"time"> & {
   date: string;
-  format?: string;
+  format?: DateFormat;
   tooltip?: "title" | "tooltip" | "none";
   children?: React.ReactNode;
 };
@@ -23,8 +27,8 @@ export function Time({
       hasChildren
         ? null
         : format
-          ? moment(date).format(format)
-          : moment(date).fromNow(),
+          ? formatDate(new Date(date), format)
+          : formatRelativeDate(new Date(date)),
     [hasChildren, format, date],
   );
   const [fromNow, setFromNow] = useState(getFormattedDate);
@@ -32,14 +36,13 @@ export function Time({
     const id = setInterval(() => setFromNow(getFormattedDate()), 1000);
     return () => clearInterval(id);
   }, [getFormattedDate]);
+  const fullDate = formatDate(new Date(date), "fullDateTime");
   return (
-    <Tooltip
-      content={tooltip === "tooltip" ? moment(date).format("LLLL") : null}
-    >
+    <Tooltip content={tooltip === "tooltip" ? fullDate : null}>
       <time
-        dateTime={moment(date).toISOString()}
+        dateTime={new Date(date).toISOString()}
         data-visual-test="transparent"
-        title={tooltip === "title" ? moment(date).format("LLLL") : undefined}
+        title={tooltip === "title" ? fullDate : undefined}
         {...props}
       >
         {children ?? fromNow}

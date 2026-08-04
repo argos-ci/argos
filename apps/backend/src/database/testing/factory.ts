@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { addMonths, startOfDay } from "@argos/util/date";
 import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
-import moment from "moment";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
 import * as models from "../models";
@@ -133,7 +133,7 @@ export const UserAccount = defineFactory(models.Account, () => ({
 export const Subscription = defineFactory(models.Subscription, () => ({
   planId: Plan.associate("id") as unknown as string,
   accountId: UserAccount.associate("id") as unknown as string,
-  startDate: moment().startOf("day").subtract(2, "months").toISOString(),
+  startDate: addMonths(startOfDay(new Date()), -2).toISOString(),
   endDate: null,
   provider: "github" as const,
   paymentMethodFilled: false,

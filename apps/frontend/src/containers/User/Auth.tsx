@@ -1,7 +1,7 @@
 import { useMutation } from "@apollo/client/react";
+import { formatRelativeDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { MonitorIcon, SmartphoneIcon } from "lucide-react";
-import moment from "moment";
 import { Button as RACButton } from "react-aria-components";
 
 import { logout } from "@/containers/Auth";
@@ -149,7 +149,7 @@ function RevokeSessionDialog(props: { session: Session }) {
     { label: "Last location", value: session.location ?? "—" },
     {
       label: "Original sign in",
-      value: <Time date={session.createdAt} format="ll" tooltip="none" />,
+      value: <Time date={session.createdAt} format="date" tooltip="none" />,
     },
   ];
 
@@ -305,7 +305,8 @@ function UserSessions(props: { sessions: readonly Session[] }) {
                   subtitle={
                     <>
                       {session.location ? `${session.location} · ` : null}
-                      Last seen {moment(session.lastSeenAt).fromNow()}
+                      Last seen{" "}
+                      {formatRelativeDate(new Date(session.lastSeenAt))}
                     </>
                   }
                   trailing={

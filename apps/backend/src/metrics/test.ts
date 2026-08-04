@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
+import { addDays, addHours, startOfDay } from "@argos/util/date";
 import * as Sentry from "@sentry/node";
-import moment from "moment";
 
 import { knex } from "@/database";
 import { IMetricsPeriod } from "@/graphql/__generated__/resolver-types";
@@ -44,7 +44,7 @@ export async function upsertTestStats(input: {
     async () => {
       const { date, change, testId } = input;
       const promises: Promise<void>[] = [];
-      const dayISODate = moment(date).startOf("day").toDate().toISOString();
+      const dayISODate = startOfDay(date).toISOString();
 
       if (change) {
         promises.push(
@@ -424,15 +424,15 @@ export function getStartDateFromPeriod(period: IMetricsPeriod | null): Date {
   const now = new Date();
   switch (period) {
     case IMetricsPeriod.Last_24Hours:
-      return moment(now).subtract(24, "hours").toDate();
+      return addHours(now, -24);
     case IMetricsPeriod.Last_3Days:
-      return moment(now).subtract(3, "days").startOf("day").toDate();
+      return startOfDay(addDays(now, -3));
     case IMetricsPeriod.Last_7Days:
-      return moment(now).subtract(7, "days").startOf("day").toDate();
+      return startOfDay(addDays(now, -7));
     case IMetricsPeriod.Last_30Days:
-      return moment(now).subtract(30, "days").startOf("day").toDate();
+      return startOfDay(addDays(now, -30));
     case IMetricsPeriod.Last_90Days:
-      return moment(now).subtract(90, "days").startOf("day").toDate();
+      return startOfDay(addDays(now, -90));
     case null:
       return new Date(0); // Default to epoch if no period is specified
     default:
