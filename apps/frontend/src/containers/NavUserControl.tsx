@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useQuery } from "@apollo/client/react";
 import clsx from "clsx";
 import {
   ActivitySquareIcon,
@@ -18,7 +17,6 @@ import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { logout, useAuthState, useAuthTokenPayload } from "@/containers/Auth";
-import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import { ColorMode, useColorMode } from "@/ui/ColorMode";
@@ -100,46 +98,6 @@ function ColorModeSubmenu() {
   );
 }
 
-const AccountQuery = graphql(`
-  query NavUserControl_account($slug: String!) {
-    account(slug: $slug) {
-      id
-      avatar {
-        ...AccountAvatarFragment
-      }
-    }
-  }
-`);
-
-function Avatar(props: { slug: string; className?: string }) {
-  const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.slug },
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return (
-      <InitialAvatar
-        aria-busy
-        initial=""
-        color="var(--gray-3)"
-        className="size-7"
-      />
-    );
-  }
-
-  if (!data.account) {
-    return null;
-  }
-
-  return (
-    <AccountAvatar avatar={data.account.avatar} className={props.className} />
-  );
-}
-
 function UserMenu() {
   const authPayload = useAuthTokenPayload();
   const hotkeysDialog = useBuildHotkeysDialogState();
@@ -157,7 +115,7 @@ function UserMenu() {
         )}
         aria-label="User settings"
       >
-        <Avatar slug={authPayload.account.slug} className="size-7" />
+        <AccountAvatar avatar={authPayload.account.avatar} className="size-7" />
       </RACButton>
       <Popover placement="bottom end">
         <Menu className="w-60">

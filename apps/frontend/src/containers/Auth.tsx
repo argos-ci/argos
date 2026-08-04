@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 
 import { config } from "@/config";
-import { graphql } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 
 /**
  * Zero-privilege render hint set (and cleared) by the server alongside the
@@ -15,13 +15,13 @@ import { graphql } from "@/gql";
  */
 const LOGGED_IN_COOKIE = "argos_logged_in";
 
-type AuthAccount = {
-  id: string;
-  slug: string;
-  name: string | null;
-  /** Nullable in the schema, but never null for `me` — the viewer owns it. */
-  staff: boolean | null;
-};
+/**
+ * Derived from the query rather than restated, so adding a field to `Auth_me`
+ * is enough to expose it to consumers.
+ *
+ * `staff` is nullable in the schema but never null for `me` — the viewer owns it.
+ */
+type AuthAccount = NonNullable<DocumentType<typeof MeQuery>["me"]>;
 
 /**
  * Shape exposed to consumers. Named `JWTData` for historical reasons (auth used
@@ -59,6 +59,9 @@ const MeQuery = graphql(`
       slug
       name
       staff
+      avatar {
+        ...AccountAvatarFragment
+      }
     }
   }
 `);
