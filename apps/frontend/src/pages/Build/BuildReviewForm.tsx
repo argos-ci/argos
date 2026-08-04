@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { DocumentType, graphql } from "@/gql";
 import { BuildReviewEvent } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
+import { Checkbox } from "@/ui/Checkbox";
 import { useOverlayTriggerState } from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { EditorField } from "@/ui/Editor/EditorField";
@@ -18,6 +19,7 @@ import { ModalActionContext } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
 import { lowTextColorClassNames } from "@/util/colors";
+import * as storage from "@/util/storage";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import { useCreateBuildReviewMutation } from "./BuildReviewAction";
@@ -36,10 +38,16 @@ const _BuildFragment = graphql(`
     members {
       ...UserCard_user
     }
+    pullRequest {
+      id
+      url
+    }
     ...BuildReviewAction_Build
     ...PendingCommentsSection_Build
   }
 `);
+
+const returnToPullRequestKey = "reviewReturnToPullRequest";
 
 type Inputs = {
   body: EditorValue;
@@ -93,6 +101,11 @@ export function BuildReviewForm(props: {
   );
   const isSubmitting = pendingEvent !== null;
 
+  const pullRequestUrl = build.pullRequest?.url ?? null;
+  const [returnToPullRequest, setReturnToPullRequest] = useState(
+    () => storage.getItem(returnToPullRequestKey) === "true",
+  );
+
   // The default action drives both focus and the implicit submit (Enter on the
   // focused button, Cmd+Enter in the editor):
   // - at least one rejection → Reject, and focus the comment field since a note
@@ -131,6 +144,13 @@ export function BuildReviewForm(props: {
       // The mutation closes the dialog through `onCompleted`; keep the pending
       // state until then so the form doesn't flash back to idle and the modal
       // stays locked through the closing animation.
+      if (
+        returnToPullRequest &&
+        pullRequestUrl &&
+        event !== BuildReviewEvent.Comment
+      ) {
+        window.location.assign(pullRequestUrl);
+      }
     } catch (error) {
       handleFormError(form, error);
       setPendingEvent(null);
@@ -196,6 +216,19 @@ export function BuildReviewForm(props: {
       </div>
       <div className="flex flex-col gap-2 p-3">
         <FormRootError control={form.control} />
+        {pullRequestUrl ? (
+          <Checkbox
+            isSelected={returnToPullRequest}
+            isDisabled={isSubmitting}
+            onChange={(isSelected) => {
+              setReturnToPullRequest(isSelected);
+              storage.setItem(returnToPullRequestKey, String(isSelected));
+            }}
+            className="text-low self-start text-sm"
+          >
+            Return to the pull request after approving or rejecting
+          </Checkbox>
+        ) : null}
         <Tooltip
           content={
             isLoading
