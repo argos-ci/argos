@@ -18,7 +18,8 @@ import { useAtom, useAtomValue } from "jotai/react";
 import {
   BlendIcon,
   ChevronDownIcon,
-  ChevronsLeftRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ChevronUpIcon,
   CodeIcon,
   CopyIcon,
@@ -1119,12 +1120,17 @@ function CompareScreenshotChanged(props: {
           overlay={
             dimensions
               ? (paneSize) => (
-                  <ScreenshotCommentLayer
-                    build={build}
-                    screenshotDiffId={diff.id}
-                    imgSize={dimensions}
-                    paneSize={paneSize}
-                  />
+                  <>
+                    <ScreenshotCommentLayer
+                      build={build}
+                      screenshotDiffId={diff.id}
+                      imgSize={dimensions}
+                      paneSize={paneSize}
+                    />
+                    {blendMode === "swipe" && paneSize && (
+                      <SwipeDivider paneSize={paneSize} imgSize={dimensions} />
+                    )}
+                  </>
                 )
               : undefined
           }
@@ -1177,7 +1183,6 @@ function CompareScreenshotChanged(props: {
                     : undefined,
               }}
             />
-            {blendMode === "swipe" && <SwipeDivider />}
           </ScreenshotContainer>
         </ZoomPane>
         {dimensions && paneSize && (
@@ -1199,19 +1204,38 @@ function CompareScreenshotChanged(props: {
 }
 
 /**
- * Draggable divider revealing the changes screenshot on its right side in
- * swipe view. Rendered in image space, so sizes are divided by the current
- * zoom scale to keep a constant size on screen.
+ * Draggable divider revealing the changes screenshot on its right side in swipe
+ * view.
+ *
+ * Drawn in the pane's screen space rather than over the image. Sizing it in
+ * image space meant dividing every length by the zoom, and those tiny lengths
+ * get quantized by layout before being scaled back up, which is what made the
+ * bar thicken and the chevrons wobble once zoomed in. Here the lengths are
+ * plain pixels and only the position goes through the transform.
  */
-function SwipeDivider() {
+function SwipeDivider(props: {
+  paneSize: { width: number; height: number };
+  imgSize: { width: number; height: number };
+}) {
+  const { paneSize, imgSize } = props;
   const [position, setPosition] = useAtom(swipePositionAtom);
   const [handleY, setHandleY] = useAtom(swipeHandleYAtom);
   const transform = useZoomTransform();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inverseScale = 1 / transform.scale;
-  // The bar carries no shadow: anything bleeding out of it would tint the
-  // pixels on both sides, which are the ones being compared.
-  const handleRing = `0 0 0 ${inverseScale}px rgba(0, 0, 0, 0.35)`;
+  const [imgScale] = useScaleContext();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // The image is centered in the pane and laid out at `imgScale`, then the zoom
+  // transform applies on top of that.
+  const imageWidth = imgSize.width * imgScale;
+  const imageHeight = imgSize.height * imgScale;
+  const offsetX = (paneSize.width - imageWidth) / 2;
+  const toPaneX = (fraction: number) =>
+    (fraction * imageWidth + offsetX) * transform.scale + transform.x;
+  const toPaneY = (fraction: number) =>
+    fraction * imageHeight * transform.scale + transform.y;
+
+  const paneX = toPaneX(position);
+  const imageTop = toPaneY(0);
 
   /**
    * Moves the divider to the pointer, and the handle along with it when the
@@ -1219,34 +1243,33 @@ function SwipeDivider() {
    */
   const moveToPointer = useEventCallback(
     (event: React.PointerEvent, moveHandle: boolean) => {
-      const container = containerRef.current;
-      if (!container) {
+      const root = rootRef.current;
+      if (!root || imageWidth === 0 || imageHeight === 0) {
         return;
       }
-      const rect = container.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        return;
-      }
-      setPosition(clampFraction((event.clientX - rect.left) / rect.width));
+      const rect = root.getBoundingClientRect();
+      const x =
+        (event.clientX - rect.left - transform.x) / transform.scale - offsetX;
+      setPosition(clampFraction(x / imageWidth));
       if (moveHandle) {
-        setHandleY(clampFraction((event.clientY - rect.top) / rect.height));
+        const y = (event.clientY - rect.top - transform.y) / transform.scale;
+        setHandleY(clampFraction(y / imageHeight));
       }
     },
   );
 
   return (
-    <div
-      ref={containerRef}
-      // Above the z-10 diff overlay, to stay visible and draggable when the
-      // overlay is shown.
-      className="pointer-events-none absolute inset-0 z-20"
-    >
+    <div ref={rootRef} className="pointer-events-none absolute inset-0">
       <div
         className={clsx(
           ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-          "pointer-events-auto absolute inset-y-0 -translate-x-1/2 cursor-ew-resize",
+          "pointer-events-auto absolute w-6 -translate-x-1/2 cursor-ew-resize",
         )}
-        style={{ left: `${position * 100}%`, width: 24 * inverseScale }}
+        style={{
+          left: paneX,
+          top: imageTop,
+          height: toPaneY(1) - imageTop,
+        }}
         onPointerDown={(event) => {
           event.preventDefault();
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -1258,25 +1281,20 @@ function SwipeDivider() {
           }
         }}
       >
-        <div
-          className="bg-solid absolute inset-y-0 left-1/2 -translate-x-1/2"
-          style={{ width: inverseScale }}
-        />
+        {/* No shadow: anything bleeding out of the bar would tint the pixels on
+            both sides, which are the ones being compared. */}
+        <div className="bg-solid absolute inset-y-0 left-1/2 w-px -translate-x-1/2" />
       </div>
       {/* Sibling of the bar rather than a child, so dragging it does not also
-          bubble into the bar's horizontal-only drag. */}
+          bubble into the bar's horizontal-only drag. The box itself is
+          transparent: only the two chevrons flanking the bar are drawn, so
+          nothing covers the pixels being compared. */}
       <div
         className={clsx(
           ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-          "pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full bg-white text-black active:cursor-grabbing",
+          "pointer-events-auto absolute flex h-5 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center gap-0.75 text-(--background-color-solid) active:cursor-grabbing",
         )}
-        style={{
-          left: `${position * 100}%`,
-          top: `${handleY * 100}%`,
-          width: 24 * inverseScale,
-          height: 24 * inverseScale,
-          boxShadow: handleRing,
-        }}
+        style={{ left: paneX, top: toPaneY(handleY) }}
         onPointerDown={(event) => {
           event.preventDefault();
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -1288,9 +1306,8 @@ function SwipeDivider() {
           }
         }}
       >
-        <ChevronsLeftRightIcon
-          style={{ width: 16 * inverseScale, height: 16 * inverseScale }}
-        />
+        <ChevronLeftIcon className="size-3" />
+        <ChevronRightIcon className="size-3" />
       </div>
     </div>
   );
