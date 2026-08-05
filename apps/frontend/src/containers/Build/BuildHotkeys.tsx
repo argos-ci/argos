@@ -185,6 +185,18 @@ const hotkeyGroups = [
         description: "Show only changes",
         envs: ["test", "build"],
       },
+      showOnion: {
+        keys: ["KeyO"],
+        displayKeys: ["O"],
+        description: "Show onion skin view",
+        envs: ["test", "build"],
+      },
+      showSwipe: {
+        keys: ["KeyW"],
+        displayKeys: ["W"],
+        description: "Show swipe view",
+        envs: ["test", "build"],
+      },
       toggleSplitView: {
         keys: ["KeyS"],
         displayKeys: ["S"],
