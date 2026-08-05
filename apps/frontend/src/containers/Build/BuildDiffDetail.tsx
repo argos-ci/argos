@@ -76,6 +76,7 @@ import {
   checkDiffCanBeBlended,
   checkIsBlendViewMode,
   onionOpacityAtom,
+  swipeHandleYAtom,
   swipePositionAtom,
   type BlendViewMode,
 } from "./BuildViewMode";
@@ -1204,22 +1205,34 @@ function CompareScreenshotChanged(props: {
  */
 function SwipeDivider() {
   const [position, setPosition] = useAtom(swipePositionAtom);
+  const [handleY, setHandleY] = useAtom(swipeHandleYAtom);
   const transform = useZoomTransform();
   const containerRef = useRef<HTMLDivElement>(null);
   const inverseScale = 1 / transform.scale;
+  // The bar carries no shadow: anything bleeding out of it would tint the
+  // pixels on both sides, which are the ones being compared.
+  const handleRing = `0 0 0 ${inverseScale}px rgba(0, 0, 0, 0.35)`;
 
-  const moveToPointer = (event: React.PointerEvent) => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-    const rect = container.getBoundingClientRect();
-    if (rect.width === 0) {
-      return;
-    }
-    const pointerPosition = (event.clientX - rect.left) / rect.width;
-    setPosition(Math.min(1, Math.max(0, pointerPosition)));
-  };
+  /**
+   * Moves the divider to the pointer, and the handle along with it when the
+   * handle itself is the one being dragged.
+   */
+  const moveToPointer = useEventCallback(
+    (event: React.PointerEvent, moveHandle: boolean) => {
+      const container = containerRef.current;
+      if (!container) {
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        return;
+      }
+      setPosition(clampFraction((event.clientX - rect.left) / rect.width));
+      if (moveHandle) {
+        setHandleY(clampFraction((event.clientY - rect.top) / rect.height));
+      }
+    },
+  );
 
   return (
     <div
@@ -1231,35 +1244,60 @@ function SwipeDivider() {
       <div
         className={clsx(
           ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-          "pointer-events-auto absolute inset-y-0 flex -translate-x-1/2 cursor-ew-resize items-center justify-center",
+          "pointer-events-auto absolute inset-y-0 -translate-x-1/2 cursor-ew-resize",
         )}
         style={{ left: `${position * 100}%`, width: 24 * inverseScale }}
         onPointerDown={(event) => {
           event.preventDefault();
           event.currentTarget.setPointerCapture(event.pointerId);
-          moveToPointer(event);
+          moveToPointer(event, false);
         }}
         onPointerMove={(event) => {
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            moveToPointer(event);
+            moveToPointer(event, false);
           }
         }}
       >
         <div
-          className="absolute inset-y-0 left-1/2 -translate-x-1/2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-          style={{ width: 2 * inverseScale }}
+          className="bg-solid absolute inset-y-0 left-1/2 -translate-x-1/2"
+          style={{ width: inverseScale }}
         />
-        <div
-          className="relative flex items-center justify-center rounded-full bg-white text-black shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-          style={{ width: 24 * inverseScale, height: 24 * inverseScale }}
-        >
-          <ChevronsLeftRightIcon
-            style={{ width: 16 * inverseScale, height: 16 * inverseScale }}
-          />
-        </div>
+      </div>
+      {/* Sibling of the bar rather than a child, so dragging it does not also
+          bubble into the bar's horizontal-only drag. */}
+      <div
+        className={clsx(
+          ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+          "pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full bg-white text-black active:cursor-grabbing",
+        )}
+        style={{
+          left: `${position * 100}%`,
+          top: `${handleY * 100}%`,
+          width: 24 * inverseScale,
+          height: 24 * inverseScale,
+          boxShadow: handleRing,
+        }}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          moveToPointer(event, true);
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            moveToPointer(event, true);
+          }
+        }}
+      >
+        <ChevronsLeftRightIcon
+          style={{ width: 16 * inverseScale, height: 16 * inverseScale }}
+        />
       </div>
     </div>
   );
+}
+
+function clampFraction(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 /**

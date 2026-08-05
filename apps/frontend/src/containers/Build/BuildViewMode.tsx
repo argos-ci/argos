@@ -20,6 +20,13 @@ export const onionOpacityAtom = atom(0.5);
 /** Horizontal position of the swipe divider, as a fraction of the image width. */
 export const swipePositionAtom = atom(0.5);
 
+/**
+ * Vertical position of the swipe handle along the divider, as a fraction of the
+ * image height. Only moves the handle, so it can be slid out of the way of the
+ * area being compared.
+ */
+export const swipeHandleYAtom = atom(0.5);
+
 export function checkIsBlendViewMode(
   viewMode: ViewMode,
 ): viewMode is BlendViewMode {
