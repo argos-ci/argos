@@ -605,13 +605,6 @@ export function createConfig() {
         default: "development",
       },
     },
-    bucket: {
-      publishableKey: {
-        doc: "Bucket.co (feature-flag) publishable key",
-        format: String,
-        default: "pub_deve_IEHZxQsLdVrHkzftm4sWDj",
-      },
-    },
     sqids: {
       // Use a custom alphabet to avoid ambiguous characters.
       // This alphabet is URL-safe and case-insensitive.

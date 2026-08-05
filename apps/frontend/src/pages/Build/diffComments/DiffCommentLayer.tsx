@@ -8,7 +8,7 @@ import type {
 } from "@pierre/diffs/react";
 import { useAtomValue } from "jotai/react";
 
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import { commentsVisibleAtom } from "@/containers/Build/CommentTool";
 import { DiffEditor } from "@/containers/Build/DiffEditor";
@@ -112,7 +112,9 @@ export function DiffCommentLayer(props: {
   const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
-  const accountId = useAuthTokenPayload()?.account.id;
+  const auth = useAuth();
+  const accountId =
+    auth.status === "authenticated" ? auth.account?.id : undefined;
   const client = useApolloClient();
 
   const [draft, setDraft] = useState<LineRange | null>(null);

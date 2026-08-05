@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useAssertAuthTokenPayload } from "@/containers/Auth";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import { TeamMemberLabel } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -84,7 +84,7 @@ interface TeamGithubMembersListProps {
 }
 
 export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
-  const authPayload = useAssertAuthTokenPayload();
+  const authAccount = useAssertAuthAccount();
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const { data, fetchMore } = useSuspenseQuery(TeamGithubMembersQuery, {
@@ -113,7 +113,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
           {members.map((member) => {
             const teamMember = member.teamMember ?? null;
             const user = teamMember?.user ?? null;
-            const isMe = Boolean(user && authPayload.account.id === user.id);
+            const isMe = Boolean(user && authAccount.id === user.id);
             return (
               <ListRow
                 key={member.id}

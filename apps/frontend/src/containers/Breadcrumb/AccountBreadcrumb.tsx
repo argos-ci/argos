@@ -6,7 +6,7 @@ import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
-import { useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
@@ -61,11 +61,13 @@ function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
 }
 
 function HomeBreadcrumbLink() {
-  const payload = useAuthTokenPayload();
-  if (!payload) {
+  const auth = useAuth();
+  const account = auth.status === "authenticated" ? auth.account : null;
+  // Nothing to link to until the account lands; the trail fills in after.
+  if (!account) {
     return null;
   }
-  return <AccountBreadcrumbLink accountSlug={payload.account.slug} />;
+  return <AccountBreadcrumbLink accountSlug={account.slug} />;
 }
 
 /**
@@ -86,7 +88,7 @@ function StaffBreadcrumbLink() {
 
 export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
-  const loggedIn = useIsLoggedIn();
+  const auth = useAuth();
   const isStaffArea = Boolean(useMatch("/staff/*"));
 
   return (
@@ -98,7 +100,7 @@ export function AccountBreadcrumbItem() {
       ) : (
         <HomeBreadcrumbLink />
       )}
-      {loggedIn && (
+      {auth.status === "authenticated" && (
         <MenuTrigger>
           <BreadcrumbMenuButton />
           <Popover placement="bottom start">

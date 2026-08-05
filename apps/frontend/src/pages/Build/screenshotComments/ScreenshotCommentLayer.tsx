@@ -11,7 +11,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom, useAtomValue } from "jotai/react";
 
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import {
   commentsVisibleAtom,
@@ -128,7 +128,9 @@ export function ScreenshotCommentLayer(props: {
   const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
-  const accountId = useAuthTokenPayload()?.account.id;
+  const auth = useAuth();
+  const accountId =
+    auth.status === "authenticated" ? auth.account?.id : undefined;
   const client = useApolloClient();
 
   const { toScreen, toNormalized, ready } = useScreenshotProjection({

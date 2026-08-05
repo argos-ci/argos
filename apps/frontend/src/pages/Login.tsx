@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router";
 
 import { config } from "@/config";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { LoginOptions } from "@/containers/LoginOptions";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
@@ -12,7 +12,7 @@ import { Link } from "@/ui/Link";
 import { redirectToSAMLLogin } from "@/util/saml";
 
 export function Component() {
-  const loggedIn = useIsLoggedIn();
+  const auth = useAuth();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
   const samlTeamSlug = searchParams.get("saml");
@@ -23,7 +23,7 @@ export function Component() {
     return <RedirectToSAMLLogin teamSlug={samlTeamSlug} redirect={redirect} />;
   }
 
-  if (loggedIn) {
+  if (auth.status === "authenticated") {
     return <Navigate to="/" replace />;
   }
 

@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useQuery } from "@apollo/client/react";
 import clsx from "clsx";
 import {
   ActivitySquareIcon,
@@ -17,8 +16,7 @@ import {
 import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
 import { useLocation } from "react-router";
 
-import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
-import { graphql } from "@/gql";
+import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import { ColorMode, useColorMode } from "@/ui/ColorMode";
@@ -100,53 +98,9 @@ function ColorModeSubmenu() {
   );
 }
 
-const AccountQuery = graphql(`
-  query NavUserControl_account($slug: String!) {
-    account(slug: $slug) {
-      id
-      avatar {
-        ...AccountAvatarFragment
-      }
-    }
-  }
-`);
-
-function Avatar(props: { slug: string; className?: string }) {
-  const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.slug },
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return (
-      <InitialAvatar
-        aria-busy
-        initial=""
-        color="var(--gray-3)"
-        className="size-7"
-      />
-    );
-  }
-
-  if (!data.account) {
-    return null;
-  }
-
-  return (
-    <AccountAvatar avatar={data.account.avatar} className={props.className} />
-  );
-}
-
-function UserMenu() {
-  const authPayload = useAuthTokenPayload();
+function UserMenu(props: { account: AuthAccount }) {
+  const { account } = props;
   const hotkeysDialog = useBuildHotkeysDialogState();
-
-  if (!authPayload) {
-    return null;
-  }
 
   return (
     <MenuTrigger>
@@ -157,12 +111,12 @@ function UserMenu() {
         )}
         aria-label="User settings"
       >
-        <Avatar slug={authPayload.account.slug} className="size-7" />
+        <AccountAvatar avatar={account.avatar} className="size-7" />
       </RACButton>
       <Popover placement="bottom end">
         <Menu className="w-60">
           <MenuItem
-            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/new`}
+            href={`${getAccountURL({ accountSlug: account.slug })}/new`}
           >
             <MenuItemIcon>
               <PlusCircleIcon />
@@ -176,14 +130,14 @@ function UserMenu() {
             New Team
           </MenuItem>
           <MenuItem
-            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/settings`}
+            href={`${getAccountURL({ accountSlug: account.slug })}/settings`}
           >
             <MenuItemIcon>
               <SettingsIcon />
             </MenuItemIcon>
             Settings
           </MenuItem>
-          {authPayload.account.staff ? (
+          {account.staff ? (
             <>
               <MenuSeparator />
               <MenuItem href="/staff">
@@ -251,6 +205,25 @@ function LoginButton() {
 }
 
 export function NavUserControl() {
-  const loggedIn = useIsLoggedIn();
-  return loggedIn ? <UserMenu /> : <LoginButton />;
+  const auth = useAuth();
+
+  if (auth.status === "anonymous") {
+    return <LoginButton />;
+  }
+
+  if (!auth.account) {
+    // Signed in, but the account has not arrived. Hold the avatar's footprint so
+    // the navbar does not reflow when it does, and mark it busy so Argos waits
+    // for the resolved state instead of screenshotting the gap.
+    return (
+      <InitialAvatar
+        aria-busy
+        initial=""
+        color="var(--gray-3)"
+        className="size-8 shrink-0"
+      />
+    );
+  }
+
+  return <UserMenu account={auth.account} />;
 }

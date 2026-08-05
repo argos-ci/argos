@@ -17,7 +17,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { Navigate, useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { OAuthAppLogo, VerifiedBadge } from "@/containers/OAuthAppLogo";
 import { graphql, type DocumentType } from "@/gql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
@@ -488,7 +488,7 @@ const InvalidRequestPage = (props: { children: React.ReactNode }) => (
 
 export function Component() {
   const [searchParams] = useSearchParams();
-  const isLoggedIn = useIsLoggedIn();
+  const auth = useAuth();
 
   const clientId = searchParams.get("client_id");
   const redirectUri = searchParams.get("redirect_uri");
@@ -526,7 +526,7 @@ export function Component() {
     );
   }
 
-  if (!isLoggedIn) {
+  if (auth.status === "anonymous") {
     return (
       <Navigate
         to={`/login?r=${encodeURIComponent(window.location.href)}`}

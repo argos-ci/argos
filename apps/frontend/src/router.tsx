@@ -17,7 +17,6 @@ import {
 import { Layout } from "@/containers/Layout";
 
 import { AuthenticationError, logout } from "./containers/Auth";
-import { FeatureFlagProvider } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
@@ -70,9 +69,7 @@ function Root() {
       navigate={navigateWithExternalLinks}
       useHref={useAbsoluteHref}
     >
-      <FeatureFlagProvider>
-        <Outlet />
-      </FeatureFlagProvider>
+      <Outlet />
     </RouterProvider>
   );
 }

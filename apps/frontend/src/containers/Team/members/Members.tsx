@@ -1,7 +1,7 @@
 import { Suspense, useState } from "react";
 import { TabPanel, Tabs } from "react-aria-components";
 
-import { useAssertAuthTokenPayload } from "@/containers/Auth";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -68,7 +68,7 @@ export function TeamMembers(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const authPayload = useAssertAuthTokenPayload();
+  const authAccount = useAssertAuthAccount();
   const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
   const removeFromTeamModal = {
     isOpen: removedUser !== null,
@@ -138,7 +138,7 @@ export function TeamMembers(props: {
         </Tabs>
         <Modal {...removeFromTeamModal}>
           {removedUser ? (
-            authPayload.account.id === removedUser.id ? (
+            authAccount.id === removedUser.id ? (
               <LeaveTeamDialog teamName={teamName} teamAccountId={team.id} />
             ) : (
               <RemoveFromTeamDialog

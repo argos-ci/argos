@@ -81,10 +81,6 @@
       name="description"
       content="Argos's visual regression system gives you high confidence in doing change"
     />
-    <link
-      href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>
@@ -102,7 +98,15 @@
       }
       updateColorModeClassName();
     </script>
-    <script type="text/javascript" src="/config.js?v=2"></script>
+    <!-- Runtime config, which `src/config.ts` reads at module evaluation.
+         `defer` keeps it off the parser-blocking path; deferred classic scripts
+         and module scripts share one execution list in document order, so this
+         still runs before the app.
+
+         In production the server replaces this tag with the config inlined,
+         removing the request entirely — see `installAppRouter`. It stays a
+         request in dev, where Vite proxies it to the backend. -->
+    <script defer src="/config.js?v=2"></script>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

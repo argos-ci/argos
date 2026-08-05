@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router";
 
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
 import { Linkify } from "@/containers/Linkify";
 import { UniversalNavigate } from "@/containers/Redirect";
@@ -101,10 +101,10 @@ function AuthCallback(props: { provider: AuthProvider }) {
 
 function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
   const { error, provider } = props;
-  const isLoggedIn = useIsLoggedIn();
+  const auth = useAuth();
   const [searchParams] = useSearchParams();
 
-  if (isLoggedIn) {
+  if (auth.status === "authenticated") {
     const state = searchParams.get("state");
     const redirectUri = state
       ? getRedirectFromState({ state, provider })

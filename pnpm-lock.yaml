@@ -478,6 +478,12 @@ importers:
       '@argos/util':
         specifier: workspace:*
         version: link:../../packages/util
+      '@argos/vite-plugin-graphql-documents':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin-graphql-documents
+      '@fontsource-variable/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
@@ -505,9 +511,6 @@ importers:
       '@react-aria/interactions':
         specifier: ^3.28.1
         version: 3.28.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@reflag/react-sdk':
-        specifier: ^1.5.5
-        version: 1.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@sentry/react':
         specifier: ^10.68.0
         version: 10.68.0(react@19.2.8)
@@ -821,6 +824,28 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)
+
+  packages/vite-plugin-graphql-documents:
+    dependencies:
+      magic-string:
+        specifier: ^1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@argos/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@argos/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)
+      vite:
+        specifier: ^8.1.5
+        version: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
 
 packages:
 
@@ -1543,6 +1568,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/inter@5.3.0':
+    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
 
   '@gitbeaker/core@43.8.0':
     resolution: {integrity: sha512-H+LfKuf4dExBinb79c+CXViRBvTVQNf5BYLNSizm2SiqdED5JruhKX88payefleY0szp7G/mySlFSXPyGRH1dQ==}
@@ -3284,18 +3312,6 @@ packages:
       react:
         optional: true
       react-redux:
-        optional: true
-
-  '@reflag/browser-sdk@1.5.4':
-    resolution: {integrity: sha512-85TjVE6kuZCw1fmm871d4oiWUMllbHDeEy1YPArHTitkAs+xsGJd8L497RHPP+7JB4u5V+XqSdH/xp0MUvoxKg==}
-
-  '@reflag/react-sdk@1.5.5':
-    resolution: {integrity: sha512-Q323+zZbmDy0Fjqi/AJ1srZsiU96qh5xsU7bU02svlgH/R4tZRw6ilhyThoIgTwebgAaRHY/yoUwPPbEgay4pg==}
-    peerDependencies:
-      react: ^19.2.8
-      react-dom: ^19.2.8
-    peerDependenciesMeta:
-      react-dom:
         optional: true
 
   '@repeaterjs/repeater@3.1.0':
@@ -6790,6 +6806,9 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
+  magic-string@1.1.0:
+    resolution: {integrity: sha512-kS3VHe0nEPST2saQV4Rbkchcd3UBRkVTQHo1D3h/ZTwFDhai/mfKkmtPAtD129EOI7K3HlHIsFOt0WrI2/oU9g==}
+
   make-asynchronous@1.1.0:
     resolution: {integrity: sha512-ayF7iT+44LXdxJLTrTd3TLQpFDDvPCBxXxbv+pMUSuHA5Q8zyAfwkRP6aHHwNVFBUFWtxAHqwNJxF8vMZLAbVg==}
     engines: {node: '>=18'}
@@ -7417,14 +7436,6 @@ packages:
   powershell-utils@0.1.0:
     resolution: {integrity: sha512-dM0jVuXJPsDN6DvRpea484tCUaMiXWjuCn++HGTqUWzGDjv5tZkEZldAJ/UMlqRYGFrD/etByo4/xOuC/snX2A==}
     engines: {node: '>=20'}
-
-  preact@10.29.7:
-    resolution: {integrity: sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q==}
-    peerDependencies:
-      preact-render-to-string: '>=5'
-    peerDependenciesMeta:
-      preact-render-to-string:
-        optional: true
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -9745,6 +9756,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
+  '@fontsource-variable/inter@5.3.0': {}
+
   '@gitbeaker/core@43.8.0':
     dependencies:
       '@gitbeaker/requester-utils': 43.8.0
@@ -11338,24 +11351,6 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
       react-redux: 9.3.0(@types/react@19.2.17)(react@19.2.8)(redux@5.0.1)
-
-  '@reflag/browser-sdk@1.5.4':
-    dependencies:
-      '@floating-ui/dom': 1.8.0
-      fast-equals: 5.4.1
-      js-cookie: 3.0.8
-      preact: 10.29.7
-    transitivePeerDependencies:
-      - preact-render-to-string
-
-  '@reflag/react-sdk@1.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@reflag/browser-sdk': 1.5.4
-      react: 19.2.8
-    optionalDependencies:
-      react-dom: 19.2.8(react@19.2.8)
-    transitivePeerDependencies:
-      - preact-render-to-string
 
   '@repeaterjs/repeater@3.1.0': {}
 
@@ -14825,6 +14820,10 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  magic-string@1.1.0:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
   make-asynchronous@1.1.0:
     dependencies:
       p-event: 6.0.1
@@ -15485,8 +15484,6 @@ snapshots:
       xtend: 4.0.2
 
   powershell-utils@0.1.0: {}
-
-  preact@10.29.7: {}
 
   prelude-ls@1.2.1: {}
 

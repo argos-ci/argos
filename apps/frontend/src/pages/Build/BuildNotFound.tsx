@@ -1,12 +1,12 @@
 import { Navigate, useLocation } from "react-router";
 
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 
 export const BuildNotFound = () => {
-  const loggedIn = useIsLoggedIn();
+  const auth = useAuth();
   const { pathname } = useLocation();
 
-  if (loggedIn) {
+  if (auth.status === "authenticated") {
     // @TODO implement a 404 page
     return <Navigate to="/" />;
   }

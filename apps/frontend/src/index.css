@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Self-hosted Inter, so the first paint does not wait on fonts.googleapis.com
+   and then fonts.gstatic.com. The weight-axis variable font covers the 400-700
+   range the UI uses in one file, and Vite emits it as a hashed, same-origin
+   asset that can be cached immutably. */
+@import "@fontsource-variable/inter/wght.css" layer(base);
+
 @import "@radix-ui/colors/gray" layer(base);
 @import "@radix-ui/colors/gray-alpha" layer(base);
 @import "@radix-ui/colors/gray-dark" layer(base);
@@ -21,9 +27,9 @@
 
 @theme {
   --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+    "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
 
   --color-*: initial;
 

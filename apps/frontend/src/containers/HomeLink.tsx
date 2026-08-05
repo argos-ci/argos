@@ -4,16 +4,18 @@ import { getAccountURL } from "@/pages/Account/AccountParams";
 import { HeadlessLink, HeadlessLinkProps } from "@/ui/Link";
 
 import { getLatestVisitedAccount } from "./AccountHistory";
-import { useAuthTokenPayload } from "./Auth";
+import { useAuth } from "./Auth";
 
 export function HomeLink(props: Omit<HeadlessLinkProps, "to">) {
-  const authPayload = useAuthTokenPayload();
+  const auth = useAuth();
+  // Null until `me` lands; the link target simply refines when it does.
+  const account = auth.status === "authenticated" ? auth.account : null;
   const params = useParams();
   const { pathname } = useLocation();
   const accountSlug =
     params.accountSlug ??
-    (authPayload ? getLatestVisitedAccount(authPayload.account.id) : null) ??
-    authPayload?.account.slug ??
+    (account ? getLatestVisitedAccount(account.id) : null) ??
+    account?.slug ??
     "";
   return (
     <HeadlessLink

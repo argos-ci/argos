@@ -16,7 +16,7 @@ import {
 import { Navigate, useSearchParams } from "react-router";
 
 import { PRO_PLAN_PRICING } from "@/constants";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { SignupOptions } from "@/containers/SignupOptions";
 import { BrandShield } from "@/ui/BrandShield";
 import { Card } from "@/ui/Card";
@@ -347,9 +347,9 @@ function SignupCard(props: { title: ReactNode; children: ReactNode }) {
 }
 
 export function Component() {
-  const loggedIn = useIsLoggedIn();
+  const auth = useAuth();
 
-  if (loggedIn) {
+  if (auth.status === "authenticated") {
     return <Navigate to="/" replace />;
   }
 

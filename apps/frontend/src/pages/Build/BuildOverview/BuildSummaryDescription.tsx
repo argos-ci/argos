@@ -1,6 +1,6 @@
 import React from "react";
 
-import { useAuthTokenPayload } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { getUserCardData, UserMention } from "@/ui/UserCard";
@@ -83,8 +83,9 @@ function ReReviewNote(props: { canReview: boolean }) {
  */
 function ApprovedDescription(props: { build: Build; canReview: boolean }) {
   const { build, canReview } = props;
-  const authPayload = useAuthTokenPayload();
-  const viewerId = authPayload?.account.id ?? null;
+  const auth = useAuth();
+  const viewerId =
+    auth.status === "authenticated" ? (auth.account?.id ?? null) : null;
   const approvers = getApprovers(build);
   const viewerApproved =
     viewerId !== null && approvers.some((user) => user.id === viewerId);
