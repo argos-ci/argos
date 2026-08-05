@@ -1,7 +1,10 @@
 import { clsx } from "clsx";
 import { createPortal } from "react-dom";
 
-import { ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "@/containers/Build/Zoomer";
+import {
+  ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+  ZOOMER_OVERLAY_SCROLLABLE_CLASS,
+} from "@/containers/Build/Zoomer";
 
 import type { ScreenPoint } from "./geometry";
 
@@ -35,6 +38,7 @@ export function CommentPopoverFrame(props: {
       }}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+        ZOOMER_OVERLAY_SCROLLABLE_CLASS,
         "fixed z-50",
         className,
       )}

@@ -5,7 +5,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "@/containers/Build/Zoomer";
+import {
+  ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+  ZOOMER_OVERLAY_SCROLLABLE_CLASS,
+} from "@/containers/Build/Zoomer";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
@@ -49,6 +52,7 @@ export function CommentMarker(props: {
     <div
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
+        ZOOMER_OVERLAY_SCROLLABLE_CLASS,
         "pointer-events-none fixed",
         expanded || open ? "z-50" : "z-40",
       )}

@@ -55,6 +55,13 @@ const ZOOMER_CONTROLS_CLASS = "zoomer-controls";
  */
 export const ZOOMER_OVERLAY_INTERACTIVE_CLASS = "zoomer-overlay-interactive";
 
+/**
+ * Overlays that handle the wheel themselves, typically because they scroll.
+ * Kept separate from {@link ZOOMER_OVERLAY_INTERACTIVE_CLASS}: an overlay can
+ * need to swallow drags without giving up zooming the screenshot under it.
+ */
+export const ZOOMER_OVERLAY_SCROLLABLE_CLASS = "zoomer-overlay-scrollable";
+
 class Zoomer {
   zoom: ZoomBehavior<Element, unknown>;
   selection: Selection<Element, unknown, null, undefined>;
@@ -100,8 +107,10 @@ class Zoomer {
     this.selection.on(
       "wheel.zoom",
       (event: any) => {
-        // Let interactive overlays (comment prompt/threads) scroll themselves.
-        if (isWrappedWithClass(event, ZOOMER_OVERLAY_INTERACTIVE_CLASS)) {
+        // Let scrollable overlays (comment prompt/threads) scroll themselves.
+        // Other interactive overlays still zoom the screenshot under them,
+        // rather than letting the browser zoom the whole page.
+        if (isWrappedWithClass(event, ZOOMER_OVERLAY_SCROLLABLE_CLASS)) {
           return;
         }
         event.preventDefault();
