@@ -1,6 +1,6 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ColumnsIcon, SquareIcon } from "lucide-react";
+import { ColumnsIcon, GalleryHorizontalIcon } from "lucide-react";
 
 import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -126,7 +126,7 @@ export const SplitViewToggle = memo(() => {
       {/* Two panes or one: the icon is the state, so there is no pressed
           state on top of it. */}
       <Button variant="secondary" iconOnly onPress={toggleSplitView}>
-        {viewMode === "split" ? <SquareIcon /> : <ColumnsIcon />}
+        {viewMode === "split" ? <GalleryHorizontalIcon /> : <ColumnsIcon />}
       </Button>
     </HotkeyTooltip>
   );
