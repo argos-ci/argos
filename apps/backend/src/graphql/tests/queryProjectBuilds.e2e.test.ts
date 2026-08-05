@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Account, Project } from "@/database/models";
+import type { Account, Build, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -20,6 +20,7 @@ describe("GraphQL", () => {
     let userAccount: Account;
     let teamAccount: Account;
     let project: Project;
+    let builds: Build[];
 
     beforeEach(async () => {
       userAccount = await factory.UserAccount.create();
@@ -40,7 +41,7 @@ describe("GraphQL", () => {
           { projectId: project.id, branch: "feat/search-box" },
           { projectId: project.id, branch: "fix/login" },
         ]);
-      await factory.Build.createMany(3, [
+      builds = await factory.Build.createMany(3, [
         {
           projectId: project.id,
           name: "default",
@@ -65,6 +66,7 @@ describe("GraphQL", () => {
       after?: number;
       search?: string;
       withTotalCount?: boolean;
+      withCommentsCount?: boolean;
     }) {
       const app = await createApolloServerApp(
         apolloServer,
@@ -90,6 +92,7 @@ describe("GraphQL", () => {
                     name
                     branch
                     commit
+                    ${args.withCommentsCount ? "commentsCount" : ""}
                   }
                 }
               }
@@ -178,6 +181,45 @@ describe("GraphQL", () => {
       const builds = await queryBuilds({ search: "does-not-exist" });
       expect(builds.edges).toEqual([]);
       expect(builds.pageInfo).toEqual({ hasNextPage: false, isEmpty: true });
+    });
+
+    it("counts the comments visible to the viewer", async () => {
+      const build = builds[0]!;
+      const otherUser = await factory.User.create();
+      const pendingReview = await factory.BuildReview.create({
+        buildId: build.id,
+        userId: otherUser.id,
+        state: "pending",
+      });
+      await factory.Comment.createMany(4, [
+        { buildId: build.id, userId: userAccount.userId! },
+        { buildId: build.id, userId: otherUser.id },
+        // Hidden: another user's draft comment.
+        {
+          buildId: build.id,
+          userId: otherUser.id,
+          buildReviewId: pendingReview.id,
+        },
+        // Hidden: soft-deleted.
+        {
+          buildId: build.id,
+          userId: otherUser.id,
+          deletedAt: new Date().toISOString(),
+        },
+      ]);
+
+      const result = await queryBuilds({ withCommentsCount: true });
+      const counts = Object.fromEntries(
+        result.edges.map(
+          (edge: { branch: string; commentsCount: number }) =>
+            [edge.branch, edge.commentsCount] as const,
+        ),
+      );
+      expect(counts).toEqual({
+        main: 2,
+        "feat/search-box": 0,
+        "fix/login": 0,
+      });
     });
 
     it("escapes LIKE wildcards in the search", async () => {

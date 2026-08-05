@@ -976,6 +976,43 @@ function createBuildPublishedCommentsLoader() {
 }
 
 /**
+ * Counts the comments visible to a given viewer on a build, replies included.
+ * The build list only needs the number, so it counts in SQL rather than
+ * reusing {@link createBuildPublishedCommentsLoader}, which would ship every
+ * comment's content for a page of builds.
+ */
+function createBuildCommentsCountLoader() {
+  return new DataLoader<
+    { buildId: string; viewerUserId: string | null },
+    number,
+    string
+  >(
+    async (inputs) => {
+      const buildIds = inputs.map((input) => input.buildId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId ?? null;
+      const rows = (await filterVisibleComments(
+        Comment.query().whereIn("buildId", buildIds),
+        viewerUserId,
+      )
+        .select("buildId")
+        .count("* as count")
+        .groupBy("buildId")) as unknown as Array<{
+        buildId: string;
+        count: string | number;
+      }>;
+      const counts = new Map(
+        rows.map((row) => [row.buildId, Number(row.count) || 0]),
+      );
+      return inputs.map((input) => counts.get(input.buildId) ?? 0);
+    },
+    {
+      cacheKeyFn: (input) => `${input.buildId}:${input.viewerUserId ?? ""}`,
+    },
+  );
+}
+
+/**
  * Loads the comments posted on a test, capped per test — see
  * {@link getVisibleTestCommentsQuery}, shared with the REST endpoint.
  */
@@ -1641,6 +1678,7 @@ export const createLoaders = () => ({
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
+  BuildCommentsCount: createBuildCommentsCountLoader(),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

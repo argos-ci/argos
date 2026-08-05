@@ -135,6 +135,8 @@ export const typeDefs = gql`
     viewerHasSubmittedReview: Boolean!
     "Comments visible to the current user (excludes other users' pending-review drafts)"
     comments: [Comment!]!
+    "Number of comments visible to the current user, replies included"
+    commentsCount: Int!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
     "Build is triggered in a merge queue"
@@ -428,6 +430,12 @@ export const resolvers: IResolvers = {
     },
     comments: async (build, _args, ctx) => {
       return ctx.loaders.BuildPublishedComments.load({
+        buildId: build.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
+    },
+    commentsCount: async (build, _args, ctx) => {
+      return ctx.loaders.BuildCommentsCount.load({
         buildId: build.id,
         viewerUserId: ctx.auth?.user.id ?? null,
       });
