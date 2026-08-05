@@ -14,7 +14,7 @@ import {
 import { invariant } from "@argos/util/invariant";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
-import { BoxesIcon, SearchIcon } from "lucide-react";
+import { BoxesIcon, MessageSquareIcon, SearchIcon } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router";
@@ -41,6 +41,7 @@ import {
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { checkAreDefaultValues } from "@/util/search-params";
@@ -103,6 +104,7 @@ const ProjectBuildsQuery = graphql(`
           mode
           mergeQueue
           subset
+          commentsCount
           stats {
             ...BuildStatsIndicator_BuildStats
           }
@@ -122,6 +124,24 @@ const ProjectBuildsQuery = graphql(`
 type ProjectBuildsDocument = DocumentType<typeof ProjectBuildsQuery>;
 type Builds = NonNullable<ProjectBuildsDocument["project"]>["builds"];
 type Build = Builds["edges"][0];
+
+/**
+ * Number of comments posted on a build, hidden when there is none: an empty
+ * counter on every row would be noise.
+ */
+function BuildCommentsCount({ count }: { count: number }) {
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <Tooltip content={count === 1 ? "1 comment" : `${count} comments`}>
+      <div className="text-low flex items-center gap-1 tabular-nums">
+        <MessageSquareIcon className="size-4" />
+        <span className="text-xs">{count}</span>
+      </div>
+    </Tooltip>
+  );
+}
 
 function BuildRow({
   build,
@@ -155,7 +175,7 @@ function BuildRow({
         <BuildTestStatusChip build={build} scale="sm" />
         <BuildBaselineEligibilityChip build={build} scale="sm" />
       </div>
-      <div className="flex grow">
+      <div className="flex grow items-center gap-3">
         <div className="hidden lg:flex">
           {build.stats ? (
             <BuildStatsIndicator
@@ -165,6 +185,7 @@ function BuildRow({
             />
           ) : null}
         </div>
+        <BuildCommentsCount count={build.commentsCount} />
       </div>
       <div className="hidden gap-2 xl:flex xl:w-56 2xl:w-96">
         <div className="w-6.5">
