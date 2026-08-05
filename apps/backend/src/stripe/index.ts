@@ -183,7 +183,7 @@ function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2026-06-24.dahlia",
+  apiVersion: "2026-07-29.dahlia",
   typescript: true,
 });
 
@@ -315,6 +315,28 @@ function getUnitAmountFromPrice(price: Stripe.Price): number | null {
   return price.unit_amount_decimal.toNumber() / 100;
 }
 
+const SubscriptionStatusSchema = z.enum([
+  "active",
+  "canceled",
+  "trialing",
+  "past_due",
+  "incomplete",
+  "unpaid",
+  "incomplete_expired",
+  "paused",
+]);
+
+/**
+ * Stripe types the subscription status as an open union, so a status introduced
+ * after this SDK release also type-checks. Argos stores a closed enum, so an
+ * unknown status is rejected here instead of reaching the database.
+ */
+function resolveSubscriptionStatus(
+  status: Stripe.Subscription.Status,
+): Subscription["status"] {
+  return SubscriptionStatusSchema.parse(status);
+}
+
 async function getArgosSubscriptionDataFromStripe(
   stripeSubscription: Stripe.Subscription,
 ) {
@@ -339,7 +361,7 @@ async function getArgosSubscriptionDataFromStripe(
     endDate,
     trialEndDate,
     paymentMethodFilled,
-    status: stripeSubscription.status,
+    status: resolveSubscriptionStatus(stripeSubscription.status),
     ...infos,
   } satisfies Partial<Subscription>;
 }
