@@ -59,14 +59,12 @@ const SCREENS = [
   {
     name: "checkout/cart",
     key: "flowpoc-checkout-cart.png",
-    flow: { name: "Checkout", step: "Cart", index: 1 },
     url: "https://atelier-shop.example.com/checkout/cart",
     test: CHECKOUT_TEST,
   },
   {
     name: "checkout/shipping",
     key: "flowpoc-checkout-shipping.png",
-    flow: { name: "Checkout", step: "Shipping", index: 2 },
     url: "https://atelier-shop.example.com/checkout/shipping",
     test: CHECKOUT_TEST,
   },
@@ -75,14 +73,12 @@ const SCREENS = [
     key: "flowpoc-checkout-payment.png",
     v2Key: "flowpoc-checkout-payment-v2.png",
     diffKey: "flowpoc-diff-payment.png",
-    flow: { name: "Checkout", step: "Payment", index: 3 },
     url: "https://atelier-shop.example.com/checkout/payment",
     test: CHECKOUT_TEST,
   },
   {
     name: "checkout/review",
     key: "flowpoc-checkout-review.png",
-    flow: { name: "Checkout", step: "Review", index: 4 },
     url: "https://atelier-shop.example.com/checkout/review",
     test: CHECKOUT_TEST,
   },
@@ -91,35 +87,30 @@ const SCREENS = [
     key: "flowpoc-checkout-confirmation.png",
     v2Key: "flowpoc-checkout-confirmation-v2.png",
     diffKey: "flowpoc-diff-confirmation.png",
-    flow: { name: "Checkout", step: "Confirmation", index: 5 },
     url: "https://atelier-shop.example.com/checkout/confirmation",
     test: CHECKOUT_TEST,
   },
   {
     name: "signup/create-account",
     key: "flowpoc-signup-account.png",
-    flow: { name: "Signup", step: "Create account", index: 1 },
     url: "https://atelier-shop.example.com/signup",
     test: SIGNUP_TEST,
   },
   {
     name: "signup/verify-email",
     key: "flowpoc-signup-verify.png",
-    flow: { name: "Signup", step: "Verify email", index: 2 },
     url: "https://atelier-shop.example.com/signup/verify",
     test: SIGNUP_TEST,
   },
   {
     name: "signup/welcome",
     key: "flowpoc-signup-welcome.png",
-    flow: { name: "Signup", step: "Welcome", index: 3 },
     url: "https://atelier-shop.example.com/welcome",
     test: SIGNUP_TEST,
   },
   {
     name: "settings/notifications",
     key: "flowpoc-settings.png",
-    flow: null,
     url: "https://atelier-shop.example.com/settings/notifications",
     test: SETTINGS_TEST,
   },
@@ -239,7 +230,6 @@ function screenshotProps(screen, bucket, key) {
     metadata: metadata({
       url: screen.url,
       test: screen.test,
-      ...(screen.flow ? { flow: screen.flow } : {}),
     }),
   };
 }

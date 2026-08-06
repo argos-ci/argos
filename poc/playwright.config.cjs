@@ -18,7 +18,7 @@ module.exports = {
   reporter: [["list"]],
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3939",
     viewport: { width: 1600, height: 1000 },
     deviceScaleFactor: 2,
   },
@@ -35,11 +35,13 @@ module.exports = {
         "web.js",
       ),
     )}`,
-    url: "http://localhost:3000",
+    url: "http://localhost:3939",
     reuseExistingServer: true,
     timeout: 60_000,
     env: {
       NODE_ENV: "test",
+      PORT: "3939",
+      SERVER_URL: "http://localhost:3939",
       TZ: "utc",
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
     },

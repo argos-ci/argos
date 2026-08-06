@@ -1,11 +1,17 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
+import { clsx } from "clsx";
+import {
+  ChevronRightIcon,
+  GripVerticalIcon,
+  WaypointsIcon,
+} from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Link } from "react-router";
 
 import { graphql, type DocumentType } from "@/gql";
+import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import {
@@ -43,10 +49,9 @@ const ProjectFlowsQuery = graphql(`
               height
               contentType
               metadata {
-                flow {
-                  name
-                  step
-                  index
+                test {
+                  title
+                  titlePath
                 }
               }
             }
@@ -66,84 +71,249 @@ type DiffEdge = ReferenceBuild["screenshotDiffs"]["edges"][0];
 type FlowStep = {
   edge: DiffEdge;
   screenshot: NonNullable<DiffEdge["compareScreenshot"]>;
-  flow: NonNullable<
-    NonNullable<NonNullable<DiffEdge["compareScreenshot"]>["metadata"]>["flow"]
-  >;
 };
 
 type Flow = {
-  name: string;
+  /** Stable key: the joined test titlePath. */
+  key: string;
+  /** The test titlePath, e.g. ["checkout.spec.ts", "complete a purchase"]. */
+  titlePath: string[];
   steps: FlowStep[];
 };
 
+/**
+ * A flow is simply a test that took at least one screenshot: the test
+ * titlePath (file › describe › test) is the flow identity — no metadata, no
+ * configuration, it works for every existing project.
+ */
 function groupFlows(edges: DiffEdge[]): Flow[] {
-  const byName = new Map<string, FlowStep[]>();
+  const byKey = new Map<string, Flow>();
   for (const edge of edges) {
     const screenshot = edge.compareScreenshot;
-    const flow = screenshot?.metadata?.flow;
-    if (!screenshot || !flow) {
+    const titlePath = screenshot?.metadata?.test?.titlePath;
+    if (!screenshot || !titlePath || titlePath.length === 0) {
       continue;
     }
-    const steps = byName.get(flow.name) ?? [];
-    byName.set(flow.name, steps);
-    steps.push({ edge, screenshot, flow });
+    const key = titlePath.join(" › ");
+    const flow = byKey.get(key) ?? { key, titlePath, steps: [] };
+    byKey.set(key, flow);
+    flow.steps.push({ edge, screenshot });
   }
-  return Array.from(byName, ([name, steps]) => ({
-    name,
-    steps: steps.toSorted(
-      (a, b) =>
-        (a.flow.index ?? Number.MAX_SAFE_INTEGER) -
-        (b.flow.index ?? Number.MAX_SAFE_INTEGER),
-    ),
-  })).toSorted((a, b) => a.name.localeCompare(b.name));
+  return [...byKey.values()]
+    .map((flow) => ({
+      ...flow,
+      // Default order is alphabetical — often wrong for a funnel, which is
+      // exactly what manual ordering fixes.
+      steps: flow.steps.toSorted((a, b) =>
+        a.screenshot.name.localeCompare(b.screenshot.name),
+      ),
+    }))
+    .toSorted((a, b) => a.key.localeCompare(b.key));
+}
+
+/**
+ * Manual step ordering, persisted locally for the POC (screenshot names per
+ * flow key). The production version would live server-side next to other
+ * project-level curation (ignore config, automations).
+ */
+function useStoredOrders(params: ProjectParams) {
+  const storageKey = `argos-flows-order:${params.accountSlug}/${params.projectName}`;
+  const [orders, setOrders] = useState<Record<string, string[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const store = useCallback(
+    (
+      updater: (orders: Record<string, string[]>) => Record<string, string[]>,
+    ) => {
+      setOrders((previous) => {
+        const next = updater(previous);
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+    [storageKey],
+  );
+  const setFlowOrder = useCallback(
+    (flowKey: string, names: string[]) => {
+      store((orders) => ({ ...orders, [flowKey]: names }));
+    },
+    [store],
+  );
+  const resetFlowOrder = useCallback(
+    (flowKey: string) => {
+      store((orders) => {
+        const { [flowKey]: _removed, ...rest } = orders;
+        return rest;
+      });
+    },
+    [store],
+  );
+  return { orders, setFlowOrder, resetFlowOrder };
+}
+
+/** Stored names first (when they still exist), new screenshots appended. */
+function applyStoredOrder(steps: FlowStep[], stored: string[] | undefined) {
+  if (!stored) {
+    return steps;
+  }
+  const byName = new Map(steps.map((step) => [step.screenshot.name, step]));
+  const ordered = stored.flatMap((name) => {
+    const step = byName.get(name);
+    if (!step) {
+      return [];
+    }
+    byName.delete(name);
+    return [step];
+  });
+  return [...ordered, ...byName.values()];
+}
+
+function stepLabel(screenshot: FlowStep["screenshot"]) {
+  return screenshot.name.split("/").pop() || screenshot.name;
 }
 
 function FlowSection(props: {
   flow: Flow;
   build: ReferenceBuild;
   params: ProjectParams;
+  storedOrder: string[] | undefined;
+  onReorder: (names: string[]) => void;
+  onReset: () => void;
 }) {
-  const { flow, build, params } = props;
+  const { flow, build, params, storedOrder, onReorder, onReset } = props;
+  const steps = useMemo(
+    () => applyStoredOrder(flow.steps, storedOrder),
+    [flow.steps, storedOrder],
+  );
+  const [dragName, setDragName] = useState<string | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const drop = (targetIndex: number) => {
+    if (dragName === null) {
+      return;
+    }
+    const names = steps.map((step) => step.screenshot.name);
+    const fromIndex = names.indexOf(dragName);
+    if (fromIndex !== -1 && fromIndex !== targetIndex) {
+      names.splice(fromIndex, 1);
+      names.splice(
+        targetIndex > fromIndex ? targetIndex - 1 : targetIndex,
+        0,
+        dragName,
+      );
+      onReorder(names);
+    }
+    setDragName(null);
+    setOverIndex(null);
+  };
+
+  const title = flow.titlePath.at(-1);
+  const prefix = flow.titlePath.slice(0, -1).join(" › ");
+
   return (
     <section className="rounded-lg border">
       <div className="flex items-baseline gap-2 border-b p-4">
-        <h2 className="text-base font-medium">{flow.name}</h2>
+        {prefix && (
+          <span className="text-low font-mono text-xs">{prefix} ›</span>
+        )}
+        <h2 className="text-base font-medium">{title}</h2>
         <span className="text-low text-sm">
           {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
         </span>
+        {storedOrder && (
+          <div className="ml-auto flex items-baseline gap-2">
+            <span className="text-low text-xs">Custom order</span>
+            <Button variant="secondary" size="small" onPress={onReset}>
+              Reset
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-2 overflow-x-auto p-4">
-        {flow.steps.map((step, index) => (
-          <div key={step.edge.id} className="flex shrink-0 items-center gap-2">
+      <div
+        className="flex items-center gap-2 overflow-x-auto p-4"
+        data-flow-strip={flow.key}
+        onDragOver={(event) => {
+          // Dragging past the last card drops at the end of the flow.
+          event.preventDefault();
+          setOverIndex(steps.length);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          drop(steps.length);
+        }}
+      >
+        {steps.map((step, index) => (
+          <div
+            key={step.edge.id}
+            className="flex shrink-0 items-center gap-2"
+            data-flow-step={step.screenshot.name}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData("text/plain", step.screenshot.name);
+              event.dataTransfer.effectAllowed = "move";
+              setDragName(step.screenshot.name);
+            }}
+            onDragEnd={() => {
+              setDragName(null);
+              setOverIndex(null);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setOverIndex(index);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              drop(index);
+            }}
+          >
             {index > 0 && (
               <ChevronRightIcon className="text-low size-4 shrink-0" />
             )}
-            <Link
-              to={getBuildURL({
-                accountSlug: params.accountSlug,
-                projectName: params.projectName,
-                buildNumber: build.number,
-                diffId: step.edge.id,
-              })}
-              className="group w-56"
+            <div
+              className={clsx(
+                "group w-56 rounded-md",
+                dragName === step.screenshot.name && "opacity-40",
+                overIndex === index &&
+                  dragName !== null &&
+                  dragName !== step.screenshot.name &&
+                  "ring-primary-active ring-2 ring-offset-2",
+              )}
             >
-              <div className="group-hover:border-hover aspect-4/3 overflow-hidden rounded-md border bg-white transition">
-                <ImageKitPicture
-                  src={step.screenshot.url}
-                  transformations={["w-448", "h-448", "c-at_max"]}
-                  className="size-full object-contain"
-                  alt={step.flow.step ?? step.screenshot.name}
-                />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5 px-0.5">
-                <span className="text-low text-xs tabular-nums">
-                  {step.flow.index ?? index + 1}
-                </span>
-                <span className="truncate text-sm font-medium">
-                  {step.flow.step ?? step.screenshot.name}
-                </span>
-              </div>
-            </Link>
+              <Link
+                to={getBuildURL({
+                  accountSlug: params.accountSlug,
+                  projectName: params.projectName,
+                  buildNumber: build.number,
+                  diffId: step.edge.id,
+                })}
+                draggable={false}
+                className="block"
+              >
+                <div className="group-hover:border-hover relative aspect-4/3 cursor-grab overflow-hidden rounded-md border bg-white transition active:cursor-grabbing">
+                  <ImageKitPicture
+                    src={step.screenshot.url}
+                    transformations={["w-448", "h-448", "c-at_max"]}
+                    className="size-full object-contain"
+                    alt={stepLabel(step.screenshot)}
+                  />
+                  <GripVerticalIcon className="text-low absolute top-1.5 right-1.5 size-4 opacity-0 transition group-hover:opacity-100" />
+                </div>
+                <div className="mt-2 flex items-baseline gap-1.5 px-0.5">
+                  <span className="text-low text-xs tabular-nums">
+                    {index + 1}
+                  </span>
+                  <span className="truncate text-sm font-medium">
+                    {stepLabel(step.screenshot)}
+                  </span>
+                </div>
+              </Link>
+            </div>
           </div>
         ))}
       </div>
@@ -162,6 +332,7 @@ function PageContent(props: { params: ProjectParams }) {
     },
   });
 
+  const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
   const build = project?.latestAutoApprovedBuild ?? null;
   const edges = useMemo(() => build?.screenshotDiffs.edges ?? [], [build]);
   const flows = useMemo(() => groupFlows(edges), [edges]);
@@ -179,11 +350,10 @@ function PageContent(props: { params: ProjectParams }) {
           </EmptyStateIcon>
           <Heading>No flows yet</Heading>
           <Text slot="description">
-            A flow is a user journey — checkout, signup, onboarding — captured
-            step by step by your E2E tests. Pass a{" "}
-            <code>{`flow: { name, step, index }`}</code> option to your Argos
-            screenshots and the journey shows up here, always up to date with
-            your reference builds.
+            A flow is a test that takes screenshots along a user journey —
+            checkout, signup, onboarding. Flows appear automatically from your
+            test structure as soon as a reference build has screenshots: nothing
+            to configure.
           </Text>
         </EmptyState>
       </PageContainer>
@@ -196,8 +366,9 @@ function PageContent(props: { params: ProjectParams }) {
         <PageHeaderContent>
           <Heading>Flows</Heading>
           <Text slot="headline">
-            Your product's user journeys, step by step, as captured on the
-            latest reference build.
+            Your product's user journeys, derived from your test suite, as
+            captured on the latest reference build. Drag steps to set their
+            order.
           </Text>
         </PageHeaderContent>
         <Chip scale="sm" className="self-start">
@@ -208,10 +379,13 @@ function PageContent(props: { params: ProjectParams }) {
       <div className="mb-8 flex flex-col gap-6">
         {flows.map((flow) => (
           <FlowSection
-            key={flow.name}
+            key={flow.key}
             flow={flow}
             build={build}
             params={params}
+            storedOrder={orders[flow.key]}
+            onReorder={(names) => setFlowOrder(flow.key, names)}
+            onReset={() => resetFlowOrder(flow.key)}
           />
         ))}
       </div>

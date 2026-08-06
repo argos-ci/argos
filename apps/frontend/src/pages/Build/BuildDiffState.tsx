@@ -85,11 +85,6 @@ const ScreenshotDiffFragment = graphql(`
           play
           tags
         }
-        flow {
-          name
-          step
-          index
-        }
         viewport {
           width
           height
@@ -151,11 +146,6 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
-        }
-        flow {
-          name
-          step
-          index
         }
         viewport {
           width
