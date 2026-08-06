@@ -22,6 +22,7 @@
   },
   "ignore": [
     "playwright.config.mts",
+    "poc/**/*",
     "tests/truncate.setup.ts",
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.unit.config.mts"

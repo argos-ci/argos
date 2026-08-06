@@ -129,6 +129,22 @@ const StoryMetadataSchema = z
   })
   .meta({ description: "Storybook story metadata" });
 
+const FlowMetadataSchema = z
+  .object({
+    name: z.string().meta({
+      description: "The name of the user flow the screenshot belongs to",
+    }),
+    step: z
+      .string()
+      .nullish()
+      .meta({ description: "The name of the step within the flow" }),
+    index: z.number().int().min(0).nullish().meta({
+      description:
+        "The position of the step within the flow, used to order steps",
+    }),
+  })
+  .meta({ description: "The user flow the screenshot is a step of" });
+
 export const ScreenshotMetadataSchema = z
   .object({
     $schema: z
@@ -161,6 +177,9 @@ export const ScreenshotMetadataSchema = z
     sdk: SdkSchema,
     story: StoryMetadataSchema.nullish().meta({
       description: "Storybook story metadata",
+    }),
+    flow: FlowMetadataSchema.nullish().meta({
+      description: "The user flow the screenshot is a step of",
     }),
     tags: z
       .array(z.string())

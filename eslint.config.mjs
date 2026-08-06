@@ -3,6 +3,6 @@ import { defineConfig, globalIgnores } from "eslint/config";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default defineConfig(
-  globalIgnores(["packages", "apps", "infra"]),
+  globalIgnores(["packages", "apps", "infra", "poc"]),
   ...config,
 );
