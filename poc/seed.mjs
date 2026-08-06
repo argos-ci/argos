@@ -311,6 +311,84 @@ const checkDiffs = await ScreenshotDiff.query().insertAndFetch(
 await concludeBuild({ build: referenceBuild, notify: false });
 await concludeBuild({ build: checkBuild, notify: false });
 
+/*
+ * Second project, reproducing two real-world situations at once: a project
+ * with NO reference build (only check builds — the Flows page must fall back
+ * to the latest build) whose screenshots carry Storybook story metadata
+ * instead of test metadata (flows must group by story component).
+ */
+const STORY_SCREENS = [
+  { name: "signup-form--default", key: "flowpoc-signup-account.png" },
+  { name: "signup-form--verify", key: "flowpoc-signup-verify.png" },
+  { name: "signup-form--success", key: "flowpoc-signup-welcome.png" },
+  { name: "settings-page--default", key: "flowpoc-settings.png" },
+];
+
+const dashboardProject = await createProject({
+  accountId: teamAccount.id,
+  name: "dashboard",
+  defaultBaseBranch: "main",
+});
+const dashboardBucket = await ScreenshotBucket.query().insertAndFetch({
+  ...bucketBase,
+  projectId: dashboardProject.id,
+  screenshotCount: STORY_SCREENS.length,
+  storybookScreenshotCount: STORY_SCREENS.length,
+  commit: "c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0",
+  branch: "feat/new-nav",
+  createdAt: "2026-08-06T10:05:00Z",
+  updatedAt: "2026-08-06T10:05:00Z",
+});
+const dashboardTests = await Test.query().insertAndFetch(
+  STORY_SCREENS.map((screen) => ({
+    name: screen.name,
+    buildName: "default",
+    projectId: dashboardProject.id,
+  })),
+);
+const dashboardTestByName = new Map(dashboardTests.map((t) => [t.name, t]));
+const dashboardScreenshots = await Screenshot.query().insertAndFetch(
+  STORY_SCREENS.map((screen) => ({
+    screenshotBucketId: dashboardBucket.id,
+    testId: dashboardTestByName.get(screen.name).id,
+    name: screen.name,
+    s3Id: screen.key,
+    fileId: fileByKey.get(screen.key).id,
+    metadata: {
+      sdk: { name: "@argos-ci/storybook", version: "99.0.0" },
+      automationLibrary: { name: "storybook", version: "8.5.0" },
+      browser: { name: "chromium", version: "126.0" },
+      colorScheme: "light",
+      viewport: VIEWPORT,
+      story: { id: screen.name },
+    },
+  })),
+);
+const dashboardBuild = await Build.query().insertAndFetch({
+  name: "default",
+  number: 1,
+  projectId: dashboardProject.id,
+  baseScreenshotBucketId: null,
+  compareScreenshotBucketId: dashboardBucket.id,
+  jobStatus: "complete",
+  type: "check",
+  mode: "ci",
+  createdAt: "2026-08-06T10:05:00Z",
+  updatedAt: "2026-08-06T10:05:00Z",
+});
+await ScreenshotDiff.query().insertAndFetch(
+  dashboardScreenshots.map((screenshot) => ({
+    buildId: dashboardBuild.id,
+    baseScreenshotId: null,
+    compareScreenshotId: screenshot.id,
+    testId: screenshot.testId,
+    score: null,
+    s3Id: null,
+    jobStatus: "complete",
+  })),
+);
+await concludeBuild({ build: dashboardBuild, notify: false });
+
 const { rawToken } = await createSession({ userId: user.id });
 
 const diffIds = Object.fromEntries(

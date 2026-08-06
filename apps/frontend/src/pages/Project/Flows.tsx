@@ -11,6 +11,7 @@ import { Heading, Text } from "react-aria-components";
 import { Link } from "react-router";
 
 import { graphql, type DocumentType } from "@/gql";
+import { BuildType } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
@@ -29,31 +30,30 @@ import { NotFound } from "../NotFound";
 import { useProjectParams, type ProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
 
-const ProjectFlowsQuery = graphql(`
-  query ProjectFlows_project($accountSlug: String!, $projectName: String!) {
-    project(accountSlug: $accountSlug, projectName: $projectName) {
-      id
-      latestAutoApprovedBuild {
+const _BuildFragment = graphql(`
+  fragment ProjectFlows_Build on Build {
+    id
+    number
+    branch
+    createdAt
+    type
+    screenshotDiffs(after: 0, first: 300) {
+      edges {
         id
-        number
-        branch
-        createdAt
-        screenshotDiffs(after: 0, first: 100) {
-          edges {
-            id
-            compareScreenshot {
+        compareScreenshot {
+          id
+          name
+          url
+          width
+          height
+          contentType
+          metadata {
+            test {
+              title
+              titlePath
+            }
+            story {
               id
-              name
-              url
-              width
-              height
-              contentType
-              metadata {
-                test {
-                  title
-                  titlePath
-                }
-              }
             }
           }
         }
@@ -62,44 +62,102 @@ const ProjectFlowsQuery = graphql(`
   }
 `);
 
-type ProjectFlowsDocument = DocumentType<typeof ProjectFlowsQuery>;
-type ReferenceBuild = NonNullable<
-  NonNullable<ProjectFlowsDocument["project"]>["latestAutoApprovedBuild"]
->;
+const ProjectFlowsQuery = graphql(`
+  query ProjectFlows_project($accountSlug: String!, $projectName: String!) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
+      id
+      latestAutoApprovedBuild {
+        id
+        ...ProjectFlows_Build
+      }
+      latestBuild {
+        id
+        ...ProjectFlows_Build
+      }
+    }
+  }
+`);
+
+type ReferenceBuild = DocumentType<typeof _BuildFragment>;
 type DiffEdge = ReferenceBuild["screenshotDiffs"]["edges"][0];
 
 type FlowStep = {
   edge: DiffEdge;
   screenshot: NonNullable<DiffEdge["compareScreenshot"]>;
+  label: string;
 };
 
 type Flow = {
-  /** Stable key: the joined test titlePath. */
+  /** Stable key, e.g. the joined test titlePath or a story component id. */
   key: string;
-  /** The test titlePath, e.g. ["checkout.spec.ts", "complete a purchase"]. */
-  titlePath: string[];
+  /** Muted context shown before the title (test file, "storybook"…). */
+  prefix: string;
+  title: string;
   steps: FlowStep[];
 };
 
 /**
- * A flow is simply a test that took at least one screenshot: the test
- * titlePath (file › describe › test) is the flow identity — no metadata, no
- * configuration, it works for every existing project.
+ * A flow is any test that took at least one screenshot: the test titlePath
+ * (file › describe › test) is the flow identity — no metadata to add, no
+ * configuration. Storybook uploads carry a story id instead: stories group
+ * by component, one step per story.
  */
-function groupFlows(edges: DiffEdge[]): Flow[] {
+function resolveFlowOf(
+  screenshot: NonNullable<DiffEdge["compareScreenshot"]>,
+): {
+  key: string;
+  prefix: string;
+  title: string;
+  stepLabel: string;
+} | null {
+  const titlePath = screenshot.metadata?.test?.titlePath;
+  if (titlePath && titlePath.length > 0) {
+    return {
+      key: titlePath.join(" › "),
+      prefix: titlePath.slice(0, -1).join(" › "),
+      title: titlePath.at(-1) as string,
+      stepLabel: screenshot.name.split("/").pop() || screenshot.name,
+    };
+  }
+  const storyId = screenshot.metadata?.story?.id;
+  if (storyId) {
+    const [component, ...variant] = storyId.split("--");
+    return {
+      key: `storybook › ${component}`,
+      prefix: "storybook",
+      title: component as string,
+      stepLabel: variant.join("--") || screenshot.name,
+    };
+  }
+  return null;
+}
+
+function groupFlows(edges: DiffEdge[]): {
+  flows: Flow[];
+  ungroupedCount: number;
+} {
   const byKey = new Map<string, Flow>();
+  let ungroupedCount = 0;
   for (const edge of edges) {
     const screenshot = edge.compareScreenshot;
-    const titlePath = screenshot?.metadata?.test?.titlePath;
-    if (!screenshot || !titlePath || titlePath.length === 0) {
+    if (!screenshot) {
       continue;
     }
-    const key = titlePath.join(" › ");
-    const flow = byKey.get(key) ?? { key, titlePath, steps: [] };
-    byKey.set(key, flow);
-    flow.steps.push({ edge, screenshot });
+    const resolved = resolveFlowOf(screenshot);
+    if (!resolved) {
+      ungroupedCount += 1;
+      continue;
+    }
+    const flow = byKey.get(resolved.key) ?? {
+      key: resolved.key,
+      prefix: resolved.prefix,
+      title: resolved.title,
+      steps: [],
+    };
+    byKey.set(resolved.key, flow);
+    flow.steps.push({ edge, screenshot, label: resolved.stepLabel });
   }
-  return [...byKey.values()]
+  const flows = [...byKey.values()]
     .map((flow) => ({
       ...flow,
       // Default order is alphabetical — often wrong for a funnel, which is
@@ -108,7 +166,13 @@ function groupFlows(edges: DiffEdge[]): Flow[] {
         a.screenshot.name.localeCompare(b.screenshot.name),
       ),
     }))
-    .toSorted((a, b) => a.key.localeCompare(b.key));
+    // Real journeys (several steps) first, single-screenshot tests after.
+    .toSorted(
+      (a, b) =>
+        Number(b.steps.length > 1) - Number(a.steps.length > 1) ||
+        a.key.localeCompare(b.key),
+    );
+  return { flows, ungroupedCount };
 }
 
 /**
@@ -172,10 +236,6 @@ function applyStoredOrder(steps: FlowStep[], stored: string[] | undefined) {
   return [...ordered, ...byName.values()];
 }
 
-function stepLabel(screenshot: FlowStep["screenshot"]) {
-  return screenshot.name.split("/").pop() || screenshot.name;
-}
-
 function FlowSection(props: {
   flow: Flow;
   build: ReferenceBuild;
@@ -211,16 +271,13 @@ function FlowSection(props: {
     setOverIndex(null);
   };
 
-  const title = flow.titlePath.at(-1);
-  const prefix = flow.titlePath.slice(0, -1).join(" › ");
-
   return (
     <section className="rounded-lg border">
       <div className="flex items-baseline gap-2 border-b p-4">
-        {prefix && (
-          <span className="text-low font-mono text-xs">{prefix} ›</span>
+        {flow.prefix && (
+          <span className="text-low font-mono text-xs">{flow.prefix} ›</span>
         )}
-        <h2 className="text-base font-medium">{title}</h2>
+        <h2 className="text-base font-medium">{flow.title}</h2>
         <span className="text-low text-sm">
           {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
         </span>
@@ -300,7 +357,7 @@ function FlowSection(props: {
                     src={step.screenshot.url}
                     transformations={["w-448", "h-448", "c-at_max"]}
                     className="size-full object-contain"
-                    alt={stepLabel(step.screenshot)}
+                    alt={step.label}
                   />
                   <GripVerticalIcon className="text-low absolute top-1.5 right-1.5 size-4 opacity-0 transition group-hover:opacity-100" />
                 </div>
@@ -309,7 +366,7 @@ function FlowSection(props: {
                     {index + 1}
                   </span>
                   <span className="truncate text-sm font-medium">
-                    {stepLabel(step.screenshot)}
+                    {step.label}
                   </span>
                 </div>
               </Link>
@@ -333,15 +390,19 @@ function PageContent(props: { params: ProjectParams }) {
   });
 
   const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
-  const build = project?.latestAutoApprovedBuild ?? null;
+  // Prefer the reference build; on projects that don't have one yet (e.g.
+  // only PR builds), fall back to the latest build so the page still shows
+  // the product.
+  const build =
+    project?.latestAutoApprovedBuild ?? project?.latestBuild ?? null;
   const edges = useMemo(() => build?.screenshotDiffs.edges ?? [], [build]);
-  const flows = useMemo(() => groupFlows(edges), [edges]);
+  const { flows, ungroupedCount } = useMemo(() => groupFlows(edges), [edges]);
 
   if (!project) {
     return <NotFound />;
   }
 
-  if (!build || flows.length === 0) {
+  if (!build || (flows.length === 0 && ungroupedCount === 0)) {
     return (
       <PageContainer>
         <EmptyState>
@@ -352,8 +413,27 @@ function PageContent(props: { params: ProjectParams }) {
           <Text slot="description">
             A flow is a test that takes screenshots along a user journey —
             checkout, signup, onboarding. Flows appear automatically from your
-            test structure as soon as a reference build has screenshots: nothing
-            to configure.
+            test structure as soon as a build has screenshots: nothing to
+            configure.
+          </Text>
+        </EmptyState>
+      </PageContainer>
+    );
+  }
+
+  if (flows.length === 0) {
+    return (
+      <PageContainer>
+        <EmptyState>
+          <EmptyStateIcon>
+            <WaypointsIcon />
+          </EmptyStateIcon>
+          <Heading>No flow information in this build</Heading>
+          <Text slot="description">
+            Build #{build.number} has {ungroupedCount} screenshot
+            {ungroupedCount > 1 ? "s" : ""}, but none carry test or story
+            metadata, which Argos uses to derive flows automatically. Update the
+            Argos SDK in your test suite to get flows without any configuration.
           </Text>
         </EmptyState>
       </PageContainer>
@@ -367,8 +447,11 @@ function PageContent(props: { params: ProjectParams }) {
           <Heading>Flows</Heading>
           <Text slot="headline">
             Your product's user journeys, derived from your test suite, as
-            captured on the latest reference build. Drag steps to set their
-            order.
+            captured on the{" "}
+            {build.type === BuildType.Reference
+              ? "latest reference build"
+              : "latest build"}
+            . Drag steps to set their order.
           </Text>
         </PageHeaderContent>
         <Chip scale="sm" className="self-start">

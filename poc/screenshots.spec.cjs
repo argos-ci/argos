@@ -171,6 +171,26 @@ test("reorder steps by drag & drop, persisted across reloads", async ({
   await expect(stepCard("checkout/cart")).toBeVisible();
 });
 
+test("fallback: no reference build, storybook grouping", async ({
+  context,
+  page,
+}) => {
+  await setup(context);
+  await page.goto(`/${seed.accountSlug}/dashboard/flows`);
+  await expect(page.getByRole("heading", { name: "Flows" })).toBeVisible();
+  // No reference build on this project: the page falls back to the latest
+  // check build.
+  await expect(page.getByText("From build #1 on feat/new-nav")).toBeVisible();
+  // Storybook uploads have no test metadata: stories group by component,
+  // and multi-step flows sort before single-screenshot ones.
+  const sectionTitles = page.locator("section h2");
+  await expect(sectionTitles.first()).toHaveText("signup-form");
+  await expect(page.getByText("3 steps")).toBeVisible();
+  await expect(page.getByText("settings-page")).toBeVisible();
+  await waitForImages(page);
+  await page.screenshot({ path: path.join(OUT, "flows-storybook-light.png") });
+});
+
 test("flows tab — dark, with curated order", async ({ context, page }) => {
   await setup(context, { dark: true, presetOrder: true });
   await page.goto(FLOWS_URL);
