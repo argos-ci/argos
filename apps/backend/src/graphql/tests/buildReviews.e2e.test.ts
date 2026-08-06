@@ -4,9 +4,8 @@ import { describe, expect, test } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 describe("GraphQL Build.reviews", () => {
   test("returns all submitted reviews for a build", async () => {
@@ -39,14 +38,10 @@ describe("GraphQL Build.reviews", () => {
     const newerReview = reviews[1];
     invariant(olderReview && newerReview, "factory should return two reviews");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: account.user,
-        account,
-      },
-    );
+    const app = createGraphQLApp({
+      user: account.user,
+      account,
+    });
 
     const result = await request(app)
       .post("/graphql")

@@ -5,10 +5,9 @@ import { test as base, expect } from "vitest";
 import type { Account, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { formatDeploymentId } from "../services/deployment";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const test = base.extend<{
   teamAccount: Account;
@@ -90,14 +89,10 @@ test("returns latest production deployments for project lists", async ({
     slug: "preview-only-project-preview",
   });
 
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user,
-      account: teamAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user,
+    account: teamAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({

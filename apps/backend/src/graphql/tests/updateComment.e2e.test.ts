@@ -5,9 +5,8 @@ import { formatCommentId } from "@/comment/id";
 import { Comment, type Account, type Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const MUTATION = `
   mutation UpdateComment($input: UpdateCommentInput!) {
@@ -51,14 +50,10 @@ const test = base.extend<Fixtures>({
 });
 
 test("lets the author edit the comment", async ({ fixture }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: fixture.authorAccount.user!,
-      account: fixture.authorAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: fixture.authorAccount.user!,
+    account: fixture.authorAccount,
+  });
   const body = commentBody("Edited content");
   const res = await request(app)
     .post("/graphql")
@@ -83,14 +78,10 @@ test("lets the author edit the comment", async ({ fixture }) => {
 test("forbids a non-author from editing the comment", async ({ fixture }) => {
   const outsiderAccount = await factory.UserAccount.create();
   await outsiderAccount.$fetchGraph("user");
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: outsiderAccount.user!,
-      account: outsiderAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: outsiderAccount.user!,
+    account: outsiderAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -112,11 +103,7 @@ test("forbids a non-author from editing the comment", async ({ fixture }) => {
 });
 
 test("requires authentication", async ({ fixture }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    null,
-  );
+  const app = createGraphQLApp(null);
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -137,14 +124,10 @@ test("requires authentication", async ({ fixture }) => {
 test("returns a clean error for a malformed comment ID", async ({
   fixture,
 }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: fixture.authorAccount.user!,
-      account: fixture.authorAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: fixture.authorAccount.user!,
+    account: fixture.authorAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({

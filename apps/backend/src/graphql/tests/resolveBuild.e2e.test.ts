@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Build, Project, Screenshot } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 describe("GraphQL", () => {
   beforeEach(async () => {
@@ -68,14 +67,10 @@ describe("GraphQL", () => {
     });
 
     it("should sort the diffs by score", async () => {
-      const app = await createApolloServerApp(
-        apolloServer,
-        createApolloMiddleware,
-        {
-          user: userAccount.user!,
-          account: userAccount,
-        },
-      );
+      const app = createGraphQLApp({
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({

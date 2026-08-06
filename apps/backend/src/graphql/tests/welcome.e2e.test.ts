@@ -5,9 +5,8 @@ import { describe, expect, test } from "vitest";
 import { TeamDomain, User, type Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const CompleteWelcomeMutation = `
   mutation CompleteWelcome($input: CompleteWelcomeInput!) {
@@ -62,11 +61,10 @@ const welcomeTest = test.extend<Fixtures>({
     await use(teamAccount);
   },
   post: async ({ user }, use) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: user.user, account: user.account },
-    );
+    const app = createGraphQLApp({
+      user: user.user,
+      account: user.account,
+    });
     await use((body: object) => request(app).post("/graphql").send(body));
   },
 });

@@ -7,9 +7,8 @@ import { IgnoredChange } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { formatTestId } from "@/util/test-id";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const TEST_CHANGES_QUERY = `
   query TestChanges(
@@ -68,11 +67,7 @@ describe("GraphQL Test.changes", () => {
     const { test = visualTest, ignored } = input;
     const user = userAccount.user;
     invariant(user, "the user account should have a user");
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
     const res = await request(app)
       .post("/graphql")
       .send({

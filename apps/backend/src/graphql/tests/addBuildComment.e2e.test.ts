@@ -17,9 +17,8 @@ import { subscribeUserToCommentThread } from "@/database/services/comment-notifi
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 vi.mock("@/notification", () => ({
   sendNotification: vi.fn(),
@@ -164,14 +163,10 @@ describe("GraphQL addBuildComment mutation", () => {
 
   test("posts a comment on a build", async ({ fixture }) => {
     const userId = getAccountUserId(fixture.userAccount);
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const body = commentBody("Looks great to me!");
     const res = await request(app)
       .post("/graphql")
@@ -229,14 +224,10 @@ describe("GraphQL addBuildComment mutation", () => {
       userId: subscriberUserId,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -279,14 +270,10 @@ describe("GraphQL addBuildComment mutation", () => {
       userId: subscriberAccount.userId,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const body = commentBody("Done, please check again.");
     const res = await request(app)
       .post("/graphql")
@@ -333,14 +320,10 @@ describe("GraphQL addBuildComment mutation", () => {
       userId: fixture.userAccount.userId,
       content: commentBody("Can we tweak this?"),
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
 
     const subscribeRes = await request(app)
       .post("/graphql")
@@ -374,14 +357,10 @@ describe("GraphQL addBuildComment mutation", () => {
   });
 
   test("rejects an invalid comment body", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -401,14 +380,10 @@ describe("GraphQL addBuildComment mutation", () => {
   });
 
   test("rejects an empty comment", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -439,14 +414,10 @@ describe("GraphQL addBuildComment mutation", () => {
       userLevel: "member",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -495,14 +466,10 @@ describe("GraphQL addBuildComment mutation", () => {
     // An account that is not part of the project's team.
     const outsiderAccount = await factory.UserAccount.create();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -531,11 +498,10 @@ describe("GraphQL addBuildComment mutation", () => {
   test("returns an error if the user cannot review", async ({ fixture }) => {
     const outsiderAccount = await factory.UserAccount.create();
     await outsiderAccount.$fetchGraph("user");
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: getAccountUser(outsiderAccount), account: outsiderAccount },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(outsiderAccount),
+      account: outsiderAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -558,14 +524,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: fixture.build.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -597,14 +559,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: fixture.build.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -642,14 +600,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: fixture.build.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -687,14 +641,10 @@ describe("GraphQL addBuildComment mutation", () => {
       userId: fixture.userAccount.userId,
       content: commentBody("Root"),
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -726,14 +676,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: otherBuild.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -754,14 +700,10 @@ describe("GraphQL addBuildComment mutation", () => {
   });
 
   test("rejects an anchor without a screenshot diff", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -787,14 +729,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: fixture.build.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -823,14 +761,10 @@ describe("GraphQL addBuildComment mutation", () => {
     const diff = await factory.ScreenshotDiff.create({
       buildId: fixture.build.id,
     });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: getAccountUser(fixture.userAccount),
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: getAccountUser(fixture.userAccount),
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({

@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { StaffTeamContact } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const TeamContactQuery = `
   query TeamContact($days: Int!) {
@@ -99,7 +98,7 @@ async function createTeamWithOwners(count: number) {
 }
 
 async function createApp(auth: Awaited<ReturnType<typeof createViewer>>) {
-  return createApolloServerApp(apolloServer, createApolloMiddleware, {
+  return createGraphQLApp({
     user: auth.user,
     account: auth.userAccount,
   });
@@ -197,11 +196,7 @@ describe("GraphQL staff team contact", () => {
 
   it("withholds the team itself from an anonymous visitor", async () => {
     const { teamAccount } = await createTeamWithOwners(1);
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      null,
-    );
+    const app = createGraphQLApp(null);
 
     const res = await request(app)
       .post("/graphql")

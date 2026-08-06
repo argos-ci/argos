@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 describe("GraphQL", () => {
   beforeEach(async () => {
@@ -45,14 +44,10 @@ describe("GraphQL", () => {
       await factory.ScreenshotDiff.create({
         buildId: build.id,
       });
-      const app = await createApolloServerApp(
-        apolloServer,
-        createApolloMiddleware,
-        {
-          user: userAccount.user!,
-          account: userAccount,
-        },
-      );
+      const app = createGraphQLApp({
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({

@@ -29,12 +29,10 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@apollo/server": "^5.5.1",
     "@argos-ci/mask-fingerprint": "^0.1.3",
     "@argos/knex-scripts": "workspace:*",
     "@argos/schemas": "workspace:*",
     "@argos/util": "workspace:*",
-    "@as-integrations/express5": "^1.1.2",
     "@aws-sdk/client-dynamodb": "^3.1102.0",
     "@aws-sdk/client-s3": "^3.1102.0",
     "@aws-sdk/lib-dynamodb": "^3.1102.0",
@@ -79,6 +77,7 @@
     "graphql-scalars": "^1.25.0",
     "graphql-tag": "^2.12.7",
     "graphql-ws": "^6.2.0",
+    "graphql-yoga": "^5.21.2",
     "happy-dom": "^20.11.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",

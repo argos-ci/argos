@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { DeploymentAlias, Project, ProjectDomain } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 async function createTeamProjectOwner() {
   const userAccount = await factory.UserAccount.create();
@@ -53,14 +52,10 @@ describe("GraphQL projectDomain", () => {
       domain: "docs.dev.argos-ci.live",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -106,14 +101,10 @@ describe("GraphQL projectDomain", () => {
       alias: "docs.dev.argos-ci.live",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -181,14 +172,10 @@ describe("GraphQL projectDomain", () => {
       internal: true,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -233,14 +220,10 @@ describe("GraphQL projectDomain", () => {
       userLevel: "owner",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -289,14 +272,10 @@ describe("GraphQL projectDomain", () => {
       userLevel: "owner",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -332,14 +311,10 @@ describe("GraphQL projectDomain", () => {
     const { userAccount, teamAccount, project, user } =
       await createTeamProjectOwner();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -397,14 +372,10 @@ describe("GraphQL projectDomain", () => {
       accountId: userAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")

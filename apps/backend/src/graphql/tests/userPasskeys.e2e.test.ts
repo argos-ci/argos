@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { UserPasskey } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const PASSKEYS_QUERY = `
   query Passkeys {
@@ -49,11 +48,7 @@ describe("GraphQL User.passkeys", () => {
     );
     expect(String(created[0]?.createdAt)).toBe(String(created[1]?.createdAt));
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     // Repeated because an unstable sort can agree with the expected order by
     // chance; a tiebreaker has to hold every time.
@@ -86,11 +81,7 @@ describe("GraphQL User.passkeys", () => {
       lastUsedAt: null,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")

@@ -8,9 +8,8 @@ import { factory, setupDatabase } from "@/database/testing";
 import { getRedisClient } from "@/util/redis/client";
 import { setupRedis } from "@/util/redis/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 setupRedis();
 
@@ -36,11 +35,7 @@ describe("GraphQL requestAccountDeletion", () => {
   it("requires authentication", async () => {
     const userAccount = await factory.UserAccount.create();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      null,
-    );
+    const app = createGraphQLApp(null);
 
     const res = await request(app)
       .post("/graphql")
@@ -67,11 +62,10 @@ describe("GraphQL requestAccountDeletion", () => {
       userLevel: "owner",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -93,11 +87,10 @@ describe("GraphQL requestAccountDeletion", () => {
     await userAccount.$fetchGraph("user");
     const otherUserAccount = await factory.UserAccount.create();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -118,11 +111,10 @@ describe("GraphQL requestAccountDeletion", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -152,11 +144,7 @@ describe("GraphQL confirmAccountDeletion", () => {
   });
 
   it("requires authentication", async () => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      null,
-    );
+    const app = createGraphQLApp(null);
 
     const res = await request(app)
       .post("/graphql")
@@ -177,11 +165,10 @@ describe("GraphQL confirmAccountDeletion", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -214,11 +201,10 @@ describe("GraphQL confirmAccountDeletion", () => {
       accountId: victimAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -264,11 +250,10 @@ describe("GraphQL confirmAccountDeletion", () => {
       accountId: userAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -310,11 +295,10 @@ describe("GraphQL confirmAccountDeletion", () => {
       accountId: userAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const firstRes = await request(app)
       .post("/graphql")
@@ -360,11 +344,10 @@ describe("GraphQL confirmAccountDeletion", () => {
       accountId: userAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: teamAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: teamAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")

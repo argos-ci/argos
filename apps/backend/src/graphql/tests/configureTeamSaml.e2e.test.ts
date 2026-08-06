@@ -5,8 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Team } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 async function setupTeam(input: { samlIncluded: boolean }) {
   const userAccount = await factory.UserAccount.create();
@@ -30,14 +29,10 @@ async function setupTeam(input: { samlIncluded: boolean }) {
     endDate: null,
   });
 
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: userAccount.user!,
-      account: userAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: userAccount.user!,
+    account: userAccount,
+  });
 
   return { app, teamAccount };
 }

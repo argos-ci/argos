@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const MsTeamsWebhooksQuery = `
   query MsTeamsWebhooks($accountSlug: String!) {
@@ -57,11 +56,10 @@ async function queryWebhooks(args: {
   userAccount: Awaited<ReturnType<typeof createTeamWithWebhook>>["userAccount"];
   accountSlug: string;
 }) {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    { user: args.user, account: args.userAccount },
-  );
+  const app = createGraphQLApp({
+    user: args.user,
+    account: args.userAccount,
+  });
 
   const res = await request(app)
     .post("/graphql")

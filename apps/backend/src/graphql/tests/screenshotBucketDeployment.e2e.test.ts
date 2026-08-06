@@ -4,10 +4,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { formatDeploymentId } from "../services/deployment";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 describe("GraphQL Build.deployment", () => {
   beforeEach(async () => {
@@ -61,14 +60,10 @@ describe("GraphQL Build.deployment", () => {
       createdAt: "2026-04-13T10:00:00.000Z",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -122,14 +117,10 @@ describe("GraphQL Build.deployment", () => {
       createdAt: "2026-04-10T10:00:00.000Z",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")

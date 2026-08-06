@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 // Real notifications are already disabled in tests (the webhook client is off);
 // spy on the sender only to assert what would have been posted.
@@ -61,11 +60,7 @@ describe("GraphQL transferProject", () => {
     const { userAccount, teamAccount, user, project } =
       await createTransferableProject();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")
@@ -105,11 +100,7 @@ describe("GraphQL transferProject", () => {
       name: "team-project",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")

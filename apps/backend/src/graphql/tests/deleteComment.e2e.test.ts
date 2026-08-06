@@ -5,9 +5,8 @@ import { formatCommentId } from "@/comment/id";
 import { Comment, type Account, type Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const MUTATION = `
   mutation DeleteComment($input: DeleteCommentInput!) {
@@ -48,14 +47,10 @@ const test = base.extend<Fixtures>({
 });
 
 test("lets the author delete the comment", async ({ fixture }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: fixture.authorAccount.user!,
-      account: fixture.authorAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: fixture.authorAccount.user!,
+    account: fixture.authorAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -78,14 +73,10 @@ test("is idempotent when the comment is already deleted", async ({
     (await Comment.query().findById(fixture.comment.id))!.deletedAt!,
   ).toISOString();
 
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: fixture.authorAccount.user!,
-      account: fixture.authorAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: fixture.authorAccount.user!,
+    account: fixture.authorAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -104,14 +95,10 @@ test("is idempotent when the comment is already deleted", async ({
 test("forbids a non-author from deleting the comment", async ({ fixture }) => {
   const outsiderAccount = await factory.UserAccount.create();
   await outsiderAccount.$fetchGraph("user");
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: outsiderAccount.user!,
-      account: outsiderAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: outsiderAccount.user!,
+    account: outsiderAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -127,11 +114,7 @@ test("forbids a non-author from deleting the comment", async ({ fixture }) => {
 });
 
 test("requires authentication", async ({ fixture }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    null,
-  );
+  const app = createGraphQLApp(null);
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -147,14 +130,10 @@ test("requires authentication", async ({ fixture }) => {
 test("returns a clean error for a malformed comment ID", async ({
   fixture,
 }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: fixture.authorAccount.user!,
-      account: fixture.authorAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: fixture.authorAccount.user!,
+    account: fixture.authorAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({

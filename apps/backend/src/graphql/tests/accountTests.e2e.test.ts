@@ -11,9 +11,8 @@ import {
 } from "@/metrics/test";
 
 import { IMetricsPeriod } from "../__generated__/resolver-types";
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const ACCOUNT_TESTS_QUERY = `
   query AccountTests($accountSlug: String!, $period: MetricsPeriod!) {
@@ -107,11 +106,7 @@ describe("GraphQL Account.tests", () => {
       });
     }
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const result = await request(app)
       .post("/graphql")
@@ -152,11 +147,7 @@ describe("GraphQL Account.tests", () => {
       userLevel: "owner",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const result = await request(app)
       .post("/graphql")
@@ -209,11 +200,7 @@ describe("GraphQL Account.tests", () => {
       change: { fileId: file.id, fingerprint: "one-off" },
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const result = await request(app)
       .post("/graphql")

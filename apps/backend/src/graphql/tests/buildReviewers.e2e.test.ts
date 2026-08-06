@@ -11,9 +11,8 @@ import {
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 vi.mock("@/notification", () => ({
   sendNotification: vi.fn(),
@@ -110,7 +109,7 @@ const test = base.extend<Fixtures>({
 
 /** Build an authenticated GraphQL app acting as the given user account. */
 function appAs(account: Account) {
-  return createApolloServerApp(apolloServer, createApolloMiddleware, {
+  return createGraphQLApp({
     user: getAccountUser(account),
     account,
   });

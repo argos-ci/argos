@@ -1,25 +1,25 @@
-import type { ApolloServer, BaseContext } from "@apollo/server";
-import express, { RequestHandler } from "express";
+import express from "express";
 
 import type { Account, User } from "@/database/models";
 
-let startPromise: Promise<void> | null = null;
+import { graphqlMiddleware } from "../yoga";
 
-export async function createApolloServerApp<Context extends BaseContext>(
-  apolloServer: ApolloServer<Context>,
-  getMiddleware: () => RequestHandler,
+/**
+ * Build a minimal Express app serving `/graphql`, with the given account
+ * authenticated. Mirrors the production wiring in `web/app-router.ts` — the
+ * body is parsed by Express and reused by Yoga — minus the CSRF and security
+ * middlewares, which have their own tests.
+ */
+export function createGraphQLApp(
   auth: { user: User; account: Account } | null,
-): Promise<express.Express> {
+): express.Express {
   const app = express();
   app.use(((req, _res, next) => {
     (req as any).__MOCKED_AUTH__ = auth;
     next();
   }) as express.RequestHandler);
 
-  startPromise ??= apolloServer.start();
-  await startPromise;
-
-  app.use("/graphql", express.json(), getMiddleware());
+  app.use("/graphql", express.json(), graphqlMiddleware);
 
   return app;
 }

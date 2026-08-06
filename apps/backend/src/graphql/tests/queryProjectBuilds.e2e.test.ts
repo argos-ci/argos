@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Build, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const MAIN_COMMIT = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0";
 const PR_HEAD_COMMIT = "0d9c8b7a6f5e4d3c2b1a0d9c8b7a6f5e4d3c2b1a";
@@ -68,14 +67,10 @@ describe("GraphQL", () => {
       withTotalCount?: boolean;
       withCommentsCount?: boolean;
     }) {
-      const app = await createApolloServerApp(
-        apolloServer,
-        createApolloMiddleware,
-        {
-          user: userAccount.user!,
-          account: userAccount,
-        },
-      );
+      const app = createGraphQLApp({
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({

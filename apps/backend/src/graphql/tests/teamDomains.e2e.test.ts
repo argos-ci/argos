@@ -6,9 +6,8 @@ import { generateAuthEmailCode } from "@/auth/email";
 import { Team, TeamDomain, TeamUser } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 async function createUserAccount() {
   const userAccount = await factory.UserAccount.create();
@@ -60,11 +59,7 @@ describe("GraphQL team domains", () => {
     });
     await createTeamDomain("other.com");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const res = await request(app)
       .post("/graphql")
@@ -103,11 +98,7 @@ describe("GraphQL team domains", () => {
     });
     await createTeamDomain("example.com");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const res = await request(app)
       .post("/graphql")
@@ -138,11 +129,7 @@ describe("GraphQL team domains", () => {
       defaultUserLevel: "contributor",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const res = await request(app)
       .post("/graphql")
@@ -176,11 +163,7 @@ describe("GraphQL team domains", () => {
 
   it("only returns the auth auto-invite flag for new accounts", async () => {
     await createTeamDomain("example.com");
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      null,
-    );
+    const app = createGraphQLApp(null);
 
     const signupCode = await generateAuthEmailCode("new@example.com");
     const signupRes = await request(app)
@@ -257,11 +240,7 @@ describe("GraphQL team domains", () => {
       userLevel: "owner",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const addRes = await request(app)
       .post("/graphql")

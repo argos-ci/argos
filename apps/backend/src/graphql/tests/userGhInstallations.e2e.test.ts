@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const QUERY = `
   query UserGhInstallations {
@@ -22,14 +21,10 @@ const QUERY = `
 `;
 
 async function queryGhInstallations(input: { user: User; account: Account }) {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: input.user,
-      account: input.account,
-    },
-  );
+  const app = createGraphQLApp({
+    user: input.user,
+    account: input.account,
+  });
   const result = await request(app).post("/graphql").send({ query: QUERY });
   expectNoGraphQLError(result);
   expect(result.status).toBe(200);

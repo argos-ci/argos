@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const ACCOUNT_METRICS_QUERY = `
   query AccountMetrics(
@@ -90,11 +89,7 @@ describe("GraphQL Account.metrics", () => {
       },
     ]);
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const result = await request(app)
       .post("/graphql")
@@ -130,11 +125,7 @@ describe("GraphQL Account.metrics", () => {
   it("reports invalid date ranges as bad user input", async () => {
     const user = await factory.User.create();
     const account = await factory.UserAccount.create({ userId: user.id });
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+    const app = createGraphQLApp({ user, account });
 
     const result = await request(app)
       .post("/graphql")

@@ -12,9 +12,8 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 type Fixtures = {
   fixture: {
@@ -84,14 +83,10 @@ const test = base.extend<Fixtures>({
 
 describe("GraphQL createBuildReview mutation", () => {
   test("creates a review", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: fixture.userAccount.user!,
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: fixture.userAccount.user!,
+      account: fixture.userAccount,
+    });
     const mutationResult = await request(app)
       .post("/graphql")
       .send({
@@ -156,14 +151,10 @@ describe("GraphQL createBuildReview mutation", () => {
   });
 
   test("rejects a review with an invalid body", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: fixture.userAccount.user!,
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: fixture.userAccount.user!,
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -199,14 +190,10 @@ describe("GraphQL createBuildReview mutation", () => {
   test("returns an error if unauthorized", async ({ fixture }) => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -242,14 +229,10 @@ describe("GraphQL createBuildReview mutation", () => {
       state: "rejected",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: reviewer,
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: reviewer,
+      account: fixture.userAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -319,14 +302,10 @@ describe("GraphQL createBuildReview mutation", () => {
         userLevel: "contributor",
       }),
     ]);
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: reviewer,
-        account: reviewerAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: reviewer,
+      account: reviewerAccount,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({

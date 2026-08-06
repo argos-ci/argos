@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const TrialPipelineQuery = `
   query StaffTrialPipeline($days: Int!) {
@@ -42,14 +41,10 @@ async function queryPipeline(
   auth: Awaited<ReturnType<typeof createViewer>>,
   days: number,
 ) {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: auth.user,
-      account: auth.userAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: auth.user,
+    account: auth.userAccount,
+  });
 
   return request(app)
     .post("/graphql")

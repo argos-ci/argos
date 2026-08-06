@@ -6,9 +6,8 @@ import { exchangeCliAuthCode } from "@/auth/cli";
 import { UserAccessToken } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 describe("GraphQL createUserAccessToken", () => {
   beforeEach(async () => {
@@ -19,14 +18,10 @@ describe("GraphQL createUserAccessToken", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -61,14 +56,10 @@ describe("GraphQL createUserAccessToken", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -102,14 +93,10 @@ describe("GraphQL createUserAccessToken", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -144,14 +131,10 @@ describe("GraphQL createUserAccessToken", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -185,14 +168,10 @@ describe("GraphQL createUserAccessToken", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: userAccount.user!,
-        account: userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
     const codeVerifier = "cli-code-verifier";
     const codeChallenge = createHash("sha256")
       .update(codeVerifier)

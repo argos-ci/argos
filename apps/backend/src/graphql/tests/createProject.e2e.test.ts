@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const CreateProjectMutation = `
   mutation CreateProject($input: CreateProjectInput!) {
@@ -45,11 +44,7 @@ describe("GraphQL createProject", () => {
   it("creates a project without a Git provider", async () => {
     const { userAccount, teamAccount, user } = await createTeamOwner();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")
@@ -86,11 +81,7 @@ describe("GraphQL createProject", () => {
       name: "taken-name",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")
@@ -122,11 +113,10 @@ describe("GraphQL createProject", () => {
       userLevel: "member",
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: memberAccount.user, account: memberAccount },
-    );
+    const app = createGraphQLApp({
+      user: memberAccount.user,
+      account: memberAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")
@@ -145,11 +135,7 @@ describe("GraphQL createProject", () => {
   it("requires authentication", async () => {
     const { teamAccount } = await createTeamOwner();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      null,
-    );
+    const app = createGraphQLApp(null);
 
     const res = await request(app)
       .post("/graphql")

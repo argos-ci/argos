@@ -5,9 +5,8 @@ import { concludeBuild } from "@/build/concludeBuild";
 import { Account, Build, Project, Screenshot } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 type Fixtures = {
   fixture: {
@@ -145,14 +144,10 @@ const test = base.extend<Fixtures>({
 
 describe("GraphQL Build.branchApprovedDiffs", () => {
   test("returns approved screenshot diffs", async ({ fixture }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      {
-        user: fixture.userAccount.user!,
-        account: fixture.userAccount,
-      },
-    );
+    const app = createGraphQLApp({
+      user: fixture.userAccount.user!,
+      account: fixture.userAccount,
+    });
     const result = await request(app)
       .post("/graphql")
       .send({

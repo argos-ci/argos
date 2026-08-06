@@ -14,9 +14,8 @@ import {
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 vi.mock("@/notification", () => ({ sendNotification: vi.fn() }));
 const mockSendNotification = vi.mocked(sendNotification);
@@ -151,11 +150,10 @@ describe("pending review comments", () => {
   test("addToReview creates a pending review and a pending comment without notifying", async ({
     fixture,
   }) => {
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.author.user!, account: fixture.author },
-    );
+    const app = createGraphQLApp({
+      user: fixture.author.user!,
+      account: fixture.author,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({
@@ -192,11 +190,10 @@ describe("pending review comments", () => {
   test("a pending comment is visible to its author but hidden from other members", async ({
     fixture,
   }) => {
-    const authorApp = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.author.user!, account: fixture.author },
-    );
+    const authorApp = createGraphQLApp({
+      user: fixture.author.user!,
+      account: fixture.author,
+    });
     await request(authorApp)
       .post("/graphql")
       .send({
@@ -226,11 +223,10 @@ describe("pending review comments", () => {
       false,
     );
 
-    const memberApp = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.member.user!, account: fixture.member },
-    );
+    const memberApp = createGraphQLApp({
+      user: fixture.member.user!,
+      account: fixture.member,
+    });
     const memberView = await request(memberApp)
       .post("/graphql")
       .send({ query: BUILD_COMMENTS, variables });
@@ -241,11 +237,10 @@ describe("pending review comments", () => {
   test("submitting the review reuses the pending review, makes its comments live and notifies mentions", async ({
     fixture,
   }) => {
-    const authorApp = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.author.user!, account: fixture.author },
-    );
+    const authorApp = createGraphQLApp({
+      user: fixture.author.user!,
+      account: fixture.author,
+    });
     // Draft a comment that mentions another member.
     await request(authorApp)
       .post("/graphql")
@@ -292,11 +287,10 @@ describe("pending review comments", () => {
     expect(mentionCalls[0]![0].recipients).toEqual([fixture.member.userId]);
 
     // The comment is now visible to the other member.
-    const memberApp = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.member.user!, account: fixture.member },
-    );
+    const memberApp = createGraphQLApp({
+      user: fixture.member.user!,
+      account: fixture.member,
+    });
     const memberView = await request(memberApp)
       .post("/graphql")
       .send({
@@ -323,11 +317,10 @@ describe("pending review comments", () => {
     });
     await concludeBuild({ build: unreviewable, notify: false });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: fixture.author.user!, account: fixture.author },
-    );
+    const app = createGraphQLApp({
+      user: fixture.author.user!,
+      account: fixture.author,
+    });
     const res = await request(app)
       .post("/graphql")
       .send({

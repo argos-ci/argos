@@ -12,7 +12,7 @@ import { revokeSessionByToken } from "@/auth/session";
 import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { getGoogleAuthUrl } from "@/google";
-import { apolloServer, createApolloMiddleware } from "@/graphql";
+import { graphqlMiddleware } from "@/graphql";
 import { mountOAuthServer } from "@/oauth/router";
 import { installSkillsRoutes } from "@/skills/router";
 import { getSlackMiddleware } from "@/slack";
@@ -119,8 +119,6 @@ export const installAppRouter = async (app: express.Application) => {
     );
   }
 
-  await apolloServer.start();
-
   const cspReportUri = getCSPReportURI();
 
   if (cspReportUri) {
@@ -152,6 +150,8 @@ export const installAppRouter = async (app: express.Application) => {
       }
       next();
     },
+    // Parsed here rather than by Yoga so the 1mb cap is enforced while the body
+    // streams in. Yoga reuses an already-parsed `req.body` as-is.
     express.json({ limit: "1mb" }),
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
@@ -168,7 +168,7 @@ export const installAppRouter = async (app: express.Application) => {
       },
     }),
     requireCsrf,
-    createApolloMiddleware(),
+    graphqlMiddleware,
   );
 
   // POST (behind CSRF) so logout cannot be triggered by a cross-site

@@ -15,9 +15,8 @@ import { consumeAuthorizationCode } from "@/oauth/authorization-code";
 import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 import { issueTokens, revokeGrant, rotateRefreshToken } from "@/oauth/tokens";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const REGISTERED_REDIRECT = "http://localhost/callback";
 // Loopback callback with an ephemeral port (RFC 8252): must still match.
@@ -54,11 +53,10 @@ describe("OAuth authorization flow", () => {
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const codeVerifier = "s".repeat(64);
     const codeChallenge = createHash("sha256")
@@ -129,11 +127,10 @@ describe("OAuth authorization flow", () => {
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     // Run the consent mutation and resolve it down to the created grant.
     const authorize = async () => {
@@ -198,11 +195,10 @@ describe("OAuth authorization flow", () => {
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const codeVerifier = "s".repeat(64);
     const codeChallenge = createHash("sha256")
@@ -232,11 +228,10 @@ describe("OAuth authorization flow", () => {
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const codeVerifier = "s".repeat(64);
     const codeChallenge = createHash("sha256")
@@ -364,11 +359,10 @@ describe("OAuth authorization flow", () => {
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user: userAccount.user!, account: userAccount },
-    );
+    const app = createGraphQLApp({
+      user: userAccount.user!,
+      account: userAccount,
+    });
 
     const res = await request(app)
       .post("/graphql")

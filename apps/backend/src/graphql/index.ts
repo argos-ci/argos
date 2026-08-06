@@ -1,2 +1,2 @@
-export * from "./apollo";
+export * from "./yoga";
 export * from "./ws";

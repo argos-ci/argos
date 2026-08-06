@@ -6,9 +6,8 @@ import { formatCommentId } from "@/comment/id";
 import { Comment, Project, type Account, type Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const RESOLVE_MUTATION = `
   mutation ResolveCommentThread($input: ResolveCommentThreadInput!) {
@@ -83,7 +82,7 @@ const test = base.extend<Fixtures>({
 });
 
 function appForReviewer(fixture: Fixtures["fixture"]) {
-  return createApolloServerApp(apolloServer, createApolloMiddleware, {
+  return createGraphQLApp({
     user: fixture.reviewerAccount.user!,
     account: fixture.reviewerAccount,
   });
@@ -175,14 +174,10 @@ test("resolving from a reply resolves the whole thread", async ({
 test("forbids a user without review permission", async ({ fixture }) => {
   const outsiderAccount = await factory.UserAccount.create();
   await outsiderAccount.$fetchGraph("user");
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: outsiderAccount.user!,
-      account: outsiderAccount,
-    },
-  );
+  const app = createGraphQLApp({
+    user: outsiderAccount.user!,
+    account: outsiderAccount,
+  });
   const res = await request(app)
     .post("/graphql")
     .send({
@@ -198,11 +193,7 @@ test("forbids a user without review permission", async ({ fixture }) => {
 });
 
 test("requires authentication", async ({ fixture }) => {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    null,
-  );
+  const app = createGraphQLApp(null);
   const res = await request(app)
     .post("/graphql")
     .send({

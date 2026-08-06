@@ -5,9 +5,8 @@ import { test as base, describe, expect } from "vitest";
 import type { Account, GithubAccount, Project, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const test = base.extend<{
   account: Account;
@@ -49,14 +48,10 @@ async function queryDeployments(args: {
   user: User;
   query: string;
 }) {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    {
-      user: args.user,
-      account: args.account,
-    },
-  );
+  const app = createGraphQLApp({
+    user: args.user,
+    account: args.account,
+  });
 
   return request(app)
     .post("/graphql")

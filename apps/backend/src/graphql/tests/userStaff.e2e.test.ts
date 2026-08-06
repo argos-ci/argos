@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const MeStaffQuery = `
   query MeStaff {
@@ -53,7 +52,7 @@ async function createViewer(options: { staff: boolean }) {
 }
 
 async function createApp(auth: Awaited<ReturnType<typeof createViewer>>) {
-  return createApolloServerApp(apolloServer, createApolloMiddleware, {
+  return createGraphQLApp({
     user: auth.user,
     account: auth.userAccount,
   });

@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { AutomationRule, DiscordWebhook } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createGraphQLApp } from "./util";
 
 const CreateAutomationRuleMutation = `
   mutation CreateAutomationRule($input: CreateAutomationRuleInput!) {
@@ -73,11 +72,7 @@ describe("GraphQL Discord automation", () => {
       factory.DiscordWebhook.create({ accountId: teamAccount.id }),
     ]);
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")
@@ -149,11 +144,7 @@ describe("GraphQL Discord automation", () => {
 
     await DiscordWebhook.query().deleteById(webhook.id);
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")
@@ -177,11 +168,7 @@ describe("GraphQL Discord automation", () => {
       accountId: otherAccount.id,
     });
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account: userAccount },
-    );
+    const app = createGraphQLApp({ user, account: userAccount });
 
     const res = await request(app)
       .post("/graphql")

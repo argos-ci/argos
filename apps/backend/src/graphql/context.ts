@@ -1,5 +1,4 @@
 import type { IncomingMessage } from "node:http";
-import type { BaseContext } from "@apollo/server";
 import { captureException } from "@sentry/node";
 import type { Request, Response } from "express";
 
@@ -18,7 +17,7 @@ import {
 
 import { createLoaders } from "./loaders";
 
-export type Context = BaseContext & {
+export type Context = {
   auth: AuthSessionPayload | null;
   requestLocation: RequestLocation | null;
   loaders: ReturnType<typeof createLoaders>;
