@@ -54,6 +54,7 @@ function ProjectTabs(props: {
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
+        <TabLink href="flows">Flows</TabLink>
         {/* The ignore ledger is only meaningful while the feature is on; the
             page itself still explains itself if reached by a direct link. */}
         {ignoreEnabled && <TabLink href="ignored">Ignored</TabLink>}
