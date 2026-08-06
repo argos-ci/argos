@@ -23,6 +23,7 @@
     }
   },
   "ignore": [
+    "poc/**/*",
     "tests/truncate.setup.ts",
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.e2e.global-setup.mts",
