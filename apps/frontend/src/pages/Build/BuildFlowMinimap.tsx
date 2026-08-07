@@ -32,7 +32,10 @@ export function BuildFlowMinimap() {
   }
   const activeVariantLabel = getVariantLabel(activeDiff.name);
   return (
-    <div className="mt-2 flex items-center gap-1 overflow-x-auto border-t pt-2 pb-1">
+    // The sticky toolbar has a `p-2` padding: compensate horizontally so the
+    // top border spans the full width, and pad the scroll container so the
+    // selection ring and focus outline of edge thumbnails don't get clipped.
+    <div className="-mx-2 mt-2 flex items-center gap-1 overflow-x-auto border-t px-2 pt-2 pb-1.5">
       {flow.steps.map((step, index) => {
         // Show the variant matching the active diff so switching steps stays
         // within the same viewport/browser.
