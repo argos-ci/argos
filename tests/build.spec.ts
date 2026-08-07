@@ -11,6 +11,13 @@ const buildExamples: {
   name: string;
   getNumber: (builds: BuildScenario) => number;
   compare?: false;
+  /**
+   * Assert every thumbnail in the diff list actually decoded. Only worth doing
+   * on a build whose snapshots point at the CDN image fixtures: a key nobody
+   * uploaded renders as a broken image, and the screenshots below then burn
+   * their whole stabilization budget waiting on the CDN to answer the miss.
+   */
+  expectLoadedImages?: true;
 }[] = [
   { name: "orphan", getNumber: (b) => b.orphanBuild.number },
   { name: "reference", getNumber: (b) => b.referenceBuild.number },
@@ -25,7 +32,11 @@ const buildExamples: {
     compare: false,
   },
   { name: "error", getNumber: (b) => b.errorBuild.number, compare: false },
-  { name: "changes detected", getNumber: (b) => b.diffDetectedBuild.number },
+  {
+    name: "changes detected",
+    getNumber: (b) => b.diffDetectedBuild.number,
+    expectLoadedImages: true,
+  },
   { name: "rejected", getNumber: (b) => b.rejectedBuild.number },
   {
     name: "scheduled",
@@ -62,6 +73,26 @@ buildExamples.forEach((build) => {
         name: /^(Start review|Browse snapshots|Browse test failures)/,
       });
       await expect(startButton).toBeVisible();
+      if (build.expectLoadedImages) {
+        // `shown` guards against passing before the virtualized diff list has
+        // mounted any thumbnail, and `broken` names the offending URLs rather
+        // than reporting a bare boolean.
+        await expect
+          .poll(() =>
+            page.evaluate(() => {
+              const fixtures = Array.from(document.images).filter((img) =>
+                /-\d+x\d+\.(png|jpg)/.test(img.currentSrc),
+              );
+              return {
+                shown: fixtures.length > 0,
+                broken: fixtures
+                  .filter((img) => !(img.complete && img.naturalWidth > 0))
+                  .map((img) => new URL(img.currentSrc).pathname),
+              };
+            }),
+          )
+          .toEqual({ shown: true, broken: [] });
+      }
       await screenshot(page, `build-overview-${build.name}`, {
         replacements: {
           [team.account.slug]: "acme",
