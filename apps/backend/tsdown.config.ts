@@ -12,6 +12,12 @@ export default defineConfig({
     "src/config/database.ts",
   ],
   platform: "node",
+  // Dependencies stay external, which is tsdown's default — do not add
+  // `noExternal` to shrink the deploy. `sharp` and `@argos-ci/mask-fingerprint`
+  // ship per-platform `.node` bindings and `odiff-bin` spawns an executable it
+  // locates next to its own package, none of which survives bundling. Sentry
+  // also patches `express`, `pg` and `http` as they load, so inlining them
+  // leaves its instrumentation nothing to hook and tracing quietly stops.
   target: "node26",
   // Types are covered by `tsc --noEmit`; nothing consumes this package.
   dts: false,
