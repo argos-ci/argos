@@ -82,8 +82,7 @@ const config = defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command:
-      "node --import ./apps/backend/dist/instrument.js apps/backend/dist/processes/proc/web.js",
+    command: "pnpm --dir apps/backend run start-web",
     port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: false,

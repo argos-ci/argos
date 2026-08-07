@@ -14,12 +14,7 @@
     {
       "name": "argos-worker",
       "image": "__IMAGE__",
-      "command": [
-        "node",
-        "--import",
-        "./apps/backend/dist/instrument.js",
-        "apps/backend/dist/processes/proc/worker.js"
-      ],
+      "command": ["pnpm", "--dir", "apps/backend", "run", "start-worker"],
       "essential": true,
       "logConfiguration": {
         "logDriver": "awslogs",
