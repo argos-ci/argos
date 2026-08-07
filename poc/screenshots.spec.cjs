@@ -130,6 +130,37 @@ test("build review — sidebar grouped by flow", async ({ context, page }) => {
     "data-flow-group",
     CHECKOUT_FLOW,
   );
+
+  // Untouched journeys start collapsed: their screenshots are hidden…
+  const signupRow = page.getByText("signup/create-account vw-1280.png");
+  await expect(signupRow).not.toBeVisible();
+  // …and the keyboard navigation skips them: payment → review →
+  // confirmation, then stays (remaining flows are collapsed).
+  await page.keyboard.press("ArrowDown");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/review"]}$`),
+  );
+  await page.keyboard.press("ArrowDown");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/confirmation"]}$`),
+  );
+  await page.keyboard.press("ArrowDown");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/confirmation"]}$`),
+  );
+
+  // A collapsed flow expands from its header.
+  await page
+    .locator(`[data-flow-group=${JSON.stringify(SIGNUP_FLOW)}]`)
+    .getByRole("button")
+    .click();
+  await expect(signupRow).toBeVisible();
+  await page
+    .locator(`[data-flow-group=${JSON.stringify(SIGNUP_FLOW)}]`)
+    .getByRole("button")
+    .click();
+  await expect(signupRow).not.toBeVisible();
+
   await page.mouse.move(760, 400);
   await page.screenshot({ path: path.join(OUT, "review-flow-light.png") });
 
