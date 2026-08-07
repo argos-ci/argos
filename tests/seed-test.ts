@@ -73,11 +73,9 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     });
     await use(project);
   },
-  builds: async ({ project }, use, testInfo) => {
-    const id = getUniqueTestIdentifier(testInfo);
+  builds: async ({ project }, use) => {
     const builds = await createBuildScenario({
       projectId: project.id,
-      keyPrefix: `${id}-`,
     });
     await use(builds);
   },

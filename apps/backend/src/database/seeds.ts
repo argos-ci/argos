@@ -166,16 +166,12 @@ export type BuildScenario = {
 /**
  * Creates a full set of build scenarios for a given project.
  * Useful for testing build-related UI components.
- *
- * @param keyPrefix - A unique prefix for file keys to avoid conflicts when
- *   calling this function multiple times (e.g. across parallel test workers).
  */
 export async function createBuildScenario(input: {
   projectId: string;
   userId?: string;
-  keyPrefix?: string;
 }): Promise<BuildScenario> {
-  const { projectId, keyPrefix = "" } = input;
+  const { projectId } = input;
   const ts = new Date().toISOString();
 
   const metadataBase = {
@@ -304,38 +300,46 @@ export async function createBuildScenario(input: {
     { width: 768, height: 1024 },
   ];
 
-  const screenshotFiles = await File.query().insertAndFetch([
-    ...dummiesFilesDimensions.map(({ width, height }) => ({
-      type: "screenshot" as const,
-      width,
-      height,
-      key: `${keyPrefix}dummy-${width}x${height}.png`,
-      contentType: "image/png",
-    })),
-    ...bearFilesDimensions.map(({ width, height }) => ({
-      type: "screenshot" as const,
-      width,
-      height,
-      key: `${keyPrefix}bear-${width}x${height}.jpg`,
-      contentType: "image/jpeg",
-    })),
+  // The keys have to be the fixtures' real keys: the browser resolves them to
+  // `files.argos-ci.com/<env>/<key>`, and a key nobody uploaded leaves the diff
+  // list waiting on a CDN miss for every thumbnail — which is what Argos'
+  // screenshot stabilization gives up on when the CDN is slow to answer.
+  const screenshotFiles = await Promise.all([
+    ...dummiesFilesDimensions.map(({ width, height }) =>
+      ensureFile({
+        type: "screenshot",
+        width,
+        height,
+        key: `dummy-${width}x${height}.png`,
+        contentType: "image/png",
+      }),
+    ),
+    ...bearFilesDimensions.map(({ width, height }) =>
+      ensureFile({
+        type: "screenshot",
+        width,
+        height,
+        key: `bear-${width}x${height}.jpg`,
+        contentType: "image/jpeg",
+      }),
+    ),
   ]);
 
-  const dummiesDiffFiles = await File.query().insertAndFetch([
-    {
-      type: "screenshotDiff" as const,
+  const dummiesDiffFiles = await Promise.all([
+    ensureFile({
+      type: "screenshotDiff",
       width: 375,
       height: 1024,
-      key: `${keyPrefix}diff-1024-to-720.png`,
+      key: "diff-1024-to-720.png",
       contentType: "image/png",
-    },
-    {
-      type: "screenshotDiff" as const,
+    }),
+    ensureFile({
+      type: "screenshotDiff",
       width: 375,
       height: 1440,
-      key: `${keyPrefix}diff-1024-to-1440.png`,
+      key: "diff-1024-to-1440.png",
       contentType: "image/png",
-    },
+    }),
   ]);
 
   const [

@@ -4,8 +4,6 @@ import { getCSPScriptHash } from "@argos-ci/playwright";
 import { createArgosReporterOptions } from "@argos-ci/playwright/reporter";
 import { defineConfig, devices } from "@playwright/test";
 
-import argosConfig from "./apps/backend/src/config";
-
 /**
  * Number of workers.
  */
@@ -64,7 +62,7 @@ const config = defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: argosConfig.get("server.url"),
+    baseURL: "http://localhost:3000",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     /* Capture screenshot after each test */
