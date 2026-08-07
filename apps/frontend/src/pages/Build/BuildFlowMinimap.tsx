@@ -67,10 +67,10 @@ export function BuildFlowMinimap() {
   }
   const activeVariantLabel = getVariantLabel(activeDiff.name);
   return (
-    // The sticky toolbar has a `p-2` padding: compensate horizontally so the
-    // top border spans the full width, and pad the scroll container so the
-    // selection ring and focus outline of edge thumbnails don't get clipped.
-    <div className="-mx-2 mt-2 flex items-center gap-1 overflow-x-auto border-t px-2 pt-2 pb-1.5">
+    // Lives in the viewer column, under the header and beside the right
+    // sidebar. Padded enough that the selection ring and focus outline of
+    // edge thumbnails don't get clipped by the scroll container.
+    <div className="bg-app border-b-thin flex shrink-0 items-center gap-1 overflow-x-auto px-2 pt-2 pb-1.5">
       {flow.steps.map((step, index) => {
         // Show the variant matching the active diff so switching steps stays
         // within the same viewport/browser.
@@ -110,6 +110,7 @@ export function BuildFlowMinimap() {
                     isActive && "ring-primary-active ring-2",
                   )}
                   fit="cover"
+                  transformations={["w-256", "h-256", "c-at_max"]}
                 />
                 {needsAttention ? (
                   <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
@@ -117,9 +118,10 @@ export function BuildFlowMinimap() {
               </span>
               <span
                 className={clsx(
-                  "w-18 truncate text-center text-[0.6875rem] leading-none",
+                  "max-w-28 truncate text-center text-[0.6875rem] leading-none",
                   isActive ? "font-medium" : "text-low",
                 )}
+                title={getStepLabel(step.key)}
               >
                 {index + 1} · {getStepLabel(step.key)}
               </span>
