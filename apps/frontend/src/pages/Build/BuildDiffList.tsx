@@ -8,13 +8,14 @@ import {
 } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import {
+  AlertCircleIcon,
   ArrowUpRightIcon,
+  CheckCircle2Icon,
   ChevronDownIcon,
   CornerDownRightIcon,
   HomeIcon,
   ImagesIcon,
   SquareStackIcon,
-  WaypointsIcon,
 } from "lucide-react";
 import memoize from "memoize";
 import {
@@ -299,34 +300,46 @@ function getRows(
 
 function FlowListHeader(props: {
   style: React.HTMLProps<HTMLDivElement>["style"];
+  onClick: RACButtonProps["onPress"];
   item: ListHeaderRow;
-  activeIndex: number;
 }) {
-  const { style, item, activeIndex } = props;
+  const { style, onClick, item } = props;
   const params = useBuildParams();
   const flow = item.group.flow;
   invariant(flow, "FlowListHeader requires a flow group");
   const borderB = item.borderBottom ? "border-b-thin" : "";
+  const hasChanges = flow.changedCount > 0;
   return (
     <div
       className={clsx(
         borderB,
-        "group/list-header bg-app border-t-thin z-10 flex w-full items-center gap-1.5 pr-2 pl-2 select-none",
+        "group/list-header bg-app border-t-thin z-10 flex w-full items-center pr-2 select-none",
       )}
       style={style}
       data-flow-group={flow.key || "others"}
+      // The condensed header only shows the test title: the full path
+      // lives in the native tooltip (and in the metadata panel).
+      title={flow.key || flow.title}
     >
-      <WaypointsIcon className="text-low size-3 shrink-0" />
-      <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
-        {flow.prefix ? (
-          <span className="text-low truncate font-mono text-[0.6875rem]">
-            {flow.prefix} ›
-          </span>
-        ) : null}
+      <RACButton
+        className="data-hovered:bg-subtle data-focus-visible:bg-subtle flex h-full min-w-0 flex-1 cursor-default items-center text-left focus:outline-hidden"
+        onPress={onClick}
+      >
+        <ChevronDownIcon
+          className={clsx(
+            "text-low m-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-focus-visible/list-header:opacity-100",
+            !item.expanded && "-rotate-90",
+          )}
+        />
+        {hasChanges ? (
+          <AlertCircleIcon className="text-warning-low mr-1.5 size-3 shrink-0" />
+        ) : (
+          <CheckCircle2Icon className="text-success-low mr-1.5 size-3 shrink-0" />
+        )}
         <span className="text-default truncate text-sm font-medium">
           {flow.title}
         </span>
-      </div>
+      </RACButton>
       {flow.key && params ? (
         <LinkButton
           href={`${getFlowURL(params, flow.key)}`}
@@ -339,17 +352,24 @@ function FlowListHeader(props: {
           <ArrowUpRightIcon />
         </LinkButton>
       ) : null}
-      <Badge className="shrink-0">
-        {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
-        {flow.changedCount > 0 ? (
-          <>
-            {item.count}
-            <span className="text-warning-low"> · {flow.changedCount}</span>
-          </>
-        ) : (
-          item.count
-        )}
-      </Badge>
+      <span
+        className="shrink-0"
+        title={
+          hasChanges
+            ? `${flow.changedCount} of ${item.count} screenshots need review`
+            : `${item.count} screenshots, unchanged`
+        }
+      >
+        <Badge>
+          {hasChanges ? (
+            <span className="text-warning-low">
+              {flow.changedCount}/{item.count}
+            </span>
+          ) : (
+            item.count
+          )}
+        </Badge>
+      </span>
     </div>
   );
 }
@@ -363,9 +383,7 @@ function ListHeader(props: {
   const { style, onClick, item, activeIndex } = props;
   const borderB = item.borderBottom ? "border-b-thin" : "";
   if (item.group.flow) {
-    return (
-      <FlowListHeader style={style} item={item} activeIndex={activeIndex} />
-    );
+    return <FlowListHeader style={style} item={item} onClick={onClick} />;
   }
   const def = getDiffGroupDefinition(item.name as DiffGroupName);
   return (

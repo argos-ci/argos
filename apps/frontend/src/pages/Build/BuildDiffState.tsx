@@ -319,7 +319,7 @@ export function useGetNextDiff(
   options?: UseGetNextDiffOptions,
 ) {
   const { searchMode } = useSearchModeState();
-  const { diffs, activeDiff, expanded } = useBuildDiffState();
+  const { diffs, activeDiff, expanded, groups } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const fromIndex = options?.fromIndex ?? activeDiffIndex;
   return useEventCallback(() => {
@@ -330,12 +330,24 @@ export function useGetNextDiff(
     const isGroupExpanded =
       !activeDiff?.group || expanded.includes(activeDiff.group);
 
-    if ((isGroupExpanded || searchMode) && !predicate) {
-      return diffs[fromIndex + 1] ?? null;
-    }
+    // Plain navigation skips diffs inside collapsed flow groups (untouched
+    // journeys); targeted navigation (predicate) may enter them, since
+    // selecting the diff expands its group.
+    const checkIsHiddenInFlow = (diff: Diff) => {
+      if (predicate || searchMode) {
+        return false;
+      }
+      const group = groups.find(
+        (candidate) => candidate.flow && candidate.diffs.includes(diff),
+      );
+      return group ? !expanded.includes(group.name) : false;
+    };
 
     const offsetIndex = fromIndex + 1;
     const nextDiffIndex = diffs.slice(offsetIndex).findIndex((diff) => {
+      if (checkIsHiddenInFlow(diff)) {
+        return false;
+      }
       if (!isGroupExpanded && !searchMode && diff.group === activeDiff.group) {
         return false;
       }
@@ -368,7 +380,7 @@ export function useHasPreviousDiff() {
 
 function useGetPreviousDiff() {
   const { searchMode } = useSearchModeState();
-  const { diffs, expanded } = useBuildDiffState();
+  const { diffs, expanded, groups } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const hasPreviousDiff = useHasPreviousDiff();
   return useEventCallback(() => {
@@ -376,7 +388,25 @@ function useGetPreviousDiff() {
       return null;
     }
 
-    const previousDiffIndex = activeDiffIndex - 1;
+    // Skip diffs inside collapsed flow groups (untouched journeys).
+    const checkIsHiddenInFlow = (diff: Diff) => {
+      if (searchMode) {
+        return false;
+      }
+      const group = groups.find(
+        (candidate) => candidate.flow && candidate.diffs.includes(diff),
+      );
+      return group ? !expanded.includes(group.name) : false;
+    };
+
+    let previousDiffIndex = activeDiffIndex - 1;
+    while (previousDiffIndex >= 0) {
+      const candidate = diffs[previousDiffIndex];
+      if (candidate && !checkIsHiddenInFlow(candidate)) {
+        break;
+      }
+      previousDiffIndex -= 1;
+    }
     const previousDiff = diffs[previousDiffIndex];
 
     if (!previousDiff) {
@@ -866,11 +896,46 @@ export function BuildDiffProvider(props: {
     return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
   }, [grouping, orders, filteredDiffs, reviewState?.diffStatuses]);
 
-  // Flow groups have no collapsed state: the journey always reads in full.
-  const effectiveExpanded = useMemo(
-    () => (grouping === "flow" ? groups.map((group) => group.name) : expanded),
-    [grouping, groups, expanded],
+  // Flow groups collapse independently of status groups: journeys with
+  // changes start open, untouched journeys start closed — that's the
+  // at-a-glance overview of what moved in the build.
+  const [flowExpandedOverrides, setFlowExpandedOverrides] = useState<
+    Record<string, boolean>
+  >({});
+  const flowDefaultExpanded = useMemo(
+    () =>
+      new Map(
+        groups.map((group) => [
+          group.name,
+          (group.flow?.changedCount ?? 0) > 0,
+        ]),
+      ),
+    [groups],
   );
+  const checkIsFlowExpanded = useEventCallback(
+    (name: string) =>
+      flowExpandedOverrides[name] ?? flowDefaultExpanded.get(name) ?? true,
+  );
+  const toggleFlowGroup = useEventCallback((name: string, value?: boolean) => {
+    const next = value ?? !checkIsFlowExpanded(name);
+    setFlowExpandedOverrides((previous) => ({ ...previous, [name]: next }));
+  });
+  const effectiveExpanded = useMemo(
+    () =>
+      grouping === "flow"
+        ? groups
+            .filter(
+              (group) =>
+                flowExpandedOverrides[group.name] ??
+                flowDefaultExpanded.get(group.name) ??
+                true,
+            )
+            .map((group) => group.name)
+        : expanded,
+    [grouping, groups, expanded, flowExpandedOverrides, flowDefaultExpanded],
+  );
+  const effectiveToggleGroup =
+    grouping === "flow" ? toggleFlowGroup : toggleGroup;
 
   const sortedDiffs = useMemo(() => {
     return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
@@ -901,7 +966,7 @@ export function BuildDiffProvider(props: {
       startTransition(() => {
         setScrolledDiff(diff);
         const group = getDiffGroup(diff)!;
-        toggleGroup(group.name, true);
+        effectiveToggleGroup(group.name, true);
       });
     }
   });
@@ -912,13 +977,13 @@ export function BuildDiffProvider(props: {
 
   useLayoutEffect(() => {
     if (initialDiffGroup?.name) {
-      toggleGroup(initialDiffGroup.name, true);
+      effectiveToggleGroup(initialDiffGroup.name, true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup?.name, toggleGroup]);
+  }, [complete, initialDiffGroup?.name, effectiveToggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -945,7 +1010,7 @@ export function BuildDiffProvider(props: {
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
       expanded: effectiveExpanded,
-      toggleGroup,
+      toggleGroup: effectiveToggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
@@ -965,7 +1030,7 @@ export function BuildDiffProvider(props: {
       sortedDiffs,
       screenshotDiffs,
       effectiveExpanded,
-      toggleGroup,
+      effectiveToggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
