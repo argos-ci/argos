@@ -14,7 +14,7 @@
     {
       "name": "argos-app",
       "image": "__IMAGE__",
-      "command": ["node", "apps/backend/dist/processes/proc/web.js"],
+      "command": ["./apps/backend/bin/start.sh", "web"],
       "essential": true,
       "portMappings": [
         {

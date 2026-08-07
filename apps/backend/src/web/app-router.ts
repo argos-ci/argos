@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ClientConfig } from "@argos/config-types";
+import { invariant } from "@argos/util/invariant";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
@@ -16,6 +17,7 @@ import { mountOAuthServer } from "@/oauth/router";
 import { installSkillsRoutes } from "@/skills/router";
 import { getSlackMiddleware } from "@/slack";
 import { boom } from "@/util/error";
+import { resolveFromRepositoryRoot } from "@/util/paths";
 import { createRedisStore } from "@/util/rate-limit";
 
 import { getEmailPreviewMiddleware } from "../email/express";
@@ -91,7 +93,11 @@ export const installAppRouter = async (app: express.Application) => {
     res.send(clientConfigScript);
   });
 
-  const distDir = join(import.meta.dirname, "../../../frontend/dist");
+  const distDir = resolveFromRepositoryRoot("apps/frontend/dist");
+  invariant(
+    distDir,
+    "cannot locate apps/frontend/dist: the web process must run from a checkout",
+  );
 
   // Boot the app without a round trip for its configuration: the `/config.js`
   // request sat ahead of the entry bundle and could not be cached (the config is

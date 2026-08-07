@@ -14,7 +14,7 @@
     {
       "name": "argos-worker",
       "image": "__IMAGE__",
-      "command": ["node", "apps/backend/dist/processes/proc/worker.js"],
+      "command": ["./apps/backend/bin/start.sh", "worker"],
       "essential": true,
       "logConfiguration": {
         "logDriver": "awslogs",

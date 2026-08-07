@@ -10,9 +10,8 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build-swc": "swc src -d dist --strip-leading-paths",
-    "build": "pnpm run build-swc --delete-dir-on-start",
-    "watch-build": "pnpm run build-swc --watch --quiet",
+    "build": "tsdown",
+    "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
@@ -29,6 +28,7 @@
   "devDependencies": {
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
-    "eslint": "catalog:"
+    "eslint": "catalog:",
+    "tsdown": "^0.22.14"
   }
 }

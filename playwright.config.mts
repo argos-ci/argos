@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { getCSPScriptHash } from "@argos-ci/playwright";
 import { createArgosReporterOptions } from "@argos-ci/playwright/reporter";
 import { defineConfig, devices } from "@playwright/test";
@@ -8,6 +10,23 @@ import argosConfig from "./apps/backend/src/config";
  * Number of workers.
  */
 const WORKERS = 2;
+
+const backendDir = fileURLToPath(new URL("./apps/backend", import.meta.url));
+const backendManifest = createRequire(import.meta.url)(
+  "./apps/backend/package.json",
+) as { scripts: Record<string, string> };
+
+/**
+ * The command that starts the web process, taken from the package script so the
+ * `--import ./dist/instrument.js` flag stays defined in one place.
+ *
+ * Read rather than delegated to `pnpm run`: this config is executed inside the
+ * Playwright container, which ships npm only.
+ */
+const startWebCommand = backendManifest.scripts["start-web"];
+if (!startWebCommand) {
+  throw new Error('apps/backend/package.json has no "start-web" script');
+}
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -82,7 +101,8 @@ const config = defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "node apps/backend/dist/processes/proc/web.js",
+    command: startWebCommand,
+    cwd: backendDir,
     port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: false,

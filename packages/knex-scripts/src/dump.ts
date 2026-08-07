@@ -1,5 +1,5 @@
-import { appendFile, mkdir } from "fs/promises";
-import { dirname } from "path";
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { Command } from "commander";
 import { oraPromise } from "ora";
 
