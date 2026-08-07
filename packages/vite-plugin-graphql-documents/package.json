@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "argos-build --clean",
-    "watch-build": "argos-build --watch --quiet",
+    "build": "tsdown",
+    "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
@@ -20,20 +20,14 @@
     }
   },
   "devDependencies": {
-    "@argos/build": "workspace:*",
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@types/node": "^26.1.2",
     "eslint": "catalog:",
+    "tsdown": "^0.22.14",
     "vite": "^8.2.0"
   },
   "dependencies": {
     "magic-string": "^1.1.0"
-  },
-  "argos-build": {
-    "entries": [
-      "src/index.ts"
-    ],
-    "target": "es2022"
   }
 }

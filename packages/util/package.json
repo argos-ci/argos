@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsdown",
+    "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
@@ -11,13 +13,18 @@
   "sideEffects": false,
   "exports": {
     "./package.json": "./package.json",
-    "./*": "./src/*.ts"
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
   },
   "devDependencies": {
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@types/node": "^26.1.2",
-    "eslint": "catalog:"
+    "eslint": "catalog:",
+    "tsdown": "^0.22.14"
   },
   "dependencies": {
     "@sindresorhus/slugify": "^3.0.0"

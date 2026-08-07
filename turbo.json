@@ -1,16 +1,10 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  // `@argos/build` produces every package's output but is only a
-  // devDependency, and turbo does not fold devDependency sources into a task
-  // hash. Without this, changing the bundler serves stale output from cache.
-  // (Source-only dependencies like `@argos/util` need no entry here — turbo
-  // already hashes those, verified by touching them and watching the miss.)
-  "globalDependencies": ["packages/build/src/**"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": ["dist/**"],
-      "inputs": ["src/**", "package.json"]
+      "inputs": ["src/**", "package.json", "tsdown.config.ts"]
     },
     "//#codegen": {
       "outputs": [

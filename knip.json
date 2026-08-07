@@ -4,7 +4,6 @@
   "workspaces": {
     "apps/backend": {
       "entry": [
-        "src/instrument.ts",
         "src/processes/proc/*.ts",
         "src/build/bin/*.ts",
         "src/database/bin/*.ts",
@@ -12,7 +11,6 @@
         "src/graphql/definitions/*.ts",
         "scripts/*.ts"
       ],
-      "ignore": ["**/bin/**/*"],
       "ignoreDependencies": ["@argos/knex-scripts", "pino-pretty"]
     },
     "infra": {
