@@ -634,6 +634,14 @@ export function createConfig() {
     loadDatabaseConfigFromURL(process.env["DATABASE_URL"], config);
   }
 
+  // Applied after the URL so it overrides the database it carries. Integration
+  // tests use it to point each worker at its own database without having to
+  // rebuild the whole connection URL.
+  const pgDatabase = process.env["PG_DATABASE"];
+  if (pgDatabase) {
+    config.set("pg.connection.database", pgDatabase);
+  }
+
   config.validate();
 
   return config;
