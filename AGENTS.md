@@ -48,8 +48,10 @@ models. To add or change a column:
    `jsonSchema.properties` (nullable → `{ type: ["string", "null"] }`, dates are
    ISO strings) and the typed class field. `createdAt`/`updatedAt` come from the
    base `Model`.
-4. Reset the test DB before running e2e tests:
+4. Reset the test DB before running the Playwright tests:
    `NODE_ENV=test pnpm run --filter @argos/backend db:reset`.
+   `pnpm test:integration` needs nothing — it rebuilds its own databases
+   whenever `structure.sql` changes.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert
@@ -127,6 +129,12 @@ never the label; labels are resolved at render time on both sides.
   in parallel. Avoid large shared setups and avoid mocking unless the behavior
   can't be tested realistically.
 - Test API endpoints with `createTestHandlerApp` + `supertest`.
+- `test:integration` runs in parallel, and every test truncates the whole
+  database, so each worker owns a `test_<workerId>` database, a Redis database
+  and a queue prefix — set up by `vitest/vitest.e2e.global-setup.mts` (see
+  `apps/backend/src/database/testing/workers.ts`). Nothing to create by hand:
+  worker databases are built from `db/structure.sql` and rebuilt whenever it
+  changes. The `test` database is left alone, it belongs to Playwright.
 - If `db:reset` reports `database "test" is being accessed by other users`:
 
   ```bash

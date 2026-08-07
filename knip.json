@@ -8,6 +8,7 @@
         "src/build/bin/*.ts",
         "src/database/bin/*.ts",
         "src/database/testing/index.ts",
+        "src/database/testing/workers.ts",
         "src/graphql/definitions/*.ts",
         "scripts/*.ts"
       ],
@@ -22,6 +23,9 @@
   "ignore": [
     "tests/truncate.setup.ts",
     "vitest/vitest.e2e.config.mts",
+    "vitest/vitest.e2e.global-setup.mts",
+    "vitest/vitest.e2e.setup.mts",
+    "vitest/vitest.e2e.workers.mts",
     "vitest/vitest.unit.config.mts"
   ],
   "ignoreBinaries": ["stripe", "ngrok", "op"],
