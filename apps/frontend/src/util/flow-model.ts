@@ -31,14 +31,9 @@ export type FlowIdentity = {
 };
 
 export function resolveFlowIdentity(source: FlowSource): FlowIdentity | null {
-  const titlePath = source.metadata?.test?.titlePath;
-  if (titlePath && titlePath.length > 0) {
-    return {
-      key: titlePath.join(" › "),
-      prefix: titlePath.slice(0, -1).join(" › "),
-      title: titlePath.at(-1) as string,
-    };
-  }
+  // Story first: Storybook runs through a Playwright test runner, so its
+  // screenshots may carry test metadata too — but the journey users care
+  // about is the component (one step per story), not the runner's test.
   const storyId = source.metadata?.story?.id;
   if (storyId) {
     const [component] = storyId.split("--");
@@ -46,6 +41,14 @@ export function resolveFlowIdentity(source: FlowSource): FlowIdentity | null {
       key: `storybook › ${component}`,
       prefix: "storybook",
       title: component as string,
+    };
+  }
+  const titlePath = source.metadata?.test?.titlePath;
+  if (titlePath && titlePath.length > 0) {
+    return {
+      key: titlePath.join(" › "),
+      prefix: titlePath.slice(0, -1).join(" › "),
+      title: titlePath.at(-1) as string,
     };
   }
   return null;
@@ -64,6 +67,7 @@ export function getStepKey(name: string): string {
     .replace(/\s+vw-\d+\.png$/, "")
     .replace(/ #\d+ \(failed\)\.png$/, "")
     .replace(/\.png$/, "")
+    .replace(/[\s-]+(dark|light)$/i, "")
     .trim();
 }
 
@@ -86,6 +90,13 @@ export function getVariantLabel(name: string): string {
   const mode = name.match(/\smode-\[([^[\]]+)\]\.png$/);
   if (mode?.[1]) {
     parts.push(mode[1]);
+  }
+  const scheme = name
+    .replace(/\s+vw-\d+\.png$/, "")
+    .replace(/\.png$/, "")
+    .match(/[\s-](dark|light)$/i);
+  if (scheme?.[1]) {
+    parts.push(scheme[1].toLowerCase());
   }
   return parts.join(" · ") || "default";
 }
