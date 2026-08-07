@@ -149,6 +149,26 @@ test("build review — journey order, flow context and minimap", async ({
   await page.mouse.move(760, 500);
   await page.screenshot({ path: path.join(OUT, "review-flow-light.png") });
 
+  // ⇧←/⇧→ walk the journey across status sections: review (unchanged) →
+  // payment (changed) → shipping (unchanged) → back.
+  await page.keyboard.press("Shift+ArrowLeft");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/payment"]}$`),
+  );
+  await page.keyboard.press("Shift+ArrowLeft");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/shipping"]}$`),
+  );
+  await page.keyboard.press("Shift+ArrowRight");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/payment"]}$`),
+  );
+  // Plain arrows still switch the diff view, they don't navigate.
+  await page.keyboard.press("ArrowLeft");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/payment"]}$`),
+  );
+
   // The minimap preference survives a reload.
   await page.reload();
   await expect(page.locator("[data-flow-step]")).toHaveCount(5);

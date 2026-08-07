@@ -78,6 +78,18 @@ const hotkeyGroups = [
         description: "Go to next snapshot",
         envs: ["test", "build"],
       },
+      goToPreviousFlowStep: {
+        keys: ["⇧", "ArrowLeft"],
+        displayKeys: ["⇧", "←"],
+        description: "Go to previous flow step",
+        envs: ["test", "build"],
+      },
+      goToNextFlowStep: {
+        keys: ["⇧", "ArrowRight"],
+        displayKeys: ["⇧", "→"],
+        description: "Go to next flow step",
+        envs: ["test", "build"],
+      },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],
@@ -306,6 +318,7 @@ type HotkeyRegistration = {
 function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
   const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
   const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
+  const shiftShouldBePressed = hotkey.keys.some((key) => key === "⇧");
   const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
 
   if (hasDigits && altShouldBePressed !== event.altKey) {
@@ -316,9 +329,29 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
+  if (shiftShouldBePressed && !event.shiftKey) {
+    return false;
+  }
+  if (!shiftShouldBePressed && event.shiftKey) {
+    // Shift may be needed to produce printable keys like "?", so only treat
+    // it as discriminating for physical keys, where holding it can only mean
+    // another shortcut (e.g. ⇧← vs ←).
+    const physicalKeysOnly = hotkey.keys.every(
+      (key) =>
+        key === "⌘" ||
+        key === "⌥" ||
+        key.startsWith("Key") ||
+        key.startsWith("Digit") ||
+        key.startsWith("Arrow"),
+    );
+    if (physicalKeysOnly) {
+      return false;
+    }
+  }
+
   return hotkey.keys.every((key) => {
     // Ignore modifier keys
-    if (key === "⌘") {
+    if (key === "⌘" || key === "⇧") {
       return true;
     }
     if (key.startsWith("Key")) {

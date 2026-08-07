@@ -1,7 +1,9 @@
 import { clsx } from "clsx";
 import { ChevronRightIcon } from "lucide-react";
 
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { useEventCallback } from "@/ui/useEventCallback";
 import { getStepLabel, getVariantLabel } from "@/util/flow-model";
 
 import {
@@ -10,6 +12,39 @@ import {
   useFlowMinimapState,
 } from "./BuildDiffState";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
+
+/**
+ * ⇧← / ⇧→ walk the journey of the active diff, across status sections —
+ * the keyboard counterpart of the minimap (and independent from it).
+ */
+export function FlowStepHotkeys() {
+  const flow = useActiveDiffFlow();
+  const { activeDiff, setActiveDiff } = useBuildDiffState();
+  const goToStep = useEventCallback((delta: -1 | 1) => {
+    if (!flow || !activeDiff) {
+      return;
+    }
+    const target = flow.steps[flow.stepIndex + delta];
+    if (!target) {
+      return;
+    }
+    const activeVariantLabel = getVariantLabel(activeDiff.name);
+    const diff =
+      target.diffs.find(
+        (candidate) => getVariantLabel(candidate.name) === activeVariantLabel,
+      ) ?? target.diffs[0];
+    if (diff) {
+      setActiveDiff(diff, true);
+    }
+  });
+  useBuildHotkey("goToPreviousFlowStep", () => goToStep(-1), {
+    preventDefault: true,
+  });
+  useBuildHotkey("goToNextFlowStep", () => goToStep(1), {
+    preventDefault: true,
+  });
+  return null;
+}
 
 const ATTENTION_STATUSES: string[] = [
   ScreenshotDiffStatus.Failure,
