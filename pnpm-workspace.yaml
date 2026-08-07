@@ -35,7 +35,6 @@ allowBuilds:
   "@apollo/protobufjs": true
   "@parcel/watcher": true
   "@sentry/cli": true
-  "@swc/core": true
   "@tailwindcss/oxide": true
   esbuild: true
   # Its postinstall refetches the domain list from three remote sources and

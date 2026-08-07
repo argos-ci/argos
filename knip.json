@@ -4,6 +4,7 @@
   "workspaces": {
     "apps/backend": {
       "entry": [
+        "src/instrument.ts",
         "src/processes/proc/*.ts",
         "src/build/bin/*.ts",
         "src/database/bin/*.ts",

@@ -4,9 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build-swc": "swc src -d dist --strip-leading-paths",
-    "build": "pnpm run build-swc --delete-dir-on-start",
-    "watch-build": "pnpm run build-swc --watch --quiet",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
@@ -14,11 +11,7 @@
   "sideEffects": false,
   "exports": {
     "./package.json": "./package.json",
-    "./*": {
-      "import": "./dist/*.js",
-      "types": "./src/*.ts",
-      "default": "./dist/*.js"
-    }
+    "./*": "./src/*.ts"
   },
   "dependencies": {
     "zod": "catalog:"

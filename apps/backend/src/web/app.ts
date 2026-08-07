@@ -1,6 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
 import express from "express";
 import { pinoHttp } from "pino-http";
@@ -13,8 +11,6 @@ import { installApiRouter } from "./api";
 import { installAppRouter } from "./app-router";
 import { jsonErrorHandler } from "./middlewares/errorHandler";
 import { subdomain } from "./util";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const redirectToHttps: express.RequestHandler = (req, res, next) => {
   const proto =
@@ -36,7 +32,6 @@ export const createApp = async (): Promise<express.Express> => {
 
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
-  app.set("views", join(__dirname, ".."));
 
   if (config.get("server.httpLogs")) {
     app.use(

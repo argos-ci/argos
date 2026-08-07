@@ -1,25 +1,28 @@
 {
-  "name": "@argos/util",
+  "name": "@argos/build",
   "version": "2.0.0",
   "private": true,
+  "bin": {
+    "argos-build": "./bin/argos-build.js"
+  },
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
   },
   "sideEffects": false,
-  "exports": {
-    "./package.json": "./package.json",
-    "./*": "./src/*.ts"
+  "dependencies": {
+    "oxc-parser": "^0.143.0",
+    "rolldown": "^1.2.2"
   },
   "devDependencies": {
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@types/node": "^26.1.2",
     "eslint": "catalog:"
-  },
-  "dependencies": {
-    "@sindresorhus/slugify": "^3.0.0"
   }
 }

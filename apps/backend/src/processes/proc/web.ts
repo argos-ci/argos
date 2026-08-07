@@ -4,27 +4,24 @@ import { readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import type { RequestListener, Server } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { invariant } from "@argos/util/invariant";
 
 import config from "@/config";
 import { createGraphQLWebSocketServer } from "@/graphql";
 import logger from "@/logger";
+import { resolveFromRepositoryRoot } from "@/util/paths";
 import { createApp } from "@/web";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const createServer = (requestListener: RequestListener): Server => {
   if (config.get("env") === "development") {
+    const keyPath = resolveFromRepositoryRoot("_wildcard.argos-ci.dev-key.pem");
+    const certPath = resolveFromRepositoryRoot("_wildcard.argos-ci.dev.pem");
+    invariant(
+      keyPath && certPath,
+      "development TLS certificates not found — run from within the repository",
+    );
     return createHttpsServer(
-      {
-        key: readFileSync(
-          join(__dirname, "../../../../../_wildcard.argos-ci.dev-key.pem"),
-        ),
-        cert: readFileSync(
-          join(__dirname, "../../../../../_wildcard.argos-ci.dev.pem"),
-        ),
-      },
+      { key: readFileSync(keyPath), cert: readFileSync(certPath) },
       requestListener,
     );
   }

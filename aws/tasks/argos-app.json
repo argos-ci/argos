@@ -14,7 +14,12 @@
     {
       "name": "argos-app",
       "image": "__IMAGE__",
-      "command": ["node", "apps/backend/dist/processes/proc/web.js"],
+      "command": [
+        "node",
+        "--import",
+        "./apps/backend/dist/instrument.js",
+        "apps/backend/dist/processes/proc/web.js"
+      ],
       "essential": true,
       "portMappings": [
         {

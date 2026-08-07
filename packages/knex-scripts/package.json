@@ -10,9 +10,8 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build-swc": "swc src -d dist --strip-leading-paths",
-    "build": "pnpm run build-swc --delete-dir-on-start",
-    "watch-build": "pnpm run build-swc --watch --quiet",
+    "build": "argos-build --clean",
+    "watch-build": "argos-build --watch --quiet",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0"
@@ -27,8 +26,15 @@
     "knex": "^3.0.0"
   },
   "devDependencies": {
+    "@argos/build": "workspace:*",
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "eslint": "catalog:"
+  },
+  "argos-build": {
+    "entries": [
+      "src/cli.ts"
+    ],
+    "target": "es2024"
   }
 }

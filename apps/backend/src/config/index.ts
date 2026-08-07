@@ -1,18 +1,20 @@
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import convict from "convict";
 import dotenv from "dotenv";
 
+import {
+  resolveFromPackageRoot,
+  resolveFromRepositoryRoot,
+} from "../util/paths";
 import { loadDatabaseConfigFromURL } from "./database-url";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const rootDotEnvPath = resolveFromRepositoryRoot(".env");
 
-const rootDotEnvPath = join(__dirname, "../../../../.env");
-
-dotenv.config({
-  path: rootDotEnvPath,
-  quiet: true,
-});
+if (rootDotEnvPath) {
+  dotenv.config({
+    path: rootDotEnvPath,
+    quiet: true,
+  });
+}
 
 const toStringArray = (value: string | string[]) => {
   if (Array.isArray(value)) {
@@ -460,7 +462,7 @@ export function createConfig() {
         directory: {
           doc: "Migrations directory",
           format: String,
-          default: join(__dirname, "../../db/migrations"),
+          default: resolveFromPackageRoot("db/migrations"),
         },
       },
       pool: {
@@ -619,7 +621,7 @@ export function createConfig() {
   });
 
   const env = config.get("env");
-  config.loadFile(join(__dirname, `../../config/environments/${env}.json`));
+  config.loadFile(resolveFromPackageRoot(`config/environments/${env}.json`));
 
   config.set(
     "github.privateKey",
