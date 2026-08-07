@@ -4,6 +4,7 @@ import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
+import { getAccountAvatar } from "@/account/avatar";
 import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
@@ -17,6 +18,7 @@ import {
 } from "@/database/services/account";
 import { queryAccountProjects } from "@/database/services/project";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
@@ -36,9 +38,8 @@ import {
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
-import { getAccountAvatar } from "../services/avatar";
 import { getVisibleProjectIds } from "../services/project";
-import { primeActiveTestMetrics, queryActiveTests } from "../services/test";
+import { primeActiveTestMetrics } from "../services/test";
 import { badUserInput, toGraphQLError, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 

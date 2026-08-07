@@ -40,3 +40,11 @@ const METRICS_PERIODS = {
 export function getMetricsPeriodStartDate(period: MetricsPeriod): Date {
   return getStartDateFromPeriod(METRICS_PERIODS[period]);
 }
+
+/**
+ * A period in the enum the shared services speak, for the queries that take it
+ * directly rather than as a start date.
+ */
+export function toMetricsPeriodEnum(period: MetricsPeriod): IMetricsPeriod {
+  return METRICS_PERIODS[period];
+}

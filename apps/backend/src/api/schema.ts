@@ -5,9 +5,20 @@ import { isMcpEligible } from "@/mcp/eligibility";
 import { getMcpResourceUrl } from "@/oauth/metadata";
 
 import {
+  cancelAccountInviteOperation,
+  createAccountInvitesOperation,
+  listAccountInvitesOperation,
+  resetAccountInviteLinkOperation,
+} from "./handlers/accountInvites";
+import {
   addBuildCommentReactionOperation,
   addTestCommentReactionOperation,
 } from "./handlers/addCommentReaction";
+import {
+  addBuildReviewersOperation,
+  listBuildReviewersOperation,
+  removeBuildReviewersOperation,
+} from "./handlers/buildReviewers";
 import { createBuildOperation } from "./handlers/createBuild";
 import {
   createBuildCommentOperation,
@@ -27,6 +38,10 @@ import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchang
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
 import { findBaselineOperation } from "./handlers/findBaseline";
+import {
+  getAccountOperation,
+  updateAccountOperation,
+} from "./handlers/getAccount";
 import { getAccountAnalyticsOperation } from "./handlers/getAccountAnalytics";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
@@ -42,15 +57,18 @@ import {
   ignoreChangeOperation,
   unignoreChangeOperation,
 } from "./handlers/ignoreChange";
+import { listAccountMembersOperation } from "./handlers/listAccountMembers";
 import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import {
   listBuildCommentsOperation,
   listTestCommentsOperation,
 } from "./handlers/listComments";
+import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
+import { listTestsOperation } from "./handlers/listTests";
 import {
   removeBuildCommentReactionOperation,
   removeTestCommentReactionOperation,
@@ -63,16 +81,28 @@ import {
 } from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
 import {
+  subscribeBuildOperation,
+  subscribeTestOperation,
+  unsubscribeBuildOperation,
+  unsubscribeTestOperation,
+} from "./handlers/subscribeBuild";
+import {
   subscribeBuildCommentThreadOperation,
   subscribeTestCommentThreadOperation,
   unsubscribeBuildCommentThreadOperation,
   unsubscribeTestCommentThreadOperation,
 } from "./handlers/subscribeCommentThread";
+import { transferProjectOperation } from "./handlers/transferProject";
+import {
+  removeAccountMemberOperation,
+  setAccountMemberLevelOperation,
+} from "./handlers/updateAccountMember";
 import { updateBuildOperation } from "./handlers/updateBuild";
 import {
   updateBuildCommentOperation,
   updateTestCommentOperation,
 } from "./handlers/updateComment";
+import { updateProjectOperation } from "./handlers/updateProject";
 import { securitySchemes } from "./security";
 
 export const zodSchema = {
@@ -155,17 +185,44 @@ export const zodSchema = {
         "Create, finalize, and resolve deployments to publish and serve project artifacts.",
       "x-page-icon": "rocket",
     },
+    {
+      name: "Members",
+      description:
+        "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
+      "x-page-icon": "users",
+    },
   ],
   components: {
     securitySchemes,
   },
   security: [{ projectToken: [] }],
   paths: {
+    "/accounts/{accountSlug}": {
+      get: getAccountOperation,
+      patch: updateAccountOperation,
+    },
     "/accounts/{accountSlug}/analytics": {
       get: getAccountAnalyticsOperation,
     },
     "/accounts/{accountSlug}/projects": {
       get: listProjectsOperation,
+    },
+    "/accounts/{accountSlug}/members": {
+      get: listAccountMembersOperation,
+    },
+    "/accounts/{accountSlug}/members/{userId}": {
+      patch: setAccountMemberLevelOperation,
+      delete: removeAccountMemberOperation,
+    },
+    "/accounts/{accountSlug}/invites": {
+      get: listAccountInvitesOperation,
+      post: createAccountInvitesOperation,
+    },
+    "/accounts/{accountSlug}/invites/{inviteId}": {
+      delete: cancelAccountInviteOperation,
+    },
+    "/accounts/{accountSlug}/invite-link/reset": {
+      post: resetAccountInviteLinkOperation,
     },
     "/builds": {
       post: createBuildOperation,
@@ -211,6 +268,10 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}": {
       get: getProjectOperation,
+      patch: updateProjectOperation,
+    },
+    "/projects/{owner}/{project}/transfer": {
+      post: transferProjectOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,
@@ -230,6 +291,19 @@ export const zodSchema = {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews": {
       get: listReviewsOperation,
       post: createReviewOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}/reviewers": {
+      get: listBuildReviewersOperation,
+      post: addBuildReviewersOperation,
+      delete: removeBuildReviewersOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}/subscription": {
+      post: subscribeBuildOperation,
+      delete: unsubscribeBuildOperation,
+    },
+    "/projects/{owner}/{project}/tests/{testId}/subscription": {
+      post: subscribeTestOperation,
+      delete: unsubscribeTestOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss":
       {
@@ -262,6 +336,12 @@ export const zodSchema = {
         post: subscribeBuildCommentThreadOperation,
         delete: unsubscribeBuildCommentThreadOperation,
       },
+    "/projects/{owner}/{project}/tests": {
+      get: listTestsOperation,
+    },
+    "/projects/{owner}/{project}/ignored-changes": {
+      get: listIgnoredChangesOperation,
+    },
     "/projects/{owner}/{project}/tests/{testId}": {
       get: getTestOperation,
     },

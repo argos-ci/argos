@@ -87,12 +87,23 @@ export function toGraphQLError(error: unknown): unknown {
   }
 
   const code = GRAPHQL_CODE_BY_STATUS[statusCode] ?? "BAD_USER_INPUT";
-  const extensions: { code: string; argosErrorCode?: ErrorCode } = { code };
+  const extensions: {
+    code: string;
+    argosErrorCode?: ErrorCode;
+    field?: string | string[];
+  } = { code };
 
   // The Sentry plugin copies this over from `originalError`, which no longer
   // holds the HTTPError once it is converted.
   if (error.code) {
     extensions.argosErrorCode = error.code;
+  }
+
+  // Services name the offending input field when both API layers call it the
+  // same thing, so forms keep highlighting it after the logic moved out of the
+  // resolver.
+  if (error.field) {
+    extensions.field = error.field;
   }
 
   return new GraphQLError(error.message, { extensions });

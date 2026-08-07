@@ -89,6 +89,17 @@ describe("createProject", () => {
       name: "web",
       defaultBaseBranch: "main",
       hasRemoteContentAccess: false,
+      autoApprovedBranchGlob: "main",
+      deploymentProductionBranchGlob: "main",
+      private: true,
+      summaryCheck: "auto",
+      prCommentEnabled: true,
+      githubActionsOidcEnabled: false,
+      tokenlessAuthEnabled: false,
+      deploymentEnabled: true,
+      deploymentAuth: "domain-private",
+      defaultUserLevel: null,
+      ignoreConfig: { enabled: true, autoIgnore: { changes: 3 } },
     });
 
     const project = await Project.query().findById(res.body.id);

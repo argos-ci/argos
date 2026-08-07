@@ -3,7 +3,6 @@ import type { BuildType } from "@argos/schemas/build-type";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
-import type { PartialModelObject } from "objection";
 
 import { isUniqueViolationError } from "@/database/error";
 import {
@@ -13,7 +12,6 @@ import {
   Deployment,
   GithubInstallation,
   GitlabProject,
-  normalizeIgnoreConfig,
   Project,
   ProjectUser,
   Screenshot,
@@ -22,18 +20,18 @@ import {
 import { queryBuilds } from "@/database/services/build";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
-  checkProjectName,
   createProject as createProjectService,
+  loadProjectById,
   notifyProjectCreation,
-  notifyProjectTransfer,
   resolveProjectName,
+  transferProject as transferProjectService,
+  updateProject as updateProjectService,
 } from "@/database/services/project";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
+import { loadAccountById } from "@/database/services/team-member";
+import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
-import {
-  invalidateDeploymentCache,
-  invalidateProjectDeploymentCache,
-} from "@/deployment/invalidate";
+import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
@@ -48,7 +46,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
-import { primeActiveTestMetrics, queryActiveTests } from "../services/test";
+import { primeActiveTestMetrics } from "../services/test";
 import {
   badUserInput,
   forbidden,
@@ -363,19 +361,6 @@ export const typeDefs = gql`
     ): RemoveContributorFromProjectPayload!
   }
 `;
-
-const checkGqlProjectName = async (
-  args: Parameters<typeof checkProjectName>[0],
-) => {
-  try {
-    await checkProjectName(args);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw badUserInput(error.message, { field: "name" });
-    }
-    throw error;
-  }
-};
 
 async function importGithubProject(props: {
   accountSlug: string;
@@ -941,111 +926,45 @@ export const resolvers: IResolvers = {
       });
     },
     updateProject: async (_root, args, ctx) => {
-      const project = await getAdminProject({
-        id: args.input.id,
-        user: ctx.auth?.user,
-      });
-
-      const data: PartialModelObject<Project> = {};
-
-      if (args.input.defaultBaseBranch !== undefined) {
-        data.defaultBaseBranch = args.input.defaultBaseBranch ?? null;
+      if (!ctx.auth) {
+        throw unauthenticated();
       }
-
-      if (args.input.autoApprovedBranchGlob !== undefined) {
-        data.autoApprovedBranchGlob = args.input.autoApprovedBranchGlob ?? null;
-      }
-
-      if (args.input.deploymentProductionBranchGlob !== undefined) {
-        data.deploymentProdBranchGlob =
-          args.input.deploymentProductionBranchGlob ?? null;
-      }
-
-      if (args.input.private !== undefined) {
-        data.private = args.input.private;
-      }
-
-      if (args.input.summaryCheck != null) {
-        data.summaryCheck = args.input.summaryCheck;
-      }
-
-      if (args.input.defaultUserLevel !== undefined) {
-        data.defaultUserLevel = args.input.defaultUserLevel;
-      }
-
-      if (args.input.ignoreConfig !== undefined) {
-        const { ignoreConfig } = args.input;
-        data.ignoreConfig = ignoreConfig
-          ? normalizeIgnoreConfig({
-              enabled: ignoreConfig.enabled,
-              autoIgnore: ignoreConfig.autoIgnore ?? null,
-            })
-          : null;
-      }
-
-      if (
-        typeof args.input.deploymentEnabled === "boolean" &&
-        project.deploymentEnabled !== args.input.deploymentEnabled
-      ) {
-        data.deploymentEnabled = args.input.deploymentEnabled;
-      }
-
-      if (
-        typeof args.input.githubActionsOidcEnabled === "boolean" &&
-        project.githubActionsOidcEnabled !== args.input.githubActionsOidcEnabled
-      ) {
-        data.githubActionsOidcEnabled = args.input.githubActionsOidcEnabled;
-      }
-
-      if (
-        typeof args.input.tokenlessAuthEnabled === "boolean" &&
-        project.tokenlessAuthEnabled !== args.input.tokenlessAuthEnabled
-      ) {
-        data.tokenlessAuthEnabled = args.input.tokenlessAuthEnabled;
-      }
-
-      if (args.input.deploymentAuth != null) {
-        const deploymentAuth = fromGraphQLDeploymentAuth(
-          args.input.deploymentAuth,
-        );
-
-        if (deploymentAuth === "private") {
-          await project.$fetchGraph("account", { skipFetched: true });
-          invariant(project.account, "account not fetched");
-          if (project.account.type !== "team") {
-            throw badUserInput("All deployments protection requires a team.", {
-              field: "deploymentAuth",
-            });
-          }
-        }
-
-        if (project.deploymentAuth !== deploymentAuth) {
-          data.deploymentAuth = deploymentAuth;
-        }
-      }
-
-      if (args.input.name != null && project.name !== args.input.name) {
-        await checkGqlProjectName({
-          name: args.input.name,
-          accountId: project.accountId,
+      try {
+        const project = await loadProjectById(args.input.id);
+        // Shared with the REST API — same admin check, same validation.
+        return await updateProjectService({
+          project,
+          user: ctx.auth.user,
+          input: {
+            name: args.input.name ?? undefined,
+            defaultBaseBranch: args.input.defaultBaseBranch,
+            autoApprovedBranchGlob: args.input.autoApprovedBranchGlob,
+            deploymentProductionBranchGlob:
+              args.input.deploymentProductionBranchGlob,
+            private: args.input.private,
+            summaryCheck: args.input.summaryCheck ?? undefined,
+            defaultUserLevel: args.input.defaultUserLevel,
+            ignoreConfig:
+              args.input.ignoreConfig === undefined
+                ? undefined
+                : args.input.ignoreConfig
+                  ? {
+                      enabled: args.input.ignoreConfig.enabled,
+                      autoIgnore: args.input.ignoreConfig.autoIgnore ?? null,
+                    }
+                  : null,
+            deploymentEnabled: args.input.deploymentEnabled ?? undefined,
+            deploymentAuth: args.input.deploymentAuth
+              ? fromGraphQLDeploymentAuth(args.input.deploymentAuth)
+              : undefined,
+            githubActionsOidcEnabled:
+              args.input.githubActionsOidcEnabled ?? undefined,
+            tokenlessAuthEnabled: args.input.tokenlessAuthEnabled ?? undefined,
+          },
         });
-        data.name = args.input.name;
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      if (Object.keys(data).length === 0) {
-        return project;
-      }
-
-      const updated = await project.$query().patchAndFetch(data);
-
-      // If deployment access changed, invalidate the project deployment cache.
-      if ("deploymentEnabled" in data || "deploymentAuth" in data) {
-        await invalidateProjectDeploymentCache(project.id).catch(() => {
-          // Non-blocking — best effort
-        });
-      }
-
-      return updated;
     },
     linkGithubRepository: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -1127,45 +1046,25 @@ export const resolvers: IResolvers = {
       });
     },
     transferProject: async (_root, args, ctx) => {
-      const project = await getAdminProject({
-        id: args.input.id,
-        user: ctx.auth?.user,
-      });
-      const { targetAccountId } = args.input;
-      if (project.accountId === targetAccountId) {
-        throw badUserInput("Project is already owned by this account.");
+      if (!ctx.auth) {
+        throw unauthenticated();
       }
-      await checkGqlProjectName({
-        name: args.input.name,
-        accountId: targetAccountId,
-      });
-
-      // Capture the source account id and name before patching: `patchAndFetch`
-      // mutates the instance in place, overwriting both.
-      const previousAccountId = project.accountId;
-      const previousName = project.name;
-
-      const [previousAccount, targetAccount, transferredProject] =
-        await Promise.all([
-          ctx.loaders.Account.load(previousAccountId),
-          ctx.loaders.Account.load(targetAccountId),
-          project.$query().patchAndFetch({
-            accountId: targetAccountId,
-            name: args.input.name,
-          }),
+      try {
+        const [project, targetAccount] = await Promise.all([
+          loadProjectById(args.input.id),
+          loadAccountById(args.input.targetAccountId),
         ]);
-
-      if (previousAccount && targetAccount) {
-        await notifyProjectTransfer({
-          project: transferredProject,
-          previousAccount,
-          previousName,
+        // Shared with the REST API — same admin checks on both sides of the
+        // move, same name validation.
+        return await transferProjectService({
+          project,
+          user: ctx.auth.user,
           targetAccount,
-          email: ctx.auth?.user.email ?? null,
+          name: args.input.name,
         });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      return transferredProject;
     },
     deleteProject: async (_root, args, ctx) => {
       const project = await Project.query().findById(args.id).select("id");

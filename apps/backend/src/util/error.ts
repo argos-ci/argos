@@ -22,6 +22,17 @@ type HttpErrorOptions = ErrorOptions & {
   }[];
   code?: ErrorCode | undefined;
   retryable?: boolean;
+  /**
+   * Name of the input field the error is about, when a shared service can name
+   * it in terms both API layers use. The GraphQL layer surfaces it as the
+   * `field` extension so forms can highlight the offending input; the REST
+   * layer ignores it, the message already says which field is wrong.
+   *
+   * Only for field names that are genuinely the same on both sides. Anything
+   * layer-specific (an index into a GraphQL input array, say) belongs in a
+   * typed error the caller maps itself.
+   */
+  field?: string | string[];
 };
 
 /**
@@ -35,6 +46,7 @@ export class HTTPError extends Error {
         message: string;
       }[]
     | undefined;
+  public field: string | string[] | undefined;
   public [retryableSymbol]: boolean;
 
   constructor(
@@ -46,6 +58,7 @@ export class HTTPError extends Error {
     this.statusCode = statusCode;
     this.details = options?.details;
     this.code = options?.code || null;
+    this.field = options?.field;
     this[retryableSymbol] = options?.retryable ?? true;
   }
 }
