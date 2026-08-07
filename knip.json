@@ -20,7 +20,6 @@
     "apps/frontend": {}
   },
   "ignore": [
-    "playwright.config.mts",
     "tests/truncate.setup.ts",
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.unit.config.mts"
