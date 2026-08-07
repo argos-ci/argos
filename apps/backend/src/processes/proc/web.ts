@@ -1,5 +1,4 @@
 import "../setup";
-
 import { readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import type { RequestListener, Server } from "node:http";

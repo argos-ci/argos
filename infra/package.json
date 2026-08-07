@@ -9,7 +9,7 @@
     "deploy": "cdk deploy",
     "diff": "cdk diff",
     "check-types": "tsc --noEmit",
-    "check-format": "prettier --check --cache .",
+    "check-format": "oxfmt --check .",
     "lint": "eslint --max-warnings 0 ."
   },
   "dependencies": {

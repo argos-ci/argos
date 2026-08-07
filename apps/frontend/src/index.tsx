@@ -1,13 +1,10 @@
+import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
-import { config } from "./config";
-
 import "./index.css";
-
-import { invariant } from "@argos/util/invariant";
-
+import { config } from "./config";
 import { APIError } from "./util/api";
 import { getSingleErrorCode } from "./util/error";
 

@@ -1,0 +1,4 @@
+{
+  "recommendations": ["oxc.oxc-vscode", "bradlc.vscode-tailwindcss"],
+  "unwantedRecommendations": ["esbenp.prettier-vscode"]
+}

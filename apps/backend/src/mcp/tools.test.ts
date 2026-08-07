@@ -193,7 +193,8 @@ describe("x-gitbook-mcp stamping", () => {
     for (const [path, pathItem] of Object.entries(schema.paths ?? {})) {
       for (const method of methods) {
         const operation = pathItem[method] as
-          { operationId?: string; "x-gitbook-mcp"?: boolean } | undefined;
+          | { operationId?: string; "x-gitbook-mcp"?: boolean }
+          | undefined;
         if (operation?.["x-gitbook-mcp"]) {
           marked.push(operation.operationId ?? `${method} ${path}`);
         }
@@ -206,11 +207,13 @@ describe("x-gitbook-mcp stamping", () => {
 
   it("does not mark project-token-only or internal operations", () => {
     const createBuild = schema.paths?.["/builds"]?.post as
-      Record<string, unknown> | undefined;
+      | Record<string, unknown>
+      | undefined;
     expect(createBuild).toBeDefined();
     expect(createBuild!["x-gitbook-mcp"]).toBeUndefined();
     const exchangeCliToken = schema.paths?.["/auth/cli/token"]?.post as
-      Record<string, unknown> | undefined;
+      | Record<string, unknown>
+      | undefined;
     expect(exchangeCliToken).toBeDefined();
     expect(exchangeCliToken!["x-gitbook-mcp"]).toBeUndefined();
   });

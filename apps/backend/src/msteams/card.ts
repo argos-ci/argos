@@ -11,7 +11,13 @@ type AdaptiveCardTextBlock = {
   size?: "small" | "default" | "medium" | "large";
   weight?: "lighter" | "default" | "bolder";
   color?:
-    "default" | "dark" | "light" | "accent" | "good" | "warning" | "attention";
+    | "default"
+    | "dark"
+    | "light"
+    | "accent"
+    | "good"
+    | "warning"
+    | "attention";
   isSubtle?: boolean;
   separator?: boolean;
   spacing?: "none" | "small" | "default" | "medium" | "large";

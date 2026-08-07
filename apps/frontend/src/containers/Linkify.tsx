@@ -1,6 +1,5 @@
 import "linkifyjs";
 import "linkify-plugin-ticket";
-
 import { useMemo } from "react";
 import BaseLinkify from "linkify-react";
 

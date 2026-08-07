@@ -18,7 +18,8 @@ import { loadTestForAuth, type TestRouteParams } from "./test";
  * implementation, so the implementations take this union.
  */
 export type CommentRouteParams =
-  { owner: string; project: string; buildNumber: number } | TestRouteParams;
+  | { owner: string; project: string; buildNumber: number }
+  | TestRouteParams;
 
 /** The auth accepted by every comment endpoint. */
 export type CommentAuth = AuthPATPayload | AuthOAuthPayload;

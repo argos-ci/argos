@@ -202,7 +202,8 @@ async function writeDeploymentFiles(
 
           requests =
             (result.UnprocessedItems?.[tableName] as
-              typeof requests | undefined) ?? [];
+              | typeof requests
+              | undefined) ?? [];
           if (requests.length > 0) {
             throw new Error(
               `DynamoDB returned ${requests.length} unprocessed deployment files`,

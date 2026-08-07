@@ -7,7 +7,7 @@
     "build": "tsdown",
     "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
-    "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
+    "check-format": "oxfmt --check .",
     "lint": "eslint . --max-warnings 0"
   },
   "sideEffects": false,

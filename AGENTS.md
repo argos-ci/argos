@@ -12,11 +12,13 @@ thing that tells you CI will pass. Fix everything it reports, including unused
 code found by knip.
 
 While iterating, use the fast local checks on what you touched:
-`prettier --write <target>`, `tsc --noEmit`, `eslint <target>`.
+`oxfmt <target>`, `tsc --noEmit`, `eslint <target>`.
 
-Do not substitute an ad-hoc `prettier --check` from the repository root: each
-workspace runs prettier from its own directory with its own ignore paths, so a
-root-level invocation is not equivalent and will miss files that CI rejects.
+Formatting is [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured
+once in `.oxfmtrc.json` at the repository root. It resolves that config — and the
+root `.gitignore` — from any working directory, so `oxfmt --check .` behaves the
+same from the root or from a workspace. It also owns import sorting and Tailwind
+class sorting, which used to be Prettier plugins.
 
 ## TypeScript
 

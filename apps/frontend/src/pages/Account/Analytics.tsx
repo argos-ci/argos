@@ -1185,7 +1185,10 @@ function EvolutionChart(props: {
 }
 
 type PresetPeriod =
-  "last-7-days" | "last-30-days" | "last-90-days" | "last-365-days";
+  | "last-7-days"
+  | "last-30-days"
+  | "last-90-days"
+  | "last-365-days";
 type Period = PresetPeriod | "custom";
 
 const Periods: Record<
