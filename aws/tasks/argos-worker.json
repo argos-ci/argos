@@ -14,7 +14,7 @@
     {
       "name": "argos-worker",
       "image": "__IMAGE__",
-      "command": ["pnpm", "--dir", "apps/backend", "run", "start-worker"],
+      "command": ["./apps/backend/bin/start.sh", "worker"],
       "essential": true,
       "logConfiguration": {
         "logDriver": "awslogs",

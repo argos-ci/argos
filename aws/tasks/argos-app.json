@@ -14,7 +14,7 @@
     {
       "name": "argos-app",
       "image": "__IMAGE__",
-      "command": ["pnpm", "--dir", "apps/backend", "run", "start-web"],
+      "command": ["./apps/backend/bin/start.sh", "web"],
       "essential": true,
       "portMappings": [
         {
