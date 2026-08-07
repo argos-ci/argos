@@ -1,0 +1,94 @@
+import { clsx } from "clsx";
+import { ChevronRightIcon } from "lucide-react";
+
+import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { getStepLabel, getVariantLabel } from "@/util/flow-model";
+
+import {
+  useActiveDiffFlow,
+  useBuildDiffState,
+  useFlowMinimapState,
+} from "./BuildDiffState";
+import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
+
+const ATTENTION_STATUSES: string[] = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+];
+
+/**
+ * The journey of the active diff as a strip of steps, on demand: shows where
+ * the change sits in the flow and jumps between steps. Only rendered when
+ * the user asked for it and the active diff belongs to a multi-step flow.
+ */
+export function BuildFlowMinimap() {
+  const { visible } = useFlowMinimapState();
+  const flow = useActiveDiffFlow();
+  const { activeDiff, setActiveDiff } = useBuildDiffState();
+  if (!visible || !flow || !activeDiff) {
+    return null;
+  }
+  const activeVariantLabel = getVariantLabel(activeDiff.name);
+  return (
+    <div className="mt-2 flex items-center gap-1 overflow-x-auto border-t pt-2 pb-1">
+      {flow.steps.map((step, index) => {
+        // Show the variant matching the active diff so switching steps stays
+        // within the same viewport/browser.
+        const diff =
+          step.diffs.find(
+            (candidate) =>
+              getVariantLabel(candidate.name) === activeVariantLabel,
+          ) ??
+          step.diffs[0] ??
+          null;
+        if (!diff) {
+          return null;
+        }
+        const isActive = index === flow.stepIndex;
+        const needsAttention = step.diffs.some((candidate) =>
+          ATTENTION_STATUSES.includes(candidate.status),
+        );
+        return (
+          <div key={step.key} className="flex shrink-0 items-center gap-0.5">
+            {index > 0 && (
+              <ChevronRightIcon className="text-low size-3 shrink-0" />
+            )}
+            <button
+              type="button"
+              data-flow-step={step.key}
+              onClick={() => setActiveDiff(diff, true)}
+              className={clsx(
+                "flex flex-col items-center gap-1 rounded-md p-1",
+                !isActive && "hover:bg-hover",
+              )}
+            >
+              <span className="relative">
+                <ScreenshotDiffThumbnail
+                  screenshotDiff={diff}
+                  className={clsx(
+                    "h-12 w-16",
+                    isActive && "ring-primary-active ring-2",
+                  )}
+                  fit="cover"
+                />
+                {needsAttention ? (
+                  <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
+                ) : null}
+              </span>
+              <span
+                className={clsx(
+                  "w-18 truncate text-center text-[0.6875rem] leading-none",
+                  isActive ? "font-medium" : "text-low",
+                )}
+              >
+                {index + 1} · {getStepLabel(step.key)}
+              </span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   ArrowUpIcon,
   ChevronRightIcon,
+  PencilIcon,
 } from "lucide-react";
 import { Link, useParams } from "react-router";
 
@@ -14,6 +15,7 @@ import { Chip } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Page, PageContainer } from "@/ui/Layout";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { getBuildURL } from "../../Build/BuildParams";
 import { NotFound } from "../../NotFound";
@@ -27,6 +29,7 @@ import {
   orderSteps,
   pickVariant,
   useProjectFlows,
+  useStoredNames,
   useStoredOrders,
   type Flow,
   type FlowsBuild,
@@ -243,7 +246,9 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
   const { params, flowId } = props;
   const { project, build, flows } = useProjectFlows(params);
   const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
+  const { names, setFlowName } = useStoredNames(params);
   const [variant, setVariant] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
 
   if (!project) {
     return <NotFound />;
@@ -270,9 +275,51 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
         </Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {flow.prefix && (
-            <span className="text-low font-mono text-sm">{flow.prefix} ›</span>
+            <span className="text-low font-mono text-sm">
+              {flow.prefix} ›{names[flow.key] ? ` ${flow.title}` : ""}
+            </span>
           )}
-          <h1 className="text-xl font-semibold">{flow.title}</h1>
+          {editingName ? (
+            <input
+              autoFocus
+              defaultValue={names[flow.key] ?? flow.title}
+              aria-label="Flow name"
+              className="rounded-sm border px-2 py-0.5 text-xl font-semibold outline-hidden"
+              onBlur={(event) => {
+                const value = event.currentTarget.value.trim();
+                setFlowName(
+                  flow.key,
+                  value && value !== flow.title ? value : null,
+                );
+                setEditingName(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+                if (event.key === "Escape") {
+                  setEditingName(false);
+                }
+              }}
+            />
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold">
+                {names[flow.key] ?? flow.title}
+              </h1>
+              <Tooltip content="Rename flow">
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  size="small"
+                  aria-label="Rename flow"
+                  onPress={() => setEditingName(true)}
+                >
+                  <PencilIcon />
+                </Button>
+              </Tooltip>
+            </>
+          )}
           <span className="text-low text-sm">
             {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
           </span>

@@ -36,21 +36,9 @@ export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
 export type DiffStatusGroupName = (typeof DIFF_STATS_GROUPS)[number];
 
-type DiffGroupFlow = {
-  /** Flow key ("" for the catch-all group of non-flow screenshots). */
-  key: string;
-  prefix: string;
-  title: string;
-  /** Number of diffs that need attention (changed, added, removed, failure). */
-  changedCount: number;
-};
-
 export interface DiffGroup<TDiff = BuildDiffDetailDocument> {
-  /** A status group name, or a `flow:`-prefixed key in flow grouping mode. */
-  name: DiffGroupName | (string & {});
+  name: DiffGroupName;
   diffs: (TDiff | null)[];
-  /** Set when the group represents a user flow instead of a status. */
-  flow?: DiffGroupFlow;
 }
 
 export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {

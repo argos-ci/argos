@@ -319,7 +319,7 @@ export function useGetNextDiff(
   options?: UseGetNextDiffOptions,
 ) {
   const { searchMode } = useSearchModeState();
-  const { diffs, activeDiff, expanded, groups } = useBuildDiffState();
+  const { diffs, activeDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const fromIndex = options?.fromIndex ?? activeDiffIndex;
   return useEventCallback(() => {
@@ -330,24 +330,8 @@ export function useGetNextDiff(
     const isGroupExpanded =
       !activeDiff?.group || expanded.includes(activeDiff.group);
 
-    // Plain navigation skips diffs inside collapsed flow groups (untouched
-    // journeys); targeted navigation (predicate) may enter them, since
-    // selecting the diff expands its group.
-    const checkIsHiddenInFlow = (diff: Diff) => {
-      if (predicate || searchMode) {
-        return false;
-      }
-      const group = groups.find(
-        (candidate) => candidate.flow && candidate.diffs.includes(diff),
-      );
-      return group ? !expanded.includes(group.name) : false;
-    };
-
     const offsetIndex = fromIndex + 1;
     const nextDiffIndex = diffs.slice(offsetIndex).findIndex((diff) => {
-      if (checkIsHiddenInFlow(diff)) {
-        return false;
-      }
       if (!isGroupExpanded && !searchMode && diff.group === activeDiff.group) {
         return false;
       }
@@ -380,7 +364,7 @@ export function useHasPreviousDiff() {
 
 function useGetPreviousDiff() {
   const { searchMode } = useSearchModeState();
-  const { diffs, expanded, groups } = useBuildDiffState();
+  const { diffs, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const hasPreviousDiff = useHasPreviousDiff();
   return useEventCallback(() => {
@@ -388,25 +372,7 @@ function useGetPreviousDiff() {
       return null;
     }
 
-    // Skip diffs inside collapsed flow groups (untouched journeys).
-    const checkIsHiddenInFlow = (diff: Diff) => {
-      if (searchMode) {
-        return false;
-      }
-      const group = groups.find(
-        (candidate) => candidate.flow && candidate.diffs.includes(diff),
-      );
-      return group ? !expanded.includes(group.name) : false;
-    };
-
-    let previousDiffIndex = activeDiffIndex - 1;
-    while (previousDiffIndex >= 0) {
-      const candidate = diffs[previousDiffIndex];
-      if (candidate && !checkIsHiddenInFlow(candidate)) {
-        break;
-      }
-      previousDiffIndex -= 1;
-    }
+    const previousDiffIndex = activeDiffIndex - 1;
     const previousDiff = diffs[previousDiffIndex];
 
     if (!previousDiff) {
@@ -578,6 +544,7 @@ function useDataState(props: {
 function groupDiffs(
   diffs: Diff[],
   reviewStatuses: Record<string, EvaluationStatus>,
+  orders: Record<string, string[]>,
 ): DiffGroup<Diff>[] {
   const diffByGroups = diffs.reduce<
     Partial<Record<DiffGroupName, DiffGroup<Diff>>>
@@ -595,112 +562,142 @@ function groupDiffs(
     }
     return groups;
   }, {});
-  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null).filter(
-    (x) => x !== null,
-  );
+  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null)
+    .filter((x) => x !== null)
+    .map((group) => ({
+      ...group,
+      // Within a status section, follow the journeys: same-flow diffs stay
+      // adjacent, in step order.
+      diffs: group.diffs
+        .filter((diff) => diff !== null)
+        .toSorted((a, b) => compareDiffsByFlow(a, b, orders)),
+    }));
 }
 
-/** Sidebar grouping mode: by review status (default) or by user flow. */
-export type SidebarGrouping = "status" | "flow";
-
-const SIDEBAR_GROUPING_STORAGE_KEY = "preferences.build.sidebar-grouping";
-
-function readStoredSidebarGrouping(): SidebarGrouping {
-  return localStorage.getItem(SIDEBAR_GROUPING_STORAGE_KEY) === "flow"
-    ? "flow"
-    : "status";
+function resolveDiffFlowIdentity(diff: Diff): FlowIdentity | null {
+  return resolveFlowIdentity({
+    name: diff.name,
+    metadata: resolveDiffMetadata(diff),
+  });
 }
 
-type SidebarGroupingContextValue = {
-  grouping: SidebarGrouping;
-  setGrouping: (grouping: SidebarGrouping) => void;
-};
-
-const SidebarGroupingContext =
-  createContext<SidebarGroupingContextValue | null>(null);
-
-export function useSidebarGrouping() {
-  const context = use(SidebarGroupingContext);
-  invariant(
-    context,
-    "useSidebarGrouping must be used within a BuildDiffProvider",
-  );
-  return context;
-}
-
-const ATTENTION_STATUSES: string[] = [
-  ScreenshotDiffStatus.Failure,
-  ScreenshotDiffStatus.Changed,
-  ScreenshotDiffStatus.Added,
-  ScreenshotDiffStatus.Removed,
-];
-
-/**
- * Groups diffs by user flow (see `@/util/flow-model`): one group per test
- * with screenshots, diffs ordered by step (curated order, then capture
- * index, then alphabetical) so reviewing follows the journey. Screenshots
- * without flow information gather in a trailing group.
- */
-function groupDiffsByFlow(
-  diffs: Diff[],
-  orders: Record<string, string[]>,
-): DiffGroup<Diff>[] {
-  const byKey = new Map<string, { identity: FlowIdentity; diffs: Diff[] }>();
-  const others: Diff[] = [];
-  for (const diff of diffs) {
-    const metadata = resolveDiffMetadata(diff);
-    const identity = resolveFlowIdentity({ name: diff.name, metadata });
-    if (!identity) {
-      others.push(diff);
-      continue;
-    }
-    const entry = byKey.get(identity.key) ?? { identity, diffs: [] };
-    byKey.set(identity.key, entry);
-    entry.diffs.push(diff);
-  }
-  const toStep = (diff: Diff) => ({
+function toFlowStepOf(diff: Diff) {
+  return {
     key: getStepKey(diff.name),
     captureIndex: getCaptureIndex({
       name: diff.name,
       metadata: resolveDiffMetadata(diff),
     }),
-  });
-  const changedCount = (diffs: Diff[]) =>
-    diffs.filter((diff) => ATTENTION_STATUSES.includes(diff.status)).length;
-  const groups: DiffGroup<Diff>[] = [...byKey.values()]
-    .map(({ identity, diffs }) => {
-      const storedOrder = orders[identity.key];
-      const sorted = diffs.toSorted(
-        (a, b) =>
-          compareSteps(toStep(a), toStep(b), storedOrder) ||
-          getVariantLabel(a.name).localeCompare(getVariantLabel(b.name)) ||
-          a.name.localeCompare(b.name),
-      );
-      return {
-        name: `flow:${identity.key}`,
-        diffs: sorted,
-        flow: { ...identity, changedCount: changedCount(diffs) },
-      };
-    })
-    .toSorted(
-      (a, b) =>
-        Number((b.flow?.changedCount ?? 0) > 0) -
-          Number((a.flow?.changedCount ?? 0) > 0) ||
-        (a.flow?.key ?? "").localeCompare(b.flow?.key ?? ""),
-    );
-  if (others.length > 0) {
-    groups.push({
-      name: "flow:others",
-      diffs: others.toSorted((a, b) => a.name.localeCompare(b.name)),
-      flow: {
-        key: "",
-        prefix: "",
-        title: "Other screenshots",
-        changedCount: changedCount(others),
-      },
-    });
+  };
+}
+
+/**
+ * Orders diffs of one status group by journey: diffs of the same flow stay
+ * adjacent, in step order (curated order, then capture index, then
+ * alphabetical); screenshots without flow information sort last.
+ */
+function compareDiffsByFlow(
+  a: Diff,
+  b: Diff,
+  orders: Record<string, string[]>,
+): number {
+  const flowA = resolveDiffFlowIdentity(a);
+  const flowB = resolveDiffFlowIdentity(b);
+  if (!flowA && !flowB) {
+    return a.name.localeCompare(b.name);
   }
-  return groups;
+  if (!flowA || !flowB) {
+    return flowA ? -1 : 1;
+  }
+  if (flowA.key !== flowB.key) {
+    return flowA.key.localeCompare(flowB.key);
+  }
+  return (
+    compareSteps(toFlowStepOf(a), toFlowStepOf(b), orders[flowA.key]) ||
+    getVariantLabel(a.name).localeCompare(getVariantLabel(b.name)) ||
+    a.name.localeCompare(b.name)
+  );
+}
+
+/**
+ * Visibility of the flow minimap in the build detail, persisted as a user
+ * preference.
+ */
+const FLOW_MINIMAP_STORAGE_KEY = "preferences.build.flow-minimap";
+
+type FlowMinimapContextValue = {
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+};
+
+const FlowMinimapContext = createContext<FlowMinimapContextValue | null>(null);
+
+export function useFlowMinimapState() {
+  const context = use(FlowMinimapContext);
+  invariant(
+    context,
+    "useFlowMinimapState must be used within a BuildDiffProvider",
+  );
+  return context;
+}
+
+export type ActiveDiffFlow = {
+  identity: FlowIdentity;
+  steps: { key: string; diffs: Diff[] }[];
+  stepIndex: number;
+};
+
+/**
+ * The flow context of the active diff: the journey it belongs to, its steps
+ * (variants collapsed) in resolved order, and the active step position.
+ * Null when the active diff has no flow information or the journey has a
+ * single step.
+ */
+export function useActiveDiffFlow(): ActiveDiffFlow | null {
+  const { activeDiff, allDiffs } = useBuildDiffState();
+  const params = useBuildParams();
+  invariant(params, "can't be used outside of a build route");
+  const { orders } = useStoredOrders(params);
+  return useMemo(() => {
+    if (!activeDiff) {
+      return null;
+    }
+    const identity = resolveDiffFlowIdentity(activeDiff);
+    if (!identity) {
+      return null;
+    }
+    const stepMap = new Map<
+      string,
+      { key: string; captureIndex: number | null; diffs: Diff[] }
+    >();
+    for (const diff of allDiffs) {
+      if (resolveDiffFlowIdentity(diff)?.key !== identity.key) {
+        continue;
+      }
+      const { key, captureIndex } = toFlowStepOf(diff);
+      const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
+      stepMap.set(key, step);
+      step.diffs.push(diff);
+      if (captureIndex !== null) {
+        step.captureIndex = Math.min(
+          step.captureIndex ?? Number.MAX_SAFE_INTEGER,
+          captureIndex,
+        );
+      }
+    }
+    const steps = [...stepMap.values()].toSorted((a, b) =>
+      compareSteps(a, b, orders[identity.key]),
+    );
+    if (steps.length < 2) {
+      return null;
+    }
+    const activeStepKey = getStepKey(activeDiff.name);
+    return {
+      identity,
+      steps,
+      stepIndex: steps.findIndex((step) => step.key === activeStepKey),
+    };
+  }, [activeDiff, allDiffs, orders]);
 }
 
 type SearchModeContextValue = {
@@ -876,66 +873,26 @@ export function BuildDiffProvider(props: {
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
-  const [grouping, setGroupingState] = useState<SidebarGrouping>(
-    readStoredSidebarGrouping,
-  );
-  const setGrouping = useCallback((value: SidebarGrouping) => {
-    localStorage.setItem(SIDEBAR_GROUPING_STORAGE_KEY, value);
-    setGroupingState(value);
-  }, []);
-  const groupingValue = useMemo(
-    (): SidebarGroupingContextValue => ({ grouping, setGrouping }),
-    [grouping, setGrouping],
-  );
   const { orders } = useStoredOrders(params);
 
-  const groups = useMemo(() => {
-    if (grouping === "flow") {
-      return groupDiffsByFlow(filteredDiffs, orders);
-    }
-    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
-  }, [grouping, orders, filteredDiffs, reviewState?.diffStatuses]);
+  const [minimapVisible, setMinimapVisibleState] = useState<boolean>(
+    () => localStorage.getItem(FLOW_MINIMAP_STORAGE_KEY) === "true",
+  );
+  const setMinimapVisible = useCallback((visible: boolean) => {
+    localStorage.setItem(FLOW_MINIMAP_STORAGE_KEY, String(visible));
+    setMinimapVisibleState(visible);
+  }, []);
+  const minimapValue = useMemo(
+    (): FlowMinimapContextValue => ({
+      visible: minimapVisible,
+      setVisible: setMinimapVisible,
+    }),
+    [minimapVisible, setMinimapVisible],
+  );
 
-  // Flow groups collapse independently of status groups: journeys with
-  // changes start open, untouched journeys start closed — that's the
-  // at-a-glance overview of what moved in the build.
-  const [flowExpandedOverrides, setFlowExpandedOverrides] = useState<
-    Record<string, boolean>
-  >({});
-  const flowDefaultExpanded = useMemo(
-    () =>
-      new Map(
-        groups.map((group) => [
-          group.name,
-          (group.flow?.changedCount ?? 0) > 0,
-        ]),
-      ),
-    [groups],
-  );
-  const checkIsFlowExpanded = useEventCallback(
-    (name: string) =>
-      flowExpandedOverrides[name] ?? flowDefaultExpanded.get(name) ?? true,
-  );
-  const toggleFlowGroup = useEventCallback((name: string, value?: boolean) => {
-    const next = value ?? !checkIsFlowExpanded(name);
-    setFlowExpandedOverrides((previous) => ({ ...previous, [name]: next }));
-  });
-  const effectiveExpanded = useMemo(
-    () =>
-      grouping === "flow"
-        ? groups
-            .filter(
-              (group) =>
-                flowExpandedOverrides[group.name] ??
-                flowDefaultExpanded.get(group.name) ??
-                true,
-            )
-            .map((group) => group.name)
-        : expanded,
-    [grouping, groups, expanded, flowExpandedOverrides, flowDefaultExpanded],
-  );
-  const effectiveToggleGroup =
-    grouping === "flow" ? toggleFlowGroup : toggleGroup;
+  const groups = useMemo(() => {
+    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {}, orders);
+  }, [filteredDiffs, reviewState?.diffStatuses, orders]);
 
   const sortedDiffs = useMemo(() => {
     return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
@@ -966,7 +923,7 @@ export function BuildDiffProvider(props: {
       startTransition(() => {
         setScrolledDiff(diff);
         const group = getDiffGroup(diff)!;
-        effectiveToggleGroup(group.name, true);
+        toggleGroup(group.name, true);
       });
     }
   });
@@ -977,13 +934,13 @@ export function BuildDiffProvider(props: {
 
   useLayoutEffect(() => {
     if (initialDiffGroup?.name) {
-      effectiveToggleGroup(initialDiffGroup.name, true);
+      toggleGroup(initialDiffGroup.name, true);
       // oxlint-disable-next-line react/react-compiler
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup?.name, effectiveToggleGroup]);
+  }, [complete, initialDiffGroup?.name, toggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -1009,8 +966,8 @@ export function BuildDiffProvider(props: {
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
-      expanded: effectiveExpanded,
-      toggleGroup: effectiveToggleGroup,
+      expanded,
+      toggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
@@ -1029,8 +986,8 @@ export function BuildDiffProvider(props: {
       groups,
       sortedDiffs,
       screenshotDiffs,
-      effectiveExpanded,
-      effectiveToggleGroup,
+      expanded,
+      toggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
@@ -1051,9 +1008,9 @@ export function BuildDiffProvider(props: {
     <FilterStateContext value={filterState}>
       <SearchModeContext value={searchModeValue}>
         <SearchContext value={searchValue}>
-          <SidebarGroupingContext value={groupingValue}>
+          <FlowMinimapContext value={minimapValue}>
             <BuildDiffContext value={value}>{children}</BuildDiffContext>
-          </SidebarGroupingContext>
+          </FlowMinimapContext>
         </SearchContext>
       </SearchModeContext>
     </FilterStateContext>

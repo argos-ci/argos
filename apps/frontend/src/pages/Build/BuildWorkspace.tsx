@@ -17,6 +17,7 @@ import { Code } from "../../ui/Code";
 import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
+import { BuildFlowMinimap } from "./BuildFlowMinimap";
 import { BuildOverview } from "./BuildOverview";
 import { BuildParams } from "./BuildParams";
 import { BuildLeftSidebar } from "./LeftSidebar";
@@ -203,6 +204,7 @@ function Toolbar(props: { build: DocumentType<typeof _BuildFragment> }) {
         buildType={build.type ?? null}
         isSubsetBuild={build.subset}
       />
+      <BuildFlowMinimap />
     </div>
   );
 }
