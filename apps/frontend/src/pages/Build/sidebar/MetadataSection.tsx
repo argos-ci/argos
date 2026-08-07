@@ -7,6 +7,7 @@ import { AutomationLibraryRow } from "./metadata/AutomationLibraryRow";
 import { BaselineRow } from "./metadata/BaselineRow";
 import { BrowserRow } from "./metadata/BrowserRow";
 import { ColorSchemeRow } from "./metadata/ColorSchemeRow";
+import { FlowRow } from "./metadata/FlowRow";
 import { MediaTypeRow } from "./metadata/MediaTypeRow";
 import { RepeatRow } from "./metadata/RepeatRow";
 import { RetryRow } from "./metadata/RetryRow";
@@ -84,6 +85,7 @@ export function MetadataSection(props: MetadataSectionProps) {
             automationLibrary={metadata?.automationLibrary ?? null}
           />
           <TestRow test={test} branch={branch} repoUrl={repoUrl} />
+          <FlowRow />
           <AnnotationsRow
             annotations={test?.annotations ?? null}
             repoUrl={repoUrl}

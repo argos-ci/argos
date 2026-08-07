@@ -123,9 +123,10 @@ test("build review — journey order, flow context and minimap", async ({
   await page.goto(REVIEW_URL);
   await expect(page.getByText("checkout/payment").first()).toBeVisible();
 
-  // Status sections are the structure; the flow context lives in the header.
+  // Status sections are the structure; the flow context is a secondary line
+  // above the screenshot name (flow display name · step position).
   await expect(page.getByText("Changed", { exact: true })).toBeVisible();
-  await expect(page.getByText("complete a purchase · step 3/5")).toBeVisible();
+  await expect(page.getByText("complete a purchase · 3/5")).toBeVisible();
 
   // Within a section, diffs follow the journey: the two changed steps are
   // payment then confirmation (curated order), not alphabetical.
@@ -139,13 +140,13 @@ test("build review — journey order, flow context and minimap", async ({
   );
 
   // The minimap shows the journey on demand and navigates between steps.
-  await page.getByRole("button", { name: "Show flow minimap" }).click();
+  await page.getByRole("button", { name: "Flow minimap" }).click();
   await expect(page.locator("[data-flow-step]")).toHaveCount(5);
   await page.locator('[data-flow-step="checkout/review"]').click();
   await expect(page).toHaveURL(
     new RegExp(`/${seed.diffIds["checkout/review"]}$`),
   );
-  await expect(page.getByText("complete a purchase · step 4/5")).toBeVisible();
+  await expect(page.getByText("complete a purchase · 4/5")).toBeVisible();
   await page.mouse.move(760, 500);
   await page.screenshot({ path: path.join(OUT, "review-flow-light.png") });
 
