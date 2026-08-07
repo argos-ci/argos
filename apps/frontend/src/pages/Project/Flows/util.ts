@@ -251,6 +251,41 @@ export function useStoredOrders(params: {
   return { orders, setFlowOrder, resetFlowOrder };
 }
 
+/**
+ * Flow display names ("the UI curates"): test titles are developer
+ * vocabulary, the rename lives in the same curation layer as the step
+ * order. localStorage for the POC, server-side in production.
+ */
+export function useStoredNames(params: {
+  accountSlug: string;
+  projectName: string;
+}) {
+  const storageKey = `argos-flows-names:${params.accountSlug}/${params.projectName}`;
+  const [names, setNames] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const setFlowName = useCallback(
+    (flowKey: string, name: string | null) => {
+      setNames((previous) => {
+        const next = { ...previous };
+        if (name) {
+          next[flowKey] = name;
+        } else {
+          delete next[flowKey];
+        }
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+    [storageKey],
+  );
+  return { names, setFlowName };
+}
+
 export function getFlowURL(
   params: { accountSlug: string; projectName: string },
   flowKey: string,

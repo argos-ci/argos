@@ -1,9 +1,10 @@
 /**
  * Drives the app against the seeded Flows POC data and captures the
  * deliverable screenshots:
- * - the build review sidebar grouped by flow (the feature's core),
- * - the flows gallery (one cover per flow),
- * - the flow view (vertical, variant switcher, step reordering).
+ * - the build review: status sections with journey-ordered diffs, flow
+ *   context in the header, on-demand flow minimap,
+ * - the flows gallery (one cover per flow, renamable),
+ * - the flow view (sticky minimap, variant switcher, reordering, rename).
  *
  * Run `NODE_ENV=test node poc/seed.mjs > poc/seed-output.json` first.
  * Screenshots land in poc/shots/.
@@ -37,7 +38,7 @@ const CORRECT_ORDER = [
 
 async function setup(
   context,
-  { dark = false, presetOrder = false, flowGrouping = false } = {},
+  { dark = false, presetOrder = false, minimap = false } = {},
 ) {
   await context.addCookies([
     {
@@ -66,15 +67,15 @@ async function setup(
     }
   });
   await context.addInitScript(
-    ([dark, order, flowGrouping]) => {
+    ([dark, order, minimap]) => {
       if (dark) {
         localStorage.theme = "dark";
       }
       if (order) {
         localStorage.setItem(order.key, order.value);
       }
-      if (flowGrouping) {
-        localStorage.setItem("preferences.build.sidebar-grouping", "flow");
+      if (minimap) {
+        localStorage.setItem("preferences.build.flow-minimap", "true");
       }
     },
     [
@@ -85,7 +86,7 @@ async function setup(
             value: JSON.stringify({ [CHECKOUT_FLOW]: CORRECT_ORDER }),
           }
         : null,
-      flowGrouping,
+      minimap,
     ],
   );
 }
@@ -114,62 +115,46 @@ async function getStepOrder(page) {
     );
 }
 
-test("build review — sidebar grouped by flow", async ({ context, page }) => {
+test("build review — journey order, flow context and minimap", async ({
+  context,
+  page,
+}) => {
   await setup(context, { presetOrder: true });
   await page.goto(REVIEW_URL);
   await expect(page.getByText("checkout/payment").first()).toBeVisible();
 
-  // Switch the sidebar from status groups to flow groups.
-  await page.getByRole("button", { name: "Group by flow" }).click();
-  const checkoutGroup = page.locator(
-    `[data-flow-group=${JSON.stringify(CHECKOUT_FLOW)}]`,
+  // Status sections are the structure; the flow context lives in the header.
+  await expect(page.getByText("Changed", { exact: true })).toBeVisible();
+  await expect(page.getByText("complete a purchase · step 3/5")).toBeVisible();
+
+  // Within a section, diffs follow the journey: the two changed steps are
+  // payment then confirmation (curated order), not alphabetical.
+  await page.keyboard.press("ArrowDown");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/confirmation"]}$`),
   );
-  await expect(checkoutGroup).toBeVisible();
-  // The flow with changes sorts first; the other flows follow.
-  await expect(page.locator("[data-flow-group]").first()).toHaveAttribute(
-    "data-flow-group",
-    CHECKOUT_FLOW,
+  await page.keyboard.press("ArrowUp");
+  await expect(page).toHaveURL(
+    new RegExp(`/${seed.diffIds["checkout/payment"]}$`),
   );
 
-  // Untouched journeys start collapsed: their screenshots are hidden…
-  const signupRow = page.getByText("signup/create-account vw-1280.png");
-  await expect(signupRow).not.toBeVisible();
-  // …and the keyboard navigation skips them: payment → review →
-  // confirmation, then stays (remaining flows are collapsed).
-  await page.keyboard.press("ArrowDown");
+  // The minimap shows the journey on demand and navigates between steps.
+  await page.getByRole("button", { name: "Show flow minimap" }).click();
+  await expect(page.locator("[data-flow-step]")).toHaveCount(5);
+  await page.locator('[data-flow-step="checkout/review"]').click();
   await expect(page).toHaveURL(
     new RegExp(`/${seed.diffIds["checkout/review"]}$`),
   );
-  await page.keyboard.press("ArrowDown");
-  await expect(page).toHaveURL(
-    new RegExp(`/${seed.diffIds["checkout/confirmation"]}$`),
-  );
-  await page.keyboard.press("ArrowDown");
-  await expect(page).toHaveURL(
-    new RegExp(`/${seed.diffIds["checkout/confirmation"]}$`),
-  );
-
-  // A collapsed flow expands from its header.
-  await page
-    .locator(`[data-flow-group=${JSON.stringify(SIGNUP_FLOW)}]`)
-    .getByRole("button")
-    .click();
-  await expect(signupRow).toBeVisible();
-  await page
-    .locator(`[data-flow-group=${JSON.stringify(SIGNUP_FLOW)}]`)
-    .getByRole("button")
-    .click();
-  await expect(signupRow).not.toBeVisible();
-
-  await page.mouse.move(760, 400);
+  await expect(page.getByText("complete a purchase · step 4/5")).toBeVisible();
+  await page.mouse.move(760, 500);
   await page.screenshot({ path: path.join(OUT, "review-flow-light.png") });
 
-  // The grouping preference survives a reload.
+  // The minimap preference survives a reload.
   await page.reload();
-  await expect(checkoutGroup).toBeVisible();
+  await expect(page.locator("[data-flow-step]")).toHaveCount(5);
 
-  // The flow header links to the flow view.
-  await page.getByRole("link", { name: "Open flow" }).first().click();
+  // Open flow lands on the flow view.
+  await page.getByRole("link", { name: "Open flow" }).click();
   await expect(page).toHaveURL(new RegExp("/flows/checkout"));
 });
 
@@ -202,11 +187,13 @@ test("flow view — capture order and variant switcher", async ({
   ).toBeVisible();
   // The SDK capture index orders steps: "all-done" is alphabetically first
   // but captured last.
-  expect(await getStepOrder(page)).toEqual([
-    "signup/create-account",
-    "signup/verify-email",
-    "signup/all-done",
-  ]);
+  await expect
+    .poll(() => getStepOrder(page))
+    .toEqual([
+      "signup/create-account",
+      "signup/verify-email",
+      "signup/all-done",
+    ]);
   await waitForImages(page);
   await page.screenshot({ path: path.join(OUT, "flow-signup-desktop.png") });
 
@@ -218,6 +205,26 @@ test("flow view — capture order and variant switcher", async ({
   );
   await waitForImages(page);
   await page.screenshot({ path: path.join(OUT, "flow-signup-mobile.png") });
+});
+
+test("flow view — rename from the UI", async ({ context, page }) => {
+  await setup(context);
+  await page.goto(SIGNUP_FLOW_URL);
+  await page.getByRole("button", { name: "Rename flow" }).click();
+  await page.getByRole("textbox", { name: "Flow name" }).fill("Inscription");
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Inscription" }),
+  ).toBeVisible();
+  // Persisted, and reflected in the gallery.
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Inscription" }),
+  ).toBeVisible();
+  await page.goto(FLOWS_URL);
+  await expect(
+    page.locator(`[data-flow-card=${JSON.stringify(SIGNUP_FLOW)}]`),
+  ).toContainText("Inscription");
 });
 
 test("flow view — manual reordering, persisted", async ({ context, page }) => {
@@ -240,12 +247,12 @@ test("flow view — manual reordering, persisted", async ({ context, page }) => 
 
   const moveUp = (step) =>
     page
-      .locator(`[data-flow-step=${JSON.stringify(step)}]`)
+      .locator(`[data-flow-step-section=${JSON.stringify(step)}]`)
       .getByRole("button", { name: "Move up" })
       .click();
   const moveDown = (step) =>
     page
-      .locator(`[data-flow-step=${JSON.stringify(step)}]`)
+      .locator(`[data-flow-step-section=${JSON.stringify(step)}]`)
       .getByRole("button", { name: "Move down" })
       .click();
 
@@ -257,9 +264,7 @@ test("flow view — manual reordering, persisted", async ({ context, page }) => 
 
   await expect.poll(() => getStepOrder(page)).toEqual(CORRECT_ORDER);
   await expect(page.getByText("Custom order")).toBeVisible();
-  await page.screenshot({
-    path: path.join(OUT, "flow-checkout-ordered.png"),
-  });
+  await page.screenshot({ path: path.join(OUT, "flow-checkout-ordered.png") });
 
   // The order survives a reload (persisted per project + flow).
   await page.reload();
@@ -282,12 +287,10 @@ test("fallback: no reference build, storybook grouping", async ({
   );
 });
 
-test("dark — review grouped by flow and gallery", async ({ context, page }) => {
-  await setup(context, { dark: true, presetOrder: true, flowGrouping: true });
+test("dark — review with minimap and gallery", async ({ context, page }) => {
+  await setup(context, { dark: true, presetOrder: true, minimap: true });
   await page.goto(REVIEW_URL);
-  await expect(
-    page.locator(`[data-flow-group=${JSON.stringify(CHECKOUT_FLOW)}]`),
-  ).toBeVisible();
+  await expect(page.locator("[data-flow-step]")).toHaveCount(5);
   await page.screenshot({ path: path.join(OUT, "review-flow-dark.png") });
 
   await page.goto(FLOWS_URL);
