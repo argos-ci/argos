@@ -94,6 +94,18 @@ const hotkeyGroups = [
         description: "Go to next media",
         envs: ["media"],
       },
+      goToPreviousFlowStep: {
+        keys: ["⇧", "ArrowLeft"],
+        displayKeys: ["⇧", "←"],
+        description: "Go to previous flow step",
+        envs: ["test", "build"],
+      },
+      goToNextFlowStep: {
+        keys: ["⇧", "ArrowRight"],
+        displayKeys: ["⇧", "→"],
+        description: "Go to next flow step",
+        envs: ["test", "build"],
+      },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],
@@ -360,10 +372,24 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
-  // Only demanded, never forbidden: plenty of existing keys ("?") are typed
-  // *with* shift without declaring it.
   if (shiftShouldBePressed && !event.shiftKey) {
     return false;
+  }
+  if (!shiftShouldBePressed && event.shiftKey) {
+    // Shift may be needed to produce printable keys like "?", so only treat
+    // it as discriminating for physical keys, where holding it can only mean
+    // another shortcut (e.g. ⇧← vs ←).
+    const physicalKeysOnly = hotkey.keys.every(
+      (key) =>
+        key === "⌘" ||
+        key === "⌥" ||
+        key.startsWith("Key") ||
+        key.startsWith("Digit") ||
+        key.startsWith("Arrow"),
+    );
+    if (physicalKeysOnly) {
+      return false;
+    }
   }
 
   return hotkey.keys.every((key) => {

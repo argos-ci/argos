@@ -17,7 +17,7 @@ import { Code } from "../../ui/Code";
 import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
-import { BuildFlowMinimap } from "./BuildFlowMinimap";
+import { BuildFlowMinimap, FlowStepHotkeys } from "./BuildFlowMinimap";
 import { BuildOverview } from "./BuildOverview";
 import { BuildParams } from "./BuildParams";
 import { BuildLeftSidebar } from "./LeftSidebar";
@@ -119,6 +119,7 @@ export function BuildWorkspace(props: {
         <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <BuildDetailProviders>
+            <FlowStepHotkeys />
             <Toolbar build={build} />
             <div className="bg-subtle flex min-h-0 flex-1">
               {(() => {
