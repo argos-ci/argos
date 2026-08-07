@@ -24,7 +24,16 @@ import {
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
+import {
+  compareSteps,
+  getCaptureIndex,
+  getStepKey,
+  getVariantLabel,
+  resolveFlowIdentity,
+  type FlowIdentity,
+} from "@/util/flow-model";
 
+import { useStoredOrders } from "../Project/Flows/util";
 import {
   getBuildOverviewURL,
   getBuildURL,
@@ -38,6 +47,7 @@ import {
   diffMatchesFilters,
   useCreateFilterState,
 } from "./metadata/filters/util";
+import { resolveDiffMetadata } from "./sidebar/metadata/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -84,6 +94,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -146,6 +159,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -554,6 +570,109 @@ function groupDiffs(
   );
 }
 
+/** Sidebar grouping mode: by review status (default) or by user flow. */
+export type SidebarGrouping = "status" | "flow";
+
+const SIDEBAR_GROUPING_STORAGE_KEY = "preferences.build.sidebar-grouping";
+
+function readStoredSidebarGrouping(): SidebarGrouping {
+  return localStorage.getItem(SIDEBAR_GROUPING_STORAGE_KEY) === "flow"
+    ? "flow"
+    : "status";
+}
+
+type SidebarGroupingContextValue = {
+  grouping: SidebarGrouping;
+  setGrouping: (grouping: SidebarGrouping) => void;
+};
+
+const SidebarGroupingContext =
+  createContext<SidebarGroupingContextValue | null>(null);
+
+export function useSidebarGrouping() {
+  const context = use(SidebarGroupingContext);
+  invariant(
+    context,
+    "useSidebarGrouping must be used within a BuildDiffProvider",
+  );
+  return context;
+}
+
+const ATTENTION_STATUSES: string[] = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+];
+
+/**
+ * Groups diffs by user flow (see `@/util/flow-model`): one group per test
+ * with screenshots, diffs ordered by step (curated order, then capture
+ * index, then alphabetical) so reviewing follows the journey. Screenshots
+ * without flow information gather in a trailing group.
+ */
+function groupDiffsByFlow(
+  diffs: Diff[],
+  orders: Record<string, string[]>,
+): DiffGroup<Diff>[] {
+  const byKey = new Map<string, { identity: FlowIdentity; diffs: Diff[] }>();
+  const others: Diff[] = [];
+  for (const diff of diffs) {
+    const metadata = resolveDiffMetadata(diff);
+    const identity = resolveFlowIdentity({ name: diff.name, metadata });
+    if (!identity) {
+      others.push(diff);
+      continue;
+    }
+    const entry = byKey.get(identity.key) ?? { identity, diffs: [] };
+    byKey.set(identity.key, entry);
+    entry.diffs.push(diff);
+  }
+  const toStep = (diff: Diff) => ({
+    key: getStepKey(diff.name),
+    captureIndex: getCaptureIndex({
+      name: diff.name,
+      metadata: resolveDiffMetadata(diff),
+    }),
+  });
+  const changedCount = (diffs: Diff[]) =>
+    diffs.filter((diff) => ATTENTION_STATUSES.includes(diff.status)).length;
+  const groups: DiffGroup<Diff>[] = [...byKey.values()]
+    .map(({ identity, diffs }) => {
+      const storedOrder = orders[identity.key];
+      const sorted = diffs.toSorted(
+        (a, b) =>
+          compareSteps(toStep(a), toStep(b), storedOrder) ||
+          getVariantLabel(a.name).localeCompare(getVariantLabel(b.name)) ||
+          a.name.localeCompare(b.name),
+      );
+      return {
+        name: `flow:${identity.key}`,
+        diffs: sorted,
+        flow: { ...identity, changedCount: changedCount(diffs) },
+      };
+    })
+    .toSorted(
+      (a, b) =>
+        Number((b.flow?.changedCount ?? 0) > 0) -
+          Number((a.flow?.changedCount ?? 0) > 0) ||
+        (a.flow?.key ?? "").localeCompare(b.flow?.key ?? ""),
+    );
+  if (others.length > 0) {
+    groups.push({
+      name: "flow:others",
+      diffs: others.toSorted((a, b) => a.name.localeCompare(b.name)),
+      flow: {
+        key: "",
+        prefix: "",
+        title: "Other screenshots",
+        changedCount: changedCount(others),
+      },
+    });
+  }
+  return groups;
+}
+
 type SearchModeContextValue = {
   searchMode: boolean;
   setSearchMode: (enabled: boolean) => void;
@@ -727,9 +846,31 @@ export function BuildDiffProvider(props: {
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
+  const [grouping, setGroupingState] = useState<SidebarGrouping>(
+    readStoredSidebarGrouping,
+  );
+  const setGrouping = useCallback((value: SidebarGrouping) => {
+    localStorage.setItem(SIDEBAR_GROUPING_STORAGE_KEY, value);
+    setGroupingState(value);
+  }, []);
+  const groupingValue = useMemo(
+    (): SidebarGroupingContextValue => ({ grouping, setGrouping }),
+    [grouping, setGrouping],
+  );
+  const { orders } = useStoredOrders(params);
+
   const groups = useMemo(() => {
+    if (grouping === "flow") {
+      return groupDiffsByFlow(filteredDiffs, orders);
+    }
     return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
-  }, [filteredDiffs, reviewState?.diffStatuses]);
+  }, [grouping, orders, filteredDiffs, reviewState?.diffStatuses]);
+
+  // Flow groups have no collapsed state: the journey always reads in full.
+  const effectiveExpanded = useMemo(
+    () => (grouping === "flow" ? groups.map((group) => group.name) : expanded),
+    [grouping, groups, expanded],
+  );
 
   const sortedDiffs = useMemo(() => {
     return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
@@ -803,7 +944,7 @@ export function BuildDiffProvider(props: {
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
-      expanded,
+      expanded: effectiveExpanded,
       toggleGroup,
       activeDiff,
       setActiveDiff,
@@ -823,7 +964,7 @@ export function BuildDiffProvider(props: {
       groups,
       sortedDiffs,
       screenshotDiffs,
-      expanded,
+      effectiveExpanded,
       toggleGroup,
       activeDiff,
       setActiveDiff,
@@ -845,7 +986,9 @@ export function BuildDiffProvider(props: {
     <FilterStateContext value={filterState}>
       <SearchModeContext value={searchModeValue}>
         <SearchContext value={searchValue}>
-          <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          <SidebarGroupingContext value={groupingValue}>
+            <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          </SidebarGroupingContext>
         </SearchContext>
       </SearchModeContext>
     </FilterStateContext>

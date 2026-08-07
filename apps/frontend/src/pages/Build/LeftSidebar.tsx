@@ -1,5 +1,5 @@
 import { memo, startTransition, useCallback, useRef } from "react";
-import { SearchIcon, XIcon } from "lucide-react";
+import { SearchIcon, WaypointsIcon, XIcon } from "lucide-react";
 import { TabList as RACTabList, TabPanel, Tabs } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -8,9 +8,14 @@ import { BuildType } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { PillTab } from "@/ui/Tab";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { BuildDiffList } from "./BuildDiffList";
-import { useSearchModeState, useSearchState } from "./BuildDiffState";
+import {
+  useSearchModeState,
+  useSearchState,
+  useSidebarGrouping,
+} from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
@@ -49,6 +54,31 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
         }}
       />
     </div>
+  );
+}
+
+function GroupByFlowButton() {
+  const { grouping, setGrouping } = useSidebarGrouping();
+  const active = grouping === "flow";
+  return (
+    <Tooltip
+      content={
+        active
+          ? "Group screenshots by status"
+          : "Group screenshots by flow, following each journey's step order"
+      }
+    >
+      <Button
+        variant={active ? "secondary" : "ghost"}
+        iconOnly
+        size="small"
+        aria-label="Group by flow"
+        aria-pressed={active}
+        onPress={() => setGrouping(active ? "status" : "flow")}
+      >
+        <WaypointsIcon />
+      </Button>
+    </Tooltip>
   );
 }
 
@@ -137,6 +167,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                   <SearchIcon />
                 </Button>
               </HotkeyTooltip>
+              <GroupByFlowButton />
             </>
           )}
           <FilterButton />

@@ -8,11 +8,13 @@ import {
 } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import {
+  ArrowUpRightIcon,
   ChevronDownIcon,
   CornerDownRightIcon,
   HomeIcon,
   ImagesIcon,
   SquareStackIcon,
+  WaypointsIcon,
 } from "lucide-react";
 import memoize from "memoize";
 import {
@@ -47,6 +49,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
+import { getFlowURL } from "../Project/Flows/util";
 import {
   Diff,
   DiffResult,
@@ -294,6 +297,63 @@ function getRows(
   );
 }
 
+function FlowListHeader(props: {
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  item: ListHeaderRow;
+  activeIndex: number;
+}) {
+  const { style, item, activeIndex } = props;
+  const params = useBuildParams();
+  const flow = item.group.flow;
+  invariant(flow, "FlowListHeader requires a flow group");
+  const borderB = item.borderBottom ? "border-b-thin" : "";
+  return (
+    <div
+      className={clsx(
+        borderB,
+        "group/list-header bg-app border-t-thin z-10 flex w-full items-center gap-1.5 pr-2 pl-2 select-none",
+      )}
+      style={style}
+      data-flow-group={flow.key || "others"}
+    >
+      <WaypointsIcon className="text-low size-3 shrink-0" />
+      <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+        {flow.prefix ? (
+          <span className="text-low truncate font-mono text-[0.6875rem]">
+            {flow.prefix} ›
+          </span>
+        ) : null}
+        <span className="text-default truncate text-sm font-medium">
+          {flow.title}
+        </span>
+      </div>
+      {flow.key && params ? (
+        <LinkButton
+          href={`${getFlowURL(params, flow.key)}`}
+          variant="ghost"
+          iconOnly
+          size="small"
+          aria-label="Open flow"
+          className="shrink-0 opacity-0 transition group-hover/sidebar:opacity-100"
+        >
+          <ArrowUpRightIcon />
+        </LinkButton>
+      ) : null}
+      <Badge className="shrink-0">
+        {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
+        {flow.changedCount > 0 ? (
+          <>
+            {item.count}
+            <span className="text-warning-low"> · {flow.changedCount}</span>
+          </>
+        ) : (
+          item.count
+        )}
+      </Badge>
+    </div>
+  );
+}
+
 function ListHeader(props: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
   onClick: RACButtonProps["onPress"];
@@ -302,7 +362,12 @@ function ListHeader(props: {
 }) {
   const { style, onClick, item, activeIndex } = props;
   const borderB = item.borderBottom ? "border-b-thin" : "";
-  const def = getDiffGroupDefinition(item.name);
+  if (item.group.flow) {
+    return (
+      <FlowListHeader style={style} item={item} activeIndex={activeIndex} />
+    );
+  }
+  const def = getDiffGroupDefinition(item.name as DiffGroupName);
   return (
     <RACButton
       className={clsx(

@@ -91,21 +91,56 @@ const SCREENS = [
     url: "https://atelier-shop.example.com/checkout/confirmation",
     test: CHECKOUT_TEST,
   },
+  /*
+   * The signup flow demonstrates two things: viewport variants (vw-1280 and
+   * vw-414 collapse into one step per screen) and the SDK capture index
+   * ("all-done" sorts last despite being first alphabetically).
+   */
   {
-    name: "signup/create-account",
+    name: "signup/create-account vw-1280.png",
     key: "flowpoc-signup-account.png",
+    viewport: { width: 1280, height: 832 },
+    capture: 0,
     url: "https://atelier-shop.example.com/signup",
     test: SIGNUP_TEST,
   },
   {
-    name: "signup/verify-email",
+    name: "signup/create-account vw-414.png",
+    key: "flowpoc-signup-account-vw414.png",
+    viewport: { width: 414, height: 832 },
+    capture: 0,
+    url: "https://atelier-shop.example.com/signup",
+    test: SIGNUP_TEST,
+  },
+  {
+    name: "signup/verify-email vw-1280.png",
     key: "flowpoc-signup-verify.png",
+    viewport: { width: 1280, height: 832 },
+    capture: 1,
     url: "https://atelier-shop.example.com/signup/verify",
     test: SIGNUP_TEST,
   },
   {
-    name: "signup/welcome",
+    name: "signup/verify-email vw-414.png",
+    key: "flowpoc-signup-verify-vw414.png",
+    viewport: { width: 414, height: 832 },
+    capture: 1,
+    url: "https://atelier-shop.example.com/signup/verify",
+    test: SIGNUP_TEST,
+  },
+  {
+    name: "signup/all-done vw-1280.png",
     key: "flowpoc-signup-welcome.png",
+    viewport: { width: 1280, height: 832 },
+    capture: 2,
+    url: "https://atelier-shop.example.com/welcome",
+    test: SIGNUP_TEST,
+  },
+  {
+    name: "signup/all-done vw-414.png",
+    key: "flowpoc-signup-welcome-vw414.png",
+    viewport: { width: 414, height: 832 },
+    capture: 2,
     url: "https://atelier-shop.example.com/welcome",
     test: SIGNUP_TEST,
   },
@@ -153,18 +188,19 @@ const project = await createProject({
 });
 
 /* Files */
-const fileKeys = new Set();
+const fileDimensions = new Map();
 for (const screen of SCREENS) {
-  fileKeys.add(screen.key);
+  const viewport = screen.viewport ?? VIEWPORT;
+  fileDimensions.set(screen.key, viewport);
   if (screen.v2Key) {
-    fileKeys.add(screen.v2Key);
+    fileDimensions.set(screen.v2Key, viewport);
   }
 }
 const screenshotFiles = await File.query().insertAndFetch(
-  [...fileKeys].map((key) => ({
+  [...fileDimensions].map(([key, viewport]) => ({
     type: "screenshot",
-    width: VIEWPORT.width,
-    height: VIEWPORT.height,
+    width: viewport.width,
+    height: viewport.height,
     key,
     contentType: "image/png",
   })),
@@ -231,6 +267,10 @@ function screenshotProps(screen, bucket, key) {
     metadata: metadata({
       url: screen.url,
       test: screen.test,
+      viewport: screen.viewport ?? VIEWPORT,
+      ...(screen.capture !== undefined
+        ? { capture: { index: screen.capture } }
+        : {}),
     }),
   };
 }

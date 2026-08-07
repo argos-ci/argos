@@ -20,8 +20,9 @@ import { NotFound } from "../../NotFound";
 import { useProjectParams, type ProjectParams } from "../ProjectParams";
 import { ProjectTitle } from "../ProjectTitle";
 import {
-  applyStoredOrder,
   getFlowURL,
+  orderSteps,
+  pickVariant,
   useProjectFlows,
   useStoredOrders,
   type Flow,
@@ -33,8 +34,9 @@ function FlowCard(props: {
   storedOrder: string[] | undefined;
 }) {
   const { flow, params, storedOrder } = props;
-  const cover = applyStoredOrder(flow.steps, storedOrder)[0];
+  const cover = orderSteps(flow.steps, storedOrder)[0];
   invariant(cover, "a flow always has at least one step");
+  const coverVariant = pickVariant(cover, null);
   return (
     <Link
       to={getFlowURL(params, flow.key)}
@@ -43,7 +45,7 @@ function FlowCard(props: {
     >
       <div className="aspect-4/3 overflow-hidden border-b bg-white">
         <ImageKitPicture
-          src={cover.screenshot.url}
+          src={coverVariant.screenshot.url}
           transformations={["w-640", "h-640", "c-at_max"]}
           className="size-full object-contain"
           alt=""
@@ -59,6 +61,9 @@ function FlowCard(props: {
           <div className="truncate text-sm font-medium">{flow.title}</div>
           <div className="text-low shrink-0 text-xs">
             {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
+            {flow.variantLabels.length > 1
+              ? ` · ${flow.variantLabels.length} variants`
+              : ""}
           </div>
         </div>
       </div>
