@@ -129,6 +129,15 @@ const StoryMetadataSchema = z
   })
   .meta({ description: "Storybook story metadata" });
 
+const CaptureSchema = z
+  .object({
+    index: z.number().int().min(0).meta({
+      description:
+        "The 0-based position of the screenshot within its test, following capture order",
+    }),
+  })
+  .meta({ description: "How the screenshot was captured within its test" });
+
 export const ScreenshotMetadataSchema = z
   .object({
     $schema: z
@@ -162,6 +171,7 @@ export const ScreenshotMetadataSchema = z
     story: StoryMetadataSchema.nullish().meta({
       description: "Storybook story metadata",
     }),
+    capture: CaptureSchema.nullish(),
     tags: z
       .array(z.string())
       .optional()

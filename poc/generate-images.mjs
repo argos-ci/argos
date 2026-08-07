@@ -416,6 +416,121 @@ const signupWelcome = page(
   ),
 );
 
+/* ---------- Signup screens — mobile variants (414×832) ---------- */
+
+const MW = 414;
+const MH = 832;
+
+function mobilePage(body) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${MW}" height="${MH}" viewBox="0 0 ${MW} ${MH}">${rect(0, 0, MW, MH, { fill: SUBTLE })}${body}</svg>`;
+}
+
+function mobileCard(body, h) {
+  const cx = 22;
+  const cy = (MH - h) / 2;
+  return (
+    text(MW / 2, 84, "Atelier", {
+      size: 19,
+      weight: 700,
+      anchor: "middle",
+      spacing: -0.3,
+    }) +
+    rect(cx, cy, MW - 44, h, { fill: BG, stroke: LINE, rx: 14 }) +
+    body(cx + 20, cy + 32)
+  );
+}
+
+const signupAccountMobile = mobilePage(
+  mobileCard(
+    (x, y) =>
+      text(x, y + 10, "Create your account", {
+        size: 19,
+        weight: 700,
+        spacing: -0.4,
+      }) +
+      text(x, y + 34, "Start collecting objects made to last.", {
+        size: 12.5,
+        color: MUTED,
+      }) +
+      input(x, y + 58, 330, "Email", "lea@example.com") +
+      input(x, y + 140, 330, "Password", "••••••••••") +
+      button(x, y + 230, 330, "Create account") +
+      text(x + 165, y + 304, "Already have an account? Sign in", {
+        size: 12,
+        color: MUTED,
+        anchor: "middle",
+      }),
+    380,
+  ),
+);
+
+const signupVerifyMobile = mobilePage(
+  mobileCard((x, y) => {
+    let out =
+      text(x, y + 10, "Check your inbox", {
+        size: 19,
+        weight: 700,
+        spacing: -0.4,
+      }) +
+      text(x, y + 34, "We sent a 6-digit code.", { size: 12.5, color: MUTED });
+    for (let i = 0; i < 6; i++) {
+      out += rect(x + i * 56, y + 58, 46, 54, {
+        fill: BG,
+        stroke: i < 3 ? INK : LINE,
+        rx: 8,
+        sw: i < 3 ? 1.5 : 1,
+      });
+      if (i < 3) {
+        out += text(x + i * 56 + 23, y + 93, String([7, 4, 2][i]), {
+          size: 20,
+          weight: 600,
+          anchor: "middle",
+        });
+      }
+    }
+    return (
+      out +
+      button(x, y + 140, 330, "Verify email") +
+      text(x + 165, y + 212, "Resend code", {
+        size: 12,
+        color: MUTED,
+        anchor: "middle",
+      })
+    );
+  }, 300),
+);
+
+const signupWelcomeMobile = mobilePage(
+  mobileCard(
+    (x, y) =>
+      `<circle cx="${x + 165}" cy="${y + 36}" r="28" fill="#ede9fe"/>` +
+      text(x + 165, y + 44, "L", {
+        size: 22,
+        weight: 700,
+        color: ACCENT,
+        anchor: "middle",
+      }) +
+      text(x + 165, y + 104, "Welcome, Léa", {
+        size: 19,
+        weight: 700,
+        anchor: "middle",
+        spacing: -0.4,
+      }) +
+      text(x + 165, y + 128, "Your account is ready.", {
+        size: 12.5,
+        color: MUTED,
+        anchor: "middle",
+      }) +
+      button(x, y + 162, 330, "Start shopping") +
+      text(x + 165, y + 232, "Explore the fall collection", {
+        size: 12,
+        color: MUTED,
+        anchor: "middle",
+      }),
+    320,
+  ),
+);
+
 /* ---------- Standalone screen (no flow) ---------- */
 
 const settings = page(
@@ -489,6 +604,9 @@ const files = {
   "flowpoc-signup-account.png": signupAccount,
   "flowpoc-signup-verify.png": signupVerify,
   "flowpoc-signup-welcome.png": signupWelcome,
+  "flowpoc-signup-account-vw414.png": signupAccountMobile,
+  "flowpoc-signup-verify-vw414.png": signupVerifyMobile,
+  "flowpoc-signup-welcome-vw414.png": signupWelcomeMobile,
   "flowpoc-settings.png": settings,
   "flowpoc-diff-payment.png": paymentMask,
   "flowpoc-diff-confirmation.png": confirmationMask,

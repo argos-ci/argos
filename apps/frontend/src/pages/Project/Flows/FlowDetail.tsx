@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ArrowLeftIcon, GripVerticalIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon } from "lucide-react";
 import { Link, useParams } from "react-router";
 
 import { Button } from "@/ui/Button";
@@ -19,152 +19,131 @@ import {
 } from "../ProjectParams";
 import { ProjectTitle } from "../ProjectTitle";
 import {
-  applyStoredOrder,
+  orderSteps,
+  pickVariant,
   useProjectFlows,
   useStoredOrders,
   type Flow,
   type FlowsBuild,
 } from "./util";
 
+function VariantSwitcher(props: {
+  labels: string[];
+  selected: string;
+  onSelect: (label: string) => void;
+}) {
+  const { labels, selected, onSelect } = props;
+  if (labels.length < 2) {
+    return null;
+  }
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-md border p-0.5"
+      role="radiogroup"
+      aria-label="Variant"
+    >
+      {labels.map((label) => (
+        <button
+          key={label}
+          type="button"
+          role="radio"
+          aria-checked={label === selected}
+          onClick={() => onSelect(label)}
+          className={clsx(
+            "rounded px-2 py-0.5 text-xs transition",
+            label === selected
+              ? "bg-active text-default font-medium"
+              : "text-low hover:text-default",
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Storyboard(props: {
   flow: Flow;
   build: FlowsBuild;
   params: ProjectParams;
+  selectedVariant: string;
   storedOrder: string[] | undefined;
-  onReorder: (names: string[]) => void;
+  onReorder: (stepKeys: string[]) => void;
 }) {
-  const { flow, build, params, storedOrder, onReorder } = props;
+  const { flow, build, params, selectedVariant, storedOrder, onReorder } =
+    props;
   const steps = useMemo(
-    () => applyStoredOrder(flow.steps, storedOrder),
+    () => orderSteps(flow.steps, storedOrder),
     [flow.steps, storedOrder],
   );
-  const [dragName, setDragName] = useState<string | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
 
-  const drop = (targetIndex: number) => {
-    if (dragName === null) {
+  const move = (index: number, delta: -1 | 1) => {
+    const keys = steps.map((step) => step.key);
+    const target = index + delta;
+    if (target < 0 || target >= keys.length) {
       return;
     }
-    const names = steps.map((step) => step.screenshot.name);
-    const fromIndex = names.indexOf(dragName);
-    if (fromIndex !== -1 && fromIndex !== targetIndex) {
-      names.splice(fromIndex, 1);
-      names.splice(
-        targetIndex > fromIndex ? targetIndex - 1 : targetIndex,
-        0,
-        dragName,
-      );
-      onReorder(names);
-    }
-    setDragName(null);
-    setOverIndex(null);
+    const [moved] = keys.splice(index, 1);
+    keys.splice(target, 0, moved as string);
+    onReorder(keys);
   };
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-8 pt-6 pb-8"
-      data-flow-strip={flow.key}
-      onDragOver={(event) => {
-        // Dragging past the last card drops at the end of the flow.
-        event.preventDefault();
-        setOverIndex(steps.length);
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        drop(steps.length);
-      }}
-    >
-      {steps.map((step, index) => (
-        <div
-          key={step.edge.id}
-          className="flex items-center gap-3"
-          data-flow-step={step.screenshot.name}
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.setData("text/plain", step.screenshot.name);
-            event.dataTransfer.effectAllowed = "move";
-            setDragName(step.screenshot.name);
-          }}
-          onDragEnd={() => {
-            setDragName(null);
-            setOverIndex(null);
-          }}
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setOverIndex(index);
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            drop(index);
-          }}
-        >
-          <div
-            className={clsx(
-              "group w-[26rem] max-w-[80vw] rounded-lg",
-              dragName === step.screenshot.name && "opacity-40",
-              overIndex === index &&
-                dragName !== null &&
-                dragName !== step.screenshot.name &&
-                "ring-primary-active ring-2 ring-offset-2",
-            )}
-          >
+    <div className="flex max-w-4xl flex-col gap-8 pt-6 pb-16">
+      {steps.map((step, index) => {
+        const variant = pickVariant(step, selectedVariant);
+        return (
+          <div key={step.key} data-flow-step={step.key} className="group">
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="text-low text-sm tabular-nums">{index + 1}</span>
+              <span className="font-medium">{step.label}</span>
+              <span className="text-low truncate text-xs">
+                {variant.screenshot.name}
+              </span>
+              <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+                <Button
+                  variant="secondary"
+                  size="small"
+                  iconOnly
+                  aria-label="Move up"
+                  isDisabled={index === 0}
+                  onPress={() => move(index, -1)}
+                >
+                  <ArrowUpIcon />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  iconOnly
+                  aria-label="Move down"
+                  isDisabled={index === steps.length - 1}
+                  onPress={() => move(index, 1)}
+                >
+                  <ArrowDownIcon />
+                </Button>
+              </div>
+            </div>
             <Link
               to={getBuildURL({
                 accountSlug: params.accountSlug,
                 projectName: params.projectName,
                 buildNumber: build.number,
-                diffId: step.edge.id,
+                diffId: variant.edge.id,
               })}
-              draggable={false}
-              className="block"
+              className="hover:border-hover block w-fit max-w-full overflow-hidden rounded-lg border bg-white shadow-xs transition"
             >
-              <div className="group-hover:border-hover relative aspect-4/3 cursor-grab overflow-hidden rounded-lg border bg-white shadow-xs transition active:cursor-grabbing">
-                <ImageKitPicture
-                  src={step.screenshot.url}
-                  transformations={["w-960", "h-960", "c-at_max"]}
-                  className="size-full object-contain"
-                  alt={step.label}
-                />
-                <GripVerticalIcon className="text-low absolute top-2 right-2 size-4 opacity-0 transition group-hover:opacity-100" />
-              </div>
-              <div className="mt-2.5 flex items-baseline gap-2 px-1">
-                <span className="text-low text-sm tabular-nums">
-                  {index + 1}
-                </span>
-                <span className="truncate font-medium">{step.label}</span>
-                <span className="text-low ml-auto shrink-0 text-xs">
-                  {step.screenshot.name}
-                </span>
-              </div>
+              <ImageKitPicture
+                key={variant.edge.id}
+                src={variant.screenshot.url}
+                transformations={["w-1400", "h-1400", "c-at_max"]}
+                className="block max-h-160 w-auto max-w-full"
+                alt={step.label}
+              />
             </Link>
           </div>
-        </div>
-      ))}
-      {/* Dedicated end-of-flow drop target: the strip overflows on wide
-          flows, so its own right edge is covered by cards. */}
-      <div
-        data-flow-dropend
-        aria-hidden
-        className={clsx(
-          "h-40 w-12 shrink-0 rounded-lg",
-          dragName !== null && "border border-dashed",
-          overIndex === steps.length &&
-            dragName !== null &&
-            "ring-primary-active ring-2",
-        )}
-        onDragOver={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          setOverIndex(steps.length);
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          drop(steps.length);
-        }}
-      />
+        );
+      })}
     </div>
   );
 }
@@ -173,6 +152,7 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
   const { params, flowId } = props;
   const { project, build, flows } = useProjectFlows(params);
   const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
+  const [variant, setVariant] = useState<string | null>(null);
 
   if (!project) {
     return <NotFound />;
@@ -185,6 +165,7 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
   }
 
   const storedOrder = orders[flow.key];
+  const selectedVariant = variant ?? flow.variantLabels[0] ?? "default";
 
   return (
     <PageContainer>
@@ -196,14 +177,13 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
           <ArrowLeftIcon className="size-3.5" />
           Flows
         </Link>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {flow.prefix && (
             <span className="text-low font-mono text-sm">{flow.prefix} ›</span>
           )}
           <h1 className="text-xl font-semibold">{flow.title}</h1>
           <span className="text-low text-sm">
-            {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""} · drag to
-            set their order
+            {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
           </span>
           <div className="ml-auto flex items-center gap-3">
             {storedOrder && (
@@ -218,6 +198,11 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
                 </Button>
               </>
             )}
+            <VariantSwitcher
+              labels={flow.variantLabels}
+              selected={selectedVariant}
+              onSelect={setVariant}
+            />
             <Chip scale="sm">
               From build #{build.number} on {build.branch} ·{" "}
               <Time date={build.createdAt} />
@@ -229,8 +214,9 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
         flow={flow}
         build={build}
         params={params}
+        selectedVariant={selectedVariant}
         storedOrder={storedOrder}
-        onReorder={(names) => setFlowOrder(flow.key, names)}
+        onReorder={(stepKeys) => setFlowOrder(flow.key, stepKeys)}
       />
     </PageContainer>
   );

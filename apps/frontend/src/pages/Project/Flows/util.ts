@@ -2,8 +2,15 @@ import { useCallback, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 
 import { graphql, type DocumentType } from "@/gql";
-
-import type { ProjectParams } from "../ProjectParams";
+import {
+  compareSteps,
+  getCaptureIndex,
+  getStepKey,
+  getStepLabel,
+  getVariantLabel,
+  resolveFlowIdentity,
+  type FlowIdentity,
+} from "@/util/flow-model";
 
 const _BuildFragment = graphql(`
   fragment ProjectFlows_Build on Build {
@@ -29,6 +36,9 @@ const _BuildFragment = graphql(`
             }
             story {
               id
+            }
+            capture {
+              index
             }
           }
         }
@@ -56,86 +66,103 @@ const ProjectFlowsQuery = graphql(`
 export type FlowsBuild = DocumentType<typeof _BuildFragment>;
 type DiffEdge = FlowsBuild["screenshotDiffs"]["edges"][0];
 
-export type FlowStep = {
+export type FlowStepVariant = {
   edge: DiffEdge;
   screenshot: NonNullable<DiffEdge["compareScreenshot"]>;
+  /** "1280px", "firefox · 414px"… or "default". */
   label: string;
 };
 
-export type Flow = {
-  /** Stable key, e.g. the joined test titlePath or a story component id. */
+export type FlowStep = {
+  /** Variant-independent key (backend `variantKey` normalization). */
   key: string;
-  /** Muted context shown before the title (test file, "storybook"…). */
-  prefix: string;
-  title: string;
-  steps: FlowStep[];
+  label: string;
+  captureIndex: number | null;
+  variants: FlowStepVariant[];
 };
 
-/**
- * A flow is any test that took at least one screenshot: the test titlePath
- * (file › describe › test) is the flow identity — no metadata to add, no
- * configuration. Storybook uploads carry a story id instead: stories group
- * by component, one step per story.
- */
-function resolveFlowOf(
-  screenshot: NonNullable<DiffEdge["compareScreenshot"]>,
-): { key: string; prefix: string; title: string; stepLabel: string } | null {
-  const titlePath = screenshot.metadata?.test?.titlePath;
-  if (titlePath && titlePath.length > 0) {
-    return {
-      key: titlePath.join(" › "),
-      prefix: titlePath.slice(0, -1).join(" › "),
-      title: titlePath.at(-1) as string,
-      stepLabel: screenshot.name.split("/").pop() || screenshot.name,
-    };
+export type Flow = FlowIdentity & {
+  steps: FlowStep[];
+  /** All variant labels present in the flow, for the variant switcher. */
+  variantLabels: string[];
+};
+
+/** Picks the variant matching `selected`, falling back to the first one. */
+export function pickVariant(
+  step: FlowStep,
+  selected: string | null,
+): FlowStepVariant {
+  const variant =
+    (selected && step.variants.find((v) => v.label === selected)) ||
+    step.variants[0];
+  if (!variant) {
+    throw new Error("a step always has at least one variant");
   }
-  const storyId = screenshot.metadata?.story?.id;
-  if (storyId) {
-    const [component, ...variant] = storyId.split("--");
-    return {
-      key: `storybook › ${component}`,
-      prefix: "storybook",
-      title: component as string,
-      stepLabel: variant.join("--") || screenshot.name,
-    };
-  }
-  return null;
+  return variant;
 }
 
 function groupFlows(edges: DiffEdge[]): {
   flows: Flow[];
   ungroupedCount: number;
 } {
-  const byKey = new Map<string, Flow>();
+  type FlowAcc = FlowIdentity & { steps: Map<string, FlowStep> };
+  const byKey = new Map<string, FlowAcc>();
   let ungroupedCount = 0;
   for (const edge of edges) {
     const screenshot = edge.compareScreenshot;
     if (!screenshot) {
       continue;
     }
-    const resolved = resolveFlowOf(screenshot);
-    if (!resolved) {
+    const identity = resolveFlowIdentity(screenshot);
+    if (!identity) {
       ungroupedCount += 1;
       continue;
     }
-    const flow = byKey.get(resolved.key) ?? {
-      key: resolved.key,
-      prefix: resolved.prefix,
-      title: resolved.title,
-      steps: [],
+    const flow = byKey.get(identity.key) ?? { ...identity, steps: new Map() };
+    byKey.set(identity.key, flow);
+    const stepKey = getStepKey(screenshot.name);
+    const step = flow.steps.get(stepKey) ?? {
+      key: stepKey,
+      label: getStepLabel(stepKey),
+      captureIndex: null,
+      variants: [],
     };
-    byKey.set(resolved.key, flow);
-    flow.steps.push({ edge, screenshot, label: resolved.stepLabel });
+    flow.steps.set(stepKey, step);
+    step.variants.push({
+      edge,
+      screenshot,
+      label: getVariantLabel(screenshot.name),
+    });
+    const captureIndex = getCaptureIndex(screenshot);
+    if (captureIndex !== null) {
+      step.captureIndex = Math.min(
+        step.captureIndex ?? Number.MAX_SAFE_INTEGER,
+        captureIndex,
+      );
+    }
   }
   const flows = [...byKey.values()]
-    .map((flow) => ({
-      ...flow,
-      // Default order is alphabetical — often wrong for a funnel, which is
-      // exactly what manual ordering fixes.
-      steps: flow.steps.toSorted((a, b) =>
-        a.screenshot.name.localeCompare(b.screenshot.name),
-      ),
-    }))
+    .map(({ steps, ...identity }) => {
+      const sortedSteps = [...steps.values()].map((step) => ({
+        ...step,
+        variants: step.variants.toSorted((a, b) =>
+          a.label.localeCompare(b.label),
+        ),
+      }));
+      return {
+        ...identity,
+        // Automatic order: capture index, then alphabetical. The manual
+        // curation applies on top at render time (see `orderSteps`).
+        steps: sortedSteps.toSorted((a, b) => compareSteps(a, b, undefined)),
+        variantLabels: [
+          ...new Set(
+            sortedSteps.flatMap((step) =>
+              step.variants.map((variant) => variant.label),
+            ),
+          ),
+        ].toSorted((a, b) => a.localeCompare(b)),
+      };
+    })
     // Real journeys (several steps) first, single-screenshot tests after.
     .toSorted(
       (a, b) =>
@@ -145,12 +172,23 @@ function groupFlows(edges: DiffEdge[]): {
   return { flows, ungroupedCount };
 }
 
+/** Curated order first (when stored), then capture index, then alphabetical. */
+export function orderSteps(
+  steps: FlowStep[],
+  storedOrder: string[] | undefined,
+) {
+  return steps.toSorted((a, b) => compareSteps(a, b, storedOrder));
+}
+
 /**
  * Loads the flows of a project, preferring the reference build and falling
  * back to the latest build for projects that don't have one yet (e.g. only
  * PR builds).
  */
-export function useProjectFlows(params: ProjectParams) {
+export function useProjectFlows(params: {
+  accountSlug: string;
+  projectName: string;
+}) {
   const {
     data: { project },
   } = useSuspenseQuery(ProjectFlowsQuery, {
@@ -167,11 +205,14 @@ export function useProjectFlows(params: ProjectParams) {
 }
 
 /**
- * Manual step ordering, persisted locally for the POC (screenshot names per
- * flow key). The production version would live server-side next to other
+ * Manual step ordering, persisted locally for the POC (step keys per flow
+ * key). The production version would live server-side next to other
  * project-level curation (ignore config, automations).
  */
-export function useStoredOrders(params: ProjectParams) {
+export function useStoredOrders(params: {
+  accountSlug: string;
+  projectName: string;
+}) {
   const storageKey = `argos-flows-order:${params.accountSlug}/${params.projectName}`;
   const [orders, setOrders] = useState<Record<string, string[]>>(() => {
     try {
@@ -193,8 +234,8 @@ export function useStoredOrders(params: ProjectParams) {
     [storageKey],
   );
   const setFlowOrder = useCallback(
-    (flowKey: string, names: string[]) => {
-      store((orders) => ({ ...orders, [flowKey]: names }));
+    (flowKey: string, stepKeys: string[]) => {
+      store((orders) => ({ ...orders, [flowKey]: stepKeys }));
     },
     [store],
   );
@@ -210,26 +251,9 @@ export function useStoredOrders(params: ProjectParams) {
   return { orders, setFlowOrder, resetFlowOrder };
 }
 
-/** Stored names first (when they still exist), new screenshots appended. */
-export function applyStoredOrder(
-  steps: FlowStep[],
-  stored: string[] | undefined,
+export function getFlowURL(
+  params: { accountSlug: string; projectName: string },
+  flowKey: string,
 ) {
-  if (!stored) {
-    return steps;
-  }
-  const byName = new Map(steps.map((step) => [step.screenshot.name, step]));
-  const ordered = stored.flatMap((name) => {
-    const step = byName.get(name);
-    if (!step) {
-      return [];
-    }
-    byName.delete(name);
-    return [step];
-  });
-  return [...ordered, ...byName.values()];
-}
-
-export function getFlowURL(params: ProjectParams, flowKey: string) {
   return `/${params.accountSlug}/${params.projectName}/flows/${encodeURIComponent(flowKey)}`;
 }
