@@ -19,6 +19,18 @@ describe("#getVariantKey", () => {
     );
   });
 
+  it("strips trailing color-scheme tokens", async () => {
+    expect(getVariantKey("homepage+-dark vw-1536.png")).toBe("homepage+");
+    expect(getVariantKey("homepage+ vw-1536.png")).toBe("homepage+");
+    expect(getVariantKey("pricing dark.png")).toBe("pricing");
+    expect(getVariantKey("pricing-light.png")).toBe("pricing");
+    expect(getVariantKey("chromium/pages/home-dark vw-375.png")).toBe(
+      "pages/home",
+    );
+    // No separator: the token is part of the name, not a scheme suffix.
+    expect(getVariantKey("darkroom.png")).toBe("darkroom");
+  });
+
   it("handles failed variant keys", async () => {
     expect(getVariantKey("chromium/role/edit/space-ui #123 (failed).png")).toBe(
       "role/edit/space-ui",

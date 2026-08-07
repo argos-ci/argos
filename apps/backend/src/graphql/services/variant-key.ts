@@ -8,6 +8,8 @@
  * 4. Removes any occurrence of " #<digits> (failed).png".
  * 5. Removes any occurrence of "mode-[]" followed by ".png".
  * 6. Removes the ".png" extension.
+ * 7. Removes a trailing color-scheme token (" dark", "-dark", " light",
+ *    "-light") so light and dark captures of the same screen are variants.
  *
  * @param name - The name string to be sanitized.
  * @returns The sanitized variant key.
@@ -24,6 +26,10 @@ export function getVariantKey(name: string): string {
       .replace(/\s+vw-\d+\.png$/, "")
       .replace(/ #\d+ \(failed\)\.png$/, "")
       .replace(/\.png$/, "")
+      // There is no canonical suffix for color schemes, so suites encode
+      // them ad hoc in the name ("homepage-dark", "homepage dark"): strip
+      // the common forms once every other suffix is gone.
+      .replace(/[\s-]+(dark|light)$/i, "")
       .trim()
   );
 }
