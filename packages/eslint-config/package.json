@@ -6,7 +6,7 @@
     "./react": "./react.js"
   },
   "scripts": {
-    "check-format": "prettier --check ."
+    "check-format": "oxfmt --check ."
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",

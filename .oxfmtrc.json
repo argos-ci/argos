@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "sortTailwindcss": {},
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "react",
+        "elementNamePattern": ["react", "react/**"]
+      }
+    ],
+    "groups": [
+      "react",
+      { "newlinesBetween": false },
+      "builtin",
+      { "newlinesBetween": false },
+      "external",
+      ["internal", "subpath"],
+      ["parent", "sibling", "index"],
+      "unknown"
+    ]
+  },
+  "ignorePatterns": [
+    "package.json",
+    "*.dump",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "/skills",
+    ".agents",
+    ".claude/worktrees"
+  ]
+}

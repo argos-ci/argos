@@ -41,7 +41,10 @@ export type AuthAttributes = {
  */
 export function assertAuthAttributes(
   auth:
-    AuthSessionPayload | AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
+    | AuthSessionPayload
+    | AuthPATPayload
+    | AuthProjectPayload
+    | AuthOAuthPayload,
   attributes: AuthAttributes | undefined,
 ): void {
   if (!attributes) {

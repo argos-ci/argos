@@ -302,7 +302,8 @@ async function getOrCreateUserAccountFromThirdParty<
   getName: (model: TModel) => string | null;
   getPotentialEmails: (model: TModel) => string[];
   thirdPartyKey:
-    { user: "gitlabUserId" | "googleUserId" } | { account: "githubAccountId" };
+    | { user: "gitlabUserId" | "googleUserId" }
+    | { account: "githubAccountId" };
   errorCodes: {
     alreadyAttachedToArgosAccount: ErrorCode;
     alreadyAttachedToThirdPartyAccount: ErrorCode;

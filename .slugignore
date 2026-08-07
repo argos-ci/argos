@@ -6,8 +6,7 @@
 /tests
 /.env.example
 /eslint.config.mjs
-/.prettierignore
-/.prettierrc
+/.oxfmtrc.json
 /CONTRIBUTING.md
 /SECURITY.md
 /README.md

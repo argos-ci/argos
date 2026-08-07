@@ -113,7 +113,10 @@ type SecurityRequirement<TAuth> = Record<string, string[]>[] & {
 
 /** The auth payload for an endpoint whose requirement isn't statically known. */
 type UnknownAuth =
-  AuthProjectPayload | AuthPATPayload | AuthOAuthPayload | null;
+  | AuthProjectPayload
+  | AuthPATPayload
+  | AuthOAuthPayload
+  | null;
 
 /**
  * Authenticate with a **project token**. Used by the build and deployment

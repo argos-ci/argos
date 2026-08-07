@@ -39,7 +39,9 @@ export type AccountAvatar = {
  * having a status of our own.
  */
 export type AccountSubscriptionStatus =
-  Subscription["status"] | "trial_expired" | "trialing_with_payment_method";
+  | Subscription["status"]
+  | "trial_expired"
+  | "trialing_with_payment_method";
 
 /**
  * Typed against this union on purpose: the shared list is the vocabulary, and

@@ -6,6 +6,6 @@
     "./node/tsconfig.json": "./node/tsconfig.json"
   },
   "scripts": {
-    "check-format": "prettier --check ."
+    "check-format": "oxfmt --check ."
   }
 }

@@ -13,7 +13,8 @@ import { Build, Comment, Project, Test } from "@/database/models";
  * events, notifications) are written once and work for both.
  */
 export type CommentTarget =
-  { type: "build"; build: Build } | { type: "test"; test: Test };
+  | { type: "build"; build: Build }
+  | { type: "test"; test: Test };
 
 /** The target columns to persist on a comment row. */
 export function getCommentTargetColumns(target: CommentTarget): {

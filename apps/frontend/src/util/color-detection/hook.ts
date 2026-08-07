@@ -8,7 +8,8 @@ import type { MessageData, Rect } from "./types";
  * or unsupported image format).
  */
 export type ColoredRectsState =
-  { loading: true; rects: null } | { loading: false; rects: Rect[] | null };
+  | { loading: true; rects: null }
+  | { loading: false; rects: Rect[] | null };
 
 const LOADING_STATE = {
   loading: true,

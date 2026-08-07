@@ -19,7 +19,8 @@ import { Popover } from "@/ui/Popover";
 import { SelectButton, SelectField } from "@/ui/Select";
 
 type DeploymentAuthLevel =
-  DeploymentAuth.DomainPrivate | DeploymentAuth.Private;
+  | DeploymentAuth.DomainPrivate
+  | DeploymentAuth.Private;
 
 const _ProjectFragment = graphql(`
   fragment DeploymentAuthentication_Project on Project {

@@ -143,7 +143,10 @@ export type DynamicClientRegistration = {
   responseTypes?: string[] | undefined;
   scope?: string | null | undefined;
   tokenEndpointAuthMethod?:
-    "none" | "client_secret_basic" | "client_secret_post" | undefined;
+    | "none"
+    | "client_secret_basic"
+    | "client_secret_post"
+    | undefined;
 };
 
 /**
