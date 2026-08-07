@@ -67,68 +67,71 @@ export function BuildFlowMinimap() {
   }
   const activeVariantLabel = getVariantLabel(activeDiff.name);
   return (
-    // Lives in the viewer column, under the header and beside the right
-    // sidebar. Padded enough that the selection ring and focus outline of
-    // edge thumbnails don't get clipped by the scroll container.
-    <div className="bg-app border-b-thin flex shrink-0 items-center gap-1 overflow-x-auto px-2 pt-2 pb-1.5">
-      {flow.steps.map((step, index) => {
-        // Show the variant matching the active diff so switching steps stays
-        // within the same viewport/browser.
-        const diff =
-          step.diffs.find(
-            (candidate) =>
-              getVariantLabel(candidate.name) === activeVariantLabel,
-          ) ??
-          step.diffs[0] ??
-          null;
-        if (!diff) {
-          return null;
-        }
-        const isActive = index === flow.stepIndex;
-        const needsAttention = step.diffs.some((candidate) =>
-          ATTENTION_STATUSES.includes(candidate.status),
-        );
-        return (
-          <div key={step.key} className="flex shrink-0 items-center gap-0.5">
-            {index > 0 && (
-              <ChevronRightIcon className="text-low size-3 shrink-0" />
-            )}
-            <button
-              type="button"
-              data-flow-step={step.key}
-              onClick={() => setActiveDiff(diff, true)}
-              className={clsx(
-                "flex flex-col items-center gap-1 rounded-md p-1",
-                !isActive && "hover:bg-hover",
+    // An inset card in the viewer column, aligned on the diff area gutters
+    // (`p-4`) and styled like the diff panels. The inner padding keeps the
+    // selection ring and focus outline of edge thumbnails from being
+    // clipped by the scroll container.
+    <div className="shrink-0 px-4 pt-2">
+      <div className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5">
+        {flow.steps.map((step, index) => {
+          // Show the variant matching the active diff so switching steps stays
+          // within the same viewport/browser.
+          const diff =
+            step.diffs.find(
+              (candidate) =>
+                getVariantLabel(candidate.name) === activeVariantLabel,
+            ) ??
+            step.diffs[0] ??
+            null;
+          if (!diff) {
+            return null;
+          }
+          const isActive = index === flow.stepIndex;
+          const needsAttention = step.diffs.some((candidate) =>
+            ATTENTION_STATUSES.includes(candidate.status),
+          );
+          return (
+            <div key={step.key} className="flex shrink-0 items-center gap-0.5">
+              {index > 0 && (
+                <ChevronRightIcon className="text-low size-3 shrink-0" />
               )}
-            >
-              <span className="relative">
-                <ScreenshotDiffThumbnail
-                  screenshotDiff={diff}
-                  className={clsx(
-                    "h-12 w-16",
-                    isActive && "ring-primary-active ring-2",
-                  )}
-                  fit="cover"
-                  transformations={["w-256", "h-256", "c-at_max"]}
-                />
-                {needsAttention ? (
-                  <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
-                ) : null}
-              </span>
-              <span
+              <button
+                type="button"
+                data-flow-step={step.key}
+                onClick={() => setActiveDiff(diff, true)}
                 className={clsx(
-                  "max-w-28 truncate text-center text-[0.6875rem] leading-none",
-                  isActive ? "font-medium" : "text-low",
+                  "flex flex-col items-center gap-1 rounded-md p-1",
+                  !isActive && "hover:bg-hover",
                 )}
-                title={getStepLabel(step.key)}
               >
-                {index + 1} · {getStepLabel(step.key)}
-              </span>
-            </button>
-          </div>
-        );
-      })}
+                <span className="relative">
+                  <ScreenshotDiffThumbnail
+                    screenshotDiff={diff}
+                    className={clsx(
+                      "h-12 w-16",
+                      isActive && "ring-primary-active ring-2",
+                    )}
+                    fit="cover"
+                    transformations={["w-256", "h-256", "c-at_max"]}
+                  />
+                  {needsAttention ? (
+                    <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
+                  ) : null}
+                </span>
+                <span
+                  className={clsx(
+                    "max-w-28 truncate text-center text-[0.6875rem] leading-none",
+                    isActive ? "font-medium" : "text-low",
+                  )}
+                  title={getStepLabel(step.key)}
+                >
+                  {index + 1} · {getStepLabel(step.key)}
+                </span>
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
