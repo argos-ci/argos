@@ -172,6 +172,21 @@ describe("Account", () => {
       expect(consumption.all).toBe(0);
       expect(consumption.storybook).toBe(0);
     });
+
+    it("never reports a negative neutral count", async ({ fixture }) => {
+      // Buckets finalized while the two counts were read by two separate
+      // queries can hold more Storybook screenshots than screenshots.
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 10,
+        storybookScreenshotCount: 12,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      const consumption = await manager.getCurrentPeriodScreenshots();
+      expect(consumption.all).toBe(10);
+      expect(consumption.storybook).toBe(10);
+      expect(consumption.neutral).toBe(0);
+    });
   });
 
   describe("#checkIsOutOfCapacity", () => {

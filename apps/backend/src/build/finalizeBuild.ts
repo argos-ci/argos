@@ -1,7 +1,8 @@
 import { BuildMetadata } from "@argos/schemas/build-metadata";
-import { ref, TransactionOrKnex } from "objection";
+import { invariant } from "@argos/util/invariant";
+import { TransactionOrKnex } from "objection";
 
-import { transaction } from "@/database";
+import { raw, transaction } from "@/database";
 import { Build, BuildShard, Screenshot } from "@/database/models";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
@@ -69,6 +70,40 @@ function aggregateMetadata(allMetatada: (BuildMetadata | null)[]) {
 }
 
 /**
+ * Count the screenshots of a bucket, split between all of them and the ones
+ * uploaded by the Storybook SDK.
+ *
+ * Both numbers come out of a single aggregate on purpose. Counting them with
+ * two queries gives them two `READ COMMITTED` snapshots, so a screenshot
+ * inserted in between — another shard of the same build, a retried upload
+ * racing a manual finalization — is seen by the second query only. The bucket
+ * then stores more Storybook screenshots than screenshots, and the neutral
+ * count derived from them (`screenshotCount - storybookScreenshotCount`) goes
+ * negative.
+ */
+async function countBucketScreenshots(params: {
+  screenshotBucketId: string;
+  trx: TransactionOrKnex | undefined;
+}): Promise<{ all: number; storybook: number }> {
+  const result = await Screenshot.query(params.trx)
+    .where("screenshotBucketId", params.screenshotBucketId)
+    .select(
+      raw(`count(*)::int as "all"`),
+      raw(
+        `count(*) filter (where metadata->'sdk'->>'name' = ?)::int as "storybook"`,
+        [ARGOS_STORYBOOK_SDK_NAME],
+      ),
+    )
+    .first()
+    .castTo<{ all: number; storybook: number } | undefined>();
+
+  // An aggregate without `group by` always yields exactly one row.
+  invariant(result, "Screenshot count not found");
+
+  return result;
+}
+
+/**
  * Finalize a build.
  * - Count the number of screenshots in the compare bucket.
  * - Check if the build is considered valid.
@@ -99,22 +134,16 @@ export async function finalizeBuild(input: {
 }) {
   const { trx, build, screenshotCount } = input;
   const hasExplicitMetadata = input.metadata !== undefined;
-  const countQuery = Screenshot.query(trx).where(
-    "screenshotBucketId",
-    build.compareScreenshotBucketId,
-  );
-  const [screenshotCountResult, storybookScreenshotCount, shards] =
-    await Promise.all([
-      screenshotCount?.all ?? countQuery.resultSize(),
-      screenshotCount?.storybook ??
-        countQuery
-          .clone()
-          .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
-          .resultSize(),
-      hasExplicitMetadata
-        ? []
-        : BuildShard.query(trx).select("metadata").where("buildId", build.id),
-    ]);
+  const [counts, shards] = await Promise.all([
+    screenshotCount ??
+      countBucketScreenshots({
+        screenshotBucketId: build.compareScreenshotBucketId,
+        trx,
+      }),
+    hasExplicitMetadata
+      ? []
+      : BuildShard.query(trx).select("metadata").where("buildId", build.id),
+  ]);
 
   const buildData: Partial<Pick<Build, "metadata" | "finalizedAt">> = {
     finalizedAt: new Date().toISOString(),
@@ -137,8 +166,8 @@ export async function finalizeBuild(input: {
       build.$clone().$query(trx).patch(buildData),
       build.$relatedQuery("compareScreenshotBucket", trx).patch({
         complete: true,
-        screenshotCount: screenshotCountResult,
-        storybookScreenshotCount,
+        screenshotCount: counts.all,
+        storybookScreenshotCount: counts.storybook,
         valid,
       }),
     ]);

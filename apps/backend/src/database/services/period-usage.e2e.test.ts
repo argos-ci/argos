@@ -161,6 +161,29 @@ describe("getAccountPeriodUsages", () => {
     expect(usage?.storybookCount).toBe(1000);
   });
 
+  it("clamps a bucket's Storybook count to its total", async () => {
+    await createUsageBasedSubscription();
+    // Buckets finalized while the two counts were read by two separate queries
+    // can hold more Storybook screenshots than screenshots. Left alone, the
+    // neutral count derived from the pair goes negative.
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() + 1000).toISOString(),
+      screenshotCount: 1500,
+      storybookScreenshotCount: 1600,
+    });
+
+    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    // Read as 1500 Storybook and 0 neutral: 1000 absorb the quota and 500 are
+    // billed at $0.10.
+    expect(usage?.additionalScreenshotCost).toBeCloseTo(50);
+    expect(usage?.storybookRatio).toBe(1);
+    expect(usage?.storybookCount).toBe(1500);
+  });
+
   it("ignores screenshots uploaded before the period started", async () => {
     await createUsageBasedSubscription();
     await factory.ScreenshotBucket.create({
