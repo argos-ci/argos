@@ -9,7 +9,7 @@ import {
   type File as FileModel,
 } from "@/database/models";
 import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
-import { getPublicFileUrl, getPublicUrl, getTwicPicsUrl } from "@/storage";
+import { getImageKitUrl, getPublicFileUrl, getPublicUrl } from "@/storage";
 import { formatTestChangeId, formatTestId } from "@/util/test-id";
 
 import { ChangeSchema } from "./change";
@@ -171,7 +171,7 @@ export async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
     return getPublicFileUrl(file);
   }
   if (diff.s3Id) {
-    return getTwicPicsUrl(diff.s3Id);
+    return getImageKitUrl(diff.s3Id);
   }
   return null;
 }
