@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
     "check-format": "oxfmt --check ."
   },
