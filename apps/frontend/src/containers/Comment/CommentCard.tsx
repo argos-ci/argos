@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
-import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
   ArrowUpIcon,
@@ -14,9 +13,9 @@ import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
-import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
@@ -512,8 +511,7 @@ function CommentMessage(props: {
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
-  const projectParams = useProjectParams();
-  invariant(projectParams);
+  const roleScope = useCommentRoleScope();
   const mentions = useMentionableUsers();
   // Resolve the comment's own mentions (which persist only an id) to render
   // their name/avatar/role — these may include users no longer mentionable.
@@ -544,8 +542,7 @@ function CommentMessage(props: {
         mutation: UpdateCommentMutation,
         variables: {
           input: { id: comment.id, body },
-          accountSlug: projectParams.accountSlug,
-          projectName: projectParams.projectName,
+          ...roleScope,
         },
       });
       setIsEditing(false);

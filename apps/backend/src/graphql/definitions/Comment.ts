@@ -53,6 +53,7 @@ import {
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import type { Context } from "../context";
+import { getMediaForUser } from "../mediaAccess";
 import { getTestForUser } from "../testAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
@@ -285,6 +286,19 @@ export const typeDefs = gql`
     body: JSONObject!
   }
 
+  input AddMediaCommentInput {
+    mediaId: ID!
+    "Root comment ID to reply to"
+    threadId: ID
+    """
+    Where on the media the comment points, as normalized coordinates. Omit for a
+    comment about the whole thing. A reply inherits its thread's anchor.
+    """
+    anchor: CommentAnchorInput
+    "Rich-text JSON content of the comment"
+    body: JSONObject!
+  }
+
   input UpdateCommentInput {
     id: ID!
     "Rich-text JSON content of the comment"
@@ -322,6 +336,8 @@ export const typeDefs = gql`
     addBuildComment(input: AddBuildCommentInput!): Build!
     "Post a comment on a test"
     addTestComment(input: AddTestCommentInput!): Test!
+    "Post a comment on an uploaded media, optionally pinned to a point on it"
+    addMediaComment(input: AddMediaCommentInput!): Media!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
     "Delete an existing comment"
@@ -626,6 +642,54 @@ export const resolvers: IResolvers = {
       });
 
       return test;
+    },
+    addMediaComment: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const media = await getMediaForUser({
+        id: input.mediaId,
+        user: auth.user,
+        permission: "review",
+        message: "You cannot comment on this media",
+      });
+
+      const target: CommentTarget = { type: "media", media };
+
+      const thread = input.threadId
+        ? await getCommentThreadForUser({
+            id: input.threadId,
+            user: auth.user,
+            permission: "review",
+            target,
+          })
+        : null;
+
+      // A reply inherits its thread's anchor, so it may not carry its own.
+      if (thread && input.anchor) {
+        throw badUserInput("A reply cannot carry its own anchor");
+      }
+
+      const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
+
+      // A line range describes a textual snapshot; an image has no lines.
+      if (anchor && anchor.type !== "point") {
+        throw badUserInput("A media comment can only be anchored to a point");
+      }
+
+      await createComment({
+        target,
+        userId: auth.user.id,
+        body: input.body as JSONContent,
+        threadId: thread?.id ?? null,
+        anchor,
+      });
+
+      return media;
     },
     updateComment: async (_root, args, ctx) => {
       const { auth } = ctx;

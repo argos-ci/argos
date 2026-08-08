@@ -114,7 +114,7 @@ const MEDIA_COMMENTS_LIMIT = 200;
  * Takes a list rather than one id so the GraphQL loader can batch across a
  * library page, which is also why the cap is a window function.
  */
-function getVisibleMediaCommentsQuery(input: {
+export function getVisibleMediaCommentsQuery(input: {
   mediaIds: string[];
   viewerUserId: string | null;
 }): QueryBuilder<Comment, Comment[]> {

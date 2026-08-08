@@ -10,7 +10,6 @@ loggedTest.beforeEach(async ({ auth, team }) => {
 
 loggedTest("team media library", async ({ page, team, project }) => {
   await createMediaScenario({
-    accountId: team.account.id,
     projectId: project.id,
   });
 
@@ -37,7 +36,6 @@ loggedTest("team media library", async ({ page, team, project }) => {
 
 loggedTest("team media library search", async ({ page, team, project }) => {
   await createMediaScenario({
-    accountId: team.account.id,
     projectId: project.id,
   });
 
@@ -52,10 +50,10 @@ loggedTest("team media library search", async ({ page, team, project }) => {
   ).toBeHidden();
 });
 
-loggedTest("media share page", async ({ page, team, project }) => {
+loggedTest("media share page", async ({ page, auth, project }) => {
   const media = await createMediaScenario({
-    accountId: team.account.id,
     projectId: project.id,
+    commentAuthorId: auth.user.id,
   });
 
   await page.goto(`/m/${media.image.shareToken}`);
@@ -63,18 +61,64 @@ loggedTest("media share page", async ({ page, team, project }) => {
   // The file name in the status line is the page's title — the share page has no
   // heading and no header bar by design.
   await expect(page.getByText("checkout-after.png")).toBeVisible();
-  await expect(page.getByText("1024×768")).toBeVisible();
+  await expect(page.getByText("375×720")).toBeVisible();
   await expect(
     page.getByRole("img", { name: "checkout-after.png" }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
 
+  // Two threads, one of them pinned to a point on the image.
+  await expect(
+    page.getByRole("heading", { name: "Comments (2)" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("The primary button is misaligned here."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Agreed — it should align with the input above."),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Comment 1" })).toBeVisible();
+
   await screenshot(page, "media-share-page");
 });
 
-loggedTest("media share page for a video", async ({ page, team, project }) => {
+loggedTest(
+  "pins a comment to a point on the image",
+  async ({ page, auth, project }) => {
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+    });
+
+    await page.goto(`/m/${media.image.shareToken}`);
+
+    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await expect(
+      page.getByText("Click the spot on the image you want to comment on."),
+    ).toBeVisible();
+
+    // The pin lands wherever the reviewer points, stored as a fraction of the
+    // media's own box.
+    await page
+      .getByRole("button", { name: "Pick the spot to comment on" })
+      .click({ position: { x: 200, y: 150 } });
+
+    const editor = page.getByLabel("Add a comment");
+    await editor.click();
+    await editor.fill("This spacing is off by a few pixels.");
+    await page.getByRole("button", { name: "Submit the comment" }).click();
+
+    await expect(
+      page.getByText("This spacing is off by a few pixels."),
+    ).toBeVisible();
+    // The new thread gets the second pin, and the panel numbers agree with it.
+    await expect(page.getByRole("button", { name: "Comment 2" })).toBeVisible();
+    await expect(page.getByText("pinned on the image")).toHaveCount(2);
+  },
+);
+
+loggedTest("media share page for a video", async ({ page, project }) => {
   const media = await createMediaScenario({
-    accountId: team.account.id,
     projectId: project.id,
   });
 

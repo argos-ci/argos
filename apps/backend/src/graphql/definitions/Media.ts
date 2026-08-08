@@ -37,6 +37,7 @@ const { gql } = gqlTag;
 /** The service's permission names, as the schema's enum members. */
 const GRAPHQL_PERMISSION: Record<MediaPermission, IMediaPermission> = {
   view: IMediaPermission.View,
+  comment: IMediaPermission.Comment,
   delete: IMediaPermission.Delete,
 };
 
@@ -57,6 +58,7 @@ export const typeDefs = gql`
 
   enum MediaPermission {
     view
+    comment
     delete
   }
 
@@ -88,6 +90,13 @@ export const typeDefs = gql`
     billedUnits: Int!
     project: Project
     permissions: [MediaPermission!]!
+    """
+    Comment threads on this media, oldest first. A comment's \`anchor\` gives the
+    point on the image it refers to, which is how a reviewer marks one up.
+    """
+    comments: [Comment!]!
+    "Open threads on this media — what still needs acting on."
+    unresolvedCommentCount: Int!
   }
 
   type MediaConnection implements Connection {
@@ -188,7 +197,28 @@ export const resolvers: IResolvers = {
     project: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      return project;
+      // A public share page is opened by people with no Argos account, and the
+      // project's name can itself be unreleased information. Only viewers who
+      // could reach the project anyway get it as context.
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      return permissions.includes("view") ? project : null;
+    },
+    comments: async (media, _args, ctx) => {
+      return ctx.loaders.MediaComments.load({
+        mediaId: media.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
+    },
+    unresolvedCommentCount: async (media, _args, ctx) => {
+      const comments = await ctx.loaders.MediaComments.load({
+        mediaId: media.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
+      // Resolution lives on a thread's root, so only roots are counted — a reply
+      // is part of its thread, not a second thing to deal with.
+      return comments.filter(
+        (comment) => !comment.threadId && !comment.resolvedAt,
+      ).length;
     },
     permissions: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
@@ -196,9 +226,10 @@ export const resolvers: IResolvers = {
       const projectPermissions = await project.$getPermissions(
         ctx.auth?.user ?? null,
       );
-      return getMediaPermissions(projectPermissions).map(
-        (permission) => GRAPHQL_PERMISSION[permission],
-      );
+      return getMediaPermissions({
+        visibility: media.visibility,
+        projectPermissions,
+      }).map((permission) => GRAPHQL_PERMISSION[permission]);
     },
   },
   Query: {
@@ -323,7 +354,11 @@ export const resolvers: IResolvers = {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
       const projectPermissions = await project.$getPermissions(ctx.auth.user);
-      if (!getMediaPermissions(projectPermissions).includes("delete")) {
+      const mediaPermissions = getMediaPermissions({
+        visibility: media.visibility,
+        projectPermissions,
+      });
+      if (!mediaPermissions.includes("delete")) {
         throw forbidden("You are not an administrator of this project.");
       }
 

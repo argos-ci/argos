@@ -1,10 +1,20 @@
+import { useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { clsx } from "clsx";
 import { ClockFadingIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
+import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
+import {
+  MediaCommentPins,
+  type MediaPoint,
+} from "@/containers/Media/MediaCommentPins";
+import { getMediaPins, MediaComments } from "@/containers/Media/MediaComments";
+import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
+import { MediaPermission } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { CopyButton } from "@/ui/CopyButton";
 import { Link } from "@/ui/Link";
@@ -12,7 +22,11 @@ import { MediaImage, MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { formatBytes, formatDimensions, formatExpiry } from "@/util/media";
 
 const MediaShareQuery = graphql(`
-  query MediaShare_media($shareToken: String!) {
+  query MediaShare_media(
+    $shareToken: String!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     mediaByShareToken(shareToken: $shareToken) {
       id
       name
@@ -26,10 +40,13 @@ const MediaShareQuery = graphql(`
       height
       isVideo
       expiresAt
+      permissions
       project {
         id
         slug
+        permissions
       }
+      ...MediaComments_Media
     }
   }
 `);
@@ -46,13 +63,18 @@ type Media = NonNullable<
  * to see one thing, and every pixel above the media is a pixel of it they cannot
  * see; the identity lands underneath, once they have been served. The file name in
  * monospace is the title.
+ *
+ * The comment panel appears only when there is something to say or someone able
+ * to say it, so an anonymous visitor opening a public link still gets the bare
+ * viewer this page was designed as.
  */
 export function Component() {
   const { shareToken } = useParams();
   invariant(shareToken, "no share token");
 
+  const roleScope = useCommentRoleScope();
   const { data } = useSuspenseQuery(MediaShareQuery, {
-    variables: { shareToken },
+    variables: { shareToken, ...roleScope },
   });
 
   const media = data.mediaByShareToken;
@@ -77,34 +99,72 @@ export function Component() {
 
 function MediaViewer(props: { media: Media }) {
   const { media } = props;
+  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(
+    null,
+  );
+  const [placing, setPlacing] = useState(false);
+  const [draftPoint, setDraftPoint] = useState<MediaPoint | null>(null);
 
-  return (
-    <div className="bg-subtle flex min-h-dvh flex-col items-center justify-center p-4 sm:p-8">
-      <div className="flex w-full max-w-6xl flex-col gap-3">
+  const pins = getMediaPins(media.comments);
+  const canComment = media.permissions.includes(MediaPermission.Comment);
+  // An anonymous visitor on a public link with nothing to read gets the viewer
+  // alone — no empty panel narrowing the thing they came to look at.
+  const showComments = canComment || media.comments.length > 0;
+
+  const body = (
+    <div
+      className={clsx(
+        "bg-subtle flex min-h-dvh p-4 sm:p-8",
+        showComments
+          ? "flex-col items-stretch gap-6 lg:flex-row lg:justify-center"
+          : "flex-col items-center justify-center",
+      )}
+    >
+      <div
+        className={clsx(
+          "flex min-w-0 flex-col gap-3",
+          showComments ? "w-full lg:max-w-4xl" : "w-full max-w-6xl",
+        )}
+      >
         <MediaWell
           aspectRatio={
             media.width && media.height
               ? { width: media.width, height: media.height }
               : null
           }
-          // `self-start` does two things. It gives the well an auto width, which
-          // is what makes the aspect ratio hold — as a stretched column child it
-          // would keep the container's full width while `max-h` clamped its
-          // height, leaving checkerboard around the image, the exact confusion
-          // the checkerboard exists to prevent. And it aligns the frame's left
-          // edge with the metadata rail below it, so the rail reads as a caption
-          // for the frame rather than as page furniture.
+          // The frame is centered over a metadata bar that spans the column, the
+          // arrangement every screenshot viewer settles on: the media is the page,
+          // and what is known about it reads as a bar beneath rather than as a
+          // caption that has to track the frame's edges at every aspect ratio.
+          //
+          // `self-center` matters beyond the alignment. A stretched column child
+          // keeps the container's full width while `max-h` clamps its height,
+          // which leaves checkerboard on both sides of the image — the exact
+          // confusion the checkerboard exists to signal. Sizing to its content is
+          // what lets the aspect ratio hold.
           //
           // The minimum gives a frame to a media whose dimensions processing
           // hasn't recorded yet; the cap keeps a tall screenshot from pushing the
           // metadata and the actions below the fold.
-          className="flex max-h-[75dvh] min-h-64 w-auto max-w-full items-center justify-center self-start"
+          className="flex max-h-[75dvh] min-h-64 w-auto max-w-full items-center justify-center self-center"
         >
           {media.isVideo ? (
             <MediaVideo src={media.fileUrl} poster={media.posterUrl} />
           ) : (
             <MediaImage src={media.fileUrl} alt={media.name} />
           )}
+          {/* The pins sit inside the well, so a percentage position lands on the
+              media's own box rather than on the page. */}
+          {showComments ? (
+            <MediaCommentPins
+              pins={pins}
+              selectedCommentId={selectedCommentId}
+              onSelect={setSelectedCommentId}
+              draftPoint={draftPoint}
+              placing={placing}
+              onPlace={setDraftPoint}
+            />
+          ) : null}
         </MediaWell>
 
         <StatusLine media={media} />
@@ -117,7 +177,32 @@ function MediaViewer(props: { media: Media }) {
           </div>
         </div>
       </div>
+
+      {showComments ? (
+        <aside className="flex min-h-0 w-full flex-col lg:w-96 lg:shrink-0">
+          <MediaComments
+            media={media}
+            pins={pins}
+            selectedCommentId={selectedCommentId}
+            onSelect={setSelectedCommentId}
+            draftPoint={draftPoint}
+            placing={placing}
+            onPlacingChange={setPlacing}
+            onDraftPointChange={setDraftPoint}
+          />
+        </aside>
+      ) : null}
     </div>
+  );
+
+  // The comment components ask the project what the viewer may do — reacting is a
+  // `review`, same as commenting. An anonymous visitor on a public link is not
+  // shown the project at all, so they get no permissions, which is exactly right:
+  // they can read the discussion and change nothing.
+  return (
+    <ProjectPermissionsContext value={media.project?.permissions ?? []}>
+      {body}
+    </ProjectPermissionsContext>
   );
 }
 

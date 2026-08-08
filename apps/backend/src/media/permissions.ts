@@ -1,26 +1,38 @@
 import type { ProjectPermission } from "@/database/models/Project";
 
-export type MediaPermission = "view" | "delete";
+export type MediaPermission = "view" | "comment" | "delete";
 
 /**
- * Compute the permissions a viewer has on a media, given what they can do on the
- * project it belongs to.
+ * Compute the permissions a viewer has on a media, given its visibility and what
+ * they can do on the project it belongs to.
  *
- * Media is project-scoped, so this is the same access control that governs the
- * project's builds — fine-grained contributor access included. Anyone who can see
- * the project can see and comment on its media; removing one is an
- * administrator's call, because a share URL may already be pasted somewhere.
+ * Media is project-scoped, so writes follow the same access control that governs
+ * the project's builds — fine-grained contributor access included. Reading is the
+ * exception: a `public` media is readable by anyone holding the link, so `view`
+ * comes from {@link checkCanViewMedia} rather than from the project. Deriving it
+ * from the project alone would report no permissions at all to the anonymous
+ * reviewer the feature exists for — while they are looking at the media.
  */
-export function getMediaPermissions(
-  projectPermissions: ProjectPermission[],
-): MediaPermission[] {
+export function getMediaPermissions(args: {
+  visibility: "team" | "public";
+  projectPermissions: ProjectPermission[];
+}): MediaPermission[] {
+  const { projectPermissions } = args;
+  const permissions: MediaPermission[] = [];
+  if (checkCanViewMedia(args)) {
+    permissions.push("view");
+  }
+  // Commenting is a write on the project's review surface, which is the same
+  // trust posting a build comment takes.
+  if (projectPermissions.includes("review")) {
+    permissions.push("comment");
+  }
+  // Deleting is an administrator's call: a share URL may already be pasted
+  // somewhere, and removing the media breaks it.
   if (projectPermissions.includes("admin")) {
-    return ["view", "delete"];
+    permissions.push("delete");
   }
-  if (projectPermissions.includes("view")) {
-    return ["view"];
-  }
-  return [];
+  return permissions;
 }
 
 /**

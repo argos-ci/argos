@@ -8,6 +8,7 @@ import type { ModelClass } from "objection";
 import { getPresences, type UserPresence } from "@/auth/presence";
 import {
   filterVisibleComments,
+  getVisibleMediaCommentsQuery,
   getVisibleTestCommentsQuery,
 } from "@/comment/getVisibleComments";
 import { knex } from "@/database";
@@ -1013,6 +1014,42 @@ function createBuildCommentsCountLoader() {
 }
 
 /**
+ * Loads the comments posted on a media, capped per media — see
+ * {@link getVisibleMediaCommentsQuery}, shared with the REST endpoint.
+ */
+function createMediaCommentsLoader() {
+  return new DataLoader<
+    { mediaId: string; viewerUserId: string | null },
+    Comment[],
+    string
+  >(
+    async (inputs) => {
+      const mediaIds = inputs.map((input) => input.mediaId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId ?? null;
+      const comments = await getVisibleMediaCommentsQuery({
+        mediaIds,
+        viewerUserId,
+      });
+      const commentsMap = comments.reduce<Record<string, Comment[]>>(
+        (map, comment) => {
+          invariant(comment.mediaId, "Media comments have a mediaId");
+          const array = map[comment.mediaId] ?? [];
+          array.push(comment);
+          map[comment.mediaId] = array;
+          return map;
+        },
+        {},
+      );
+      return inputs.map((input) => commentsMap[input.mediaId] ?? []);
+    },
+    {
+      cacheKeyFn: (input) => `${input.mediaId}:${input.viewerUserId ?? ""}`,
+    },
+  );
+}
+
+/**
  * Loads the comments posted on a test, capped per test — see
  * {@link getVisibleTestCommentsQuery}, shared with the REST endpoint.
  */
@@ -1679,6 +1716,7 @@ export const createLoaders = () => ({
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   BuildCommentsCount: createBuildCommentsCountLoader(),
+  MediaComments: createMediaCommentsLoader(),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

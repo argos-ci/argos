@@ -9,6 +9,7 @@ import { UserEmail } from "./models";
 import { Account } from "./models/Account";
 import { Build } from "./models/Build";
 import { BuildReview } from "./models/BuildReview";
+import { Comment } from "./models/Comment";
 import { Deployment } from "./models/Deployment";
 import { DeploymentAlias } from "./models/DeploymentAlias";
 import { File } from "./models/File";
@@ -1678,12 +1679,17 @@ export async function seed() {
 /**
  * Standalone media for the team media library and the share page.
  *
- * Reuses the `dummy-*` image keys the screenshot seeds use, so the thumbnails and
- * the share page load real images from the test bucket. Fixed timestamps keep the
- * visual baselines stable.
+ * Reuses the `dummy-*` image keys the screenshot seeds use — the only ones that
+ * exist in the test bucket — so the thumbnails and the share page load real images.
+ * The recorded dimensions have to match those files, because the share page sizes
+ * its frame from them. Fixed timestamps keep the visual baselines stable.
  */
-export async function createMediaScenario(input: { projectId: string }) {
-  const { projectId } = input;
+export async function createMediaScenario(input: {
+  projectId: string;
+  /** When given, seeds a pinned thread and a plain comment on the image. */
+  commentAuthorId?: string;
+}) {
+  const { projectId, commentAuthorId } = input;
   const imageTs = "2026-04-20T10:00:00.000Z";
   const videoTs = "2026-04-20T09:00:00.000Z";
   const secondImageTs = "2026-04-20T08:00:00.000Z";
@@ -1693,11 +1699,11 @@ export async function createMediaScenario(input: { projectId: string }) {
       projectId,
       name: "checkout-after.png",
       slug: "pr-1234-after",
-      key: "dummy-1024x768.png",
+      key: "dummy-375x720.png",
       mimeType: "image/png",
       sizeBytes: "188416",
-      width: 1024,
-      height: 768,
+      width: 375,
+      height: 720,
       visibility: "team" as const,
       shareToken: `seed-media-image-${projectId}`,
       // Far enough out that the "expiring soon" colour never fires in a baseline.
@@ -1711,7 +1717,7 @@ export async function createMediaScenario(input: { projectId: string }) {
       projectId,
       name: "checkout-flow.mp4",
       slug: null,
-      key: "dummy-1440x900.png",
+      key: "dummy-375x1024.png",
       mimeType: "video/mp4",
       sizeBytes: "8388608",
       visibility: "public" as const,
@@ -1726,10 +1732,10 @@ export async function createMediaScenario(input: { projectId: string }) {
       projectId,
       name: "sidebar.png",
       slug: null,
-      key: "dummy-720x1024.png",
+      key: "dummy-375x1024.png",
       mimeType: "image/png",
       sizeBytes: "20971520",
-      width: 720,
+      width: 375,
       height: 1024,
       visibility: "team" as const,
       shareToken: `seed-media-second-${projectId}`,
@@ -1743,5 +1749,47 @@ export async function createMediaScenario(input: { projectId: string }) {
 
   invariant(image && video && secondImage, "media should be created");
 
+  if (commentAuthorId) {
+    const commentTs = "2026-04-20T11:00:00.000Z";
+    // A pinned root with a reply, plus one comment about the whole image: the
+    // three states the share page has to lay out at once.
+    const [pinned] = await Comment.query().insertAndFetch([
+      {
+        mediaId: image.id,
+        userId: commentAuthorId,
+        content: commentDoc("The primary button is misaligned here."),
+        anchor: { type: "point" as const, x: 0.62, y: 0.34 },
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+    ]);
+    invariant(pinned, "comment should be created");
+    await Comment.query().insert([
+      {
+        mediaId: image.id,
+        userId: commentAuthorId,
+        threadId: pinned.id,
+        content: commentDoc("Agreed — it should align with the input above."),
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+      {
+        mediaId: image.id,
+        userId: commentAuthorId,
+        content: commentDoc("Otherwise this looks good to ship."),
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+    ]);
+  }
+
   return { image, video, secondImage };
+}
+
+/** A one-paragraph TipTap document, the shape the comment editor produces. */
+function commentDoc(text: string) {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
 }
