@@ -29,7 +29,6 @@ import { createProject } from "./handlers/createProject";
 import { createReview } from "./handlers/createReview";
 import { deleteComment } from "./handlers/deleteComment";
 import { dismissReview } from "./handlers/dismissReview";
-import { exchangeEmailCode, requestEmailCode } from "./handlers/emailAuth";
 import { exchangeCliToken } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcToken } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessToken } from "./handlers/exchangeGitHubActionsTokenlessToken";
@@ -194,8 +193,6 @@ registerHandler(router, updateProjectDomain);
 registerHandler(router, listTeamDomainsHandler);
 registerHandler(router, addTeamDomainHandler);
 registerHandler(router, removeTeamDomainHandler);
-registerHandler(router, requestEmailCode);
-registerHandler(router, exchangeEmailCode);
 
 // Error handlers
 router.use(errorHandler);

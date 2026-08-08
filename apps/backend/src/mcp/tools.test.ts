@@ -100,11 +100,7 @@ describe("buildMcpTools", () => {
       "createDeployment",
       "finalizeDeployment",
       "getDeployment",
-      // Internal token-exchange operations. The email ones mint a token from
-      // a code sent to an inbox: that is a human signing up from a terminal,
-      // never something an agent should be able to drive.
-      "requestEmailCode",
-      "exchangeEmailCode",
+      // Internal token-exchange operations.
       "exchangeCliToken",
       "exchangeGitHubActionsOidcToken",
       "exchangeGitHubActionsTokenlessToken",

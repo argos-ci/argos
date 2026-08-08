@@ -28,4 +28,3 @@ export const serviceUnavailable = createErrorResponse("Service unavailable");
 export const conflict = createErrorResponse("Conflict");
 export const notFound = createErrorResponse("Not found");
 export const forbidden = createErrorResponse("Forbidden");
-export const tooManyRequests = createErrorResponse("Too many requests");
