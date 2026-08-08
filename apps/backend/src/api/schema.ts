@@ -29,6 +29,7 @@ import {
 import { createBuildOperation } from "./handlers/createBuild";
 import {
   createBuildCommentOperation,
+  createMediaCommentOperation,
   createTestCommentOperation,
 } from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
@@ -69,6 +70,7 @@ import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import {
   listBuildCommentsOperation,
+  listMediaCommentsOperation,
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
@@ -76,6 +78,13 @@ import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
 import { listTestsOperation } from "./handlers/listTests";
+import {
+  createMediaOperation,
+  deleteMediaOperation,
+  finalizeMediaOperation,
+  getMediaOperation,
+  listMediaOperation,
+} from "./handlers/media";
 import {
   listProjectContributorsOperation,
   removeProjectContributorOperation,
@@ -214,6 +223,12 @@ export const zodSchema = {
       "x-page-icon": "workflow",
     },
     {
+      name: "Media",
+      description:
+        "Upload standalone images and videos, with no build or test run behind them, and get back a shareable URL plus ready-to-paste Markdown. Built for embedding a screenshot or a screen recording in the pull request an agent just opened.",
+      "x-page-icon": "image-play",
+    },
+    {
       name: "Members",
       description:
         "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
@@ -258,6 +273,20 @@ export const zodSchema = {
     },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
+    },
+    "/media": {
+      post: createMediaOperation,
+    },
+    "/media/{mediaId}": {
+      get: getMediaOperation,
+      delete: deleteMediaOperation,
+    },
+    "/media/{mediaId}/finalize": {
+      post: finalizeMediaOperation,
+    },
+    "/media/{mediaId}/comments": {
+      get: listMediaCommentsOperation,
+      post: createMediaCommentOperation,
     },
     "/builds": {
       post: createBuildOperation,
@@ -325,6 +354,9 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}/transfer": {
       post: transferProjectOperation,
+    },
+    "/projects/{owner}/{project}/media": {
+      get: listMediaOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,

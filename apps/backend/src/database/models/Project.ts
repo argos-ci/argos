@@ -24,7 +24,7 @@ import { ProjectUser } from "./ProjectUser";
 import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
-type ProjectPermission =
+export type ProjectPermission =
   | "admin"
   | "review"
   | "review_dismiss"

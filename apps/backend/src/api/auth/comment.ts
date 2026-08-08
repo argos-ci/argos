@@ -10,29 +10,35 @@ import { Comment, type User } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { loadBuildForUserAuth, type BuildActionPermission } from "./build";
+import { loadMediaForAuth, type MediaRouteParams } from "./media";
 import { loadTestForAuth, type TestRouteParams } from "./test";
 
 /**
- * The path params of a comment route. Comments live on a build or on a test, and
- * every comment endpoint is registered on both paths with a single
- * implementation, so the implementations take this union.
+ * The path params of a comment route. Comments live on a build, a test or a
+ * media, and every comment endpoint is registered on all three paths with a
+ * single implementation, so the implementations take this union.
  */
 export type CommentRouteParams =
   | { owner: string; project: string; buildNumber: number }
-  | TestRouteParams;
+  | TestRouteParams
+  | MediaRouteParams;
 
 /** The auth accepted by every comment endpoint. */
 export type CommentAuth = AuthPATPayload | AuthOAuthPayload;
 
 /**
  * Load the comment target addressed by a route, whichever kind it is. Every
- * comment endpoint is registered on both a build path and a test path and shares
- * one implementation, so they all resolve their target through this.
+ * comment endpoint is registered on a build path, a test path and a media path
+ * and shares one implementation, so they all resolve their target through this.
  */
 export async function loadCommentTargetForUserAuth(
   authPromise: Promise<CommentAuth>,
   params: CommentRouteParams,
 ): Promise<{ auth: CommentAuth; target: CommentTarget }> {
+  if ("mediaId" in params) {
+    const { auth, media } = await loadMediaForAuth(authPromise, params);
+    return { auth, target: { type: "media", media } };
+  }
   if ("testId" in params) {
     const { auth, test } = await loadTestForAuth(authPromise, params);
     return { auth, target: { type: "test", test } };

@@ -21,6 +21,7 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
+import { queryProjectMedia } from "@/media/query";
 import {
   getAccountMetrics,
   InvalidAccountMetricsInputError,
@@ -176,6 +177,15 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    """
+    Standalone images and videos across the projects the viewer can see, most
+    recent first.
+    """
+    media(
+      after: Int = 0
+      first: Int = 30
+      filters: MediaFilterInput
+    ): MediaConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -304,6 +314,29 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       first: args.first,
       result,
     });
+  },
+  media: async (account, { first, after, filters }, ctx) => {
+    const { auth } = ctx;
+    if (!auth) {
+      throw unauthenticated();
+    }
+    // Media is project-scoped, so the library shows what the viewer can already
+    // see — the same shape the tests dashboard uses.
+    const projectIds = await getVisibleProjectIds({
+      account,
+      user: auth.user,
+    });
+    if (projectIds.length === 0) {
+      return {
+        pageInfo: { totalCount: 0, hasNextPage: false, isEmpty: true },
+        edges: [],
+      };
+    }
+    const result = await queryProjectMedia({
+      projectIds,
+      filters: filters ?? null,
+    }).range(after, after + first - 1);
+    return paginateResult({ result, first, after });
   },
   tests: async (account, { first, after, period, filters }, ctx) => {
     const { auth } = ctx;

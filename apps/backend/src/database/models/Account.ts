@@ -11,6 +11,7 @@ import { timestampsSchema } from "../util/schemas";
 import { DiscordWebhook } from "./DiscordWebhook";
 import { GithubAccount } from "./GithubAccount";
 import { GithubInstallation } from "./GithubInstallation";
+import { Media } from "./Media";
 import { MsTeamsWebhook } from "./MsTeamsWebhook";
 import { Plan } from "./Plan";
 import { Project } from "./Project";
@@ -741,13 +742,58 @@ export class Account extends Model {
       query.where("project.id", options.projectId);
     }
 
-    const result = await query.castTo<
-      { all: string | null; storybook: string | null } | undefined
-    >();
-    const all = result?.all ? Number(result.all) : 0;
+    const [result, mediaUnits] = await Promise.all([
+      query.castTo<
+        { all: string | null; storybook: string | null } | undefined
+      >(),
+      this.$getMediaUnitsBetween(from, to, options),
+    ]);
+    const buckets = result?.all ? Number(result.all) : 0;
     const storybook = result?.storybook ? Number(result.storybook) : 0;
+    // Standalone media is billed on this meter rather than on one of its own, so
+    // it lands on the invoice line accounts already read and inherits the
+    // capacity and spend-limit checks unchanged. It is never Storybook, so it
+    // only ever moves the neutral half.
+    const all = buckets + mediaUnits;
     const neutral = all - storybook;
     return { all, neutral, storybook };
+  }
+
+  /**
+   * Screenshot units charged by standalone media uploads over a period.
+   *
+   * Reads the units frozen on each row at upload time rather than recomputing
+   * them from the content type, so changing the conversion never rewrites what an
+   * account was already billed.
+   *
+   * Joined to the account through the project, exactly like screenshot buckets —
+   * so transferring a project moves its media's billing with it.
+   */
+  async $getMediaUnitsBetween(
+    from: Date,
+    to: Date | "now",
+    options?: {
+      projectId?: string | undefined;
+    },
+  ): Promise<number> {
+    const query = Media.query()
+      .sum("media.billedUnits as units")
+      .joinRelated("project")
+      .where("project.accountId", this.id)
+      .whereNotNull("media.uploadedAt")
+      .where("media.uploadedAt", ">=", from.toISOString())
+      .first();
+
+    if (to !== "now") {
+      query.where("media.uploadedAt", "<", to.toISOString());
+    }
+
+    if (options?.projectId) {
+      query.where("media.projectId", options.projectId);
+    }
+
+    const result = await query.castTo<{ units: string | null } | undefined>();
+    return result?.units ? Number(result.units) : 0;
   }
 
   static async getPermissions(

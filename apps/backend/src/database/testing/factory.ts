@@ -432,6 +432,24 @@ export const AutomationRun = defineFactory(models.AutomationRun, () => ({
   buildId: Build.associate("id") as unknown as string,
 }));
 
+export const Media = defineFactory(models.Media, () => ({
+  projectId: Project.associate("id") as unknown as string,
+  name: "screenshot.png",
+  slug: null,
+  key: `media/test/${bytesToString(randomBytes(32))}.png`,
+  mimeType: "image/png",
+  sizeBytes: "1024",
+  visibility: "team" as const,
+  shareToken: FactoryGirl.sequence(
+    "media.shareToken",
+    (n) => `share-token-${n}`,
+  ),
+  // Uploaded and billed: an unfinalized media is the state the two-step upload
+  // passes through, not the one tests usually mean.
+  uploadedAt: new Date().toISOString(),
+  billedUnits: 1,
+}));
+
 export const PullRequest = defineFactory(models.GithubPullRequest, () => ({
   number: 99,
   title: "Fix bug",

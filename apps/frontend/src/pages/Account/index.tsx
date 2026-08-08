@@ -41,6 +41,7 @@ function AccountTabs({ account }: { account: Account }) {
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="~/tests">Tests</TabLink>
+        <TabLink href="~/media">Media</TabLink>
         <TabLink href="settings">Settings</TabLink>
       </TabList>
       <hr className="border-t" />
