@@ -236,6 +236,17 @@ describe("listAutomationRules / getAutomationRule", () => {
     expect(one.body.id).toBe(created.body.id);
   });
 
+  test("404s on a non-numeric rule id", async ({ token }) => {
+    // The id column is a bigint: without a guard this reaches Postgres and
+    // comes back as a 500 carrying the query text.
+    const res = await request(app)
+      .get("/projects/acme/web/automation-rules/not-a-number")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(404);
+
+    expect(res.body.error).toBe("Automation rule not found.");
+  });
+
   test("404s for a rule belonging to another project", async ({
     account,
     webhook,

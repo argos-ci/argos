@@ -12,6 +12,7 @@
  * runner needs, refusing anything belonging to another account.
  */
 import type { AutomationEvent } from "@argos/schemas/automation-event";
+import { invariant } from "@argos/util/invariant";
 import type { QueryBuilder } from "objection";
 import { z } from "zod";
 
@@ -30,6 +31,7 @@ import type { Project } from "../models/Project";
 import { SlackChannel } from "../models/SlackChannel";
 import type { SlackInstallation } from "../models/SlackInstallation";
 import type { User } from "../models/User";
+import { isValidPgBigInt } from "../util/biginteger";
 import { assertProjectAdmin, loadProjectById } from "./project";
 
 /** How an action names its target before the service resolves it. */
@@ -312,6 +314,14 @@ export async function getAutomationRuleForAdmin(args: {
   /** When set, the rule must belong to this project. */
   projectId?: string;
 }): Promise<AutomationRule> {
+  // The id reaches us from a URL path or a GraphQL argument, and the column is
+  // a bigint: handing Postgres a non-numeric one raises a cast error, which the
+  // API surfaces as a 500 carrying the query text. A malformed id is simply a
+  // rule that does not exist.
+  if (!isValidPgBigInt(args.id)) {
+    throw boom(404, "Automation rule not found.");
+  }
+
   const automationRule = await AutomationRule.query()
     .findById(args.id)
     .withGraphFetched("project");
@@ -353,8 +363,9 @@ export async function updateAutomationRule(args: {
   const automationRule = await getAutomationRuleForAdmin(args);
   const { project } = automationRule;
   // `getAutomationRuleForAdmin` fetched it to check permissions.
+  invariant(project, "automation rule project not fetched");
   const data = await buildAutomationRuleData({
-    project: project as Project,
+    project,
     input: args.input,
   });
   return automationRule.$query().patchAndFetch(data);

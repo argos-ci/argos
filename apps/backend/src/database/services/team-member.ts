@@ -223,21 +223,39 @@ export async function removeTeamMember(args: {
     userAccountId: args.userAccountId,
   });
 
-  const count = await TeamUser.query().where({ teamId }).resultSize();
-  if (count === 1) {
-    throw boom(403, "Can't remove the last user of a team.");
-  }
+  return transaction(async (trx) => {
+    // Both rules below are statements about the whole membership, so the set
+    // has to be read under a lock: counting outside the transaction lets two
+    // concurrent removals each see two members, each pass the guard, and each
+    // delete — leaving the team with nobody in it. `forUpdate` makes the second
+    // request wait and re-read, so it sees the team the first one left behind.
+    //
+    // Not covered by a test: two `removeTeamMember` calls raced with
+    // `Promise.all` do not reliably interleave, because the second spends three
+    // queries on authorization before it opens its transaction, by which time
+    // the first has usually committed. A test that passes either way would
+    // advertise coverage this does not have.
+    const members = await TeamUser.query(trx)
+      .where({ teamId })
+      .select("id")
+      .forUpdate();
 
-  await transaction(async (trx) => {
-    await TeamUser.query(trx).findById(teamUser.id).delete();
+    if (members.length <= 1) {
+      throw boom(403, "Can't remove the last user of a team.");
+    }
+
+    const deleted = await TeamUser.query(trx).findById(teamUser.id).delete();
+    if (deleted === 0) {
+      throw boom(404, "This user is not a member of the team.");
+    }
 
     // The last one left is the only one, so it must be the owner.
-    if (count === 2) {
+    if (members.length === 2) {
       await TeamUser.query(trx).where({ teamId }).patch({ userLevel: "owner" });
     }
-  });
 
-  return { teamMemberId: teamUser.id };
+    return { teamMemberId: teamUser.id };
+  });
 }
 
 /**

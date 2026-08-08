@@ -66,11 +66,11 @@ export function TeamSubscribeDialog({
         return 0;
       })
     : null;
-  const disabledAccountIds = teams
-    ? teams
-        .filter((a) => checkIsActiveSubscriptionStatus(a.subscriptionStatus))
-        .map((a) => a.id)
-    : [];
+  const disabledReasons = Object.fromEntries(
+    (teams ?? [])
+      .filter((a) => checkIsActiveSubscriptionStatus(a.subscriptionStatus))
+      .map((a) => [a.id, "Already on a paid plan"] as const),
+  );
 
   return (
     <DialogTrigger>
@@ -84,8 +84,7 @@ export function TeamSubscribeDialog({
               <Label>Team to subscribe</Label>
               <AccountSelector
                 accounts={sortedTeams}
-                disabledAccountIds={disabledAccountIds}
-                disabledTooltip="This team already has a paid plan."
+                disabledReasons={disabledReasons}
                 value={accountId}
                 setValue={setAccountId}
               />
