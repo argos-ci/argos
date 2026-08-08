@@ -193,7 +193,14 @@ export default defineConfig((args) => {
     build: {
       sourcemap: mode !== "development",
       rollupOptions: {
+        // Both of these are required by `includeDependenciesRecursively: false`
+        // below — Rolldown can otherwise emit chunks whose execution order
+        // doesn't match the module graph. That failed loudly: the build, test
+        // detail, analytics, passkey and settings pages all rendered the root
+        // error boundary, while simpler routes were fine.
+        preserveEntrySignatures: false,
         output: {
+          strictExecutionOrder: true,
           // An `entriesAware` group names each split after every entry that
           // pulls it in, which runs to 100+ characters and spells out the app's
           // route list in `index.html`. The hash already disambiguates, so keep
@@ -211,6 +218,9 @@ export default defineConfig((args) => {
             // shared leaf utilities that boot code needs, which made boot
             // statically depend on recharts and put 440 kB of charts on the
             // critical path of every page.
+            //
+            // Turning it off is what makes the two options above mandatory; see
+            // https://rolldown.rs/reference/OutputOptions.codeSplitting
             includeDependenciesRecursively: false,
             groups: [
               {
