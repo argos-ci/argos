@@ -7,20 +7,13 @@ import {
   ChevronRightIcon,
   PencilIcon,
 } from "lucide-react";
-import { Heading } from "react-aria-components";
 import { Link, useParams } from "react-router";
 
 import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { ChipButton } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
-import {
-  Page,
-  PageContainer,
-  PageHeader,
-  PageHeaderActions,
-  PageHeaderContent,
-} from "@/ui/Layout";
+import { Page, PageContainer } from "@/ui/Layout";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -130,19 +123,77 @@ function VariantGroups(props: {
   );
 }
 
+/**
+ * Horizontal strip of every step of the journey, styled like the minimap of the
+ * build viewer. Clicking a thumbnail scrolls the matching step into view.
+ */
+function FlowMinimap(props: {
+  steps: Flow["steps"];
+  activeStepKey: string | null;
+  selection: VariantSelection;
+  onSelect: (stepKey: string) => void;
+}) {
+  const { steps, activeStepKey, selection, onSelect } = props;
+  return (
+    // The inner padding keeps the selection ring of the edge thumbnails from
+    // being clipped by the horizontal scroll container.
+    <div className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5">
+      {steps.map((step, index) => {
+        const isActive = step.key === activeStepKey;
+        const variant = pickVariant(step, selection);
+        return (
+          <div key={step.key} className="flex shrink-0 items-center gap-1">
+            {index > 0 && (
+              <ChevronRightIcon className="text-low size-3.5 shrink-0" />
+            )}
+            <button
+              type="button"
+              data-flow-step={step.key}
+              onClick={() => onSelect(step.key)}
+              className={clsx(
+                "flex flex-col items-center gap-1 rounded-md p-1",
+                !isActive && "hover:bg-hover",
+              )}
+            >
+              <span
+                className={clsx(
+                  "block h-20 overflow-hidden rounded-md border bg-white transition",
+                  isActive
+                    ? "ring-primary-active ring-2"
+                    : "hover:border-hover",
+                )}
+              >
+                <ImageKitPicture
+                  src={variant.screenshot.url}
+                  transformations={["w-320", "h-320", "c-at_max"]}
+                  className="block h-full w-auto max-w-36 object-contain"
+                  alt={step.label}
+                />
+              </span>
+              <span
+                className={clsx(
+                  "max-w-32 truncate text-[0.6875rem] leading-none",
+                  isActive ? "font-medium" : "text-low",
+                )}
+              >
+                {index + 1} · {step.label}
+              </span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Storyboard(props: {
-  flow: Flow;
+  steps: Flow["steps"];
   build: FlowsBuild;
   params: ProjectParams;
   selection: VariantSelection;
-  storedOrder: string[] | undefined;
   onReorder: (stepKeys: string[]) => void;
 }) {
-  const { flow, build, params, selection, storedOrder, onReorder } = props;
-  const steps = useMemo(
-    () => orderSteps(flow.steps, storedOrder),
-    [flow.steps, storedOrder],
-  );
+  const { steps, build, params, selection, onReorder } = props;
 
   const move = (index: number, delta: -1 | 1) => {
     const keys = steps.map((step) => step.key);
@@ -154,6 +205,88 @@ function Storyboard(props: {
     keys.splice(target, 0, moved as string);
     onReorder(keys);
   };
+
+  return (
+    // Every step, large, in journey order.
+    <div className="flex max-w-4xl flex-col gap-10 pt-6 pb-16">
+      {steps.map((step, index) => {
+        const variant = pickVariant(step, selection);
+        return (
+          <div
+            key={step.key}
+            data-flow-step-section={step.key}
+            // Clears the sticky title bar plus the minimap parked under it.
+            className="group scroll-mt-48"
+          >
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="text-low text-sm tabular-nums">{index + 1}</span>
+              <span className="font-medium">{step.label}</span>
+              <span className="text-low truncate text-xs">
+                {variant.screenshot.name}
+              </span>
+              <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+                <Button
+                  variant="secondary"
+                  size="small"
+                  iconOnly
+                  aria-label="Move up"
+                  isDisabled={index === 0}
+                  onPress={() => move(index, -1)}
+                >
+                  <ArrowUpIcon />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  iconOnly
+                  aria-label="Move down"
+                  isDisabled={index === steps.length - 1}
+                  onPress={() => move(index, 1)}
+                >
+                  <ArrowDownIcon />
+                </Button>
+              </div>
+            </div>
+            <Link
+              to={getBuildURL({
+                accountSlug: params.accountSlug,
+                projectName: params.projectName,
+                buildNumber: build.number,
+                diffId: variant.edge.id,
+              })}
+              className="hover:border-hover block w-fit max-w-full overflow-hidden rounded-lg border bg-white shadow-xs transition"
+            >
+              <ImageKitPicture
+                key={variant.edge.id}
+                src={variant.screenshot.url}
+                transformations={["w-1400", "h-1400", "c-at_max"]}
+                className="block max-h-160 w-auto max-w-full"
+                alt={step.label}
+              />
+            </Link>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PageContent(props: { params: ProjectParams; flowId: string }) {
+  const { params, flowId } = props;
+  const { project, build, flows, truncated } = useProjectFlows(params);
+  const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
+  const { names, setFlowName } = useStoredNames(params);
+  const [partialSelection, setPartialSelection] = useState<
+    Partial<VariantSelection>
+  >({});
+  const [editingName, setEditingName] = useState(false);
+
+  const flow = flows.find((candidate) => candidate.key === flowId) ?? null;
+  const storedOrder = flow ? orders[flow.key] : undefined;
+  const steps = useMemo(
+    () => (flow ? orderSteps(flow.steps, storedOrder) : []),
+    [flow, storedOrder],
+  );
 
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const activeStepKey = activeKey ?? steps[0]?.key ?? null;
@@ -186,141 +319,14 @@ function Storyboard(props: {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  return (
-    <div className="flex flex-col pt-3 pb-16">
-      {/* Minimap of the journey, sticky while browsing the steps below:
-          every step stays in sight, a click scrolls to it. */}
-      <div className="bg-app sticky top-0 z-10 flex items-center gap-1 overflow-x-auto py-2">
-        {steps.map((step, index) => {
-          const isActive = step.key === activeStepKey;
-          const variant = pickVariant(step, selection);
-          return (
-            <div key={step.key} className="flex shrink-0 items-center gap-1">
-              {index > 0 && (
-                <ChevronRightIcon className="text-low size-3.5 shrink-0" />
-              )}
-              <button
-                type="button"
-                data-flow-step={step.key}
-                onClick={() => scrollToStep(step.key)}
-                className="flex flex-col items-center gap-1 rounded-md p-1"
-              >
-                <span
-                  className={clsx(
-                    "block h-20 overflow-hidden rounded-md border bg-white transition",
-                    isActive
-                      ? "ring-primary-active ring-2"
-                      : "hover:border-hover",
-                  )}
-                >
-                  <ImageKitPicture
-                    src={variant.screenshot.url}
-                    transformations={["w-320", "h-320", "c-at_max"]}
-                    className="block h-full w-auto max-w-36 object-contain"
-                    alt={step.label}
-                  />
-                </span>
-                <span
-                  className={clsx(
-                    "max-w-32 truncate text-[0.6875rem] leading-none",
-                    isActive ? "font-medium" : "text-low",
-                  )}
-                >
-                  {index + 1} · {step.label}
-                </span>
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Every step, large, in journey order. */}
-      <div className="flex max-w-4xl flex-col gap-10 pt-6">
-        {steps.map((step, index) => {
-          const variant = pickVariant(step, selection);
-          return (
-            <div
-              key={step.key}
-              data-flow-step-section={step.key}
-              className="group scroll-mt-36"
-            >
-              <div className="mb-2 flex items-baseline gap-2">
-                <span className="text-low text-sm tabular-nums">
-                  {index + 1}
-                </span>
-                <span className="font-medium">{step.label}</span>
-                <span className="text-low truncate text-xs">
-                  {variant.screenshot.name}
-                </span>
-                <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    iconOnly
-                    aria-label="Move up"
-                    isDisabled={index === 0}
-                    onPress={() => move(index, -1)}
-                  >
-                    <ArrowUpIcon />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    iconOnly
-                    aria-label="Move down"
-                    isDisabled={index === steps.length - 1}
-                    onPress={() => move(index, 1)}
-                  >
-                    <ArrowDownIcon />
-                  </Button>
-                </div>
-              </div>
-              <Link
-                to={getBuildURL({
-                  accountSlug: params.accountSlug,
-                  projectName: params.projectName,
-                  buildNumber: build.number,
-                  diffId: variant.edge.id,
-                })}
-                className="hover:border-hover block w-fit max-w-full overflow-hidden rounded-lg border bg-white shadow-xs transition"
-              >
-                <ImageKitPicture
-                  key={variant.edge.id}
-                  src={variant.screenshot.url}
-                  transformations={["w-1400", "h-1400", "c-at_max"]}
-                  className="block max-h-160 w-auto max-w-full"
-                  alt={step.label}
-                />
-              </Link>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PageContent(props: { params: ProjectParams; flowId: string }) {
-  const { params, flowId } = props;
-  const { project, build, flows, truncated } = useProjectFlows(params);
-  const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
-  const { names, setFlowName } = useStoredNames(params);
-  const [partialSelection, setPartialSelection] = useState<
-    Partial<VariantSelection>
-  >({});
-  const [editingName, setEditingName] = useState(false);
-
   if (!project) {
     return <NotFound />;
   }
-
-  const flow = flows.find((candidate) => candidate.key === flowId) ?? null;
 
   if (!build || !flow) {
     return <NotFound />;
   }
 
-  const storedOrder = orders[flow.key];
   const dimensions = getFlowDimensions(flow);
   // Defaults per axis: first browser, largest viewport (desktop), light.
   const selection: VariantSelection = {
@@ -332,72 +338,58 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
 
   return (
     <PageContainer>
-      <PageHeader>
-        <PageHeaderContent>
-          <div className="flex items-center gap-1">
-            {editingName ? (
-              <input
-                autoFocus
-                defaultValue={names[flow.key] ?? flow.title}
-                aria-label="Flow name"
-                className="rounded-sm border px-2 py-0.5 text-lg font-semibold outline-hidden"
-                onBlur={(event) => {
-                  const value = event.currentTarget.value.trim();
-                  setFlowName(
-                    flow.key,
-                    value && value !== flow.title ? value : null,
-                  );
+      {/* Title bar. It sticks alone at the very top, so the flow one is
+          reading is never anonymous — and being opaque, it is what the
+          subtitle slides behind on the way out.
+
+          Deliberately not `PageHeader`: its own `mb-6` and `text-2xl` heading
+          would both have to be fought here, and the fixed height is what lets
+          the minimap park right under it in CSS alone. */}
+      <div className="bg-subtle sticky top-0 z-20 flex h-12 items-center justify-between gap-x-4">
+        <div className="flex items-center gap-1">
+          {editingName ? (
+            <input
+              autoFocus
+              defaultValue={names[flow.key] ?? flow.title}
+              aria-label="Flow name"
+              className="rounded-sm border px-2 py-0.5 text-lg font-semibold outline-hidden"
+              onBlur={(event) => {
+                const value = event.currentTarget.value.trim();
+                setFlowName(
+                  flow.key,
+                  value && value !== flow.title ? value : null,
+                );
+                setEditingName(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+                if (event.key === "Escape") {
                   setEditingName(false);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.currentTarget.blur();
-                  }
-                  if (event.key === "Escape") {
-                    setEditingName(false);
-                  }
-                }}
-              />
-            ) : (
-              <>
-                <Heading className="text-lg!">
-                  {names[flow.key] ?? flow.title}
-                </Heading>
-                <Tooltip content="Rename flow">
-                  <Button
-                    variant="ghost"
-                    iconOnly
-                    size="small"
-                    aria-label="Rename flow"
-                    onPress={() => setEditingName(true)}
-                  >
-                    <PencilIcon />
-                  </Button>
-                </Tooltip>
-              </>
-            )}
-          </div>
-          <div className="text-low flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm">
-            {flow.prefix ? (
-              <>
-                <span className="truncate font-mono text-xs">
-                  {flow.prefix}
-                  {names[flow.key] ? ` › ${flow.title}` : ""}
-                </span>
-                <span>·</span>
-              </>
-            ) : null}
-            <span className="shrink-0">
-              {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
-            </span>
-            <span>·</span>
-            <span className="shrink-0">
-              from build #{build.number} on {build.branch} ·{" "}
-              <Time date={build.createdAt} />
-            </span>
-          </div>
-        </PageHeaderContent>
-        <PageHeaderActions>
+                }
+              }}
+            />
+          ) : (
+            <>
+              <h1 className="text-lg font-medium">
+                {names[flow.key] ?? flow.title}
+              </h1>
+              <Tooltip content="Rename flow">
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  size="small"
+                  aria-label="Rename flow"
+                  onPress={() => setEditingName(true)}
+                >
+                  <PencilIcon />
+                </Button>
+              </Tooltip>
+            </>
+          )}
+        </div>
+        <div className="flex gap-4">
           {storedOrder && (
             <>
               <span className="text-low text-xs">Custom order</span>
@@ -417,8 +409,39 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
               setPartialSelection((previous) => ({ ...previous, ...change }))
             }
           />
-        </PageHeaderActions>
-      </PageHeader>
+        </div>
+      </div>
+      {/* Plain flow, on purpose: it is the one thing allowed to leave. It
+          scrolls up at scroll speed and disappears behind the title bar above,
+          which is all the "collapse" this needs. */}
+      <div className="text-low flex min-w-0 flex-wrap items-center gap-x-1.5 pb-4 text-sm">
+        {flow.prefix ? (
+          <>
+            <span className="truncate font-mono text-xs">
+              {flow.prefix}
+              {names[flow.key] ? ` › ${flow.title}` : ""}
+            </span>
+            <span>·</span>
+          </>
+        ) : null}
+        <span className="shrink-0">
+          {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
+        </span>
+        <span>·</span>
+        <span className="shrink-0">
+          from build #{build.number} on {build.branch} ·{" "}
+          <Time date={build.createdAt} />
+        </span>
+      </div>
+      {/* Parks right under the title bar — `top-12` mirrors its `h-12`. */}
+      <div className="bg-subtle sticky top-12 z-10 pb-3">
+        <FlowMinimap
+          steps={steps}
+          activeStepKey={activeStepKey}
+          selection={selection}
+          onSelect={scrollToStep}
+        />
+      </div>
       {truncated ? (
         <div className="text-low text-xs">
           Flows are computed from the first 1000 screenshots of the build — some
@@ -426,11 +449,10 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
         </div>
       ) : null}
       <Storyboard
-        flow={flow}
+        steps={steps}
         build={build}
         params={params}
         selection={selection}
-        storedOrder={storedOrder}
         onReorder={(stepKeys) => setFlowOrder(flow.key, stepKeys)}
       />
     </PageContainer>
