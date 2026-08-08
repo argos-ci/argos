@@ -6,6 +6,7 @@ import { ColorModeProvider } from "@/ui/ColorMode";
 
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthContextProvider } from "./containers/Auth";
+import { RoutePreloader } from "./containers/RoutePreloader";
 import { router } from "./router";
 import { Toaster } from "./ui/Toaster";
 
@@ -18,6 +19,7 @@ export function App() {
           <ApolloInitializer>
             <AuthContextProvider>
               <RouterProvider router={router} useTransitions={false} />
+              <RoutePreloader />
               <Toaster />
             </AuthContextProvider>
           </ApolloInitializer>
