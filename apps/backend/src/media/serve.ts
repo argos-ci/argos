@@ -1,5 +1,5 @@
 import type { Media } from "@/database/models";
-import { getTwicPicsUrl } from "@/storage/public-url";
+import { getImageKitUrl } from "@/storage";
 
 /**
  * Seconds into a video to grab the poster frame from.
@@ -24,7 +24,7 @@ const POSTER_SEEK_SECONDS = 1;
  * `team` means the branded page (project context, expiry, delete) needs a session.
  */
 export function getMediaFileUrl(media: Media): string {
-  return getTwicPicsUrl(media.key);
+  return getImageKitUrl(media.key);
 }
 
 /**
@@ -39,7 +39,7 @@ export function getMediaPosterUrl(media: Media): string | null {
   if (!media.isVideo()) {
     return null;
   }
-  const url = new URL(getTwicPicsUrl(media.key));
+  const url = new URL(getImageKitUrl(media.key));
   // ImageKit's video-thumbnail endpoint: `<video-path>/ik-thumbnail.jpg`, with
   // `so` (start offset, in seconds) choosing the frame.
   url.pathname = `${url.pathname}/ik-thumbnail.jpg`;
