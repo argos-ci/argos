@@ -21,6 +21,8 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
+import { getMediaPermissions } from "@/media/permissions";
+import { queryAccountMedia } from "@/media/query";
 import {
   getAccountMetrics,
   InvalidAccountMetricsInputError,
@@ -40,7 +42,12 @@ import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getVisibleProjectIds } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
-import { badUserInput, toGraphQLError, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -176,6 +183,17 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    """
+    Standalone images and videos uploaded to this account, most recent first.
+
+    Administrators only: the library spans projects a given member may have no
+    access to. Following a single share link is a separate, more permissive check.
+    """
+    media(
+      after: Int = 0
+      first: Int = 30
+      filters: MediaFilterInput
+    ): MediaConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -304,6 +322,21 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       first: args.first,
       result,
     });
+  },
+  media: async (account, { first, after, filters }, ctx) => {
+    const { auth } = ctx;
+    if (!auth) {
+      throw unauthenticated();
+    }
+    const permissions = await account.$getPermissions(auth.user);
+    if (getMediaPermissions(permissions).length === 0) {
+      throw forbidden("You are not an administrator of this team.");
+    }
+    const result = await queryAccountMedia({
+      accountId: account.id,
+      filters: filters ?? null,
+    }).range(after, after + first - 1);
+    return paginateResult({ result, first, after });
   },
   tests: async (account, { first, after, period, filters }, ctx) => {
     const { auth } = ctx;

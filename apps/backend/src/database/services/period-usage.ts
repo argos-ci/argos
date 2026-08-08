@@ -103,14 +103,76 @@ async function getScreenshotTotals(
     allTimeStorybook: string | number;
   }[];
 
+  // Standalone media hangs off the account, not off a project, so it cannot ride
+  // the join above — that would multiply each account's media by its project
+  // count. It is aggregated separately and added in.
+  const mediaUnitsByAccountId = await getMediaUnits(periodStartByAccountId);
+
+  return new Map(
+    rows.map((row) => {
+      const accountId = String(row.accountId);
+      const media = mediaUnitsByAccountId.get(accountId);
+      return [
+        accountId,
+        {
+          // Media is never Storybook, so it lifts the totals without touching
+          // either Storybook count — the neutral half absorbs it.
+          periodAll: (Number(row.periodAll) || 0) + (media?.period ?? 0),
+          periodStorybook: Number(row.periodStorybook) || 0,
+          allTimeAll: (Number(row.allTimeAll) || 0) + (media?.allTime ?? 0),
+          allTimeStorybook: Number(row.allTimeStorybook) || 0,
+        },
+      ];
+    }),
+  );
+}
+
+/**
+ * Screenshot units charged by standalone media, per account, over the period and
+ * over all time.
+ *
+ * One query for the whole batch, same as the bucket totals: the period boundary
+ * travels with the rows in a `VALUES` list because every account's period follows
+ * its own subscription anniversary.
+ */
+async function getMediaUnits(
+  periodStartByAccountId: Map<string, Date>,
+): Promise<Map<string, { period: number; allTime: number }>> {
+  const entries = [...periodStartByAccountId];
+  const values = entries.map(() => `(?::bigint, ?::timestamptz)`).join(", ");
+  const bindings = entries.flatMap(([accountId, periodStart]) => [
+    accountId,
+    periodStart.toISOString(),
+  ]);
+
+  const rows = (await knex
+    .select("v.accountId")
+    .select(
+      knex.raw(
+        `coalesce(sum(m."billedUnits") filter (where m."uploadedAt" >= v."periodStart"), 0) as "period"`,
+      ),
+      knex.raw(`coalesce(sum(m."billedUnits"), 0) as "allTime"`),
+    )
+    .from(
+      knex.raw(`(values ${values}) as v("accountId", "periodStart")`, bindings),
+    )
+    // Only uploads that completed are billed, which is what `uploadedAt`
+    // records; a row whose bytes never landed charges nothing.
+    .leftJoin("media as m", (join) => {
+      join.on("m.accountId", "v.accountId").onNotNull("m.uploadedAt");
+    })
+    .groupBy("v.accountId")) as unknown as {
+    accountId: string | number;
+    period: string | number;
+    allTime: string | number;
+  }[];
+
   return new Map(
     rows.map((row) => [
       String(row.accountId),
       {
-        periodAll: Number(row.periodAll) || 0,
-        periodStorybook: Number(row.periodStorybook) || 0,
-        allTimeAll: Number(row.allTimeAll) || 0,
-        allTimeStorybook: Number(row.allTimeStorybook) || 0,
+        period: Number(row.period) || 0,
+        allTime: Number(row.allTime) || 0,
       },
     ]),
   );

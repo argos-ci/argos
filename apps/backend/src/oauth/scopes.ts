@@ -39,6 +39,15 @@ export const OAUTH_SCOPES = {
     description:
       "Post, edit, and delete comments, add reactions, and manage subscriptions.",
   },
+  "media:read": {
+    title: "Read media",
+    description: "Read the images and videos uploaded to your teams.",
+  },
+  "media:write": {
+    title: "Upload media",
+    description:
+      "Upload images and videos, and delete the ones already uploaded.",
+  },
   "account:admin": {
     title: "Administer organizations",
     description: "Manage organization settings and members.",

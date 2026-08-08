@@ -126,6 +126,11 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    media(
+      after: Int = 0
+      first: Int = 30
+      filters: MediaFilterInput
+    ): MediaConnection!
     avatar: AccountAvatar!
     hasForcedPlan: Boolean!
     gitlabAccessToken: String

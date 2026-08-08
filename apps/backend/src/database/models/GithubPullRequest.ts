@@ -19,6 +19,8 @@ export class GithubPullRequest extends Model {
         properties: {
           commentDeleted: { type: "boolean" },
           commentId: { type: ["string", "null"] },
+          mediaCommentDeleted: { type: "boolean" },
+          mediaCommentId: { type: ["string", "null"] },
           githubRepositoryId: { type: "string" },
           number: { type: "integer" },
           title: {
@@ -40,6 +42,13 @@ export class GithubPullRequest extends Model {
 
   commentDeleted!: boolean;
   commentId!: string | null;
+  /**
+   * The managed comment listing the standalone media uploaded for this pull
+   * request. A second comment, deliberately not the build-status one: media has
+   * no build behind it.
+   */
+  mediaCommentDeleted!: boolean;
+  mediaCommentId!: string | null;
   jobStatus!: JobStatus;
   githubRepositoryId!: string;
   number!: number;

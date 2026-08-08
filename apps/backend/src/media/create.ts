@@ -1,0 +1,299 @@
+import { randomBytes } from "node:crypto";
+import type { MediaVisibility } from "@argos/schemas/media";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+
+import config from "@/config";
+import { Account, Media, Project } from "@/database/models";
+import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
+import { getS3Client } from "@/storage/s3";
+import { endTrialToUnlockUsage } from "@/stripe";
+import { boom } from "@/util/error";
+import { redisLock } from "@/util/redis";
+
+import { finalizeMedia } from "./finalize";
+import { getMediaKey } from "./key";
+import { getMediaLimits, resolveExpiresAt, type MediaLimits } from "./limits";
+import { headMediaObject } from "./object";
+
+/** How long a signed upload target stays valid. */
+const UPLOAD_EXPIRES_IN_SECONDS = 1800; // 30 minutes
+
+/**
+ * Length of the share token in bytes. 24 bytes is 192 bits of entropy, rendered
+ * as 32 base64url characters: unguessable is the *only* thing protecting a public
+ * share URL, so this is deliberately far past what a rate limiter would need to
+ * make enumeration hopeless.
+ */
+const SHARE_TOKEN_BYTES = 24;
+
+function generateShareToken(): string {
+  return randomBytes(SHARE_TOKEN_BYTES).toString("base64url");
+}
+
+export type CreateMediaParams = {
+  account: Account;
+  /** The project the upload came from, when the caller is a project token. */
+  project: Project | null;
+  /** The acting user, when the caller holds a user token. */
+  userId: string | null;
+  /** Original file name, used for display and Markdown alt text. */
+  name: string;
+  contentType: string;
+  /** Size the caller says the file is, enforced by S3 on upload. */
+  sizeBytes: number;
+  /** SHA-256 of the file contents, hex encoded. Makes the key content-addressed. */
+  hash: string;
+  /** Stable per-account identifier. Re-uploading the same slug replaces in place. */
+  slug: string | null;
+  visibility: MediaVisibility | null;
+  retentionDays: number | null;
+};
+
+export type CreateMediaResult = {
+  media: Media;
+  /** Where to POST the bytes. */
+  upload: {
+    url: string;
+    fields: Record<string, string>;
+  } | null;
+};
+
+/**
+ * Register a media and hand back a signed target to upload its bytes to.
+ *
+ * The row exists before the bytes do, so the share URL is known up front and the
+ * caller can print it (or paste it into a pull request) without waiting for a
+ * 500 MB video to finish uploading. It only becomes serveable once
+ * {@link finalizeMedia} confirms the object landed.
+ */
+export async function createMedia(
+  params: CreateMediaParams,
+): Promise<CreateMediaResult> {
+  const { account } = params;
+
+  await assertAccountCanUpload(account);
+
+  const limits = await getMediaLimits(account);
+
+  assertWithinFileSizeLimit({ sizeBytes: params.sizeBytes, limits });
+  const visibility = resolveVisibility({
+    requested: params.visibility,
+    limits,
+  });
+
+  const key = getMediaKey({
+    accountId: account.id,
+    hash: params.hash,
+    contentType: params.contentType,
+  });
+  const expiresAt = resolveExpiresAt({
+    limits,
+    requestedRetentionDays: params.retentionDays,
+  });
+
+  const media = await upsertMedia({ ...params, key, visibility, expiresAt });
+
+  if (media.uploadedAt) {
+    return { media, upload: null };
+  }
+
+  // The key is content-addressed, so bytes uploaded once — by this media or by
+  // any earlier one — are already in the bucket. Re-running the same command
+  // then costs one HEAD instead of re-transferring a 500 MB video.
+  const existingObject = await headMediaObject(key);
+  if (existingObject) {
+    return { media: await finalizeMedia(media), upload: null };
+  }
+
+  const upload = await createUploadTarget({
+    key,
+    contentType: params.contentType,
+    maxBytes: limits.maxFileBytes,
+  });
+
+  return { media, upload };
+}
+
+/**
+ * Insert the media, or replace the bytes of the one already holding this slug.
+ *
+ * Replacing in place is what keeps a Markdown embed already posted to a pull
+ * request from going stale: the id, the share token and therefore the URL survive
+ * a re-upload, only the bytes behind them change.
+ */
+async function upsertMedia(
+  params: CreateMediaParams & {
+    key: string;
+    visibility: MediaVisibility;
+    expiresAt: Date;
+  },
+): Promise<Media> {
+  const { account, project, slug, key, visibility, expiresAt } = params;
+
+  const attributes = {
+    accountId: account.id,
+    projectId: project?.id ?? null,
+    createdByUserId: params.userId,
+    name: params.name,
+    slug,
+    key,
+    mimeType: params.contentType,
+    sizeBytes: String(params.sizeBytes),
+    visibility,
+    expiresAt: expiresAt.toISOString(),
+  };
+
+  if (!slug) {
+    return Media.query().insertAndFetch({
+      ...attributes,
+      shareToken: generateShareToken(),
+      billedUnits: 0,
+    });
+  }
+
+  // Two agents racing on the same slug (a re-run of the same CI job, say) must
+  // not both insert: the partial unique index would reject one of them with a
+  // constraint violation rather than a usable answer. The lock serializes them,
+  // and the loser updates the row the winner created.
+  return redisLock.acquire(["media-slug", account.id, slug], async () => {
+    const existing = await Media.query().findOne({
+      accountId: account.id,
+      slug,
+    });
+
+    if (!existing) {
+      return Media.query().insertAndFetch({
+        ...attributes,
+        shareToken: generateShareToken(),
+        billedUnits: 0,
+      });
+    }
+
+    // Same bytes as last time: nothing to re-upload and nothing to re-bill. The
+    // key is content-addressed and never rewritten, so comparing it is exact.
+    if (existing.key === key && existing.uploadedAt) {
+      return existing;
+    }
+
+    return existing.$query().patchAndFetch({
+      ...attributes,
+      // The recorded dimensions described the previous bytes.
+      width: null,
+      height: null,
+      uploadedAt: null,
+    });
+  });
+}
+
+/**
+ * Sign a POST policy S3 itself enforces, so an oversized or mistyped upload is
+ * rejected **before** the bytes reach the bucket rather than after we have paid
+ * to receive them.
+ */
+async function createUploadTarget(args: {
+  key: string;
+  contentType: string;
+  maxBytes: number;
+}): Promise<{ url: string; fields: Record<string, string> }> {
+  const { url, fields } = await createPresignedPost(getS3Client(), {
+    Bucket: config.get("s3.screenshotsBucket"),
+    Key: args.key,
+    Expires: UPLOAD_EXPIRES_IN_SECONDS,
+    Fields: { "Content-Type": args.contentType },
+    Conditions: [
+      ["content-length-range", 1, args.maxBytes],
+      ["eq", "$Content-Type", args.contentType],
+    ],
+  });
+  return { url, fields };
+}
+
+/**
+ * Reject the upload when the account has no capacity left, reusing the checks
+ * that gate build creation so media and screenshots run out together — they draw
+ * on the same pool.
+ */
+async function assertAccountCanUpload(account: Account): Promise<void> {
+  const manager = account.$getSubscriptionManager();
+  const [plan, outOfCapacityReason, isBlockedBySpendLimit] = await Promise.all([
+    manager.getPlan(),
+    manager.checkIsOutOfCapacity(),
+    checkIsBlockedBySpendLimit(account),
+  ]);
+
+  // Same gate as build creation: a team that has never subscribed (or has
+  // churned) has no plan at all, and team features are not free. Someone who
+  // wants the free tier uses their personal account, which is what Hobby is.
+  if (account.type === "team" && !plan) {
+    throw boom(
+      402,
+      "Upload rejected: subscribe to a Pro plan to use Team features.",
+    );
+  }
+
+  switch (outOfCapacityReason) {
+    case null:
+      break;
+    case "trialing": {
+      const trialEnded = await endTrialToUnlockUsage(account);
+      if (trialEnded) {
+        break;
+      }
+      throw boom(
+        402,
+        `Upload rejected: you have reached the maximum screenshot capacity of your ${plan ? `${plan.displayName} Plan` : "Plan"} trial. Please upgrade your Plan.`,
+      );
+    }
+    case "flat-rate":
+      throw boom(
+        402,
+        `Upload rejected: you have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,
+      );
+    default:
+      assertNever(outOfCapacityReason);
+  }
+
+  if (isBlockedBySpendLimit) {
+    const spendLimit = account.meteredSpendLimitByPeriod;
+    invariant(
+      spendLimit !== null,
+      "If we are over the spend limit, it should be set",
+    );
+    throw boom(
+      402,
+      "Upload rejected: you have reached the spend limit for this billing period. Ask an owner to update the limit in your Team settings.",
+    );
+  }
+}
+
+function assertWithinFileSizeLimit(args: {
+  sizeBytes: number;
+  limits: MediaLimits;
+}): void {
+  if (args.sizeBytes > args.limits.maxFileBytes) {
+    const limitMb = Math.round(args.limits.maxFileBytes / (1024 * 1024));
+    throw boom(
+      413,
+      `File is too large. The maximum file size on your plan is ${limitMb} MB.`,
+    );
+  }
+}
+
+function resolveVisibility(args: {
+  requested: MediaVisibility | null;
+  limits: MediaLimits;
+}): MediaVisibility {
+  const { requested, limits } = args;
+  if (!requested) {
+    return limits.defaultVisibility;
+  }
+  if (!limits.allowedVisibilities.includes(requested)) {
+    throw boom(
+      402,
+      `The \`${requested}\` visibility requires a paid plan. Media uploaded on the Hobby plan is reachable by anyone holding its share URL.`,
+    );
+  }
+  return requested;
+}

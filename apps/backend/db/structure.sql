@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict SkPe5timWpcdrDbEShqT7aRRHqHrPjsFg2tSEhkLUMc9f7x0grLW4jP7bn9O18G
+\restrict jDKZlczMfbRrPRIbfQW18KQZ0DfAyWH7r3oi3rRgGyRiTwGDMtGc63O0aflx8QG
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -496,8 +496,8 @@ CREATE TABLE public.build_shards (
     "updatedAt" timestamp with time zone NOT NULL,
     "buildId" bigint NOT NULL,
     index integer,
-    nonce character varying(255),
-    metadata jsonb
+    metadata jsonb,
+    nonce character varying(255)
 );
 
 
@@ -1069,6 +1069,8 @@ CREATE TABLE public.github_pull_requests (
     "creatorId" bigint,
     merged boolean,
     draft boolean,
+    "mediaCommentId" character varying(255),
+    "mediaCommentDeleted" boolean DEFAULT false NOT NULL,
     CONSTRAINT github_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
 );
 
@@ -1432,6 +1434,58 @@ ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNED BY public.knex_migrations_lock.index;
+
+
+--
+-- Name: media; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.media (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    "projectId" bigint,
+    "githubPullRequestId" bigint,
+    "buildId" bigint,
+    "screenshotDiffId" bigint,
+    "createdByUserId" bigint,
+    name character varying(255) NOT NULL,
+    slug character varying(255),
+    key character varying(255) NOT NULL,
+    "mimeType" character varying(255) NOT NULL,
+    "sizeBytes" bigint NOT NULL,
+    width integer,
+    height integer,
+    visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
+    "shareToken" character varying(255) NOT NULL,
+    "expiresAt" timestamp with time zone,
+    "uploadedAt" timestamp with time zone,
+    "billedUnits" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.media OWNER TO postgres;
+
+--
+-- Name: media_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.media_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.media_id_seq OWNER TO postgres;
+
+--
+-- Name: media_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.media_id_seq OWNED BY public.media.id;
 
 
 --
@@ -1936,12 +1990,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
+    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
-    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     "buildNumber" integer DEFAULT 0 NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
@@ -3032,6 +3086,13 @@ ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT next
 
 
 --
+-- Name: media id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media ALTER COLUMN id SET DEFAULT nextval('public.media_id_seq'::regclass);
+
+
+--
 -- Name: ms_teams_webhooks id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3678,6 +3739,22 @@ ALTER TABLE ONLY public.knex_migrations_lock
 
 ALTER TABLE ONLY public.knex_migrations
     ADD CONSTRAINT knex_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media media_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media media_sharetoken_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_sharetoken_unique UNIQUE ("shareToken");
 
 
 --
@@ -4485,6 +4562,41 @@ CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github
 --
 
 CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: media_account_slug_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX media_account_slug_unique ON public.media USING btree ("accountId", slug) WHERE (slug IS NOT NULL);
+
+
+--
+-- Name: media_account_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_account_uploaded_at_idx ON public.media USING btree ("accountId", "uploadedAt") WHERE ("uploadedAt" IS NOT NULL);
+
+
+--
+-- Name: media_accountid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_accountid_createdat_index ON public.media USING btree ("accountId", "createdAt");
+
+
+--
+-- Name: media_expiresat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_expiresat_index ON public.media USING btree ("expiresAt");
+
+
+--
+-- Name: media_githubpullrequestid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_githubpullrequestid_index ON public.media USING btree ("githubPullRequestId");
 
 
 --
@@ -5381,6 +5493,54 @@ ALTER TABLE ONLY public.ignored_changes
 
 
 --
+-- Name: media media_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: media media_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media media_createdbyuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_createdbyuserid_foreign FOREIGN KEY ("createdByUserId") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media media_githubpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media media_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media media_screenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_screenshotdiffid_foreign FOREIGN KEY ("screenshotDiffId") REFERENCES public.screenshot_diffs(id) ON DELETE SET NULL;
+
+
+--
 -- Name: ms_teams_webhooks ms_teams_webhooks_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5856,7 +6016,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SkPe5timWpcdrDbEShqT7aRRHqHrPjsFg2tSEhkLUMc9f7x0grLW4jP7bn9O18G
+\unrestrict jDKZlczMfbRrPRIbfQW18KQZ0DfAyWH7r3oi3rRgGyRiTwGDMtGc63O0aflx8QG
 
 -- Knex migrations
 
@@ -6096,3 +6256,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801130000_builds-number-counter.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801130001_builds-number-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808120000_fix-storybook-count-overflow.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808130000_media.js', 1, NOW());

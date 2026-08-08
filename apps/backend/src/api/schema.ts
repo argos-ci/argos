@@ -77,6 +77,13 @@ import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
 import { listTestsOperation } from "./handlers/listTests";
 import {
+  createMediaOperation,
+  deleteMediaOperation,
+  finalizeMediaOperation,
+  getMediaOperation,
+  listMediaOperation,
+} from "./handlers/media";
+import {
   listProjectContributorsOperation,
   removeProjectContributorOperation,
   setProjectContributorOperation,
@@ -214,6 +221,12 @@ export const zodSchema = {
       "x-page-icon": "workflow",
     },
     {
+      name: "Media",
+      description:
+        "Upload standalone images and videos, with no build or test run behind them, and get back a shareable URL plus ready-to-paste Markdown. Built for embedding a screenshot or a screen recording in the pull request an agent just opened.",
+      "x-page-icon": "image-play",
+    },
+    {
       name: "Members",
       description:
         "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
@@ -258,6 +271,19 @@ export const zodSchema = {
     },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
+    },
+    "/accounts/{accountSlug}/media": {
+      get: listMediaOperation,
+    },
+    "/media": {
+      post: createMediaOperation,
+    },
+    "/media/{mediaId}": {
+      get: getMediaOperation,
+      delete: deleteMediaOperation,
+    },
+    "/media/{mediaId}/finalize": {
+      post: finalizeMediaOperation,
     },
     "/builds": {
       post: createBuildOperation,
