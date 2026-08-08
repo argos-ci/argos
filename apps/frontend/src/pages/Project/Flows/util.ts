@@ -7,9 +7,11 @@ import {
   getCaptureIndex,
   getStepKey,
   getStepLabel,
+  getVariantDims,
   getVariantLabel,
   resolveFlowIdentity,
   type FlowIdentity,
+  type VariantDims,
 } from "@/util/flow-model";
 
 const _BuildFragment = graphql(`
@@ -19,9 +21,13 @@ const _BuildFragment = graphql(`
     branch
     createdAt
     type
-    screenshotDiffs(after: 0, first: 300) {
+    screenshotDiffs(after: 0, first: 1000) {
+      pageInfo {
+        hasNextPage
+      }
       edges {
         id
+        parentName
         compareScreenshot {
           id
           name
@@ -71,7 +77,47 @@ export type FlowStepVariant = {
   screenshot: NonNullable<DiffEdge["compareScreenshot"]>;
   /** "1280px", "firefox · 414px"… or "default". */
   label: string;
+  dims: VariantDims;
 };
+
+/**
+ * The values of a per-axis variant selection. `null` on an axis means "no
+ * preference": `pickVariant` then keeps the step's first variant for it.
+ */
+export type VariantSelection = {
+  browser: string | null;
+  viewport: number | null;
+  scheme: "dark" | "light" | null;
+  mode: string | null;
+};
+
+/**
+ * The variant axes a flow spans, one entry per axis that actually varies.
+ * Scheme is resolved flow-wide: a name without a token is the light run as
+ * soon as a dark sibling exists.
+ */
+export type FlowDimensions = {
+  browsers: string[];
+  viewports: number[];
+  schemes: ("light" | "dark")[];
+  modes: string[];
+};
+
+export function getFlowDimensions(flow: Flow): FlowDimensions {
+  const variants = flow.steps.flatMap((step) => step.variants);
+  const unique = <T>(values: (T | null)[]) => [
+    ...new Set(values.filter((v): v is T => v !== null)),
+  ];
+  const hasDark = variants.some((v) => v.dims.scheme === "dark");
+  return {
+    browsers: unique(variants.map((v) => v.dims.browser)).toSorted(),
+    viewports: unique(variants.map((v) => v.dims.viewport)).toSorted(
+      (a, b) => a - b,
+    ),
+    schemes: hasDark ? ["light", "dark"] : [],
+    modes: unique(variants.map((v) => v.dims.mode)).toSorted(),
+  };
+}
 
 export type FlowStep = {
   /** Variant-independent key (backend `variantKey` normalization). */
@@ -87,14 +133,39 @@ export type Flow = FlowIdentity & {
   variantLabels: string[];
 };
 
-/** Picks the variant matching `selected`, falling back to the first one. */
+/**
+ * Picks the variant best matching the per-axis selection: the one satisfying
+ * the most selected axes wins, ties keep the stable label order. A step
+ * missing the exact combination still shows its closest variant.
+ */
 export function pickVariant(
   step: FlowStep,
-  selected: string | null,
+  selection: Partial<VariantSelection> | null,
 ): FlowStepVariant {
-  const variant =
-    (selected && step.variants.find((v) => v.label === selected)) ||
-    step.variants[0];
+  const score = (variant: FlowStepVariant) => {
+    if (!selection) {
+      return 0;
+    }
+    const { dims } = variant;
+    let matches = 0;
+    if (selection.browser != null && dims.browser === selection.browser) {
+      matches += 1;
+    }
+    if (selection.viewport != null && dims.viewport === selection.viewport) {
+      matches += 1;
+    }
+    if (
+      selection.scheme != null &&
+      (dims.scheme ?? "light") === selection.scheme
+    ) {
+      matches += 1;
+    }
+    if (selection.mode != null && dims.mode === selection.mode) {
+      matches += 1;
+    }
+    return matches;
+  };
+  const variant = step.variants.toSorted((a, b) => score(b) - score(a))[0];
   if (!variant) {
     throw new Error("a step always has at least one variant");
   }
@@ -104,11 +175,17 @@ export function pickVariant(
 function groupFlows(edges: DiffEdge[]): {
   flows: Flow[];
   ungroupedCount: number;
+  singleStepCount: number;
 } {
   type FlowAcc = FlowIdentity & { steps: Map<string, FlowStep> };
   const byKey = new Map<string, FlowAcc>();
   let ungroupedCount = 0;
   for (const edge of edges) {
+    // ARIA snapshots and other child screenshots (`parentName`) are internal
+    // companions of a snapshot, not steps of the journey.
+    if (edge.parentName) {
+      continue;
+    }
     const screenshot = edge.compareScreenshot;
     if (!screenshot) {
       continue;
@@ -132,6 +209,7 @@ function groupFlows(edges: DiffEdge[]): {
       edge,
       screenshot,
       label: getVariantLabel(screenshot.name),
+      dims: getVariantDims(screenshot.name),
     });
     const captureIndex = getCaptureIndex(screenshot);
     if (captureIndex !== null) {
@@ -141,7 +219,7 @@ function groupFlows(edges: DiffEdge[]): {
       );
     }
   }
-  const flows = [...byKey.values()]
+  const grouped = [...byKey.values()]
     .map(({ steps, ...identity }) => {
       const sortedSteps = [...steps.values()].map((step) => ({
         ...step,
@@ -163,13 +241,15 @@ function groupFlows(edges: DiffEdge[]): {
         ].toSorted((a, b) => a.localeCompare(b)),
       };
     })
-    // Real journeys (several steps) first, single-screenshot tests after.
-    .toSorted(
-      (a, b) =>
-        Number(b.steps.length > 1) - Number(a.steps.length > 1) ||
-        a.key.localeCompare(b.key),
-    );
-  return { flows, ungroupedCount };
+    .toSorted((a, b) => a.key.localeCompare(b.key));
+  // A flow is a journey: a test that captures a single screen (whatever its
+  // variants) is regular visual testing, not a flow.
+  const flows = grouped.filter((flow) => flow.steps.length > 1);
+  return {
+    flows,
+    ungroupedCount,
+    singleStepCount: grouped.length - flows.length,
+  };
 }
 
 /** Curated order first (when stored), then capture index, then alphabetical. */
@@ -200,8 +280,19 @@ export function useProjectFlows(params: {
   const build =
     project?.latestAutoApprovedBuild ?? project?.latestBuild ?? null;
   const edges = useMemo(() => build?.screenshotDiffs.edges ?? [], [build]);
-  const { flows, ungroupedCount } = useMemo(() => groupFlows(edges), [edges]);
-  return { project, build, flows, ungroupedCount };
+  const { flows, ungroupedCount, singleStepCount } = useMemo(
+    () => groupFlows(edges),
+    [edges],
+  );
+  return {
+    project,
+    build,
+    flows,
+    ungroupedCount,
+    singleStepCount,
+    /** The build has more screenshots than the flows query fetched. */
+    truncated: build?.screenshotDiffs.pageInfo.hasNextPage ?? false,
+  };
 }
 
 /**

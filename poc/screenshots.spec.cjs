@@ -187,7 +187,8 @@ test("flows gallery — one cover per flow, variants collapsed", async ({
   await page.goto(FLOWS_URL);
   await expect(page.getByRole("heading", { name: "Flows" })).toBeVisible();
   const cards = page.locator("[data-flow-card]");
-  await expect(cards).toHaveCount(3);
+  // The single-screenshot "settings" test is not a journey: no card for it.
+  await expect(cards).toHaveCount(2);
   await expect(cards.first()).toHaveAttribute("data-flow-card", CHECKOUT_FLOW);
   // The signup flow has 6 screenshots but 3 logical steps in 2 variants.
   await expect(
@@ -219,11 +220,9 @@ test("flow view — capture order and variant switcher", async ({
   await page.screenshot({ path: path.join(OUT, "flow-signup-desktop.png") });
 
   // Switch to the mobile variant: same journey, other screenshots.
-  await page.getByRole("radio", { name: "414px" }).click();
-  await expect(page.getByRole("radio", { name: "414px" })).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
+  const mobileChip = page.getByRole("button", { name: "414", exact: true });
+  await mobileChip.click();
+  await expect(mobileChip).toHaveAttribute("aria-current", "page");
   await waitForImages(page);
   await page.screenshot({ path: path.join(OUT, "flow-signup-mobile.png") });
 });
@@ -301,7 +300,8 @@ test("fallback: no reference build, storybook grouping", async ({
   await page.goto(`/${seed.accountSlug}/dashboard/flows`);
   await expect(page.getByText("From build #1 on feat/new-nav")).toBeVisible();
   const cards = page.locator("[data-flow-card]");
-  await expect(cards).toHaveCount(2);
+  // The single-story "settings-page" component is not a journey: no card.
+  await expect(cards).toHaveCount(1);
   await expect(cards.first()).toHaveAttribute(
     "data-flow-card",
     "storybook › signup-form",

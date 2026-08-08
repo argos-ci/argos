@@ -3,71 +3,130 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
   ArrowDownIcon,
-  ArrowLeftIcon,
   ArrowUpIcon,
   ChevronRightIcon,
   PencilIcon,
 } from "lucide-react";
+import { Heading } from "react-aria-components";
 import { Link, useParams } from "react-router";
 
 import { Button } from "@/ui/Button";
-import { Chip } from "@/ui/Chip";
+import { ButtonGroup } from "@/ui/ButtonGroup";
+import { ChipButton } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
-import { Page, PageContainer } from "@/ui/Layout";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { getBuildURL } from "../../Build/BuildParams";
-import { NotFound } from "../../NotFound";
+import { BrowserIcon } from "../../Build/metadata/browser/BrowserIcon";
+import { getBrowserLabel } from "../../Build/metadata/browser/browserLabels";
 import {
-  getProjectURL,
-  useProjectParams,
-  type ProjectParams,
-} from "../ProjectParams";
+  colorSchemeIcons,
+  getViewportIconKind,
+  viewportIcons,
+} from "../../Build/metadata/metadataIcons";
+import { NotFound } from "../../NotFound";
+import { useProjectParams, type ProjectParams } from "../ProjectParams";
 import { ProjectTitle } from "../ProjectTitle";
 import {
+  getFlowDimensions,
   orderSteps,
   pickVariant,
   useProjectFlows,
   useStoredNames,
   useStoredOrders,
   type Flow,
+  type FlowDimensions,
   type FlowsBuild,
+  type VariantSelection,
 } from "./util";
 
-function VariantSwitcher(props: {
-  labels: string[];
-  selected: string;
-  onSelect: (label: string) => void;
+/**
+ * One button group per variant axis (browser, viewport, color scheme, mode),
+ * mirroring the chips of the build review sidebar.
+ */
+function VariantGroups(props: {
+  dimensions: FlowDimensions;
+  selection: VariantSelection;
+  onChange: (selection: Partial<VariantSelection>) => void;
 }) {
-  const { labels, selected, onSelect } = props;
-  if (labels.length < 2) {
-    return null;
-  }
+  const { dimensions, selection, onChange } = props;
   return (
-    <div
-      className="flex items-center gap-0.5 rounded-md border p-0.5"
-      role="radiogroup"
-      aria-label="Variant"
-    >
-      {labels.map((label) => (
-        <button
-          key={label}
-          type="button"
-          role="radio"
-          aria-checked={label === selected}
-          onClick={() => onSelect(label)}
-          className={clsx(
-            "rounded px-2 py-0.5 text-xs transition",
-            label === selected
-              ? "bg-active text-default font-medium"
-              : "text-low hover:text-default",
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+    <>
+      {dimensions.browsers.length > 1 && (
+        <ButtonGroup>
+          {dimensions.browsers.map((browser) => (
+            <Tooltip key={browser} content={getBrowserLabel(browser)}>
+              <ChipButton
+                icon={<BrowserIcon browser={{ name: browser }} />}
+                className="cursor-default"
+                aria-current={
+                  selection.browser === browser ? "page" : undefined
+                }
+                onPress={() => onChange({ browser })}
+              >
+                {getBrowserLabel(browser)}
+              </ChipButton>
+            </Tooltip>
+          ))}
+        </ButtonGroup>
+      )}
+      {dimensions.viewports.length > 1 && (
+        <ButtonGroup>
+          {dimensions.viewports.map((viewport) => (
+            <Tooltip key={viewport} content={`Viewport width of ${viewport}px`}>
+              <ChipButton
+                icon={viewportIcons[getViewportIconKind(viewport)]}
+                className="cursor-default"
+                aria-current={
+                  selection.viewport === viewport ? "page" : undefined
+                }
+                onPress={() => onChange({ viewport })}
+              >
+                {viewport}
+              </ChipButton>
+            </Tooltip>
+          ))}
+        </ButtonGroup>
+      )}
+      {dimensions.modes.length > 1 && (
+        <ButtonGroup>
+          {dimensions.modes.map((mode) => (
+            <ChipButton
+              key={mode}
+              className="cursor-default"
+              aria-current={selection.mode === mode ? "page" : undefined}
+              onPress={() => onChange({ mode })}
+            >
+              {mode}
+            </ChipButton>
+          ))}
+        </ButtonGroup>
+      )}
+      {dimensions.schemes.length > 1 && (
+        <ButtonGroup>
+          {dimensions.schemes.map((scheme) => (
+            <Tooltip key={scheme} content={`${scheme} color scheme`}>
+              <ChipButton
+                icon={colorSchemeIcons[scheme]}
+                className="cursor-default"
+                aria-current={selection.scheme === scheme ? "page" : undefined}
+                onPress={() => onChange({ scheme })}
+              >
+                {scheme === "dark" ? "Dark" : "Light"}
+              </ChipButton>
+            </Tooltip>
+          ))}
+        </ButtonGroup>
+      )}
+    </>
   );
 }
 
@@ -75,12 +134,11 @@ function Storyboard(props: {
   flow: Flow;
   build: FlowsBuild;
   params: ProjectParams;
-  selectedVariant: string;
+  selection: VariantSelection;
   storedOrder: string[] | undefined;
   onReorder: (stepKeys: string[]) => void;
 }) {
-  const { flow, build, params, selectedVariant, storedOrder, onReorder } =
-    props;
+  const { flow, build, params, selection, storedOrder, onReorder } = props;
   const steps = useMemo(
     () => orderSteps(flow.steps, storedOrder),
     [flow.steps, storedOrder],
@@ -135,7 +193,7 @@ function Storyboard(props: {
       <div className="bg-app sticky top-0 z-10 flex items-center gap-1 overflow-x-auto py-2">
         {steps.map((step, index) => {
           const isActive = step.key === activeStepKey;
-          const variant = pickVariant(step, selectedVariant);
+          const variant = pickVariant(step, selection);
           return (
             <div key={step.key} className="flex shrink-0 items-center gap-1">
               {index > 0 && (
@@ -179,7 +237,7 @@ function Storyboard(props: {
       {/* Every step, large, in journey order. */}
       <div className="flex max-w-4xl flex-col gap-10 pt-6">
         {steps.map((step, index) => {
-          const variant = pickVariant(step, selectedVariant);
+          const variant = pickVariant(step, selection);
           return (
             <div
               key={step.key}
@@ -244,10 +302,12 @@ function Storyboard(props: {
 
 function PageContent(props: { params: ProjectParams; flowId: string }) {
   const { params, flowId } = props;
-  const { project, build, flows } = useProjectFlows(params);
+  const { project, build, flows, truncated } = useProjectFlows(params);
   const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
   const { names, setFlowName } = useStoredNames(params);
-  const [variant, setVariant] = useState<string | null>(null);
+  const [partialSelection, setPartialSelection] = useState<
+    Partial<VariantSelection>
+  >({});
   const [editingName, setEditingName] = useState(false);
 
   if (!project) {
@@ -261,98 +321,115 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
   }
 
   const storedOrder = orders[flow.key];
-  const selectedVariant = variant ?? flow.variantLabels[0] ?? "default";
+  const dimensions = getFlowDimensions(flow);
+  // Defaults per axis: first browser, largest viewport (desktop), light.
+  const selection: VariantSelection = {
+    browser: partialSelection.browser ?? dimensions.browsers[0] ?? null,
+    viewport: partialSelection.viewport ?? dimensions.viewports.at(-1) ?? null,
+    scheme: partialSelection.scheme ?? dimensions.schemes[0] ?? null,
+    mode: partialSelection.mode ?? dimensions.modes[0] ?? null,
+  };
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-4 pt-6">
-        <Link
-          to={`${getProjectURL(params)}/flows`}
-          className="text-low hover:text-default flex items-center gap-1.5 text-sm transition"
-        >
-          <ArrowLeftIcon className="size-3.5" />
-          Flows
-        </Link>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {flow.prefix && (
-            <span className="text-low font-mono text-sm">
-              {flow.prefix} ›{names[flow.key] ? ` ${flow.title}` : ""}
-            </span>
-          )}
-          {editingName ? (
-            <input
-              autoFocus
-              defaultValue={names[flow.key] ?? flow.title}
-              aria-label="Flow name"
-              className="rounded-sm border px-2 py-0.5 text-xl font-semibold outline-hidden"
-              onBlur={(event) => {
-                const value = event.currentTarget.value.trim();
-                setFlowName(
-                  flow.key,
-                  value && value !== flow.title ? value : null,
-                );
-                setEditingName(false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-                if (event.key === "Escape") {
+      <PageHeader>
+        <PageHeaderContent>
+          <div className="flex items-center gap-1">
+            {editingName ? (
+              <input
+                autoFocus
+                defaultValue={names[flow.key] ?? flow.title}
+                aria-label="Flow name"
+                className="rounded-sm border px-2 py-0.5 text-lg font-semibold outline-hidden"
+                onBlur={(event) => {
+                  const value = event.currentTarget.value.trim();
+                  setFlowName(
+                    flow.key,
+                    value && value !== flow.title ? value : null,
+                  );
                   setEditingName(false);
-                }
-              }}
-            />
-          ) : (
-            <>
-              <h1 className="text-xl font-semibold">
-                {names[flow.key] ?? flow.title}
-              </h1>
-              <Tooltip content="Rename flow">
-                <Button
-                  variant="ghost"
-                  iconOnly
-                  size="small"
-                  aria-label="Rename flow"
-                  onPress={() => setEditingName(true)}
-                >
-                  <PencilIcon />
-                </Button>
-              </Tooltip>
-            </>
-          )}
-          <span className="text-low text-sm">
-            {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
-          </span>
-          <div className="ml-auto flex items-center gap-3">
-            {storedOrder && (
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                  if (event.key === "Escape") {
+                    setEditingName(false);
+                  }
+                }}
+              />
+            ) : (
               <>
-                <span className="text-low text-xs">Custom order</span>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onPress={() => resetFlowOrder(flow.key)}
-                >
-                  Reset
-                </Button>
+                <Heading className="text-lg!">
+                  {names[flow.key] ?? flow.title}
+                </Heading>
+                <Tooltip content="Rename flow">
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    size="small"
+                    aria-label="Rename flow"
+                    onPress={() => setEditingName(true)}
+                  >
+                    <PencilIcon />
+                  </Button>
+                </Tooltip>
               </>
             )}
-            <VariantSwitcher
-              labels={flow.variantLabels}
-              selected={selectedVariant}
-              onSelect={setVariant}
-            />
-            <Chip scale="sm">
-              From build #{build.number} on {build.branch} ·{" "}
-              <Time date={build.createdAt} />
-            </Chip>
           </div>
+          <div className="text-low flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm">
+            {flow.prefix ? (
+              <>
+                <span className="truncate font-mono text-xs">
+                  {flow.prefix}
+                  {names[flow.key] ? ` › ${flow.title}` : ""}
+                </span>
+                <span>·</span>
+              </>
+            ) : null}
+            <span className="shrink-0">
+              {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
+            </span>
+            <span>·</span>
+            <span className="shrink-0">
+              from build #{build.number} on {build.branch} ·{" "}
+              <Time date={build.createdAt} />
+            </span>
+          </div>
+        </PageHeaderContent>
+        <PageHeaderActions>
+          {storedOrder && (
+            <>
+              <span className="text-low text-xs">Custom order</span>
+              <Button
+                variant="secondary"
+                size="small"
+                onPress={() => resetFlowOrder(flow.key)}
+              >
+                Reset
+              </Button>
+            </>
+          )}
+          <VariantGroups
+            dimensions={dimensions}
+            selection={selection}
+            onChange={(change) =>
+              setPartialSelection((previous) => ({ ...previous, ...change }))
+            }
+          />
+        </PageHeaderActions>
+      </PageHeader>
+      {truncated ? (
+        <div className="text-low text-xs">
+          Flows are computed from the first 1000 screenshots of the build — some
+          steps or variants may be missing.
         </div>
-      </div>
+      ) : null}
       <Storyboard
         flow={flow}
         build={build}
         params={params}
-        selectedVariant={selectedVariant}
+        selection={selection}
         storedOrder={storedOrder}
         onReorder={(stepKeys) => setFlowOrder(flow.key, stepKeys)}
       />
