@@ -249,6 +249,7 @@ function RejectCommentDialog(props: {
               className="size-8"
               iconClassName="size-5"
               fit="cover"
+              transformations={["w-64", "h-64", "fo-top"]}
             />
             <span className="min-w-0 flex-1 truncate text-sm font-medium">
               {diff.name}
