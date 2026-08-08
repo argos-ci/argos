@@ -35,6 +35,8 @@ import {
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
+  Media,
+  MediaVersion,
   IgnoredChange,
   Model,
   MsTeamsWebhook,
@@ -66,6 +68,7 @@ import {
   getAppOctokit,
   GhApiInstallation,
 } from "@/github";
+import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
@@ -1049,6 +1052,82 @@ function createMediaCommentsLoader() {
   );
 }
 
+/** The newest uploaded version of a media, batched across a request. */
+function createLatestMediaVersionLoader() {
+  return new DataLoader<string, MediaVersion | null>(async (mediaIds) => {
+    const latest = await getLatestMediaVersions([...mediaIds]);
+    return mediaIds.map((mediaId) => latest.get(mediaId) ?? null);
+  });
+}
+
+/** Every uploaded version of a media, newest first — the version picker. */
+function createMediaVersionsLoader() {
+  return new DataLoader<string, MediaVersion[]>(async (mediaIds) => {
+    const versions = await MediaVersion.query()
+      .whereIn("mediaId", [...mediaIds])
+      .whereNotNull("uploadedAt")
+      .orderBy("number", "desc");
+    const byMediaId = versions.reduce<Record<string, MediaVersion[]>>(
+      (map, version) => {
+        const array = map[version.mediaId] ?? [];
+        array.push(version);
+        map[version.mediaId] = array;
+        return map;
+      },
+      {},
+    );
+    return mediaIds.map((mediaId) => byMediaId[mediaId] ?? []);
+  });
+}
+
+/**
+ * The other half of a media's before/after pair.
+ *
+ * Matched on the same project, pull request and name with the opposite state —
+ * the same tuple `media_identity_unique` is built on, so there is at most one.
+ */
+function createMediaCounterpartLoader() {
+  return new DataLoader<string, Media | null>(async (mediaIds) => {
+    const media = await Media.query().whereIn("id", [...mediaIds]);
+    const paired = media.filter((item) => item.state !== null);
+
+    if (paired.length === 0) {
+      return mediaIds.map(() => null);
+    }
+
+    const candidates = await Media.query()
+      .whereIn(
+        "name",
+        paired.map((item) => item.name),
+      )
+      .whereIn(
+        "projectId",
+        paired.map((item) => item.projectId),
+      )
+      .whereNotNull("state");
+
+    const key = (item: {
+      projectId: string;
+      githubPullRequestId: string | null;
+      name: string;
+      state: string | null;
+    }) =>
+      `${item.projectId}:${item.githubPullRequestId ?? ""}:${item.name}:${item.state}`;
+
+    const byKey = new Map(candidates.map((item) => [key(item), item]));
+    const byId = new Map(media.map((item) => [item.id, item]));
+
+    return mediaIds.map((mediaId) => {
+      const item = byId.get(mediaId);
+      if (!item?.state) {
+        return null;
+      }
+      const opposite = item.state === "before" ? "after" : "before";
+      return byKey.get(key({ ...item, state: opposite })) ?? null;
+    });
+  });
+}
+
 /**
  * Loads the comments posted on a test, capped per test — see
  * {@link getVisibleTestCommentsQuery}, shared with the REST endpoint.
@@ -1717,6 +1796,9 @@ export const createLoaders = () => ({
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   BuildCommentsCount: createBuildCommentsCountLoader(),
   MediaComments: createMediaCommentsLoader(),
+  LatestMediaVersion: createLatestMediaVersionLoader(),
+  MediaVersions: createMediaVersionsLoader(),
+  MediaCounterpart: createMediaCounterpartLoader(),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

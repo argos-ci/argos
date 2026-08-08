@@ -79,6 +79,7 @@ export class Comment extends Model {
           buildId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
           mediaId: { type: ["string", "null"] },
+          mediaVersionId: { type: ["string", "null"] },
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
@@ -109,6 +110,14 @@ export class Comment extends Model {
   buildId!: string | null;
   /** The test this comment is posted on, when it isn't posted on a build. */
   testId!: string | null;
+  /**
+   * The media version the author was looking at, for a comment posted on a media.
+   *
+   * The thread belongs to the media so it survives the re-upload it asked for;
+   * this records which bytes it was actually about, so a pin is only drawn on the
+   * version whose pixels it describes.
+   */
+  mediaVersionId!: string | null;
   /** The uploaded media this comment is posted on. */
   mediaId!: string | null;
   buildReviewId!: string | null;

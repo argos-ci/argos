@@ -5,6 +5,28 @@ import { getAccountPeriodUsages } from "@/database/services/period-usage";
 import { factory, setupDatabase } from "@/database/testing";
 
 /**
+ * A media with one uploaded version, which is the shape the meter reads.
+ *
+ * Units live on the version because every version is an upload that stores its
+ * own bytes, so a fixture that only creates the identity charges nothing.
+ */
+async function createBilledMedia(attributes: {
+  projectId: string;
+  mimeType?: string;
+  billedUnits: number;
+  uploadedAt: string | null;
+}) {
+  const media = await factory.Media.create({ projectId: attributes.projectId });
+  return factory.MediaVersion.create({
+    mediaId: media.id,
+    number: 1,
+    mimeType: attributes.mimeType ?? "image/png",
+    billedUnits: attributes.billedUnits,
+    uploadedAt: attributes.uploadedAt,
+  });
+}
+
+/**
  * Standalone media is billed on the **screenshot** meter, not on a meter of its
  * own. That is a deliberate pricing decision, and it only holds if every path
  * that counts screenshots counts media too — the per-account one that gates a
@@ -61,12 +83,12 @@ describe("media metering", () => {
         createdAt: periodStart.toISOString(),
       });
       // One image (1 unit) and one video (25 units).
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         billedUnits: 1,
         uploadedAt: periodStart.toISOString(),
       });
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
@@ -87,7 +109,7 @@ describe("media metering", () => {
     it("ignores media whose upload never completed", async () => {
       // The two-step upload creates the row before the bytes land. Billing one
       // would charge for a file that does not exist.
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         billedUnits: 0,
         uploadedAt: null,
@@ -102,7 +124,7 @@ describe("media metering", () => {
     });
 
     it("ignores media uploaded before the period started", async () => {
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         billedUnits: 25,
         uploadedAt: beforePeriod.toISOString(),
@@ -123,7 +145,7 @@ describe("media metering", () => {
       const otherProject = await factory.Project.create({
         accountId: otherAccount.id,
       });
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: otherProject.id,
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
@@ -138,7 +160,7 @@ describe("media metering", () => {
     });
 
     it("counts only one project's media when scoped to a project", async () => {
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
@@ -147,7 +169,7 @@ describe("media metering", () => {
         accountId: account.id,
         name: "second-project",
       });
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: secondProject.id,
         billedUnits: 1,
         uploadedAt: periodStart.toISOString(),
@@ -177,7 +199,7 @@ describe("media metering", () => {
         createdAt: periodStart.toISOString(),
       });
       // A video on top of a full quota: 25 units of overage.
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
@@ -200,7 +222,7 @@ describe("media metering", () => {
       await createSubscription();
       await factory.Project.create({ accountId: account.id, name: "second" });
       await factory.Project.create({ accountId: account.id, name: "third" });
-      await factory.Media.create({
+      await createBilledMedia({
         projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
@@ -229,7 +251,7 @@ describe("media metering", () => {
         createdAt: periodStart.toISOString(),
       });
       for (const _ of [1, 2, 3]) {
-        await factory.Media.create({
+        await createBilledMedia({
           projectId: project.id,
           billedUnits: 1,
           uploadedAt: periodStart.toISOString(),

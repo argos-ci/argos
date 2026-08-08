@@ -1,7 +1,7 @@
 import { DeleteObjectsCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
 import config from "@/config";
-import { Media } from "@/database/models";
+import { MediaVersion } from "@/database/models";
 import { getS3Client } from "@/storage/s3";
 
 /**
@@ -57,21 +57,22 @@ async function deleteMediaObjects(keys: string[]): Promise<void> {
 }
 
 /**
- * Delete media objects, keeping any that another media still serves.
+ * Delete media objects, keeping any that another version still serves.
  *
- * Keys are content-addressed and namespaced per account, so one account
- * uploading the same file twice — under two slugs, or twice without one — gets
- * two rows pointing at one object. Deleting it because one of them went away
- * would break the other, and nothing would ever notice: the surviving row still
- * looks fine, its bytes are simply gone.
+ * Keys are content-addressed and namespaced per project, so the same file
+ * uploaded twice gets two version rows pointing at one object. Versions make this
+ * routine rather than a corner case: reverting a screenshot to what it was two
+ * uploads ago produces a new version with an already-stored key. Deleting the
+ * object because one version went away would break the others, and nothing would
+ * ever notice — the surviving rows still look fine, their bytes are simply gone.
  *
  * Every path that removes bytes goes through here: an explicit delete, a rejected
  * upload, and the retention purge.
  */
 export async function deleteUnreferencedMediaObjects(args: {
   keys: (string | null | undefined)[];
-  /** Media whose references don't count — the rows being deleted or rewritten. */
-  excludeMediaIds: string[];
+  /** Versions whose references don't count — the rows being deleted. */
+  excludeVersionIds: string[];
 }): Promise<void> {
   const keys = [
     ...new Set(
@@ -87,21 +88,21 @@ export async function deleteUnreferencedMediaObjects(args: {
 
   const inUse = await findReferencedKeys({
     keys,
-    excludeMediaIds: args.excludeMediaIds,
+    excludeVersionIds: args.excludeVersionIds,
   });
 
   await deleteMediaObjects(keys.filter((key) => !inUse.has(key)));
 }
 
-/** Which of these keys some other media still points at. */
+/** Which of these keys some other version still points at. */
 async function findReferencedKeys(args: {
   keys: string[];
-  excludeMediaIds: string[];
+  excludeVersionIds: string[];
 }): Promise<Set<string>> {
-  const query = Media.query().select("key").whereIn("key", args.keys);
+  const query = MediaVersion.query().select("key").whereIn("key", args.keys);
 
-  if (args.excludeMediaIds.length > 0) {
-    query.whereNotIn("id", args.excludeMediaIds);
+  if (args.excludeVersionIds.length > 0) {
+    query.whereNotIn("id", args.excludeVersionIds);
   }
 
   const rows = await query;

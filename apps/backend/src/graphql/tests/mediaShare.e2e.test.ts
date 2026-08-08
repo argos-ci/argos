@@ -24,18 +24,36 @@ const MEDIA_SHARE_QUERY = `
     mediaByShareToken(shareToken: $shareToken) {
       id
       name
-      fileUrl
-      posterUrl
+      state
+      description
       url
       markdown
-      contentType
-      sizeBytes
-      width
-      height
-      isVideo
-      expiresAt
       permissions
       unresolvedCommentCount
+      latestVersion {
+        id
+        number
+        fileUrl
+        posterUrl
+        contentType
+        sizeBytes
+        width
+        height
+        isVideo
+        expiresAt
+      }
+      versions {
+        id
+        number
+      }
+      counterpart {
+        id
+        state
+        latestVersion {
+          id
+          fileUrl
+        }
+      }
       project {
         id
         slug
@@ -125,17 +143,26 @@ describe("mediaByShareToken", () => {
       commentAuthorId: user.id,
     });
 
-    const res = await query({ auth, shareToken: media.image.shareToken });
+    const res = await query({ auth, shareToken: media.after.shareToken });
 
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
 
     const result = res.body.data.mediaByShareToken;
-    expect(result.name).toBe("checkout-after.png");
+    expect(result.name).toBe("checkout.png");
     expect(result.permissions).toContain("comment");
     // Two roots and one reply.
     expect(result.comments).toHaveLength(3);
     expect(result.unresolvedCommentCount).toBe(2);
+
+    // The share page shows the newest upload, and can list what came before.
+    expect(result.latestVersion.number).toBe(2);
+    expect(result.versions).toHaveLength(2);
+
+    // The other half of the pair, which is what the viewer compares against.
+    expect(result.state).toBe("after");
+    expect(result.counterpart.state).toBe("before");
+    expect(result.counterpart.latestVersion.fileUrl).toContain("http");
 
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
@@ -159,7 +186,7 @@ describe("mediaByShareToken", () => {
 
     const res = await query({
       auth: { user: outsider, account: outsiderAccount },
-      shareToken: media.image.shareToken,
+      shareToken: media.after.shareToken,
     });
 
     expectNoGraphQLError(res);
@@ -192,13 +219,13 @@ describe("mediaByShareToken", () => {
 
     // Resolve the pinned root: its reply goes with it.
     const pinned = await Comment.query()
-      .where("mediaId", media.image.id)
+      .where("mediaId", media.after.id)
       .whereNotNull("anchor")
       .first();
     invariant(pinned, "the scenario seeds a pinned comment");
     await pinned.$query().patch({ resolvedAt: new Date().toISOString() });
 
-    const res = await query({ auth, shareToken: media.image.shareToken });
+    const res = await query({ auth, shareToken: media.after.shareToken });
 
     expectNoGraphQLError(res);
     expect(res.body.data.mediaByShareToken.unresolvedCommentCount).toBe(1);

@@ -1,4 +1,4 @@
-import { Media } from "@/database/models";
+import { Media, MediaVersion } from "@/database/models";
 import logger from "@/logger";
 
 import { deleteUnreferencedMediaObjects } from "./object";
@@ -7,10 +7,15 @@ import { deleteUnreferencedMediaObjects } from "./object";
 const BATCH_SIZE = 200;
 
 /**
- * Delete expired media: the object and the row.
+ * Delete expired media versions: the object and the row. A media left with no
+ * versions goes too.
+ *
+ * Retention is about stored bytes, so it applies per version: an old version ages
+ * out while the media and its newest version live on, and the share URL keeps
+ * working. A media only disappears once every version of it has expired.
  *
  * Runs as a cron rather than a per-row scheduled job because expiry is a range
- * scan over one index, and because a media whose expiry passed while the worker
+ * scan over one index, and because a version whose expiry passed while the worker
  * was down still has to go.
  *
  * The row is deleted last. A crash between the two leaves a row pointing at an
@@ -23,7 +28,7 @@ export async function purgeExpiredMedia(
   let purged = 0;
 
   for (;;) {
-    const batch = await Media.query()
+    const batch = await MediaVersion.query()
       .where("expiresAt", "<=", now.toISOString())
       .orderBy("expiresAt", "asc")
       .limit(BATCH_SIZE);
@@ -32,18 +37,30 @@ export async function purgeExpiredMedia(
       return purged;
     }
 
-    const ids = batch.map((media) => media.id);
+    const ids = batch.map((version) => version.id);
+    const mediaIds = [...new Set(batch.map((version) => version.mediaId))];
 
-    // Keys are content-addressed, so one still referenced by a media that has not
-    // expired must survive this batch.
+    // Keys are content-addressed, so one still referenced by a version that has
+    // not expired must survive this batch.
     await deleteUnreferencedMediaObjects({
-      keys: batch.map((media) => media.key),
-      excludeMediaIds: ids,
+      keys: batch.map((version) => version.key),
+      excludeVersionIds: ids,
     });
 
-    await Media.query().delete().whereIn("id", ids);
+    await MediaVersion.query().delete().whereIn("id", ids);
+
+    // A media is nothing without its bytes. Deleting it takes its comment threads
+    // with it, which is correct: there is no longer an image to discuss.
+    await Media.query()
+      .delete()
+      .whereIn("id", mediaIds)
+      .whereNotExists(
+        MediaVersion.query()
+          .select(1)
+          .whereColumn("media_versions.mediaId", "media.id"),
+      );
 
     purged += batch.length;
-    logger.info({ count: batch.length }, "Purged expired media");
+    logger.info({ count: batch.length }, "Purged expired media versions");
   }
 }

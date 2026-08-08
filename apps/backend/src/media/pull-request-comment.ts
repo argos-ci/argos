@@ -1,13 +1,19 @@
 import { invariant } from "@argos/util/invariant";
 import type { Octokit } from "@octokit/rest";
 
-import { GithubPullRequest, GithubRepository, Media } from "@/database/models";
+import {
+  GithubPullRequest,
+  GithubRepository,
+  Media,
+  MediaVersion,
+} from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
 import { getMediaPosterUrl } from "./serve";
 import { getMediaMarkdown } from "./url";
+import { getLatestMediaVersions } from "./version";
 
 /** How many media the comment lists before it stops growing. */
 const MAX_LISTED_MEDIA = 20;
@@ -30,7 +36,12 @@ export async function updatePullRequestComment(
 
   const media = await Media.query()
     .where("githubPullRequestId", githubPullRequestId)
-    .whereNotNull("uploadedAt")
+    .whereExists(
+      MediaVersion.query()
+        .select(1)
+        .whereColumn("media_versions.mediaId", "media.id")
+        .whereNotNull("media_versions.uploadedAt"),
+    )
     .orderBy("createdAt", "asc")
     .limit(MAX_LISTED_MEDIA);
 
@@ -38,7 +49,13 @@ export async function updatePullRequestComment(
     return;
   }
 
-  const body = buildCommentBody(media);
+  // The comment always shows the newest upload of each media, which is what makes
+  // re-uploading after a review update the pull request without touching it.
+  const latestVersions = await getLatestMediaVersions(
+    media.map((item) => item.id),
+  );
+
+  const body = buildCommentBody(media, latestVersions);
 
   // Two uploads finishing at once would otherwise both read "no comment yet" and
   // both create one.
@@ -96,35 +113,108 @@ export async function updatePullRequestComment(
 /**
  * Render the comment.
  *
+ * A before/after pair shares a name, so the two are shown in one row side by side
+ * — which is the whole reason `state` exists, and reads far better than two
+ * unrelated rows a reviewer has to match up themselves.
+ *
  * Videos embed their poster frame wrapped in a link to the share page, because
  * GitHub renders an inline player only for media it hosts itself — pointing a
  * `<video>` tag at Argos produces a blank box, which is the single easiest way to
  * make this feature look broken. The poster is a CDN URL, so it needs no session:
  * GitHub fetches embedded images server-side, with no cookie of ours.
  */
-function buildCommentBody(media: Media[]): string {
-  const entries = media.map((item) => {
-    const markdown = getMediaMarkdown({
+function buildCommentBody(
+  media: Media[],
+  latestVersions: Map<string, MediaVersion>,
+): string {
+  const embed = (item: Media): string => {
+    const version = latestVersions.get(item.id);
+    if (!version) {
+      return "";
+    }
+    return getMediaMarkdown({
       name: item.name,
       shareUrl: item.url,
-      posterUrl: getMediaPosterUrl(item),
-      isVideo: item.isVideo(),
+      posterUrl: getMediaPosterUrl(version),
+      isVideo: version.isVideo(),
     });
-    return `| ${escapeCell(item.name)} | ${markdown} |`;
+  };
+
+  const paired = groupByPair(media);
+  const hasPairs = paired.some((group) => group.before && group.after);
+
+  const rows = paired.map((group) => {
+    const item = group.after ?? group.before;
+    invariant(item, "a group has at least one media");
+    const cells = hasPairs
+      ? [
+          escapeCell(item.name),
+          group.before ? embed(group.before) : "",
+          group.after ? embed(group.after) : "",
+        ]
+      : [escapeCell(item.name), embed(item)];
+    // The description belongs to the pair, not to either half.
+    const description = group.after?.description ?? group.before?.description;
+    if (description) {
+      cells.push(escapeCell(description));
+    } else if (hasDescription(paired)) {
+      cells.push("");
+    }
+    return `| ${cells.join(" | ")} |`;
   });
+
+  const headers = hasPairs ? ["Name", "Before", "After"] : ["Name", "Preview"];
+  if (hasDescription(paired)) {
+    headers.push("Notes");
+  }
+
+  const versionNote = media.some(
+    (item) => (latestVersions.get(item.id)?.number ?? 1) > 1,
+  )
+    ? " Re-uploading a screenshot adds a version, and this comment always shows the newest."
+    : "";
 
   return [
     "**Media uploaded by Argos**",
     "",
-    "| Name | Preview |",
-    "| --- | --- |",
-    ...entries,
+    `| ${headers.join(" | ")} |`,
+    `| ${headers.map(() => "---").join(" | ")} |`,
+    ...rows,
     "",
-    "<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.</sub>",
+    `<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.${versionNote}</sub>`,
   ].join("\n");
 }
 
-/** A pipe inside a cell would split it into two columns. */
+type MediaPair = { before: Media | null; after: Media | null };
+
+/**
+ * Group a pull request's media so the two halves of a pair land in one row.
+ *
+ * Keyed on the name, which is what a pair shares. A media with no state is its own
+ * group, keyed separately so a standalone `checkout.png` never absorbs a
+ * `checkout.png` that is half of a pair.
+ */
+function groupByPair(media: Media[]): MediaPair[] {
+  const groups = new Map<string, MediaPair>();
+  for (const item of media) {
+    const key = item.state ? `pair:${item.name}` : `solo:${item.id}`;
+    const group = groups.get(key) ?? { before: null, after: null };
+    if (item.state === "before") {
+      group.before = item;
+    } else {
+      group.after = item;
+    }
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+function hasDescription(groups: MediaPair[]): boolean {
+  return groups.some(
+    (group) => group.before?.description ?? group.after?.description,
+  );
+}
+
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|");
 }

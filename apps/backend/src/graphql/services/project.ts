@@ -13,6 +13,7 @@ import {
   BuildShard,
   IgnoredChange,
   Media,
+  MediaVersion,
   Project,
   ProjectUser,
   Screenshot,
@@ -210,10 +211,13 @@ export async function unsafe_deleteProject(args: {
       .join("tests", "test_stats_fingerprints.testId", "tests.id")
       .where("tests.projectId", args.projectId)
       .delete();
-    const media = await Media.query(trx)
-      .select("key")
-      .where("projectId", args.projectId);
-    mediaKeys = media.map((row) => row.key);
+    // Keys live on the versions, so they are collected before the media rows go —
+    // `media_versions` cascades on delete, which would take them with it.
+    const versions = await MediaVersion.query(trx)
+      .select("media_versions.key")
+      .joinRelated("media")
+      .where("media.projectId", args.projectId);
+    mediaKeys = versions.map((row) => row.key);
     await Media.query(trx).where("projectId", args.projectId).delete();
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
@@ -226,6 +230,6 @@ export async function unsafe_deleteProject(args: {
   // project's media could share one, which the check inside handles.
   await deleteUnreferencedMediaObjects({
     keys: mediaKeys,
-    excludeMediaIds: [],
+    excludeVersionIds: [],
   });
 }

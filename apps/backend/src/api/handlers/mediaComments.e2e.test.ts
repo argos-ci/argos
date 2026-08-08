@@ -63,7 +63,10 @@ const test = base.extend<{
     await use(await factory.Project.create({ accountId: account.id }));
   },
   media: async ({ project }, use) => {
-    await use(await factory.Media.create({ projectId: project.id }));
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+    });
+    await use(media);
   },
   token: async ({ user, account }, use) => {
     const token = `arp_${"e".repeat(36)}`;
@@ -199,8 +202,8 @@ describe("media comments", () => {
     const otherProject = await factory.Project.create({
       accountId: otherAccount.id,
     });
-    const otherMedia = await factory.Media.create({
-      projectId: otherProject.id,
+    const { media: otherMedia } = await factory.createMediaWithVersion({
+      media: { projectId: otherProject.id },
     });
 
     await request(app)
@@ -215,17 +218,17 @@ describe("listMediaFeedback", () => {
     token,
     project,
   }) => {
-    const first = await factory.Media.create({
-      projectId: project.id,
-      name: "one.png",
+    const { media: first } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "one.png" },
     });
-    const second = await factory.Media.create({
-      projectId: project.id,
-      name: "two.png",
+    const { media: second } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "two.png" },
     });
     // A third with no comments: it must not appear — the caller asked what the
     // feedback is.
-    await factory.Media.create({ projectId: project.id, name: "quiet.png" });
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "quiet.png" },
+    });
 
     for (const media of [first, second]) {
       await request(app)
@@ -261,7 +264,9 @@ describe("listMediaFeedback", () => {
     token,
     project,
   }) => {
-    const media = await factory.Media.create({ projectId: project.id });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+    });
 
     const resolvedRoot = await request(app)
       .post(`/media/${media.id}/comments`)
@@ -312,14 +317,15 @@ describe("listMediaFeedback", () => {
       githubRepositoryId: project.githubRepositoryId,
       number: 1234,
     });
-    const onPr = await factory.Media.create({
-      projectId: project.id,
-      name: "on-pr.png",
-      githubPullRequestId: pullRequest.id,
+    const { media: onPr } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "on-pr.png",
+        githubPullRequestId: pullRequest.id,
+      },
     });
-    const offPr = await factory.Media.create({
-      projectId: project.id,
-      name: "off-pr.png",
+    const { media: offPr } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "off-pr.png" },
     });
 
     for (const media of [onPr, offPr]) {

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict o2JT2sN5Tn1DGYwod5eiicIQGexx16kCUvip8gRNtc3QG2civajUu2xHqb1FiDg
+\restrict SqOSc1ZPPIGdRkKikIdjqWrEwbq9y4VSA6GOtMiiIgblCT5EKWT79g4RfBFpFmn
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -700,8 +700,10 @@ CREATE TABLE public.comments (
     anchor jsonb,
     "testId" bigint,
     "mediaId" bigint,
+    "mediaVersionId" bigint,
     CONSTRAINT comments_anchor_requires_target CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL) OR ("mediaId" IS NOT NULL))),
     CONSTRAINT comments_media_target_scope CHECK ((("mediaId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL)))),
+    CONSTRAINT comments_media_version_requires_media CHECK ((("mediaVersionId" IS NULL) OR ("mediaId" IS NOT NULL))),
     CONSTRAINT comments_target_xor CHECK ((num_nonnulls("buildId", "testId", "mediaId") = 1)),
     CONSTRAINT comments_test_target_scope CHECK ((("testId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL))))
 );
@@ -1452,17 +1454,11 @@ CREATE TABLE public.media (
     "screenshotDiffId" bigint,
     "createdByUserId" bigint,
     name character varying(255) NOT NULL,
-    slug character varying(255),
-    key character varying(255) NOT NULL,
-    "mimeType" character varying(255) NOT NULL,
-    "sizeBytes" bigint NOT NULL,
-    width integer,
-    height integer,
+    state character varying(255),
+    description text,
     visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
     "shareToken" character varying(255) NOT NULL,
-    "expiresAt" timestamp with time zone,
-    "uploadedAt" timestamp with time zone,
-    "billedUnits" integer DEFAULT 0 NOT NULL
+    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY ((ARRAY['before'::character varying, 'after'::character varying])::text[]))))
 );
 
 
@@ -1487,6 +1483,51 @@ ALTER SEQUENCE public.media_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.media_id_seq OWNED BY public.media.id;
+
+
+--
+-- Name: media_versions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.media_versions (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "mediaId" bigint NOT NULL,
+    number integer NOT NULL,
+    "createdByUserId" bigint,
+    key character varying(255) NOT NULL,
+    "mimeType" character varying(255) NOT NULL,
+    "sizeBytes" bigint NOT NULL,
+    width integer,
+    height integer,
+    "expiresAt" timestamp with time zone,
+    "uploadedAt" timestamp with time zone,
+    "billedUnits" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.media_versions OWNER TO postgres;
+
+--
+-- Name: media_versions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.media_versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.media_versions_id_seq OWNER TO postgres;
+
+--
+-- Name: media_versions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.media_versions_id_seq OWNED BY public.media_versions.id;
 
 
 --
@@ -3094,6 +3135,13 @@ ALTER TABLE ONLY public.media ALTER COLUMN id SET DEFAULT nextval('public.media_
 
 
 --
+-- Name: media_versions id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_versions ALTER COLUMN id SET DEFAULT nextval('public.media_versions_id_seq'::regclass);
+
+
+--
 -- Name: ms_teams_webhooks id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3756,6 +3804,22 @@ ALTER TABLE ONLY public.media
 
 ALTER TABLE ONLY public.media
     ADD CONSTRAINT media_sharetoken_unique UNIQUE ("shareToken");
+
+
+--
+-- Name: media_versions media_versions_mediaid_number_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_versions
+    ADD CONSTRAINT media_versions_mediaid_number_unique UNIQUE ("mediaId", number);
+
+
+--
+-- Name: media_versions media_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_versions
+    ADD CONSTRAINT media_versions_pkey PRIMARY KEY (id);
 
 
 --
@@ -4573,13 +4637,6 @@ CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchroniz
 
 
 --
--- Name: media_expiresat_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX media_expiresat_index ON public.media USING btree ("expiresAt");
-
-
---
 -- Name: media_githubpullrequestid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4587,17 +4644,10 @@ CREATE INDEX media_githubpullrequestid_index ON public.media USING btree ("githu
 
 
 --
--- Name: media_project_slug_unique; Type: INDEX; Schema: public; Owner: postgres
+-- Name: media_identity_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE UNIQUE INDEX media_project_slug_unique ON public.media USING btree ("projectId", slug) WHERE (slug IS NOT NULL);
-
-
---
--- Name: media_project_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX media_project_uploaded_at_idx ON public.media USING btree ("projectId", "uploadedAt") WHERE ("uploadedAt" IS NOT NULL);
+CREATE UNIQUE INDEX media_identity_unique ON public.media USING btree ("projectId", COALESCE("githubPullRequestId", (0)::bigint), name, COALESCE(state, ''::character varying));
 
 
 --
@@ -4605,6 +4655,27 @@ CREATE INDEX media_project_uploaded_at_idx ON public.media USING btree ("project
 --
 
 CREATE INDEX media_projectid_createdat_index ON public.media USING btree ("projectId", "createdAt");
+
+
+--
+-- Name: media_versions_expiresat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_versions_expiresat_index ON public.media_versions USING btree ("expiresAt");
+
+
+--
+-- Name: media_versions_media_number_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_versions_media_number_idx ON public.media_versions USING btree ("mediaId", number DESC);
+
+
+--
+-- Name: media_versions_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_versions_uploaded_at_idx ON public.media_versions USING btree ("uploadedAt") WHERE ("uploadedAt" IS NOT NULL);
 
 
 --
@@ -5357,6 +5428,14 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: comments comments_mediaversionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_mediaversionid_foreign FOREIGN KEY ("mediaVersionId") REFERENCES public.media_versions(id) ON DELETE SET NULL;
+
+
+--
 -- Name: comments comments_screenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5546,6 +5625,22 @@ ALTER TABLE ONLY public.media
 
 ALTER TABLE ONLY public.media
     ADD CONSTRAINT media_screenshotdiffid_foreign FOREIGN KEY ("screenshotDiffId") REFERENCES public.screenshot_diffs(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media_versions media_versions_createdbyuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_versions
+    ADD CONSTRAINT media_versions_createdbyuserid_foreign FOREIGN KEY ("createdByUserId") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: media_versions media_versions_mediaid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_versions
+    ADD CONSTRAINT media_versions_mediaid_foreign FOREIGN KEY ("mediaId") REFERENCES public.media(id) ON DELETE CASCADE;
 
 
 --
@@ -6024,7 +6119,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict o2JT2sN5Tn1DGYwod5eiicIQGexx16kCUvip8gRNtc3QG2civajUu2xHqb1FiDg
+\unrestrict SqOSc1ZPPIGdRkKikIdjqWrEwbq9y4VSA6GOtMiiIgblCT5EKWT79g4RfBFpFmn
 
 -- Knex migrations
 

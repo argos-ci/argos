@@ -7,7 +7,7 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
-import { Account, Media, Project } from "@/database/models";
+import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { createMedia } from "@/media/create";
@@ -16,6 +16,11 @@ import { deleteUnreferencedMediaObjects } from "@/media/object";
 import { getMediaPermissions, type MediaPermission } from "@/media/permissions";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { queryProjectMedia } from "@/media/query";
+import {
+  getLatestMediaVersion,
+  getLatestMediaVersions,
+  getMediaVersionCounts,
+} from "@/media/version";
 import { boom } from "@/util/error";
 
 import { getProjectForAuth } from "../auth/project";
@@ -24,7 +29,6 @@ import {
   MediaSchema,
   MediaUploadTargetSchema,
   serializeMedia,
-  serializeMediaList,
 } from "../schema/primitives/media";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -51,11 +55,7 @@ const CreateMediaRequestSchema = MediaInputSchema.extend({
     }),
   prNumber: z.number().int().min(1).nullish().meta({
     description:
-      "Pull request to attach the media to. With `comment`, Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time.",
-  }),
-  comment: z.boolean().nullish().meta({
-    description:
-      "Post (or update) the managed pull request comment. Requires `prNumber` and a project connected to GitHub.",
+      "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time — attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
   }),
 });
 
@@ -119,40 +119,37 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
       projectPath: body.project ?? null,
     });
 
+    // Resolved before the upsert, not stamped on after it: the pull request is
+    // part of the media's identity, so it decides whether this upload is a new
+    // media or a new version of one that is already there.
     const githubPullRequestId = await resolvePullRequest({
       project,
       prNumber: body.prNumber ?? null,
-      comment: body.comment ?? false,
     });
 
-    const { media, upload } = await createMedia({
+    const { media, version, upload } = await createMedia({
       project,
       account,
       userId: auth.type === "project" ? null : auth.user.id,
       name: body.name,
+      state: body.state ?? null,
+      description: body.description ?? null,
+      githubPullRequestId,
       contentType: body.contentType,
       sizeBytes: body.size,
       hash: body.hash,
-      slug: body.slug ?? null,
       visibility: body.visibility ?? null,
       retentionDays: body.retentionDays ?? null,
     });
 
-    // Stamped after creation rather than passed through: the pull request is a
-    // property of *this* upload request, and a media re-uploaded under the same
-    // slug for a different pull request has to move with it.
-    const linked = githubPullRequestId
-      ? await media.$query().patchAndFetch({ githubPullRequestId })
-      : media;
-
     // Nothing to comment about until the bytes are there. When the file was
     // already held, `createMedia` finalized it, so the comment can go up now.
-    if (githubPullRequestId && linked.uploadedAt) {
+    if (githubPullRequestId && version.uploadedAt) {
       await updatePullRequestComment(githubPullRequestId);
     }
 
     res.status(201).send({
-      media: serializeMedia(linked),
+      media: await serializeMediaWithVersion(media, version),
       upload,
     });
   });
@@ -162,7 +159,7 @@ export const finalizeMediaOperation = {
   operationId: "finalizeMedia",
   summary: "Finalize a media upload",
   description:
-    "Confirm that a media's bytes have been uploaded. Argos reads the object back, starts processing it (poster frame for videos, metadata stripping), bills it to the screenshot meter, and updates the managed pull request comment when one was requested.",
+    "Confirm that a media version's bytes have been uploaded. Argos reads the object back to check the file is what it claims to be, records an image's dimensions, bills it to the screenshot meter, and updates the managed pull request comment. There is no processing step: the media is usable the moment this returns.",
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:write"]),
   requestParams: {
@@ -195,13 +192,24 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
       permission: "view",
     });
 
-    const finalized = await finalizeMedia(media);
+    // The version waiting on bytes is the newest one, uploaded or not — a caller
+    // finalizing is telling us about the upload it was just handed a target for.
+    const pending = await MediaVersion.query()
+      .where("mediaId", media.id)
+      .orderBy("number", "desc")
+      .first();
 
-    if (finalized.githubPullRequestId) {
-      await updatePullRequestComment(finalized.githubPullRequestId);
+    if (!pending) {
+      throw boom(400, "This media has no upload to finalize.");
     }
 
-    res.send(serializeMedia(finalized));
+    const finalized = await finalizeMedia(pending);
+
+    if (media.githubPullRequestId) {
+      await updatePullRequestComment(media.githubPullRequestId);
+    }
+
+    res.send(await serializeMediaWithVersion(media, finalized));
   });
 };
 
@@ -241,7 +249,7 @@ export const getMediaHandler: CreateAPIHandler = ({ get }) => {
       mediaId: req.ctx.params.mediaId,
       permission: "view",
     });
-    res.send(serializeMedia(media));
+    res.send(await serializeMediaWithVersion(media, null));
   });
 };
 
@@ -275,12 +283,15 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
       permission: "delete",
     });
 
-    // Objects first: a row deleted while its bytes survive leaves storage nobody
-    // references, and there is no second pass that would find it. Keys another
-    // media still points at are kept — the same file uploaded twice shares one.
+    // Every version, not just the latest: deleting a media deletes its whole
+    // history. Objects first — a row deleted while its bytes survive leaves
+    // storage nobody references, and there is no second pass that would find it.
+    // Keys another version still points at are kept, which versions make routine:
+    // reverting a screenshot produces a version sharing an older one's key.
+    const versions = await MediaVersion.query().where("mediaId", media.id);
     await deleteUnreferencedMediaObjects({
-      keys: [media.key],
-      excludeMediaIds: [media.id],
+      keys: versions.map((version) => version.key),
+      excludeVersionIds: versions.map((version) => version.id),
     });
     await media.$query().delete();
 
@@ -344,7 +355,7 @@ export const listMediaHandler: CreateAPIHandler = ({ get }) => {
     }).range((page - 1) * perPage, page * perPage - 1);
 
     res.send({
-      results: serializeMediaList(media.results),
+      results: await serializeMediaListWithVersions(media.results),
       pageInfo: { total: media.total, page, perPage },
     });
   });
@@ -406,14 +417,10 @@ async function resolveUploadTarget(args: {
 async function resolvePullRequest(args: {
   project: Project;
   prNumber: number | null;
-  comment: boolean;
 }): Promise<string | null> {
-  const { project, prNumber, comment } = args;
+  const { project, prNumber } = args;
 
   if (!prNumber) {
-    if (comment) {
-      throw boom(400, "`prNumber` is required when `comment` is `true`.");
-    }
     return null;
   }
 
@@ -486,4 +493,45 @@ async function loadMediaForAuth(args: {
   }
 
   return media;
+}
+
+/**
+ * Serialize a media as of one of its versions, resolving the latest when the
+ * caller doesn't have one in hand.
+ *
+ * A media with no uploaded version is not serveable, and no read path should be
+ * able to reach one: `queryProjectMedia` filters them out and a create/finalize
+ * response always has the version it just touched.
+ */
+async function serializeMediaWithVersion(
+  media: Media,
+  version: MediaVersion | null,
+) {
+  const [resolved, counts] = await Promise.all([
+    version ?? getLatestMediaVersion(media.id),
+    getMediaVersionCounts([media.id]),
+  ]);
+  invariant(resolved, "media has no version to serve");
+  return serializeMedia(media, resolved, counts.get(media.id) ?? 1);
+}
+
+/**
+ * Serialize a list, resolving every media's latest version in two queries rather
+ * than two per row.
+ */
+async function serializeMediaListWithVersions(list: Media[]) {
+  const ids = list.map((media) => media.id);
+  const [latest, counts] = await Promise.all([
+    getLatestMediaVersions(ids),
+    getMediaVersionCounts(ids),
+  ]);
+  return list.flatMap((media) => {
+    const version = latest.get(media.id);
+    // Defensive rather than expected: the list query requires an uploaded
+    // version, so a media without one here means the two disagree.
+    if (!version) {
+      return [];
+    }
+    return [serializeMedia(media, version, counts.get(media.id) ?? 1)];
+  });
 }

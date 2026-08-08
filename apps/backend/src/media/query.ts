@@ -1,25 +1,24 @@
 import type { QueryBuilder } from "objection";
 
-import { Media } from "@/database/models";
+import { Media, MediaVersion } from "@/database/models";
 
 export type MediaFilters = {
-  /** Match on the file name or the slug. */
+  /** Match on the media's name or its description. */
   search?: string | null | undefined;
   /** Restrict to images or to videos. */
   type?: "image" | "video" | null | undefined;
 };
 
 /**
- * The media library query, shared by the REST list endpoint and the GraphQL
- * connection so both paginate, filter and order identically.
+ * The media list query, shared by the REST list endpoint and the GraphQL pull
+ * request list so both paginate, filter and order identically.
  *
  * Takes project ids rather than an account so the caller decides the scope: one
- * project for the project endpoint, or every project a viewer can see for the
- * account-level library — the same shape the tests dashboard uses.
+ * project for the project endpoint, or every project a viewer can see.
  *
- * Only media whose bytes landed: a row created for an upload that never completed
- * is an implementation detail of the two-step flow, not something a team should
- * see in its library.
+ * Only media with at least one uploaded version: a media created to sign an upload
+ * that never completed is an implementation detail of the two-step flow, not
+ * something a project should see listed.
  */
 export function queryProjectMedia(args: {
   projectIds: string[];
@@ -27,7 +26,7 @@ export function queryProjectMedia(args: {
 }): QueryBuilder<Media, Media[]> {
   const query = Media.query()
     .whereIn("media.projectId", args.projectIds)
-    .whereNotNull("media.uploadedAt")
+    .whereExists(uploadedVersions())
     .orderBy("media.createdAt", "desc");
 
   const { search, type } = args.filters ?? {};
@@ -37,19 +36,39 @@ export function queryProjectMedia(args: {
     query.where((builder) => {
       builder
         .whereILike("media.name", pattern)
-        .orWhereILike("media.slug", pattern);
+        .orWhereILike("media.description", pattern);
     });
   }
 
   if (type) {
-    query.where(
-      "media.mimeType",
-      type === "video" ? "like" : "not like",
-      "video/%",
+    // The *latest* version decides, not any version: re-uploading a screenshot
+    // as a recording would otherwise leave the media matching both filters
+    // forever. `number = max(number)` is what pins the check to the newest one —
+    // filtering inside an `EXISTS` would match a version that has been superseded.
+    const operator = type === "video" ? "LIKE" : "NOT LIKE";
+    query.whereRaw(
+      `EXISTS (
+        SELECT 1 FROM media_versions v
+        WHERE v."mediaId" = media.id
+          AND v."uploadedAt" IS NOT NULL
+          AND v."mimeType" ${operator} 'video/%'
+          AND v."number" = (
+            SELECT max(v2."number") FROM media_versions v2
+            WHERE v2."mediaId" = media.id AND v2."uploadedAt" IS NOT NULL
+          )
+      )`,
     );
   }
 
   return query;
+}
+
+/** Correlated "this media has landed at least one upload". */
+function uploadedVersions() {
+  return MediaVersion.query()
+    .select(1)
+    .whereColumn("media_versions.mediaId", "media.id")
+    .whereNotNull("media_versions.uploadedAt");
 }
 
 /**

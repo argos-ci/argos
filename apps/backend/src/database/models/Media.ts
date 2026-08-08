@@ -1,6 +1,7 @@
 import {
-  isVideoMediaContentType,
+  MediaStateSchema,
   MediaVisibilitySchema,
+  type MediaState,
   type MediaVisibility,
 } from "@argos/schemas/media";
 import type { JSONSchema, RelationMappings } from "objection";
@@ -11,6 +12,7 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Build } from "./Build";
 import { GithubPullRequest } from "./GithubPullRequest";
+import { MediaVersion } from "./MediaVersion";
 import { Project } from "./Project";
 import { ScreenshotDiff } from "./ScreenshotDiff";
 import { User } from "./User";
@@ -26,9 +28,11 @@ import { User } from "./User";
  * Not a {@link Screenshot}: nothing compares it to a baseline, and it has no
  * bucket and no build. It shares only the storage bucket.
  *
- * Argos never rewrites the bytes it was given. The image CDN in front of the
- * bucket derives WebP/AVIF variants and video poster frames on request, so there
- * is no processing state here and `key` is stable for the row's whole life.
+ * This row is the **identity** — what the thing is a picture of — and holds no
+ * bytes. Each upload is a {@link MediaVersion}. Its identity is
+ * `(project, pull request, name, state)`, enforced by `media_identity_unique`, so
+ * re-uploading the same screenshot on the same pull request adds a version and the
+ * share URL keeps working.
  */
 export class Media extends Model {
   static override tableName = "media";
@@ -38,15 +42,7 @@ export class Media extends Model {
       timestampsSchema,
       {
         type: "object" as const,
-        required: [
-          "projectId",
-          "name",
-          "key",
-          "mimeType",
-          "sizeBytes",
-          "visibility",
-          "shareToken",
-        ],
+        required: ["projectId", "name", "visibility", "shareToken"],
         properties: {
           projectId: { type: "string" },
           githubPullRequestId: { type: ["string", "null"] },
@@ -54,20 +50,10 @@ export class Media extends Model {
           screenshotDiffId: { type: ["string", "null"] },
           createdByUserId: { type: ["string", "null"] },
           name: { type: "string", maxLength: 255 },
-          slug: { type: ["string", "null"], maxLength: 255 },
-          key: { type: "string" },
-          mimeType: { type: "string" },
-          // A bigint column: Objection hands it back as a string, and every
-          // writer passes one, so the schema accepts only strings — a union here
-          // trips ajv's strict mode.
-          sizeBytes: { type: "string" },
-          width: { type: ["number", "null"], minimum: 0 },
-          height: { type: ["number", "null"], minimum: 0 },
+          state: MediaStateSchema.nullable().toJSONSchema() as JSONSchema,
+          description: { type: ["string", "null"] },
           visibility: MediaVisibilitySchema.toJSONSchema() as JSONSchema,
           shareToken: { type: "string" },
-          expiresAt: { type: ["string", "null"] },
-          uploadedAt: { type: ["string", "null"] },
-          billedUnits: { type: "number", minimum: 0 },
         },
       },
     ],
@@ -103,6 +89,11 @@ export class Media extends Model {
         modelClass: User,
         join: { from: "media.createdByUserId", to: "users.id" },
       },
+      versions: {
+        relation: Model.HasManyRelation,
+        modelClass: MediaVersion,
+        join: { from: "media.id", to: "media_versions.mediaId" },
+      },
     };
   }
 
@@ -114,50 +105,20 @@ export class Media extends Model {
   screenshotDiffId!: string | null;
   createdByUserId!: string | null;
   name!: string;
-  slug!: string | null;
-  key!: string;
-  mimeType!: string;
-  /** A bigint column, so it arrives as a string. Use {@link size}. */
-  sizeBytes!: string;
-  width!: number | null;
-  height!: number | null;
+  state!: MediaState | null;
+  description!: string | null;
   visibility!: MediaVisibility;
   shareToken!: string;
-  expiresAt!: string | null;
-  uploadedAt!: string | null;
-  billedUnits!: number;
 
   project?: Project;
   githubPullRequest?: GithubPullRequest | null;
   build?: Build | null;
   screenshotDiff?: ScreenshotDiff | null;
   createdBy?: User | null;
+  versions?: MediaVersion[];
 
   /** The share page URL, the one that goes into a pull request. */
   get url(): string {
     return getMediaShareUrl(this.shareToken);
-  }
-
-  /** Size in bytes, as a number. */
-  get size(): number {
-    return Number(this.sizeBytes);
-  }
-
-  /** Check if the media is a video. */
-  isVideo(): boolean {
-    return isVideoMediaContentType(this.mimeType);
-  }
-
-  /** Check if the media is an image. */
-  isImage(): boolean {
-    return !this.isVideo();
-  }
-
-  /**
-   * Check if the media has expired. Expired media is kept in the database until
-   * the purge job runs, so this can be true for a row that still exists.
-   */
-  isExpired(now: Date = new Date()): boolean {
-    return this.expiresAt !== null && new Date(this.expiresAt) <= now;
   }
 }

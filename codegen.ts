@@ -68,6 +68,7 @@ const config: CodegenConfig = {
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           GoogleUser: "../../database/models/index.js#GoogleUser",
           Media: "../../database/models/index.js#Media",
+        MediaVersion: "../../database/models/index.js#MediaVersion",
           MsTeamsWebhook: "../../database/models/index.js#MsTeamsWebhook",
           OAuthClient: "../../database/models/index.js#OAuthClient",
           Plan: "../../database/models/index.js#Plan",

@@ -1,4 +1,4 @@
-import type { Media } from "@/database/models";
+import type { MediaVersion } from "@/database/models";
 import { getImageKitUrl } from "@/storage";
 
 /**
@@ -20,11 +20,11 @@ const POSTER_SEEK_SECONDS = 1;
  * the bytes are protected by an unguessable content-addressed key rather than by
  * a session, exactly as Argos already serves screenshots.
  *
- * {@link Media.visibility} therefore governs the **share page**, not the file:
+ * A media's `visibility` therefore governs the **share page**, not the file:
  * `team` means the branded page (project context, expiry, delete) needs a session.
  */
-export function getMediaFileUrl(media: Media): string {
-  return getImageKitUrl(media.key);
+export function getMediaFileUrl(version: MediaVersion): string {
+  return getImageKitUrl(version.key);
 }
 
 /**
@@ -35,11 +35,11 @@ export function getMediaFileUrl(media: Media): string {
  * with the media key — and a poster that cannot go stale, because it is computed
  * from whatever the key currently points at.
  */
-export function getMediaPosterUrl(media: Media): string | null {
-  if (!media.isVideo()) {
+export function getMediaPosterUrl(version: MediaVersion): string | null {
+  if (!version.isVideo()) {
     return null;
   }
-  const url = new URL(getImageKitUrl(media.key));
+  const url = new URL(getImageKitUrl(version.key));
   // ImageKit's video-thumbnail endpoint: `<video-path>/ik-thumbnail.jpg`, with
   // `so` (start offset, in seconds) choosing the frame.
   url.pathname = `${url.pathname}/ik-thumbnail.jpg`;

@@ -1,9 +1,12 @@
+import { MediaStateSchema } from "@argos/schemas/media";
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { filterVisibleComments } from "@/comment/getVisibleComments";
-import { Comment, Media } from "@/database/models";
+import { Comment, Media, MediaVersion } from "@/database/models";
 import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
+import { getLatestMediaVersions } from "@/media/version";
 import { boom } from "@/util/error";
 
 import { getProjectForAuth } from "../auth/project";
@@ -32,6 +35,11 @@ const MediaFeedbackSchema = z
       .object({
         id: z.string(),
         name: z.string(),
+        state: MediaStateSchema.nullable(),
+        version: z.number().meta({
+          description:
+            "Which version this feedback is about — always the newest, since that is the one to fix.",
+        }),
         url: z.url().meta({ description: "Share page URL" }),
         fileUrl: z.url().meta({
           description:
@@ -124,7 +132,13 @@ export const listMediaFeedback: CreateAPIHandler = ({ get }) => {
 
     const mediaQuery = Media.query()
       .where("projectId", project.id)
-      .whereNotNull("uploadedAt")
+      // At least one landed upload: expiry and completion live on the versions.
+      .whereExists(
+        MediaVersion.query()
+          .select(1)
+          .whereColumn("media_versions.mediaId", "media.id")
+          .whereNotNull("media_versions.uploadedAt"),
+      )
       .orderBy("createdAt", "asc")
       .limit(MAX_MEDIA);
 
@@ -165,25 +179,39 @@ export const listMediaFeedback: CreateAPIHandler = ({ get }) => {
 
     // Media with no comments is dropped: the caller asked what the feedback is,
     // and a screenshot nobody commented on is not part of the answer.
+    const commented = media.filter((item) => commentsByMediaId.has(item.id));
+
+    // The file the caller should go and look at is the *newest* one. Feedback on
+    // an image that has since been re-uploaded is exactly the case this endpoint
+    // exists for, so pointing at an old version would send an agent to fix a
+    // screenshot it already replaced.
+    const latestVersions = await getLatestMediaVersions(
+      commented.map((item) => item.id),
+    );
+
     const results = await Promise.all(
-      media
-        .filter((item) => commentsByMediaId.has(item.id))
-        .map(async (item) => ({
+      commented.map(async (item) => {
+        const version = latestVersions.get(item.id);
+        invariant(version, "a listed media has an uploaded version");
+        return {
           media: {
             id: item.id,
             name: item.name,
+            state: item.state,
+            version: version.number,
             url: item.url,
-            fileUrl: getMediaFileUrl(item),
-            posterUrl: getMediaPosterUrl(item),
-            width: item.width,
-            height: item.height,
+            fileUrl: getMediaFileUrl(version),
+            posterUrl: getMediaPosterUrl(version),
+            width: version.width,
+            height: version.height,
           },
           comments: await Promise.all(
             (commentsByMediaId.get(item.id) ?? []).map((comment) =>
               serializeComment(comment),
             ),
           ),
-        })),
+        };
+      }),
     );
 
     res.send({ results });

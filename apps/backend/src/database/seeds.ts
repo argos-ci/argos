@@ -18,6 +18,7 @@ import { GithubInstallation } from "./models/GithubInstallation";
 import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
 import { Media } from "./models/Media";
+import { MediaVersion } from "./models/MediaVersion";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
@@ -1686,76 +1687,126 @@ export async function seed() {
  */
 export async function createMediaScenario(input: {
   projectId: string;
-  /** When given, seeds a pinned thread and a plain comment on the image. */
+  /** When given, seeds a pinned thread and a plain comment on the "after" image. */
   commentAuthorId?: string;
 }) {
   const { projectId, commentAuthorId } = input;
-  const imageTs = "2026-04-20T10:00:00.000Z";
-  const videoTs = "2026-04-20T09:00:00.000Z";
-  const secondImageTs = "2026-04-20T08:00:00.000Z";
+  const beforeTs = "2026-04-20T08:00:00.000Z";
+  const afterV1Ts = "2026-04-20T09:00:00.000Z";
+  const afterV2Ts = "2026-04-20T10:00:00.000Z";
+  const videoTs = "2026-04-20T09:30:00.000Z";
 
-  const [image, video, secondImage] = await Media.query().insertAndFetch([
+  // A before/after pair sharing one name, which is what lets the share page show
+  // them together and compare them, plus a video that stands alone.
+  const [before, after, video] = await Media.query().insertAndFetch([
     {
       projectId,
-      name: "checkout-after.png",
-      slug: "pr-1234-after",
+      name: "checkout.png",
+      state: "before" as const,
+      description: "Checkout before the spacing fix.",
+      visibility: "team" as const,
+      shareToken: `seed-media-before-${projectId}`,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
+    },
+    {
+      projectId,
+      name: "checkout.png",
+      state: "after" as const,
+      description: "Checkout after the spacing fix.",
+      visibility: "team" as const,
+      shareToken: `seed-media-after-${projectId}`,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+    {
+      projectId,
+      name: "checkout-flow.mp4",
+      state: null,
+      description: null,
+      visibility: "public" as const,
+      shareToken: `seed-media-video-${projectId}`,
+      createdAt: videoTs,
+      updatedAt: videoTs,
+    },
+  ]);
+
+  invariant(before && after && video, "media should be created");
+
+  // The "after" image has two versions: the reviewer asked for a change and the
+  // second upload answered it. That is the state the version UI has to render.
+  const [, afterV2] = await MediaVersion.query().insertAndFetch([
+    {
+      mediaId: after.id,
+      number: 1,
+      key: "dummy-375x1024.png",
+      mimeType: "image/png",
+      sizeBytes: "196608",
+      width: 375,
+      height: 1024,
+      // Far enough out that the "expiring soon" colour never fires in a baseline.
+      expiresAt: "2027-04-20T09:00:00.000Z",
+      uploadedAt: afterV1Ts,
+      billedUnits: 1,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+    {
+      mediaId: after.id,
+      number: 2,
       key: "dummy-375x720.png",
       mimeType: "image/png",
       sizeBytes: "188416",
       width: 375,
       height: 720,
-      visibility: "team" as const,
-      shareToken: `seed-media-image-${projectId}`,
-      // Far enough out that the "expiring soon" colour never fires in a baseline.
       expiresAt: "2027-04-20T10:00:00.000Z",
-      uploadedAt: imageTs,
+      uploadedAt: afterV2Ts,
       billedUnits: 1,
-      createdAt: imageTs,
-      updatedAt: imageTs,
+      createdAt: afterV2Ts,
+      updatedAt: afterV2Ts,
+    },
+  ]);
+  invariant(afterV2, "the after media should have two versions");
+
+  const [beforeV1, videoV1] = await MediaVersion.query().insertAndFetch([
+    {
+      mediaId: before.id,
+      number: 1,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      sizeBytes: "184320",
+      width: 375,
+      height: 720,
+      expiresAt: "2027-04-20T08:00:00.000Z",
+      uploadedAt: beforeTs,
+      billedUnits: 1,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
     },
     {
-      projectId,
-      name: "checkout-flow.mp4",
-      slug: null,
+      mediaId: video.id,
+      number: 1,
       key: "dummy-375x1024.png",
       mimeType: "video/mp4",
       sizeBytes: "8388608",
-      visibility: "public" as const,
-      shareToken: `seed-media-video-${projectId}`,
-      expiresAt: "2027-04-20T09:00:00.000Z",
+      expiresAt: "2027-04-20T09:30:00.000Z",
       uploadedAt: videoTs,
       billedUnits: 25,
       createdAt: videoTs,
       updatedAt: videoTs,
     },
-    {
-      projectId,
-      name: "sidebar.png",
-      slug: null,
-      key: "dummy-375x1024.png",
-      mimeType: "image/png",
-      sizeBytes: "20971520",
-      width: 375,
-      height: 1024,
-      visibility: "team" as const,
-      shareToken: `seed-media-second-${projectId}`,
-      expiresAt: "2027-04-20T08:00:00.000Z",
-      uploadedAt: secondImageTs,
-      billedUnits: 1,
-      createdAt: secondImageTs,
-      updatedAt: secondImageTs,
-    },
   ]);
-
-  invariant(image && video && secondImage, "media should be created");
+  invariant(beforeV1 && videoV1, "versions should be created");
 
   if (commentAuthorId) {
     const commentTs = "2026-04-20T11:00:00.000Z";
     // A pinned root with a reply, plus one comment about the whole image: the
-    // three states the share page has to lay out at once.
+    // three states the share page has to lay out at once. Pinned to version 1,
+    // which is the version the reviewer was looking at when they wrote it.
     const [pinned] = await Comment.query().insertAndFetch([
       {
-        mediaId: image.id,
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
         userId: commentAuthorId,
         content: commentDoc("The primary button is misaligned here."),
         anchor: { type: "point" as const, x: 0.62, y: 0.34 },
@@ -1766,7 +1817,8 @@ export async function createMediaScenario(input: {
     invariant(pinned, "comment should be created");
     await Comment.query().insert([
       {
-        mediaId: image.id,
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
         userId: commentAuthorId,
         threadId: pinned.id,
         content: commentDoc("Agreed — it should align with the input above."),
@@ -1774,7 +1826,8 @@ export async function createMediaScenario(input: {
         updatedAt: commentTs,
       },
       {
-        mediaId: image.id,
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
         userId: commentAuthorId,
         content: commentDoc("Otherwise this looks good to ship."),
         createdAt: commentTs,
@@ -1783,7 +1836,7 @@ export async function createMediaScenario(input: {
     ]);
   }
 
-  return { image, video, secondImage };
+  return { before, after, video, afterV2 };
 }
 
 /** A one-paragraph TipTap document, the shape the comment editor produces. */

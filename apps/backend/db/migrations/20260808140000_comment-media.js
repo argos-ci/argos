@@ -12,6 +12,13 @@
  * a normalized (x, y) on an uploaded image work, which is why the feature needs
  * no annotation tooling of its own.
  *
+ * A thread belongs to the **media**, not to the version it was written on, so it
+ * survives the re-upload it asked for. `mediaVersionId` records which version the
+ * author was actually looking at: a pin at (0.62, 0.34) described a spot on those
+ * bytes, and drawing it on a later version — reshot at a different size, or fixed
+ * so the thing is no longer there — points at the wrong pixel and reads as a
+ * false claim about the current image.
+ *
  * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
@@ -19,7 +26,22 @@ export const up = async (knex) => {
     table.bigInteger("mediaId");
     table.foreign("mediaId").references("media.id").onDelete("CASCADE");
     table.index(["mediaId", "createdAt"]);
+
+    // Set null rather than cascade: a version can be purged by retention while
+    // the discussion it started is still worth keeping.
+    table.bigInteger("mediaVersionId");
+    table
+      .foreign("mediaVersionId")
+      .references("media_versions.id")
+      .onDelete("SET NULL");
   });
+
+  // A version reference only means something on a media comment.
+  await knex.raw(`
+    ALTER TABLE comments
+    ADD CONSTRAINT comments_media_version_requires_media
+    CHECK ("mediaVersionId" IS NULL OR "mediaId" IS NOT NULL);
+  `);
 
   await knex.raw(`ALTER TABLE comments DROP CONSTRAINT comments_target_xor;`);
   await knex.raw(`

@@ -129,8 +129,8 @@ async function getScreenshotTotals(
 }
 
 /**
- * Screenshot units charged by standalone media, per account, over the period and
- * over all time.
+ * Screenshot units charged by standalone media uploads, per account, over the
+ * period and over all time.
  *
  * One query for the whole batch, same as the bucket totals: the period boundary
  * travels with the rows in a `VALUES` list because every account's period follows
@@ -150,9 +150,9 @@ async function getMediaUnits(
     .select("v.accountId")
     .select(
       knex.raw(
-        `coalesce(sum(m."billedUnits") filter (where m."uploadedAt" >= v."periodStart"), 0) as "period"`,
+        `coalesce(sum(mv."billedUnits") filter (where mv."uploadedAt" >= v."periodStart"), 0) as "period"`,
       ),
-      knex.raw(`coalesce(sum(m."billedUnits"), 0) as "allTime"`),
+      knex.raw(`coalesce(sum(mv."billedUnits"), 0) as "allTime"`),
     )
     .from(
       knex.raw(`(values ${values}) as v("accountId", "periodStart")`, bindings),
@@ -160,10 +160,12 @@ async function getMediaUnits(
     // Media reaches the account through its project, exactly as a bucket does —
     // which is what makes a project transfer carry its billing with it.
     .leftJoin("projects as p", "p.accountId", "v.accountId")
-    // Only uploads that completed are billed, which is what `uploadedAt`
-    // records; a row whose bytes never landed charges nothing.
-    .leftJoin("media as m", (join) => {
-      join.on("m.projectId", "p.id").onNotNull("m.uploadedAt");
+    .leftJoin("media as m", "m.projectId", "p.id")
+    // Units live on the version, because every version is an upload and each one
+    // stores its own bytes. Only uploads that completed are billed, which is what
+    // `uploadedAt` records.
+    .leftJoin("media_versions as mv", (join) => {
+      join.on("mv.mediaId", "m.id").onNotNull("mv.uploadedAt");
     })
     .groupBy("v.accountId")) as unknown as {
     accountId: string | number;

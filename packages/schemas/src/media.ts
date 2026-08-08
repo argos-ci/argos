@@ -17,10 +17,11 @@ export const IMAGE_MEDIA_CONTENT_TYPES = IMAGE_SNAPSHOT_CONTENT_TYPES;
 /**
  * Video content types accepted for a standalone media upload.
  *
- * QuickTime is accepted because it is what macOS screen recordings and
- * Playwright on macOS produce, but it is not what gets served: the processing
- * worker transcodes anything that isn't H.264-in-MP4 so browsers can actually
- * play it back.
+ * QuickTime is accepted because it is what macOS screen recordings and Playwright
+ * on macOS produce. Argos does not transcode, so a container a browser cannot
+ * play back (ProRes, some HEVC exports) is stored and served as a download rather
+ * than played inline — the caller is responsible for exporting H.264 if it needs
+ * to play in a pull request.
  */
 export const VIDEO_MEDIA_CONTENT_TYPES = [
   "video/mp4",
@@ -84,6 +85,52 @@ export const MediaVisibilitySchema = z.enum(MEDIA_VISIBILITIES).meta({
 });
 
 export type MediaVisibility = z.infer<typeof MediaVisibilitySchema>;
+
+/**
+ * Which half of a before/after pair a media is, if it is half of one.
+ *
+ * Part of a media's identity alongside its name, so `checkout.png` before and
+ * `checkout.png` after are two media rather than two versions of one — and the
+ * pair can be shown side by side and compared. A media that stands alone has no
+ * state.
+ */
+export const MEDIA_STATES = ["before", "after"] as const;
+
+export const MediaStateSchema = z.enum(MEDIA_STATES).meta({
+  description:
+    "Which half of a before/after pair this media is, so the two can be shown side by side and compared. Inferred from a file name ending in `-before` or `-after`.",
+});
+
+export type MediaState = z.infer<typeof MediaStateSchema>;
+
+/**
+ * Read the before/after state out of a file name, and return the name without it.
+ *
+ * `checkout-before.png` is a reviewer saying "this is the before", not a file
+ * literally called that, so the state is lifted off and the two halves of a pair
+ * share one name — which is what lets them be matched up and compared. An explicit
+ * `--state` overrides this; nothing here guesses when the suffix is absent.
+ */
+export function parseMediaStateFromName(fileName: string): {
+  name: string;
+  state: MediaState | null;
+} {
+  const match = /^(.*)-(before|after)(\.[^.]+)?$/i.exec(fileName);
+  if (!match) {
+    return { name: fileName, state: null };
+  }
+  const [, stem, state, extension] = match;
+  // The capture groups are guaranteed by the pattern, but the compiler cannot see
+  // that through a regex.
+  if (stem === undefined || state === undefined) {
+    return { name: fileName, state: null };
+  }
+  const normalized = state.toLowerCase();
+  return {
+    name: `${stem}${extension ?? ""}`,
+    state: normalized === "before" ? "before" : "after",
+  };
+}
 
 /**
  * What one media upload costs on the screenshot meter.

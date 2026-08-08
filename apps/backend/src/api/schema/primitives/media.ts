@@ -1,24 +1,14 @@
 import {
   MediaContentTypeSchema,
+  MediaStateSchema,
   MediaVisibilitySchema,
 } from "@argos/schemas/media";
 import { z } from "zod";
 
-import type { Media } from "@/database/models";
-import { getMediaPosterUrl } from "@/media/serve";
+import type { Media, MediaVersion } from "@/database/models";
+import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
 import { getMediaMarkdown } from "@/media/url";
 import { SHA256_REGEX } from "@/util/validation";
-
-const MediaSlug = z
-  .string()
-  .min(1)
-  .max(120)
-  // The slug goes into a URL and into an index; keeping it to this shape means a
-  // caller never has to wonder whether theirs needs escaping.
-  .regex(/^[\w.-]+$/, {
-    message:
-      "A slug may only contain letters, digits, underscores, dots and dashes.",
-  });
 
 export const MediaId = z.string().meta({
   description: "The media ID",
@@ -28,18 +18,32 @@ export const MediaId = z.string().meta({
 export const MediaSchema = z
   .object({
     id: z.string().meta({ description: "Unique identifier of the media" }),
-    name: z.string().meta({ description: "Original file name" }),
-    slug: z.string().nullable().meta({
+    name: z.string().meta({
       description:
-        "Stable per-team identifier. Re-uploading the same slug replaces the file in place, keeping this URL valid.",
+        "The media's name, and its identity within its pull request. Uploading the same name again adds a version.",
+    }),
+    state: MediaStateSchema.nullable(),
+    description: z.string().nullable().meta({
+      description: "Prose shown under the media in the pull request comment.",
     }),
     url: z.url().meta({
       description:
-        "Share page URL. This is the link to put in a pull request or a chat message.",
+        "Share page URL. This is the link to put in a pull request or a chat message, and it keeps working across versions — it always shows the newest one.",
     }),
     markdown: z.string().meta({
       description:
         "Ready-to-paste Markdown. Images embed directly; videos embed their poster frame linked to the share page, because GitHub only renders inline players for media it hosts itself.",
+    }),
+    version: z.number().meta({
+      description:
+        "Which version this response describes: 1 for a first upload, incrementing each time the same name is uploaded again.",
+    }),
+    versionCount: z.number().meta({
+      description: "How many versions of this media exist.",
+    }),
+    fileUrl: z.url().meta({
+      description:
+        "URL of the image or video itself, for an agent that wants to look at it.",
     }),
     posterUrl: z.url().nullable().meta({
       description:
@@ -56,7 +60,7 @@ export const MediaSchema = z
     }),
     expiresAt: z.string().nullable().meta({
       description:
-        "When the media is deleted. Counted from the upload, not from the last view.",
+        "When this version is deleted. Counted from its upload, not from the last view.",
     }),
     createdAt: z.string(),
   })
@@ -88,9 +92,15 @@ export const MediaInputSchema = z.object({
     .min(1)
     .max(255)
     .meta({
-      description: "File name, used for display and as the Markdown alt text.",
+      description:
+        "File name, used for display and as the Markdown alt text. Also the media's identity: uploading the same name on the same pull request adds a version rather than creating a second media.",
       examples: ["before.png", "checkout-flow.mp4"],
     }),
+  state: MediaStateSchema.nullish(),
+  description: z.string().max(2000).nullish().meta({
+    description:
+      "Prose shown under the media in the managed pull request comment.",
+  }),
   contentType: MediaContentTypeSchema,
   size: z.number().int().min(1).meta({
     description:
@@ -98,12 +108,7 @@ export const MediaInputSchema = z.object({
   }),
   hash: z.string().regex(SHA256_REGEX).meta({
     description:
-      "SHA-256 of the file contents, hex encoded. Uploading the same file twice is free: Argos recognizes the hash and skips the transfer.",
-  }),
-  slug: MediaSlug.nullish().meta({
-    description:
-      "Stable identifier, unique per team. Re-uploading the same slug replaces the file in place, so a Markdown embed already posted to a pull request never goes stale.",
-    examples: ["pr-1234-checkout-before"],
+      "SHA-256 of the file contents, hex encoded. Uploading the same file twice is free: Argos recognizes the hash and skips the transfer, and byte-identical bytes do not create a new version.",
   }),
   visibility: MediaVisibilitySchema.nullish(),
   retentionDays: z.number().int().min(1).max(365).nullish().meta({
@@ -112,40 +117,42 @@ export const MediaInputSchema = z.object({
   }),
 });
 
-/** Serialize a media for the REST API. */
-export function serializeMedia(media: Media): MediaResponse {
-  const posterUrl = getMediaPosterUrl(media);
+/**
+ * Serialize a media for the REST API, as of one of its versions.
+ *
+ * The version carries the bytes and everything read off them; the media carries
+ * the identity and the share URL. A caller gets one flat object because that is
+ * what it wants to act on — the newest screenshot, at a stable link.
+ */
+export function serializeMedia(
+  media: Media,
+  version: MediaVersion,
+  versionCount: number,
+): MediaResponse {
+  const posterUrl = getMediaPosterUrl(version);
   return {
     id: media.id,
     name: media.name,
-    slug: media.slug,
+    state: media.state,
+    description: media.description,
     url: media.url,
     markdown: getMediaMarkdown({
       name: media.name,
       shareUrl: media.url,
       posterUrl,
-      isVideo: media.isVideo(),
+      isVideo: version.isVideo(),
     }),
+    version: version.number,
+    versionCount,
+    fileUrl: getMediaFileUrl(version),
     posterUrl,
-    contentType: media.mimeType,
-    sizeBytes: media.size,
-    width: media.width,
-    height: media.height,
+    contentType: version.mimeType,
+    sizeBytes: version.size,
+    width: version.width,
+    height: version.height,
     visibility: media.visibility,
-    status: getMediaStatus(media),
-    expiresAt: media.expiresAt,
+    status: version.uploadedAt ? "ready" : "pending",
+    expiresAt: version.expiresAt,
     createdAt: media.createdAt,
   };
-}
-
-export function serializeMediaList(list: Media[]): MediaResponse[] {
-  return list.map(serializeMedia);
-}
-
-/**
- * Whether the bytes have landed. A media is fully usable the moment they have —
- * nothing happens to a file after upload.
- */
-function getMediaStatus(media: Media): MediaResponse["status"] {
-  return media.uploadedAt ? "ready" : "pending";
 }

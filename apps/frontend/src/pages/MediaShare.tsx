@@ -30,17 +30,42 @@ const MediaShareQuery = graphql(`
     mediaByShareToken(shareToken: $shareToken) {
       id
       name
-      fileUrl
-      posterUrl
+      state
+      description
       url
       markdown
-      contentType
-      sizeBytes
-      width
-      height
-      isVideo
-      expiresAt
       permissions
+      latestVersion {
+        id
+        number
+        fileUrl
+        posterUrl
+        contentType
+        sizeBytes
+        width
+        height
+        isVideo
+        expiresAt
+      }
+      versions {
+        id
+        number
+        createdAt
+      }
+      counterpart {
+        id
+        name
+        state
+        url
+        latestVersion {
+          id
+          fileUrl
+          posterUrl
+          width
+          height
+          isVideo
+        }
+      }
       project {
         id
         slug
@@ -105,6 +130,7 @@ function MediaViewer(props: { media: Media }) {
   const [placing, setPlacing] = useState(false);
   const [draftPoint, setDraftPoint] = useState<MediaPoint | null>(null);
 
+  const version = media.latestVersion;
   const pins = getMediaPins(media.comments);
   const canComment = media.permissions.includes(MediaPermission.Comment);
   // An anonymous visitor on a public link with nothing to read gets the viewer
@@ -128,8 +154,8 @@ function MediaViewer(props: { media: Media }) {
       >
         <MediaWell
           aspectRatio={
-            media.width && media.height
-              ? { width: media.width, height: media.height }
+            version.width && version.height
+              ? { width: version.width, height: version.height }
               : null
           }
           // The frame is centered over a metadata bar that spans the column, the
@@ -148,10 +174,10 @@ function MediaViewer(props: { media: Media }) {
           // metadata and the actions below the fold.
           className="flex max-h-[75dvh] min-h-64 w-auto max-w-full items-center justify-center self-center"
         >
-          {media.isVideo ? (
-            <MediaVideo src={media.fileUrl} poster={media.posterUrl} />
+          {version.isVideo ? (
+            <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
           ) : (
-            <MediaImage src={media.fileUrl} alt={media.name} />
+            <MediaImage src={version.fileUrl} alt={media.name} />
           )}
           {/* The pins sit inside the well, so a percentage position lands on the
               media's own box rather than on the page. */}
@@ -212,12 +238,16 @@ function MediaViewer(props: { media: Media }) {
  */
 function StatusLine(props: { media: Media }) {
   const { media } = props;
+  const { latestVersion: version } = media;
   const parts = [
-    formatDimensions(media.width, media.height),
-    formatBytes(media.sizeBytes),
+    formatDimensions(version.width, version.height),
+    formatBytes(version.sizeBytes),
+    // Only worth saying once there is more than one: "v1" on a media nobody has
+    // re-uploaded is noise.
+    media.versions.length > 1 ? `v${version.number}` : null,
   ].filter((part): part is string => part !== null);
 
-  const expiry = formatExpiry(media.expiresAt);
+  const expiry = formatExpiry(version.expiresAt);
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 font-mono text-xs">

@@ -1,19 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import config from "@/config";
-import { Media } from "@/database/models";
+import { MediaVersion } from "@/database/models";
 
 import { getMediaFileUrl, getMediaPosterUrl } from "./serve";
 
 /** The CDN base carries an environment segment, so it comes from config. */
 const CDN = config.get("s3.publicImageBaseUrl");
 
-function media(attributes: { key: string; mimeType: string }): Media {
-  return Media.fromJson({
-    projectId: "1",
-    name: "file",
-    visibility: "team",
-    shareToken: "token",
+function media(attributes: { key: string; mimeType: string }): MediaVersion {
+  return MediaVersion.fromJson({
+    mediaId: "1",
+    number: 1,
     sizeBytes: "1024",
     ...attributes,
   });

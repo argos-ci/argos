@@ -1,36 +1,20 @@
-import { MediaContentTypeSchema } from "@argos/schemas/media";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { Media } from "@/database/models";
-import { isValidPgBigInt } from "@/database/util/biginteger";
-import { createMedia } from "@/media/create";
-import { finalizeMedia } from "@/media/finalize";
-import { deleteUnreferencedMediaObjects } from "@/media/object";
 import {
   checkCanViewMedia,
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
-import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
 import { getMediaMarkdown } from "@/media/url";
-import { SHA256_REGEX } from "@/util/validation";
+import { getLatestMediaVersion } from "@/media/version";
 
 import {
   IMediaPermission,
-  IMediaStatus,
   type IResolvers,
 } from "../__generated__/resolver-types";
-import { getWritableProject } from "../services/media";
-import {
-  badUserInput,
-  forbidden,
-  invalidId,
-  notFound,
-  toGraphQLError,
-  unauthenticated,
-} from "../util";
 
 const { gql } = gqlTag;
 
@@ -49,30 +33,27 @@ export const typeDefs = gql`
     team
   }
 
-  enum MediaStatus {
-    "Registered, waiting for its bytes"
-    pending
-    "Bytes uploaded and checked; fully usable"
-    ready
-  }
-
   enum MediaPermission {
     view
     comment
     delete
   }
 
-  type Media implements Node {
+  enum MediaState {
+    before
+    after
+  }
+
+  """
+  One upload of a media. Re-uploading the same name adds a version rather than
+  overwriting one, so the version a reviewer commented on is still there to
+  compare against.
+  """
+  type MediaVersion implements Node {
     id: ID!
     createdAt: DateTime!
-    "Original file name"
-    name: String!
-    "Stable per-team identifier; re-uploading it replaces the file in place"
-    slug: String
-    "Share page URL, the one to paste into a pull request"
-    url: String!
-    "Ready-to-paste Markdown embed"
-    markdown: String!
+    "1-based, and what the UI calls this version"
+    number: Int!
     "CDN URL the bytes are served from"
     fileUrl: String!
     "Poster frame of a video, derived by the image CDN. Null for images."
@@ -82,73 +63,53 @@ export const typeDefs = gql`
     width: Int
     height: Int
     isVideo: Boolean!
-    visibility: MediaVisibility!
-    status: MediaStatus!
-    "When the media is deleted. Counted from the upload."
+    "When this version is deleted. Counted from its upload."
     expiresAt: DateTime
     "Screenshot units this upload charged"
     billedUnits: Int!
+  }
+
+  type Media implements Node {
+    id: ID!
+    createdAt: DateTime!
+    """
+    The media's name, and its identity within its pull request. Uploading the
+    same name again adds a version.
+    """
+    name: String!
+    "Which half of a before/after pair this is, if it is half of one"
+    state: MediaState
+    "Prose shown under the media in the pull request comment"
+    description: String
+    "Share page URL, the one to paste into a pull request"
+    url: String!
+    "Ready-to-paste Markdown embed, always pointing at the newest version"
+    markdown: String!
+    "The newest uploaded version — what the share page and the comment show"
+    latestVersion: MediaVersion!
+    "Every uploaded version, newest first"
+    versions: [MediaVersion!]!
+    """
+    The other half of this media's before/after pair, if there is one.
+
+    Matched on the same name and pull request with the opposite state, which is
+    what lets the share page show the two together and compare them.
+    """
+    counterpart: Media
+    visibility: MediaVisibility!
     project: Project
     permissions: [MediaPermission!]!
     """
     Comment threads on this media, oldest first. A comment's \`anchor\` gives the
     point on the image it refers to, which is how a reviewer marks one up.
+
+    Threads belong to the media rather than to a version, so they survive the
+    re-upload they asked for; each comment's \`mediaVersion\` says which version
+    its author was looking at.
     """
     comments: [Comment!]!
     "Open threads on this media — what still needs acting on."
     unresolvedCommentCount: Int!
-  }
-
-  type MediaConnection implements Connection {
-    pageInfo: PageInfo!
-    edges: [Media!]!
-  }
-
-  input MediaFilterInput {
-    "Match media on their file name or slug"
-    search: String
-    "Restrict to images or to videos"
-    type: MediaType
-  }
-
-  enum MediaType {
-    image
-    video
-  }
-
-  input DeleteMediaInput {
-    id: ID!
-  }
-
-  input CreateMediaInput {
-    projectId: ID!
-    "File name"
-    name: String!
-    contentType: String!
-    "File size in bytes"
-    size: Int!
-    "SHA-256 of the file contents, hex encoded"
-    hash: String!
-    visibility: MediaVisibility
-  }
-
-  """
-  Where to send a file's bytes: POST it to \`url\` as multipart form data, with
-  every entry of \`fields\` appended before the \`file\` part.
-  """
-  type MediaUploadTarget {
-    url: String!
-    fields: JSONObject!
-  }
-
-  type CreateMediaPayload {
-    media: Media!
-    "Null when Argos already holds this exact file and nothing needs uploading"
-    upload: MediaUploadTarget
-  }
-
-  input FinalizeMediaInput {
-    id: ID!
   }
 
   extend type Query {
@@ -161,39 +122,44 @@ export const typeDefs = gql`
     """
     mediaByShareToken(shareToken: String!): Media
   }
-
-  extend type Mutation {
-    """
-    Register a media and get a signed target to upload its bytes to.
-
-    The browser uploads straight to storage rather than through Argos: a 500 MB
-    screen recording has no business passing through a GraphQL request.
-    """
-    createMedia(input: CreateMediaInput!): CreateMediaPayload!
-    "Confirm a media's bytes have been uploaded, making it viewable"
-    finalizeMedia(input: FinalizeMediaInput!): Media!
-    "Delete a media and the files behind it"
-    deleteMedia(input: DeleteMediaInput!): Boolean!
-  }
 `;
 
 export const resolvers: IResolvers = {
+  MediaVersion: {
+    fileUrl: (version) => getMediaFileUrl(version),
+    posterUrl: (version) => getMediaPosterUrl(version),
+    contentType: (version) => version.mimeType,
+    sizeBytes: (version) => version.size,
+    isVideo: (version) => version.isVideo(),
+  },
   Media: {
     url: (media) => media.url,
-    fileUrl: (media) => getMediaFileUrl(media),
-    posterUrl: (media) => getMediaPosterUrl(media),
-    contentType: (media) => media.mimeType,
-    sizeBytes: (media) => media.size,
-    isVideo: (media) => media.isVideo(),
-    markdown: (media) =>
-      getMediaMarkdown({
+    latestVersion: async (media, _args, ctx) => {
+      const version = await ctx.loaders.LatestMediaVersion.load(media.id);
+      // `mediaByShareToken` refuses a media with no uploaded version, and nothing
+      // else exposes one, so reaching here means those two disagree.
+      invariant(version, "media has no uploaded version");
+      return version;
+    },
+    versions: async (media, _args, ctx) => {
+      return ctx.loaders.MediaVersions.load(media.id);
+    },
+    counterpart: async (media, _args, ctx) => {
+      if (!media.state) {
+        return null;
+      }
+      return ctx.loaders.MediaCounterpart.load(media.id);
+    },
+    markdown: async (media, _args, ctx) => {
+      const version = await ctx.loaders.LatestMediaVersion.load(media.id);
+      invariant(version, "media has no uploaded version");
+      return getMediaMarkdown({
         name: media.name,
         shareUrl: media.url,
-        posterUrl: getMediaPosterUrl(media),
-        isVideo: media.isVideo(),
-      }),
-    status: (media) =>
-      media.uploadedAt ? IMediaStatus.Ready : IMediaStatus.Pending,
+        posterUrl: getMediaPosterUrl(version),
+        isVideo: version.isVideo(),
+      });
+    },
     project: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
@@ -238,10 +204,16 @@ export const resolvers: IResolvers = {
         shareToken: args.shareToken,
       });
 
+      if (!media) {
+        return null;
+      }
+
       // Not found, expired and not-yet-uploaded all answer the same way: the
       // share page renders one "this link is no longer available" state, and
-      // telling them apart would leak whether a token was ever valid.
-      if (!media || media.isExpired() || !media.uploadedAt) {
+      // telling them apart would leak whether a token was ever valid. Expiry is
+      // per version, so a media with nothing left unexpired reads as gone.
+      const latest = await getLatestMediaVersion(media.id);
+      if (!latest || latest.isExpired()) {
         return null;
       }
 
@@ -263,119 +235,6 @@ export const resolvers: IResolvers = {
       })
         ? media
         : null;
-    },
-  },
-  Mutation: {
-    createMedia: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      const { input } = args;
-
-      // Uploading spends the account's quota and publishes a link under the
-      // project's name, so it takes more than read access on the project.
-      const project = await getWritableProject({
-        id: input.projectId,
-        user: ctx.auth.user,
-      });
-      const account = await project.$relatedQuery("account");
-      invariant(account, "project account not found");
-
-      const contentType = MediaContentTypeSchema.safeParse(input.contentType);
-      if (!contentType.success) {
-        throw badUserInput(
-          contentType.error.issues[0]?.message ?? "Unsupported file type.",
-          { field: "contentType" },
-        );
-      }
-
-      if (!SHA256_REGEX.test(input.hash)) {
-        throw badUserInput("Invalid file hash.", { field: "hash" });
-      }
-
-      try {
-        const result = await createMedia({
-          project,
-          account,
-          userId: ctx.auth.user.id,
-          name: input.name,
-          contentType: contentType.data,
-          sizeBytes: input.size,
-          hash: input.hash,
-          slug: null,
-          visibility: input.visibility ?? null,
-          retentionDays: null,
-        });
-        return result;
-      } catch (error) {
-        // The service throws HTTP errors (plan limits, file too large); surface
-        // them as GraphQL errors the form can display rather than as crashes.
-        throw toGraphQLError(error);
-      }
-    },
-    finalizeMedia: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      if (!isValidPgBigInt(args.input.id)) {
-        throw invalidId();
-      }
-
-      const media = await Media.query().findById(args.input.id);
-      if (!media) {
-        throw notFound("Media not found.");
-      }
-
-      await getWritableProject({
-        id: media.projectId,
-        user: ctx.auth.user,
-      });
-
-      try {
-        return await finalizeMedia(media);
-      } catch (error) {
-        throw toGraphQLError(error);
-      }
-    },
-    deleteMedia: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      if (!isValidPgBigInt(args.input.id)) {
-        throw invalidId();
-      }
-
-      const media = await Media.query().findById(args.input.id);
-      if (!media) {
-        throw notFound("Media not found.");
-      }
-
-      const project = await ctx.loaders.Project.load(media.projectId);
-      invariant(project, "project not found");
-      const projectPermissions = await project.$getPermissions(ctx.auth.user);
-      const mediaPermissions = getMediaPermissions({
-        visibility: media.visibility,
-        projectPermissions,
-      });
-      if (!mediaPermissions.includes("delete")) {
-        throw forbidden("You are not an administrator of this project.");
-      }
-
-      // Objects first: a row deleted while its bytes survive leaves storage
-      // nothing references, and no later pass would find it. Keys another media
-      // still points at are kept — the same file uploaded twice shares one.
-      await deleteUnreferencedMediaObjects({
-        keys: [media.key],
-        excludeMediaIds: [media.id],
-      });
-      await media.$query().delete();
-
-      if (media.githubPullRequestId) {
-        await updatePullRequestComment(media.githubPullRequestId);
-      }
-
-      return true;
     },
   },
 };

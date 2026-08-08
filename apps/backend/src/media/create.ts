@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
-import type { MediaVisibility } from "@argos/schemas/media";
+import type { MediaState, MediaVisibility } from "@argos/schemas/media";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 
 import config from "@/config";
-import { Account, Media, Project } from "@/database/models";
+import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getS3Client } from "@/storage/s3";
 import { endTrialToUnlockUsage } from "@/stripe";
@@ -39,21 +39,33 @@ export type CreateMediaParams = {
   account: Account;
   /** The acting user, when the caller holds a user token. */
   userId: string | null;
-  /** Original file name, used for display and Markdown alt text. */
+  /**
+   * The media's name, and part of its identity. Uploading the same name again on
+   * the same pull request adds a version.
+   */
   name: string;
+  /** Which half of a before/after pair this is, if it is half of one. */
+  state: MediaState | null;
+  /** Prose shown under the media in the managed pull request comment. */
+  description: string | null;
+  /**
+   * The pull request this media belongs to, already resolved. Part of the
+   * identity: the same name on another pull request is a different media.
+   */
+  githubPullRequestId: string | null;
   contentType: string;
   /** Size the caller says the file is, enforced by S3 on upload. */
   sizeBytes: number;
   /** SHA-256 of the file contents, hex encoded. Makes the key content-addressed. */
   hash: string;
-  /** Stable per-account identifier. Re-uploading the same slug replaces in place. */
-  slug: string | null;
   visibility: MediaVisibility | null;
   retentionDays: number | null;
 };
 
 export type CreateMediaResult = {
   media: Media;
+  /** The version the caller is uploading, or the existing one it matched. */
+  version: MediaVersion;
   /** Where to POST the bytes. */
   upload: {
     url: string;
@@ -94,10 +106,15 @@ export async function createMedia(
     requestedRetentionDays: params.retentionDays,
   });
 
-  const media = await upsertMedia({ ...params, key, visibility, expiresAt });
+  const { media, version } = await upsertMediaVersion({
+    ...params,
+    key,
+    visibility,
+    expiresAt,
+  });
 
-  if (media.uploadedAt) {
-    return { media, upload: null };
+  if (version.uploadedAt) {
+    return { media, version, upload: null };
   }
 
   // The key is content-addressed, so bytes uploaded once — by this media or by
@@ -105,7 +122,7 @@ export async function createMedia(
   // then costs one HEAD instead of re-transferring a 500 MB video.
   const existingObject = await headMediaObject(key);
   if (existingObject) {
-    return { media: await finalizeMedia(media), upload: null };
+    return { media, version: await finalizeMedia(version), upload: null };
   }
 
   const upload = await createUploadTarget({
@@ -114,77 +131,109 @@ export async function createMedia(
     maxBytes: limits.maxFileBytes,
   });
 
-  return { media, upload };
+  return { media, version, upload };
 }
 
 /**
- * Insert the media, or replace the bytes of the one already holding this slug.
+ * Find or create the media this upload belongs to, and give it a version.
  *
- * Replacing in place is what keeps a Markdown embed already posted to a pull
- * request from going stale: the id, the share token and therefore the URL survive
- * a re-upload, only the bytes behind them change.
+ * Identity is `(project, pull request, name, state)`. Uploading a name that is
+ * already there adds a version rather than overwriting one, which is what keeps a
+ * share URL — and any Markdown embed already posted to a pull request — pointing
+ * at the newest image while the version a reviewer commented on survives.
+ *
+ * Byte-identical to the current version is *not* a new version: a CI job that
+ * re-runs without the screenshot changing would otherwise stack identical
+ * versions and bill for each one.
  */
-async function upsertMedia(
+async function upsertMediaVersion(
   params: CreateMediaParams & {
     key: string;
     visibility: MediaVisibility;
     expiresAt: Date;
   },
-): Promise<Media> {
-  const { project, slug, key, visibility, expiresAt } = params;
-
-  const attributes = {
-    projectId: project.id,
-    createdByUserId: params.userId,
-    name: params.name,
-    slug,
+): Promise<{ media: Media; version: MediaVersion }> {
+  const {
+    project,
+    githubPullRequestId,
+    name,
+    state,
+    description,
     key,
-    mimeType: params.contentType,
-    sizeBytes: String(params.sizeBytes),
     visibility,
-    expiresAt: expiresAt.toISOString(),
-  };
+    expiresAt,
+  } = params;
 
-  if (!slug) {
-    return Media.query().insertAndFetch({
-      ...attributes,
-      shareToken: generateShareToken(),
-      billedUnits: 0,
-    });
-  }
+  // Two agents racing on the same identity — a re-run of the same CI job, say —
+  // must not both insert: `media_identity_unique` would reject one of them with a
+  // constraint violation rather than a usable answer, and the version number is
+  // read-then-written so it needs serializing too.
+  return redisLock.acquire(
+    ["media-identity", project.id, githubPullRequestId ?? 0, name, state ?? ""],
+    async () => {
+      const existing = await Media.query()
+        .findOne({
+          projectId: project.id,
+          name,
+          state: state ?? null,
+        })
+        // A null pull request is its own identity, and `= NULL` never matches.
+        .where((builder) => {
+          if (githubPullRequestId) {
+            builder.where("githubPullRequestId", githubPullRequestId);
+          } else {
+            builder.whereNull("githubPullRequestId");
+          }
+        });
 
-  // Two agents racing on the same slug (a re-run of the same CI job, say) must
-  // not both insert: the partial unique index would reject one of them with a
-  // constraint violation rather than a usable answer. The lock serializes them,
-  // and the loser updates the row the winner created.
-  return redisLock.acquire(["media-slug", project.id, slug], async () => {
-    const existing = await Media.query().findOne({
-      projectId: project.id,
-      slug,
-    });
+      const media = existing
+        ? // The description travels with the newest upload that supplied one, so
+          // re-uploading with better wording updates what the comment says.
+          await existing.$query().patchAndFetch({
+            visibility,
+            ...(description === null ? {} : { description }),
+          })
+        : await Media.query().insertAndFetch({
+            projectId: project.id,
+            githubPullRequestId,
+            createdByUserId: params.userId,
+            name,
+            state,
+            description,
+            visibility,
+            shareToken: generateShareToken(),
+          });
 
-    if (!existing) {
-      return Media.query().insertAndFetch({
-        ...attributes,
-        shareToken: generateShareToken(),
+      const latest = await MediaVersion.query()
+        .where("mediaId", media.id)
+        .orderBy("number", "desc")
+        .first();
+
+      // Same bytes as the current version: nothing to upload, nothing to bill,
+      // and nothing worth calling a new version.
+      if (latest && latest.key === key && latest.uploadedAt) {
+        return { media, version: latest };
+      }
+
+      // An unfinished version of the same bytes is the same attempt resumed.
+      if (latest && latest.key === key) {
+        return { media, version: latest };
+      }
+
+      const version = await MediaVersion.query().insertAndFetch({
+        mediaId: media.id,
+        number: (latest?.number ?? 0) + 1,
+        createdByUserId: params.userId,
+        key,
+        mimeType: params.contentType,
+        sizeBytes: String(params.sizeBytes),
+        expiresAt: expiresAt.toISOString(),
         billedUnits: 0,
       });
-    }
 
-    // Same bytes as last time: nothing to re-upload and nothing to re-bill. The
-    // key is content-addressed and never rewritten, so comparing it is exact.
-    if (existing.key === key && existing.uploadedAt) {
-      return existing;
-    }
-
-    return existing.$query().patchAndFetch({
-      ...attributes,
-      // The recorded dimensions described the previous bytes.
-      width: null,
-      height: null,
-      uploadedAt: null,
-    });
-  });
+      return { media, version };
+    },
+  );
 }
 
 /**

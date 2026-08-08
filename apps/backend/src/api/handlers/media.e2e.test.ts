@@ -313,7 +313,9 @@ describe("getMedia", () => {
     projectToken,
     project,
   }) => {
-    const media = await factory.Media.create({ projectId: project.id });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+    });
 
     const res = await request(app)
       .get(`/media/${media.id}`)
@@ -333,7 +335,9 @@ describe("getMedia", () => {
       accountId: account.id,
       name: "other",
     });
-    const media = await factory.Media.create({ projectId: otherProject.id });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: otherProject.id },
+    });
 
     await request(app)
       .get(`/media/${media.id}`)
@@ -351,7 +355,9 @@ describe("getMedia", () => {
 
 describe("deleteMedia", () => {
   test("deletes the media", async ({ projectToken, project }) => {
-    const media = await factory.Media.create({ projectId: project.id });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+    });
 
     await request(app)
       .delete(`/media/${media.id}`)
@@ -364,11 +370,12 @@ describe("deleteMedia", () => {
 
 describe("listMedia", () => {
   test("lists a project's media", async ({ patToken, project }) => {
-    await factory.Media.create({ projectId: project.id, name: "one.png" });
-    await factory.Media.create({
-      projectId: project.id,
-      name: "two.mp4",
-      mimeType: "video/mp4",
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "one.png" },
+    });
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "two.mp4" },
+      version: { mimeType: "video/mp4" },
     });
 
     const res = await request(app)
@@ -381,11 +388,12 @@ describe("listMedia", () => {
   });
 
   test("filters to videos", async ({ patToken, project }) => {
-    await factory.Media.create({ projectId: project.id, name: "one.png" });
-    await factory.Media.create({
-      projectId: project.id,
-      name: "two.mp4",
-      mimeType: "video/mp4",
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "one.png" },
+    });
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "two.mp4" },
+      version: { mimeType: "video/mp4" },
     });
 
     const res = await request(app)
@@ -401,10 +409,11 @@ describe("listMedia", () => {
     patToken,
     project,
   }) => {
-    await factory.Media.create({
-      projectId: project.id,
-      uploadedAt: null,
-      billedUnits: 0,
+    // A media whose version never landed: the two-step upload passes through
+    // this state, and nothing should list it.
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+      version: { uploadedAt: null, billedUnits: 0 },
     });
 
     const res = await request(app)
@@ -424,10 +433,11 @@ describe("listMedia", () => {
       accountId: account.id,
       name: "other",
     });
-    await factory.Media.create({ projectId: project.id, name: "mine.png" });
-    await factory.Media.create({
-      projectId: otherProject.id,
-      name: "theirs.png",
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "mine.png" },
+    });
+    await factory.createMediaWithVersion({
+      media: { projectId: otherProject.id, name: "theirs.png" },
     });
 
     const res = await request(app)
@@ -446,7 +456,9 @@ describe("listMedia", () => {
     // Project scoping means CI can read back what it uploaded — the
     // account-scoped version could not, since a project token has no account
     // scope of its own.
-    await factory.Media.create({ projectId: project.id, name: "one.png" });
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "one.png" },
+    });
 
     const res = await request(app)
       .get(`/projects/${PROJECT_PATH}/media`)

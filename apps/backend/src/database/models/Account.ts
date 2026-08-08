@@ -11,7 +11,7 @@ import { timestampsSchema } from "../util/schemas";
 import { DiscordWebhook } from "./DiscordWebhook";
 import { GithubAccount } from "./GithubAccount";
 import { GithubInstallation } from "./GithubInstallation";
-import { Media } from "./Media";
+import { MediaVersion } from "./MediaVersion";
 import { MsTeamsWebhook } from "./MsTeamsWebhook";
 import { Plan } from "./Plan";
 import { Project } from "./Project";
@@ -762,7 +762,7 @@ export class Account extends Model {
   /**
    * Screenshot units charged by standalone media uploads over a period.
    *
-   * Reads the units frozen on each row at upload time rather than recomputing
+   * Reads the units frozen on each version at upload time rather than recomputing
    * them from the content type, so changing the conversion never rewrites what an
    * account was already billed.
    *
@@ -776,16 +776,20 @@ export class Account extends Model {
       projectId?: string | undefined;
     },
   ): Promise<number> {
-    const query = Media.query()
-      .sum("media.billedUnits as units")
-      .joinRelated("project")
-      .where("project.accountId", this.id)
-      .whereNotNull("media.uploadedAt")
-      .where("media.uploadedAt", ">=", from.toISOString())
+    // Every *version* is an upload, so every version is billed. Re-uploading a
+    // screenshot after a fix stores new bytes and costs what storing them costs;
+    // byte-identical bytes never become a version in the first place, so a CI
+    // re-run that changes nothing is still free.
+    const query = MediaVersion.query()
+      .sum("media_versions.billedUnits as units")
+      .joinRelated("media.project")
+      .where("media:project.accountId", this.id)
+      .whereNotNull("media_versions.uploadedAt")
+      .where("media_versions.uploadedAt", ">=", from.toISOString())
       .first();
 
     if (to !== "now") {
-      query.where("media.uploadedAt", "<", to.toISOString());
+      query.where("media_versions.uploadedAt", "<", to.toISOString());
     }
 
     if (options?.projectId) {
