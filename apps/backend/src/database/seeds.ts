@@ -16,6 +16,7 @@ import { GithubAccount } from "./models/GithubAccount";
 import { GithubInstallation } from "./models/GithubInstallation";
 import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
+import { Media } from "./models/Media";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
@@ -1672,4 +1673,81 @@ export async function seed() {
     accountSlug: smoothAccount.slug,
     projectName: bigProject.name,
   });
+}
+
+/**
+ * Standalone media for the team media library and the share page.
+ *
+ * Reuses the `dummy-*` image keys the screenshot seeds use, so the thumbnails and
+ * the share page load real images from the test bucket. Fixed timestamps keep the
+ * visual baselines stable.
+ */
+export async function createMediaScenario(input: {
+  accountId: string;
+  projectId: string;
+}) {
+  const { accountId, projectId } = input;
+  const imageTs = "2026-04-20T10:00:00.000Z";
+  const videoTs = "2026-04-20T09:00:00.000Z";
+  const secondImageTs = "2026-04-20T08:00:00.000Z";
+
+  const [image, video, secondImage] = await Media.query().insertAndFetch([
+    {
+      accountId,
+      projectId,
+      name: "checkout-after.png",
+      slug: "pr-1234-after",
+      key: "dummy-1024x768.png",
+      mimeType: "image/png",
+      sizeBytes: "188416",
+      width: 1024,
+      height: 768,
+      visibility: "team" as const,
+      shareToken: `seed-media-image-${accountId}`,
+      // Far enough out that the "expiring soon" colour never fires in a baseline.
+      expiresAt: "2027-04-20T10:00:00.000Z",
+      uploadedAt: imageTs,
+      billedUnits: 1,
+      createdAt: imageTs,
+      updatedAt: imageTs,
+    },
+    {
+      accountId,
+      projectId,
+      name: "checkout-flow.mp4",
+      slug: null,
+      key: "dummy-1440x900.png",
+      mimeType: "video/mp4",
+      sizeBytes: "8388608",
+      visibility: "public" as const,
+      shareToken: `seed-media-video-${accountId}`,
+      expiresAt: "2027-04-20T09:00:00.000Z",
+      uploadedAt: videoTs,
+      billedUnits: 25,
+      createdAt: videoTs,
+      updatedAt: videoTs,
+    },
+    {
+      accountId,
+      projectId: null,
+      name: "sidebar.png",
+      slug: null,
+      key: "dummy-720x1024.png",
+      mimeType: "image/png",
+      sizeBytes: "20971520",
+      width: 720,
+      height: 1024,
+      visibility: "team" as const,
+      shareToken: `seed-media-second-${accountId}`,
+      expiresAt: "2027-04-20T08:00:00.000Z",
+      uploadedAt: secondImageTs,
+      billedUnits: 1,
+      createdAt: secondImageTs,
+      updatedAt: secondImageTs,
+    },
+  ]);
+
+  invariant(image && video && secondImage, "media should be created");
+
+  return { image, video, secondImage };
 }

@@ -55,6 +55,13 @@ import { listReviews } from "./handlers/listReviews";
 import { listTestChanges } from "./handlers/listTestChanges";
 import { listTests } from "./handlers/listTests";
 import {
+  createMediaHandler,
+  deleteMediaHandler,
+  finalizeMediaHandler,
+  getMediaHandler,
+  listMediaHandler,
+} from "./handlers/media";
+import {
   listProjectContributors,
   removeProjectContributorHandler,
   setProjectContributor,
@@ -193,6 +200,11 @@ registerHandler(router, updateProjectDomain);
 registerHandler(router, listTeamDomainsHandler);
 registerHandler(router, addTeamDomainHandler);
 registerHandler(router, removeTeamDomainHandler);
+registerHandler(router, createMediaHandler);
+registerHandler(router, finalizeMediaHandler);
+registerHandler(router, getMediaHandler);
+registerHandler(router, deleteMediaHandler);
+registerHandler(router, listMediaHandler);
 
 // Error handlers
 router.use(errorHandler);
