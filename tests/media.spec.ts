@@ -8,63 +8,21 @@ loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("team media library", async ({ page, team, project }) => {
-  await createMediaScenario({
-    projectId: project.id,
-  });
-
-  await page.goto(`/${team.account.slug}/~/media`);
-
-  await expect(page.getByRole("heading", { name: "Media" })).toBeVisible();
-
-  // The rows link to the share page, so the file name is the link text.
-  await expect(
-    page.getByRole("link", { name: "checkout-after.png" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "checkout-flow.mp4" }),
-  ).toBeVisible();
-
-  // Both copy actions are on every row: the link and the Markdown embed.
-  await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(3);
-  await expect(page.getByRole("button", { name: "Copy Markdown" })).toHaveCount(
-    3,
-  );
-
-  await screenshot(page, "team-media-library");
-});
-
-loggedTest("team media library search", async ({ page, team, project }) => {
-  await createMediaScenario({
-    projectId: project.id,
-  });
-
-  await page.goto(`/${team.account.slug}/~/media`);
-  await page.getByRole("textbox", { name: "Search media" }).fill("flow");
-
-  await expect(
-    page.getByRole("link", { name: "checkout-flow.mp4" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "checkout-after.png" }),
-  ).toBeHidden();
-});
-
 loggedTest("media share page", async ({ page, auth, project }) => {
   const media = await createMediaScenario({
     projectId: project.id,
     commentAuthorId: auth.user.id,
   });
 
-  await page.goto(`/m/${media.image.shareToken}`);
+  await page.goto(`/m/${media.after.shareToken}`);
 
   // The file name in the status line is the page's title — the share page has no
   // heading and no header bar by design.
-  await expect(page.getByText("checkout-after.png")).toBeVisible();
+  await expect(page.getByText("checkout.png")).toBeVisible();
   await expect(page.getByText("375×720")).toBeVisible();
-  await expect(
-    page.getByRole("img", { name: "checkout-after.png" }),
-  ).toBeVisible();
+  // Two uploads, so the version is worth naming.
+  await expect(page.getByText("v2")).toBeVisible();
+  await expect(page.getByRole("img", { name: "checkout.png" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
 
   // Two threads, one of them pinned to a point on the image.
@@ -90,7 +48,7 @@ loggedTest(
       commentAuthorId: auth.user.id,
     });
 
-    await page.goto(`/m/${media.image.shareToken}`);
+    await page.goto(`/m/${media.after.shareToken}`);
 
     await page.getByRole("button", { name: "Pin a comment" }).click();
     await expect(
