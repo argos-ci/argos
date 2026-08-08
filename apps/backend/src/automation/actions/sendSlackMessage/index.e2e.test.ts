@@ -46,7 +46,7 @@ describe("sendSlackMessage", () => {
   });
 
   it("throws if Slack channel does not exist", async () => {
-    const [project] = await Promise.all([factory.Project.create()]);
+    const project = await factory.Project.create();
     const build = await factory.Build.create({ projectId: project.id });
     const automationRule = await factory.AutomationRule.create();
     const automationRun = await factory.AutomationRun.create({

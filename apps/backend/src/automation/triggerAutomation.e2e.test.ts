@@ -609,10 +609,12 @@ describe("automation/triggerAutomation", () => {
         automationRunId: automationRuns[0].id,
       });
       expect(actionRuns).toHaveLength(2);
-      expect((actionRuns[0]?.actionPayload as any).channelId).toBe(
+      invariant(actionRuns[0], "AutomationActionRun should be defined");
+      invariant(actionRuns[1], "AutomationActionRun should be defined");
+      expect((actionRuns[0].actionPayload as any).channelId).toBe(
         slackChannel.slackId,
       );
-      expect((actionRuns[1]?.actionPayload as any).channelId).toBe(
+      expect((actionRuns[1].actionPayload as any).channelId).toBe(
         otherSlackChannel.slackId,
       );
     });

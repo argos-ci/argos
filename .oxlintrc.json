@@ -1,0 +1,84 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": [
+    "**/.claude/worktrees",
+    "infra/cdk.out",
+    "infra/cloudfront-functions"
+  ],
+  "rules": {
+    "curly": "error",
+    "no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "unicorn/no-thenable": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/no-standalone-expect": "off",
+    "vitest/prefer-snapshot-hint": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/require-to-throw-message": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.mts", "**/*.test.tsx"],
+      "rules": {
+        "no-empty-pattern": "off",
+        "vitest/expect-expect": [
+          "error",
+          {
+            "assertFunctionNames": [
+              "expect",
+              "expectTypeOf",
+              "assert",
+              "assertType",
+              "expectHttpError",
+              "request.**.expect"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.jsx", "**/*.tsx"],
+      "rules": {
+        "react/react-compiler": "error"
+      }
+    },
+    {
+      "files": ["apps/frontend/**"],
+      "excludeFiles": ["apps/frontend/src/ui/Toaster.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "sonner",
+                "message": "Import { toast, Toaster } from \"@/ui/Toaster\" instead, it handles theming and emphasizes duplicate toasts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/backend/src/**/*.ts", "apps/backend/src/**/*.tsx"],
+      "excludeFiles": [
+        "apps/backend/src/util/paths.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "jsPlugins": ["./tools/oxlint-plugin-argos.js"],
+      "rules": {
+        "argos/no-module-relative-paths": "error"
+      }
+    }
+  ]
+}

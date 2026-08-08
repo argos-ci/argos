@@ -8,7 +8,7 @@ export function UniversalNavigate(props: { to: string; replace?: boolean }) {
   if (replace) {
     window.location.replace(to);
   } else {
-    // eslint-disable-next-line react-hooks/immutability
+    // oxlint-disable-next-line react/react-compiler
     window.location.href = to;
   }
   return null;

@@ -1,4 +1,4 @@
-/* eslint-disable no-empty-pattern */
+/* oxlint-disable no-empty-pattern */
 import type { BuildType } from "@argos/schemas/build-type";
 import { expect, test } from "@playwright/test";
 

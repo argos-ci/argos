@@ -108,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     env:
       NODE_ENV: test
       TZ: utc
@@ -168,7 +168,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: pnpm run test:integration --shard=${{ matrix.shard }}/2
+        run: pnpm run test:integration --shard=${{ matrix.shard }}/3
 
   e2e-test:
     runs-on: ubuntu-latest

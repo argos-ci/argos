@@ -79,6 +79,9 @@ export function AnimatedBubbleMenu(props: AnimatedBubbleMenuProps) {
             if (timeoutId !== null) {
               window.clearTimeout(timeoutId);
             }
+            // `handleAnimationEnd` is declared below and only read once
+            // `cleanup` runs, long after this closure is built.
+            // oxlint-disable-next-line react/react-compiler
             element.removeEventListener("animationend", handleAnimationEnd);
           };
 
@@ -124,7 +127,7 @@ export function AnimatedBubbleMenu(props: AnimatedBubbleMenuProps) {
 
   const animatedOptions = useMemo(
     () => ({
-      ...(options ?? {}),
+      ...options,
       onShow: () => {
         showWithAnimation();
         options?.onShow?.();

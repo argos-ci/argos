@@ -466,7 +466,7 @@ export function ZoomPane(props: {
       return { minScale, maxScale };
     })();
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // oxlint-disable-next-line react/react-compiler
     setScales(scales);
     const zoomer = new Zoomer(pane, scales);
 

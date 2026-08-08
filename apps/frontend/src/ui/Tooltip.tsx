@@ -128,7 +128,7 @@ function TooltipTarget(props: {
 
   return cloneElement(
     props.children,
-    // eslint-disable-next-line react-hooks/refs
+    // oxlint-disable-next-line react/react-compiler
     mergeProps(focusableProps, { tabIndex: 0 }, props.children.props, {
       ref: triggerRef,
     }),

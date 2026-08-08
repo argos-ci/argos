@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/refs */
+/* oxlint-disable react/react-compiler */
 import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
 import { useDropzone, type DropzoneOptions } from "react-dropzone";

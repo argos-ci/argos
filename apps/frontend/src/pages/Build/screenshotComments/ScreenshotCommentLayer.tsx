@@ -177,7 +177,7 @@ export function ScreenshotCommentLayer(props: {
     if (requested) {
       setRequestedCommentId(null);
       // Move the external open request into this layer's local state.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // oxlint-disable-next-line react/react-compiler
       setDraft(null);
       setOpenThreadId(requestedCommentId);
     }

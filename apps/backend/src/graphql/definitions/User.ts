@@ -360,7 +360,7 @@ export const resolvers: IResolvers = {
           data: { email },
           recipients: [ctx.auth.user.id],
         }),
-        await sendVerificationEmail({ account: ctx.auth.account, email }),
+        sendVerificationEmail({ account: ctx.auth.account, email }),
       ]);
 
       return ctx.auth.account;

@@ -233,7 +233,7 @@ pnpm run test:e2e
 
 ## 📜 Coding Style
 
-Please follow the coding style of the current code base. Argos uses ESLint to maintain a consistent coding style. If possible, enable linting in your editor to get realtime feedback. Linting can be run manually with `pnpm run lint`.
+Please follow the coding style of the current code base. Argos uses [oxlint](https://oxc.rs/docs/guide/usage/linter.html) to maintain a consistent coding style, configured in `.oxlintrc.json` at the repository root. If possible, install the [Oxc extension](https://oxc.rs/docs/guide/usage/linter/editors.html) for your editor to get realtime feedback. Linting can be run manually with `pnpm run lint`, and most issues fixed with `pnpm run lint:fix`.
 
 Continuous Integration will run linting on your PR, so it’s best to ensure your code is clean before submitting.
 

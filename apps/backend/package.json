@@ -25,8 +25,7 @@
     "start-worker": "./bin/start.sh worker",
     "watch-server-worker": "./bin/start.sh worker --watch",
     "watch-server-web": "./bin/start.sh web --watch",
-    "watch-server": "concurrently \"npm:watch-server-*\"",
-    "lint": "eslint . --max-warnings 0"
+    "watch-server": "concurrently \"npm:watch-server-*\""
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
@@ -118,7 +117,6 @@
   "devDependencies": {
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
-    "@argos/eslint-config": "workspace:*",
     "@argos/knex-scripts": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@levischuck/tiny-cbor": "^0.3.6",
@@ -135,7 +133,6 @@
     "@types/tmp": "^0.2.6",
     "@types/ws": "^8.18.1",
     "concurrently": "^10.0.4",
-    "eslint": "catalog:",
     "factory-girl-ts": "^2.3.1",
     "msw": "^2.15.0",
     "pino-pretty": "^13.1.3",
