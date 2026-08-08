@@ -50,6 +50,7 @@ import { listBuildDiffs } from "./handlers/listBuildDiffs";
 import { listBuilds } from "./handlers/listBuilds";
 import { listComments } from "./handlers/listComments";
 import { listIgnoredChanges } from "./handlers/listIgnoredChanges";
+import { listMediaFeedback } from "./handlers/listMediaFeedback";
 import { listProjects } from "./handlers/listProjects";
 import { listReviews } from "./handlers/listReviews";
 import { listTestChanges } from "./handlers/listTestChanges";
@@ -205,6 +206,7 @@ registerHandler(router, finalizeMediaHandler);
 registerHandler(router, getMediaHandler);
 registerHandler(router, deleteMediaHandler);
 registerHandler(router, listMediaHandler);
+registerHandler(router, listMediaFeedback);
 
 // Error handlers
 router.use(errorHandler);

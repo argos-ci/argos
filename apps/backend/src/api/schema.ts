@@ -12,6 +12,7 @@ import {
 } from "./handlers/accountInvites";
 import {
   addBuildCommentReactionOperation,
+  addMediaCommentReactionOperation,
   addTestCommentReactionOperation,
 } from "./handlers/addCommentReaction";
 import {
@@ -37,6 +38,7 @@ import { createProjectOperation } from "./handlers/createProject";
 import { createReviewOperation } from "./handlers/createReview";
 import {
   deleteBuildCommentOperation,
+  deleteMediaCommentOperation,
   deleteTestCommentOperation,
 } from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
@@ -55,6 +57,7 @@ import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import {
   getBuildCommentOperation,
+  getMediaCommentOperation,
   getTestCommentOperation,
 } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
@@ -74,6 +77,7 @@ import {
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
+import { listMediaFeedbackOperation } from "./handlers/listMediaFeedback";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
@@ -97,12 +101,15 @@ import {
 } from "./handlers/projectDeployments";
 import {
   removeBuildCommentReactionOperation,
+  removeMediaCommentReactionOperation,
   removeTestCommentReactionOperation,
 } from "./handlers/removeCommentReaction";
 import {
   resolveBuildCommentThreadOperation,
+  resolveMediaCommentThreadOperation,
   resolveTestCommentThreadOperation,
   unresolveBuildCommentThreadOperation,
+  unresolveMediaCommentThreadOperation,
   unresolveTestCommentThreadOperation,
 } from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
@@ -114,8 +121,10 @@ import {
 } from "./handlers/subscribeBuild";
 import {
   subscribeBuildCommentThreadOperation,
+  subscribeMediaCommentThreadOperation,
   subscribeTestCommentThreadOperation,
   unsubscribeBuildCommentThreadOperation,
+  unsubscribeMediaCommentThreadOperation,
   unsubscribeTestCommentThreadOperation,
 } from "./handlers/subscribeCommentThread";
 import {
@@ -131,6 +140,7 @@ import {
 import { updateBuildOperation } from "./handlers/updateBuild";
 import {
   updateBuildCommentOperation,
+  updateMediaCommentOperation,
   updateTestCommentOperation,
 } from "./handlers/updateComment";
 import { updateProjectOperation } from "./handlers/updateProject";
@@ -288,6 +298,25 @@ export const zodSchema = {
       get: listMediaCommentsOperation,
       post: createMediaCommentOperation,
     },
+    "/media/{mediaId}/comments/{commentId}": {
+      get: getMediaCommentOperation,
+      patch: updateMediaCommentOperation,
+      delete: deleteMediaCommentOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/reactions": {
+      post: addMediaCommentReactionOperation,
+      delete: removeMediaCommentReactionOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/resolve": {
+      post: resolveMediaCommentThreadOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/unresolve": {
+      post: unresolveMediaCommentThreadOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/subscription": {
+      post: subscribeMediaCommentThreadOperation,
+      delete: unsubscribeMediaCommentThreadOperation,
+    },
     "/builds": {
       post: createBuildOperation,
     },
@@ -357,6 +386,9 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}/media": {
       get: listMediaOperation,
+    },
+    "/projects/{owner}/{project}/media/comments": {
+      get: listMediaFeedbackOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,

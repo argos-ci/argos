@@ -20,6 +20,7 @@ import {
   serializeComment,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -71,6 +72,25 @@ export const updateTestCommentOperation = {
       owner: AccountSlug,
       project: ProjectName,
       testId: TestId,
+      commentId: CommentId,
+    }),
+  },
+  requestBody,
+  responses: commentResponses(
+    "Comment updated successfully — returns the comment",
+  ),
+} satisfies ZodOpenApiOperationObject;
+
+export const updateMediaCommentOperation = {
+  operationId: "updateMediaComment",
+  summary: "Update a comment on a media",
+  description:
+    "Update the body of a comment on a media. Only the comment's author can edit it.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
       commentId: CommentId,
     }),
   },
@@ -135,4 +155,14 @@ export const updateComment: CreateAPIHandler = ({ patch }) => {
       );
     },
   );
+
+  patch("/media/{mediaId}/comments/{commentId}", async (req, res) => {
+    res.send(
+      await updateTargetComment({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        body: req.ctx.body,
+      }),
+    );
+  });
 };

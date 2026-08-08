@@ -18,6 +18,7 @@ import {
   serializeComment,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -51,6 +52,21 @@ export const getTestCommentOperation = {
       owner: AccountSlug,
       project: ProjectName,
       testId: TestId,
+      commentId: CommentId,
+    }),
+  },
+  responses: commentResponses("Comment"),
+} satisfies ZodOpenApiOperationObject;
+
+export const getMediaCommentOperation = {
+  operationId: "getMediaComment",
+  summary: "Get a single comment on a media",
+  description: "Retrieve a single comment on a media by its ID.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:read"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
       commentId: CommentId,
     }),
   },
@@ -121,4 +137,13 @@ export const getComment: CreateAPIHandler = ({ get }) => {
       );
     },
   );
+
+  get("/media/{mediaId}/comments/{commentId}", async (req, res) => {
+    res.send(
+      await getTargetCommentPayload({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+      }),
+    );
+  });
 };

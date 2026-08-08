@@ -25,13 +25,20 @@ function getTestCommentChannel(testId: string): string {
   return `test-comment-change:${testId}`;
 }
 
+function getMediaCommentChannel(mediaId: string): string {
+  return `media-comment-change:${mediaId}`;
+}
+
 /** The channel a comment's changes are broadcast on, from its own target. */
 function getCommentChannel(comment: Comment): string {
   if (comment.buildId) {
     return getBuildCommentChannel(comment.buildId);
   }
-  invariant(comment.testId, "Comment has no target");
-  return getTestCommentChannel(comment.testId);
+  if (comment.testId) {
+    return getTestCommentChannel(comment.testId);
+  }
+  invariant(comment.mediaId, "Comment has no target");
+  return getMediaCommentChannel(comment.mediaId);
 }
 
 /**

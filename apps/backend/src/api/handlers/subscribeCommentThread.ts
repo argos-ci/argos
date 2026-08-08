@@ -20,6 +20,7 @@ import {
   ThreadCommentId,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -36,6 +37,11 @@ const TestPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   testId: TestId,
+  commentId: ThreadCommentId,
+});
+
+const MediaPathParams = z.object({
+  mediaId: MediaId,
   commentId: ThreadCommentId,
 });
 
@@ -72,6 +78,17 @@ export const subscribeTestCommentThreadOperation = {
   responses: commentResponses("Subscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
+export const subscribeMediaCommentThreadOperation = {
+  operationId: "subscribeMediaCommentThread",
+  summary: "Subscribe to a media comment thread's notifications",
+  description:
+    "Subscribe the authenticated user to a comment thread on a media to receive notifications about new replies.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: { path: MediaPathParams },
+  responses: commentResponses("Subscribed — returns the root comment"),
+} satisfies ZodOpenApiOperationObject;
+
 export const unsubscribeTestCommentThreadOperation = {
   operationId: "unsubscribeTestCommentThread",
   summary: "Unsubscribe from a test comment thread's notifications",
@@ -80,6 +97,17 @@ export const unsubscribeTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
+  responses: commentResponses("Unsubscribed — returns the root comment"),
+} satisfies ZodOpenApiOperationObject;
+
+export const unsubscribeMediaCommentThreadOperation = {
+  operationId: "unsubscribeMediaCommentThread",
+  summary: "Unsubscribe from a media comment thread's notifications",
+  description:
+    "Unsubscribe the authenticated user from a media comment thread's notifications.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: { path: MediaPathParams },
   responses: commentResponses("Unsubscribed — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
@@ -150,6 +178,19 @@ export const subscribeCommentThread: CreateAPIHandler = ({ post }) => {
       );
     },
   );
+
+  post(
+    "/media/{mediaId}/comments/{commentId}/subscription",
+    async (req, res) => {
+      res.send(
+        await setTargetThreadSubscription({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+          subscribed: true,
+        }),
+      );
+    },
+  );
 };
 
 export const unsubscribeCommentThread: CreateAPIHandler = ({ delete: del }) => {
@@ -168,6 +209,19 @@ export const unsubscribeCommentThread: CreateAPIHandler = ({ delete: del }) => {
 
   del(
     "/projects/{owner}/{project}/tests/{testId}/comments/{commentId}/subscription",
+    async (req, res) => {
+      res.send(
+        await setTargetThreadSubscription({
+          authPromise: req.ctx.auth(),
+          params: req.ctx.params,
+          subscribed: false,
+        }),
+      );
+    },
+  );
+
+  del(
+    "/media/{mediaId}/comments/{commentId}/subscription",
     async (req, res) => {
       res.send(
         await setTargetThreadSubscription({
