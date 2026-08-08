@@ -84,6 +84,7 @@ function AttachedSnapshotToggle(props: {
               className="size-4"
               iconClassName="size-3.5"
               fit="cover"
+              transformations={["w-32", "h-32", "fo-top"]}
             />
           ) : (
             <EyeOffIcon className="text-low size-3.5" />

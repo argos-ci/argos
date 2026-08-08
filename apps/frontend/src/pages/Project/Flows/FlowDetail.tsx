@@ -134,6 +134,12 @@ function FlowMinimap(props: {
   onSelect: (stepKey: string) => void;
 }) {
   const { steps, activeStepKey, selection, onSelect } = props;
+  // Every step of a strip shows the same selected viewport, so the box can
+  // take its shape from it: portrait for a mobile run, landscape otherwise.
+  // Uniform within a strip, but the strip itself reads as mobile at a glance.
+  const portrait =
+    selection.viewport !== null &&
+    getViewportIconKind(selection.viewport) === "mobile";
   return (
     // The inner padding keeps the selection ring of the edge thumbnails from
     // being clipped by the horizontal scroll container.
@@ -155,9 +161,16 @@ function FlowMinimap(props: {
                 !isActive && "hover:bg-hover",
               )}
             >
+              {/* A fixed box, cropped from the top rather than fitted: a
+                  full-page capture scaled to fit would be an unreadable
+                  sliver, and the top of a page is what makes it
+                  recognizable. ImageKit does the crop (`fo-top`) at twice the
+                  rendered size, so the thumbnail stays sharp instead of
+                  upscaling a 50px-wide fit. */}
               <span
                 className={clsx(
                   "block h-20 overflow-hidden rounded-md border bg-white transition",
+                  portrait ? "w-11" : "w-28",
                   isActive
                     ? "ring-primary-active ring-2"
                     : "hover:border-hover",
@@ -165,14 +178,18 @@ function FlowMinimap(props: {
               >
                 <ImageKitPicture
                   src={variant.screenshot.url}
-                  transformations={["w-320", "h-320", "c-at_max"]}
-                  className="block h-full w-auto max-w-36 object-contain"
+                  transformations={
+                    portrait
+                      ? ["w-88", "h-160", "fo-top"]
+                      : ["w-224", "h-160", "fo-top"]
+                  }
+                  className="size-full object-cover object-top"
                   alt={step.label}
                 />
               </span>
               <span
                 className={clsx(
-                  "max-w-32 truncate text-[0.6875rem] leading-none",
+                  "w-28 truncate text-center text-[0.6875rem] leading-none",
                   isActive ? "font-medium" : "text-low",
                 )}
               >

@@ -4,13 +4,18 @@ import { ChevronRightIcon } from "lucide-react";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
-import { getStepLabel, getVariantLabel } from "@/util/flow-model";
+import {
+  getStepLabel,
+  getVariantDims,
+  getVariantLabel,
+} from "@/util/flow-model";
 
 import {
   useActiveDiffFlow,
   useBuildDiffState,
   useFlowMinimapState,
 } from "./BuildDiffState";
+import { getViewportIconKind } from "./metadata/metadataIcons";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
 
 /**
@@ -66,6 +71,11 @@ export function BuildFlowMinimap() {
     return null;
   }
   const activeVariantLabel = getVariantLabel(activeDiff.name);
+  // The strip stays within the active diff's variant, so every box shares one
+  // viewport: it can take its shape from it, portrait for a mobile run.
+  const { viewport } = getVariantDims(activeDiff.name);
+  const portrait =
+    viewport !== null && getViewportIconKind(viewport) === "mobile";
   return (
     // An inset card in the viewer column, aligned on the diff area gutters
     // (`p-4`) and styled like the diff panels. The inner padding keeps the
@@ -108,11 +118,19 @@ export function BuildFlowMinimap() {
                   <ScreenshotDiffThumbnail
                     screenshotDiff={diff}
                     className={clsx(
-                      "h-12 w-16",
+                      "h-12",
+                      portrait ? "w-6.5" : "w-16",
                       isActive && "ring-primary-active ring-2",
                     )}
                     fit="cover"
-                    transformations={["w-256", "h-256", "c-at_max"]}
+                    // A top crop at 2x the rendered box. Fitting inside a
+                    // square instead would hand `object-cover` a sliver of a
+                    // full-page capture to upscale.
+                    transformations={
+                      portrait
+                        ? ["w-52", "h-96", "fo-top"]
+                        : ["w-128", "h-96", "fo-top"]
+                    }
                   />
                   {needsAttention ? (
                     <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />

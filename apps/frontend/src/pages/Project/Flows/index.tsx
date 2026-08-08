@@ -45,11 +45,14 @@ function FlowCard(props: {
       className="group hover:border-hover flex flex-col overflow-hidden rounded-lg border transition hover:shadow-xs"
       data-flow-card={flow.key}
     >
+      {/* Cropped from the top, like the steps of the minimap: fitting a
+          full-page capture into the card would leave a sliver of image lost in
+          white, exactly where the cover has to carry the recognition. */}
       <div className="aspect-4/3 overflow-hidden border-b bg-white">
         <ImageKitPicture
           src={coverVariant.screenshot.url}
-          transformations={["w-640", "h-640", "c-at_max"]}
-          className="size-full object-contain"
+          transformations={["w-640", "h-480", "fo-top"]}
+          className="size-full object-cover object-top"
           alt=""
         />
       </div>

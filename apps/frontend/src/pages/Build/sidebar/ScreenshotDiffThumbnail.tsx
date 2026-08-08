@@ -66,7 +66,9 @@ export function ScreenshotDiffThumbnail(props: {
           transformations={transformations}
           className={clsx(
             "size-full",
-            fit === "cover" ? "object-cover" : "object-contain",
+            // Cropping a page capture from the top keeps the part that makes
+            // it recognizable; a centred crop lands on a random band of body.
+            fit === "cover" ? "object-cover object-top" : "object-contain",
           )}
           alt=""
         />
