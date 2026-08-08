@@ -6,6 +6,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -46,9 +47,11 @@ const MeQuery = graphql(`
   query TransferProject_me {
     me {
       id
+      permissions
       ...AccountItem_Account
       teams {
         id
+        permissions
         ...AccountItem_Account
       }
     }
@@ -59,6 +62,20 @@ const SelectAccountStep = (props: SelectAccountStepProps) => {
   const { data, error } = useQuery(MeQuery);
   if (error) {
     throw error;
+  }
+
+  const accounts = data?.me ? [data.me, ...data.me.teams] : null;
+
+  // Every reason a transfer would be refused, resolved before the user picks
+  // rather than after they have gone through the review step: the project
+  // already lives here, or they do not administer the destination.
+  const disabledReasons: Record<string, string> = {};
+  for (const account of accounts ?? []) {
+    if (account.id === props.actualAccountId) {
+      disabledReasons[account.id] = "Current owner";
+    } else if (!account.permissions.includes(AccountPermission.Admin)) {
+      disabledReasons[account.id] = "You are not an owner";
+    }
   }
 
   return (
@@ -85,8 +102,8 @@ const SelectAccountStep = (props: SelectAccountStepProps) => {
         <AccountSelector
           value={props.targetAccountId}
           setValue={props.setTargetAccountId}
-          accounts={data && data.me ? [data.me, ...data.me.teams] : []}
-          disabledAccountIds={[props.actualAccountId]}
+          accounts={accounts}
+          disabledReasons={disabledReasons}
         />
       </DialogBody>
       <DialogFooter>

@@ -2,9 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import config from "@/config";
-import type { Account } from "@/database/models";
-
-import { createLoaders } from "../loaders";
+import { GithubAccount, User, type Account } from "@/database/models";
 
 const colors = [
   "#2a3b4c",
@@ -67,11 +65,37 @@ function getGitLabAvatarFactory(args: { email: string }) {
 }
 
 /**
+ * The two entity lookups {@link getAccountAvatar} needs, described structurally
+ * so the GraphQL context can pass its own DataLoaders (batching the lookups
+ * across a request) while callers outside GraphQL — the public REST API, the
+ * invite service — get the direct-query fallback below without depending on the
+ * GraphQL layer.
+ */
+export type AvatarLoaders = {
+  GithubAccount: { load: (id: string) => Promise<GithubAccount | null> };
+  User: { load: (id: string) => Promise<User | null> };
+};
+
+/**
+ * Direct-query lookups used when no loaders are supplied. A fresh DataLoader
+ * batches nothing on its own, so a caller with a single account to render loses
+ * nothing by going straight to the database.
+ */
+const directLoaders: AvatarLoaders = {
+  GithubAccount: {
+    load: async (id) => (await GithubAccount.query().findById(id)) ?? null,
+  },
+  User: {
+    load: async (id) => (await User.query().findById(id)) ?? null,
+  },
+};
+
+/**
  * Get the avatar for an account, either from GitHub, GitLab, or a default initial avatar.
  */
 export async function getAccountAvatar(
   account: Account,
-  loaders: ReturnType<typeof createLoaders> = createLoaders(),
+  loaders: AvatarLoaders = directLoaders,
 ) {
   const ghAccount = account.githubAccountId
     ? await loaders.GithubAccount.load(account.githubAccountId)

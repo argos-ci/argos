@@ -6,6 +6,27 @@ export default defineConfig(
   globalIgnores(["src/graphql/__generated__"]),
   ...config,
   {
+    name: "argos/vitest-assertions",
+    // Two shapes assert without calling `expect` where ESLint can see it:
+    // supertest's own `.expect(status)` at the end of a request chain, and the
+    // `expectHttpError` helper each service test defines to assert a rejection
+    // carries a given HTTP status. Both fail the test when they don't hold, so
+    // name them rather than padding tests with a redundant `expect`.
+    files: ["**/*.test.ts"],
+    rules: {
+      "vitest/expect-expect": [
+        "error",
+        {
+          assertFunctionNames: [
+            "expect",
+            "expectHttpError",
+            "request.**.expect",
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: "argos/no-file-relative-paths",
     // This code is bundled, so a module does not keep its own file in the
     // output: `src/config/index.ts` may land at `dist/config/index.js` or be

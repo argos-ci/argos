@@ -622,11 +622,30 @@ async function ensureFile(props: {
  * can be used in isolation (e.g. the test-view visual test) without perturbing
  * the other scenarios' baselines.
  */
+/**
+ * Instant the time-anchored scenarios below are seeded at.
+ *
+ * Deliberately not "now". The app renders relative times ("5 seconds ago"), and
+ * Argos hides them for screenshots but keeps the space they take — in a
+ * monospace font, so one character more is one character wider. A string that
+ * crosses "9 seconds" → "10 seconds", or "59 seconds" → "1 minute", while a
+ * test is still clicking around therefore shifts everything after it on the
+ * line, and the screenshot diffs over nothing. That is what made
+ * `test-view-comment` flaky: the seed was `now`, and the run took long enough
+ * to change the string's length.
+ *
+ * Hours back, the string reads the same from the first assertion to the last,
+ * while staying inside the default 7-day metrics window the pages query.
+ */
+function getSeedInstant(): string {
+  return new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+}
+
 export async function createTestChangeScenario(input: {
   projectId: string;
 }): Promise<{ test: Test; build: Build }> {
   const { projectId } = input;
-  const now = new Date().toISOString();
+  const seededAt = getSeedInstant();
 
   const bucketProps = {
     name: "default",
@@ -636,8 +655,8 @@ export async function createTestChangeScenario(input: {
     valid: true,
     screenshotCount: 0,
     storybookScreenshotCount: 0,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: seededAt,
+    updatedAt: seededAt,
   };
   const [baseBucket, compareBucket] =
     await ScreenshotBucket.query().insertAndFetch([
@@ -703,8 +722,8 @@ export async function createTestChangeScenario(input: {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: seededAt,
+      updatedAt: seededAt,
     },
   ]);
   invariant(build);
@@ -720,8 +739,8 @@ export async function createTestChangeScenario(input: {
       s3Id: diffFile.key,
       fileId: diffFile.id,
       fingerprint: "penelope-argos-change",
-      createdAt: now,
-      updatedAt: now,
+      createdAt: seededAt,
+      updatedAt: seededAt,
     },
   ]);
 
@@ -851,7 +870,7 @@ export async function createFallbackBaselineScenario(input: {
   projectId: string;
 }): Promise<{ build: Build }> {
   const { projectId } = input;
-  const now = new Date().toISOString();
+  const seededAt = getSeedInstant();
 
   const bucketProps = {
     name: "default",
@@ -861,8 +880,8 @@ export async function createFallbackBaselineScenario(input: {
     valid: true,
     screenshotCount: 1,
     storybookScreenshotCount: 0,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: seededAt,
+    updatedAt: seededAt,
   };
   const [baseBucket, compareBucket] =
     await ScreenshotBucket.query().insertAndFetch([
@@ -932,8 +951,8 @@ export async function createFallbackBaselineScenario(input: {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: seededAt,
+      updatedAt: seededAt,
     },
   ]);
   invariant(build);
@@ -948,8 +967,8 @@ export async function createFallbackBaselineScenario(input: {
       jobStatus: "complete" as const,
       s3Id: diffFile.key,
       fileId: diffFile.id,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: seededAt,
+      updatedAt: seededAt,
     },
   ]);
 

@@ -76,6 +76,18 @@ const TestChangeOccurrenceSchema = z
     id: "TestChangeOccurrence",
   });
 
+/**
+ * A test as it appears in a project listing. The heavier per-test reads that
+ * {@link TestDetailsSchema} performs (status, series, first/last change) are
+ * deliberately left out: a page of them would be a query each, and the ranking
+ * already answers what a list is for.
+ */
+export const TestSummarySchema = TestSchema.meta({
+  description:
+    "A test with its flakiness metrics over the requested period. Fetch the test itself for its history and the changes behind the score.",
+  id: "TestSummary",
+});
+
 export const TestDetailsSchema = TestSchema.extend({
   status: TestStatusSchema,
   createdAt: z.iso.datetime().meta({

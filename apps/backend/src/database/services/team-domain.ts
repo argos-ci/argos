@@ -2,12 +2,19 @@ import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
 import { sanitizeEmail } from "@/util/email";
-import { filterOutPublicEmailDomains } from "@/util/public-email-domains";
+import { boom } from "@/util/error";
+import {
+  checkIsPublicEmailDomain,
+  filterOutPublicEmailDomains,
+} from "@/util/public-email-domains";
 
+import { isUniqueViolationError } from "../error";
+import type { Account } from "../models/Account";
 import { TeamDomain } from "../models/TeamDomain";
 import { TeamUser } from "../models/TeamUser";
 import { User } from "../models/User";
 import { UserEmail } from "../models/UserEmail";
+import { assertTeamAdmin } from "./team-member";
 
 const DOMAIN_REGEX =
   /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
@@ -28,7 +35,7 @@ function getEmailDomain(email: string) {
   return sanitizedEmail.slice(atIndex + 1);
 }
 
-export function normalizeTeamDomain(value: string) {
+function normalizeTeamDomain(value: string) {
   const domain = value.trim().toLowerCase();
   if (!DOMAIN_REGEX.test(domain)) {
     throw new Error("Invalid domain");
@@ -57,7 +64,7 @@ async function getVerifiedEmailByDomain(args: {
   return emailByDomain;
 }
 
-export async function findVerifiedEmailForDomain(args: {
+async function findVerifiedEmailForDomain(args: {
   userId: string;
   domain: string;
   trx?: TransactionOrKnex;
@@ -203,4 +210,90 @@ export async function hasAutoInviteForTeam(args: {
     .first();
 
   return Boolean(teamDomain);
+}
+
+/**
+ * List a team's verified email domains, alphabetically.
+ */
+export async function listTeamDomains(teamId: string): Promise<TeamDomain[]> {
+  return TeamDomain.query().where({ teamId }).orderBy("domain", "asc");
+}
+
+/**
+ * Add a verified email domain to a team, so anyone with an address on it joins
+ * automatically.
+ *
+ * Shared by the GraphQL API and the public REST API. Two rules make this safe
+ * and must hold on every write path:
+ * - the domain must not be a public email provider, otherwise every Gmail user
+ *   who signs up would be offered the team;
+ * - the acting user must themselves hold a verified address on it, so a team
+ *   can only be opened to a domain its administrator demonstrably belongs to.
+ */
+export async function addTeamDomain(args: {
+  account: Account;
+  user: User;
+  domain: string;
+}): Promise<TeamDomain> {
+  const teamId = await assertTeamAdmin(args);
+
+  const domain = (() => {
+    try {
+      return normalizeTeamDomain(args.domain);
+    } catch {
+      throw boom(400, "Invalid domain", { field: "domain" });
+    }
+  })();
+
+  if (await checkIsPublicEmailDomain(domain)) {
+    throw boom(
+      400,
+      "This is a public email provider, so anyone could join. Use a domain your organization owns.",
+      { field: "domain" },
+    );
+  }
+
+  const verifiedEmail = await findVerifiedEmailForDomain({
+    userId: args.user.id,
+    domain,
+  });
+  if (!verifiedEmail) {
+    throw boom(
+      400,
+      "You must have a verified email address matching this domain",
+      { field: "domain" },
+    );
+  }
+
+  try {
+    // Insert straight away rather than checking first: two concurrent requests
+    // would both pass an existence check, and the unique index on
+    // (teamId, domain) is what actually decides. The loser lands in the catch.
+    return await TeamDomain.query().insertAndFetch({ teamId, domain });
+  } catch (error) {
+    if (isUniqueViolationError(error)) {
+      throw boom(400, "This domain is already linked to this team", {
+        field: "domain",
+      });
+    }
+    throw error;
+  }
+}
+
+/**
+ * Remove a verified email domain from a team. New sign-ups on it no longer
+ * join automatically; members who already joined stay.
+ */
+export async function removeTeamDomain(args: {
+  account: Account;
+  user: User;
+  domain: string;
+}): Promise<void> {
+  const teamId = await assertTeamAdmin(args);
+  const deleted = await TeamDomain.query()
+    .where({ teamId, domain: args.domain.toLowerCase() })
+    .delete();
+  if (deleted === 0) {
+    throw boom(404, "Team domain not found.");
+  }
 }

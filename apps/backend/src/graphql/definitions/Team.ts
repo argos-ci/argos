@@ -3,6 +3,7 @@ import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
+import { getAvatarColor } from "@/account/avatar";
 import { startSession } from "@/auth/login";
 import {
   checkHasAccessToSAML,
@@ -12,7 +13,6 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { transaction } from "@/database";
-import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
   checkIsActiveSubscriptionStatus,
@@ -30,15 +30,29 @@ import {
 import { createAccount } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
 import {
+  addTeamDomain,
   enableTeamDomainAutoJoin,
-  findVerifiedEmailForDomain,
   getAutoInvitesForUser,
   hasAutoInviteForTeam,
-  normalizeTeamDomain,
+  removeTeamDomain,
   type AutoInvite,
 } from "@/database/services/team-domain";
+import {
+  AlreadyTeamMembersError,
+  cancelTeamInvite,
+  inviteTeamMembers,
+  queryTeamInvites,
+} from "@/database/services/team-invite";
+import {
+  loadAccountById,
+  queryTeamMembers,
+  removeTeamMember,
+  resetTeamInviteLink,
+  setTeamDefaultUserLevel,
+  setTeamMemberLevel,
+  type TeamMembersOrder,
+} from "@/database/services/team-member";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
-import { sendEmailTemplate } from "@/email/send-email-template";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
   createArgosSubscriptionFromStripe,
@@ -50,7 +64,6 @@ import {
   stripe,
 } from "@/stripe";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
-import { checkIsPublicEmailDomain } from "@/util/public-email-domains";
 
 import {
   ITeamMembersOrderBy,
@@ -59,13 +72,18 @@ import {
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
 import { deleteAccount, getAdminAccount } from "../services/account";
-import { getAccountAvatar, getAvatarColor } from "../services/avatar";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { commonAccountResolvers } from "./Account";
 import { paginateResult } from "./PageInfo";
 
@@ -517,6 +535,23 @@ async function removeStripeProductFromSubscription(input: {
   }
 }
 
+/**
+ * Map the GraphQL member ordering enum onto the service's own, so the shared
+ * query never has to know about generated GraphQL types.
+ */
+function fromGraphQLTeamMembersOrderBy(
+  orderBy: ITeamMembersOrderBy | null | undefined,
+): TeamMembersOrder {
+  switch (orderBy ?? ITeamMembersOrderBy.Date) {
+    case ITeamMembersOrderBy.Date:
+      return "date";
+    case ITeamMembersOrderBy.NameAsc:
+      return "name-asc";
+    case ITeamMembersOrderBy.NameDesc:
+      return "name-desc";
+  }
+}
+
 export const resolvers: IResolvers = {
   TeamGithubMember: {
     githubAccount: async (githubAccountMember, _args, ctx) => {
@@ -599,67 +634,16 @@ export const resolvers: IResolvers = {
 
       invariant(team, "team not found");
 
-      const hasGithubSSO = Boolean(team.ssoGithubAccountId);
-
-      const orderBy = args.orderBy ?? ITeamMembersOrderBy.Date;
-
-      const query = TeamUser.query()
-        .withGraphJoined("user.account")
-        .where("team_users.teamId", account.teamId)
-        .range(after, after + first - 1);
-
-      switch (orderBy) {
-        case ITeamMembersOrderBy.Date:
-          query.orderBy("team_users.id", "DESC");
-          break;
-        case ITeamMembersOrderBy.NameAsc:
-          query
-            .orderBy("user:account.name", "ASC")
-            .orderBy("user:account.slug", "ASC");
-          break;
-        case ITeamMembersOrderBy.NameDesc:
-          query
-            .orderBy("user:account.name", "DESC")
-            .orderBy("user:account.slug", "DESC");
-          break;
-      }
-
-      if (levels && levels.length > 0) {
-        query.whereIn("team_users.userLevel", levels);
-      }
-
-      if (search) {
-        query.where((qb) => {
-          qb.where("user:account.name", "ilike", `%${search}%`)
-            .orWhere("user:account.slug", "ilike", `%${search}%`)
-            .orWhere("user.email", "ilike", `%${search}%`);
-        });
-      }
-
-      // If SSO is activated, exclude SSO members.
-      if (hasGithubSSO && typeof args.sso === "boolean") {
-        if (args.sso) {
-          query
-            .withGraphJoined("user.account")
-            .whereIn(
-              "user:account.githubAccountId",
-              GithubAccountMember.query()
-                .select("githubMemberId")
-                .where("githubAccountId", team.ssoGithubAccountId),
-            );
-        } else {
-          query.withGraphJoined("user.account").where((qb) => {
-            qb.whereNull("user:account.githubAccountId").orWhereNotIn(
-              "user:account.githubAccountId",
-              GithubAccountMember.query()
-                .select("githubMemberId")
-                .where("githubAccountId", team.ssoGithubAccountId),
-            );
-          });
-        }
-      }
-
-      const result = await query;
+      // Shared with the REST API — same filters, same ordering.
+      const result = await queryTeamMembers({
+        team,
+        filters: {
+          search,
+          levels,
+          sso: args.sso,
+          orderBy: fromGraphQLTeamMembersOrderBy(args.orderBy),
+        },
+      }).range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
@@ -868,16 +852,12 @@ export const resolvers: IResolvers = {
 
       const { first, after, search } = args;
 
-      const query = TeamInvite.query()
-        .where("teamId", account.teamId)
-        .orderBy("createdAt", "desc")
-        .range(after, after + first - 1);
+      // Shared with the REST API.
+      const result = await queryTeamInvites({
+        teamId: account.teamId,
+        search,
+      }).range(after, after + first - 1);
 
-      if (search) {
-        query.where("email", "ilike", `%${search}%`);
-      }
-
-      const result = await query;
       return paginateResult({ result, first, after });
     },
   },
@@ -1172,56 +1152,16 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const [teamAccount, userAccount] = await Promise.all([
-        getAdminAccount({
-          id: args.input.teamAccountId,
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        return await removeTeamMember({
+          account,
           user: ctx.auth.user,
-        }),
-        Account.query().findById(args.input.userAccountId).throwIfNotFound(),
-      ]);
-
-      const count = await TeamUser.query()
-        .where({ teamId: teamAccount.teamId })
-        .resultSize();
-
-      if (count === 1) {
-        throw forbidden("Can't remove the last user of a team.");
+          userAccountId: args.input.userAccountId,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      const teamUser = await TeamUser.query()
-        .select("id")
-        .findOne({
-          teamId: teamAccount.teamId,
-          userId: userAccount.userId,
-        })
-        .throwIfNotFound();
-
-      await transaction(async (trx) => {
-        if (!ctx.auth) {
-          throw unauthenticated();
-        }
-
-        const teamUser = await TeamUser.query(trx)
-          .select("id")
-          .findOne({
-            teamId: teamAccount.teamId,
-            userId: userAccount.userId,
-          })
-          .throwIfNotFound();
-
-        await teamUser.$query(trx).delete();
-
-        // The last one is the only one, so it must be the owner
-        if (count === 2) {
-          await TeamUser.query(trx)
-            .where({ teamId: teamAccount.teamId })
-            .patch({ userLevel: "owner" });
-        }
-      });
-
-      return {
-        teamMemberId: teamUser.id,
-      };
     },
     acceptTeamInvite: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -1430,28 +1370,17 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const [teamAccount, userAccount] = await Promise.all([
-        getAdminAccount({
-          id: args.input.teamAccountId,
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        return await setTeamMemberLevel({
+          account,
           user: ctx.auth.user,
-        }),
-        Account.query().findById(args.input.userAccountId).throwIfNotFound(),
-      ]);
-
-      const teamUser = await TeamUser.query()
-        .findOne({
-          userId: userAccount.userId,
-          teamId: teamAccount.teamId,
-        })
-        .throwIfNotFound();
-
-      if (teamUser.userLevel === args.input.level) {
-        return teamUser;
+          userAccountId: args.input.userAccountId,
+          level: args.input.level,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      return teamUser.$query().patchAndFetch({
-        userLevel: args.input.level,
-      });
     },
     deleteTeam: async (_root, args, ctx) => {
       await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
@@ -1685,33 +1614,28 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-
-      const teamAccount = await getAdminAccount({
-        id: args.input.teamAccountId,
-        user: ctx.auth.user,
-      });
-
-      invariant(teamAccount.teamId, "Account teamId is undefined");
-
-      await Team.query().findById(teamAccount.teamId).patch({
-        defaultUserLevel: args.input.level,
-      });
-
-      return teamAccount;
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        return await setTeamDefaultUserLevel({
+          account,
+          user: ctx.auth.user,
+          level: args.input.level,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
     },
     resetInviteLink: async (_root, args, ctx) => {
-      const teamAccount = await getAdminAccount({
-        id: args.input.teamAccountId,
-        user: ctx.auth?.user,
-      });
-
-      invariant(teamAccount.teamId, "Account teamId is undefined");
-
-      await Team.query().findById(teamAccount.teamId).patch({
-        inviteSecret: Team.generateInviteSecret(),
-      });
-
-      return teamAccount;
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        await resetTeamInviteLink({ account, user: ctx.auth.user });
+        return account;
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
     },
     inviteMembers: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -1720,180 +1644,48 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const teamAccount = await getAdminAccount({
-        id: args.input.teamAccountId,
-        user: auth?.user,
-      });
-
-      const { teamId } = teamAccount;
-      invariant(teamId, "Account teamId is undefined");
-
-      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
-      const data = args.input.members.map((member) => ({
-        secret: TeamInvite.generateSecret(),
-        email: sanitizeEmail(member.email),
-        teamId,
-        userLevel: member.level,
-        expiresAt: expiresAt.toISOString(),
-        invitedById: auth.user.id,
-      }));
-
-      const userEmails = await UserEmail.query()
-        .whereIn(
-          "user_emails.email",
-          data.map((d) => d.email),
-        )
-        .withGraphJoined("user.[teams,account]");
-
-      const usersInTeam = userEmails.filter((ue) => {
-        invariant(ue.user?.teams, "relation not fetched");
-        return ue.user.teams.some((tu) => tu.id === teamId);
-      });
-
-      if (usersInTeam.length > 0) {
-        const fields = usersInTeam.map((user) => {
-          const index = data.findIndex((d) => d.email === user.email);
-          return `members.${index}.email`;
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        return await inviteTeamMembers({
+          account,
+          user: auth.user,
+          actorAccount: auth.account,
+          members: args.input.members,
+          requestLocation: ctx.requestLocation,
         });
-        throw badUserInput("User already in the team", {
-          field: fields,
-        });
-      }
-
-      const invites = await TeamInvite.query()
-        .insertAndFetch(data)
-        .onConflict(["email", "teamId"])
-        .merge();
-
-      await Promise.all(
-        invites.map(async (invite) => {
-          const user = userEmails.find((ue) => ue.email === invite.email)?.user;
-
-          const [teamAvatar, avatar] = await Promise.all([
-            getAccountAvatar(teamAccount, ctx.loaders),
-            user?.account ? getAccountAvatar(user.account, ctx.loaders) : null,
-          ]);
-
-          const [teamAvatarURL, avatarURL] = await Promise.all([
-            teamAvatar.url({ size: 128 }),
-            avatar?.url({ size: 128 }) ?? null,
-          ]);
-
-          const firstEmailLetter = invite.email[0]?.toUpperCase();
-          invariant(firstEmailLetter, "Email is empty");
-
-          await sendEmailTemplate({
-            template: "team_invite",
-            to: [invite.email],
-            data: {
-              email: invite.email,
-              userLevel: invite.userLevel,
-              avatar: avatar
-                ? {
-                    url: avatarURL,
-                    initial: avatar.initial,
-                    color: avatar.color,
-                  }
-                : {
-                    url: null,
-                    initial: firstEmailLetter.toUpperCase(),
-                    color: getAvatarColor(invite.email),
-                  },
-              invite: {
-                url: new URL(
-                  `/invites/${invite.secret}`,
-                  config.get("server.url"),
-                ).href,
-                date: new Date(invite.createdAt),
-              },
-              team: {
-                name: teamAccount.displayName,
-                avatar: {
-                  url: teamAvatarURL,
-                  initial: teamAvatar.initial,
-                  color: teamAvatar.color,
-                },
-              },
-              invitedBy: {
-                name: auth.account.displayName,
-                email: auth.user.email,
-                location: ctx.requestLocation,
-              },
-            },
+      } catch (error) {
+        // The dashboard highlights the offending rows of its input array, so
+        // map the rejected addresses back to their positions in it.
+        if (error instanceof AlreadyTeamMembersError) {
+          throw badUserInput("User already in the team", {
+            field: error.emails.map((email) => {
+              const index = args.input.members.findIndex(
+                (member) => sanitizeEmail(member.email) === email,
+              );
+              return `members.${index}.email`;
+            }),
           });
-        }),
-      );
-
-      return invites;
+        }
+        throw toGraphQLError(error);
+      }
     },
     addTeamDomain: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-
-      const teamAccount = await getAdminAccount({
-        id: args.input.teamAccountId,
-        user: ctx.auth.user,
-      });
-      invariant(teamAccount.teamId, "Account teamId is undefined");
-
-      const domain = (() => {
-        try {
-          return normalizeTeamDomain(args.input.domain);
-        } catch {
-          throw badUserInput("Invalid domain", { field: "domain" });
-        }
-      })();
-
-      // The same rule the welcome page and team creation apply. Without it here
-      // an owner whose address is `x@gmail.com` could add `gmail.com`, and
-      // `getAutoInvitesForUser` would then offer this team to every Gmail user
-      // who signs up — the outcome the domain list exists to prevent, reachable
-      // through the one write path that skipped the check.
-      if (await checkIsPublicEmailDomain(domain)) {
-        throw badUserInput(
-          "This is a public email provider, so anyone could join. Use a domain your organization owns.",
-          { field: "domain" },
-        );
-      }
-
-      const verifiedEmail = await findVerifiedEmailForDomain({
-        userId: ctx.auth.user.id,
-        domain,
-      });
-      if (!verifiedEmail) {
-        throw badUserInput(
-          "You must have a verified email address matching this domain",
-          { field: "domain" },
-        );
-      }
-
-      const existingTeamDomain = await TeamDomain.query().findOne({
-        teamId: teamAccount.teamId,
-        domain,
-      });
-
-      if (existingTeamDomain) {
-        throw badUserInput("This domain is already linked to this team", {
-          field: "domain",
-        });
-      }
-
       try {
-        await TeamDomain.query().insert({
-          teamId: teamAccount.teamId,
-          domain,
+        const account = await loadAccountById(args.input.teamAccountId);
+        // Shared with the REST API — same public-provider and verified-address
+        // rules.
+        await addTeamDomain({
+          account,
+          user: ctx.auth.user,
+          domain: args.input.domain,
         });
-      } catch (error: unknown) {
-        if (isUniqueViolationError(error)) {
-          throw badUserInput("This domain is already linked to this team", {
-            field: "domain",
-          });
-        }
-        throw error;
+        return account;
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      return teamAccount;
     },
     removeTeamDomain: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -1914,12 +1706,15 @@ export const resolvers: IResolvers = {
         throw notFound("Team domain not found");
       }
 
-      const permissions = await teamAccount.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("admin")) {
-        throw forbidden("You don't have access to this team domain");
+      try {
+        await removeTeamDomain({
+          account: teamAccount,
+          user: ctx.auth.user,
+          domain: teamDomain.domain,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      await teamDomain.$query().delete();
 
       return teamAccount;
     },
@@ -2034,24 +1829,22 @@ export const resolvers: IResolvers = {
         throw notFound("Team invite not found");
       }
 
-      // Fetch the team invite and ensure the user has admin access to the team in parallel.
-      const [teamInvite, teamAccount] = await Promise.all([
-        TeamInvite.query().findOne(parsedId),
-        ctx.loaders.AccountFromRelation.load({
-          teamId: parsedId.teamId,
-        }),
-      ]);
-
-      if (!teamAccount || !teamInvite) {
+      const teamAccount = await ctx.loaders.AccountFromRelation.load({
+        teamId: parsedId.teamId,
+      });
+      if (!teamAccount) {
         throw notFound("Team invite not found");
       }
 
-      const permissions = await teamAccount.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("admin")) {
-        throw forbidden("You don't have access to this invite");
+      try {
+        await cancelTeamInvite({
+          account: teamAccount,
+          user: ctx.auth.user,
+          inviteId: args.teamInviteId,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      await teamInvite.$query().delete();
 
       return teamAccount;
     },
