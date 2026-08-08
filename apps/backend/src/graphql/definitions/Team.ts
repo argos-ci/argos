@@ -13,7 +13,6 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { transaction } from "@/database";
-import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
   checkIsActiveSubscriptionStatus,
@@ -31,11 +30,11 @@ import {
 import { createAccount } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
 import {
+  addTeamDomain,
   enableTeamDomainAutoJoin,
-  findVerifiedEmailForDomain,
   getAutoInvitesForUser,
   hasAutoInviteForTeam,
-  normalizeTeamDomain,
+  removeTeamDomain,
   type AutoInvite,
 } from "@/database/services/team-domain";
 import {
@@ -65,7 +64,6 @@ import {
   stripe,
 } from "@/stripe";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
-import { checkIsPublicEmailDomain } from "@/util/public-email-domains";
 
 import {
   ITeamMembersOrderBy,
@@ -1675,70 +1673,19 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-
-      const teamAccount = await getAdminAccount({
-        id: args.input.teamAccountId,
-        user: ctx.auth.user,
-      });
-      invariant(teamAccount.teamId, "Account teamId is undefined");
-
-      const domain = (() => {
-        try {
-          return normalizeTeamDomain(args.input.domain);
-        } catch {
-          throw badUserInput("Invalid domain", { field: "domain" });
-        }
-      })();
-
-      // The same rule the welcome page and team creation apply. Without it here
-      // an owner whose address is `x@gmail.com` could add `gmail.com`, and
-      // `getAutoInvitesForUser` would then offer this team to every Gmail user
-      // who signs up — the outcome the domain list exists to prevent, reachable
-      // through the one write path that skipped the check.
-      if (await checkIsPublicEmailDomain(domain)) {
-        throw badUserInput(
-          "This is a public email provider, so anyone could join. Use a domain your organization owns.",
-          { field: "domain" },
-        );
-      }
-
-      const verifiedEmail = await findVerifiedEmailForDomain({
-        userId: ctx.auth.user.id,
-        domain,
-      });
-      if (!verifiedEmail) {
-        throw badUserInput(
-          "You must have a verified email address matching this domain",
-          { field: "domain" },
-        );
-      }
-
-      const existingTeamDomain = await TeamDomain.query().findOne({
-        teamId: teamAccount.teamId,
-        domain,
-      });
-
-      if (existingTeamDomain) {
-        throw badUserInput("This domain is already linked to this team", {
-          field: "domain",
-        });
-      }
-
       try {
-        await TeamDomain.query().insert({
-          teamId: teamAccount.teamId,
-          domain,
+        const account = await loadAccountById(args.input.teamAccountId);
+        // Shared with the REST API — same public-provider and verified-address
+        // rules.
+        await addTeamDomain({
+          account,
+          user: ctx.auth.user,
+          domain: args.input.domain,
         });
-      } catch (error: unknown) {
-        if (isUniqueViolationError(error)) {
-          throw badUserInput("This domain is already linked to this team", {
-            field: "domain",
-          });
-        }
-        throw error;
+        return account;
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      return teamAccount;
     },
     removeTeamDomain: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -1759,12 +1706,15 @@ export const resolvers: IResolvers = {
         throw notFound("Team domain not found");
       }
 
-      const permissions = await teamAccount.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("admin")) {
-        throw forbidden("You don't have access to this team domain");
+      try {
+        await removeTeamDomain({
+          account: teamAccount,
+          user: ctx.auth.user,
+          domain: teamDomain.domain,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      await teamDomain.$query().delete();
 
       return teamAccount;
     },

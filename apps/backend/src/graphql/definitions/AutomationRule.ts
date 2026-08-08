@@ -5,34 +5,40 @@ import gqlTag from "graphql-tag";
 import { z } from "zod";
 
 import { testAutomation } from "@/automation";
-import type { AutomationActionTypeDef } from "@/automation/actions";
 import { automationAction as discordAutomationAction } from "@/automation/actions/sendDiscordMessage";
 import { automationAction as msTeamsAutomationAction } from "@/automation/actions/sendMsTeamsMessage";
 import { automationAction } from "@/automation/actions/sendSlackMessage";
 import {
   AutomationActionRun,
-  AutomationRule,
   BuildReview,
   DiscordWebhook,
   MsTeamsWebhook,
   Project,
   SlackChannel,
-  type SlackInstallation,
 } from "@/database/models";
 import {
-  getSlackChannelById,
-  getSlackChannelByName,
-  normalizeChannelName,
-} from "@/slack/channel";
+  AutomationActionInputSchema,
+  createAutomationRule,
+  deactivateAutomationRule,
+  getAutomationRuleForAdmin,
+  resolveAutomationActions,
+  updateAutomationRule,
+  type AutomationActionInput,
+  type AutomationRuleInput,
+} from "@/database/services/automation-rule";
 
 import {
   IAutomationRunStatus,
   IResolvers,
   type IAutomationActionInput,
-  type ICreateAutomationRuleInput,
-  type IUpdateAutomationRuleInput,
 } from "../__generated__/resolver-types";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 
 const { gql } = gqlTag;
 
@@ -144,234 +150,40 @@ export const typeDefs = gql`
 `;
 
 /**
- * Extract actions from input variables.
+ * Parse the loosely-typed GraphQL action inputs (`payload` is a `JSONObject`)
+ * into the shape the shared service accepts. The REST API declares the same
+ * schema in its request body, so both reject the same malformed payloads.
  */
-async function getActionsFromInput(args: {
-  project: Project;
-  input: Array<IAutomationActionInput>;
-}) {
-  const { project } = args;
-
-  const SlackPayload = z.object({
-    slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
-    name: z.string().min(1, { message: "Required" }).max(256, {
-      message: "Must be 256 characters or less",
-    }),
-  });
-
-  // Both webhook-based integrations reference their target the same way.
-  const WebhookPayload = z.object({
-    webhookId: z.string().min(1, { message: "Required" }),
-  });
-
-  // Resolved on first use: most rules use a single action kind.
-  let slackInstallation: SlackInstallation | null | undefined;
-
-  async function getSlackInstallation(): Promise<SlackInstallation> {
-    if (slackInstallation === undefined) {
-      await project.$fetchGraph("account.slackInstallation");
-      slackInstallation = project.account?.slackInstallation ?? null;
-    }
-    if (!slackInstallation) {
-      throw badUserInput(
-        "Slack installation not found for the project account.",
-      );
-    }
-    return slackInstallation;
+function parseAutomationActions(
+  input: readonly IAutomationActionInput[],
+): AutomationActionInput[] {
+  const parsed = z.array(AutomationActionInputSchema).safeParse(input);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw badUserInput(issue?.message ?? "Invalid automation action.", {
+      field: issue ? `actions.${issue.path.join(".")}` : "actions",
+    });
   }
-
-  const actions: AutomationActionTypeDef[] = [];
-
-  // Iterate in input order: `then` is replayed into the form as-is, so
-  // grouping by action type here would silently reorder the user's actions.
-  for (const action of args.input) {
-    switch (action.type) {
-      case "sendMsTeamsMessage": {
-        const payload = WebhookPayload.parse(action.payload);
-        // Scope the lookup to the project account so a rule can't target
-        // another account's webhook.
-        const webhook = await MsTeamsWebhook.query().findOne({
-          id: payload.webhookId,
-          accountId: project.accountId,
-        });
-
-        if (!webhook) {
-          throw badUserInput(
-            "Microsoft Teams webhook not found for the project account.",
-          );
-        }
-
-        actions.push({
-          action: "sendMsTeamsMessage",
-          actionPayload: { webhookId: webhook.id },
-        });
-        break;
-      }
-      case "sendDiscordMessage": {
-        const payload = WebhookPayload.parse(action.payload);
-        // Scope the lookup to the project account so a rule can't target
-        // another account's webhook.
-        const webhook = await DiscordWebhook.query().findOne({
-          id: payload.webhookId,
-          accountId: project.accountId,
-        });
-
-        if (!webhook) {
-          throw badUserInput(
-            "Discord webhook not found for the project account.",
-          );
-        }
-
-        actions.push({
-          action: "sendDiscordMessage",
-          actionPayload: { webhookId: webhook.id },
-        });
-        break;
-      }
-      case "sendSlackMessage": {
-        const payload = SlackPayload.parse(action.payload);
-        const installation = await getSlackInstallation();
-
-        // Get or create the Slack channel by name or ID (prefer ID if available)
-        const slackChannel = payload.slackId
-          ? await getOrCreateSlackChannelBySlackId({
-              slackInstallation: installation,
-              slackId: payload.slackId,
-            })
-          : await getOrCreateSlackChannelByName({
-              slackInstallation: installation,
-              name: payload.name,
-            });
-
-        if (!slackChannel) {
-          throw badUserInput(
-            `Slack channel "${payload.name}" not found in ${installation.teamName} workspace.`,
-          );
-        }
-
-        actions.push({
-          action: "sendSlackMessage",
-          actionPayload: {
-            channelId: slackChannel.slackId,
-          },
-        });
-        break;
-      }
-      default:
-        throw badUserInput(`Unknown action type: ${action.type}`);
-    }
-  }
-
-  return actions;
+  return parsed.data;
 }
 
-/**
- * Get automation rule data from input variables.
- */
-async function getAutomationRuleDataFromInput(args: {
-  project: Project;
-  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput;
-}) {
-  const { project } = args;
-
-  validateAutomationRuleInput(args.input);
-
-  const then = await getActionsFromInput({
-    project,
-    input: args.input.actions,
-  });
-
-  return AutomationRule.schema.parse({
-    active: true,
-    name: args.input.name,
-    projectId: project.id,
-    on: args.input.events,
-    if: { all: args.input.conditions },
-    then,
-  });
-}
-
-/**
- * Get or create a Slack channel by name.
- */
-async function getOrCreateSlackChannelByName(input: {
-  slackInstallation: SlackInstallation;
+/** Parse a rule definition coming from the GraphQL layer. */
+function parseAutomationRuleInput(input: {
   name: string;
-}) {
-  const { slackInstallation } = input;
-  const name = normalizeChannelName(input.name);
-  const existingSlackChannel = await SlackChannel.query().findOne({
-    name,
-    slackInstallationId: slackInstallation.id,
-  });
-
-  if (existingSlackChannel) {
-    return existingSlackChannel;
+  events: string[];
+  conditions: unknown[];
+  actions: readonly IAutomationActionInput[];
+}): AutomationRuleInput {
+  const events = z.array(AutomationEventSchema).safeParse(input.events);
+  if (!events.success) {
+    throw badUserInput("Invalid automation event.", { field: "events" });
   }
-
-  const channel = await getSlackChannelByName({
-    installation: slackInstallation,
-    name,
-  });
-
-  if (!channel) {
-    return null;
-  }
-
-  const slackChannel = await SlackChannel.query().insertAndFetch({
-    name: channel.name,
-    slackId: channel.id,
-    slackInstallationId: slackInstallation.id,
-  });
-
-  return slackChannel;
-}
-
-/**
- * Get or create a Slack channel by id.
- */
-async function getOrCreateSlackChannelBySlackId(input: {
-  slackInstallation: SlackInstallation;
-  slackId: string;
-}) {
-  const { slackInstallation, slackId } = input;
-  const existingSlackChannel = await SlackChannel.query().findOne({
-    slackId,
-    slackInstallationId: slackInstallation.id,
-  });
-
-  if (existingSlackChannel) {
-    return existingSlackChannel;
-  }
-
-  const channel = await getSlackChannelById({
-    installation: slackInstallation,
-    id: slackId,
-  });
-
-  if (!channel) {
-    return null;
-  }
-
-  const slackChannel = await SlackChannel.query().insertAndFetch({
-    name: channel.name,
-    slackId: channel.id,
-    slackInstallationId: slackInstallation.id,
-  });
-
-  return slackChannel;
-}
-
-function validateAutomationRuleInput(
-  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput,
-): void {
-  if (input.events.length === 0) {
-    throw new Error("At least one event must be selected.");
-  }
-
-  if (input.actions.length === 0) {
-    throw new Error("At least one action must be specified.");
-  }
+  return {
+    name: input.name,
+    events: events.data,
+    conditions: input.conditions,
+    actions: parseAutomationActions(input.actions),
+  };
 }
 
 function getAutomationActionRunStatus(
@@ -509,27 +321,18 @@ export const resolvers: IResolvers = {
   Query: {
     automationRule: async (_root, args, ctx) => {
       const { auth } = ctx;
-
       if (!auth) {
         throw unauthenticated();
       }
-
-      const automationRule = await AutomationRule.query()
-        .findById(args.id)
-        .withGraphFetched("project")
-        .throwIfNotFound();
-
-      invariant(automationRule.project, "Project relation not found");
-
-      const permissions = await automationRule.project.$getPermissions(
-        auth.user,
-      );
-
-      if (!permissions.includes("admin")) {
-        throw forbidden();
+      try {
+        // Shared with the REST API — same admin check.
+        return await getAutomationRuleForAdmin({
+          id: args.id,
+          user: auth.user,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      return automationRule;
     },
   },
   Mutation: {
@@ -538,84 +341,42 @@ export const resolvers: IResolvers = {
       if (!auth) {
         throw unauthenticated();
       }
-
-      const { projectId } = args.input;
-
-      const project = await Project.query().findById(projectId);
-
-      if (!project) {
-        throw notFound("Project not found.");
+      try {
+        // Shared with the REST API — same admin check, same action resolution.
+        return await createAutomationRule({
+          projectId: args.input.projectId,
+          user: auth.user,
+          input: parseAutomationRuleInput(args.input),
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      const permissions = await project.$getPermissions(auth.user);
-
-      if (!permissions.includes("admin")) {
-        throw forbidden();
-      }
-
-      const data = await getAutomationRuleDataFromInput({
-        project,
-        input: args.input,
-      });
-
-      return AutomationRule.query().insertAndFetch(data);
     },
     updateAutomationRule: async (_root, args, ctx) => {
       const { auth } = ctx;
       if (!auth) {
         throw unauthenticated();
       }
-
-      const automationRule = await AutomationRule.query()
-        .findById(args.input.id)
-        .withGraphFetched("project");
-
-      if (!automationRule) {
-        throw notFound("Automation rule not found.");
+      try {
+        return await updateAutomationRule({
+          id: args.input.id,
+          user: auth.user,
+          input: parseAutomationRuleInput(args.input),
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      invariant(automationRule.project, "Project relation not found");
-
-      const permissions = await automationRule.project.$getPermissions(
-        auth.user,
-      );
-
-      if (!permissions.includes("admin")) {
-        throw forbidden();
-      }
-
-      const data = await getAutomationRuleDataFromInput({
-        project: automationRule.project,
-        input: args.input,
-      });
-
-      return automationRule.$query().patchAndFetch(data);
     },
     deactivateAutomationRule: async (_root, { id }, ctx) => {
       const { auth } = ctx;
       if (!auth) {
         throw unauthenticated();
       }
-
-      const automationRule = await AutomationRule.query()
-        .findById(id)
-        .withGraphFetched("project");
-
-      if (!automationRule) {
-        throw notFound("Automation rule not found.");
+      try {
+        return await deactivateAutomationRule({ id, user: auth.user });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      invariant(automationRule.project, "Project relation not found");
-
-      const permissions = await automationRule.project.$getPermissions(
-        auth.user,
-      );
-
-      if (!permissions.includes("admin")) {
-        throw forbidden();
-      }
-
-      return automationRule.$query().patchAndFetch({ active: false });
     },
     testAutomation: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -638,9 +399,10 @@ export const resolvers: IResolvers = {
       }
 
       const automationEvent = AutomationEventSchema.parse(args.input.event);
-      const actions = await getActionsFromInput({
+      // Shared with the REST API — same target resolution and scoping.
+      const actions = await resolveAutomationActions({
         project,
-        input: args.input.actions,
+        input: parseAutomationActions(args.input.actions),
       });
 
       switch (automationEvent) {

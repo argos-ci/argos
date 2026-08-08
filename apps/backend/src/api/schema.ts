@@ -15,6 +15,13 @@ import {
   addTestCommentReactionOperation,
 } from "./handlers/addCommentReaction";
 import {
+  createAutomationRuleOperation,
+  deactivateAutomationRuleOperation,
+  getAutomationRuleOperation,
+  listAutomationRulesOperation,
+  updateAutomationRuleOperation,
+} from "./handlers/automationRules";
+import {
   addBuildReviewersOperation,
   listBuildReviewersOperation,
   removeBuildReviewersOperation,
@@ -32,6 +39,10 @@ import {
   deleteTestCommentOperation,
 } from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
+import {
+  exchangeEmailCodeOperation,
+  requestEmailCodeOperation,
+} from "./handlers/emailAuth";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchangeGitHubActionsTokenlessToken";
@@ -70,6 +81,16 @@ import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
 import { listTestsOperation } from "./handlers/listTests";
 import {
+  listProjectContributorsOperation,
+  removeProjectContributorOperation,
+  setProjectContributorOperation,
+} from "./handlers/projectContributors";
+import {
+  getProjectDomainOperation,
+  listProjectDeploymentsOperation,
+  updateProjectDomainOperation,
+} from "./handlers/projectDeployments";
+import {
   removeBuildCommentReactionOperation,
   removeTestCommentReactionOperation,
 } from "./handlers/removeCommentReaction";
@@ -92,6 +113,11 @@ import {
   unsubscribeBuildCommentThreadOperation,
   unsubscribeTestCommentThreadOperation,
 } from "./handlers/subscribeCommentThread";
+import {
+  addTeamDomainOperation,
+  listTeamDomainsOperation,
+  removeTeamDomainOperation,
+} from "./handlers/teamDomains";
 import { transferProjectOperation } from "./handlers/transferProject";
 import {
   removeAccountMemberOperation,
@@ -186,6 +212,12 @@ export const zodSchema = {
       "x-page-icon": "rocket",
     },
     {
+      name: "Automations",
+      description:
+        "Run actions when a build event matches your conditions — post to Slack, Microsoft Teams or Discord when a build completes or is reviewed.",
+      "x-page-icon": "workflow",
+    },
+    {
       name: "Members",
       description:
         "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
@@ -221,6 +253,13 @@ export const zodSchema = {
     "/accounts/{accountSlug}/invites/{inviteId}": {
       delete: cancelAccountInviteOperation,
     },
+    "/accounts/{accountSlug}/domains": {
+      get: listTeamDomainsOperation,
+      post: addTeamDomainOperation,
+    },
+    "/accounts/{accountSlug}/domains/{domain}": {
+      delete: removeTeamDomainOperation,
+    },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
     },
@@ -244,6 +283,12 @@ export const zodSchema = {
     },
     "/baseline": {
       post: findBaselineOperation,
+    },
+    "/auth/email/code": {
+      post: requestEmailCodeOperation,
+    },
+    "/auth/email/token": {
+      post: exchangeEmailCodeOperation,
     },
     "/auth/cli/token": {
       post: exchangeCliTokenOperation,
@@ -269,6 +314,24 @@ export const zodSchema = {
     "/projects/{owner}/{project}": {
       get: getProjectOperation,
       patch: updateProjectOperation,
+    },
+    "/projects/{owner}/{project}/automation-rules": {
+      get: listAutomationRulesOperation,
+      post: createAutomationRuleOperation,
+    },
+    "/projects/{owner}/{project}/automation-rules/{ruleId}": {
+      get: getAutomationRuleOperation,
+      put: updateAutomationRuleOperation,
+    },
+    "/projects/{owner}/{project}/automation-rules/{ruleId}/deactivate": {
+      post: deactivateAutomationRuleOperation,
+    },
+    "/projects/{owner}/{project}/contributors": {
+      get: listProjectContributorsOperation,
+    },
+    "/projects/{owner}/{project}/contributors/{userId}": {
+      put: setProjectContributorOperation,
+      delete: removeProjectContributorOperation,
     },
     "/projects/{owner}/{project}/transfer": {
       post: transferProjectOperation,
@@ -338,6 +401,13 @@ export const zodSchema = {
       },
     "/projects/{owner}/{project}/tests": {
       get: listTestsOperation,
+    },
+    "/projects/{owner}/{project}/deployments": {
+      get: listProjectDeploymentsOperation,
+    },
+    "/projects/{owner}/{project}/domain": {
+      get: getProjectDomainOperation,
+      put: updateProjectDomainOperation,
     },
     "/projects/{owner}/{project}/ignored-changes": {
       get: listIgnoredChangesOperation,

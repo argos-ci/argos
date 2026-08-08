@@ -32,7 +32,7 @@ type HttpErrorOptions = ErrorOptions & {
    * layer-specific (an index into a GraphQL input array, say) belongs in a
    * typed error the caller maps itself.
    */
-  field?: string | string[];
+  field?: string | string[] | undefined;
 };
 
 /**

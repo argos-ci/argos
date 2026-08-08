@@ -13,7 +13,6 @@ import {
   GithubInstallation,
   GitlabProject,
   Project,
-  ProjectUser,
   Screenshot,
   User,
 } from "@/database/models";
@@ -27,6 +26,11 @@ import {
   transferProject as transferProjectService,
   updateProject as updateProjectService,
 } from "@/database/services/project";
+import {
+  addOrUpdateProjectContributor,
+  queryProjectContributors,
+  removeProjectContributor,
+} from "@/database/services/project-contributor";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { loadAccountById } from "@/database/services/team-member";
 import { queryActiveTests } from "@/database/services/test";
@@ -778,16 +782,11 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const result = await ProjectUser.query()
-        .where("project_users.projectId", project.id)
-        .orderByRaw(
-          `(CASE WHEN project_users."userId" = ? THEN 0
-     ELSE project_users."id"
-     END) ASC
-    `,
-          ctx.auth.user.id,
-        )
-        .range(after, after + first - 1);
+      // Shared with the REST API.
+      const result = await queryProjectContributors({
+        projectId: project.id,
+        currentUserId: ctx.auth.user.id,
+      }).range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
@@ -1091,38 +1090,18 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const [project, userAccount] = await Promise.all([
-        getAdminProject({
-          id: args.input.projectId,
+      try {
+        const project = await loadProjectById(args.input.projectId);
+        // Shared with the REST API — same admin check, same idempotence.
+        return await addOrUpdateProjectContributor({
+          project,
           user: ctx.auth.user,
-        }),
-        ctx.loaders.Account.load(args.input.userAccountId),
-      ]);
-
-      if (!userAccount?.userId) {
-        throw badUserInput("User not found");
+          userAccountId: args.input.userAccountId,
+          level: args.input.level,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      const projectUser = await ProjectUser.query().findOne({
-        projectId: project.id,
-        userId: userAccount.userId,
-      });
-
-      if (projectUser) {
-        if (projectUser.userLevel !== args.input.level) {
-          return projectUser
-            .$query()
-            .patchAndFetch({ userLevel: args.input.level });
-        }
-
-        return projectUser;
-      }
-
-      return ProjectUser.query().insertAndFetch({
-        projectId: project.id,
-        userId: userAccount.userId,
-        userLevel: args.input.level,
-      });
     },
     updateProjectDomain: async (_root, args, ctx) => {
       const project = await getAdminProject({
@@ -1180,38 +1159,18 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const [project, userAccount] = await Promise.all([
-        Project.query().findById(args.input.projectId).throwIfNotFound(),
-        ctx.loaders.Account.load(args.input.userAccountId),
-      ]);
-
-      invariant(userAccount?.userId, "User not found");
-
-      const canRemove = await (async () => {
-        invariant(ctx.auth, "Auth not found");
-        if (ctx.auth.account.id === args.input.userAccountId) {
-          return true;
-        }
-        const permissions = await project.$getPermissions(ctx.auth.user);
-        return permissions.includes("admin");
-      })();
-
-      if (!canRemove) {
-        throw forbidden();
+      try {
+        const project = await loadProjectById(args.input.projectId);
+        // Shared with the REST API — admins can remove anyone, anyone can
+        // remove themselves.
+        return await removeProjectContributor({
+          project,
+          user: ctx.auth.user,
+          userAccountId: args.input.userAccountId,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
       }
-
-      const projectUser = await ProjectUser.query()
-        .select("id")
-        .findOne({
-          projectId: project.id,
-          userId: userAccount.userId,
-        })
-        .throwIfNotFound();
-
-      const projectContributorId = projectUser.id;
-      await projectUser.$query().delete();
-
-      return { projectContributorId };
     },
     regenerateProjectToken: async (_root, args, ctx) => {
       if (!ctx.auth) {

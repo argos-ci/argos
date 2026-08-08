@@ -197,7 +197,7 @@ export async function createProject(input: {
  * API and the REST API can never drift on who is allowed to configure a
  * project.
  */
-async function assertProjectAdmin(args: {
+export async function assertProjectAdmin(args: {
   project: Project;
   user: User;
 }): Promise<void> {

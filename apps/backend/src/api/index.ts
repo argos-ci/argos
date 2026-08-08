@@ -11,6 +11,13 @@ import {
 } from "./handlers/accountInvites";
 import { addCommentReaction } from "./handlers/addCommentReaction";
 import {
+  createAutomationRule,
+  deactivateAutomationRule,
+  getAutomationRule,
+  listAutomationRules,
+  updateAutomationRule,
+} from "./handlers/automationRules";
+import {
   addBuildReviewers,
   listBuildReviewers,
   removeBuildReviewers,
@@ -22,6 +29,7 @@ import { createProject } from "./handlers/createProject";
 import { createReview } from "./handlers/createReview";
 import { deleteComment } from "./handlers/deleteComment";
 import { dismissReview } from "./handlers/dismissReview";
+import { exchangeEmailCode, requestEmailCode } from "./handlers/emailAuth";
 import { exchangeCliToken } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcToken } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessToken } from "./handlers/exchangeGitHubActionsTokenlessToken";
@@ -47,6 +55,16 @@ import { listProjects } from "./handlers/listProjects";
 import { listReviews } from "./handlers/listReviews";
 import { listTestChanges } from "./handlers/listTestChanges";
 import { listTests } from "./handlers/listTests";
+import {
+  listProjectContributors,
+  removeProjectContributorHandler,
+  setProjectContributor,
+} from "./handlers/projectContributors";
+import {
+  getProjectDomain,
+  listProjectDeployments,
+  updateProjectDomain,
+} from "./handlers/projectDeployments";
 import { removeCommentReaction } from "./handlers/removeCommentReaction";
 import {
   resolveCommentThread,
@@ -63,6 +81,11 @@ import {
   subscribeCommentThread,
   unsubscribeCommentThread,
 } from "./handlers/subscribeCommentThread";
+import {
+  addTeamDomainHandler,
+  listTeamDomainsHandler,
+  removeTeamDomainHandler,
+} from "./handlers/teamDomains";
 import { transferProject } from "./handlers/transferProject";
 import {
   removeAccountMember,
@@ -157,6 +180,22 @@ registerHandler(router, subscribeTest);
 registerHandler(router, unsubscribeTest);
 registerHandler(router, getAccount);
 registerHandler(router, updateAccount);
+registerHandler(router, listProjectContributors);
+registerHandler(router, setProjectContributor);
+registerHandler(router, removeProjectContributorHandler);
+registerHandler(router, listAutomationRules);
+registerHandler(router, getAutomationRule);
+registerHandler(router, createAutomationRule);
+registerHandler(router, updateAutomationRule);
+registerHandler(router, deactivateAutomationRule);
+registerHandler(router, listProjectDeployments);
+registerHandler(router, getProjectDomain);
+registerHandler(router, updateProjectDomain);
+registerHandler(router, listTeamDomainsHandler);
+registerHandler(router, addTeamDomainHandler);
+registerHandler(router, removeTeamDomainHandler);
+registerHandler(router, requestEmailCode);
+registerHandler(router, exchangeEmailCode);
 
 // Error handlers
 router.use(errorHandler);
