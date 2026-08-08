@@ -33,9 +33,10 @@ function generateShareToken(): string {
 }
 
 export type CreateMediaParams = {
+  /** The project the media belongs to. Media is scoped exactly like a build. */
+  project: Project;
+  /** The project's account, for the plan limits and the quota checks. */
   account: Account;
-  /** The project the upload came from, when the caller is a project token. */
-  project: Project | null;
   /** The acting user, when the caller holds a user token. */
   userId: string | null;
   /** Original file name, used for display and Markdown alt text. */
@@ -84,7 +85,7 @@ export async function createMedia(
   });
 
   const key = getMediaKey({
-    accountId: account.id,
+    projectId: params.project.id,
     hash: params.hash,
     contentType: params.contentType,
   });
@@ -130,11 +131,10 @@ async function upsertMedia(
     expiresAt: Date;
   },
 ): Promise<Media> {
-  const { account, project, slug, key, visibility, expiresAt } = params;
+  const { project, slug, key, visibility, expiresAt } = params;
 
   const attributes = {
-    accountId: account.id,
-    projectId: project?.id ?? null,
+    projectId: project.id,
     createdByUserId: params.userId,
     name: params.name,
     slug,
@@ -157,9 +157,9 @@ async function upsertMedia(
   // not both insert: the partial unique index would reject one of them with a
   // constraint violation rather than a usable answer. The lock serializes them,
   // and the loser updates the row the winner created.
-  return redisLock.acquire(["media-slug", account.id, slug], async () => {
+  return redisLock.acquire(["media-slug", project.id, slug], async () => {
     const existing = await Media.query().findOne({
-      accountId: account.id,
+      projectId: project.id,
       slug,
     });
 

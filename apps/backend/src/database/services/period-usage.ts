@@ -103,9 +103,10 @@ async function getScreenshotTotals(
     allTimeStorybook: string | number;
   }[];
 
-  // Standalone media hangs off the account, not off a project, so it cannot ride
-  // the join above — that would multiply each account's media by its project
-  // count. It is aggregated separately and added in.
+  // Media hangs off a project, like a bucket does, but it still cannot ride the
+  // join above: joining two independent one-to-many tables in a single pass
+  // multiplies their rows against each other. It is aggregated separately and
+  // added in.
   const mediaUnitsByAccountId = await getMediaUnits(periodStartByAccountId);
 
   return new Map(
@@ -156,10 +157,13 @@ async function getMediaUnits(
     .from(
       knex.raw(`(values ${values}) as v("accountId", "periodStart")`, bindings),
     )
+    // Media reaches the account through its project, exactly as a bucket does —
+    // which is what makes a project transfer carry its billing with it.
+    .leftJoin("projects as p", "p.accountId", "v.accountId")
     // Only uploads that completed are billed, which is what `uploadedAt`
     // records; a row whose bytes never landed charges nothing.
     .leftJoin("media as m", (join) => {
-      join.on("m.accountId", "v.accountId").onNotNull("m.uploadedAt");
+      join.on("m.projectId", "p.id").onNotNull("m.uploadedAt");
     })
     .groupBy("v.accountId")) as unknown as {
     accountId: string | number;

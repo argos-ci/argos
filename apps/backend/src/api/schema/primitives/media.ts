@@ -20,6 +20,11 @@ const MediaSlug = z
       "A slug may only contain letters, digits, underscores, dots and dashes.",
   });
 
+export const MediaId = z.string().meta({
+  description: "The media ID",
+  examples: ["4821"],
+});
+
 export const MediaSchema = z
   .object({
     id: z.string().meta({ description: "Unique identifier of the media" }),

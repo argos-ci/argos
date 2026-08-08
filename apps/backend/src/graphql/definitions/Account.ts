@@ -21,8 +21,7 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
-import { getMediaPermissions } from "@/media/permissions";
-import { queryAccountMedia } from "@/media/query";
+import { queryProjectMedia } from "@/media/query";
 import {
   getAccountMetrics,
   InvalidAccountMetricsInputError,
@@ -42,12 +41,7 @@ import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getVisibleProjectIds } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
-import {
-  badUserInput,
-  forbidden,
-  toGraphQLError,
-  unauthenticated,
-} from "../util";
+import { badUserInput, toGraphQLError, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -184,10 +178,8 @@ export const typeDefs = gql`
       filters: TestsFilterInput
     ): TestConnection!
     """
-    Standalone images and videos uploaded to this account, most recent first.
-
-    Administrators only: the library spans projects a given member may have no
-    access to. Following a single share link is a separate, more permissive check.
+    Standalone images and videos across the projects the viewer can see, most
+    recent first.
     """
     media(
       after: Int = 0
@@ -328,12 +320,20 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!auth) {
       throw unauthenticated();
     }
-    const permissions = await account.$getPermissions(auth.user);
-    if (getMediaPermissions(permissions).length === 0) {
-      throw forbidden("You are not an administrator of this team.");
+    // Media is project-scoped, so the library shows what the viewer can already
+    // see — the same shape the tests dashboard uses.
+    const projectIds = await getVisibleProjectIds({
+      account,
+      user: auth.user,
+    });
+    if (projectIds.length === 0) {
+      return {
+        pageInfo: { totalCount: 0, hasNextPage: false, isEmpty: true },
+        edges: [],
+      };
     }
-    const result = await queryAccountMedia({
-      accountId: account.id,
+    const result = await queryProjectMedia({
+      projectIds,
       filters: filters ?? null,
     }).range(after, after + first - 1);
     return paginateResult({ result, first, after });

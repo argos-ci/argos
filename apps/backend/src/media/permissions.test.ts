@@ -7,10 +7,9 @@ describe("getMediaPermissions", () => {
     expect(getMediaPermissions(["admin", "view"])).toEqual(["view", "delete"]);
   });
 
-  it("gives a plain member nothing", () => {
-    // The library spans projects a member may have no access to, so browsing it
-    // is not something team membership alone earns.
-    expect(getMediaPermissions(["view"])).toEqual([]);
+  it("lets anyone who can see the project see its media", () => {
+    // Media is project-scoped, so seeing the project is what grants access.
+    expect(getMediaPermissions(["view"])).toEqual(["view"]);
   });
 
   it("gives an outsider nothing", () => {
@@ -22,21 +21,19 @@ describe("checkCanViewMedia", () => {
   it("lets anyone open a public media", () => {
     // The whole point: a pull request reviewer with no Argos account.
     expect(
-      checkCanViewMedia({ visibility: "public", accountPermissions: [] }),
+      checkCanViewMedia({ visibility: "public", projectPermissions: [] }),
     ).toBe(true);
   });
 
-  it("lets any team member open a team media, not just admins", () => {
-    // Following a link somebody on your team shared is a lower bar than browsing
-    // everything the team ever uploaded.
+  it("lets anyone with project access open a team media", () => {
     expect(
-      checkCanViewMedia({ visibility: "team", accountPermissions: ["view"] }),
+      checkCanViewMedia({ visibility: "team", projectPermissions: ["view"] }),
     ).toBe(true);
   });
 
-  it("refuses a team media to someone outside the team", () => {
+  it("refuses a team media to someone without project access", () => {
     expect(
-      checkCanViewMedia({ visibility: "team", accountPermissions: [] }),
+      checkCanViewMedia({ visibility: "team", projectPermissions: [] }),
     ).toBe(false);
   });
 });

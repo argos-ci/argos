@@ -22,7 +22,7 @@ import {
   IMediaStatus,
   type IResolvers,
 } from "../__generated__/resolver-types";
-import { getAdminAccount } from "../services/account";
+import { getWritableProject } from "../services/media";
 import {
   badUserInput,
   forbidden,
@@ -112,7 +112,7 @@ export const typeDefs = gql`
   }
 
   input CreateMediaInput {
-    accountId: ID!
+    projectId: ID!
     "File name"
     name: String!
     contentType: String!
@@ -186,18 +186,17 @@ export const resolvers: IResolvers = {
     status: (media) =>
       media.uploadedAt ? IMediaStatus.Ready : IMediaStatus.Pending,
     project: async (media, _args, ctx) => {
-      if (!media.projectId) {
-        return null;
-      }
-      return ctx.loaders.Project.load(media.projectId);
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      return project;
     },
     permissions: async (media, _args, ctx) => {
-      const account = await ctx.loaders.Account.load(media.accountId);
-      invariant(account, "account not found");
-      const accountPermissions = await account.$getPermissions(
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const projectPermissions = await project.$getPermissions(
         ctx.auth?.user ?? null,
       );
-      return getMediaPermissions(accountPermissions).map(
+      return getMediaPermissions(projectPermissions).map(
         (permission) => GRAPHQL_PERMISSION[permission],
       );
     },
@@ -221,15 +220,15 @@ export const resolvers: IResolvers = {
         return media;
       }
 
-      const account = await ctx.loaders.Account.load(media.accountId);
-      invariant(account, "account not found");
-      const accountPermissions = await account.$getPermissions(
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const projectPermissions = await project.$getPermissions(
         ctx.auth?.user ?? null,
       );
 
       return checkCanViewMedia({
         visibility: media.visibility,
-        accountPermissions,
+        projectPermissions,
       })
         ? media
         : null;
@@ -243,12 +242,14 @@ export const resolvers: IResolvers = {
 
       const { input } = args;
 
-      // Uploading from the app is an admin action, same as browsing the library:
-      // it spends the team's screenshot quota and publishes a link under its name.
-      const account = await getAdminAccount({
-        id: input.accountId,
+      // Uploading spends the account's quota and publishes a link under the
+      // project's name, so it takes more than read access on the project.
+      const project = await getWritableProject({
+        id: input.projectId,
         user: ctx.auth.user,
       });
+      const account = await project.$relatedQuery("account");
+      invariant(account, "project account not found");
 
       const contentType = MediaContentTypeSchema.safeParse(input.contentType);
       if (!contentType.success) {
@@ -264,8 +265,8 @@ export const resolvers: IResolvers = {
 
       try {
         const result = await createMedia({
+          project,
           account,
-          project: null,
           userId: ctx.auth.user.id,
           name: input.name,
           contentType: contentType.data,
@@ -295,8 +296,8 @@ export const resolvers: IResolvers = {
         throw notFound("Media not found.");
       }
 
-      await getAdminAccount({
-        id: media.accountId,
+      await getWritableProject({
+        id: media.projectId,
         user: ctx.auth.user,
       });
 
@@ -319,11 +320,11 @@ export const resolvers: IResolvers = {
         throw notFound("Media not found.");
       }
 
-      const account = await ctx.loaders.Account.load(media.accountId);
-      invariant(account, "account not found");
-      const accountPermissions = await account.$getPermissions(ctx.auth.user);
-      if (!getMediaPermissions(accountPermissions).includes("delete")) {
-        throw forbidden("You are not an administrator of this team.");
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const projectPermissions = await project.$getPermissions(ctx.auth.user);
+      if (!getMediaPermissions(projectPermissions).includes("delete")) {
+        throw forbidden("You are not an administrator of this project.");
       }
 
       // Objects first: a row deleted while its bytes survive leaves storage

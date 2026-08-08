@@ -35,17 +35,13 @@ export const useAccountContext = () => {
 };
 
 function AccountTabs({ account }: { account: Account }) {
-  const isAdmin = account.permissions.includes(AccountPermission.Admin);
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabList className="px-4" aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="~/tests">Tests</TabLink>
-        {/* The media library spans projects a member may have no access to, so
-            it is an admin surface — and a tab nobody can open is worse than no
-            tab at all. */}
-        {isAdmin ? <TabLink href="~/media">Media</TabLink> : null}
+        <TabLink href="~/media">Media</TabLink>
         <TabLink href="settings">Settings</TabLink>
       </TabList>
       <hr className="border-t" />

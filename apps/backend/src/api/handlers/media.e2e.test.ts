@@ -28,6 +28,8 @@ const app = createTestHandlerApp(
 );
 
 const HASH = "a".repeat(64);
+/** The routed project: the account slug plus the project factory's name. */
+const PROJECT_PATH = "acme/awesome-project";
 
 // The signing and delete paths talk to S3. Nothing here is testing AWS — the
 // shared-key logic behind `deleteUnreferencedMediaObjects` has its own test.
@@ -108,7 +110,7 @@ beforeAll(() => {
 describe("createMedia", () => {
   test("registers a media and returns a signed upload target", async ({
     projectToken,
-    account,
+    project,
   }) => {
     const res = await request(app)
       .post("/media")
@@ -135,8 +137,9 @@ describe("createMedia", () => {
       url: "https://s3.example.com/bucket",
     });
 
+    // Media is project-scoped, and a project token identifies its own project.
     const media = await Media.query().findById(res.body.media.id);
-    expect(media?.accountId).toBe(account.id);
+    expect(media?.projectId).toBe(project.id);
   });
 
   test("rejects a content type that is not an accepted media type", async ({
@@ -179,8 +182,8 @@ describe("createMedia", () => {
   test("refuses team-scoped visibility on a free plan", async ({
     projectToken,
   }) => {
-    // Private links are the paid wedge; a free account gets a public URL and is
-    // told so rather than silently downgraded.
+    // A team-scoped share page is the paid wedge; a free account gets a public
+    // one and is told so rather than silently downgraded.
     const res = await request(app)
       .post("/media")
       .set("Authorization", `Bearer ${projectToken}`)
@@ -219,7 +222,7 @@ describe("createMedia", () => {
     expect(res.body.error).toContain("Pro plan");
   });
 
-  test("requires an account slug when the caller holds a user token", async ({
+  test("requires a project when the caller holds a user token", async ({
     patToken,
   }) => {
     const res = await request(app)
@@ -233,7 +236,43 @@ describe("createMedia", () => {
       })
       .expect(400);
 
-    expect(res.body.error).toContain("accountSlug");
+    expect(res.body.error).toContain("`project` is required");
+  });
+
+  test("uploads to a named project with a user token", async ({
+    patToken,
+    project,
+  }) => {
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${patToken}`)
+      .send({
+        name: "before.png",
+        contentType: "image/png",
+        size: 1024,
+        hash: HASH,
+        project: PROJECT_PATH,
+      })
+      .expect(201);
+
+    const media = await Media.query().findById(res.body.media.id);
+    expect(media?.projectId).toBe(project.id);
+  });
+
+  test("rejects a malformed project path", async ({ patToken }) => {
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${patToken}`)
+      .send({
+        name: "before.png",
+        contentType: "image/png",
+        size: 1024,
+        hash: HASH,
+        project: "acme",
+      })
+      .expect(400);
+
+    expect(res.body.error).toContain("owner/project");
   });
 
   test("reuses the row when the same slug is uploaded again", async ({
@@ -272,13 +311,9 @@ describe("createMedia", () => {
 describe("getMedia", () => {
   test("returns a media the project token owns", async ({
     projectToken,
-    account,
     project,
   }) => {
-    const media = await factory.Media.create({
-      accountId: account.id,
-      projectId: project.id,
-    });
+    const media = await factory.Media.create({ projectId: project.id });
 
     const res = await request(app)
       .get(`/media/${media.id}`)
@@ -293,15 +328,12 @@ describe("getMedia", () => {
     account,
   }) => {
     // The ids are sequential; confirming which exist would let a caller count
-    // another team's uploads.
+    // another project's uploads.
     const otherProject = await factory.Project.create({
       accountId: account.id,
       name: "other",
     });
-    const media = await factory.Media.create({
-      accountId: account.id,
-      projectId: otherProject.id,
-    });
+    const media = await factory.Media.create({ projectId: otherProject.id });
 
     await request(app)
       .get(`/media/${media.id}`)
@@ -318,11 +350,8 @@ describe("getMedia", () => {
 });
 
 describe("deleteMedia", () => {
-  test("deletes the media", async ({ projectToken, account, project }) => {
-    const media = await factory.Media.create({
-      accountId: account.id,
-      projectId: project.id,
-    });
+  test("deletes the media", async ({ projectToken, project }) => {
+    const media = await factory.Media.create({ projectId: project.id });
 
     await request(app)
       .delete(`/media/${media.id}`)
@@ -334,16 +363,16 @@ describe("deleteMedia", () => {
 });
 
 describe("listMedia", () => {
-  test("lists a team's media for an admin", async ({ patToken, account }) => {
-    await factory.Media.create({ accountId: account.id, name: "one.png" });
+  test("lists a project's media", async ({ patToken, project }) => {
+    await factory.Media.create({ projectId: project.id, name: "one.png" });
     await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       name: "two.mp4",
       mimeType: "video/mp4",
     });
 
     const res = await request(app)
-      .get("/accounts/acme/media")
+      .get(`/projects/${PROJECT_PATH}/media`)
       .set("Authorization", `Bearer ${patToken}`)
       .expect(200);
 
@@ -351,16 +380,16 @@ describe("listMedia", () => {
     expect(res.body.results).toHaveLength(2);
   });
 
-  test("filters to videos", async ({ patToken, account }) => {
-    await factory.Media.create({ accountId: account.id, name: "one.png" });
+  test("filters to videos", async ({ patToken, project }) => {
+    await factory.Media.create({ projectId: project.id, name: "one.png" });
     await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       name: "two.mp4",
       mimeType: "video/mp4",
     });
 
     const res = await request(app)
-      .get("/accounts/acme/media?type=video")
+      .get(`/projects/${PROJECT_PATH}/media?type=video`)
       .set("Authorization", `Bearer ${patToken}`)
       .expect(200);
 
@@ -370,54 +399,60 @@ describe("listMedia", () => {
 
   test("hides media whose upload never completed", async ({
     patToken,
-    account,
+    project,
   }) => {
     await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       uploadedAt: null,
       billedUnits: 0,
     });
 
     const res = await request(app)
-      .get("/accounts/acme/media")
+      .get(`/projects/${PROJECT_PATH}/media`)
       .set("Authorization", `Bearer ${patToken}`)
       .expect(200);
 
     expect(res.body.results).toHaveLength(0);
   });
 
-  test("403s for a member who is not an administrator", async ({ account }) => {
-    const member = await factory.User.create();
-    await factory.UserAccount.create({ userId: member.id });
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: member.id,
-      userLevel: "member",
-    });
-    const token = `arp_${"f".repeat(36)}`;
-    const userAccessToken = await factory.UserAccessToken.create({
-      userId: member.id,
-      token: hashToken(token),
-    });
-    await UserAccessTokenScope.query().insert({
-      userAccessTokenId: userAccessToken.id,
+  test("excludes another project's media", async ({
+    patToken,
+    account,
+    project,
+  }) => {
+    const otherProject = await factory.Project.create({
       accountId: account.id,
+      name: "other",
+    });
+    await factory.Media.create({ projectId: project.id, name: "mine.png" });
+    await factory.Media.create({
+      projectId: otherProject.id,
+      name: "theirs.png",
     });
 
     const res = await request(app)
-      .get("/accounts/acme/media")
-      .set("Authorization", `Bearer ${token}`)
-      .expect(403);
+      .get(`/projects/${PROJECT_PATH}/media`)
+      .set("Authorization", `Bearer ${patToken}`)
+      .expect(200);
 
-    expect(res.body.error).toContain("administrator");
+    expect(res.body.results).toHaveLength(1);
+    expect(res.body.results[0].name).toBe("mine.png");
   });
 
-  test("401s a project token, which cannot act at account level", async ({
+  test("lets a project token list its own project's media", async ({
     projectToken,
+    project,
   }) => {
-    await request(app)
-      .get("/accounts/acme/media")
+    // Project scoping means CI can read back what it uploaded — the
+    // account-scoped version could not, since a project token has no account
+    // scope of its own.
+    await factory.Media.create({ projectId: project.id, name: "one.png" });
+
+    const res = await request(app)
+      .get(`/projects/${PROJECT_PATH}/media`)
       .set("Authorization", `Bearer ${projectToken}`)
-      .expect(401);
+      .expect(200);
+
+    expect(res.body.results).toHaveLength(1);
   });
 });

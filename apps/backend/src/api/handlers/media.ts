@@ -13,12 +13,12 @@ import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
 import { deleteUnreferencedMediaObjects } from "@/media/object";
-import { getMediaPermissions } from "@/media/permissions";
+import { getMediaPermissions, type MediaPermission } from "@/media/permissions";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
-import { queryAccountMedia } from "@/media/query";
+import { queryProjectMedia } from "@/media/query";
 import { boom } from "@/util/error";
 
-import { getAccountForAuth } from "../auth/project";
+import { getProjectForAuth } from "../auth/project";
 import {
   MediaInputSchema,
   MediaSchema,
@@ -27,7 +27,7 @@ import {
   serializeMediaList,
 } from "../schema/primitives/media";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
-import { AccountSlug } from "../schema/primitives/project";
+import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
   invalidParameters,
@@ -41,10 +41,14 @@ import { CreateAPIHandler } from "../util";
 type AnyAuth = AuthProjectPayload | AuthPATPayload | AuthOAuthPayload;
 
 const CreateMediaRequestSchema = MediaInputSchema.extend({
-  accountSlug: AccountSlug.nullish().meta({
-    description:
-      "Team to upload to. Required with a personal access token; ignored with a project token, which already identifies its team.",
-  }),
+  project: z
+    .string()
+    .nullish()
+    .meta({
+      description:
+        "Project to upload to, as `owner/project`. Required with a personal access token; ignored with a project token, which already identifies its project.",
+      examples: ["acme/web"],
+    }),
   prNumber: z.number().int().min(1).nullish().meta({
     description:
       "Pull request to attach the media to. With `comment`, Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time.",
@@ -112,7 +116,7 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
 
     const { account, project } = await resolveUploadTarget({
       auth,
-      accountSlug: body.accountSlug ?? null,
+      projectPath: body.project ?? null,
     });
 
     const githubPullRequestId = await resolvePullRequest({
@@ -122,8 +126,8 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
     });
 
     const { media, upload } = await createMedia({
-      account,
       project,
+      account,
       userId: auth.type === "project" ? null : auth.user.id,
       name: body.name,
       contentType: body.contentType,
@@ -188,6 +192,7 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
+      permission: "view",
     });
 
     const finalized = await finalizeMedia(media);
@@ -234,6 +239,7 @@ export const getMediaHandler: CreateAPIHandler = ({ get }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
+      permission: "view",
     });
     res.send(serializeMedia(media));
   });
@@ -266,6 +272,7 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
+      permission: "delete",
     });
 
     // Objects first: a row deleted while its bytes survive leaves storage nobody
@@ -288,16 +295,15 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
 
 export const listMediaOperation = {
   operationId: "listMedia",
-  summary: "List a team's media",
+  summary: "List a project's media",
   description:
-    "List the standalone images and videos uploaded to a team, most recent first. Requires administrator access to the team.",
+    "List the standalone images and videos uploaded to a project, most recent first.",
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
   requestParams: {
     path: z.object({
-      accountSlug: AccountSlug.meta({
-        description: "Slug of the team to list media for.",
-      }),
+      owner: AccountSlug,
+      project: ProjectName,
     }),
     query: PageParamsSchema.extend({
       search: z.string().optional().meta({
@@ -326,20 +332,14 @@ export const listMediaOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const listMediaHandler: CreateAPIHandler = ({ get }) => {
-  get("/accounts/{accountSlug}/media", async (req, res) => {
+  get("/projects/{owner}/{project}/media", async (req, res) => {
     const { page, perPage, search, type } = req.ctx.query;
-    const auth = await req.ctx.auth();
-
-    const account = getAccountForAuth(auth, {
-      slug: req.ctx.params.accountSlug,
-    });
-
-    await assertMediaLibraryAccess({ account, auth });
+    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
 
     // The same query the GraphQL connection uses, so the two agree on filtering
     // and ordering.
-    const media = await queryAccountMedia({
-      accountId: account.id,
+    const media = await queryProjectMedia({
+      projectIds: [project.id],
       filters: { search, type },
     }).range((page - 1) * perPage, page * perPage - 1);
 
@@ -351,47 +351,60 @@ export const listMediaHandler: CreateAPIHandler = ({ get }) => {
 };
 
 /**
- * Resolve which account a new media belongs to, and which project it came from.
+ * Resolve the project a new media belongs to, and its account.
  *
- * A project token identifies both without being asked. A user token identifies a
- * set of accounts, so the caller has to name one — and naming one it is not scoped
- * to is a 401 rather than a 404, which is what keeps the existence of other
- * accounts undisclosed.
+ * Media is project-scoped, so a project is always required. A project token
+ * identifies its own; a user token has to name one as `owner/project`, and naming
+ * one it cannot reach is a 401 rather than a 404 — which keeps the existence of
+ * other projects undisclosed.
+ *
+ * The account comes along because the plan decides the size cap, the retention
+ * and the visibilities allowed.
  */
 async function resolveUploadTarget(args: {
   auth: AnyAuth;
-  accountSlug: string | null;
-}): Promise<{ account: Account; project: Project | null }> {
-  const { auth, accountSlug } = args;
+  projectPath: string | null;
+}): Promise<{ account: Account; project: Project }> {
+  const { auth, projectPath } = args;
 
-  if (auth.type === "project") {
-    const account = await auth.project.$relatedQuery("account");
-    invariant(account, "Project account not found");
-    return { account, project: auth.project };
-  }
+  const project = await (async () => {
+    if (auth.type === "project") {
+      return auth.project;
+    }
+    if (!projectPath) {
+      throw boom(
+        400,
+        "`project` is required when uploading with a personal access token. Pass it as `owner/project`.",
+      );
+    }
+    const [owner, name] = projectPath.split("/");
+    if (!owner || !name) {
+      throw boom(400, "`project` must be in the `owner/project` format.");
+    }
+    const resolved = await getProjectForAuth(Promise.resolve(auth), {
+      owner,
+      project: name,
+    });
+    // Uploading spends the account's quota and publishes a link under the
+    // project's name, so it takes more than read access.
+    const permissions = await resolved.$getPermissions(auth.user);
+    if (!permissions.includes("review") && !permissions.includes("admin")) {
+      throw boom(403, "You do not have permission to upload to this project.");
+    }
+    return resolved;
+  })();
 
-  if (!accountSlug) {
-    throw boom(
-      400,
-      "`accountSlug` is required when uploading with a personal access token.",
-    );
-  }
-
-  return {
-    account: getAccountForAuth(auth, { slug: accountSlug }),
-    project: null,
-  };
+  const account = await project.$relatedQuery("account");
+  invariant(account, "Project account not found");
+  return { account, project };
 }
 
 /**
- * Resolve the pull request to attach a media to, when one was asked for.
- *
- * Needs a project connected to GitHub, which in practice means a project token:
- * that is what CI and agents hold, and it is the only caller that knows which
- * repository it is running against.
+ * Resolve the pull request to attach a media to, when one was asked for. Needs the
+ * project to be connected to a GitHub repository.
  */
 async function resolvePullRequest(args: {
-  project: Project | null;
+  project: Project;
   prNumber: number | null;
   comment: boolean;
 }): Promise<string | null> {
@@ -402,13 +415,6 @@ async function resolvePullRequest(args: {
       throw boom(400, "`prNumber` is required when `comment` is `true`.");
     }
     return null;
-  }
-
-  if (!project) {
-    throw boom(
-      400,
-      "Attaching a media to a pull request requires a project token.",
-    );
   }
 
   if (!project.githubRepositoryId) {
@@ -429,16 +435,20 @@ async function resolvePullRequest(args: {
 /**
  * Load a media the caller is allowed to act on.
  *
- * A project token may only reach the media of its own project; a user token may
- * reach anything in the accounts it is scoped to. Either way an out-of-reach media
- * answers 404, not 403: the ids are sequential, and confirming which ones exist
- * would let a caller count another team's uploads.
+ * A project token may only reach the media of its own project; a user token needs
+ * a token scoped to the owning account *and* access to the project, so
+ * fine-grained project permissions apply. Either way an out-of-reach media answers
+ * 404, not 403: the ids are sequential, and confirming which ones exist would let
+ * a caller count another team's uploads.
+ *
+ * `permission` is what the action requires — `view` to read, `delete` to remove.
  */
 async function loadMediaForAuth(args: {
   authPromise: Promise<AnyAuth>;
   mediaId: string;
+  permission: MediaPermission;
 }): Promise<Media> {
-  const { mediaId } = args;
+  const { mediaId, permission } = args;
 
   if (!isValidPgBigInt(mediaId)) {
     throw boom(400, "Invalid media ID.");
@@ -446,46 +456,30 @@ async function loadMediaForAuth(args: {
 
   const [auth, media] = await Promise.all([
     args.authPromise,
-    Media.query().findById(mediaId),
+    Media.query().findById(mediaId).withGraphFetched("project.account"),
   ]);
 
   if (!media) {
     throw boom(404, "Media not found");
   }
 
-  switch (auth.type) {
-    case "project": {
-      if (media.projectId !== auth.project.id) {
-        throw boom(404, "Media not found");
-      }
-      return media;
-    }
-    case "pat":
-    case "oauth": {
-      if (!auth.scope.some((account) => account.id === media.accountId)) {
-        throw boom(404, "Media not found");
-      }
-      return media;
-    }
-  }
-}
-
-/**
- * The media library lists everything a team ever uploaded, across projects a given
- * member may not have access to, so browsing it is an administrator's privilege.
- * Reading one media through its share link is a different question, answered by
- * the share page.
- */
-async function assertMediaLibraryAccess(args: {
-  account: Account;
-  auth: AnyAuth;
-}): Promise<void> {
-  const { account, auth } = args;
   if (auth.type === "project") {
-    throw boom(401, "Listing a team's media requires a personal access token.");
+    if (media.projectId !== auth.project.id) {
+      throw boom(404, "Media not found");
+    }
+    return media;
   }
-  const permissions = await account.$getPermissions(auth.user);
-  if (getMediaPermissions(permissions).length === 0) {
-    throw boom(403, "You are not an administrator of this team.");
+
+  invariant(media.project?.account, "Media project account not fetched");
+
+  if (!auth.scope.some((account) => account.id === media.project?.accountId)) {
+    throw boom(404, "Media not found");
   }
+
+  const permissions = await media.project.$getPermissions(auth.user);
+  if (!getMediaPermissions(permissions).includes(permission)) {
+    throw boom(404, "Media not found");
+  }
+
+  return media;
 }

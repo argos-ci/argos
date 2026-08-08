@@ -9,8 +9,11 @@ import { factory, setupDatabase } from "@/database/testing";
  * own. That is a deliberate pricing decision, and it only holds if every path
  * that counts screenshots counts media too — the per-account one that gates a
  * single upload, and the batched one that prices an invoice. They are two
- * separate queries, so they are both covered here: a media that shows up in one
- * and not the other is a billing bug nothing else would catch.
+ * separate queries, so both are covered here: a media that shows up in one and
+ * not the other is a billing bug nothing else would catch.
+ *
+ * Media reaches the account through its project, exactly as a screenshot bucket
+ * does, which is what makes a project transfer carry its billing with it.
  */
 describe("media metering", () => {
   beforeEach(async () => {
@@ -59,12 +62,12 @@ describe("media metering", () => {
       });
       // One image (1 unit) and one video (25 units).
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         billedUnits: 1,
         uploadedAt: periodStart.toISOString(),
       });
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
@@ -85,7 +88,7 @@ describe("media metering", () => {
       // The two-step upload creates the row before the bytes land. Billing one
       // would charge for a file that does not exist.
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         billedUnits: 0,
         uploadedAt: null,
       });
@@ -100,7 +103,7 @@ describe("media metering", () => {
 
     it("ignores media uploaded before the period started", async () => {
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         billedUnits: 25,
         uploadedAt: beforePeriod.toISOString(),
       });
@@ -113,10 +116,15 @@ describe("media metering", () => {
       expect(count.all).toBe(0);
     });
 
-    it("ignores another account's media", async () => {
+    it("ignores media in another account's project", async () => {
+      // The meter joins through the project, so this is what proves the join
+      // actually constrains the account.
       const otherAccount = await factory.TeamAccount.create();
-      await factory.Media.create({
+      const otherProject = await factory.Project.create({
         accountId: otherAccount.id,
+      });
+      await factory.Media.create({
+        projectId: otherProject.id,
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
       });
@@ -129,18 +137,18 @@ describe("media metering", () => {
       expect(count.all).toBe(0);
     });
 
-    it("counts only a project's own media when scoped to a project", async () => {
-      // Media belongs to the account, so a project-scoped breakdown can only
-      // honestly report what was uploaded with that project's token.
+    it("counts only one project's media when scoped to a project", async () => {
       await factory.Media.create({
-        accountId: account.id,
         projectId: project.id,
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
       });
-      await factory.Media.create({
+      const secondProject = await factory.Project.create({
         accountId: account.id,
-        projectId: null,
+        name: "second-project",
+      });
+      await factory.Media.create({
+        projectId: secondProject.id,
         billedUnits: 1,
         uploadedAt: periodStart.toISOString(),
       });
@@ -170,43 +178,71 @@ describe("media metering", () => {
       });
       // A video on top of a full quota: 25 units of overage.
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
       });
 
       const usages = await getAccountPeriodUsages([account]);
-      const usage = usages.get(account.id);
 
-      expect(usage?.additionalScreenshotCost).toBeCloseTo(25 * 0.004, 5);
+      expect(usages.get(account.id)?.additionalScreenshotCost).toBeCloseTo(
+        25 * 0.004,
+        5,
+      );
     });
 
     it("does not multiply media by the number of projects", async () => {
-      // Media hangs off the account, not off a project, so it cannot ride the
-      // project join the bucket totals use — it is aggregated separately for
-      // exactly this reason.
+      // Media and buckets are two independent one-to-many tables hanging off a
+      // project, so joining both in a single pass would multiply their rows
+      // against each other. They are aggregated separately for exactly this
+      // reason, and this is the test that catches it if that ever changes.
       await createSubscription();
       await factory.Project.create({ accountId: account.id, name: "second" });
       await factory.Project.create({ accountId: account.id, name: "third" });
       await factory.Media.create({
-        accountId: account.id,
+        projectId: project.id,
         mimeType: "video/mp4",
         billedUnits: 25,
         uploadedAt: periodStart.toISOString(),
       });
 
       const usages = await getAccountPeriodUsages([account]);
-      const usage = usages.get(account.id);
 
       // 25 units, under the 100 included: no overage, and crucially not 75.
-      expect(usage?.additionalScreenshotCost).toBe(0);
+      expect(usages.get(account.id)?.additionalScreenshotCost).toBe(0);
 
       const count = await account.$getScreenshotCountBetween(
         periodStart,
         "now",
       );
       expect(count.all).toBe(25);
+    });
+
+    it("does not multiply buckets by the number of media either", async () => {
+      // The mirror of the case above: several media on one project must not
+      // inflate that project's bucket count.
+      await createSubscription();
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        screenshotCount: 10,
+        createdAt: periodStart.toISOString(),
+      });
+      for (const _ of [1, 2, 3]) {
+        await factory.Media.create({
+          projectId: project.id,
+          billedUnits: 1,
+          uploadedAt: periodStart.toISOString(),
+        });
+      }
+
+      const count = await account.$getScreenshotCountBetween(
+        periodStart,
+        "now",
+      );
+
+      // 10 screenshots + 3 images, not 30 + 3.
+      expect(count.all).toBe(13);
     });
   });
 });
