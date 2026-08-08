@@ -75,7 +75,8 @@ function FlowCard(props: {
 
 function PageContent(props: { params: ProjectParams }) {
   const { params } = props;
-  const { project, build, flows, ungroupedCount } = useProjectFlows(params);
+  const { project, build, flows, ungroupedCount, singleStepCount, truncated } =
+    useProjectFlows(params);
   const { orders } = useStoredOrders(params);
   const { names } = useStoredNames(params);
 
@@ -83,7 +84,10 @@ function PageContent(props: { params: ProjectParams }) {
     return <NotFound />;
   }
 
-  if (!build || (flows.length === 0 && ungroupedCount === 0)) {
+  if (
+    !build ||
+    (flows.length === 0 && ungroupedCount === 0 && singleStepCount === 0)
+  ) {
     return (
       <PageContainer>
         <EmptyState>
@@ -96,6 +100,25 @@ function PageContent(props: { params: ProjectParams }) {
             checkout, signup, onboarding. Flows appear automatically from your
             test structure as soon as a build has screenshots: nothing to
             configure.
+          </Text>
+        </EmptyState>
+      </PageContainer>
+    );
+  }
+
+  if (flows.length === 0 && singleStepCount > 0) {
+    return (
+      <PageContainer>
+        <EmptyState>
+          <EmptyStateIcon>
+            <WaypointsIcon />
+          </EmptyStateIcon>
+          <Heading>No journeys in this build</Heading>
+          <Text slot="description">
+            Build #{build.number} has {singleStepCount} test
+            {singleStepCount > 1 ? "s" : ""} capturing a single screen — that's
+            regular visual testing. A flow appears as soon as a test takes
+            several screenshots along a journey: checkout, signup, onboarding.
           </Text>
         </EmptyState>
       </PageContainer>
@@ -140,6 +163,11 @@ function PageContent(props: { params: ProjectParams }) {
           <Time date={build.createdAt} />
         </Chip>
       </PageHeader>
+      {truncated ? (
+        <div className="text-low mb-4 text-xs">
+          Flows are computed from the first 1000 screenshots of the build.
+        </div>
+      ) : null}
       <div className="mb-8 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4">
         {flows.map((flow) => (
           <FlowCard
