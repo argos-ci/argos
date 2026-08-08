@@ -40,6 +40,9 @@ type ScreenshotTotals = {
   allTimeStorybook: number;
 };
 
+/** A bucket's Storybook count, never above the bucket's own total. */
+const CLAMPED_STORYBOOK_COUNT = `least(coalesce(sb."storybookScreenshotCount", 0), coalesce(sb."screenshotCount", 0))`;
+
 /**
  * Sum screenshots per account in a single pass.
  *
@@ -74,12 +77,17 @@ async function getScreenshotTotals(
       knex.raw(
         `coalesce(sum(sb."screenshotCount") filter (where sb."createdAt" >= v."periodStart"), 0) as "periodAll"`,
       ),
+      // A bucket's Storybook count is clamped to its total before being summed.
+      // The two used to be counted by two separate queries, so buckets written
+      // back then can hold more Storybook screenshots than screenshots, which
+      // would make the neutral count negative. Mirrors
+      // `Account.$getScreenshotCountBetween`.
       knex.raw(
-        `coalesce(sum(sb."storybookScreenshotCount") filter (where sb."createdAt" >= v."periodStart"), 0) as "periodStorybook"`,
+        `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}) filter (where sb."createdAt" >= v."periodStart"), 0) as "periodStorybook"`,
       ),
       knex.raw(`coalesce(sum(sb."screenshotCount"), 0) as "allTimeAll"`),
       knex.raw(
-        `coalesce(sum(sb."storybookScreenshotCount"), 0) as "allTimeStorybook"`,
+        `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}), 0) as "allTimeStorybook"`,
       ),
     )
     .from(

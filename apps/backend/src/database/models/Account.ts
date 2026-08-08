@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { slugJsonSchema } from "@argos/util/slug";
 import { memoize } from "lodash-es";
-import type { Pojo, RelationMappings } from "objection";
+import { raw, type Pojo, type RelationMappings } from "objection";
 
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
 import { Model } from "../util/model";
@@ -718,7 +718,16 @@ export class Account extends Model {
   }> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as all")
-      .sum("screenshot_buckets.storybookScreenshotCount as storybook")
+      // A bucket's Storybook count is clamped to its total before being summed.
+      // The two used to be counted by two separate queries, so buckets written
+      // back then can hold more Storybook screenshots than screenshots, which
+      // would make `neutral` negative.
+      .select(
+        raw(`sum(least(coalesce(??, 0), coalesce(??, 0))) as "storybook"`, [
+          "screenshot_buckets.storybookScreenshotCount",
+          "screenshot_buckets.screenshotCount",
+        ]),
+      )
       .leftJoinRelated("project")
       .where("screenshot_buckets.createdAt", ">=", from.toISOString())
       .where("project.accountId", this.id)
@@ -732,12 +741,11 @@ export class Account extends Model {
       query.where("project.id", options.projectId);
     }
 
-    const result = (await query) as unknown as {
-      all: string | null;
-      storybook: string | null;
-    };
-    const all = result.all ? Number(result.all) : 0;
-    const storybook = result.storybook ? Number(result.storybook) : 0;
+    const result = await query.castTo<
+      { all: string | null; storybook: string | null } | undefined
+    >();
+    const all = result?.all ? Number(result.all) : 0;
+    const storybook = result?.storybook ? Number(result.storybook) : 0;
     const neutral = all - storybook;
     return { all, neutral, storybook };
   }
