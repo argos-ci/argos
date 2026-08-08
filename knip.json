@@ -18,7 +18,9 @@
       "entry": ["scripts/app.ts", "lambda/*.ts"],
       "ignore": ["cloudfront-functions/**/*"]
     },
-    "apps/frontend": {}
+    "apps/frontend": {
+      "ignoreDependencies": ["hast"]
+    }
   },
   "ignore": [
     "tests/truncate.setup.ts",

@@ -482,6 +482,9 @@ importers:
       '@sentry/vite-plugin':
         specifier: ^5.4.0
         version: 5.4.0(supports-color@10.2.2)
+      '@shikijs/langs':
+        specifier: ^4.4.1
+        version: 4.4.1
       '@simplewebauthn/browser':
         specifier: ^13.3.0
         version: 13.3.0
@@ -530,6 +533,9 @@ importers:
       '@types/d3-zoom':
         specifier: ^3.0.8
         version: 3.0.8
+      '@types/hast':
+        specifier: ^3.0.5
+        version: 3.0.5
       '@types/js-cookie':
         specifier: ^3.0.6
         version: 3.0.6
@@ -647,6 +653,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      shiki:
+        specifier: ^4.4.1
+        version: 4.4.1
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
