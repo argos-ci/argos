@@ -67,6 +67,7 @@ function Root() {
   return (
     <RouterProvider
       navigate={navigateWithExternalLinks}
+      // oxlint-disable-next-line react/react-compiler -- RouterProvider's API takes the hook itself and calls it internally.
       useHref={useAbsoluteHref}
     >
       <Outlet />

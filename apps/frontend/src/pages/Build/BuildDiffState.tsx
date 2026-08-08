@@ -418,7 +418,7 @@ export function useGoToBuildOverview() {
 function useExpandedState(initial: string[]) {
   const [expanded, setExpanded] = useState<string[]>(initial);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // oxlint-disable-next-line react/react-compiler
     setExpanded(initial);
   }, [initial]);
   const toggleGroup = useCallback((name: string, value?: boolean) => {
@@ -772,7 +772,7 @@ export function BuildDiffProvider(props: {
   useLayoutEffect(() => {
     if (initialDiffGroup?.name) {
       toggleGroup(initialDiffGroup.name, true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // oxlint-disable-next-line react/react-compiler
       setReady(true);
     } else if (complete) {
       setReady(true);

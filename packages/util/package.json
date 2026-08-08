@@ -7,8 +7,7 @@
     "build": "tsdown",
     "watch-build": "tsdown --watch --silent",
     "check-types": "tsc --noEmit",
-    "check-format": "oxfmt --check .",
-    "lint": "eslint . --max-warnings 0"
+    "check-format": "oxfmt --check ."
   },
   "sideEffects": false,
   "exports": {
@@ -20,10 +19,8 @@
     }
   },
   "devDependencies": {
-    "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@types/node": "^26.1.2",
-    "eslint": "catalog:",
     "tsdown": "^0.22.14"
   },
   "dependencies": {

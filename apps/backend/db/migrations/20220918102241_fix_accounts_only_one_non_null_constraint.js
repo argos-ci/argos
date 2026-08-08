@@ -2,7 +2,7 @@
  * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
-  await await knex.raw(
+  await knex.raw(
     "ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_non_null",
   );
   await knex.raw(
@@ -14,7 +14,7 @@ export const up = async (knex) => {
  * @param {import('knex').Knex} knex
  */
 export const down = async (knex) => {
-  await await knex.raw(
+  await knex.raw(
     "ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_owner",
   );
   await knex.raw(

@@ -7,18 +7,36 @@ seeding, dev server) is documented in [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Before finishing any change
 
 **Run `pnpm run static-checks`.** It is the same turbo task CI runs
-(`check-types`, `check-format`, `lint`, `lint:root`, `knip`), so it is the only
-thing that tells you CI will pass. Fix everything it reports, including unused
-code found by knip.
+(`check-types`, `check-format`, `lint`, `knip`), so it is the only thing that
+tells you CI will pass. Fix everything it reports, including unused code found
+by knip.
 
 While iterating, use the fast local checks on what you touched:
-`oxfmt <target>`, `tsc --noEmit`, `eslint <target>`.
+`oxfmt <target>`, `tsc --noEmit`, `oxlint <target>`.
 
 Formatting is [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured
 once in `.oxfmtrc.json` at the repository root. It resolves that config — and the
 root `.gitignore` — from any working directory, so `oxfmt --check .` behaves the
 same from the root or from a workspace. It also owns import sorting and Tailwind
 class sorting, which used to be Prettier plugins.
+
+Linting is [oxlint](https://oxc.rs/docs/guide/usage/linter.html), configured once
+in `.oxlintrc.json` at the repository root — there is no per-workspace config and
+no per-workspace `lint` script. It lints the whole monorepo in well under a
+second, so `pnpm run lint` at the root is the only command you need. The rule set
+is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
+`react` and `vitest` plugins, plus the deviations listed in `rules` /
+`overrides`. Two project-specific guards live there:
+
+- `no-restricted-imports` keeps `sonner` out of the frontend (import from
+  `@/ui/Toaster` instead).
+- `argos/no-module-relative-paths` — a local plugin in
+  `tools/oxlint-plugin-argos.js`, wired up through `jsPlugins` — rejects
+  `import.meta.dirname` / `__dirname` in the bundled backend. Oxlint has no
+  `no-restricted-syntax` equivalent, so the rule is hand-written.
+
+Suppress with `// oxlint-disable-next-line <rule>`. Oxlint still honours
+`eslint-disable` comments, but do not write new ones.
 
 ## TypeScript
 

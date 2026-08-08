@@ -14,7 +14,8 @@
       ],
       "inputs": ["apps/frontend/src/**", "apps/backend/src/**", "codegen.ts"]
     },
-    "//#lint:root": {
+    "//#lint": {
+      "dependsOn": ["//#codegen"],
       "outputs": []
     },
     "//#knip": {
@@ -34,18 +35,8 @@
       "dependsOn": [],
       "outputs": []
     },
-    "lint": {
-      "dependsOn": ["//#codegen", "^lint"],
-      "outputs": []
-    },
     "static-checks": {
-      "dependsOn": [
-        "check-types",
-        "check-format",
-        "lint",
-        "//#lint:root",
-        "//#knip"
-      ]
+      "dependsOn": ["check-types", "check-format", "//#lint", "//#knip"]
     },
     "watch-build": {
       "dependsOn": ["build"],

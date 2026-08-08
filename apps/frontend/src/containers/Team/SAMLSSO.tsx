@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/refs */
+/* oxlint-disable react/react-compiler */
 import { useId } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";

@@ -205,7 +205,7 @@ export function useCreateFilterState(diffs: Diff[]): FilterState {
       filterGroups,
       filters,
     }),
-    [active, setActive, filterByKey, filterGroups, getFilterByKey, filters],
+    [active, setActive, filterGroups, getFilterByKey, filters],
   );
 }
 

@@ -239,7 +239,7 @@ function isSafeReturnTo(value: string): boolean {
   return (
     value.startsWith("/") &&
     !value.startsWith("//") &&
-    // eslint-disable-next-line no-control-regex
+    // oxlint-disable-next-line no-control-regex
     !/[\x00-\x1F\x7F]/.test(value)
   );
 }

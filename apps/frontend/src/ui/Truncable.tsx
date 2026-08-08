@@ -24,6 +24,9 @@ export function Truncable({
 
   useEffect(() => {
     invariant(ref.current);
+    // The overflow can only be measured from the mounted DOM node, so it
+    // cannot be derived during render.
+    // oxlint-disable-next-line react/react-compiler
     setIsEnabled(ref.current.scrollWidth > ref.current.clientWidth);
   }, [ref]);
 

@@ -187,14 +187,14 @@ export default function Editor(props: EditorProps) {
       LinkEditTrigger,
       // The getters are invoked lazily by the suggestion plugin and node views,
       // never during this render, so reading the refs here is safe.
-      /* eslint-disable react-hooks/refs */
+      /* oxlint-disable react/react-compiler */
       createMentionExtension({
         getSuggestions: () => mentionsRef.current ?? [],
         resolveUser: (id) =>
           mentionedUsersRef.current?.find((user) => user.id === id) ??
           mentionsRef.current?.find((user) => user.id === id),
       }),
-      /* eslint-enable react-hooks/refs */
+      /* oxlint-enable react/react-compiler */
       SlashCommand,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
