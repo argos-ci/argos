@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getStartDateFromPeriod } from "@/metrics/test";
-import { getPublicFileUrl, getTwicPicsUrl } from "@/storage";
+import { getImageKitUrl, getPublicFileUrl } from "@/storage";
 
 import {
   IResolvers,
@@ -139,7 +139,7 @@ export const resolvers: IResolvers = {
         if (!screenshotDiff.s3Id) {
           return null;
         }
-        return getTwicPicsUrl(screenshotDiff.s3Id);
+        return getImageKitUrl(screenshotDiff.s3Id);
       }
       const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");

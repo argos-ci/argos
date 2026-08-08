@@ -41,7 +41,7 @@ function getPixelsInFile(file: FileModel) {
   return null;
 }
 
-export function getTwicPicsUrl(key: string) {
+export function getImageKitUrl(key: string) {
   return new URL(key, config.get("s3.publicImageBaseUrl")).href;
 }
 
@@ -49,7 +49,7 @@ export async function getPublicImageFileUrl(file: FileModel) {
   if (config.get("s3.publicImageBaseUrl")) {
     const pixels = getPixelsInFile(file);
     if (pixels !== null && pixels < IMAGEKIT_PIXELS_LIMIT) {
-      return getTwicPicsUrl(file.key);
+      return getImageKitUrl(file.key);
     }
   }
 

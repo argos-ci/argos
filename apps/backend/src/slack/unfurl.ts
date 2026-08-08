@@ -7,7 +7,7 @@ import { getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
 import { Build, ScreenshotDiff, Test } from "@/database/models";
 import { getTestAllMetrics } from "@/metrics/test";
-import { getPublicFileUrl, getTwicPicsUrl } from "@/storage";
+import { getImageKitUrl, getPublicFileUrl } from "@/storage";
 import { safeParseTestId } from "@/util/test-id";
 
 type BuildMatchParams = {
@@ -61,7 +61,7 @@ export async function unfurlBuild(
       return null;
     }
     if (!screenshot.file) {
-      return getTwicPicsUrl(screenshot.s3Id);
+      return getImageKitUrl(screenshot.s3Id);
     }
     return getPublicFileUrl(screenshot.file);
   })();
@@ -139,7 +139,7 @@ export async function unfurlTest(
       return null;
     }
     if (!screenshot.file) {
-      return getTwicPicsUrl(screenshot.s3Id);
+      return getImageKitUrl(screenshot.s3Id);
     }
     return getPublicFileUrl(screenshot.file);
   })();
