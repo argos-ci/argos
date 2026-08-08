@@ -6,13 +6,14 @@ import { BreadcrumbSeparator } from "@/ui/Breadcrumb";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountBreadcrumbItem } from "./Breadcrumb/AccountBreadcrumb";
+import { FlowBreadcrumbItem } from "./Breadcrumb/FlowBreadcrumb";
 import { ProjectBreadcrumbItem } from "./Breadcrumb/ProjectBreadcrumb";
 import { TestBreadcrumbItem } from "./Breadcrumb/TestBreadcrumb";
 import { HomeLink } from "./HomeLink";
 import { NavUserControl } from "./NavUserControl";
 
 export function Navbar() {
-  const { accountSlug, projectName, testId } = useParams();
+  const { accountSlug, projectName, testId, flowId } = useParams();
   return (
     <nav className="container mx-auto flex items-center justify-between p-4">
       <div className="flex shrink-0 items-center">
@@ -39,6 +40,16 @@ export function Navbar() {
                         accountSlug={accountSlug}
                         projectName={projectName}
                         testId={testId}
+                      />
+                    </>
+                  )}
+                  {flowId && (
+                    <>
+                      <BreadcrumbSeparator />
+                      <FlowBreadcrumbItem
+                        accountSlug={accountSlug}
+                        projectName={projectName}
+                        flowId={flowId}
                       />
                     </>
                   )}
