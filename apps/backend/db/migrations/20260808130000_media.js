@@ -4,9 +4,12 @@
  * screenshot, uploads it, and embeds the resulting share URL in the pull request
  * it just opened.
  *
- * Scoped to the **account**, not to a project: the primary caller holds a
- * project token, but the media it uploads belongs to the team and is listed and
- * billed there. `projectId` keeps the project it came from as context, and
+ * Scoped to a **project**, exactly like a build. Everything else about Argos
+ * hangs off a project — permissions, transfer, deletion, billing through the
+ * account — so media gets all of it for free instead of needing an account-level
+ * parallel for each. In particular `transferProject` moves a project's media and
+ * its billing with it, which a denormalized `accountId` would have got wrong.
+ *
  * `buildId` / `screenshotDiffId` are the seams for the later "link this media to
  * a diff" feature — nullable and unused for now, per the brief's non-goals.
  *
@@ -23,14 +26,8 @@ export const up = async (knex) => {
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
 
-    table.bigInteger("accountId").notNullable();
-    table.foreign("accountId").references("accounts.id").onDelete("cascade");
-
-    // Context, never identity. A project token stamps the project it belongs to
-    // so the media can be shown next to it, but deleting the project must not
-    // take the team's media with it.
-    table.bigInteger("projectId");
-    table.foreign("projectId").references("projects.id").onDelete("set null");
+    table.bigInteger("projectId").notNullable();
+    table.foreign("projectId").references("projects.id").onDelete("cascade");
 
     // The pull request this media was uploaded for, when the caller asked for a
     // managed comment. It is what the comment is keyed on: the comment lists
@@ -63,13 +60,13 @@ export const up = async (knex) => {
     // Original file name, for display and for the Markdown alt text.
     table.string("name").notNullable();
 
-    // Caller-provided stable identifier, unique per account. Re-uploading the
+    // Caller-provided stable identifier, unique per project. Re-uploading the
     // same slug replaces the bytes in place and keeps the id and the share
     // token, so a Markdown embed already posted to a pull request never goes
     // stale. Null means "a new media every time".
     table.string("slug");
 
-    // Content-addressed CDN key: `media/<accountId>/<sha256>.<ext>`. Never
+    // Content-addressed CDN key: `media/<projectId>/<sha256>.<ext>`. Never
     // rewritten, so the same bytes always resolve to the same URL and the CDN
     // can cache it forever. Doubles as the "have I seen this file?" check.
     table.string("key").notNullable();
@@ -103,29 +100,30 @@ export const up = async (knex) => {
 
     table.unique(["shareToken"]);
 
-    // The team media list: newest first, for one account.
-    table.index(["accountId", "createdAt"]);
+    // The media list: newest first, for one project.
+    table.index(["projectId", "createdAt"]);
 
     // Rebuilding a pull request's managed comment reads every media on it.
     table.index(["githubPullRequestId"]);
 
-    // The retention purge scans due rows across all accounts.
+    // The retention purge scans due rows across all projects.
     table.index(["expiresAt"]);
   });
 
-  // A slug is unique per account only when it is set — a partial index, which
+  // A slug is unique per project only when it is set — a partial index, which
   // Knex's `unique()` cannot express.
   await knex.raw(`
-    CREATE UNIQUE INDEX media_account_slug_unique
-    ON media ("accountId", "slug")
+    CREATE UNIQUE INDEX media_project_slug_unique
+    ON media ("projectId", "slug")
     WHERE "slug" IS NOT NULL
   `);
 
-  // The media meter reads uploaded rows per account over a period. Partial, so
-  // rows whose upload never completed stay out of the index and out of billing.
+  // The media meter sums units per project over a period, joined to the account
+  // through the project. Partial, so rows whose upload never completed stay out
+  // of the index and out of billing.
   await knex.raw(`
-    CREATE INDEX media_account_uploaded_at_idx
-    ON media ("accountId", "uploadedAt")
+    CREATE INDEX media_project_uploaded_at_idx
+    ON media ("projectId", "uploadedAt")
     WHERE "uploadedAt" IS NOT NULL
   `);
 

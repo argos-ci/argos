@@ -28,6 +28,7 @@ import {
   serializeComment,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -55,6 +56,12 @@ const CreateCommentBodySchema = z.object({
 const CreateTestCommentBodySchema = z.object({
   body: CommentBodyInputSchema,
   threadId: ThreadIdSchema,
+});
+
+const CreateMediaCommentBodySchema = z.object({
+  body: CommentBodyInputSchema,
+  threadId: ThreadIdSchema,
+  anchor: CommentAnchorSchema.optional(),
 });
 
 const responses = {
@@ -204,10 +211,65 @@ async function resolveBuildCommentOptions(input: {
   return { screenshotDiffId, anchor, buildReviewId, pending };
 }
 
+export const createMediaCommentOperation = {
+  operationId: "createMediaComment",
+  summary: "Post a comment (or reply) on a media",
+  description:
+    "Post a comment on an uploaded media. Start a new thread, or reply to an existing one with `threadId`. Pass an `anchor` to pin the comment to a point on the image — normalized coordinates, so it survives any scaling — which is how a reviewer marks up a screenshot.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
+    }),
+  },
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: CreateMediaCommentBodySchema,
+      },
+    },
+  },
+  responses,
+} satisfies ZodOpenApiOperationObject;
+
 /**
- * Shared by the build- and test-scoped create endpoints. Reviews and snapshot
- * anchors only exist on a build, and the test endpoint's request body doesn't
- * accept them, so a test comment is created with none of them.
+ * Resolve the anchor of a media comment.
+ *
+ * A media anchor needs no diff to resolve against — the media *is* the subject —
+ * which is why the database constraint accepts an anchor whose target is a media.
+ * A reply inherits its thread's anchor, so it may not carry its own.
+ */
+function resolveMediaCommentOptions(input: {
+  thread: Comment | null;
+  body: z.infer<typeof CreateMediaCommentBodySchema>;
+}): { anchor: CommentAnchor | null } {
+  const { thread, body: requestBody } = input;
+
+  if (thread && requestBody.anchor) {
+    throw boom(400, "A reply cannot carry its own anchor");
+  }
+
+  if (!requestBody.anchor) {
+    return { anchor: null };
+  }
+
+  const anchor = parseCommentAnchor(requestBody.anchor);
+
+  // A line range describes a textual snapshot. An uploaded image or video has
+  // no lines, so only a point makes sense here.
+  if (anchor.type !== "point") {
+    throw boom(400, "A media comment can only be anchored to a point");
+  }
+
+  return { anchor };
+}
+
+/**
+ * Shared by the build-, test- and media-scoped create endpoints. Reviews and
+ * snapshot anchors only exist on a build, and the other endpoints' request bodies
+ * don't accept them, so their comments are created without.
  */
 async function createTargetComment(input: {
   authPromise: Promise<CommentAuth>;
@@ -234,22 +296,28 @@ async function createTargetComment(input: {
       })
     : null;
 
-  const buildOptions =
-    target.type === "build"
-      ? await resolveBuildCommentOptions({
+  const targetOptions = await (async () => {
+    switch (target.type) {
+      case "build":
+        return resolveBuildCommentOptions({
           build: target.build,
           userId: auth.user.id,
           thread,
           body: requestBody,
-        })
-      : null;
+        });
+      case "media":
+        return resolveMediaCommentOptions({ thread, body: requestBody });
+      case "test":
+        return null;
+    }
+  })();
 
   const comment = await createCommentService({
     target,
     userId: auth.user.id,
     body: await resolveCommentBody(requestBody.body),
     threadId: thread?.id ?? null,
-    ...buildOptions,
+    ...targetOptions,
   });
 
   return serializeComment(comment);
@@ -281,4 +349,14 @@ export const createComment: CreateAPIHandler = ({ post }) => {
       );
     },
   );
+
+  post("/media/{mediaId}/comments", async (req, res) => {
+    res.status(201).send(
+      await createTargetComment({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        body: req.ctx.body,
+      }),
+    );
+  });
 };

@@ -10,7 +10,7 @@ const CDN = config.get("s3.publicImageBaseUrl");
 
 function media(attributes: { key: string; mimeType: string }): Media {
   return Media.fromJson({
-    accountId: "1",
+    projectId: "1",
     name: "file",
     visibility: "team",
     shareToken: "token",

@@ -7,6 +7,7 @@ import { Build } from "./Build";
 import { BuildReview } from "./BuildReview";
 import { CommentMention } from "./CommentMention";
 import { CommentReaction } from "./CommentReaction";
+import { Media } from "./Media";
 import { ScreenshotDiff } from "./ScreenshotDiff";
 import { Test } from "./Test";
 import { User } from "./User";
@@ -77,6 +78,7 @@ export class Comment extends Model {
           userId: { type: "string" },
           buildId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
+          mediaId: { type: ["string", "null"] },
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
@@ -101,17 +103,24 @@ export class Comment extends Model {
 
   userId!: string;
   /**
-   * The build this comment is posted on. Exactly one of `buildId` / `testId` is
-   * set — see the `comments_target_xor` constraint.
+   * The build this comment is posted on. Exactly one of `buildId` / `testId` /
+   * `mediaId` is set — see the `comments_target_xor` constraint.
    */
   buildId!: string | null;
   /** The test this comment is posted on, when it isn't posted on a build. */
   testId!: string | null;
+  /** The uploaded media this comment is posted on. */
+  mediaId!: string | null;
   buildReviewId!: string | null;
   threadId!: string | null;
   /** The screenshot diff this comment is anchored to, if any. */
   screenshotDiffId!: string | null;
-  /** Where on {@link screenshotDiffId} the comment points; null = whole diff. */
+  /**
+   * Where on the anchored subject the comment points — a screenshot diff inside
+   * a build, or an uploaded media. Null means the comment is about the whole
+   * thing. This is what lets a reviewer pin feedback to a spot on an image
+   * without any annotation tooling.
+   */
   anchor!: CommentAnchor | null;
   editedAt!: string | null;
   deletedAt!: string | null;
@@ -146,6 +155,14 @@ export class Comment extends Model {
         join: {
           from: "comments.testId",
           to: "tests.id",
+        },
+      },
+      media: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Media,
+        join: {
+          from: "comments.mediaId",
+          to: "media.id",
         },
       },
       buildReview: {
@@ -202,6 +219,7 @@ export class Comment extends Model {
   user?: User;
   build?: Build | null;
   test?: Test | null;
+  media?: Media | null;
   buildReview?: BuildReview | null;
   thread?: Comment | null;
   replies?: Comment[];

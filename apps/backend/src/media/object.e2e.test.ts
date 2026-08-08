@@ -11,8 +11,8 @@ vi.mock("@/storage/s3", () => ({
 const { deleteUnreferencedMediaObjects } = await import("./object");
 
 /**
- * Media keys are content-addressed and namespaced per account, so the same
- * account uploading the same file twice produces two rows pointing at one object.
+ * Media keys are content-addressed and namespaced per project, so the same
+ * project receiving the same file twice produces two rows pointing at one object.
  * Every path that removes bytes — delete, a rejected upload, retention purge —
  * has to keep an object another row still serves. Nothing else would notice if it
  * didn't: the surviving row looks fine, its bytes are simply gone.
@@ -44,13 +44,13 @@ describe("deleteUnreferencedMediaObjects", () => {
   });
 
   it("keeps a key another media still serves", async () => {
-    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create();
     const going = await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       key: "media/1/shared.png",
     });
     await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       key: "media/1/shared.png",
     });
 
@@ -63,17 +63,17 @@ describe("deleteUnreferencedMediaObjects", () => {
   });
 
   it("deletes the unreferenced keys of a mixed batch and keeps the rest", async () => {
-    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create();
     const a = await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       key: "media/1/free.png",
     });
     const b = await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       key: "media/1/held.png",
     });
     await factory.Media.create({
-      accountId: account.id,
+      projectId: project.id,
       key: "media/1/held.png",
     });
 

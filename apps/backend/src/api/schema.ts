@@ -29,6 +29,7 @@ import {
 import { createBuildOperation } from "./handlers/createBuild";
 import {
   createBuildCommentOperation,
+  createMediaCommentOperation,
   createTestCommentOperation,
 } from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
@@ -69,6 +70,7 @@ import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import {
   listBuildCommentsOperation,
+  listMediaCommentsOperation,
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
@@ -272,9 +274,6 @@ export const zodSchema = {
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
     },
-    "/accounts/{accountSlug}/media": {
-      get: listMediaOperation,
-    },
     "/media": {
       post: createMediaOperation,
     },
@@ -284,6 +283,10 @@ export const zodSchema = {
     },
     "/media/{mediaId}/finalize": {
       post: finalizeMediaOperation,
+    },
+    "/media/{mediaId}/comments": {
+      get: listMediaCommentsOperation,
+      post: createMediaCommentOperation,
     },
     "/builds": {
       post: createBuildOperation,
@@ -351,6 +354,9 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}/transfer": {
       post: transferProjectOperation,
+    },
+    "/projects/{owner}/{project}/media": {
+      get: listMediaOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,

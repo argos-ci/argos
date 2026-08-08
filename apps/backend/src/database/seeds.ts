@@ -1682,18 +1682,14 @@ export async function seed() {
  * the share page load real images from the test bucket. Fixed timestamps keep the
  * visual baselines stable.
  */
-export async function createMediaScenario(input: {
-  accountId: string;
-  projectId: string;
-}) {
-  const { accountId, projectId } = input;
+export async function createMediaScenario(input: { projectId: string }) {
+  const { projectId } = input;
   const imageTs = "2026-04-20T10:00:00.000Z";
   const videoTs = "2026-04-20T09:00:00.000Z";
   const secondImageTs = "2026-04-20T08:00:00.000Z";
 
   const [image, video, secondImage] = await Media.query().insertAndFetch([
     {
-      accountId,
       projectId,
       name: "checkout-after.png",
       slug: "pr-1234-after",
@@ -1703,7 +1699,7 @@ export async function createMediaScenario(input: {
       width: 1024,
       height: 768,
       visibility: "team" as const,
-      shareToken: `seed-media-image-${accountId}`,
+      shareToken: `seed-media-image-${projectId}`,
       // Far enough out that the "expiring soon" colour never fires in a baseline.
       expiresAt: "2027-04-20T10:00:00.000Z",
       uploadedAt: imageTs,
@@ -1712,7 +1708,6 @@ export async function createMediaScenario(input: {
       updatedAt: imageTs,
     },
     {
-      accountId,
       projectId,
       name: "checkout-flow.mp4",
       slug: null,
@@ -1720,7 +1715,7 @@ export async function createMediaScenario(input: {
       mimeType: "video/mp4",
       sizeBytes: "8388608",
       visibility: "public" as const,
-      shareToken: `seed-media-video-${accountId}`,
+      shareToken: `seed-media-video-${projectId}`,
       expiresAt: "2027-04-20T09:00:00.000Z",
       uploadedAt: videoTs,
       billedUnits: 25,
@@ -1728,8 +1723,7 @@ export async function createMediaScenario(input: {
       updatedAt: videoTs,
     },
     {
-      accountId,
-      projectId: null,
+      projectId,
       name: "sidebar.png",
       slug: null,
       key: "dummy-720x1024.png",
@@ -1738,7 +1732,7 @@ export async function createMediaScenario(input: {
       width: 720,
       height: 1024,
       visibility: "team" as const,
-      shareToken: `seed-media-second-${accountId}`,
+      shareToken: `seed-media-second-${projectId}`,
       expiresAt: "2027-04-20T08:00:00.000Z",
       uploadedAt: secondImageTs,
       billedUnits: 1,

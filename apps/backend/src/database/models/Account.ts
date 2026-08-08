@@ -766,10 +766,8 @@ export class Account extends Model {
    * them from the content type, so changing the conversion never rewrites what an
    * account was already billed.
    *
-   * Media belongs to the account, not to a project, so a project-scoped query
-   * counts only the media uploaded with that project's token. That is the honest
-   * answer for the per-project breakdown, and the account-level total — the one
-   * that gets invoiced — always includes everything.
+   * Joined to the account through the project, exactly like screenshot buckets —
+   * so transferring a project moves its media's billing with it.
    */
   async $getMediaUnitsBetween(
     from: Date,
@@ -780,7 +778,8 @@ export class Account extends Model {
   ): Promise<number> {
     const query = Media.query()
       .sum("media.billedUnits as units")
-      .where("media.accountId", this.id)
+      .joinRelated("project")
+      .where("project.accountId", this.id)
       .whereNotNull("media.uploadedAt")
       .where("media.uploadedAt", ">=", from.toISOString())
       .first();

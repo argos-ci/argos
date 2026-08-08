@@ -1,31 +1,35 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
-import { Build, Comment, Project, Test } from "@/database/models";
+import { Build, Comment, Media, Project, Test } from "@/database/models";
 
 /**
- * What a comment is posted on. A comment lives either on a build (where it can
- * also belong to a review and point at a screenshot diff) or on a test, never
- * on both — see the `comments_target_xor` database constraint.
+ * What a comment is posted on: a build (where it can also belong to a review and
+ * point at a screenshot diff), a test, or an uploaded media. Exactly one — see
+ * the `comments_target_xor` database constraint.
  *
- * Everything that used to take a `build` now takes a target, so the comment
+ * Everything that used to take a `build` takes a target instead, so the comment
  * primitives (creation, edition, deletion, reactions, thread resolution, live
- * events, notifications) are written once and work for both.
+ * events, notifications) are written once and work for all three.
  */
 export type CommentTarget =
   | { type: "build"; build: Build }
-  | { type: "test"; test: Test };
+  | { type: "test"; test: Test }
+  | { type: "media"; media: Media };
 
 /** The target columns to persist on a comment row. */
 export function getCommentTargetColumns(target: CommentTarget): {
   buildId: string | null;
   testId: string | null;
+  mediaId: string | null;
 } {
   switch (target.type) {
     case "build":
-      return { buildId: target.build.id, testId: null };
+      return { buildId: target.build.id, testId: null, mediaId: null };
     case "test":
-      return { buildId: null, testId: target.test.id };
+      return { buildId: null, testId: target.test.id, mediaId: null };
+    case "media":
+      return { buildId: null, testId: null, mediaId: target.media.id };
     default:
       assertNever(target);
   }
@@ -42,7 +46,9 @@ export function isCommentOnTarget(
 ): boolean {
   const columns = getCommentTargetColumns(target);
   return (
-    comment.buildId === columns.buildId && comment.testId === columns.testId
+    comment.buildId === columns.buildId &&
+    comment.testId === columns.testId &&
+    comment.mediaId === columns.mediaId
   );
 }
 
@@ -70,6 +76,14 @@ export async function getCommentTargetProject(
       invariant(test.project?.account, "Test project account not found");
       return test.project;
     }
+    case "media": {
+      const { media } = target;
+      if (!media.project?.account) {
+        await media.$fetchGraph("project.account");
+      }
+      invariant(media.project?.account, "Media project account not found");
+      return media.project;
+    }
     default:
       assertNever(target);
   }
@@ -90,12 +104,19 @@ export async function resolveCommentTarget(
     invariant(build, "Comment build not found");
     return { type: "build", build };
   }
-  invariant(comment.testId, "Comment has no target");
-  const test = await Test.query()
-    .findById(comment.testId)
+  if (comment.testId) {
+    const test = await Test.query()
+      .findById(comment.testId)
+      .withGraphFetched("project.account");
+    invariant(test, "Comment test not found");
+    return { type: "test", test };
+  }
+  invariant(comment.mediaId, "Comment has no target");
+  const media = await Media.query()
+    .findById(comment.mediaId)
     .withGraphFetched("project.account");
-  invariant(test, "Comment test not found");
-  return { type: "test", test };
+  invariant(media, "Comment media not found");
+  return { type: "media", media };
 }
 
 /** URL of the page a target's comments are shown on. */
@@ -107,6 +128,8 @@ export async function getCommentTargetUrl(
       return target.build.getUrl();
     case "test":
       return target.test.getUrl();
+    case "media":
+      return target.media.url;
     default:
       assertNever(target);
   }
@@ -114,13 +137,14 @@ export async function getCommentTargetUrl(
 
 /**
  * Fields describing a target in a comment notification. Builds send their
- * number and name, tests send their name; the email copy picks the one that is
- * set.
+ * number and name, tests and media send their name; the email copy picks the one
+ * that is set.
  */
 export function getCommentTargetNotificationFields(target: CommentTarget): {
   buildNumber?: number;
   buildName?: string | null;
   testName?: string;
+  mediaName?: string;
 } {
   switch (target.type) {
     case "build":
@@ -130,6 +154,8 @@ export function getCommentTargetNotificationFields(target: CommentTarget): {
       };
     case "test":
       return { testName: target.test.name };
+    case "media":
+      return { mediaName: target.media.name };
     default:
       assertNever(target);
   }

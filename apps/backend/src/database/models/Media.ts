@@ -9,7 +9,6 @@ import { getMediaShareUrl } from "@/media/url";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
-import { Account } from "./Account";
 import { Build } from "./Build";
 import { GithubPullRequest } from "./GithubPullRequest";
 import { Project } from "./Project";
@@ -17,8 +16,12 @@ import { ScreenshotDiff } from "./ScreenshotDiff";
 import { User } from "./User";
 
 /**
- * A standalone image or video: uploaded on its own, belonging to an account,
- * reachable at a share URL that can be embedded in a pull request.
+ * A standalone image or video: uploaded on its own, reachable at a share URL
+ * that can be embedded in a pull request.
+ *
+ * Scoped to a project, exactly like a build — so it inherits project
+ * permissions, project transfer and project deletion, and bills through the
+ * project's account.
  *
  * Not a {@link Screenshot}: nothing compares it to a baseline, and it has no
  * bucket and no build. It shares only the storage bucket.
@@ -36,7 +39,7 @@ export class Media extends Model {
       {
         type: "object" as const,
         required: [
-          "accountId",
+          "projectId",
           "name",
           "key",
           "mimeType",
@@ -45,8 +48,7 @@ export class Media extends Model {
           "shareToken",
         ],
         properties: {
-          accountId: { type: "string" },
-          projectId: { type: ["string", "null"] },
+          projectId: { type: "string" },
           githubPullRequestId: { type: ["string", "null"] },
           buildId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
@@ -73,11 +75,6 @@ export class Media extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      account: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: Account,
-        join: { from: "media.accountId", to: "accounts.id" },
-      },
       project: {
         relation: Model.BelongsToOneRelation,
         modelClass: Project,
@@ -111,8 +108,7 @@ export class Media extends Model {
 
   static override virtualAttributes = ["url"];
 
-  accountId!: string;
-  projectId!: string | null;
+  projectId!: string;
   githubPullRequestId!: string | null;
   buildId!: string | null;
   screenshotDiffId!: string | null;
@@ -131,8 +127,7 @@ export class Media extends Model {
   uploadedAt!: string | null;
   billedUnits!: number;
 
-  account?: Account;
-  project?: Project | null;
+  project?: Project;
   githubPullRequest?: GithubPullRequest | null;
   build?: Build | null;
   screenshotDiff?: ScreenshotDiff | null;

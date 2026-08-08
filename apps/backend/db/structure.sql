@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict jDKZlczMfbRrPRIbfQW18KQZ0DfAyWH7r3oi3rRgGyRiTwGDMtGc63O0aflx8QG
+\restrict o2JT2sN5Tn1DGYwod5eiicIQGexx16kCUvip8gRNtc3QG2civajUu2xHqb1FiDg
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -496,8 +496,8 @@ CREATE TABLE public.build_shards (
     "updatedAt" timestamp with time zone NOT NULL,
     "buildId" bigint NOT NULL,
     index integer,
-    metadata jsonb,
-    nonce character varying(255)
+    nonce character varying(255),
+    metadata jsonb
 );
 
 
@@ -699,8 +699,10 @@ CREATE TABLE public.comments (
     "screenshotDiffId" bigint,
     anchor jsonb,
     "testId" bigint,
-    CONSTRAINT comments_anchor_requires_diff CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL))),
-    CONSTRAINT comments_target_xor CHECK ((num_nonnulls("buildId", "testId") = 1)),
+    "mediaId" bigint,
+    CONSTRAINT comments_anchor_requires_target CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL) OR ("mediaId" IS NOT NULL))),
+    CONSTRAINT comments_media_target_scope CHECK ((("mediaId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL)))),
+    CONSTRAINT comments_target_xor CHECK ((num_nonnulls("buildId", "testId", "mediaId") = 1)),
     CONSTRAINT comments_test_target_scope CHECK ((("testId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL))))
 );
 
@@ -1444,8 +1446,7 @@ CREATE TABLE public.media (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "accountId" bigint NOT NULL,
-    "projectId" bigint,
+    "projectId" bigint NOT NULL,
     "githubPullRequestId" bigint,
     "buildId" bigint,
     "screenshotDiffId" bigint,
@@ -1990,12 +1991,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
-    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
+    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     "buildNumber" integer DEFAULT 0 NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
@@ -4460,6 +4461,13 @@ CREATE INDEX comments_buildid_createdat_index ON public.comments USING btree ("b
 
 
 --
+-- Name: comments_mediaid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comments_mediaid_createdat_index ON public.comments USING btree ("mediaId", "createdAt");
+
+
+--
 -- Name: comments_screenshotdiffid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4565,27 +4573,6 @@ CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchroniz
 
 
 --
--- Name: media_account_slug_unique; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX media_account_slug_unique ON public.media USING btree ("accountId", slug) WHERE (slug IS NOT NULL);
-
-
---
--- Name: media_account_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX media_account_uploaded_at_idx ON public.media USING btree ("accountId", "uploadedAt") WHERE ("uploadedAt" IS NOT NULL);
-
-
---
--- Name: media_accountid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX media_accountid_createdat_index ON public.media USING btree ("accountId", "createdAt");
-
-
---
 -- Name: media_expiresat_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4597,6 +4584,27 @@ CREATE INDEX media_expiresat_index ON public.media USING btree ("expiresAt");
 --
 
 CREATE INDEX media_githubpullrequestid_index ON public.media USING btree ("githubPullRequestId");
+
+
+--
+-- Name: media_project_slug_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX media_project_slug_unique ON public.media USING btree ("projectId", slug) WHERE (slug IS NOT NULL);
+
+
+--
+-- Name: media_project_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_project_uploaded_at_idx ON public.media USING btree ("projectId", "uploadedAt") WHERE ("uploadedAt" IS NOT NULL);
+
+
+--
+-- Name: media_projectid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_projectid_createdat_index ON public.media USING btree ("projectId", "createdAt");
 
 
 --
@@ -5341,6 +5349,14 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: comments comments_mediaid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_mediaid_foreign FOREIGN KEY ("mediaId") REFERENCES public.media(id) ON DELETE CASCADE;
+
+
+--
 -- Name: comments comments_screenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5493,14 +5509,6 @@ ALTER TABLE ONLY public.ignored_changes
 
 
 --
--- Name: media media_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.media
-    ADD CONSTRAINT media_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
-
-
---
 -- Name: media media_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5529,7 +5537,7 @@ ALTER TABLE ONLY public.media
 --
 
 ALTER TABLE ONLY public.media
-    ADD CONSTRAINT media_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE SET NULL;
+    ADD CONSTRAINT media_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
 
 
 --
@@ -6016,7 +6024,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jDKZlczMfbRrPRIbfQW18KQZ0DfAyWH7r3oi3rRgGyRiTwGDMtGc63O0aflx8QG
+\unrestrict o2JT2sN5Tn1DGYwod5eiicIQGexx16kCUvip8gRNtc3QG2civajUu2xHqb1FiDg
 
 -- Knex migrations
 
@@ -6257,3 +6265,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260801130001_builds-number-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808120000_fix-storybook-count-overflow.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808130000_media.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808140000_comment-media.js', 1, NOW());

@@ -1,22 +1,24 @@
-import type { AccountPermission } from "@/database/models";
+import type { ProjectPermission } from "@/database/models/Project";
 
 export type MediaPermission = "view" | "delete";
 
 /**
  * Compute the permissions a viewer has on a media, given what they can do on the
- * owning account.
+ * project it belongs to.
  *
- * The media library is an **admin** surface: a team's uploads are the team's
- * screenshots of unreleased work, sometimes uploaded from a project a given member
- * has no access to, and everyone on the team being able to browse the lot is not
- * what a team asks for. Viewing an individual media through its share link is a
- * separate question, answered by {@link checkCanViewMedia}.
+ * Media is project-scoped, so this is the same access control that governs the
+ * project's builds — fine-grained contributor access included. Anyone who can see
+ * the project can see and comment on its media; removing one is an
+ * administrator's call, because a share URL may already be pasted somewhere.
  */
 export function getMediaPermissions(
-  accountPermissions: AccountPermission[],
+  projectPermissions: ProjectPermission[],
 ): MediaPermission[] {
-  if (accountPermissions.includes("admin")) {
+  if (projectPermissions.includes("admin")) {
     return ["view", "delete"];
+  }
+  if (projectPermissions.includes("view")) {
+    return ["view"];
   }
   return [];
 }
@@ -24,19 +26,20 @@ export function getMediaPermissions(
 /**
  * Can this viewer open this media's share page?
  *
- * Distinct from the library permissions above, and deliberately more permissive:
- * a share link is meant to be followed. A `public` media needs nothing at all — it
- * is what a reviewer with no Argos account opens. A `team` media needs a session
- * that can see the owning account, at any level: being able to read a team's
- * builds and being able to read a media somebody on that team linked from a pull
- * request are the same trust level.
+ * A `public` media needs nothing at all — it is what a pull request reviewer with
+ * no Argos account opens, and the whole feature depends on that working. A `team`
+ * media needs a session that can see the owning project.
+ *
+ * This governs the *page*, not the bytes: the file itself is served from an
+ * unauthenticated CDN URL, because GitHub fetches embedded images server-side
+ * with no session of ours. See `media/serve.ts`.
  */
 export function checkCanViewMedia(args: {
   visibility: "team" | "public";
-  accountPermissions: AccountPermission[];
+  projectPermissions: ProjectPermission[];
 }): boolean {
   if (args.visibility === "public") {
     return true;
   }
-  return args.accountPermissions.length > 0;
+  return args.projectPermissions.includes("view");
 }

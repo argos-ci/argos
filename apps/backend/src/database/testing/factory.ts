@@ -433,8 +433,7 @@ export const AutomationRun = defineFactory(models.AutomationRun, () => ({
 }));
 
 export const Media = defineFactory(models.Media, () => ({
-  accountId: TeamAccount.associate("id") as unknown as string,
-  projectId: null,
+  projectId: Project.associate("id") as unknown as string,
   name: "screenshot.png",
   slug: null,
   key: `media/test/${bytesToString(randomBytes(32))}.png`,

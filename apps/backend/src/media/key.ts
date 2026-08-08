@@ -28,14 +28,15 @@ function getExtensionForContentType(contentType: string): string {
  * The S3 key for a media's bytes.
  *
  * Content-addressed, so the same bytes always land on the same key and a CDN in
- * front of the bucket can cache it indefinitely. Namespaced by account so a
- * purge or an audit can be scoped without a database round trip.
+ * front of the bucket can cache it indefinitely. Namespaced by project so a
+ * purge or an audit can be scoped without a database round trip — and so a
+ * project transfer moves its objects' logical owner with it.
  */
 export function getMediaKey(args: {
-  accountId: string;
+  projectId: string;
   hash: string;
   contentType: string;
 }): string {
   const extension = getExtensionForContentType(args.contentType);
-  return `media/${args.accountId}/${args.hash}.${extension}`;
+  return `media/${args.projectId}/${args.hash}.${extension}`;
 }

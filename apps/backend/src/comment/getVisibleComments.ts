@@ -99,8 +99,53 @@ export function getVisibleTestCommentsQuery(input: {
 }
 
 /**
- * Load the comments visible to a given viewer on a build or a test, oldest
- * first. Used by the REST endpoints, which serve both from one implementation.
+ * The most comments a single media's thread list serves. A media expires, so the
+ * list is naturally bounded — but the GraphQL loader batches across every media
+ * in a library page, so the cap is a window function for the same reason the
+ * test one is: a plain limit would bound the batch, not each media in it.
+ */
+const MEDIA_COMMENTS_LIMIT = 200;
+
+/**
+ * The comments visible to a given viewer on one or more media, oldest first.
+ * Media comments never belong to a review, so of the shared visibility rules
+ * only the soft-deletion filter actually narrows them.
+ *
+ * Takes a list rather than one id so the GraphQL loader can batch across a
+ * library page, which is also why the cap is a window function.
+ */
+function getVisibleMediaCommentsQuery(input: {
+  mediaIds: string[];
+  viewerUserId: string | null;
+}): QueryBuilder<Comment, Comment[]> {
+  const { mediaIds, viewerUserId } = input;
+  return Comment.query()
+    .with(
+      "ranked",
+      filterVisibleComments(
+        Comment.query().whereIn("mediaId", mediaIds),
+        viewerUserId,
+      ).select(
+        "id",
+        knex.raw(
+          'row_number() over (partition by "mediaId" order by "createdAt" desc, "id" desc) as "rank"',
+        ),
+      ),
+    )
+    .whereIn(
+      "id",
+      knex
+        .select("id")
+        .from("ranked")
+        .where("rank", "<=", MEDIA_COMMENTS_LIMIT),
+    )
+    .orderBy("createdAt", "asc");
+}
+
+/**
+ * Load the comments visible to a given viewer on a build, a test or a media,
+ * oldest first. Used by the REST endpoints, which serve all three from one
+ * implementation.
  */
 export async function getVisibleTargetComments(input: {
   target: CommentTarget;
@@ -116,6 +161,11 @@ export async function getVisibleTargetComments(input: {
     case "test":
       return getVisibleTestCommentsQuery({
         testIds: [target.test.id],
+        viewerUserId,
+      });
+    case "media":
+      return getVisibleMediaCommentsQuery({
+        mediaIds: [target.media.id],
         viewerUserId,
       });
     default:

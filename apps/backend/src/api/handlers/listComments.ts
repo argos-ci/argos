@@ -16,6 +16,7 @@ import {
   serializeComments,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -66,7 +67,22 @@ export const listTestCommentsOperation = {
   responses,
 } satisfies ZodOpenApiOperationObject;
 
-/** Shared by the build- and test-scoped list endpoints. */
+export const listMediaCommentsOperation = {
+  operationId: "listMediaComments",
+  summary: "List the comments on a media",
+  description:
+    "List the comments on an uploaded media, oldest first. A comment may carry an `anchor` pinning it to a point on the image, which is how reviewers mark up a screenshot.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:read"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
+    }),
+  },
+  responses,
+} satisfies ZodOpenApiOperationObject;
+
+/** Shared by the build-, test- and media-scoped list endpoints. */
 async function listTargetComments(input: {
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams;
@@ -115,4 +131,13 @@ export const listComments: CreateAPIHandler = ({ get }) => {
       );
     },
   );
+
+  get("/media/{mediaId}/comments", async (req, res) => {
+    res.send(
+      await listTargetComments({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+      }),
+    );
+  });
 };

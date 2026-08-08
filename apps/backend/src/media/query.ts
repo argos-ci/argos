@@ -13,16 +13,20 @@ export type MediaFilters = {
  * The media library query, shared by the REST list endpoint and the GraphQL
  * connection so both paginate, filter and order identically.
  *
+ * Takes project ids rather than an account so the caller decides the scope: one
+ * project for the project endpoint, or every project a viewer can see for the
+ * account-level library — the same shape the tests dashboard uses.
+ *
  * Only media whose bytes landed: a row created for an upload that never completed
  * is an implementation detail of the two-step flow, not something a team should
  * see in its library.
  */
-export function queryAccountMedia(args: {
-  accountId: string;
+export function queryProjectMedia(args: {
+  projectIds: string[];
   filters: MediaFilters | null;
 }): QueryBuilder<Media, Media[]> {
   const query = Media.query()
-    .where("media.accountId", args.accountId)
+    .whereIn("media.projectId", args.projectIds)
     .whereNotNull("media.uploadedAt")
     .orderBy("media.createdAt", "desc");
 
