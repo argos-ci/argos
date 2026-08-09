@@ -24,6 +24,7 @@ import {
 import { Kbd } from "@/ui/Kbd";
 
 import { ALT, MOD, SHIFT } from "./EditorToolbar.shortcuts";
+import { positionSuggestionPopup } from "./suggestionPopup";
 
 /** Range of the document the slash trigger spans (`/query`), to be replaced. */
 interface SlashRange {
@@ -244,30 +245,6 @@ const SlashCommandList = forwardRef<
   );
 });
 
-/**
- * Position a floating element just below the caret rect provided by the
- * suggestion plugin. Hides the element when the rect is missing.
- */
-function positionPopup(
-  popup: HTMLElement,
-  getRect: SuggestionProps<SlashCommandItem>["clientRect"],
-) {
-  const rect = getRect?.();
-  if (!rect) {
-    popup.style.display = "none";
-    return;
-  }
-  popup.style.display = "block";
-  popup.style.position = "fixed";
-  popup.style.left = `${rect.left}px`;
-  popup.style.top = `${rect.bottom + 4}px`;
-  // Keep the menu above every overlay so it stays visible and clickable when the
-  // editor is rendered inside one (e.g. the review submission popover). The popup
-  // is appended to `document.body`, and react-aria gives its popovers/modals an
-  // inline `z-index: 100000`, so this must clear that layer.
-  popup.style.zIndex = "300000";
-}
-
 /** Dedicated key so this plugin never collides with the mention suggestion. */
 const SlashCommandPluginKey = new PluginKey("slashCommand");
 
@@ -321,12 +298,12 @@ export const SlashCommand = Extension.create({
               popup.setAttribute("data-react-aria-top-layer", "true");
               popup.append(component.element);
               document.body.append(popup);
-              positionPopup(popup, props.clientRect);
+              positionSuggestionPopup(popup, props.clientRect);
             },
             onUpdate: (props: SuggestionProps<SlashCommandItem>) => {
               component?.updateProps(props);
               if (popup) {
-                positionPopup(popup, props.clientRect);
+                positionSuggestionPopup(popup, props.clientRect);
               }
             },
             onKeyDown: (props: SuggestionKeyDownProps) => {
