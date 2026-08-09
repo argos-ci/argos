@@ -1,26 +1,33 @@
 import { clsx } from "clsx";
+import { CheckIcon } from "lucide-react";
+import { ToggleButton } from "react-aria-components";
 
+import { MediaWell } from "@/ui/MediaFrame";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
-import { Tooltip } from "@/ui/Tooltip";
 
-export type PickableVersion = {
+type MediaVersionRow = {
   id: string;
   number: number;
   createdAt: string;
+  fileUrl: string;
+  posterUrl: string | null;
+  isVideo: boolean;
 };
 
 /**
- * Switch between a media's uploads.
+ * The sidebar panel listing a media's uploads, one row per version with its
+ * thumbnail and upload time.
  *
- * Newest first and selected by default, because the newest is what the share URL
- * means and what a reviewer is being asked about. The older ones are there to
- * answer "what did this look like before you changed it?" without needing a second
+ * Newest first and selected by default, because the newest is what the share
+ * URL means and what a reviewer is being asked about. The older ones answer
+ * "what did this look like before you changed it?" without needing a second
  * link — the reason versions exist rather than overwriting.
  *
- * Hidden entirely for a media uploaded once: a picker with one option is furniture.
+ * Hidden entirely for a media uploaded once: a list with one row is furniture.
  */
-export function MediaVersionPicker(props: {
-  versions: PickableVersion[];
+export function MediaVersions(props: {
+  versions: MediaVersionRow[];
   selectedId: string;
   onSelect: (versionId: string) => void;
 }) {
@@ -30,37 +37,62 @@ export function MediaVersionPicker(props: {
     return null;
   }
 
+  const ordered = versions.toSorted((a, b) => b.number - a.number);
+
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-low mr-0.5 text-xs">Versions</span>
-      {versions.map((version) => {
-        const selected = version.id === selectedId;
-        return (
-          <Tooltip
-            key={version.id}
-            content={
-              <>
-                Uploaded <Time date={version.createdAt} />
-              </>
-            }
-          >
-            <button
-              type="button"
-              onClick={() => onSelect(version.id)}
-              aria-pressed={selected}
-              className={clsx(
-                "rounded-full px-2 py-0.5 font-mono text-xs tabular-nums transition",
-                "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none",
-                selected
-                  ? "bg-primary-solid text-white"
-                  : "bg-ui text-low hover:text-default",
-              )}
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>Versions</PanelTitle>
+      </PanelHeader>
+      <div className="flex flex-col gap-0.5 px-1.5">
+        {ordered.map((version, index) => {
+          const thumbnailUrl = version.isVideo
+            ? version.posterUrl
+            : version.fileUrl;
+          return (
+            <ToggleButton
+              key={version.id}
+              isSelected={version.id === selectedId}
+              // Radio semantics on a toggle: picking the selected row again
+              // keeps it selected instead of leaving nothing on screen.
+              onChange={() => onSelect(version.id)}
+              className="rac-focus hover:bg-hover data-selected:bg-ui flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs"
             >
-              v{version.number}
-            </button>
-          </Tooltip>
-        );
-      })}
-    </div>
+              {({ isSelected }) => (
+                <>
+                  {thumbnailUrl ? (
+                    <MediaWell checkerSize={3} className="size-8 shrink-0">
+                      <img
+                        src={thumbnailUrl}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    </MediaWell>
+                  ) : null}
+                  <span className="shrink-0 font-mono font-medium tabular-nums">
+                    v{version.number}
+                  </span>
+                  <span className="text-low min-w-0 flex-1 truncate">
+                    <Time date={version.createdAt} />
+                  </span>
+                  {index === 0 ? (
+                    <span className="text-low shrink-0">Latest</span>
+                  ) : null}
+                  {/* Always in the row so the "Latest" column lines up; only
+                      visible on the selected one. */}
+                  <CheckIcon
+                    aria-hidden="true"
+                    className={clsx(
+                      "size-3.5 shrink-0",
+                      !isSelected && "invisible",
+                    )}
+                  />
+                </>
+              )}
+            </ToggleButton>
+          );
+        })}
+      </div>
+    </Panel>
   );
 }

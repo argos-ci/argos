@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { clsx } from "clsx";
 import {
   ChevronDownIcon,
   ClipboardListIcon,
@@ -29,7 +28,7 @@ import {
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { MediaComments } from "@/containers/Media/MediaComments";
-import { MediaVersionPicker } from "@/containers/Media/MediaVersionPicker";
+import { MediaVersions } from "@/containers/Media/MediaVersions";
 import {
   getMediaDownloadName,
   MediaViewer,
@@ -43,11 +42,9 @@ import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { HeadlessLink, Link } from "@/ui/Link";
+import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
-import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Popover } from "@/ui/Popover";
-import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
@@ -194,7 +191,7 @@ function SharePage(props: { media: Media }) {
         <BuildHotkeysDialogStateProvider>
           <BuildHotkeysDialog env="media" />
           <div className="flex min-h-dvh flex-col lg:h-dvh">
-            <PageHeader media={media} />
+            <PageHeader media={media} version={version} />
             <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
               <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
                 <MediaViewer
@@ -228,10 +225,10 @@ function SharePage(props: { media: Media }) {
                     is the build sidebar's: without it the scroll container
                     crops the last panel's shadow. */}
                 <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pb-6">
-                  <DetailsPanel
-                    media={media}
-                    version={version}
-                    onSelectVersion={setVersionId}
+                  <MediaVersions
+                    versions={media.versions}
+                    selectedId={version.id}
+                    onSelect={setVersionId}
                   />
                   <MediaComments
                     media={media}
@@ -419,98 +416,6 @@ function MediaActions(props: {
 }
 
 /**
- * What this file is: its name as the panel's title, the prose that shipped
- * with it, and the facts of the selected version as labelled monospace values
- * — a file listing, not prose.
- */
-function DetailsPanel(props: {
-  media: Media;
-  version: Media["versions"][number];
-  onSelectVersion: (versionId: string) => void;
-}) {
-  const { media, version, onSelectVersion } = props;
-  const dimensions = formatDimensions(version.width, version.height);
-  const expiry = formatExpiry(version.expiresAt);
-  return (
-    <Panel>
-      <PanelHeader>
-        <PanelTitle>Details</PanelTitle>
-      </PanelHeader>
-      <div className="flex flex-col gap-3 px-4">
-        <dl className="flex flex-col gap-1.5">
-          {media.project ? (
-            // Only viewers who could reach the project anyway get it named —
-            // the resolver hides it from everyone else.
-            <DetailRow label="Project">
-              <HeadlessLink
-                href={`/${media.project.slug}`}
-                className="data-hovered:text-default rac-focus transition"
-              >
-                {media.project.slug}
-              </HeadlessLink>
-            </DetailRow>
-          ) : null}
-          <DetailRow label="Visibility">
-            <VisibilityChip visibility={media.visibility} />
-          </DetailRow>
-          <DetailRow label="Uploaded">
-            <Time date={version.createdAt} className="text-default" />
-          </DetailRow>
-          {dimensions ? (
-            <DetailRow label="Dimensions" mono>
-              {dimensions}
-            </DetailRow>
-          ) : null}
-          <DetailRow label="Size" mono>
-            {formatBytes(version.sizeBytes)}
-          </DetailRow>
-          {media.state && !media.counterpart ? (
-            // Which half of a pair this is. With both halves on the page the
-            // panes label themselves; alone, the label lives here.
-            <DetailRow label="State" mono>
-              {media.state}
-            </DetailRow>
-          ) : null}
-          {expiry ? (
-            <DetailRow label="Expires" mono>
-              {/* A live countdown: neutralized in visual tests so the baseline
-                  doesn't change every day, the same way `<Time>` is. */}
-              <span data-visual-test="transparent">{expiry}</span>
-            </DetailRow>
-          ) : null}
-        </dl>
-        <MediaVersionPicker
-          versions={media.versions}
-          selectedId={version.id}
-          onSelect={onSelectVersion}
-        />
-      </div>
-    </Panel>
-  );
-}
-
-function DetailRow(props: {
-  label: string;
-  children: React.ReactNode;
-  mono?: boolean;
-}) {
-  const { label, children, mono = false } = props;
-  return (
-    <div className="flex items-baseline justify-between gap-4 text-xs">
-      <dt className="text-low shrink-0">{label}</dt>
-      <dd
-        className={clsx(
-          "text-default flex min-w-0 justify-end truncate text-right",
-          mono && "font-mono",
-        )}
-      >
-        {children}
-      </dd>
-    </div>
-  );
-}
-
-/**
  * Who can open this link. The answer matters most at the moment of forwarding
  * it — pasting a "team only" URL into a public issue silently shows nothing.
  */
@@ -519,7 +424,7 @@ function VisibilityChip(props: { visibility: MediaVisibility }) {
     case MediaVisibility.Public:
       return (
         <Tooltip content="Anyone with the link can view this media">
-          <Chip scale="xs" color="neutral" icon={GlobeIcon}>
+          <Chip color="neutral" icon={GlobeIcon}>
             Public link
           </Chip>
         </Tooltip>
@@ -527,7 +432,7 @@ function VisibilityChip(props: { visibility: MediaVisibility }) {
     case MediaVisibility.Team:
       return (
         <Tooltip content="Only members of the team can view this media">
-          <Chip scale="xs" color="neutral" icon={LockIcon}>
+          <Chip color="neutral" icon={LockIcon}>
             Team only
           </Chip>
         </Tooltip>
@@ -536,31 +441,76 @@ function VisibilityChip(props: { visibility: MediaVisibility }) {
 }
 
 /**
- * The slim bar over the media: the file's name and the prose that shipped with
- * it on one side, and who is looking on the other — the same login-or-avatar
- * control as the app's, so an anonymous visitor can see the way in to
- * commenting. Everything else lives in the sidebar and the footer.
+ * The bar over the media, two lines and done: what the file is (name and the
+ * prose that shipped with it), then the version's numbers — dimensions, size,
+ * time left — with who may open it and the same login-or-avatar control as
+ * the app's on the right. Every value reads without a label, the way a file
+ * listing does. Versions have their own panel in the sidebar.
  */
-function PageHeader(props: { media: Media }) {
-  const { media } = props;
+function PageHeader(props: {
+  media: Media;
+  version: Media["versions"][number];
+}) {
+  const { media, version } = props;
+  const facts: React.ReactNode[] = [];
+  if (media.state && !media.counterpart) {
+    // Which half of a pair this is. With both halves on the page the panes
+    // label themselves; alone, the fact lives here.
+    facts.push(media.state);
+  }
+  const dimensions = formatDimensions(version.width, version.height);
+  if (dimensions) {
+    facts.push(dimensions);
+  }
+  facts.push(formatBytes(version.sizeBytes));
+  const expiry = formatExpiry(version.expiresAt);
+  if (expiry) {
+    facts.push(
+      <Tooltip content="Time left before this version is deleted">
+        {/* A live countdown: neutralized in visual tests so the baseline
+            doesn't change every day, the same way `<Time>` is. */}
+        <span data-visual-test="transparent">{expiry}</span>
+      </Tooltip>,
+    );
+  }
+
   return (
     <header className="border-b-thin flex shrink-0 items-center justify-between gap-4 px-4 py-2">
-      <div className="flex min-w-0 items-baseline gap-1.5">
-        {/* The file name is the page's title, in monospace because it is a
-            value, not a sentence. */}
-        <h1 className="shrink-0 font-mono text-sm leading-tight font-medium">
-          {media.name}
-        </h1>
-        {media.description ? (
-          <span className="text-low min-w-0 truncate text-xs leading-tight">
-            <span aria-hidden="true" className="mr-1.5 opacity-60">
-              ·
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          {/* The file name is the page's title, in monospace because it is a
+              value, not a sentence. */}
+          <h1 className="shrink-0 font-mono text-sm leading-tight font-medium">
+            {media.name}
+          </h1>
+          {media.description ? (
+            <span className="text-low min-w-0 truncate text-xs leading-tight">
+              <span aria-hidden="true" className="mr-1.5 opacity-60">
+                ·
+              </span>
+              {media.description}
             </span>
-            {media.description}
-          </span>
-        ) : null}
+          ) : null}
+        </div>
+        <div className="text-default flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 font-mono text-xs leading-tight">
+          {facts.map((fact, index) => (
+            // Order is fixed and the parts are static per render.
+            // oxlint-disable-next-line react/no-array-index-key
+            <span key={index} className="flex items-baseline gap-x-2">
+              {index > 0 ? (
+                <span aria-hidden="true" className="text-low opacity-60">
+                  ·
+                </span>
+              ) : null}
+              {fact}
+            </span>
+          ))}
+        </div>
       </div>
-      <NavUserControl />
+      <div className="flex shrink-0 items-center gap-3">
+        <VisibilityChip visibility={media.visibility} />
+        <NavUserControl />
+      </div>
     </header>
   );
 }

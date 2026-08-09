@@ -22,9 +22,10 @@ loggedTest("media share page", async ({ page, auth, project }) => {
     page.getByRole("heading", { name: "checkout.png" }),
   ).toBeVisible();
   await expect(page.getByText("375×720")).toBeVisible();
-  // Two uploads, so the version is worth naming — as the picker's pill (the
-  // activity timeline also says "v2 uploaded").
-  await expect(page.getByRole("button", { name: "v2" })).toBeVisible();
+  // Two uploads, so the versions get their own panel — one row per upload
+  // (the activity timeline also says "v2 uploaded").
+  await expect(page.getByRole("heading", { name: "Versions" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^v2/ })).toBeVisible();
   // A pair, so both halves are on the page and the alt text distinguishes them.
   await expect(
     page.getByRole("img", { name: "checkout.png (before)" }),
