@@ -310,6 +310,74 @@ describe("mediaByShareToken", () => {
     expect(res.body.data.mediaByShareToken.counterpart.id).toBe(sibling.id);
   });
 
+  it("hides a team-only counterpart from a public share link", async () => {
+    // A pair is two uploads, each carrying its own visibility, so a mixed pair
+    // is ordinary — and on a paid plan `team` is the default. Returning the
+    // counterpart unchecked handed an anonymous visitor the team half in full:
+    // its share token, its review threads, and a `fileUrl` that is the bytes.
+    const { project } = await createTeamOwner();
+
+    const { media: shared } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/mixed",
+        visibility: "public",
+        shareToken: "mixed-public-half",
+      },
+    });
+    await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "before",
+        branch: "feat/mixed",
+        visibility: "team",
+        shareToken: "mixed-team-half",
+      },
+    });
+
+    // No session at all: the reviewer a public link exists for.
+    const res = await query({ auth: null, shareToken: shared.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    expect(result.id).toBe(shared.id);
+    expect(result.counterpart).toBeNull();
+    // The pair snippet embeds the counterpart's share URL, so it has to go too.
+    expect(result.markdownPair).toBeNull();
+  });
+
+  it("still shows a counterpart the viewer may see", async () => {
+    const { auth, project } = await createTeamOwner();
+    const { media: shared } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/team",
+        visibility: "team",
+        shareToken: "team-both-after",
+      },
+    });
+    const { media: other } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "before",
+        branch: "feat/team",
+        visibility: "team",
+        shareToken: "team-both-before",
+      },
+    });
+
+    const res = await query({ auth, shareToken: shared.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken.counterpart.id).toBe(other.id);
+  });
+
   it("counts only unresolved threads", async () => {
     const { user, auth, project } = await createTeamOwner();
     const media = await createMediaScenario({

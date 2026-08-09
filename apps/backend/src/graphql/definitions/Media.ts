@@ -16,6 +16,7 @@ import {
   IMediaPermission,
   type IResolvers,
 } from "../__generated__/resolver-types";
+import type { Context } from "../context";
 
 const { gql } = gqlTag;
 
@@ -161,7 +162,7 @@ export const resolvers: IResolvers = {
       if (!media.state) {
         return null;
       }
-      return ctx.loaders.MediaCounterpart.load(media.id);
+      return resolveVisibleCounterpart(media, ctx);
     },
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
@@ -178,7 +179,7 @@ export const resolvers: IResolvers = {
       // request comment uses — so pasting it by hand shows before and after
       // together, like the page does.
       const counterpart = media.state
-        ? await ctx.loaders.MediaCounterpart.load(media.id)
+        ? await resolveVisibleCounterpart(media, ctx)
         : null;
       const counterpartVersion = counterpart
         ? await ctx.loaders.LatestMediaVersion.load(counterpart.id)
@@ -322,3 +323,38 @@ export const resolvers: IResolvers = {
     },
   },
 };
+
+/**
+ * The other half of a pair, but only if this viewer may see *it*.
+ *
+ * The two halves carry their own `visibility` — they are two `POST /media` calls
+ * — so a pair can be mixed, and on a paid plan the default is `team`. Returning
+ * the counterpart unchecked let a `public` share link hand out the `team` half in
+ * full: its name, description, share token, review threads, and a
+ * `latestVersion.fileUrl` that is an unauthenticated CDN URL, which is the bytes
+ * themselves. The share page's own query selects exactly those fields, so no
+ * crafted request was needed.
+ *
+ * Same rule the media's own `permissions` field already applied to itself — it
+ * was the one thing on the object not applied to the counterpart.
+ */
+async function resolveVisibleCounterpart(
+  media: Media,
+  ctx: Context,
+): Promise<Media | null> {
+  const counterpart = await ctx.loaders.MediaCounterpart.load(media.id);
+  if (!counterpart) {
+    return null;
+  }
+  const project = await ctx.loaders.Project.load(counterpart.projectId);
+  invariant(project, "project not found");
+  const membershipPermissions = await project.$getMembershipPermissions(
+    ctx.auth?.user ?? null,
+  );
+  return checkCanViewMedia({
+    visibility: counterpart.visibility,
+    membershipPermissions,
+  })
+    ? counterpart
+    : null;
+}
