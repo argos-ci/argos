@@ -1,8 +1,14 @@
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import { clsx } from "clsx";
 
-import { ScaleProvider } from "@/containers/Build/ScaleContext";
+import { getImageScale } from "@/containers/Build/projection";
+import {
+  ScaleProvider,
+  useScaleContext,
+} from "@/containers/Build/ScaleContext";
 import { ZoomerSyncProvider, ZoomPane } from "@/containers/Build/Zoomer";
 import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
+import { useResizeObserver } from "@/ui/useResizeObserver";
 
 import {
   MediaCommentPins,
@@ -65,7 +71,7 @@ export function MediaViewer(props: {
             ? { width: version.width, height: version.height }
             : null
         }
-        className="flex max-h-[75dvh] min-h-64 w-auto max-w-full items-center justify-center self-center"
+        className="flex max-h-[70dvh] min-h-64 w-auto max-w-full items-center justify-center self-center lg:max-h-full"
       >
         <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
       </MediaWell>
@@ -88,15 +94,30 @@ export function MediaViewer(props: {
           ]
       : [{ media, interactive: true }];
 
+  // Where the page stacks (below `lg`), the viewer sizes itself from the
+  // media's own shape instead of claiming a fixed slice of the viewport: a
+  // wide screenshot on a phone would otherwise sit in a mostly-empty well.
+  // On `lg` the page gives the viewer its full column and `h-full` wins.
+  const stackedAspectRatio =
+    version.width && version.height
+      ? (version.width / version.height) * panes.length
+      : null;
+
   return (
     <ScaleProvider>
       {/* One provider across both panes is what couples their transforms. */}
       <ZoomerSyncProvider id={`media-${media.name}`}>
         <div
           className={clsx(
-            "flex min-h-64 gap-3",
-            panes.length > 1 ? "h-[70dvh]" : "h-[75dvh]",
+            "flex max-h-[70dvh] min-h-64 w-full gap-3 lg:h-full lg:max-h-none",
+            // No known shape to size from: fall back to a viewport slice.
+            stackedAspectRatio === null && "h-[60dvh]",
           )}
+          style={
+            stackedAspectRatio !== null
+              ? { aspectRatio: stackedAspectRatio }
+              : undefined
+          }
         >
           {panes.map((pane) => (
             <MediaPane
@@ -136,8 +157,12 @@ function MediaPane(props: {
           {media.state}
         </div>
       ) : null}
-      <div className="bg-app border-thin min-h-0 flex-1 overflow-hidden rounded-lg">
+      {/* The inspection surface: the same dark checkerboard as the library
+          thumbnails, so a white screenshot has a known ground to end on. The
+          pane draws no chrome of its own — the well is the chrome. */}
+      <MediaWell className="flex min-h-0 flex-1">
         <ZoomPane
+          surface="bare"
           dimensions={dimensions}
           overlay={
             pinProps && dimensions
@@ -151,18 +176,91 @@ function MediaPane(props: {
               : undefined
           }
         >
-          <img
+          <MediaImage
             src={version.fileUrl}
             // The state is part of the alt text, not only the visible label
             // above: a pair is two images with one name, and a screen reader
             // reading "checkout.png" twice cannot tell the reader which is which.
             alt={media.state ? `${media.name} (${media.state})` : media.name}
-            width={version.width ?? undefined}
-            height={version.height ?? undefined}
-            className="max-w-full"
+            dimensions={dimensions}
+            // Only the pinned pane drives the shared scale: the pins are
+            // projected against *its* image, and a pair's halves can have
+            // different intrinsic sizes.
+            trackScale={pinProps != null}
           />
         </ZoomPane>
-      </div>
+      </MediaWell>
+    </div>
+  );
+}
+
+/**
+ * The image, contain-fitted the way the build's snapshots are: a container
+ * carrying the aspect ratio shrinks to the pane while the flex stretch that
+ * would distort a bare `img` hits the container instead.
+ *
+ * The pinned pane also reports its rendered scale to `ScaleContext` — the
+ * pin projection multiplies by it, so without this a pin on any image larger
+ * than the pane would drift off the pixel it marks.
+ */
+function MediaImage(props: {
+  src: string;
+  alt: string;
+  dimensions: { width: number; height: number } | undefined;
+  trackScale: boolean;
+}) {
+  const { src, alt, dimensions, trackScale } = props;
+  const [, setImgScale] = useScaleContext();
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  const updateScale = useCallback(() => {
+    if (!trackScale) {
+      return;
+    }
+    const img = imageRef.current;
+    if (img && img.complete) {
+      const imgScale = getImageScale(img);
+      startTransition(() => {
+        setImgScale(imgScale);
+      });
+    }
+  }, [trackScale, setImgScale]);
+
+  const ref = useResizeObserver(() => updateScale(), imageRef);
+
+  // Update scale when the image is loaded, and reset it on unmount so the next
+  // media starts from a clean slate.
+  useEffect(() => {
+    updateScale();
+  }, [updateScale]);
+  useEffect(() => {
+    if (!trackScale) {
+      return undefined;
+    }
+    return () => setImgScale(1);
+  }, [trackScale, setImgScale]);
+
+  return (
+    <div
+      className="relative max-h-full min-h-0 max-w-full min-w-0"
+      style={
+        dimensions
+          ? {
+              aspectRatio: `${dimensions.width} / ${dimensions.height}`,
+              height: dimensions.height,
+            }
+          : undefined
+      }
+    >
+      <img
+        ref={ref}
+        src={src}
+        alt={alt}
+        width={dimensions?.width}
+        height={dimensions?.height}
+        onLoad={updateScale}
+        className="size-full"
+      />
     </div>
   );
 }

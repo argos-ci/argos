@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { MapPinIcon, MessageSquareIcon, XIcon } from "lucide-react";
+import { MapPinIcon, XIcon } from "lucide-react";
+import { useLocation } from "react-router";
 
+import { useAuth } from "@/containers/Auth";
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
@@ -13,6 +15,8 @@ import { MediaPermission } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { Link } from "@/ui/Link";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -109,10 +113,13 @@ export function getMediaPins(
 }
 
 /**
- * The comment side of the share page: every thread on the media, and a composer.
+ * The comment panel of the share page: every thread on the media, and a composer.
  *
- * A thread that points at a spot on the image carries its pin's number, so the
- * two halves of the page reference each other without the reader having to guess.
+ * The same panel-of-comment-cards the build sidebar renders — shared
+ * {@link CommentCard} inside a {@link Panel}, with the build's spacing — so the
+ * two surfaces cannot drift apart. A thread that points at a spot on the image
+ * carries its pin's number, so the two halves of the page reference each other
+ * without the reader having to guess.
  */
 export function MediaComments(props: {
   media: Media;
@@ -184,11 +191,11 @@ export function MediaComments(props: {
 
   return (
     <MentionableUsersProvider value={[]}>
-      <div className="flex min-h-0 flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>
             {threads.length === 0 ? "Comments" : `Comments (${threads.length})`}
-          </h2>
+          </PanelTitle>
           {canComment ? (
             <Button
               variant={placing ? "primary" : "secondary"}
@@ -205,82 +212,111 @@ export function MediaComments(props: {
               {placing ? "Cancel" : "Pin a comment"}
             </Button>
           ) : null}
+        </PanelHeader>
+
+        <div className="px-3">
+          {placing && !draftPoint ? (
+            <p className="text-low bg-ui mb-3 rounded-md px-3 py-2 text-xs">
+              Click the spot on the image you want to comment on.
+            </p>
+          ) : null}
+
+          <div className="flex flex-col gap-4 select-none">
+            {threads.map((thread) => {
+              const index = pinIndexByCommentId.get(thread.root.id);
+              return (
+                <div
+                  key={thread.root.id}
+                  onMouseEnter={() => onSelect(thread.root.id)}
+                  onMouseLeave={() => onSelect(null)}
+                >
+                  {index !== undefined ? (
+                    <div className="text-low text-xxs mb-1.5 flex items-center gap-1.5">
+                      {/* A miniature of the pin drawn on the image — same shape,
+                          same border — so the pairing is visual, not just a
+                          shared number. */}
+                      <span className="rounded-chip border-primary bg-app text-default flex size-4 items-center justify-center rounded-bl-none border text-[10px] font-semibold tabular-nums">
+                        {index}
+                      </span>
+                      pinned on the image
+                    </div>
+                  ) : null}
+                  <CommentCard
+                    comment={thread.root}
+                    replies={thread.replies}
+                    highlightedCommentId={highlightedCommentId}
+                    canReply={canComment}
+                    className={clsx(
+                      "transition",
+                      thread.root.id === selectedCommentId &&
+                        "ring-primary ring-1",
+                    )}
+                    onReply={async (body) => {
+                      setReplyPending(true);
+                      try {
+                        await postComment({ body, threadId: thread.root.id });
+                      } finally {
+                        setReplyPending(false);
+                      }
+                    }}
+                    draftKeyPrefix={`media.${media.id}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {canComment ? (
+            <div className={clsx("-mx-1.5 -mb-1.5", threads.length && "mt-3")}>
+              <StandaloneEditor
+                onSubmit={handleSubmit}
+                draftKey={`media.${media.id}.comment`}
+                placeholder={
+                  draftPoint
+                    ? "Comment on this spot…"
+                    : "Leave a comment on this media…"
+                }
+                submitLabel="Submit the comment"
+                disabled={replyPending}
+                emptyMessage={{
+                  title: "Comment required",
+                  description: "Please add a comment before submitting.",
+                }}
+                aria-label="Add a comment"
+              />
+            </div>
+          ) : (
+            <ReadOnlyNotice hasThreads={threads.length > 0} />
+          )}
         </div>
-
-        {placing && !draftPoint ? (
-          <p className="text-low bg-ui rounded-md px-3 py-2 text-xs">
-            Click the spot on the image you want to comment on.
-          </p>
-        ) : null}
-
-        {threads.length === 0 && !canComment ? (
-          <p className="text-low flex items-center gap-2 text-sm">
-            <MessageSquareIcon className="size-4" />
-            No comments yet.
-          </p>
-        ) : null}
-
-        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
-          {threads.map((thread) => {
-            const index = pinIndexByCommentId.get(thread.root.id);
-            return (
-              <div
-                key={thread.root.id}
-                className={clsx(
-                  "rounded-lg transition",
-                  thread.root.id === selectedCommentId &&
-                    "ring-primary ring-2 ring-offset-2",
-                )}
-                onMouseEnter={() => onSelect(thread.root.id)}
-                onMouseLeave={() => onSelect(null)}
-              >
-                {index !== undefined ? (
-                  <div className="text-low text-xxs mb-1 flex items-center gap-1.5">
-                    <span className="bg-ui text-default flex size-4 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums">
-                      {index}
-                    </span>
-                    pinned on the image
-                  </div>
-                ) : null}
-                <CommentCard
-                  comment={thread.root}
-                  replies={thread.replies}
-                  highlightedCommentId={highlightedCommentId}
-                  canReply={canComment}
-                  onReply={async (body) => {
-                    setReplyPending(true);
-                    try {
-                      await postComment({ body, threadId: thread.root.id });
-                    } finally {
-                      setReplyPending(false);
-                    }
-                  }}
-                  draftKeyPrefix={`media.${media.id}`}
-                />
-              </div>
-            );
-          })}
-        </div>
-
-        {canComment ? (
-          <StandaloneEditor
-            onSubmit={handleSubmit}
-            draftKey={`media.${media.id}.comment`}
-            placeholder={
-              draftPoint
-                ? "Comment on this spot…"
-                : "Leave a comment on this media…"
-            }
-            submitLabel="Submit the comment"
-            disabled={replyPending}
-            emptyMessage={{
-              title: "Comment required",
-              description: "Please add a comment before submitting.",
-            }}
-            aria-label="Add a comment"
-          />
-        ) : null}
-      </div>
+      </Panel>
     </MentionableUsersProvider>
   );
+}
+
+/**
+ * The composer's stand-in for a viewer who cannot comment: an anonymous visitor
+ * gets the fix (logging in), a signed-in visitor without the permission gets the
+ * plain fact — but only when there is nothing to read, because next to a live
+ * discussion "no comments" would be false and a notice would be noise.
+ */
+function ReadOnlyNotice(props: { hasThreads: boolean }) {
+  const { hasThreads } = props;
+  const auth = useAuth();
+  const { pathname } = useLocation();
+
+  if (auth.status === "anonymous") {
+    return (
+      <p className={clsx("text-low text-sm", hasThreads && "mt-3")}>
+        <Link href={`/login?r=${encodeURIComponent(pathname)}`}>Login</Link> to
+        comment on this media.
+      </p>
+    );
+  }
+
+  if (!hasThreads) {
+    return <p className="text-low text-sm">No comments yet.</p>;
+  }
+
+  return null;
 }

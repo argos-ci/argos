@@ -16,9 +16,11 @@ loggedTest("media share page", async ({ page, auth, project }) => {
 
   await page.goto(`/m/${media.after.shareToken}`);
 
-  // The file name in the status line is the page's title — the share page has no
-  // heading and no header bar by design.
-  await expect(page.getByText("checkout.png")).toBeVisible();
+  // The file name is the page's title, in the header. It also appears inside
+  // the Share panel's Markdown embed, hence the heading role.
+  await expect(
+    page.getByRole("heading", { name: "checkout.png" }),
+  ).toBeVisible();
   await expect(page.getByText("375×720")).toBeVisible();
   // Two uploads, so the version is worth naming.
   await expect(page.getByText("v2")).toBeVisible();
@@ -89,7 +91,9 @@ loggedTest("media share page for a video", async ({ page, project }) => {
 
   await page.goto(`/m/${media.video.shareToken}`);
 
-  await expect(page.getByText("checkout-flow.mp4")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "checkout-flow.mp4" }),
+  ).toBeVisible();
   // Rendered in a player, with the CDN-derived poster as its still frame.
   const video = page.locator("video");
   await expect(video).toBeVisible();

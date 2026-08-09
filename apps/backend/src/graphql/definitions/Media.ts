@@ -7,7 +7,11 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
-import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
+import {
+  getMediaDownloadUrl,
+  getMediaFileUrl,
+  getMediaPosterUrl,
+} from "@/media/serve";
 import { getMediaMarkdown } from "@/media/url";
 import { getLatestMediaVersion } from "@/media/version";
 
@@ -56,6 +60,8 @@ export const typeDefs = gql`
     number: Int!
     "CDN URL the bytes are served from"
     fileUrl: String!
+    "Same bytes, served as an attachment so the browser saves instead of rendering"
+    downloadUrl: String!
     "Poster frame of a video, derived by the image CDN. Null for images."
     posterUrl: String
     contentType: String!
@@ -147,6 +153,7 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
+    downloadUrl: (version) => getMediaDownloadUrl(version),
     posterUrl: (version) => getMediaPosterUrl(version),
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,

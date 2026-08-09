@@ -63,3 +63,14 @@ export function useImageProjection(params: {
 export function isPointInImage(point: NormalizedPoint): boolean {
   return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
 }
+
+/**
+ * The scale a contain-fitted image is rendered at — what `ScaleContext` carries,
+ * and what makes the projection above agree with the pixels on screen.
+ */
+export function getImageScale(element: HTMLImageElement): number {
+  if (element.naturalWidth > element.naturalHeight) {
+    return element.width / element.naturalWidth;
+  }
+  return element.height / element.naturalHeight;
+}

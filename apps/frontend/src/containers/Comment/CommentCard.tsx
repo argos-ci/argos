@@ -161,6 +161,8 @@ export function CommentCard(props: {
   replies?: Comment[];
   highlightedCommentId: string | null;
   canReply: boolean;
+  /** Extra classes on the card root, e.g. a selection ring. */
+  className?: string;
   /** Posts a reply in this thread. Only called when `canReply` is set. */
   onReply: (body: EditorValue) => Promise<void>;
   /**
@@ -200,6 +202,7 @@ export function CommentCard(props: {
     replies = [],
     highlightedCommentId,
     canReply,
+    className,
     onReply,
     draftKeyPrefix,
     screenshotReference = null,
@@ -376,6 +379,7 @@ export function CommentCard(props: {
         // links, editors), so the pointer only shows where a click navigates.
         cardNavigates &&
           "hover:ring-primary-hover cursor-pointer hover:ring-1 **:data-no-card-nav:cursor-auto",
+        className,
       )}
     >
       {screenshotReference ? (

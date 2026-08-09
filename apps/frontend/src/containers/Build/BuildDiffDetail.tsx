@@ -88,6 +88,7 @@ import {
   overlayVisibleAtom,
   useOverlayStyle,
 } from "./OverlayStyle";
+import { getImageScale } from "./projection";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
 import {
@@ -557,16 +558,6 @@ function getScreenshotPictureProps(screenshot: {
     width: screenshot.width,
     height: screenshot.height,
   };
-}
-
-/**
- * Returns the scale of the image.
- */
-function getImageScale(element: HTMLImageElement) {
-  if (element.naturalWidth > element.naturalHeight) {
-    return element.width / element.naturalWidth;
-  }
-  return element.height / element.naturalHeight;
 }
 
 type ScreenshotPictureProps = Omit<
