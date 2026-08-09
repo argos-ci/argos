@@ -19,6 +19,7 @@ import {
   getMediaHandler,
   listMediaHandler,
   listMediaVersionsHandler,
+  updateMediaHandler,
 } from "./media";
 
 const app = createTestHandlerApp(
@@ -27,6 +28,7 @@ const app = createTestHandlerApp(
   deleteMediaHandler,
   listMediaHandler,
   listMediaVersionsHandler,
+  updateMediaHandler,
 );
 
 const HASH = "a".repeat(64);
@@ -394,6 +396,49 @@ describe("getMedia", () => {
       .get(`/media/${media.id}/versions`)
       .set("Authorization", `Bearer ${outsiderToken}`)
       .expect(404);
+  });
+
+  test("lets a reviewer finalize and edit their own upload", async ({
+    account,
+  }) => {
+    // Uploading takes `review`, so finishing and correcting the upload must too.
+    // Gating either on `admin` leaves a reviewer able to start an upload and
+    // unable to complete it — the primary flow, half-broken.
+    const project = await factory.Project.create({
+      accountId: account.id,
+      name: "reviewer-project",
+      defaultUserLevel: "reviewer",
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, branch: "feat/a" },
+      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+    });
+
+    const reviewer = await factory.User.create();
+    await factory.UserAccount.create({ userId: reviewer.id });
+    // A contributor, not a member: members get every project permission, so the
+    // test would pass whatever the gate demanded. The project's default level
+    // makes this one a reviewer and nothing more.
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: reviewer.id,
+      userLevel: "contributor",
+    });
+    const reviewerToken = `arp_${"b".repeat(36)}`;
+    const accessToken = await factory.UserAccessToken.create({
+      userId: reviewer.id,
+      token: hashToken(reviewerToken),
+    });
+    await UserAccessTokenScope.query().insert({
+      userAccessTokenId: accessToken.id,
+      accountId: account.id,
+    });
+
+    await request(app)
+      .patch(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${reviewerToken}`)
+      .send({ branch: "feat/b" })
+      .expect(200);
   });
 
   test("400s on an id that is not an integer", async ({ projectToken }) => {

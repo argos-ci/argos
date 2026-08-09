@@ -24,7 +24,6 @@ import logger from "@/logger";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
 import { deleteUnreferencedMediaObjects } from "@/media/object";
-import type { MediaPermission } from "@/media/permissions";
 import { publishMediaForBranch } from "@/media/publish";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { queryProjectMedia } from "@/media/query";
@@ -63,17 +62,24 @@ import { CreateAPIHandler } from "../util";
 type AnyAuth = AuthProjectPayload | AuthPATPayload | AuthOAuthPayload;
 
 /**
- * What each media action requires on the *project*, for the id-addressed API.
+ * What the id-addressed API takes on the *project*: `view` to read, `review` to
+ * write, `admin` to destroy.
  *
- * Mirrors `getMediaPermissions` except for `view`, which that helper grants to
- * anyone for a `public` media. Reaching a media by id is not the same act as
- * opening its share URL, so reading here takes project access like everything
- * else.
+ * Deliberately not `getMediaPermissions`, which grants `view` to anyone for a
+ * `public` media. That rule belongs to the share page, where the caller
+ * presented an unguessable token; here they present a sequential id.
+ *
+ * `review` for finalize and edit, not `admin`: uploading itself takes `review`
+ * (see `resolveUploadTarget`), and a reviewer who cannot finish or correct their
+ * own upload has a half-broken feature. Deleting stays `admin` — a share URL may
+ * already be pasted somewhere, and removing the media breaks it.
  */
-const MEDIA_ACTION_PERMISSION: Record<MediaPermission, ProjectPermission> = {
-  view: "view",
-  comment: "review",
-  delete: "admin",
+type MediaAction = "read" | "write" | "destroy";
+
+const MEDIA_ACTION_PERMISSION: Record<MediaAction, ProjectPermission> = {
+  read: "view",
+  write: "review",
+  destroy: "admin",
 };
 
 const CreateMediaRequestSchema = MediaInputSchema.extend({
@@ -230,11 +236,11 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
       // A write, not a read: it marks a version uploaded, bills the account's
-      // screenshot meter and makes Argos post to GitHub. `view` is granted
-      // unconditionally for a `public` media, so gating on it let anyone whose
-      // token is scoped to the account finalize uploads in projects they hold
-      // nothing on.
-      permission: "delete",
+      // screenshot meter and makes Argos post to GitHub. It was gated on `view`,
+      // which is granted unconditionally for a `public` media, so anyone whose
+      // token was scoped to the account could finalize uploads in projects they
+      // held nothing on.
+      action: "write",
     });
 
     // The version waiting on bytes is the newest one, uploaded or not — a caller
@@ -323,7 +329,7 @@ export const getMediaHandler: CreateAPIHandler = ({ get }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      permission: "view",
+      action: "read",
     });
     res.send(await serializeMediaWithVersion(media, null));
   });
@@ -368,7 +374,7 @@ export const listMediaVersionsHandler: CreateAPIHandler = ({ get }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      permission: "view",
+      action: "read",
     });
     const versions = await getMediaVersions(media.id);
     res.send(versions.map(serializeMediaVersion));
@@ -402,7 +408,7 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      permission: "delete",
+      action: "destroy",
     });
 
     // Every version, not just the latest: deleting a media deletes its whole
@@ -571,9 +577,10 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      // Editing identity is not something a viewer does, and it is the same
-      // authority as removing the media.
-      permission: "delete",
+      // Editing identity is not something a viewer does, but it is the same
+      // authority as making the upload in the first place — a reviewer has to be
+      // able to correct their own staged media.
+      action: "write",
     });
 
     if (getMediaStage(media) === "published") {
@@ -806,9 +813,9 @@ async function resolvePullRequest(args: {
 async function loadMediaForAuth(args: {
   authPromise: Promise<AnyAuth>;
   mediaId: string;
-  permission: MediaPermission;
+  action: MediaAction;
 }): Promise<Media> {
-  const { mediaId, permission } = args;
+  const { mediaId, action } = args;
 
   if (!isValidPgBigInt(mediaId)) {
     throw boom(400, "Invalid media ID.");
@@ -849,7 +856,7 @@ async function loadMediaForAuth(args: {
   const membershipPermissions = await media.project.$getMembershipPermissions(
     auth.user,
   );
-  const required = MEDIA_ACTION_PERMISSION[permission];
+  const required = MEDIA_ACTION_PERMISSION[action];
   if (!membershipPermissions.includes(required)) {
     throw boom(404, "Media not found");
   }
