@@ -109,6 +109,45 @@ const RELATIVE_UNITS: readonly {
   { unit: "year", ms: MS_PER_YEAR, max: Number.POSITIVE_INFINITY },
 ];
 
+type VaguePhrasing = { past: string; future: string };
+
+/**
+ * Wording that stands in for a count. `Intl.RelativeTimeFormat` always emits
+ * one, and a count of seconds changes every second — enough to reflow whatever
+ * sits next to it. The whole seconds bucket therefore reads as one steady
+ * phrase, and a lone minute or hour matches that register. Bigger units already
+ * get idiomatic wording from `numeric: "auto"` ("yesterday", "last month").
+ *
+ * Keyed by language, since the phrases are not something `Intl` can derive.
+ * Languages missing from the table keep the numeric wording.
+ */
+const VAGUE_PHRASINGS: Record<
+  string,
+  Partial<Record<Intl.RelativeTimeFormatUnit, VaguePhrasing>>
+> = {
+  en: {
+    second: { past: "a few seconds ago", future: "in a few seconds" },
+    minute: { past: "a minute ago", future: "in a minute" },
+    hour: { past: "an hour ago", future: "in an hour" },
+  },
+};
+
+/**
+ * Vague wording for `value` `unit`s, or `null` when the count should be shown.
+ * Everything below a minute is vague; past that, only a lone unit is, so
+ * "5 minutes ago" keeps its number.
+ */
+function getVaguePhrasing(
+  locale: string,
+  unit: Intl.RelativeTimeFormatUnit,
+  value: number,
+): VaguePhrasing | null {
+  if (unit !== "second" && Math.abs(value) !== 1) {
+    return null;
+  }
+  return VAGUE_PHRASINGS[new Intl.Locale(locale).language]?.[unit] ?? null;
+}
+
 const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
 function getRelativeTimeFormatter(locale: string) {
@@ -124,7 +163,8 @@ function getRelativeTimeFormatter(locale: string) {
 }
 
 /**
- * Describe `date` relative to now — "3 minutes ago", "yesterday", "in 2 months".
+ * Describe `date` relative to now — "a few seconds ago", "3 minutes ago",
+ * "yesterday", "in 2 months".
  */
 export function formatRelativeDate(
   date: Date,
@@ -144,6 +184,10 @@ export function formatRelativeDate(
       // value: `Math.round` breaks ties towards +Infinity, which would make a
       // 90-second gap read as "1 minute ago" but "in 2 minutes".
       const value = Math.round(magnitude / ms) * Math.sign(elapsed);
+      const vague = getVaguePhrasing(locale, unit, value);
+      if (vague) {
+        return elapsed > 0 ? vague.future : vague.past;
+      }
       return formatter.format(value, unit);
     }
   }
