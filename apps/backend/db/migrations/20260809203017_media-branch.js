@@ -63,8 +63,15 @@ export const down = async (knex) => {
   await knex.raw(`DROP INDEX media_identity_unique`);
 
   // Two staged media on different branches can share a name, which the restored
-  // index has no room for. Keep the oldest of each colliding group so the index can be
-  // rebuilt; the rest were only distinguishable by the column being dropped.
+  // index has no room for. Keep the oldest of each colliding group so the index
+  // can be rebuilt; the rest were only distinguishable by the column being
+  // dropped.
+  //
+  // Deliberately not filtered on `branch IS NOT NULL`: a group can collide
+  // because one row has a branch and a *newer* one does not, and skipping the
+  // branchless row leaves both behind — the unique index then fails to build and
+  // the rollback aborts halfway, with the table left carrying no identity index
+  // at all. Membership of the group is what decides, not how the row got there.
   await knex.raw(`
     DELETE FROM media
     WHERE "githubPullRequestId" IS NULL
@@ -73,7 +80,6 @@ export const down = async (knex) => {
         WHERE "githubPullRequestId" IS NULL
         GROUP BY "projectId", name, COALESCE(state, '')
       )
-      AND branch IS NOT NULL
   `);
 
   await knex.raw(`
