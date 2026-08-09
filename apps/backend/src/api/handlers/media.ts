@@ -8,6 +8,7 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
+import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
   GithubPullRequest,
@@ -539,7 +540,7 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
       .$query()
       .patchAndFetch(patchProps)
       .catch((error: unknown) => {
-        if (isUniqueViolation(error)) {
+        if (isUniqueViolationError(error)) {
           throw boom(
             409,
             "Another media on this branch already has that name.",
@@ -572,19 +573,6 @@ async function findPullRequestId(args: {
   });
 
   return pullRequest?.id ?? null;
-}
-
-/** Postgres' unique-violation code, which Objection wraps rather than replaces. */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "nativeError" in error &&
-    typeof error.nativeError === "object" &&
-    error.nativeError !== null &&
-    "code" in error.nativeError &&
-    error.nativeError.code === "23505"
-  );
 }
 
 /**

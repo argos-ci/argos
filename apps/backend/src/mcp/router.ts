@@ -6,6 +6,8 @@
  * - `GET /` — humans and non-MCP clients are redirected to the documentation.
  * - `GET /.well-known/oauth-protected-resource` — RFC 9728 metadata pointing
  *   MCP clients at the Authorization Server (the OAuth discovery handshake).
+ * - `GET /.well-known/mcp/server-card.json` — SEP-1649 Server Card for
+ *   pre-connection discovery.
  *
  * Requests are authenticated with a personal access token or an OAuth access
  * token. Unauthenticated requests get a `401` with a `WWW-Authenticate` header
@@ -33,8 +35,7 @@ import { createRedisStore } from "@/util/rate-limit";
 
 import { asyncHandler } from "../web/util";
 import { createMcpServer } from "./server";
-
-const MCP_DOCS_URL = "https://argos-ci.com/docs/agents/mcp-server";
+import { getServerCard, MCP_DOCS_URL } from "./server-card";
 
 const router: Router = Router();
 
@@ -64,6 +65,12 @@ router.get("/.well-known/oauth-protected-resource", (_req, res) => {
 // following the Protected Resource Metadata to the AS.
 router.get("/.well-known/oauth-authorization-server", (_req, res) => {
   res.json(getAuthorizationServerMetadata());
+});
+
+// SEP-1649 MCP Server Card: pre-connection discovery of the endpoint,
+// transport and OAuth entry point.
+router.get("/.well-known/mcp/server-card.json", (_req, res) => {
+  res.json(getServerCard());
 });
 
 // Humans and non-MCP clients land here (the MCP protocol only POSTs).
