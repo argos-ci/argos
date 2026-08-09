@@ -24,9 +24,19 @@ import { updatePullRequestComment } from "./pull-request-comment";
 export async function publishBranchMedia(
   pullRequest: GithubPullRequest,
 ): Promise<number> {
-  const { headRef, githubRepositoryId } = pullRequest;
+  const { headRef, headFromFork, githubRepositoryId } = pullRequest;
 
   if (!headRef) {
+    return 0;
+  }
+
+  // A fork's head branch name is chosen by whoever opened the pull request, and
+  // they need no relationship with the Argos account at all. Matching staged
+  // media on it would let an outsider fork a public repository, push a branch
+  // called `feat/checkout`, open a pull request, and have the team's staged
+  // media — share URLs included — attached to it and posted in its comment.
+  // Only a branch in the base repository is the team's own.
+  if (headFromFork !== false) {
     return 0;
   }
 

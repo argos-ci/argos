@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict pRDHisGw1OHb8jxsje5vcv83aZLrMirudomFEUZKaZDYDdzCiiau0tpUcNGednu
+\restrict 14tMBc1VW6qLMnJksYmpEdJ79ToDnaBs1Xeh7MUTl2SbuqaWmF2QLLyWDfTcRH5
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1076,6 +1076,7 @@ CREATE TABLE public.github_pull_requests (
     "mediaCommentId" character varying(255),
     "mediaCommentDeleted" boolean DEFAULT false NOT NULL,
     "headRef" character varying(255),
+    "headFromFork" boolean,
     CONSTRAINT github_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
 );
 
@@ -6139,7 +6140,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pRDHisGw1OHb8jxsje5vcv83aZLrMirudomFEUZKaZDYDdzCiiau0tpUcNGednu
+\unrestrict 14tMBc1VW6qLMnJksYmpEdJ79ToDnaBs1Xeh7MUTl2SbuqaWmF2QLLyWDfTcRH5
 
 -- Knex migrations
 

@@ -517,6 +517,7 @@ describe("publishing when the pull request opens", () => {
       githubRepositoryId: repository.id,
       number: 77,
       headRef: "feat/checkout",
+      headFromFork: false,
     });
 
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(1);
@@ -541,6 +542,7 @@ describe("publishing when the pull request opens", () => {
       githubRepositoryId: repository.id,
       number: 78,
       headRef: "feat/checkout",
+      headFromFork: false,
     });
 
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(1);
@@ -562,6 +564,7 @@ describe("publishing when the pull request opens", () => {
       githubRepositoryId: repository.id,
       number: 81,
       headRef: "feat/collide",
+      headFromFork: false,
     });
     await factory.createMediaWithVersion({
       media: {
@@ -596,6 +599,50 @@ describe("publishing when the pull request opens", () => {
     expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
   });
 
+  test("never publishes to a fork's pull request", async ({
+    project,
+    repository,
+  }) => {
+    // The head branch name on a fork is chosen by an outsider with no
+    // relationship to the account. Matching on it would attach the team's staged
+    // media — share URLs included — to a stranger's pull request.
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, branch: "feat/checkout" },
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 82,
+      headRef: "feat/checkout",
+      headFromFork: true,
+    });
+
+    await expect(publishBranchMedia(pullRequest)).resolves.toBe(0);
+    await expect(Media.query().findById(media.id)).resolves.toMatchObject({
+      githubPullRequestId: null,
+    });
+  });
+
+  test("does not publish before it knows whether the head is a fork", async ({
+    project,
+    repository,
+  }) => {
+    // `headFromFork` is null until Argos has fetched the pull request. Treating
+    // unknown as "ours" is the same leak, one race earlier.
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, branch: "feat/checkout" },
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 83,
+      headRef: "feat/checkout",
+    });
+
+    await expect(publishBranchMedia(pullRequest)).resolves.toBe(0);
+    await expect(Media.query().findById(media.id)).resolves.toMatchObject({
+      githubPullRequestId: null,
+    });
+  });
+
   test("does nothing for a pull request with no head branch recorded", async ({
     repository,
   }) => {
@@ -628,6 +675,7 @@ describe("publishing when the pull request opens", () => {
       githubRepositoryId: repository.id,
       number: 80,
       headRef: "main",
+      headFromFork: false,
     });
 
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(0);

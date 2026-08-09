@@ -38,6 +38,10 @@ export const up = async (knex) => {
 
   await knex.schema.alterTable("github_pull_requests", (table) => {
     table.string("headRef");
+    // Whether the head branch lives in the base repository. Only a same-repo
+    // branch belongs to the team; on a fork the name is chosen by whoever opened
+    // the pull request, so it must never be used to claim their media.
+    table.boolean("headFromFork");
   });
 
   // The list filter: "what has been uploaded for this branch".
@@ -124,6 +128,7 @@ export const down = async (knex) => {
   );
 
   await knex.schema.alterTable("github_pull_requests", (table) => {
+    table.dropColumn("headFromFork");
     table.dropColumn("headRef");
   });
 

@@ -27,6 +27,7 @@ export class GithubPullRequest extends Model {
             oneOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
           },
           headRef: { type: ["string", "null"], maxLength: 255 },
+          headFromFork: { type: ["boolean", "null"] },
           baseRef: { type: ["string", "null"] },
           baseSha: { type: ["string", "null"] },
           state: { type: ["string", "null"], enum: ["open", "closed"] },
@@ -54,8 +55,13 @@ export class GithubPullRequest extends Model {
   githubRepositoryId!: string;
   number!: number;
   title!: string | null;
-  /** The branch the pull request is *from* — what publishes a branch's drafts. */
+  /** The branch the pull request is *from* — what publishes a branch's staged media. */
   headRef!: string | null;
+  /**
+   * Whether {@link headRef} names a branch in a *fork* rather than in the base
+   * repository. Null until Argos has fetched the pull request.
+   */
+  headFromFork!: boolean | null;
   /** The branch the pull request merges *into*. */
   baseRef!: string | null;
   baseSha!: string | null;
