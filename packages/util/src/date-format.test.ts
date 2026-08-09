@@ -57,14 +57,15 @@ describe("#formatRelativeDate", () => {
   const ahead = (ms: number) =>
     formatRelativeDate(new Date(now.getTime() + ms), { now });
 
-  it("describes the recent past", () => {
-    expect(ago(0)).toBe("now");
-    expect(ago(3_000)).toBe("3 seconds ago");
-    expect(ago(44_000)).toBe("44 seconds ago");
+  it("keeps the whole seconds bucket vague, so it does not tick", () => {
+    expect(ago(0)).toBe("a few seconds ago");
+    expect(ago(3_000)).toBe("a few seconds ago");
+    expect(ago(44_000)).toBe("a few seconds ago");
+    expect(ahead(3_000)).toBe("in a few seconds");
   });
 
   it("promotes to minutes past the seconds threshold", () => {
-    expect(ago(45_000)).toBe("1 minute ago");
+    expect(ago(45_000)).toBe("a minute ago");
     expect(ago(30 * 60_000)).toBe("30 minutes ago");
   });
 
@@ -74,8 +75,14 @@ describe("#formatRelativeDate", () => {
   });
 
   it("promotes to hours past the minutes threshold", () => {
-    expect(ago(45 * 60_000)).toBe("1 hour ago");
+    expect(ago(45 * 60_000)).toBe("an hour ago");
     expect(ago(5 * 3_600_000)).toBe("5 hours ago");
+  });
+
+  it("spells a lone unit out, but keeps larger counts numeric", () => {
+    expect(ahead(60_000)).toBe("in a minute");
+    expect(ahead(3_600_000)).toBe("in an hour");
+    expect(ago(2 * 3_600_000)).toBe("2 hours ago");
   });
 
   it("promotes to days past the hours threshold", () => {
@@ -91,7 +98,6 @@ describe("#formatRelativeDate", () => {
   });
 
   it("describes the future", () => {
-    expect(ahead(3_000)).toBe("in 3 seconds");
     expect(ahead(5 * 3_600_000)).toBe("in 5 hours");
     expect(ahead(3 * 86_400_000)).toBe("in 3 days");
   });
@@ -105,8 +111,17 @@ describe("#formatRelativeDate", () => {
     ).toBe("il y a 3 jours");
   });
 
+  it("falls back to the numeric wording for a locale without vague phrasing", () => {
+    expect(
+      formatRelativeDate(new Date(now.getTime() - 3_000), {
+        now,
+        locale: "fr-FR",
+      }),
+    ).toBe("il y a 3 secondes");
+  });
+
   it("defaults to comparing against the current time", () => {
-    expect(formatRelativeDate(new Date())).toBe("now");
+    expect(formatRelativeDate(new Date())).toBe("a few seconds ago");
   });
 });
 
