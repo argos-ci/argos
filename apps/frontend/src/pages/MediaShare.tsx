@@ -7,18 +7,16 @@ import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
-import {
-  MediaCommentPins,
-  type MediaPoint,
-} from "@/containers/Media/MediaCommentPins";
+import type { MediaPoint } from "@/containers/Media/MediaCommentPins";
 import { getMediaPins, MediaComments } from "@/containers/Media/MediaComments";
+import { MediaVersionPicker } from "@/containers/Media/MediaVersionPicker";
+import { MediaViewer } from "@/containers/Media/MediaViewer";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { MediaPermission } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { CopyButton } from "@/ui/CopyButton";
 import { Link } from "@/ui/Link";
-import { MediaImage, MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { formatBytes, formatDimensions, formatExpiry } from "@/util/media";
 
 const MediaShareQuery = graphql(`
@@ -38,6 +36,7 @@ const MediaShareQuery = graphql(`
       latestVersion {
         id
         number
+        createdAt
         fileUrl
         posterUrl
         contentType
@@ -51,6 +50,14 @@ const MediaShareQuery = graphql(`
         id
         number
         createdAt
+        fileUrl
+        posterUrl
+        contentType
+        sizeBytes
+        width
+        height
+        isVideo
+        expiresAt
       }
       counterpart {
         id
@@ -117,21 +124,27 @@ export function Component() {
             hosting public links is a spam magnet if it is indexable. */}
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
-      <MediaViewer media={media} />
+      <SharePage media={media} />
     </>
   );
 }
 
-function MediaViewer(props: { media: Media }) {
+function SharePage(props: { media: Media }) {
   const { media } = props;
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(
     null,
   );
   const [placing, setPlacing] = useState(false);
   const [draftPoint, setDraftPoint] = useState<MediaPoint | null>(null);
+  const [versionId, setVersionId] = useState(media.latestVersion.id);
 
-  const version = media.latestVersion;
-  const pins = getMediaPins(media.comments);
+  // Falls back to the latest if the selected version went away under us — a
+  // retention purge can take an old one while the page is open.
+  const version =
+    media.versions.find((candidate) => candidate.id === versionId) ??
+    media.latestVersion;
+
+  const pins = getMediaPins(media.comments, version.id);
   const canComment = media.permissions.includes(MediaPermission.Comment);
   // An anonymous visitor on a public link with nothing to read gets the viewer
   // alone — no empty panel narrowing the thing they came to look at.
@@ -152,48 +165,35 @@ function MediaViewer(props: { media: Media }) {
           showComments ? "w-full lg:max-w-4xl" : "w-full max-w-6xl",
         )}
       >
-        <MediaWell
-          aspectRatio={
-            version.width && version.height
-              ? { width: version.width, height: version.height }
+        <MediaViewer
+          media={{ ...media, version }}
+          counterpart={
+            media.counterpart
+              ? {
+                  ...media.counterpart,
+                  // Its own newest, not the selected version number: the two
+                  // media have independent histories, and "v2 of the after" has
+                  // no counterpart "v2 of the before" to line up with.
+                  version: media.counterpart.latestVersion,
+                }
               : null
           }
-          // The frame is centered over a metadata bar that spans the column, the
-          // arrangement every screenshot viewer settles on: the media is the page,
-          // and what is known about it reads as a bar beneath rather than as a
-          // caption that has to track the frame's edges at every aspect ratio.
-          //
-          // `self-center` matters beyond the alignment. A stretched column child
-          // keeps the container's full width while `max-h` clamps its height,
-          // which leaves checkerboard on both sides of the image — the exact
-          // confusion the checkerboard exists to signal. Sizing to its content is
-          // what lets the aspect ratio hold.
-          //
-          // The minimum gives a frame to a media whose dimensions processing
-          // hasn't recorded yet; the cap keeps a tall screenshot from pushing the
-          // metadata and the actions below the fold.
-          className="flex max-h-[75dvh] min-h-64 w-auto max-w-full items-center justify-center self-center"
-        >
-          {version.isVideo ? (
-            <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
-          ) : (
-            <MediaImage src={version.fileUrl} alt={media.name} />
-          )}
-          {/* The pins sit inside the well, so a percentage position lands on the
-              media's own box rather than on the page. */}
-          {showComments ? (
-            <MediaCommentPins
-              pins={pins}
-              selectedCommentId={selectedCommentId}
-              onSelect={setSelectedCommentId}
-              draftPoint={draftPoint}
-              placing={placing}
-              onPlace={setDraftPoint}
-            />
-          ) : null}
-        </MediaWell>
+          pins={pins}
+          selectedCommentId={selectedCommentId}
+          onSelect={setSelectedCommentId}
+          draftPoint={draftPoint}
+          placing={placing}
+          onPlace={setDraftPoint}
+        />
 
-        <StatusLine media={media} />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <StatusLine media={media} version={version} />
+          <MediaVersionPicker
+            versions={media.versions}
+            selectedId={version.id}
+            onSelect={setVersionId}
+          />
+        </div>
 
         <div className="border-t-thin flex items-center justify-between gap-4 pt-3">
           <Identity projectSlug={media.project?.slug ?? null} />
@@ -208,6 +208,7 @@ function MediaViewer(props: { media: Media }) {
         <aside className="flex min-h-0 w-full flex-col lg:w-96 lg:shrink-0">
           <MediaComments
             media={media}
+            viewedVersionId={version.id}
             pins={pins}
             selectedCommentId={selectedCommentId}
             onSelect={setSelectedCommentId}
@@ -236,15 +237,15 @@ function MediaViewer(props: { media: Media }) {
  * The metadata rail: monospace, because every value on it is a value rather than a
  * sentence — a file name, a pixel count, a byte count, a countdown.
  */
-function StatusLine(props: { media: Media }) {
-  const { media } = props;
-  const { latestVersion: version } = media;
+function StatusLine(props: {
+  media: Media;
+  version: Media["versions"][number];
+}) {
+  const { media, version } = props;
   const parts = [
     formatDimensions(version.width, version.height),
     formatBytes(version.sizeBytes),
-    // Only worth saying once there is more than one: "v1" on a media nobody has
-    // re-uploaded is noise.
-    media.versions.length > 1 ? `v${version.number}` : null,
+    // The picker already names the version when there is more than one.
   ].filter((part): part is string => part !== null);
 
   const expiry = formatExpiry(version.expiresAt);

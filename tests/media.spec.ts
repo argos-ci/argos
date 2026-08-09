@@ -22,7 +22,14 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   await expect(page.getByText("375×720")).toBeVisible();
   // Two uploads, so the version is worth naming.
   await expect(page.getByText("v2")).toBeVisible();
-  await expect(page.getByRole("img", { name: "checkout.png" })).toBeVisible();
+  // A pair, so both halves are on the page and the alt text distinguishes them.
+  await expect(
+    page.getByRole("img", { name: "checkout.png (before)" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "checkout.png (after)" }),
+  ).toBeVisible();
+  await expect(page.getByText("BEFORE")).toBeVisible();
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
 
   // Two threads, one of them pinned to a point on the image.

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import type { ScreenPoint } from "@/containers/Build/projection";
 import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
@@ -13,8 +14,6 @@ import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
-
-import type { ScreenPoint } from "./geometry";
 
 type CommentCardProps = React.ComponentProps<typeof BuildCommentCard>;
 type Comment = CommentCardProps["comment"];

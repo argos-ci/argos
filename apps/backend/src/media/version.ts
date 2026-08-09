@@ -1,4 +1,5 @@
 import { MediaVersion } from "@/database/models";
+import { boom } from "@/util/error";
 
 /**
  * The newest uploaded version of each of these media.
@@ -58,4 +59,35 @@ export async function getMediaVersionCounts(
     .castTo<{ mediaId: string; count: string }[]>();
 
   return new Map(rows.map((row) => [row.mediaId, Number(row.count)]));
+}
+
+/**
+ * Which version a comment is about.
+ *
+ * A pin describes a spot on the bytes its author was looking at, so the version
+ * has to be recorded rather than assumed: the share page lets a reviewer step back
+ * through the history, and a comment written on v1 that claimed to be about v3
+ * would point at the wrong pixel.
+ *
+ * A requested version must belong to this media — accepting any id would let a
+ * caller attach their comment to someone else's upload.
+ */
+export async function resolveCommentMediaVersionId(args: {
+  media: { id: string };
+  requested: string | null;
+}): Promise<string | null> {
+  const { media, requested } = args;
+
+  if (requested) {
+    const version = await MediaVersion.query()
+      .findById(requested)
+      .where("mediaId", media.id);
+    if (!version) {
+      throw boom(400, "That version does not belong to this media.");
+    }
+    return version.id;
+  }
+
+  const latest = await getLatestMediaVersion(media.id);
+  return latest?.id ?? null;
 }

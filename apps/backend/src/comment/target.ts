@@ -15,21 +15,45 @@ import { Build, Comment, Media, Project, Test } from "@/database/models";
 export type CommentTarget =
   | { type: "build"; build: Build }
   | { type: "test"; test: Test }
-  | { type: "media"; media: Media };
+  | {
+      type: "media";
+      media: Media;
+      /**
+       * The version the author was looking at, so a pin is only ever drawn over
+       * the bytes it describes. Null when the media has no landed upload.
+       */
+      mediaVersionId: string | null;
+    };
 
 /** The target columns to persist on a comment row. */
 export function getCommentTargetColumns(target: CommentTarget): {
   buildId: string | null;
   testId: string | null;
   mediaId: string | null;
+  mediaVersionId: string | null;
 } {
   switch (target.type) {
     case "build":
-      return { buildId: target.build.id, testId: null, mediaId: null };
+      return {
+        buildId: target.build.id,
+        testId: null,
+        mediaId: null,
+        mediaVersionId: null,
+      };
     case "test":
-      return { buildId: null, testId: target.test.id, mediaId: null };
+      return {
+        buildId: null,
+        testId: target.test.id,
+        mediaId: null,
+        mediaVersionId: null,
+      };
     case "media":
-      return { buildId: null, testId: null, mediaId: target.media.id };
+      return {
+        buildId: null,
+        testId: null,
+        mediaId: target.media.id,
+        mediaVersionId: target.mediaVersionId,
+      };
     default:
       assertNever(target);
   }
@@ -116,7 +140,7 @@ export async function resolveCommentTarget(
     .findById(comment.mediaId)
     .withGraphFetched("project.account");
   invariant(media, "Comment media not found");
-  return { type: "media", media };
+  return { type: "media", media, mediaVersionId: comment.mediaVersionId };
 }
 
 /** URL of the page a target's comments are shown on. */

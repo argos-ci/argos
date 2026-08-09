@@ -42,6 +42,7 @@ import {
   subscribeUserToCommentThread,
   unsubscribeUserFromCommentThread,
 } from "@/database/services/comment-notification-subscription";
+import { resolveCommentMediaVersionId } from "@/media/version";
 
 import {
   ICommentChangeType,
@@ -235,6 +236,14 @@ export const typeDefs = gql`
     screenshotDiff: ScreenshotDiff
     "Where on the screenshot diff the comment points; null means the whole diff"
     anchor: CommentAnchor
+    """
+    The media version this comment was written on, for a comment on a media.
+
+    A pin describes a spot on the bytes its author was looking at, so it is only
+    meaningful drawn over that version. Null for a comment written before versions
+    existed, or on a version since purged by retention.
+    """
+    mediaVersionId: ID
     "Whether the current user is subscribed to this comment thread"
     threadSubscribed: Boolean!
     "Whether the comment belongs to a pending (unsubmitted) review and is only visible to its author"
@@ -295,6 +304,11 @@ export const typeDefs = gql`
     comment about the whole thing. A reply inherits its thread's anchor.
     """
     anchor: CommentAnchorInput
+    """
+    The media version being looked at, so a pin is only drawn over the bytes it
+    describes. Defaults to the newest.
+    """
+    mediaVersionId: ID
     "Rich-text JSON content of the comment"
     body: JSONObject!
   }
@@ -658,7 +672,14 @@ export const resolvers: IResolvers = {
         message: "You cannot comment on this media",
       });
 
-      const target: CommentTarget = { type: "media", media };
+      // The version the author is looking at, which is not necessarily the
+      // newest: the share page lets them go back through the history.
+      const mediaVersionId = await resolveCommentMediaVersionId({
+        media,
+        requested: input.mediaVersionId ?? null,
+      });
+
+      const target: CommentTarget = { type: "media", media, mediaVersionId };
 
       const thread = input.threadId
         ? await getCommentThreadForUser({

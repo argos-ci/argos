@@ -19,9 +19,16 @@ import {
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
 import {
+  isPointInImage,
+  useImageProjection,
+  type NormalizedPoint,
+  type ScreenPoint,
+} from "@/containers/Build/projection";
+import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   type PaneSize,
 } from "@/containers/Build/Zoomer";
+import { CommentPin } from "@/containers/Comment/CommentPin";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
@@ -36,14 +43,7 @@ import { getErrorMessage } from "@/util/error";
 import { useCanAddToReview } from "../ReviewCommentSubmitButton";
 import { CommentDraftPopover } from "./CommentDraftPopover";
 import { CommentMarker } from "./CommentMarker";
-import { CommentPin } from "./CommentPin";
 import { CommentThreadPopover } from "./CommentThreadPopover";
-import {
-  isPointInImage,
-  useScreenshotProjection,
-  type NormalizedPoint,
-  type ScreenPoint,
-} from "./geometry";
 
 const _BuildFragment = graphql(`
   fragment ScreenshotCommentLayer_Build on Build {
@@ -133,7 +133,7 @@ export function ScreenshotCommentLayer(props: {
     auth.status === "authenticated" ? auth.account?.id : undefined;
   const client = useApolloClient();
 
-  const { toScreen, toNormalized, ready } = useScreenshotProjection({
+  const { toScreen, toNormalized, ready } = useImageProjection({
     paneSize,
     imgSize,
   });

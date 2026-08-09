@@ -1,12 +1,11 @@
 import { clsx } from "clsx";
 import { createPortal } from "react-dom";
 
+import type { ScreenPoint } from "@/containers/Build/projection";
 import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
 } from "@/containers/Build/Zoomer";
-
-import type { ScreenPoint } from "./geometry";
 
 /**
  * Positioning shell for a comment prompt, thread or preview. Rendered in a

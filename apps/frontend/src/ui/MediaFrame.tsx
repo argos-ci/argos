@@ -1,4 +1,3 @@
-import { useState } from "react";
 import clsx from "clsx";
 
 /**
@@ -60,40 +59,7 @@ export function MediaWell(props: {
 }
 
 /**
- * An image on the inspection surface.
- *
- * Fades in over 150ms as it decodes: a multi-megabyte screenshot otherwise snaps
- * into place, which on a page whose whole job is that one image reads as a
- * glitch. Skipped entirely under `prefers-reduced-motion`.
- */
-export function MediaImage(props: {
-  src: string;
-  alt: string;
-  className?: string;
-}) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <img
-      src={props.src}
-      alt={props.alt}
-      onLoad={() => setLoaded(true)}
-      className={clsx(
-        "block h-auto max-h-full w-auto max-w-full object-contain",
-        "motion-safe:transition-opacity motion-safe:duration-150",
-        loaded ? "opacity-100" : "motion-safe:opacity-0",
-        props.className,
-      )}
-    />
-  );
-}
-
-/**
- * A video on the inspection surface, with the browser's own controls.
- *
- * Native controls on purpose: a custom player is a lot of surface to get wrong
- * (keyboard, captions, fullscreen, scrubbing) for no gain on a page somebody
- * opened to watch one clip, and the native ones are the controls they already
- * know.
+ * A video in its frame, with the browser's own controls.
  */
 export function MediaVideo(props: {
   src: string;

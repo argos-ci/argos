@@ -1,7 +1,7 @@
+import type { ScreenPoint } from "@/containers/Build/projection";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
-import type { ScreenPoint } from "./geometry";
 
 type CommentCardProps = React.ComponentProps<typeof BuildCommentCard>;
 

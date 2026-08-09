@@ -1,19 +1,23 @@
 import { useCallback } from "react";
 
-import { useScaleContext } from "@/containers/Build/ScaleContext";
-import { useZoomTransform, type PaneSize } from "@/containers/Build/Zoomer";
+import { useScaleContext } from "./ScaleContext";
+import { useZoomTransform, type PaneSize } from "./Zoomer";
 
 export type NormalizedPoint = { x: number; y: number };
 export type ScreenPoint = { left: number; top: number };
 
 /**
- * Maps between a screenshot's normalized coordinates (0–1 of its width/height)
- * and pixel positions within the pane's content box. It accounts for the image
- * being horizontally centered and top-aligned, scaled by `imgScale`, then moved
- * by the live pan/zoom transform — the same `imgToWorkspace` math that places
- * the change highlights (see `RectHighlights`).
+ * Maps between an image's normalized coordinates (0–1 of its width/height) and
+ * pixel positions within the pane's content box. It accounts for the image being
+ * horizontally centered and top-aligned, scaled by `imgScale`, then moved by the
+ * live pan/zoom transform — the same `imgToWorkspace` math that places the change
+ * highlights (see `RectHighlights`).
+ *
+ * Shared by a build's screenshot comments and an uploaded media's, because a
+ * normalized anchor means the same thing on both and neither can position by CSS
+ * percentage once the image can be panned and zoomed.
  */
-export function useScreenshotProjection(params: {
+export function useImageProjection(params: {
   paneSize: PaneSize | null;
   imgSize: { width: number; height: number };
 }) {

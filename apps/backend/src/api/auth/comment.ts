@@ -7,6 +7,7 @@ import {
 } from "@/comment/target";
 import { getCommentThreadRoot } from "@/comment/thread";
 import { Comment, type User } from "@/database/models";
+import { resolveCommentMediaVersionId } from "@/media/version";
 import { boom } from "@/util/error";
 
 import { loadBuildForUserAuth, type BuildActionPermission } from "./build";
@@ -37,7 +38,13 @@ export async function loadCommentTargetForUserAuth(
 ): Promise<{ auth: CommentAuth; target: CommentTarget }> {
   if ("mediaId" in params) {
     const { auth, media } = await loadMediaForAuth(authPromise, params);
-    return { auth, target: { type: "media", media } };
+    // A caller reaching a media through the REST API is acting on its current
+    // state, which is its newest upload.
+    const mediaVersionId = await resolveCommentMediaVersionId({
+      media,
+      requested: null,
+    });
+    return { auth, target: { type: "media", media, mediaVersionId } };
   }
   if ("testId" in params) {
     const { auth, test } = await loadTestForAuth(authPromise, params);

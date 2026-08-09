@@ -25,6 +25,7 @@ const _MediaCommentsFragment = graphql(`
     comments {
       id
       threadId
+      mediaVersionId
       anchor {
         __typename
         ... on CommentPointAnchor {
@@ -83,13 +84,26 @@ function getCommentPoint(comment: Comment): MediaPoint | null {
  * Pins for a media's threads, numbered in the order they are listed so the badge
  * on the image and the badge beside the thread always agree.
  */
-export function getMediaPins(comments: readonly Comment[]): MediaPin[] {
+export function getMediaPins(
+  comments: readonly Comment[],
+  /** The version on screen. A pin only belongs on the bytes it described. */
+  viewedVersionId: string | null,
+): MediaPin[] {
   const pins: MediaPin[] = [];
   for (const thread of getCommentThreads(comments)) {
     const point = getCommentPoint(thread.root);
-    if (point) {
-      pins.push({ commentId: thread.root.id, point, index: pins.length + 1 });
+    if (!point) {
+      continue;
     }
+    // A pin at (0.62, 0.34) described a spot on one upload. Drawing it over a
+    // later version — reshot at another size, or fixed so the thing is no longer
+    // there — points at the wrong pixel and reads as a claim about the current
+    // image that nobody made. The thread still shows in the panel; only its
+    // marker is withheld.
+    if (thread.root.mediaVersionId !== viewedVersionId) {
+      continue;
+    }
+    pins.push({ commentId: thread.root.id, point, index: pins.length + 1 });
   }
   return pins;
 }
@@ -102,6 +116,8 @@ export function getMediaPins(comments: readonly Comment[]): MediaPin[] {
  */
 export function MediaComments(props: {
   media: Media;
+  /** The version on screen — what a new pin will be recorded against. */
+  viewedVersionId: string;
   pins: MediaPin[];
   selectedCommentId: string | null;
   onSelect: (commentId: string | null) => void;
@@ -113,6 +129,7 @@ export function MediaComments(props: {
 }) {
   const {
     media,
+    viewedVersionId,
     pins,
     selectedCommentId,
     onSelect,
@@ -143,7 +160,10 @@ export function MediaComments(props: {
   }) => {
     await client.mutate({
       mutation: AddMediaCommentMutation,
-      variables: { input: { mediaId: media.id, ...input }, ...roleScope },
+      variables: {
+        input: { mediaId: media.id, mediaVersionId: viewedVersionId, ...input },
+        ...roleScope,
+      },
     });
   };
 
