@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import type { MediaState, MediaVisibility } from "@argos/schemas/media";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -6,6 +5,7 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 
 import config from "@/config";
 import { Account, Media, MediaVersion, Project } from "@/database/models";
+import { generateRandomString } from "@/database/services/crypto";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getS3Client } from "@/storage/s3";
 import { endTrialToUnlockUsage } from "@/stripe";
@@ -21,15 +21,17 @@ import { headMediaObject } from "./object";
 const UPLOAD_EXPIRES_IN_SECONDS = 1800; // 30 minutes
 
 /**
- * Length of the share token in bytes. 24 bytes is 192 bits of entropy, rendered
- * as 32 base64url characters: unguessable is the *only* thing protecting a public
- * share URL, so this is deliberately far past what a rate limiter would need to
- * make enumeration hopeless.
+ * Length of the share token, in characters of {@link generateRandomString}'s
+ * alphabet (~5.1 bits each, so ~100 bits): unguessable is the *only* thing
+ * protecting a public share URL, so this stays far past what a rate limiter
+ * would need to make enumeration hopeless. Alphanumeric and this short on
+ * purpose — the URL is pasted into pull requests and chat messages, and
+ * base64url's `-`/`_` break double-click selection and word wrapping.
  */
-const SHARE_TOKEN_BYTES = 24;
+const SHARE_TOKEN_LENGTH = 20;
 
 function generateShareToken(): string {
-  return randomBytes(SHARE_TOKEN_BYTES).toString("base64url");
+  return generateRandomString(SHARE_TOKEN_LENGTH);
 }
 
 export type CreateMediaParams = {
