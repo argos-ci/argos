@@ -32,6 +32,7 @@ import {
   getNewestMediaVersion,
 } from "@/media/version";
 import { boom } from "@/util/error";
+import { redisLock } from "@/util/redis";
 
 import { getProjectForAuth } from "../auth/project";
 import {
@@ -541,22 +542,57 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
       return;
     }
 
-    // Name and branch are both in the identity index, so a rename onto another
-    // staged media of the same name is a constraint violation rather than a
-    // merge.
-    // Answered as a 409 instead of a 500: the caller can act on it.
-    const updated = await media
-      .$query()
-      .patchAndFetch(patchProps)
-      .catch((error: unknown) => {
-        if (isUniqueViolationError(error)) {
+    // The identity this edit is moving *to* — the same key `createMedia` locks,
+    // so a rename and an upload racing for one name serialize against each other
+    // instead of one of them hitting the index and 500ing.
+    const target = {
+      branch: patchProps.branch ?? media.branch,
+      name: patchProps.name ?? media.name,
+    };
+
+    const updated = await redisLock.acquire(
+      [
+        "media-identity",
+        media.projectId,
+        target.branch ? `branch:${target.branch}` : "pr:0",
+        target.name,
+        media.state ?? "",
+      ],
+      async () => {
+        // `whereNull` rather than the check above on its own: publishing can
+        // land between them, and patching afterwards would rename a media the
+        // pull request comment already lists — leaving the comment describing a
+        // name that no longer exists and the next upload of the old one
+        // creating a duplicate.
+        const rows = await Media.query()
+          .patch(patchProps)
+          .where("id", media.id)
+          .whereNull("githubPullRequestId")
+          .catch((error: unknown) => {
+            // Name and branch are both in the identity index, so a rename onto
+            // another staged media of the same name is a constraint violation
+            // rather than a merge. 409 rather than 500: the caller can act on it.
+            if (isUniqueViolationError(error)) {
+              throw boom(
+                409,
+                "Another media on this branch already has that name.",
+              );
+            }
+            throw error;
+          });
+
+        if (rows === 0) {
           throw boom(
             409,
-            "Another media on this branch already has that name.",
+            "This media was published to a pull request while the edit was in flight. Its name and branch are fixed once it is published.",
           );
         }
-        throw error;
-      });
+
+        const fresh = await Media.query().findById(media.id);
+        invariant(fresh, "the media was just patched");
+        return fresh;
+      },
+    );
 
     res.send(await serializeMediaWithVersion(updated, null));
   });
