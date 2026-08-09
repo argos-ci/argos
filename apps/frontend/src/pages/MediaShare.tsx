@@ -197,9 +197,9 @@ function SharePage(props: { media: Media }) {
 
         <div className="border-t-thin flex items-center justify-between gap-4 pt-3">
           <Identity projectSlug={media.project?.slug ?? null} />
-          <div className="flex items-center gap-2">
-            <CopyMarkdownButton markdown={media.markdown} />
-            <CopyButton text={media.url} aria-label="Copy link" />
+          <div className="flex items-center gap-4">
+            <CopyAction label="Link" text={media.url} />
+            <CopyAction label="Markdown" text={media.markdown} />
           </div>
         </div>
       </div>
@@ -301,11 +301,18 @@ function Identity(props: { projectSlug: string | null }) {
   );
 }
 
-function CopyMarkdownButton(props: { markdown: string }) {
+/**
+ * One labelled copy action.
+ *
+ * Both are labelled because there are two: the share link and the Markdown embed
+ * are different things, and two bare copy icons side by side read as the same
+ * button rendered twice — which is exactly how it looked before.
+ */
+function CopyAction(props: { label: string; text: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-low hidden text-xs sm:inline">Markdown</span>
-      <CopyButton text={props.markdown} aria-label="Copy Markdown" />
+      <span className="text-low text-xs">{props.label}</span>
+      <CopyButton text={props.text} aria-label={`Copy ${props.label}`} />
     </div>
   );
 }

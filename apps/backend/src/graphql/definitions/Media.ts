@@ -112,6 +112,26 @@ export const typeDefs = gql`
     unresolvedCommentCount: Int!
   }
 
+  """
+  A pull request that has media uploaded to it, with what is needed to act on it:
+  the pull request itself, the build that tested it, and the media.
+  """
+  type MediaPullRequest implements Node {
+    "The pull request's own id, so a row is stable across refetches"
+    id: ID!
+    pullRequest: PullRequest!
+    project: Project!
+    "The most recent Argos build for this pull request, if it has one"
+    latestBuild: Build
+    "The media uploaded to this pull request, oldest first"
+    media: [Media!]!
+  }
+
+  type MediaPullRequestConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [MediaPullRequest!]!
+  }
+
   extend type Query {
     """
     Look up a media by its share token — the handle a share URL carries.
@@ -196,6 +216,27 @@ export const resolvers: IResolvers = {
         visibility: media.visibility,
         projectPermissions,
       }).map((permission) => GRAPHQL_PERMISSION[permission]);
+    },
+  },
+  MediaPullRequest: {
+    id: (row) => row.githubPullRequestId,
+    pullRequest: async (row, _args, ctx) => {
+      const pullRequest = await ctx.loaders.GithubPullRequest.load(
+        row.githubPullRequestId,
+      );
+      invariant(pullRequest, "pull request not found");
+      return pullRequest;
+    },
+    project: async (row, _args, ctx) => {
+      const project = await ctx.loaders.Project.load(row.projectId);
+      invariant(project, "project not found");
+      return project;
+    },
+    latestBuild: async (row, _args, ctx) => {
+      return ctx.loaders.LatestPullRequestBuild.load(row.githubPullRequestId);
+    },
+    media: async (row, _args, ctx) => {
+      return ctx.loaders.PullRequestMedia.load(row.githubPullRequestId);
     },
   },
   Query: {
