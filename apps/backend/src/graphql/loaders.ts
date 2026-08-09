@@ -1083,8 +1083,14 @@ function createMediaVersionsLoader() {
 /**
  * The other half of a media's before/after pair.
  *
- * Matched on the same project, pull request and name with the opposite state —
+ * Matched on the same project and attachment and name with the opposite state —
  * the same tuple `media_identity_unique` is built on, so there is at most one.
+ *
+ * "Attachment" is the pull request when there is one and the branch otherwise,
+ * exactly as the index computes it. Keying on the pull request alone would
+ * collapse every staged media onto one empty segment, so two branches staging
+ * `checkout.png` would pair across each other and which one won would depend on
+ * the order the unordered candidate query happened to return.
  */
 function createMediaCounterpartLoader() {
   return new DataLoader<string, Media | null>(async (mediaIds) => {
@@ -1109,10 +1115,15 @@ function createMediaCounterpartLoader() {
     const key = (item: {
       projectId: string;
       githubPullRequestId: string | null;
+      branch: string | null;
       name: string;
       state: string | null;
-    }) =>
-      `${item.projectId}:${item.githubPullRequestId ?? ""}:${item.name}:${item.state}`;
+    }) => {
+      const attachment = item.githubPullRequestId
+        ? `pr:${item.githubPullRequestId}`
+        : `branch:${item.branch ?? ""}`;
+      return `${item.projectId}:${attachment}:${item.name}:${item.state}`;
+    };
 
     const byKey = new Map(candidates.map((item) => [key(item), item]));
     const byId = new Map(media.map((item) => [item.id, item]));

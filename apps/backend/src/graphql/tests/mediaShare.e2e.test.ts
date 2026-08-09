@@ -267,6 +267,49 @@ describe("mediaByShareToken", () => {
     expect(result.comments).toEqual([]);
   });
 
+  it("pairs a staged media only within its own branch", async () => {
+    // Identity is (project, attachment, name, state), and for staged media the
+    // attachment is the branch. Keying the pairing on the pull request alone
+    // collapses every staged media onto one empty segment, so two branches
+    // staging `checkout.png` pair across each other — and which one wins depends
+    // on the order the candidate query happened to return.
+    const { auth, project } = await createTeamOwner();
+
+    const { media: mine } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "before",
+        branch: "feat/a",
+        shareToken: "pair-mine",
+      },
+    });
+    const { media: sibling } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/a",
+        shareToken: "pair-sibling",
+      },
+    });
+    // Same name and the same opposite state, on another branch.
+    await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/b",
+        shareToken: "pair-other-branch",
+      },
+    });
+
+    const res = await query({ auth, shareToken: mine.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken.counterpart.id).toBe(sibling.id);
+  });
+
   it("counts only unresolved threads", async () => {
     const { user, auth, project } = await createTeamOwner();
     const media = await createMediaScenario({
