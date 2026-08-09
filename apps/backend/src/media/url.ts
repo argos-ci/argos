@@ -11,6 +11,14 @@ export function getMediaShareUrl(shareToken: string): string {
   return new URL(`/m/${shareToken}`, config.get("server.url")).href;
 }
 
+/** What embedding a media in Markdown needs to know about it. */
+export type MediaEmbedArgs = {
+  name: string;
+  shareUrl: string;
+  posterUrl: string | null;
+  isVideo: boolean;
+};
+
 /**
  * Markdown ready to paste into a pull request comment.
  *
@@ -20,12 +28,7 @@ export function getMediaShareUrl(shareToken: string): string {
  * render as a dead link. A video whose poster hasn't been extracted yet
  * degrades to a plain link rather than an image that 404s.
  */
-export function getMediaMarkdown(args: {
-  name: string;
-  shareUrl: string;
-  posterUrl: string | null;
-  isVideo: boolean;
-}): string {
+export function getMediaMarkdown(args: MediaEmbedArgs): string {
   const { name, shareUrl, posterUrl, isVideo } = args;
   const alt = escapeMarkdownText(name);
 
@@ -38,6 +41,62 @@ export function getMediaMarkdown(args: {
   }
 
   return `[▶ ${alt}](${shareUrl})`;
+}
+
+/** One row of the media table: a pair's two halves, or a lone media. */
+export type MediaMarkdownGroup = {
+  name: string;
+  /** The pair's note — shown in a Notes column when any group has one. */
+  description: string | null;
+  before: MediaEmbedArgs | null;
+  after: MediaEmbedArgs | null;
+};
+
+/**
+ * The Markdown table presenting media, a before/after pair side by side in one
+ * row. One rendering shared by the managed pull request comment and by the
+ * share page's copyable snippet, so what a reviewer pastes by hand shows up
+ * exactly like what the bot posts.
+ */
+export function getMediaTableMarkdown(groups: MediaMarkdownGroup[]): string {
+  const hasPairs = groups.some((group) => group.before && group.after);
+  const hasNotes = groups.some((group) => group.description);
+
+  const rows = groups.flatMap((group) => {
+    const solo = group.after ?? group.before;
+    if (!solo) {
+      return [];
+    }
+    const cells = hasPairs
+      ? [
+          escapeTableCell(group.name),
+          group.before ? getMediaMarkdown(group.before) : "",
+          group.after ? getMediaMarkdown(group.after) : "",
+        ]
+      : [escapeTableCell(group.name), getMediaMarkdown(solo)];
+    if (group.description) {
+      cells.push(escapeTableCell(group.description));
+    } else if (hasNotes) {
+      cells.push("");
+    }
+    return [`| ${cells.join(" | ")} |`];
+  });
+
+  const headers = hasPairs ? ["Name", "Before", "After"] : ["Name", "Preview"];
+  if (hasNotes) {
+    headers.push("Notes");
+  }
+
+  return [
+    `| ${headers.join(" | ")} |`,
+    `| ${headers.map(() => "---").join(" | ")} |`,
+    ...rows,
+  ].join("\n");
+}
+
+/** `|` alone is enough to break out of a table cell. */
+function escapeTableCell(value: string): string {
+  return value.replace(/\|/g, "\\|");
 }
 
 /**

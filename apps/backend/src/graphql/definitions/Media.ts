@@ -7,13 +7,10 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
-import {
-  getMediaDownloadUrl,
-  getMediaFileUrl,
-  getMediaPosterUrl,
-} from "@/media/serve";
-import { getMediaMarkdown } from "@/media/url";
+import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
+import { getMediaMarkdown, getMediaTableMarkdown } from "@/media/url";
 import { getLatestMediaVersion } from "@/media/version";
+import { getProjectMemberIds } from "@/project/members";
 
 import {
   IMediaPermission,
@@ -60,8 +57,6 @@ export const typeDefs = gql`
     number: Int!
     "CDN URL the bytes are served from"
     fileUrl: String!
-    "Same bytes, served as an attachment so the browser saves instead of rendering"
-    downloadUrl: String!
     "Poster frame of a video, derived by the image CDN. Null for images."
     posterUrl: String
     contentType: String!
@@ -91,6 +86,12 @@ export const typeDefs = gql`
     url: String!
     "Ready-to-paste Markdown embed, always pointing at the newest version"
     markdown: String!
+    """
+    Ready-to-paste Markdown table showing the before/after pair side by side —
+    the same rendering the managed pull request comment uses. Null when this
+    media is not half of an uploaded pair.
+    """
+    markdownPair: String
     "The newest uploaded version — what the share page and the comment show"
     latestVersion: MediaVersion!
     "Every uploaded version, newest first"
@@ -114,6 +115,12 @@ export const typeDefs = gql`
     its author was looking at.
     """
     comments: [Comment!]!
+    """
+    Users that can be @-mentioned in a comment on this media — the project's
+    members. Empty unless the viewer can comment: a public share link must not
+    enumerate the team behind it.
+    """
+    mentionableUsers: [User!]!
     "Open threads on this media — what still needs acting on."
     unresolvedCommentCount: Int!
   }
@@ -153,7 +160,6 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
-    downloadUrl: (version) => getMediaDownloadUrl(version),
     posterUrl: (version) => getMediaPosterUrl(version),
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,
@@ -187,6 +193,51 @@ export const resolvers: IResolvers = {
         isVideo: version.isVideo(),
       });
     },
+    markdownPair: async (media, _args, ctx) => {
+      // The pair's side-by-side table — the exact rendering the managed pull
+      // request comment uses — so pasting it by hand shows before and after
+      // together, like the page does.
+      const counterpart = media.state
+        ? await ctx.loaders.MediaCounterpart.load(media.id)
+        : null;
+      const counterpartVersion = counterpart
+        ? await ctx.loaders.LatestMediaVersion.load(counterpart.id)
+        : null;
+      if (!counterpart || !counterpartVersion) {
+        return null;
+      }
+
+      const version = await ctx.loaders.LatestMediaVersion.load(media.id);
+      invariant(version, "media has no uploaded version");
+      const embed = {
+        name: media.name,
+        shareUrl: media.url,
+        posterUrl: getMediaPosterUrl(version),
+        isVideo: version.isVideo(),
+      };
+      const counterpartEmbed = {
+        name: counterpart.name,
+        shareUrl: counterpart.url,
+        posterUrl: getMediaPosterUrl(counterpartVersion),
+        isVideo: counterpartVersion.isVideo(),
+      };
+      const [beforeMedia, afterMedia] =
+        media.state === "before" ? [media, counterpart] : [counterpart, media];
+      const [before, after] =
+        media.state === "before"
+          ? [embed, counterpartEmbed]
+          : [counterpartEmbed, embed];
+      return getMediaTableMarkdown([
+        {
+          name: media.name,
+          // The description belongs to the pair, not to either half.
+          description:
+            afterMedia.description ?? beforeMedia.description ?? null,
+          before,
+          after,
+        },
+      ]);
+    },
     project: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
@@ -201,6 +252,28 @@ export const resolvers: IResolvers = {
         mediaId: media.id,
         viewerUserId: ctx.auth?.user.id ?? null,
       });
+    },
+    mentionableUsers: async (media, _args, ctx) => {
+      if (!ctx.auth) {
+        return [];
+      }
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const projectPermissions = await project.$getPermissions(ctx.auth.user);
+      const permissions = getMediaPermissions({
+        visibility: media.visibility,
+        projectPermissions,
+      });
+      if (!permissions.includes("comment")) {
+        return [];
+      }
+      const userIds = await getProjectMemberIds(project);
+      const accounts = await Promise.all(
+        userIds.map((userId) =>
+          ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
+      );
+      return accounts.filter((account) => account !== null);
     },
     unresolvedCommentCount: async (media, _args, ctx) => {
       const comments = await ctx.loaders.MediaComments.load({

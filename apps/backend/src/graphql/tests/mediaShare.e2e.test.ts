@@ -28,6 +28,7 @@ const MEDIA_SHARE_QUERY = `
       description
       url
       markdown
+      markdownPair
       permissions
       unresolvedCommentCount
       latestVersion {
@@ -48,6 +49,7 @@ const MEDIA_SHARE_QUERY = `
       }
       counterpart {
         id
+        url
         state
         latestVersion {
           id
@@ -164,6 +166,13 @@ describe("mediaByShareToken", () => {
     expect(result.counterpart.state).toBe("before");
     expect(result.counterpart.latestVersion.fileUrl).toContain("http");
 
+    // The single embed points at this half; the pair snippet is the same
+    // side-by-side table the managed pull request comment renders.
+    expect(result.markdown).toBe(`![checkout.png](${result.url})`);
+    expect(result.markdownPair).toContain("| Name | Before | After |");
+    expect(result.markdownPair).toContain(result.url);
+    expect(result.markdownPair).toContain(result.counterpart.url);
+
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
     );
@@ -207,6 +216,8 @@ describe("mediaByShareToken", () => {
     // and cannot comment on it.
     expect(result.project).toBeNull();
     expect(result.permissions).toEqual(["view"]);
+    // Not half of a pair: there is no before/after table to offer.
+    expect(result.markdownPair).toBeNull();
     expect(result.comments).toEqual([]);
   });
 

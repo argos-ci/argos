@@ -12,7 +12,11 @@ import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
 import { getMediaPosterUrl } from "./serve";
-import { getMediaMarkdown } from "./url";
+import {
+  getMediaTableMarkdown,
+  type MediaEmbedArgs,
+  type MediaMarkdownGroup,
+} from "./url";
 import { getLatestMediaVersions } from "./version";
 
 /** How many media the comment lists before it stops growing. */
@@ -127,46 +131,41 @@ function buildCommentBody(
   media: Media[],
   latestVersions: Map<string, MediaVersion>,
 ): string {
-  const embed = (item: Media): string => {
+  const embed = (item: Media | null): MediaEmbedArgs | null => {
+    if (!item) {
+      return null;
+    }
     const version = latestVersions.get(item.id);
     if (!version) {
-      return "";
+      return null;
     }
-    return getMediaMarkdown({
+    return {
       name: item.name,
       shareUrl: item.url,
       posterUrl: getMediaPosterUrl(version),
       isVideo: version.isVideo(),
-    });
+    };
   };
 
-  const paired = groupByPair(media);
-  const hasPairs = paired.some((group) => group.before && group.after);
-
-  const rows = paired.map((group) => {
+  const groups = groupByPair(media).flatMap((group): MediaMarkdownGroup[] => {
     const item = group.after ?? group.before;
     invariant(item, "a group has at least one media");
-    const cells = hasPairs
-      ? [
-          escapeCell(item.name),
-          group.before ? embed(group.before) : "",
-          group.after ? embed(group.after) : "",
-        ]
-      : [escapeCell(item.name), embed(item)];
-    // The description belongs to the pair, not to either half.
-    const description = group.after?.description ?? group.before?.description;
-    if (description) {
-      cells.push(escapeCell(description));
-    } else if (hasDescription(paired)) {
-      cells.push("");
+    const before = embed(group.before);
+    const after = embed(group.after);
+    if (!before && !after) {
+      return [];
     }
-    return `| ${cells.join(" | ")} |`;
+    return [
+      {
+        name: item.name,
+        // The description belongs to the pair, not to either half.
+        description:
+          group.after?.description ?? group.before?.description ?? null,
+        before,
+        after,
+      },
+    ];
   });
-
-  const headers = hasPairs ? ["Name", "Before", "After"] : ["Name", "Preview"];
-  if (hasDescription(paired)) {
-    headers.push("Notes");
-  }
 
   const versionNote = media.some(
     (item) => (latestVersions.get(item.id)?.number ?? 1) > 1,
@@ -177,9 +176,7 @@ function buildCommentBody(
   return [
     "**Media uploaded by Argos**",
     "",
-    `| ${headers.join(" | ")} |`,
-    `| ${headers.map(() => "---").join(" | ")} |`,
-    ...rows,
+    getMediaTableMarkdown(groups),
     "",
     `<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.${versionNote}</sub>`,
   ].join("\n");
@@ -207,16 +204,6 @@ function groupByPair(media: Media[]): MediaPair[] {
     groups.set(key, group);
   }
   return [...groups.values()];
-}
-
-function hasDescription(groups: MediaPair[]): boolean {
-  return groups.some(
-    (group) => group.before?.description ?? group.after?.description,
-  );
-}
-
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, "\\|");
 }
 
 /**

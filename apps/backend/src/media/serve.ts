@@ -28,20 +28,6 @@ export function getMediaFileUrl(version: MediaVersion): string {
 }
 
 /**
- * A URL that downloads the file instead of rendering it.
- *
- * Served by the CDN with `Content-Disposition: attachment` (ImageKit's
- * `ik-attachment` switch). The frontend cannot do this with `<a download>`:
- * the attribute is ignored on cross-origin URLs, and the bytes live on the
- * CDN's origin, not the app's.
- */
-export function getMediaDownloadUrl(version: MediaVersion): string {
-  const url = new URL(getImageKitUrl(version.key));
-  url.searchParams.set("ik-attachment", "true");
-  return url.href;
-}
-
-/**
  * The URL of a video's poster frame, or `null` for an image.
  *
  * Derived, not stored: the CDN extracts the frame from the video on request. That

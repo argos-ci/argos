@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getMediaMarkdown } from "./url";
+import { getMediaMarkdown, getMediaTableMarkdown } from "./url";
 
 const shareUrl = "https://app.argos-ci.dev/m/abc123";
 const posterUrl = "https://files.example.com/poster.webp";
@@ -53,5 +53,73 @@ describe("getMediaMarkdown", () => {
         isVideo: false,
       }),
     ).toBe(`![before \\[v2\\].png](${shareUrl})`);
+  });
+});
+
+describe("getMediaTableMarkdown", () => {
+  it("shows a pair side by side — the pull request comment's own rendering", () => {
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "checkout.png",
+          description: "Checkout after the spacing fix.",
+          before: {
+            name: "checkout.png",
+            shareUrl: "https://app/m/before",
+            posterUrl: null,
+            isVideo: false,
+          },
+          after: {
+            name: "checkout.png",
+            shareUrl: "https://app/m/after",
+            posterUrl: null,
+            isVideo: false,
+          },
+        },
+      ]),
+    ).toBe(
+      [
+        "| Name | Before | After | Notes |",
+        "| --- | --- | --- | --- |",
+        "| checkout.png | ![checkout.png](https://app/m/before) | ![checkout.png](https://app/m/after) | Checkout after the spacing fix. |",
+      ].join("\n"),
+    );
+  });
+
+  it("keeps a lone media to a single preview column", () => {
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "dashboard.png",
+          description: null,
+          before: null,
+          after: {
+            name: "dashboard.png",
+            shareUrl,
+            posterUrl: null,
+            isVideo: false,
+          },
+        },
+      ]),
+    ).toBe(
+      [
+        "| Name | Preview |",
+        "| --- | --- |",
+        `| dashboard.png | ![dashboard.png](${shareUrl}) |`,
+      ].join("\n"),
+    );
+  });
+
+  it("escapes pipes so a name cannot break out of its cell", () => {
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "a|b.png",
+          description: null,
+          before: null,
+          after: { name: "a|b.png", shareUrl, posterUrl: null, isVideo: false },
+        },
+      ]),
+    ).toContain("| a\\|b.png |");
   });
 });
