@@ -80,7 +80,7 @@ export const CommentSchema = z
     }),
     mediaVersionId: z.string().nullable().meta({
       description:
-        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload — match it to the media's `versions` to get the right file.",
+        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload — match this id against `GET /media/{mediaId}/versions` to get the right file.",
     }),
     threadId: z
       .string()
