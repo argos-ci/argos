@@ -4,12 +4,11 @@ import {
   isVideoMediaContentType,
 } from "@argos/schemas/media";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { fileTypeFromBuffer } from "file-type";
 import sharp from "sharp";
 
 import config from "@/config";
 import { getS3Client } from "@/storage/s3";
-
-import { detectContentType } from "./sniff";
 
 /**
  * How much of the uploaded object to read.
@@ -62,7 +61,12 @@ export async function inspectMediaObject(args: {
   declaredContentType: string;
 }): Promise<MediaInspection> {
   const header = await readObjectHeader(args.key);
-  const detected = detectContentType(header);
+  // `file-type` rather than our own magic-byte table: identifying a container is
+  // a job with a long tail, and the tail is where a bypass would live. It reads
+  // WebM's `DocType` instead of trusting the EBML magic every Matroska file
+  // shares, and an ISO base media `ftyp` brand instead of assuming MP4 — two
+  // distinctions a hand-rolled matcher gets wrong quietly.
+  const detected = (await fileTypeFromBuffer(header))?.mime ?? null;
 
   if (!detected || !isMediaContentType(detected)) {
     throw new MediaContentMismatchError(args.declaredContentType, detected);

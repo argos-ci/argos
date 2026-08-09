@@ -72,6 +72,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
+    "file-type": "^21.3.4",
     "free-email-domains": "^1.9.88",
     "google-auth-library": "^11.0.0",
     "graphql": "16.14.2",
