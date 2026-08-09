@@ -57,7 +57,6 @@ describe("buildMcpTools", () => {
         "listIgnoredChanges",
         "listMedia",
         "listMediaComments",
-        "listMediaFeedback",
         "listProjectContributors",
         "listProjectDeployments",
         "listProjects",

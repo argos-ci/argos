@@ -77,7 +77,6 @@ import {
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
-import { listMediaFeedbackOperation } from "./handlers/listMediaFeedback";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
@@ -386,9 +385,6 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}/media": {
       get: listMediaOperation,
-    },
-    "/projects/{owner}/{project}/media/comments": {
-      get: listMediaFeedbackOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,
