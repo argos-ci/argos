@@ -19,7 +19,7 @@ import { queryProjectMedia } from "@/media/query";
 import {
   getLatestMediaVersion,
   getLatestMediaVersions,
-  getMediaVersionCounts,
+  getMediaVersions,
 } from "@/media/version";
 import { boom } from "@/util/error";
 
@@ -511,23 +511,23 @@ async function serializeMediaWithVersion(
   media: Media,
   version: MediaVersion | null,
 ) {
-  const [resolved, counts] = await Promise.all([
+  const [resolved, versions] = await Promise.all([
     version ?? getLatestMediaVersion(media.id),
-    getMediaVersionCounts([media.id]),
+    getMediaVersions([media.id]),
   ]);
   invariant(resolved, "media has no version to serve");
-  return serializeMedia(media, resolved, counts.get(media.id) ?? 1);
+  return serializeMedia(media, resolved, versions.get(media.id) ?? []);
 }
 
 /**
- * Serialize a list, resolving every media's latest version in two queries rather
- * than two per row.
+ * Serialize a list, resolving every media's versions in two queries rather than
+ * two per row.
  */
 async function serializeMediaListWithVersions(list: Media[]) {
   const ids = list.map((media) => media.id);
-  const [latest, counts] = await Promise.all([
+  const [latest, versions] = await Promise.all([
     getLatestMediaVersions(ids),
-    getMediaVersionCounts(ids),
+    getMediaVersions(ids),
   ]);
   return list.flatMap((media) => {
     const version = latest.get(media.id);
@@ -536,6 +536,6 @@ async function serializeMediaListWithVersions(list: Media[]) {
     if (!version) {
       return [];
     }
-    return [serializeMedia(media, version, counts.get(media.id) ?? 1)];
+    return [serializeMedia(media, version, versions.get(media.id) ?? [])];
   });
 }

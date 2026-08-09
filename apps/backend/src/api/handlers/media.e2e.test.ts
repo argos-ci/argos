@@ -351,6 +351,68 @@ describe("getMedia", () => {
       .set("Authorization", `Bearer ${projectToken}`)
       .expect(400);
   });
+
+  test("lists every version, newest first, each with its own file", async ({
+    projectToken,
+    project,
+  }) => {
+    // A comment records the version its author was looking at, so acting on
+    // feedback means fetching the file *that* version stored — not the current
+    // one, which is the whole reason the feedback exists.
+    const { media, version: first } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+      version: { number: 1, key: "media/1/v1.png" },
+    });
+    const second = await factory.MediaVersion.create({
+      mediaId: media.id,
+      number: 2,
+      key: "media/1/v2.png",
+    });
+
+    const res = await request(app)
+      .get(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${projectToken}`)
+      .expect(200);
+
+    expect(res.body.version).toBe(2);
+    expect(res.body.versions.map((v: { id: string }) => v.id)).toEqual([
+      second.id,
+      first.id,
+    ]);
+    // Each version points at its own bytes: resolving a comment's
+    // `mediaVersionId` here has to reach a different file, or the list is
+    // decoration.
+    const [latest, previous] = res.body.versions;
+    expect(latest.fileUrl).not.toBe(previous.fileUrl);
+    expect(res.body.fileUrl).toBe(latest.fileUrl);
+  });
+
+  test("leaves an unfinalized upload out of the version list", async ({
+    projectToken,
+    project,
+  }) => {
+    // The row exists to sign the upload. Listing it would hand out a URL for
+    // bytes that are not there.
+    const { media, version } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+      version: { number: 1 },
+    });
+    await factory.MediaVersion.create({
+      mediaId: media.id,
+      number: 2,
+      uploadedAt: null,
+      billedUnits: 0,
+    });
+
+    const res = await request(app)
+      .get(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${projectToken}`)
+      .expect(200);
+
+    expect(res.body.versions.map((v: { id: string }) => v.id)).toEqual([
+      version.id,
+    ]);
+  });
 });
 
 describe("deleteMedia", () => {

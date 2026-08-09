@@ -42,23 +42,34 @@ export async function getLatestMediaVersion(
   return version ?? null;
 }
 
-/** How many uploaded versions each of these media has. */
-export async function getMediaVersionCounts(
+/**
+ * Every uploaded version of each of these media, newest first.
+ *
+ * One query for the whole batch, which is what lets the API list a media's whole
+ * history inline instead of behind an endpoint of its own: a comment records the
+ * version it was written against, so acting on feedback means reaching an older
+ * file, and a per-version round trip to fetch what the list already had is the
+ * cost worth avoiding.
+ */
+export async function getMediaVersions(
   mediaIds: string[],
-): Promise<Map<string, number>> {
+): Promise<Map<string, MediaVersion[]>> {
   if (mediaIds.length === 0) {
     return new Map();
   }
 
-  const rows = await MediaVersion.query()
-    .select("mediaId")
-    .count({ count: "*" })
+  const versions = await MediaVersion.query()
     .whereIn("mediaId", mediaIds)
     .whereNotNull("uploadedAt")
-    .groupBy("mediaId")
-    .castTo<{ mediaId: string; count: string }[]>();
+    .orderBy("number", "desc");
 
-  return new Map(rows.map((row) => [row.mediaId, Number(row.count)]));
+  const byMediaId = new Map<string, MediaVersion[]>();
+  for (const version of versions) {
+    const list = byMediaId.get(version.mediaId) ?? [];
+    list.push(version);
+    byMediaId.set(version.mediaId, list);
+  }
+  return byMediaId;
 }
 
 /**

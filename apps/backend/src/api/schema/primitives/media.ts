@@ -15,6 +15,47 @@ export const MediaId = z.string().meta({
   examples: ["4821"],
 });
 
+/**
+ * One stored upload of a media.
+ *
+ * Listed on the media rather than reachable through an endpoint of its own. A
+ * comment records the version its author was looking at — a pin describes a spot
+ * on those bytes, so feedback on v1 that resolved to v3 would point at the wrong
+ * pixel — which means anything acting on comments needs the old file, not just
+ * the current one. An extra round trip per version to fetch what is already in
+ * hand is the bloat, not these few fields.
+ */
+const MediaVersionSchema = z
+  .object({
+    id: z.string().meta({
+      description:
+        "Unique identifier of this version — what a comment's `mediaVersionId` points at.",
+    }),
+    number: z.number().meta({
+      description:
+        "1-based, and what the UI calls the version. Increments each time the same name is uploaded again.",
+    }),
+    fileUrl: z.url().meta({
+      description: "URL of the image or video as it was at this version.",
+    }),
+    posterUrl: z.url().nullable().meta({
+      description: "Poster frame of a video. Always `null` for images.",
+    }),
+    contentType: z.string(),
+    sizeBytes: z.number(),
+    width: z.number().nullable(),
+    height: z.number().nullable(),
+    expiresAt: z.string().nullable().meta({
+      description:
+        "When this version is deleted. Retention applies per version, so an old one ages out while the media and its share URL live on.",
+    }),
+    createdAt: z.string(),
+  })
+  .meta({
+    description: "One uploaded version of a media",
+    id: "MediaVersion",
+  });
+
 export const MediaSchema = z
   .object({
     id: z.string().meta({ description: "Unique identifier of the media" }),
@@ -38,8 +79,9 @@ export const MediaSchema = z
       description:
         "Which version this response describes: 1 for a first upload, incrementing each time the same name is uploaded again.",
     }),
-    versionCount: z.number().meta({
-      description: "How many versions of this media exist.",
+    versions: z.array(MediaVersionSchema).meta({
+      description:
+        "Every uploaded version, newest first. A comment carries the `mediaVersionId` it was written against, so this is how you reach the file it is actually about.",
     }),
     fileUrl: z.url().meta({
       description:
@@ -117,17 +159,36 @@ export const MediaInputSchema = z.object({
   }),
 });
 
+/** Serialize one stored upload. */
+function serializeMediaVersion(
+  version: MediaVersion,
+): z.infer<typeof MediaVersionSchema> {
+  return {
+    id: version.id,
+    number: version.number,
+    fileUrl: getMediaFileUrl(version),
+    posterUrl: getMediaPosterUrl(version),
+    contentType: version.mimeType,
+    sizeBytes: version.size,
+    width: version.width,
+    height: version.height,
+    expiresAt: version.expiresAt,
+    createdAt: version.createdAt,
+  };
+}
+
 /**
  * Serialize a media for the REST API, as of one of its versions.
  *
  * The version carries the bytes and everything read off them; the media carries
  * the identity and the share URL. A caller gets one flat object because that is
- * what it wants to act on — the newest screenshot, at a stable link.
+ * what it wants to act on — the newest screenshot, at a stable link — with the
+ * history alongside it for the cases that are about an older one.
  */
 export function serializeMedia(
   media: Media,
   version: MediaVersion,
-  versionCount: number,
+  versions: MediaVersion[],
 ): MediaResponse {
   const posterUrl = getMediaPosterUrl(version);
   return {
@@ -143,7 +204,7 @@ export function serializeMedia(
       isVideo: version.isVideo(),
     }),
     version: version.number,
-    versionCount,
+    versions: versions.map(serializeMediaVersion),
     fileUrl: getMediaFileUrl(version),
     posterUrl,
     contentType: version.mimeType,

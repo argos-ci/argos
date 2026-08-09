@@ -116,6 +116,34 @@ describe("media comments", () => {
     expect(res.body.anchor).toBeNull();
   });
 
+  test("reports which media and which version a comment is about", async ({
+    token,
+    media,
+  }) => {
+    // Without these the feedback is unusable from the API: a pin describes a
+    // spot on the bytes its author was looking at, and a later upload moves what
+    // is under it. The version id matches an entry in the media's `versions`,
+    // which is how a caller gets to the file the comment is actually about.
+    const version = await factory.MediaVersion.create({
+      mediaId: media.id,
+      number: 2,
+    });
+
+    const res = await request(app)
+      .post(`/media/${media.id}/comments`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        body: body("Still misaligned"),
+        anchor: { type: "point", x: 0.5, y: 0.5 },
+      })
+      .expect(201);
+
+    expect(res.body.mediaId).toBe(media.id);
+    expect(res.body.mediaVersionId).toBe(version.id);
+    expect(res.body.buildId).toBeNull();
+    expect(res.body.testId).toBeNull();
+  });
+
   test("rejects a line-range anchor, which has no meaning on an image", async ({
     token,
     media,
