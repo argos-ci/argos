@@ -172,48 +172,68 @@ async function upsertMediaVersion(
     expiresAt,
   } = params;
 
-  // What the media is attached to, and so what its identity is keyed on: the
-  // pull request when there is one, the branch otherwise. Mirrors
-  // `media_identity_unique` — the lock has to serialize exactly what the index
-  // rejects, or two racing uploads take different locks and one gets a
-  // constraint violation instead of a version.
-  const attachment = githubPullRequestId ? "" : (branch ?? "");
+  // What this upload is about, and so what its identity is keyed on. The branch
+  // comes first when it is known — including when it was derived from the pull
+  // request's own head — because it is the one handle that stays the same across
+  // the moment the pull request opens. Keying on the pull request instead would
+  // give the same screenshot two different locks either side of publication, and
+  // let two concurrent uploads create two media for it.
+  const attachment = branch
+    ? `branch:${branch}`
+    : `pr:${githubPullRequestId ?? 0}`;
 
   // Two agents racing on the same identity — a re-run of the same CI job, say —
   // must not both insert: `media_identity_unique` would reject one of them with a
   // constraint violation rather than a usable answer, and the version number is
   // read-then-written so it needs serializing too.
   return redisLock.acquire(
-    [
-      "media-identity",
-      project.id,
-      githubPullRequestId ?? 0,
-      attachment,
-      name,
-      state ?? "",
-    ],
+    ["media-identity", project.id, attachment, name, state ?? ""],
     async () => {
-      const existing = await Media.query()
-        .findOne({
+      const found = await Media.query()
+        .where({
           projectId: project.id,
           name,
           state: state ?? null,
         })
-        // A null pull request is its own identity, and `= NULL` never matches.
-        // With no pull request the branch takes over as the attachment, so two
-        // drafts of `checkout.png` on different branches are two media.
+        // Two ways to be the same screenshot, and both have to match or the
+        // upload creates a second media beside the one it meant to add a version
+        // to. `= NULL` never matches, hence the explicit null branches.
+        //
+        //  - already on this pull request, which is the steady state; or
+        //  - staged on this upload's branch, which is the same screenshot before
+        //    the pull request existed. Its attachment is about to change, and
+        //    that is the point: the media is adopted rather than duplicated.
         .where((builder) => {
           if (githubPullRequestId) {
             builder.where("githubPullRequestId", githubPullRequestId);
+            if (branch) {
+              builder.orWhere((staged) =>
+                staged.whereNull("githubPullRequestId").where("branch", branch),
+              );
+            }
             return;
           }
-          builder.whereNull("githubPullRequestId");
           if (branch) {
+            // Not restricted to staged media: once this branch's media is
+            // published, a later upload from the same branch is a new version of
+            // it, not a shadow copy the pull request will never show.
             builder.where("branch", branch);
-          } else {
-            builder.whereNull("branch");
+            return;
           }
-        });
+          builder.whereNull("githubPullRequestId").whereNull("branch");
+        })
+        // Deterministic when both match: the one already on the pull request is
+        // the one the comment is built from.
+        .orderByRaw('"githubPullRequestId" IS NULL, id')
+        .first();
+
+      // Adoption: a media staged on the branch becomes this pull request's the
+      // moment an upload names the pull request, without waiting for the branch
+      // to be published.
+      const existing =
+        found && githubPullRequestId && !found.githubPullRequestId
+          ? await found.$query().patchAndFetch({ githubPullRequestId })
+          : found;
 
       const media = existing
         ? // The description travels with the newest upload that supplied one, so

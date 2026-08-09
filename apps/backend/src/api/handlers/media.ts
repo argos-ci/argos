@@ -138,10 +138,11 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
     // Resolved before the upsert, not stamped on after it: the pull request is
     // part of the media's identity, so it decides whether this upload is a new
     // media or a new version of one that is already there.
-    const githubPullRequestId = await resolvePullRequest({
+    const pullRequest = await resolvePullRequest({
       project,
       prNumber: body.prNumber ?? null,
     });
+    const githubPullRequestId = pullRequest?.id ?? null;
 
     const { media, version, upload } = await createMedia({
       project,
@@ -151,7 +152,10 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
       state: body.state ?? null,
       description: body.description ?? null,
       githubPullRequestId,
-      branch: body.branch ?? null,
+      // Falls back to the pull request's own head branch, which is what lets an
+      // upload naming only `prNumber` find the media already staged on that
+      // branch instead of creating a second one beside it.
+      branch: body.branch ?? pullRequest?.headRef ?? null,
       contentType: body.contentType,
       sizeBytes: body.size,
       hash: body.hash,
@@ -636,7 +640,7 @@ async function resolveUploadTarget(args: {
 async function resolvePullRequest(args: {
   project: Project;
   prNumber: number | null;
-}): Promise<string | null> {
+}): Promise<GithubPullRequest | null> {
   const { project, prNumber } = args;
 
   if (!prNumber) {
@@ -650,12 +654,10 @@ async function resolvePullRequest(args: {
     );
   }
 
-  const pullRequest = await getOrCreatePullRequest({
+  return getOrCreatePullRequest({
     githubRepositoryId: project.githubRepositoryId,
     number: prNumber,
   });
-
-  return pullRequest.id;
 }
 
 /**

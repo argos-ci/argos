@@ -200,6 +200,87 @@ describe("createMedia with a branch", () => {
       Media.query().where("projectId", project.id).resultSize(),
     ).resolves.toBe(1);
   });
+
+  test("versions the staged media when the upload names the pull request", async ({
+    token,
+    project,
+    repository,
+  }) => {
+    // The sequence the whole feature is built around: stage on a branch, then
+    // upload again once the pull request exists. Looking only at media already
+    // on the pull request missed the staged one and inserted a second media —
+    // and the index permits both, so nothing caught it. The staged media then
+    // became unpublishable, its versions and review comments orphaned.
+    await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 55,
+      headRef: "feat/adopt",
+      headFromFork: false,
+    });
+    const staged = await createOnBranch({
+      token,
+      branch: "feat/adopt",
+      name: "checkout.png",
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        project: PROJECT_PATH,
+        prNumber: 55,
+        name: "checkout.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: "e".repeat(64),
+      })
+      .expect(201);
+
+    expect(res.body.media.id).toBe(staged.id);
+    expect(res.body.media.version).toBe(2);
+    expect(res.body.media.stage).toBe("published");
+    await expect(
+      Media.query().where("projectId", project.id).resultSize(),
+    ).resolves.toBe(1);
+  });
+
+  test("versions the published media when the branch uploads again", async ({
+    token,
+    project,
+    repository,
+  }) => {
+    // The agent never learns a pull request opened, so it keeps uploading with
+    // `branch`. That has to reach the published media; a shadow staged copy
+    // would never appear in the pull request comment and would silently take
+    // every later version with it.
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 56,
+      headRef: "feat/keep",
+      headFromFork: false,
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        branch: "feat/keep",
+        githubPullRequestId: pullRequest.id,
+      },
+    });
+
+    const again = await createOnBranch({
+      token,
+      branch: "feat/keep",
+      name: "checkout.png",
+      hash: "f".repeat(64),
+    });
+
+    expect(again.id).toBe(media.id);
+    expect(again.stage).toBe("published");
+    await expect(
+      Media.query().where("projectId", project.id).resultSize(),
+    ).resolves.toBe(1);
+  });
 });
 
 describe("listMedia filters", () => {
