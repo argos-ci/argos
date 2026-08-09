@@ -151,6 +151,27 @@ describe("getMediaTableMarkdown", () => {
     ).toContain("| a\\\\\\|b.png |");
   });
 
+  it("collapses a lone carriage return, which also ends a row", () => {
+    // CommonMark and GFM treat a bare `\r` as a line ending, so matching only
+    // `\r?\n` leaves it to end the row and drop the rest into the comment as
+    // top-level Markdown.
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "dashboard.png",
+          description: "First.\rSecond.",
+          before: null,
+          after: {
+            name: "dashboard.png",
+            shareUrl,
+            posterUrl: null,
+            isVideo: false,
+          },
+        },
+      ]),
+    ).toContain("| First.<br>Second. |");
+  });
+
   it("turns a newline in a note into a line break instead of a new row", () => {
     expect(
       getMediaTableMarkdown([

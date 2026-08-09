@@ -104,10 +104,19 @@ export function getMediaTableMarkdown(groups: MediaMarkdownGroup[]): string {
  * `<br>` GitHub renders a line break with inside a cell.
  */
 function escapeTableCell(value: string): string {
-  return value
-    .replace(/\\/g, "\\\\")
-    .replace(/\|/g, "\\|")
-    .replace(/\r?\n/g, "<br>");
+  return collapseLineBreaks(value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|"));
+}
+
+/**
+ * Replace every line ending with the `<br>` GitHub renders one with inside a
+ * cell.
+ *
+ * All three forms, not just `\n`: CommonMark and GFM treat a lone carriage
+ * return as a line ending too, so matching `\r?\n` alone leaves `\r` to end the
+ * row and drop everything after it into the comment as top-level Markdown.
+ */
+function collapseLineBreaks(value: string): string {
+  return value.replace(/\r\n|[\r\n]/g, "<br>");
 }
 
 /**
