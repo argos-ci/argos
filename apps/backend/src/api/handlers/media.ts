@@ -578,8 +578,12 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     // The identity this edit is moving *to* — the same key `createMedia` locks,
     // so a rename and an upload racing for one name serialize against each other
     // instead of one of them hitting the index and 500ing.
+    // `in` rather than `??`: clearing the branch sets it to null, and `??` would
+    // fall through to the branch the media is *leaving* — locking the identity
+    // being vacated instead of the one being taken, which is the opposite of
+    // what the lock is for.
     const target = {
-      branch: patchProps.branch ?? media.branch,
+      branch: "branch" in patchProps ? patchProps.branch : media.branch,
       name: patchProps.name ?? media.name,
     };
 
@@ -587,7 +591,11 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
       [
         "media-identity",
         media.projectId,
-        target.branch ? `branch:${target.branch}` : "pr:0",
+        // Always the branch form, and spelled exactly as `createMedia` spells
+        // it: this only ever runs on a staged media, so the pull request half of
+        // the key can never apply. `pr:0` here would have missed the lock a
+        // concurrent branchless upload takes.
+        `branch:${target.branch ?? ""}`,
         target.name,
         media.state ?? "",
       ],
