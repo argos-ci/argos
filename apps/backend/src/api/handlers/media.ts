@@ -292,7 +292,7 @@ export const listMediaVersionsOperation = {
   operationId: "listMediaVersions",
   summary: "List a media's versions",
   description: [
-    "Every uploaded version of a media, newest first.",
+    "A media's most recent uploaded versions, newest first, up to 100.",
     "",
     "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first — at 1 there is nothing here you do not already have.",
     "",

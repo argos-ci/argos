@@ -88,7 +88,21 @@ export async function getMediaVersionCounts(
 }
 
 /**
- * Every uploaded version of one media, newest first.
+ * How many versions one listing returns.
+ *
+ * Versions accumulate without bound — a CI job re-running against a long-lived
+ * branch appends one per run — and every sibling read path is capped: the media
+ * list paginates, the pull request comment stops at 20. An uncapped fan-out here
+ * would let one request pull a media's entire history in a single response.
+ *
+ * Newest first, so the cap drops the oldest — which is the right end to lose. A
+ * comment old enough to point past this is pointing at bytes retention has
+ * probably already collected.
+ */
+const MAX_LISTED_VERSIONS = 100;
+
+/**
+ * The most recent uploaded versions of one media, newest first.
  *
  * Unfinalized versions are left out: those rows exist to sign an upload, and
  * listing one hands out a URL for bytes that are not there.
@@ -99,7 +113,8 @@ export async function getMediaVersions(
   return MediaVersion.query()
     .where("mediaId", mediaId)
     .whereNotNull("uploadedAt")
-    .orderBy("number", "desc");
+    .orderBy("number", "desc")
+    .limit(MAX_LISTED_VERSIONS);
 }
 
 /**
