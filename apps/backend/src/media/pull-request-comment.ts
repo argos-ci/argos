@@ -6,6 +6,7 @@ import {
   GithubRepository,
   Media,
   MediaVersion,
+  Project,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import logger from "@/logger";
@@ -42,6 +43,17 @@ export async function updatePullRequestComment(
   const media = await Media.query()
     .where("githubPullRequestId", githubPullRequestId)
     .whereExists(uploadedVersions())
+    // The setting the build and deployment paths both honour, and the media
+    // path did not: an owner who turned Argos pull request comments off was
+    // still getting them. Per project, because one pull request can carry media
+    // from several — the ones that opted out drop out of the table rather than
+    // suppressing the whole comment.
+    .whereExists(
+      Project.query()
+        .select(1)
+        .whereColumn("projects.id", "media.projectId")
+        .where("projects.prCommentEnabled", true),
+    )
     .orderBy("createdAt", "asc")
     .limit(MAX_LISTED_MEDIA);
 
