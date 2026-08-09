@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 
 import config from "@/config";
+import { isUniqueViolationError } from "@/database/error";
 import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
@@ -172,15 +173,17 @@ async function upsertMediaVersion(
     expiresAt,
   } = params;
 
-  // What this upload is about, and so what its identity is keyed on. The branch
-  // comes first when it is known — including when it was derived from the pull
-  // request's own head — because it is the one handle that stays the same across
-  // the moment the pull request opens. Keying on the pull request instead would
-  // give the same screenshot two different locks either side of publication, and
-  // let two concurrent uploads create two media for it.
-  const attachment = branch
-    ? `branch:${branch}`
-    : `pr:${githubPullRequestId ?? 0}`;
+  // Mirrors `media_identity_unique` exactly: the pull request when there is one,
+  // the branch otherwise. It has to, or two uploads that collide on the index
+  // take two different locks and neither blocks the other.
+  //
+  // The lock alone is still not enough, because the *lookup* is wider than the
+  // index — an upload naming only a branch can resolve to a media that has since
+  // been published, whose key is `pr:…`. So a create that loses that race is
+  // caught below and retried rather than surfacing the constraint violation.
+  const attachment = githubPullRequestId
+    ? `pr:${githubPullRequestId}`
+    : `branch:${branch ?? ""}`;
 
   // Two agents racing on the same identity — a re-run of the same CI job, say —
   // must not both insert: `media_identity_unique` would reject one of them with a
@@ -189,43 +192,48 @@ async function upsertMediaVersion(
   return redisLock.acquire(
     ["media-identity", project.id, attachment, name, state ?? ""],
     async () => {
-      const found = await Media.query()
-        .where({
-          projectId: project.id,
-          name,
-          state: state ?? null,
-        })
-        // Two ways to be the same screenshot, and both have to match or the
-        // upload creates a second media beside the one it meant to add a version
-        // to. `= NULL` never matches, hence the explicit null branches.
-        //
-        //  - already on this pull request, which is the steady state; or
-        //  - staged on this upload's branch, which is the same screenshot before
-        //    the pull request existed. Its attachment is about to change, and
-        //    that is the point: the media is adopted rather than duplicated.
-        .where((builder) => {
-          if (githubPullRequestId) {
-            builder.where("githubPullRequestId", githubPullRequestId);
-            if (branch) {
-              builder.orWhere((staged) =>
-                staged.whereNull("githubPullRequestId").where("branch", branch),
-              );
+      const findMediaForUpload = () =>
+        Media.query()
+          .where({
+            projectId: project.id,
+            name,
+            state: state ?? null,
+          })
+          // Two ways to be the same screenshot, and both have to match or the
+          // upload creates a second media beside the one it meant to add a version
+          // to. `= NULL` never matches, hence the explicit null branches.
+          //
+          //  - already on this pull request, which is the steady state; or
+          //  - staged on this upload's branch, which is the same screenshot before
+          //    the pull request existed. Its attachment is about to change, and
+          //    that is the point: the media is adopted rather than duplicated.
+          .where((builder) => {
+            if (githubPullRequestId) {
+              builder.where("githubPullRequestId", githubPullRequestId);
+              if (branch) {
+                builder.orWhere((staged) =>
+                  staged
+                    .whereNull("githubPullRequestId")
+                    .where("branch", branch),
+                );
+              }
+              return;
             }
-            return;
-          }
-          if (branch) {
-            // Not restricted to staged media: once this branch's media is
-            // published, a later upload from the same branch is a new version of
-            // it, not a shadow copy the pull request will never show.
-            builder.where("branch", branch);
-            return;
-          }
-          builder.whereNull("githubPullRequestId").whereNull("branch");
-        })
-        // Deterministic when both match: the one already on the pull request is
-        // the one the comment is built from.
-        .orderByRaw('"githubPullRequestId" IS NULL, id')
-        .first();
+            if (branch) {
+              // Not restricted to staged media: once this branch's media is
+              // published, a later upload from the same branch is a new version of
+              // it, not a shadow copy the pull request will never show.
+              builder.where("branch", branch);
+              return;
+            }
+            builder.whereNull("githubPullRequestId").whereNull("branch");
+          })
+          // Deterministic when both match: the one already on the pull request is
+          // the one the comment is built from.
+          .orderByRaw('"githubPullRequestId" IS NULL, id')
+          .first();
+
+      const found = await findMediaForUpload();
 
       // Adoption: a media staged on the branch becomes this pull request's the
       // moment an upload names the pull request, without waiting for the branch
@@ -247,17 +255,32 @@ async function upsertMediaVersion(
             // provenance for nothing.
             ...(branch === null ? {} : { branch }),
           })
-        : await Media.query().insertAndFetch({
-            projectId: project.id,
-            githubPullRequestId,
-            branch,
-            createdByUserId: params.userId,
-            name,
-            state,
-            description,
-            visibility,
-            shareToken: generateShareToken(),
-          });
+        : await Media.query()
+            .insertAndFetch({
+              projectId: project.id,
+              githubPullRequestId,
+              branch,
+              createdByUserId: params.userId,
+              name,
+              state,
+              description,
+              visibility,
+              shareToken: generateShareToken(),
+            })
+            .catch(async (error: unknown) => {
+              if (!isUniqueViolationError(error)) {
+                throw error;
+              }
+              // Someone else created this identity under a lock we do not share
+              // — the lookup spans more keys than the index does, so that is
+              // reachable. The row they made is the one this upload belongs to.
+              const raced = await findMediaForUpload();
+              invariant(
+                raced,
+                "the identity was taken, so a media exists for it",
+              );
+              return raced;
+            });
 
       const latest = await MediaVersion.query()
         .where("mediaId", media.id)
