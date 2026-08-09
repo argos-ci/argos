@@ -37,6 +37,8 @@ type RpcResponse = {
     content?: { type: string; text: string }[];
     structuredContent?: Record<string, unknown>;
     isError?: boolean;
+    serverInfo?: Record<string, unknown>;
+    capabilities?: Record<string, unknown>;
   };
   error?: { code: number; message: string };
 };
@@ -154,6 +156,35 @@ describe("MCP server", () => {
       .expect(200);
     expect(res.body.resource).toBe(getMcpResourceUrl());
     expect(res.body.authorization_servers).toHaveLength(1);
+  });
+
+  test("serves a server card consistent with the live initialize response", async ({
+    patToken,
+  }) => {
+    const cardRes = await request(app)
+      .get("/.well-known/mcp/server-card.json")
+      .expect(200);
+    const card = cardRes.body;
+    expect(card.endpoint).toBe(getMcpResourceUrl());
+    expect(card.transport).toEqual({
+      type: "streamable-http",
+      endpoint: getMcpResourceUrl(),
+    });
+    expect(card.remotes[0].authentication).toEqual({
+      type: "oauth2",
+      resourceMetadata: `${getMcpResourceUrl()}/.well-known/oauth-protected-resource`,
+    });
+    // The card is advisory (SEP-1649): what it declares must match what the
+    // server actually reports during the MCP handshake.
+    const res = await rpc(patToken, "initialize", {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "test-client", version: "0.0.0" },
+    });
+    expect(res.status).toBe(200);
+    const body = res.body as RpcResponse;
+    expect(card.serverInfo).toEqual(body.result!.serverInfo);
+    expect(card.capabilities).toEqual(body.result!.capabilities);
   });
 
   test("mirrors the authorization server metadata for legacy MCP clients", async () => {

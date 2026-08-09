@@ -25,14 +25,24 @@ Call "getMe" first: it returns the authenticated user and the accounts (personal
 Projects are identified by an "owner" (account slug) and a "project" (project name), as in the URL https://app.argos-ci.com/{owner}/{project}. Builds are identified by their per-project "buildNumber". List endpoints are paginated with "page" and "perPage" arguments.`;
 
 /**
+ * The implementation info the server reports on `initialize`. Also embedded in
+ * the Server Card (`server-card.ts`) as its `serverInfo`, so the discovery
+ * document can never disagree with the running server.
+ */
+export const MCP_SERVER_INFO = {
+  name: "argos",
+  title: "Argos",
+  version: "2.0.0",
+} as const;
+
+/**
  * Create an MCP server bound to the caller's authorization. One instance per
  * request (the transport is stateless).
  */
 export function createMcpServer(context: { authorization: string }): McpServer {
-  const server = new McpServer(
-    { name: "argos", title: "Argos", version: "2.0.0" },
-    { instructions: MCP_INSTRUCTIONS },
-  );
+  const server = new McpServer(MCP_SERVER_INFO, {
+    instructions: MCP_INSTRUCTIONS,
+  });
 
   for (const tool of mcpTools) {
     server.registerTool(

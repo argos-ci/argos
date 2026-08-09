@@ -59,6 +59,17 @@ No operation needs it by default — eligibility is computed from `security`.
   (`assertOAuthScopes`); scope failures come back as `isError` tool results,
   not HTTP 401s, so clients don't needlessly re-authenticate.
 
+## Discovery
+
+`GET /.well-known/mcp/server-card.json` on the MCP origin serves the canonical
+[SEP-1649 Server Card](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127)
+(`server-card.ts`): endpoint, transport and OAuth entry point for
+pre-connection discovery. Its `serverInfo` is the same `MCP_SERVER_INFO`
+object the server hands to the SDK, and the e2e test checks the card against a
+live `initialize` response, so the card cannot drift from the running server.
+The marketing site serves a copy at
+`argos-ci.com/.well-known/mcp/server-card.json`.
+
 ## Local development
 
 The `mcp` subdomain must resolve to the backend (like `api` and `app`):
