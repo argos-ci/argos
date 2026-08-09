@@ -1,3 +1,4 @@
+import { isUniqueViolationError } from "@/database/error";
 import { Media, MediaVersion, Project } from "@/database/models";
 import type { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import logger from "@/logger";
@@ -62,20 +63,28 @@ export async function publishBranchMedia(
     return 0;
   }
 
-  // One at a time, and tolerating a failure: identity is
+  // One at a time, and tolerating exactly one failure: identity is
   // `(project, pull request, name, state)`, so a staged media whose name is
   // already taken on this pull request — someone uploaded it there directly in
   // the meantime — cannot be attached. It stays staged rather than taking the
   // whole batch down with it.
+  //
+  // Everything else rethrows. Swallowing a connection reset or a lock timeout
+  // here would report a successful no-op: the job completes, nothing retries,
+  // and the media are never published — with only an `info` log to say so.
+  // Failing loudly is what lets `githubPullRequestJob` run again.
   let published = 0;
   for (const media of staged) {
     try {
       await media.$query().patch({ githubPullRequestId: pullRequest.id });
       published += 1;
     } catch (error) {
+      if (!isUniqueViolationError(error)) {
+        throw error;
+      }
       logger.info(
-        { mediaId: media.id, pullRequestId: pullRequest.id, error },
-        "Could not publish a staged media to its pull request",
+        { mediaId: media.id, pullRequestId: pullRequest.id },
+        "A media of that name is already on this pull request; leaving it staged",
       );
     }
   }

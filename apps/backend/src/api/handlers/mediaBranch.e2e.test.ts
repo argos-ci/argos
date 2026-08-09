@@ -549,6 +549,53 @@ describe("publishing when the pull request opens", () => {
     expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
   });
 
+  test("leaves a colliding name staged and publishes the rest", async ({
+    project,
+    repository,
+  }) => {
+    // Attaching rewrites identity from (project, branch, name) to
+    // (project, pr, name), so a staged media collides with one already uploaded
+    // straight to the pull request. That one media cannot be attached; the batch
+    // must not go down with it.
+    updatePullRequestComment.mockClear();
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 81,
+      headRef: "feat/collide",
+    });
+    await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "taken.png",
+        githubPullRequestId: pullRequest.id,
+      },
+    });
+    const { media: colliding } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "taken.png",
+        branch: "feat/collide",
+      },
+    });
+    const { media: clean } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "fresh.png",
+        branch: "feat/collide",
+      },
+    });
+
+    await expect(publishBranchMedia(pullRequest)).resolves.toBe(1);
+
+    await expect(Media.query().findById(clean.id)).resolves.toMatchObject({
+      githubPullRequestId: pullRequest.id,
+    });
+    await expect(Media.query().findById(colliding.id)).resolves.toMatchObject({
+      githubPullRequestId: null,
+    });
+    expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
+  });
+
   test("does nothing for a pull request with no head branch recorded", async ({
     repository,
   }) => {
