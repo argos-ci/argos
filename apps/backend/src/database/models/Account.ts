@@ -63,6 +63,30 @@ export function checkIsActiveSubscriptionStatus(
   return status != null && ACTIVE_STATUSES.has(status);
 }
 
+/**
+ * What one media upload contributed to the meter, kept apart from the screenshots
+ * it is added to.
+ *
+ * The two numbers answer different questions and neither substitutes for the
+ * other: `count` is what the account did — how many images and videos it
+ * uploaded — and `units` is what it was charged for doing it. A video costs 25
+ * units, so an account seeing its screenshot total jump has no way to connect
+ * that to "we recorded four videos" without both.
+ */
+export type MediaUsageCount = {
+  /** Uploads, not media: every version is an upload, and every upload is billed. */
+  count: number;
+  /** Screenshot units they cost, already included in `all` and `neutral`. */
+  units: number;
+};
+
+export type ScreenshotsCount = {
+  all: number;
+  neutral: number;
+  storybook: number;
+  media: MediaUsageCount;
+};
+
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
   getPlan(): Promise<Plan | null>;
@@ -72,11 +96,7 @@ type AccountSubscriptionManager = {
   getCurrentPeriodScreenshots(options?: {
     to?: "previousUsage";
     projectId?: string;
-  }): Promise<{
-    all: number;
-    neutral: number;
-    storybook: number;
-  }>;
+  }): Promise<ScreenshotsCount>;
   getAdditionalScreenshotCost(options?: {
     to?: "previousUsage";
   }): Promise<number>;
@@ -712,11 +732,7 @@ export class Account extends Model {
     options?: {
       projectId?: string | undefined;
     },
-  ): Promise<{
-    all: number;
-    neutral: number;
-    storybook: number;
-  }> {
+  ): Promise<ScreenshotsCount> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as all")
       // A bucket's Storybook count is clamped to its total before being summed.
@@ -742,11 +758,11 @@ export class Account extends Model {
       query.where("project.id", options.projectId);
     }
 
-    const [result, mediaUnits] = await Promise.all([
+    const [result, media] = await Promise.all([
       query.castTo<
         { all: string | null; storybook: string | null } | undefined
       >(),
-      this.$getMediaUnitsBetween(from, to, options),
+      this.$getMediaUsageBetween(from, to, options),
     ]);
     const buckets = result?.all ? Number(result.all) : 0;
     const storybook = result?.storybook ? Number(result.storybook) : 0;
@@ -754,34 +770,35 @@ export class Account extends Model {
     // it lands on the invoice line accounts already read and inherits the
     // capacity and spend-limit checks unchanged. It is never Storybook, so it
     // only ever moves the neutral half.
-    const all = buckets + mediaUnits;
+    const all = buckets + media.units;
     const neutral = all - storybook;
-    return { all, neutral, storybook };
+    return { all, neutral, storybook, media };
   }
 
   /**
-   * Screenshot units charged by standalone media uploads over a period.
+   * Standalone media uploaded over a period: how many, and what they cost.
    *
-   * Reads the units frozen on each version at upload time rather than recomputing
-   * them from the content type, so changing the conversion never rewrites what an
-   * account was already billed.
+   * The units are read off each version as frozen at upload time rather than
+   * recomputed from the content type, so changing the conversion never rewrites
+   * what an account was already billed.
    *
    * Joined to the account through the project, exactly like screenshot buckets —
    * so transferring a project moves its media's billing with it.
    */
-  async $getMediaUnitsBetween(
+  async $getMediaUsageBetween(
     from: Date,
     to: Date | "now",
     options?: {
       projectId?: string | undefined;
     },
-  ): Promise<number> {
-    // Every *version* is an upload, so every version is billed. Re-uploading a
-    // screenshot after a fix stores new bytes and costs what storing them costs;
-    // byte-identical bytes never become a version in the first place, so a CI
-    // re-run that changes nothing is still free.
+  ): Promise<MediaUsageCount> {
+    // Every *version* is an upload, so every version is billed and every version
+    // counts. Re-uploading a screenshot after a fix stores new bytes and costs
+    // what storing them costs; byte-identical bytes never become a version in the
+    // first place, so a CI re-run that changes nothing is still free.
     const query = MediaVersion.query()
       .sum("media_versions.billedUnits as units")
+      .count("media_versions.id as count")
       .joinRelated("media.project")
       .where("media:project.accountId", this.id)
       .whereNotNull("media_versions.uploadedAt")
@@ -796,8 +813,13 @@ export class Account extends Model {
       query.where("media.projectId", options.projectId);
     }
 
-    const result = await query.castTo<{ units: string | null } | undefined>();
-    return result?.units ? Number(result.units) : 0;
+    const result = await query.castTo<
+      { units: string | null; count: string | null } | undefined
+    >();
+    return {
+      count: result?.count ? Number(result.count) : 0,
+      units: result?.units ? Number(result.units) : 0,
+    };
   }
 
   static async getPermissions(

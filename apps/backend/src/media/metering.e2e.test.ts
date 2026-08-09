@@ -104,6 +104,52 @@ describe("media metering", () => {
       // Media is never Storybook, so it only lifts the neutral half.
       expect(count.neutral).toBe(36);
       expect(count.storybook).toBe(0);
+      // And it is reported apart from the screenshots it was added to, because
+      // "36 screenshots" is unreadable otherwise: 26 of them are two files.
+      expect(count.media).toEqual({ count: 2, units: 26 });
+    });
+
+    it("counts every version as an upload", async () => {
+      // A media's identity is its name, but each version stores its own bytes and
+      // is billed on its own — so the count the billing page shows has to be
+      // uploads, not media.
+      const { media } = await factory.createMediaWithVersion({
+        media: { projectId: project.id },
+        version: {
+          number: 1,
+          billedUnits: 1,
+          uploadedAt: periodStart.toISOString(),
+        },
+      });
+      await factory.MediaVersion.create({
+        mediaId: media.id,
+        number: 2,
+        billedUnits: 1,
+        uploadedAt: periodStart.toISOString(),
+      });
+
+      const count = await account.$getScreenshotCountBetween(
+        periodStart,
+        "now",
+      );
+
+      expect(count.media).toEqual({ count: 2, units: 2 });
+    });
+
+    it("reports no media usage when there is none", async () => {
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        screenshotCount: 10,
+        createdAt: periodStart.toISOString(),
+      });
+
+      const count = await account.$getScreenshotCountBetween(
+        periodStart,
+        "now",
+      );
+
+      expect(count.all).toBe(10);
+      expect(count.media).toEqual({ count: 0, units: 0 });
     });
 
     it("ignores media whose upload never completed", async () => {
