@@ -16,6 +16,7 @@ import {
   MediaVersion,
   Project,
 } from "@/database/models";
+import type { ProjectPermission } from "@/database/models/Project";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { githubPullRequestJob } from "@/github-pull-request/job";
@@ -23,7 +24,7 @@ import logger from "@/logger";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
 import { deleteUnreferencedMediaObjects } from "@/media/object";
-import { getMediaPermissions, type MediaPermission } from "@/media/permissions";
+import type { MediaPermission } from "@/media/permissions";
 import { publishMediaForBranch } from "@/media/publish";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { queryProjectMedia } from "@/media/query";
@@ -60,6 +61,20 @@ import { anyTokenOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 type AnyAuth = AuthProjectPayload | AuthPATPayload | AuthOAuthPayload;
+
+/**
+ * What each media action requires on the *project*, for the id-addressed API.
+ *
+ * Mirrors `getMediaPermissions` except for `view`, which that helper grants to
+ * anyone for a `public` media. Reaching a media by id is not the same act as
+ * opening its share URL, so reading here takes project access like everything
+ * else.
+ */
+const MEDIA_ACTION_PERMISSION: Record<MediaPermission, ProjectPermission> = {
+  view: "view",
+  comment: "review",
+  delete: "admin",
+};
 
 const CreateMediaRequestSchema = MediaInputSchema.extend({
   project: z
@@ -821,16 +836,21 @@ async function loadMediaForAuth(args: {
     throw boom(404, "Media not found");
   }
 
-  // Membership permissions, not `$getPermissions`: the "view" a public project
-  // hands to anyone must not reach its team-only media.
+  // The project's own permissions, straight — deliberately *not* through
+  // `getMediaPermissions`, which grants `view` unconditionally for a `public`
+  // media.
+  //
+  // That rule belongs to the share page, where the unguessable token is what the
+  // caller had to present. Here the caller presents a sequential `media_id_seq`
+  // id, so honouring it would let anyone with a token scoped to the account walk
+  // the id space and read every public media in every project — including ones
+  // they hold nothing on — with the share token's unguessability, the only
+  // control the design names, routed around entirely.
   const membershipPermissions = await media.project.$getMembershipPermissions(
     auth.user,
   );
-  const permissions = getMediaPermissions({
-    visibility: media.visibility,
-    membershipPermissions,
-  });
-  if (!permissions.includes(permission)) {
+  const required = MEDIA_ACTION_PERMISSION[permission];
+  if (!membershipPermissions.includes(required)) {
     throw boom(404, "Media not found");
   }
 

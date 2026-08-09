@@ -351,6 +351,51 @@ describe("getMedia", () => {
       .expect(404);
   });
 
+  test("404s a public media in a project the caller cannot open", async ({
+    user,
+    account,
+  }) => {
+    // `public` visibility governs the share page, where the caller presented an
+    // unguessable token. Here they present a sequential id, so reading takes
+    // project access — otherwise an account insider walks the id space and reads
+    // every public media in projects they hold nothing on.
+    const otherProject = await factory.Project.create({
+      accountId: account.id,
+      name: "closed-project",
+      defaultUserLevel: null,
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: otherProject.id, visibility: "public" },
+    });
+
+    const outsider = await factory.User.create();
+    await factory.UserAccount.create({ userId: outsider.id });
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: outsider.id,
+      userLevel: "contributor",
+    });
+    const outsiderToken = `arp_${"d".repeat(36)}`;
+    const accessToken = await factory.UserAccessToken.create({
+      userId: outsider.id,
+      token: hashToken(outsiderToken),
+    });
+    await UserAccessTokenScope.query().insert({
+      userAccessTokenId: accessToken.id,
+      accountId: account.id,
+    });
+    expect(user.id).not.toBe(outsider.id);
+
+    await request(app)
+      .get(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${outsiderToken}`)
+      .expect(404);
+    await request(app)
+      .get(`/media/${media.id}/versions`)
+      .set("Authorization", `Bearer ${outsiderToken}`)
+      .expect(404);
+  });
+
   test("400s on an id that is not an integer", async ({ projectToken }) => {
     await request(app)
       .get("/media/not-an-id")
