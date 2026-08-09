@@ -382,8 +382,12 @@ export const listMediaOperation = {
       project: ProjectName,
     }),
     query: PageParamsSchema.extend({
+      // `.min(1)` rather than a bare string: an empty value is a caller whose
+      // `$BRANCH` was unset, and answering it with the whole project — every
+      // other branch and pull request included — is worse than refusing.
       branch: z
         .string()
+        .min(1)
         .optional()
         .meta({
           description:

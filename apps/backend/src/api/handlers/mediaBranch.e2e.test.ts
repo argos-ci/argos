@@ -221,6 +221,22 @@ describe("listMedia filters", () => {
     ]);
   });
 
+  test("refuses an empty branch instead of answering with everything", async ({
+    token,
+    project,
+  }) => {
+    // `--branch "$BRANCH"` with `BRANCH` unset. Returning the whole project
+    // hands the caller a page of other branches' media to act on.
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "a.png", branch: "feat/a" },
+    });
+
+    await request(app)
+      .get(`/projects/${PROJECT_PATH}/media?branch=`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(400);
+  });
+
   test("filters by pull request number", async ({
     token,
     project,
