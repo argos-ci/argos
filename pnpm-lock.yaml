@@ -223,7 +223,7 @@ importers:
         specifier: ^8.6.2
         version: 8.6.2(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
       file-type:
-        specifier: ^21.3.4
+        specifier: ^21.3.2
         version: 21.3.4(supports-color@10.2.2)
       free-email-domains:
         specifier: ^1.9.88
