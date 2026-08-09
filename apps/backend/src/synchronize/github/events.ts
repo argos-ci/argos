@@ -20,6 +20,7 @@ import {
 } from "@/database/services/github";
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
+import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { parsePullRequestData } from "@/github-pull-request/remote";
 import parentLogger from "@/logger";
 import { publishBranchMedia } from "@/media/publish";
@@ -189,26 +190,27 @@ export async function handleGitHubEvents(
 
       // `opened` is the event a branch's staged media are waiting for, and it is
       // the one case where Argos has no row yet — every other action bails below
-      // when it finds none. The payload carries everything the row needs, so
-      // this costs no API call.
+      // when it finds none.
+      //
+      // Through `getOrCreatePullRequest` rather than a read-then-insert of our
+      // own: it holds the creation lock, so this cannot race a concurrent build
+      // or media upload into a second row for the same pull request (there is no
+      // unique index on `(githubRepositoryId, number)` to catch that), and it
+      // enqueues the sync job that fills in the creator and subscribes them to
+      // the build notifications.
       if (payload.action === "opened" || payload.action === "reopened") {
-        const opened = await GithubPullRequest.query()
-          .findOne({
-            githubRepositoryId: repository.id,
-            number: payload.pull_request.number,
-          })
-          .then(async (existing) => {
-            const data = parsePullRequestData(payload.pull_request);
-            return existing
-              ? existing.$clone().$query().patchAndFetch(data)
-              : GithubPullRequest.query().insertAndFetch({
-                  githubRepositoryId: repository.id,
-                  number: payload.pull_request.number,
-                  jobStatus: "complete",
-                  ...data,
-                });
-          });
-        await publishBranchMedia(opened);
+        const opened = await getOrCreatePullRequest({
+          githubRepositoryId: repository.id,
+          number: payload.pull_request.number,
+        });
+        // The payload already carries what the job would fetch, so publishing
+        // does not have to wait for it — but the job still runs, for the parts
+        // only the API has.
+        const updated = await opened
+          .$clone()
+          .$query()
+          .patchAndFetch(parsePullRequestData(payload.pull_request));
+        await publishBranchMedia(updated);
         return;
       }
 
