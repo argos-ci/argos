@@ -4,7 +4,6 @@ import { invariant } from "@argos/util/invariant";
 import type {
   DiffLineAnnotation,
   SelectedLineRange,
-  SupportedLanguages,
 } from "@pierre/diffs/react";
 import { useAtomValue } from "jotai/react";
 
@@ -22,6 +21,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import type { BundledLanguage } from "@/shiki/bundle";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
@@ -92,8 +92,8 @@ export function DiffCommentLayer(props: {
   screenshotDiffId: string;
   original: string;
   modified: string;
-  originalLanguage: SupportedLanguages;
-  modifiedLanguage: SupportedLanguages;
+  originalLanguage: BundledLanguage;
+  modifiedLanguage: BundledLanguage;
   renderSideBySide: boolean;
 }) {
   const {

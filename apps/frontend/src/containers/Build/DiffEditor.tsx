@@ -3,10 +3,10 @@ import type {
   BaseCodeOptions,
   DiffLineAnnotation,
   SelectedLineRange,
-  SupportedLanguages,
   ThemeTypes,
 } from "@pierre/diffs/react";
 
+import type { BundledLanguage } from "@/shiki/bundle";
 import { ColorMode, useColorMode } from "@/ui/ColorMode";
 
 import { SnapshotLoader } from "./SnapshotLoader";
@@ -102,8 +102,8 @@ export type DiffEditorComments<LAnnotation> = {
 export function DiffEditor<LAnnotation = undefined>(props: {
   original: string;
   modified: string;
-  originalLanguage: SupportedLanguages;
-  modifiedLanguage: SupportedLanguages;
+  originalLanguage: BundledLanguage;
+  modifiedLanguage: BundledLanguage;
   renderSideBySide: boolean;
   comments?: DiffEditorComments<LAnnotation>;
 }) {
@@ -154,7 +154,7 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   );
 }
 
-export function Editor(props: { value: string; language: SupportedLanguages }) {
+export function Editor(props: { value: string; language: BundledLanguage }) {
   const themeType = useThemeType();
   return (
     <Suspense fallback={<SnapshotLoader />}>
@@ -168,7 +168,7 @@ export function Editor(props: { value: string; language: SupportedLanguages }) {
 
 export function getLanguageFromContentType(
   contentType: string,
-): SupportedLanguages {
+): BundledLanguage {
   // Normalize: drop any parameters (e.g. "; charset=utf-8") and lowercase.
   const normalized = (contentType.split(";")[0] ?? "").trim().toLowerCase();
   switch (normalized) {
