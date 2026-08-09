@@ -116,6 +116,48 @@ describe("media comments", () => {
     expect(res.body.anchor).toBeNull();
   });
 
+  test("hides team-media threads from a member without project access", async ({
+    account,
+  }) => {
+    // A public project grants `view` to anyone, which is right for its builds
+    // and tests — they are public too. A media carries its own visibility, so a
+    // `team` one in a public project stays team-only, and the comment surface
+    // has to draw the same line `GET /media/{id}` does.
+    const publicProject = await factory.Project.create({
+      accountId: account.id,
+      name: "public-project",
+      private: false,
+      defaultUserLevel: null,
+    });
+    const { media: teamMedia } = await factory.createMediaWithVersion({
+      media: { projectId: publicProject.id, visibility: "team" },
+    });
+
+    // A contributor with no `ProjectUser` row: in the team, so a token scoped to
+    // the account is legitimate, but holding nothing on this project.
+    const outsider = await factory.User.create();
+    await factory.UserAccount.create({ userId: outsider.id });
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: outsider.id,
+      userLevel: "contributor",
+    });
+    const outsiderToken = `arp_${"c".repeat(36)}`;
+    const outsiderAccessToken = await factory.UserAccessToken.create({
+      userId: outsider.id,
+      token: hashToken(outsiderToken),
+    });
+    await UserAccessTokenScope.query().insert({
+      userAccessTokenId: outsiderAccessToken.id,
+      accountId: account.id,
+    });
+
+    await request(app)
+      .get(`/media/${teamMedia.id}/comments`)
+      .set("Authorization", `Bearer ${outsiderToken}`)
+      .expect(403);
+  });
+
   test("reports which media and which version a comment is about", async ({
     token,
     media,

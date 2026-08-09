@@ -57,6 +57,15 @@ export async function loadCommentTargetForUserAuth(
 /**
  * Assert the user holds a project permission on the project a comment target
  * belongs to, throwing a 403 with the given message otherwise.
+ *
+ * A media is checked against its **membership** permissions, not
+ * `$getPermissions`. The difference is the public-project fallback: a public
+ * project grants `view` to anyone, which is right for its builds and tests —
+ * they are public too — but a media carries its own `visibility`, and a
+ * `team` one in a public project must stay team-only. Everywhere else in the
+ * media surface already draws that line; this was the one helper that did not,
+ * so a member with no project access could read every review thread on media
+ * the same account's `GET /media/{id}` answers 404 for.
  */
 export async function assertCommentTargetPermission(input: {
   target: CommentTarget;
@@ -66,7 +75,10 @@ export async function assertCommentTargetPermission(input: {
 }): Promise<void> {
   const { target, user, permission, message } = input;
   const project = await getCommentTargetProject(target);
-  const permissions = await project.$getPermissions(user);
+  const permissions =
+    target.type === "media"
+      ? await project.$getMembershipPermissions(user)
+      : await project.$getPermissions(user);
   if (!permissions.includes(permission)) {
     throw boom(403, message);
   }
