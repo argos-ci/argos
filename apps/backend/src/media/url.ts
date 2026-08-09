@@ -94,16 +94,32 @@ export function getMediaTableMarkdown(groups: MediaMarkdownGroup[]): string {
   ].join("\n");
 }
 
-/** `|` alone is enough to break out of a table cell. */
+/**
+ * Escape a value so it stays inside its table cell.
+ *
+ * Backslashes go first, and skipping them is not cosmetic: escaping turns `|`
+ * into `\|`, so a value already ending in a backslash would have that backslash
+ * escaped by ours and let the pipe through — the very break this prevents. A
+ * newline has no escape at all, since it ends the row outright, so it becomes the
+ * `<br>` GitHub renders a line break with inside a cell.
+ */
 function escapeTableCell(value: string): string {
-  return value.replace(/\|/g, "\\|");
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, "<br>");
 }
 
 /**
  * Escape the characters that would break out of a Markdown link label. File names
  * are caller-controlled, and `]` alone is enough to truncate the label and leak
  * the rest as body text.
+ *
+ * `|` is in the set even though it means nothing to a link, because these labels
+ * are rendered into table cells and a raw pipe there opens a column mid-embed.
+ * The cell escaping cannot do it: by then the label is glued to a URL that must
+ * not be escaped.
  */
 function escapeMarkdownText(value: string): string {
-  return value.replace(/([[\]\\])/g, "\\$1");
+  return value.replace(/([[\]\\|])/g, "\\$1");
 }

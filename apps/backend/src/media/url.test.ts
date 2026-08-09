@@ -120,6 +120,52 @@ describe("getMediaTableMarkdown", () => {
           after: { name: "a|b.png", shareUrl, posterUrl: null, isVideo: false },
         },
       ]),
-    ).toContain("| a\\|b.png |");
+    ).toBe(
+      [
+        "| Name | Preview |",
+        "| --- | --- |",
+        // Both cells: the pipe is escaped in the name column and again inside
+        // the embed's alt text, which is a cell of its own.
+        `| a\\|b.png | ![a\\|b.png](${shareUrl}) |`,
+      ].join("\n"),
+    );
+  });
+
+  it("escapes a trailing backslash so it cannot escape the pipe escape", () => {
+    // `a\` + `|` naively escaped gives `a\\|`, which renders a literal backslash
+    // followed by a live pipe — a new column, from a file name.
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "a\\|b.png",
+          description: null,
+          before: null,
+          after: {
+            name: "dashboard.png",
+            shareUrl,
+            posterUrl: null,
+            isVideo: false,
+          },
+        },
+      ]),
+    ).toContain("| a\\\\\\|b.png |");
+  });
+
+  it("turns a newline in a note into a line break instead of a new row", () => {
+    expect(
+      getMediaTableMarkdown([
+        {
+          name: "dashboard.png",
+          description: "First line.\nSecond line.",
+          before: null,
+          after: {
+            name: "dashboard.png",
+            shareUrl,
+            posterUrl: null,
+            isVideo: false,
+          },
+        },
+      ]),
+    ).toContain("| First line.<br>Second line. |");
   });
 });
