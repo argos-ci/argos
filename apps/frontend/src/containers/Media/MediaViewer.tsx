@@ -207,7 +207,13 @@ export function MediaViewer(props: {
               <MediaPane
                 key={pane.media.state ?? "solo"}
                 media={pane.media}
-                labelled={panes.length > 1}
+                // A pair's half also names itself when shown alone — "single"
+                // is still one side of a comparison. Blended panes show both
+                // halves, and their controls already name the two layers.
+                labelled={
+                  panes.length > 1 ||
+                  Boolean(mode === "single" && pane.media.state && counterpart)
+                }
                 blend={pane.interactive ? blend : null}
                 // Comments and the version picker belong to the media whose page
                 // this is. Drawing them on the counterpart would attach feedback
