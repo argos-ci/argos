@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 07kqib1lKMSQLditB71hpPJD7CjKtRGbFDG6rVbJQEfNWPmXqB3Rg1n1zRO6kOS
+\restrict pRDHisGw1OHb8jxsje5vcv83aZLrMirudomFEUZKaZDYDdzCiiau0tpUcNGednu
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -6139,7 +6139,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 07kqib1lKMSQLditB71hpPJD7CjKtRGbFDG6rVbJQEfNWPmXqB3Rg1n1zRO6kOS
+\unrestrict pRDHisGw1OHb8jxsje5vcv83aZLrMirudomFEUZKaZDYDdzCiiau0tpUcNGednu
 
 -- Knex migrations
 

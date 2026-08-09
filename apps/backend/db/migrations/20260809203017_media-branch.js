@@ -13,21 +13,43 @@
  * into. Publishing a branch's staged media when its pull request opens is a lookup
  * on that column, so without it there is nothing to match on.
  *
+/**
+ * Every index here is built `CONCURRENTLY`, which Postgres refuses inside a
+ * transaction — so the migration runs without one.
+ *
+ * `media` is on the upload path. Rebuilding its identity index the plain way
+ * takes SHARE for the length of a full index build, and the `DROP` before it
+ * takes ACCESS EXCLUSIVE, so every upload, finalize and delete would block until
+ * both finished. The cost of running unwrapped is that a failure leaves the
+ * schema half-applied; re-running `up` is safe, since each statement is
+ * idempotent or names a distinct index.
+ */
+export const config = { transaction: false };
+
+/**
  * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
+  // Adding a nullable varchar rewrites nothing, so the brief ACCESS EXCLUSIVE
+  // these take is the cheap part.
   await knex.schema.alterTable("media", (table) => {
     table.string("branch");
-    // The list filter: "what has been uploaded for this branch".
-    table.index(["projectId", "branch"]);
   });
 
   await knex.schema.alterTable("github_pull_requests", (table) => {
     table.string("headRef");
-    // Publishing looks staged media up by (repository, branch) the moment a
-    // pull request's data lands.
-    table.index(["githubRepositoryId", "headRef"]);
   });
+
+  // The list filter: "what has been uploaded for this branch".
+  await knex.raw(
+    `CREATE INDEX CONCURRENTLY IF NOT EXISTS media_projectid_branch_index ON media ("projectId", branch)`,
+  );
+
+  // Publishing looks staged media up by (repository, branch) the moment a pull
+  // request's data lands.
+  await knex.raw(
+    `CREATE INDEX CONCURRENTLY IF NOT EXISTS github_pull_requests_githubrepositoryid_headref_index ON github_pull_requests ("githubRepositoryId", "headRef")`,
+  );
 
   // Identity becomes "(project, whatever this media is attached to, name,
   // state)", where the attachment is the pull request when there is one and the
@@ -39,9 +61,12 @@ export const up = async (knex) => {
   // pull request. Without that, `checkout.png` uploaded to branch `feat/x` and
   // then re-uploaded with `prNumber` would read as two different media and the
   // second upload would create one instead of adding a version to the first.
-  await knex.raw(`DROP INDEX media_identity_unique`);
+  //
+  // Built under a second name, then swapped: dropping first would leave a window
+  // with no uniqueness at all, and two concurrent uploads landing in it create
+  // the duplicate the index exists to refuse.
   await knex.raw(`
-    CREATE UNIQUE INDEX media_identity_unique
+    CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS media_identity_unique_v2
     ON media (
       "projectId",
       COALESCE("githubPullRequestId", 0),
@@ -50,6 +75,10 @@ export const up = async (knex) => {
       COALESCE(state, '')
     )
   `);
+  await knex.raw(`DROP INDEX CONCURRENTLY IF EXISTS media_identity_unique`);
+  await knex.raw(
+    `ALTER INDEX media_identity_unique_v2 RENAME TO media_identity_unique`,
+  );
 };
 
 /**
@@ -60,8 +89,6 @@ export const up = async (knex) => {
  * @param {import('knex').Knex} knex
  */
 export const down = async (knex) => {
-  await knex.raw(`DROP INDEX media_identity_unique`);
-
   // Two staged media on different branches can share a name, which the restored
   // index has no room for. Keep the oldest of each colliding group so the index
   // can be rebuilt; the rest were only distinguishable by the column being
@@ -83,7 +110,7 @@ export const down = async (knex) => {
   `);
 
   await knex.raw(`
-    CREATE UNIQUE INDEX media_identity_unique
+    CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS media_identity_unique_v1
     ON media (
       "projectId",
       COALESCE("githubPullRequestId", 0),
@@ -91,6 +118,10 @@ export const down = async (knex) => {
       COALESCE(state, '')
     )
   `);
+  await knex.raw(`DROP INDEX CONCURRENTLY IF EXISTS media_identity_unique`);
+  await knex.raw(
+    `ALTER INDEX media_identity_unique_v1 RENAME TO media_identity_unique`,
+  );
 
   await knex.schema.alterTable("github_pull_requests", (table) => {
     table.dropColumn("headRef");
