@@ -1,18 +1,33 @@
 import clsx from "clsx";
 
 /**
- * The surface a media is inspected on.
- *
- * Always dark, whatever the viewer's theme: a light surround shifts how you read
- * an image's own values, and every tool built for looking at pixels — Preview,
- * Quick Look, Photoshop — is dark for that reason. It is a material, not a mood,
- * which is why it doesn't follow the theme the way the page around it does.
- *
- * Under the media sits a transparency checkerboard. Screenshots routinely have
- * alpha or white edges, and without a known ground you cannot tell where the
- * image stops and the page starts. It is the universal mark for "these are the
- * actual pixels, nothing added", and it carries across from the share page to the
- * library thumbnails so the feature reads as one thing.
+ * The transparency ground drawn under inspected pixels: a dark two-tone
+ * checkerboard, always dark whatever the viewer's theme (a light surround
+ * shifts how you read an image's own values — every tool built for looking at
+ * pixels is dark for that reason). Two offset gradients make the classic grid,
+ * drawn in CSS so there is no asset to load before the content has a ground.
+ * Shared by `MediaWell` and the build's `ZoomPane`, so a screenshot sits on
+ * the same ground wherever it is inspected.
+ */
+export function getCheckerboardStyle(checkerSize = 8): React.CSSProperties {
+  return {
+    backgroundColor: "#16161a",
+    backgroundImage: `
+      linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%),
+      linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%)
+    `,
+    backgroundSize: `${checkerSize * 2}px ${checkerSize * 2}px`,
+    backgroundPosition: `0 0, ${checkerSize}px ${checkerSize}px`,
+  };
+}
+
+/**
+ * The surface a media is inspected on: the checkerboard ground (see
+ * {@link getCheckerboardStyle}) under the build pane's hairline-and-shadow
+ * chrome, so the image zone reads identically on both pages. Screenshots
+ * routinely have alpha or white edges, and without a known ground you cannot
+ * tell where the image stops and the page starts. It carries across from the
+ * share page to the library thumbnails so the feature reads as one thing.
  */
 export function MediaWell(props: {
   children: React.ReactNode;
@@ -33,24 +48,14 @@ export function MediaWell(props: {
   return (
     <div
       className={clsx(
-        // A hairline, not a shadow: a shadow reads as "content in a layout",
-        // and this is an asset under inspection.
-        "relative overflow-hidden rounded-md ring-1 ring-white/10",
+        "border-thin relative overflow-hidden rounded-md shadow-xs",
         className,
       )}
       style={{
         ...(aspectRatio
           ? { aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}` }
           : null),
-        backgroundColor: "#16161a",
-        // Two offset gradients make the classic two-tone grid. Drawn in CSS so
-        // there is no asset to load before the media has a ground.
-        backgroundImage: `
-          linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%),
-          linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%)
-        `,
-        backgroundSize: `${checkerSize * 2}px ${checkerSize * 2}px`,
-        backgroundPosition: `0 0, ${checkerSize}px ${checkerSize}px`,
+        ...getCheckerboardStyle(checkerSize),
       }}
     >
       {children}

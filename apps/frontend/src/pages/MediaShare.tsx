@@ -1,27 +1,46 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ClockFadingIcon, GlobeIcon, LockIcon } from "lucide-react";
+import {
+  ClockFadingIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  GlobeIcon,
+  LockIcon,
+} from "lucide-react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
+import {
+  downloadBlob,
+  downloadWithToast,
+  fetchBlob,
+} from "@/containers/Build/ScreenshotActions";
+import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
-import type { MediaPoint } from "@/containers/Media/MediaCommentPins";
-import { getMediaPins, MediaComments } from "@/containers/Media/MediaComments";
+import { MediaComments } from "@/containers/Media/MediaComments";
 import { MediaVersionPicker } from "@/containers/Media/MediaVersionPicker";
-import { MediaViewer } from "@/containers/Media/MediaViewer";
+import {
+  getMediaDownloadName,
+  MediaViewer,
+} from "@/containers/Media/MediaViewer";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
-import { MediaPermission, MediaVisibility } from "@/gql/graphql";
+import { MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { CopyButton } from "@/ui/CopyButton";
 import { HeadlessLink, Link } from "@/ui/Link";
+import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
+import { Popover } from "@/ui/Popover";
+import { Select, SelectButton, SelectValue } from "@/ui/Select";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { getMentionUser } from "@/ui/UserCard";
 import { formatBytes, formatDimensions, formatExpiry } from "@/util/media";
 
 const MediaShareQuery = graphql(`
@@ -37,6 +56,7 @@ const MediaShareQuery = graphql(`
       description
       url
       markdown
+      markdownPair
       visibility
       permissions
       latestVersion {
@@ -44,9 +64,7 @@ const MediaShareQuery = graphql(`
         number
         createdAt
         fileUrl
-        downloadUrl
         posterUrl
-        contentType
         sizeBytes
         width
         height
@@ -58,9 +76,7 @@ const MediaShareQuery = graphql(`
         number
         createdAt
         fileUrl
-        downloadUrl
         posterUrl
-        contentType
         sizeBytes
         width
         height
@@ -74,11 +90,14 @@ const MediaShareQuery = graphql(`
         url
         latestVersion {
           id
+          createdAt
           fileUrl
           posterUrl
+          sizeBytes
           width
           height
           isVideo
+          expiresAt
         }
       }
       project {
@@ -87,6 +106,7 @@ const MediaShareQuery = graphql(`
         permissions
       }
       ...MediaComments_Media
+      ...MediaCommentLayer_Media
     }
   }
 `);
@@ -101,9 +121,10 @@ type Media = NonNullable<
  *
  * Laid out like the build page — a slim header, the media on the inspection
  * surface, a sidebar of panels — because for a reviewer that *is* the Argos
- * grammar: the same viewer, the same comment cards, the same chrome. The header
- * carries the login control, since commenting is the page's second job and an
- * anonymous visitor needs to see the way in.
+ * grammar: the same viewer, the same controls, the same comment cards and the
+ * same floating comment markers. The header carries the login control, since
+ * commenting is the page's second job and an anonymous visitor needs to see the
+ * way in.
  */
 export function Component() {
   const { shareToken } = useParams();
@@ -136,12 +157,12 @@ export function Component() {
 
 function SharePage(props: { media: Media }) {
   const { media } = props;
-  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(
+  const [placing, setPlacing] = useState(false);
+  const [versionId, setVersionId] = useState(media.latestVersion.id);
+  // A thread the sidebar asked to open as a marker popover on the image.
+  const [requestedThreadId, setRequestedThreadId] = useState<string | null>(
     null,
   );
-  const [placing, setPlacing] = useState(false);
-  const [draftPoint, setDraftPoint] = useState<MediaPoint | null>(null);
-  const [versionId, setVersionId] = useState(media.latestVersion.id);
 
   // Falls back to the latest if the selected version went away under us — a
   // retention purge can take an old one while the page is open.
@@ -149,7 +170,10 @@ function SharePage(props: { media: Media }) {
     media.versions.find((candidate) => candidate.id === versionId) ??
     media.latestVersion;
 
-  const pins = getMediaPins(media.comments, version.id);
+  const mentionUsers = useMemo(
+    () => media.mentionableUsers.map(getMentionUser),
+    [media.mentionableUsers],
+  );
 
   // The comment components ask the project what the viewer may do — reacting is a
   // `review`, same as commenting. An anonymous visitor on a public link is not
@@ -157,64 +181,72 @@ function SharePage(props: { media: Media }) {
   // they can read the discussion and change nothing.
   return (
     <ProjectPermissionsContext value={media.project?.permissions ?? []}>
-      <div className="flex min-h-dvh flex-col lg:h-dvh">
-        <PageHeader media={media} />
-        <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
-          <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
-            <MediaViewer
-              media={{ ...media, version }}
-              counterpart={
-                media.counterpart
-                  ? {
-                      ...media.counterpart,
-                      // Its own newest, not the selected version number: the two
-                      // media have independent histories, and "v2 of the after" has
-                      // no counterpart "v2 of the before" to line up with.
-                      version: media.counterpart.latestVersion,
-                    }
-                  : null
-              }
-              pins={pins}
-              selectedCommentId={selectedCommentId}
-              onSelect={setSelectedCommentId}
-              draftPoint={draftPoint}
-              placing={placing}
-              onPlace={setDraftPoint}
-            />
-          </main>
+      <MentionableUsersProvider value={mentionUsers}>
+        <div className="flex min-h-dvh flex-col lg:h-dvh">
+          <PageHeader media={media} />
+          <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
+            <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
+              <MediaViewer
+                media={{ ...media, version }}
+                counterpart={
+                  media.counterpart
+                    ? {
+                        ...media.counterpart,
+                        // Its own newest, not the selected version number: the two
+                        // media have independent histories, and "v2 of the after" has
+                        // no counterpart "v2 of the before" to line up with.
+                        version: media.counterpart.latestVersion,
+                      }
+                    : null
+                }
+                comments={{
+                  media,
+                  viewedVersionId: version.id,
+                  placing,
+                  onPlacingChange: setPlacing,
+                  requestedThreadId,
+                  onRequestedThreadConsumed: () => setRequestedThreadId(null),
+                }}
+              />
+            </main>
 
-          <aside className="flex w-full flex-col gap-3 lg:min-h-0 lg:w-80 lg:shrink-0 lg:overflow-y-auto">
-            <SharePanel media={media} version={version} />
-            <DetailsPanel
-              media={media}
-              version={version}
-              onSelectVersion={setVersionId}
-            />
-            <MediaComments
-              media={media}
-              viewedVersionId={version.id}
-              pins={pins}
-              selectedCommentId={selectedCommentId}
-              onSelect={setSelectedCommentId}
-              draftPoint={draftPoint}
-              placing={placing}
-              onPlacingChange={setPlacing}
-              onDraftPointChange={setDraftPoint}
-            />
-          </aside>
+            {/* `gap-2`: the build sidebar's own gap between panels. */}
+            <aside className="flex w-full flex-col gap-2 lg:min-h-0 lg:w-80 lg:shrink-0 lg:overflow-y-auto">
+              <SharePanel media={media} version={version} />
+              <DetailsPanel
+                media={media}
+                version={version}
+                onSelectVersion={setVersionId}
+              />
+              <MediaComments
+                media={media}
+                viewedVersionId={version.id}
+                placing={placing}
+                onPlacingChange={setPlacing}
+                onOpenPinned={(comment) => {
+                  // The marker only exists on the version the pin was dropped
+                  // on, so showing the thread may mean switching to it first.
+                  if (comment.mediaVersionId) {
+                    setVersionId(comment.mediaVersionId);
+                  }
+                  setRequestedThreadId(comment.id);
+                }}
+              />
+            </aside>
+          </div>
+          <PageFooter />
         </div>
-        <PageFooter />
-      </div>
+      </MentionableUsersProvider>
     </ProjectPermissionsContext>
   );
 }
 
 /**
- * The slim bar over the media: what this file is, who may see it, and who you
- * are. The shield leads out to argos-ci.com — on a page every reviewer of every
- * pull request sees, that link is the whole top-of-funnel job — and
- * {@link NavUserControl} is the same login-or-avatar control as the app's, so
- * an anonymous visitor can see the way in to commenting.
+ * The slim bar over the media: what this file is, where it lives, who may see
+ * it, and who you are. The shield leads out to argos-ci.com — on a page every
+ * reviewer of every pull request sees, that link is the whole top-of-funnel
+ * job — and {@link NavUserControl} is the same login-or-avatar control as the
+ * app's, so an anonymous visitor can see the way in to commenting.
  */
 function PageHeader(props: { media: Media | null }) {
   const { media } = props;
@@ -232,22 +264,34 @@ function PageHeader(props: { media: Media | null }) {
           </HeadlessLink>
         </Tooltip>
         {media ? (
-          <div className="flex min-w-0 flex-col justify-center gap-1">
+          <div className="flex min-w-0 flex-col justify-center gap-0.5">
             {/* The file name is the page's title, in monospace because it is a
                 value, not a sentence. */}
-            <h1 className="truncate font-mono text-sm leading-none font-medium">
+            <h1 className="truncate font-mono text-sm leading-tight font-medium">
               {media.name}
             </h1>
-            {media.project ? (
-              // Only viewers who could reach the project anyway get it named —
-              // the resolver hides it from everyone else.
-              <HeadlessLink
-                href={`/${media.project.slug}`}
-                className="text-low data-hovered:text-default rac-focus truncate text-xs leading-none transition"
-              >
-                {media.project.slug}
-              </HeadlessLink>
-            ) : null}
+            <div className="text-low flex min-w-0 items-baseline gap-1.5 text-xs leading-tight">
+              {media.project ? (
+                // Only viewers who could reach the project anyway get it named —
+                // the resolver hides it from everyone else.
+                <HeadlessLink
+                  href={`/${media.project.slug}`}
+                  className="data-hovered:text-default rac-focus shrink-0 transition"
+                >
+                  {media.project.slug}
+                </HeadlessLink>
+              ) : null}
+              {media.description ? (
+                <span className="min-w-0 truncate">
+                  {media.project ? (
+                    <span aria-hidden="true" className="mr-1.5 opacity-60">
+                      ·
+                    </span>
+                  ) : null}
+                  {media.description}
+                </span>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </div>
@@ -322,65 +366,138 @@ function PageFooter() {
   );
 }
 
+/** What the Share panel can put on the clipboard. */
+type ShareFormat = {
+  id: string;
+  label: string;
+  value: string;
+};
+
 /**
- * Everything needed to pass the media along: the share URL, the Markdown embed
- * ready to paste into a pull request, and the raw bytes.
+ * The last format the user copied, remembered across media: someone who embeds
+ * Markdown in pull requests all day should find the panel already on it.
+ */
+const SHARE_FORMAT_STORAGE_KEY = "preferences.mediaShareFormat";
+
+function getShareFormats(media: Media): ShareFormat[] {
+  return [
+    // First is the default: the pair's table when there is one — pasting it
+    // shows before and after together, like the page does.
+    ...(media.markdownPair
+      ? [
+          {
+            id: "markdown-pair",
+            label: "Markdown (before + after)",
+            value: media.markdownPair,
+          },
+        ]
+      : []),
+    { id: "markdown", label: "Markdown", value: media.markdown },
+    { id: "link", label: "Page link", value: media.url },
+  ];
+}
+
+/**
+ * Everything needed to pass the media along, front and center in the sidebar:
+ * the raw bytes, then a format picker (the share page's URL, or Markdown ready
+ * to paste into a pull request) and the snippet it produces. Copy actions on a
+ * *single* pane of a pair live on the image's own controls; this panel speaks
+ * for the media as a whole.
  */
 function SharePanel(props: {
   media: Media;
+  /** The version on screen — what Open original and Download act on. */
   version: Media["versions"][number];
 }) {
   const { media, version } = props;
-  const canDownload = media.permissions.includes(MediaPermission.View);
+  const formats = getShareFormats(media);
+  const [storedFormatId, setStoredFormatId] = useState<string | null>(() =>
+    localStorage.getItem(SHARE_FORMAT_STORAGE_KEY),
+  );
+  const format =
+    formats.find((candidate) => candidate.id === storedFormatId) ?? formats[0];
+  invariant(format, "there is always at least one share format");
+
   return (
     <Panel>
-      <PanelHeader>
-        <PanelTitle>Share</PanelTitle>
-      </PanelHeader>
       <div className="flex flex-col gap-3 px-4">
-        <CopyRow label="Link" value={media.url} />
-        <CopyRow label="Markdown" value={media.markdown} />
-        {canDownload ? (
-          <div className="flex items-center gap-4 text-xs">
-            <Link href={version.fileUrl} target="_blank">
-              Open original
-            </Link>
-            <Link href={version.downloadUrl} external={false}>
-              Download
-            </Link>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <LinkButton
+            variant="secondary"
+            size="small"
+            href={version.fileUrl}
+            target="_blank"
+          >
+            <ButtonIcon>
+              <ExternalLinkIcon />
+            </ButtonIcon>
+            Open original
+          </LinkButton>
+          <Button
+            variant="secondary"
+            size="small"
+            onPress={() => {
+              downloadWithToast(
+                fetchBlob(version.fileUrl).then((blob) => {
+                  downloadBlob(blob, getMediaDownloadName(media));
+                }),
+              );
+            }}
+          >
+            <ButtonIcon>
+              <DownloadIcon />
+            </ButtonIcon>
+            Download
+          </Button>
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="text-low text-xs">Copy as</div>
+          <Select
+            aria-label="Copy as"
+            selectedKey={format.id}
+            onSelectionChange={(key) => {
+              const id = String(key);
+              setStoredFormatId(id);
+              localStorage.setItem(SHARE_FORMAT_STORAGE_KEY, id);
+            }}
+          >
+            <SelectButton size="sm" className="w-full">
+              <SelectValue />
+            </SelectButton>
+            <Popover>
+              <ListBox>
+                {formats.map((candidate) => (
+                  <ListBoxItem
+                    key={candidate.id}
+                    id={candidate.id}
+                    textValue={candidate.label}
+                  >
+                    <ListBoxItemLabel>{candidate.label}</ListBoxItemLabel>
+                  </ListBoxItem>
+                ))}
+              </ListBox>
+            </Popover>
+          </Select>
+        </div>
+        <div className="border-thin bg-subtle relative rounded-md py-2 pr-9 pl-2.5">
+          <code className="text-default block max-h-36 overflow-auto font-mono text-xs break-all whitespace-pre-wrap">
+            {format.value}
+          </code>
+          <CopyButton
+            text={format.value}
+            aria-label={`Copy ${format.label.toLowerCase()}`}
+            className="absolute top-1.5 right-1.5"
+          />
+        </div>
       </div>
     </Panel>
   );
 }
 
 /**
- * One labelled, copyable value: the text shown so the reader knows what they are
- * about to paste, the button so they never have to select it by hand.
- */
-function CopyRow(props: { label: string; value: string }) {
-  const { label, value } = props;
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="text-low text-xs">{label}</div>
-      <div className="border-thin bg-subtle flex items-center gap-1.5 rounded-md p-1 pl-2.5">
-        <code className="text-default min-w-0 flex-1 truncate font-mono text-xs">
-          {value}
-        </code>
-        <CopyButton
-          text={value}
-          aria-label={`Copy ${label.toLowerCase()}`}
-          className="shrink-0"
-        />
-      </div>
-    </div>
-  );
-}
-
-/**
  * The facts of the selected version, as labelled monospace values — a file
- * listing, not prose.
+ * listing, not prose. The description lives in the header, next to the name it
+ * belongs to.
  */
 function DetailsPanel(props: {
   media: Media;
@@ -396,9 +513,6 @@ function DetailsPanel(props: {
         <PanelTitle>Details</PanelTitle>
       </PanelHeader>
       <div className="flex flex-col gap-3 px-4">
-        {media.description ? (
-          <p className="text-sm">{media.description}</p>
-        ) : null}
         <dl className="flex flex-col gap-1.5">
           <DetailRow label="Uploaded">
             <Time date={version.createdAt} className="text-default" />

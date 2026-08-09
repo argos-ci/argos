@@ -1,31 +1,41 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
 import { MapPinIcon, XIcon } from "lucide-react";
+import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { DocumentType, graphql } from "@/gql";
 import { MediaPermission } from "@/gql/graphql";
+import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon } from "@/ui/Button";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { Link } from "@/ui/Link";
+import { MediaWell } from "@/ui/MediaFrame";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
-import type { MediaPin, MediaPoint } from "./MediaCommentPins";
+import { createHandleMediaCommentsPrompt } from "./MediaCommentsPrompt";
 
 const _MediaCommentsFragment = graphql(`
   fragment MediaComments_Media on Media {
     id
+    url
     permissions
+    versions {
+      id
+      number
+      fileUrl
+      posterUrl
+      isVideo
+    }
     comments {
       id
       threadId
@@ -43,7 +53,6 @@ const _MediaCommentsFragment = graphql(`
 `);
 
 type Media = DocumentType<typeof _MediaCommentsFragment>;
-type Comment = Media["comments"][number];
 
 const AddMediaCommentMutation = graphql(`
   mutation MediaComments_addMediaComment(
@@ -71,80 +80,28 @@ const AddMediaCommentMutation = graphql(`
 `);
 
 /**
- * Read the point a comment refers to, or null when it is about the whole media.
- *
- * Only point anchors reach a media — a line range describes a textual snapshot —
- * but the schema's anchor is a union, so the narrowing has to be explicit.
- */
-function getCommentPoint(comment: Comment): MediaPoint | null {
-  const { anchor } = comment;
-  if (anchor?.__typename !== "CommentPointAnchor") {
-    return null;
-  }
-  return { x: anchor.x, y: anchor.y };
-}
-
-/**
- * Pins for a media's threads, numbered in the order they are listed so the badge
- * on the image and the badge beside the thread always agree.
- */
-export function getMediaPins(
-  comments: readonly Comment[],
-  /** The version on screen. A pin only belongs on the bytes it described. */
-  viewedVersionId: string | null,
-): MediaPin[] {
-  const pins: MediaPin[] = [];
-  for (const thread of getCommentThreads(comments)) {
-    const point = getCommentPoint(thread.root);
-    if (!point) {
-      continue;
-    }
-    // A pin at (0.62, 0.34) described a spot on one upload. Drawing it over a
-    // later version — reshot at another size, or fixed so the thing is no longer
-    // there — points at the wrong pixel and reads as a claim about the current
-    // image that nobody made. The thread still shows in the panel; only its
-    // marker is withheld.
-    if (thread.root.mediaVersionId !== viewedVersionId) {
-      continue;
-    }
-    pins.push({ commentId: thread.root.id, point, index: pins.length + 1 });
-  }
-  return pins;
-}
-
-/**
  * The comment panel of the share page: every thread on the media, and a composer.
  *
  * The same panel-of-comment-cards the build sidebar renders — shared
- * {@link CommentCard} inside a {@link Panel}, with the build's spacing — so the
- * two surfaces cannot drift apart. A thread that points at a spot on the image
- * carries its pin's number, so the two halves of the page reference each other
- * without the reader having to guess.
+ * {@link CommentCard} inside a {@link Panel} — so the two surfaces cannot drift
+ * apart. Threads pinned to a point also live as markers on the image itself
+ * (see `MediaCommentLayer`); the panel is the complete record, including pins
+ * on other versions and resolved threads.
  */
 export function MediaComments(props: {
   media: Media;
-  /** The version on screen — what a new pin will be recorded against. */
+  /** The version on screen — what a new comment will be recorded against. */
   viewedVersionId: string;
-  pins: MediaPin[];
-  selectedCommentId: string | null;
-  onSelect: (commentId: string | null) => void;
-  /** The point the pending comment will be pinned to, if any. */
-  draftPoint: MediaPoint | null;
   placing: boolean;
   onPlacingChange: (placing: boolean) => void;
-  onDraftPointChange: (point: MediaPoint | null) => void;
+  /** Open a pinned thread on the image, switching to its version if needed. */
+  onOpenPinned: (comment: {
+    id: string;
+    mediaVersionId: string | null;
+  }) => void;
 }) {
-  const {
-    media,
-    viewedVersionId,
-    pins,
-    selectedCommentId,
-    onSelect,
-    draftPoint,
-    placing,
-    onPlacingChange,
-    onDraftPointChange,
-  } = props;
+  const { media, viewedVersionId, placing, onPlacingChange, onOpenPinned } =
+    props;
   const client = useApolloClient();
   const roleScope = useCommentRoleScope();
   const [replyPending, setReplyPending] = useState(false);
@@ -155,15 +112,9 @@ export function MediaComments(props: {
     media.comments.map((comment) => comment.id),
   );
 
-  const pinIndexByCommentId = useMemo(
-    () => new Map(pins.map((pin) => [pin.commentId, pin.index])),
-    [pins],
-  );
-
   const postComment = async (input: {
     body: EditorValue;
     threadId?: string;
-    anchor?: { point: MediaPoint };
   }) => {
     await client.mutate({
       mutation: AddMediaCommentMutation,
@@ -176,12 +127,7 @@ export function MediaComments(props: {
 
   const handleSubmit = async (body: EditorValue) => {
     try {
-      await postComment({
-        body,
-        ...(draftPoint ? { anchor: { point: draftPoint } } : {}),
-      });
-      onDraftPointChange(null);
-      onPlacingChange(false);
+      await postComment({ body });
     } catch (error) {
       toast.error(getErrorMessage(error));
       // Rethrown so the editor keeps the content and the author can retry.
@@ -190,107 +136,112 @@ export function MediaComments(props: {
   };
 
   return (
-    <MentionableUsersProvider value={[]}>
-      <Panel>
-        <PanelHeader>
-          <PanelTitle>
-            {threads.length === 0 ? "Comments" : `Comments (${threads.length})`}
-          </PanelTitle>
-          {canComment ? (
-            <Button
-              variant={placing ? "primary" : "secondary"}
-              size="small"
-              onPress={() => {
-                const next = !placing;
-                onPlacingChange(next);
-                if (!next) {
-                  onDraftPointChange(null);
-                }
-              }}
-            >
-              <ButtonIcon>{placing ? <XIcon /> : <MapPinIcon />}</ButtonIcon>
-              {placing ? "Cancel" : "Pin a comment"}
-            </Button>
-          ) : null}
-        </PanelHeader>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>
+          Comments
+          {threads.length > 0 ? <Badge>{threads.length}</Badge> : null}
+        </PanelTitle>
+        {canComment ? (
+          <Button
+            variant={placing ? "primary" : "secondary"}
+            size="small"
+            onPress={() => onPlacingChange(!placing)}
+          >
+            <ButtonIcon>{placing ? <XIcon /> : <MapPinIcon />}</ButtonIcon>
+            {placing ? "Cancel" : "Pin a comment"}
+          </Button>
+        ) : null}
+      </PanelHeader>
 
-        <div className="px-3">
-          {placing && !draftPoint ? (
-            <p className="text-low bg-ui mb-3 rounded-md px-3 py-2 text-xs">
-              Click the spot on the image you want to comment on.
-            </p>
-          ) : null}
+      <div className="px-3">
+        {placing ? (
+          <p className="text-low bg-ui mb-3 rounded-md px-3 py-2 text-xs">
+            Click the spot on the image you want to comment on.
+          </p>
+        ) : null}
 
-          <div className="flex flex-col gap-4 select-none">
-            {threads.map((thread) => {
-              const index = pinIndexByCommentId.get(thread.root.id);
-              return (
-                <div
-                  key={thread.root.id}
-                  onMouseEnter={() => onSelect(thread.root.id)}
-                  onMouseLeave={() => onSelect(null)}
-                >
-                  {index !== undefined ? (
-                    <div className="text-low text-xxs mb-1.5 flex items-center gap-1.5">
-                      {/* A miniature of the pin drawn on the image — same shape,
-                          same border — so the pairing is visual, not just a
-                          shared number. */}
-                      <span className="rounded-chip border-primary bg-app text-default flex size-4 items-center justify-center rounded-bl-none border text-[10px] font-semibold tabular-nums">
-                        {index}
-                      </span>
-                      pinned on the image
-                    </div>
-                  ) : null}
-                  <CommentCard
-                    comment={thread.root}
-                    replies={thread.replies}
-                    highlightedCommentId={highlightedCommentId}
-                    canReply={canComment}
-                    className={clsx(
-                      "transition",
-                      thread.root.id === selectedCommentId &&
-                        "ring-primary ring-1",
-                    )}
-                    onReply={async (body) => {
-                      setReplyPending(true);
-                      try {
-                        await postComment({ body, threadId: thread.root.id });
-                      } finally {
-                        setReplyPending(false);
-                      }
-                    }}
-                    draftKeyPrefix={`media.${media.id}`}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {canComment ? (
-            <div className={clsx("-mx-1.5 -mb-1.5", threads.length && "mt-3")}>
-              <StandaloneEditor
-                onSubmit={handleSubmit}
-                draftKey={`media.${media.id}.comment`}
-                placeholder={
-                  draftPoint
-                    ? "Comment on this spot…"
-                    : "Leave a comment on this media…"
-                }
-                submitLabel="Submit the comment"
-                disabled={replyPending}
-                emptyMessage={{
-                  title: "Comment required",
-                  description: "Please add a comment before submitting.",
+        {/* `px-1` mirrors the build's `Activity` wrapper, so the cards' edges
+            land exactly where the build sidebar puts them. */}
+        <div className="flex flex-col gap-4 px-1 select-none">
+          {threads.map((thread) => {
+            const pinned =
+              thread.root.anchor?.__typename === "CommentPointAnchor";
+            return (
+              <CommentCard
+                key={thread.root.id}
+                comment={thread.root}
+                replies={thread.replies}
+                highlightedCommentId={highlightedCommentId}
+                canReply={canComment}
+                // The build sidebar's exact geometry: wider than the column
+                // on purpose, flirting with the panel's edge.
+                className="-mx-2.5"
+                onReply={async (body) => {
+                  setReplyPending(true);
+                  try {
+                    await postComment({ body, threadId: thread.root.id });
+                  } finally {
+                    setReplyPending(false);
+                  }
                 }}
-                aria-label="Add a comment"
+                draftKeyPrefix={`media.${media.id}`}
+                threadPrompt={createHandleMediaCommentsPrompt({
+                  shareUrl: media.url,
+                  threadId: thread.root.id,
+                })}
+                screenshotReference={
+                  pinned
+                    ? {
+                        node: (
+                          <MediaPinnedReference
+                            media={media}
+                            mediaVersionId={thread.root.mediaVersionId ?? null}
+                            viewedVersionId={viewedVersionId}
+                            onNavigate={() =>
+                              onOpenPinned({
+                                id: thread.root.id,
+                                mediaVersionId:
+                                  thread.root.mediaVersionId ?? null,
+                              })
+                            }
+                          />
+                        ),
+                        onNavigate: () =>
+                          onOpenPinned({
+                            id: thread.root.id,
+                            mediaVersionId: thread.root.mediaVersionId ?? null,
+                          }),
+                      }
+                    : null
+                }
               />
-            </div>
-          ) : (
-            <ReadOnlyNotice hasThreads={threads.length > 0} />
-          )}
+            );
+          })}
         </div>
-      </Panel>
-    </MentionableUsersProvider>
+
+        {canComment ? (
+          // The build sidebar's composer inset, between the cards' edge and
+          // the column's.
+          <div className={clsx("-mx-1.5 -mb-1.5", threads.length && "mt-3")}>
+            <StandaloneEditor
+              onSubmit={handleSubmit}
+              draftKey={`media.${media.id}.comment`}
+              placeholder="Leave a comment on this media…"
+              submitLabel="Submit the comment"
+              disabled={replyPending}
+              emptyMessage={{
+                title: "Comment required",
+                description: "Please add a comment before submitting.",
+              }}
+              aria-label="Add a comment"
+            />
+          </div>
+        ) : (
+          <ReadOnlyNotice hasThreads={threads.length > 0} />
+        )}
+      </div>
+    </Panel>
   );
 }
 
@@ -319,4 +270,50 @@ function ReadOnlyNotice(props: { hasThreads: boolean }) {
   }
 
   return null;
+}
+
+/**
+ * A quote of where a pinned thread points — the media page's counterpart of
+ * the build's snapshot reference header, so the card reads as clickable the
+ * same way. Clicking it (or the card, which shares the navigation) opens the
+ * thread's marker on the image, switching the picker to the version the pin
+ * was dropped on when needed.
+ */
+function MediaPinnedReference(props: {
+  media: Media;
+  mediaVersionId: string | null;
+  viewedVersionId: string;
+  onNavigate: () => void;
+}) {
+  const { media, mediaVersionId, viewedVersionId, onNavigate } = props;
+  const version =
+    media.versions.find((candidate) => candidate.id === mediaVersionId) ?? null;
+  const thumbnailUrl = version
+    ? version.isVideo
+      ? version.posterUrl
+      : version.fileUrl
+    : null;
+  const label =
+    mediaVersionId === viewedVersionId
+      ? "Pinned on the image"
+      : version
+        ? `Pinned on v${version.number}`
+        : "Pinned on another version";
+  return (
+    <RACButton
+      onPress={onNavigate}
+      aria-label="Go to the pinned comment"
+      // No hover style or default cursor of its own: the surrounding card
+      // shares this button's navigation and carries the hover affordance.
+      className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
+    >
+      {thumbnailUrl ? (
+        <MediaWell checkerSize={3} className="size-6 shrink-0">
+          <img src={thumbnailUrl} alt="" className="size-full object-cover" />
+        </MediaWell>
+      ) : null}
+      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+      <MapPinIcon aria-hidden="true" className="size-3.5 shrink-0" />
+    </RACButton>
+  );
 }

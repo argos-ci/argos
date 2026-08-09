@@ -31,20 +31,22 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   await expect(
     page.getByRole("img", { name: "checkout.png (after)" }),
   ).toBeVisible();
-  await expect(page.getByText("BEFORE")).toBeVisible();
+  // The pane label (uppercased by CSS, so the DOM text is the raw state).
+  await expect(page.getByText("before", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
 
-  // Two threads, one of them pinned to a point on the image.
-  await expect(
-    page.getByRole("heading", { name: "Comments (2)" }),
-  ).toBeVisible();
+  // Two threads, one of them pinned to a point on the image — the pin is a
+  // floating marker on the image itself.
+  await expect(page.getByRole("heading", { name: "Comments 2" })).toBeVisible();
   await expect(
     page.getByText("The primary button is misaligned here."),
   ).toBeVisible();
   await expect(
     page.getByText("Agreed — it should align with the input above."),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Comment 1" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Open comment from/ }),
+  ).toBeVisible();
 
   await screenshot(page, "media-share-page");
 });
@@ -65,21 +67,28 @@ loggedTest(
     ).toBeVisible();
 
     // The pin lands wherever the reviewer points, stored as a fraction of the
-    // media's own box.
+    // media's own box, and the composer floats right beside it — the same
+    // flow as the build's screenshot comments.
     await page
       .getByRole("button", { name: "Pick the spot to comment on" })
       .click({ position: { x: 200, y: 150 } });
 
-    const editor = page.getByLabel("Add a comment");
+    const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
+    const editor = draftDialog.getByLabel("Add a comment");
     await editor.click();
     await editor.fill("This spacing is off by a few pixels.");
-    await page.getByRole("button", { name: "Submit the comment" }).click();
+    await draftDialog
+      .getByRole("button", { name: "Submit the comment" })
+      .click();
 
+    // The created thread opens beside its marker, and the sidebar lists it
+    // too — the comment is on both surfaces.
     await expect(
       page.getByText("This spacing is off by a few pixels."),
-    ).toBeVisible();
-    // The new thread gets the second pin, and the panel numbers agree with it.
-    await expect(page.getByRole("button", { name: "Comment 2" })).toBeVisible();
+    ).toHaveCount(2);
+    await expect(
+      page.getByRole("button", { name: /^Open comment from/ }),
+    ).toHaveCount(2);
     await expect(page.getByText("pinned on the image")).toHaveCount(2);
   },
 );

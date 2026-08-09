@@ -63,6 +63,8 @@ export function BuildCommentCard(props: {
   replies?: Comment[];
   highlightedCommentId: string | null;
   canReply: boolean;
+  /** Extra classes on the card root, e.g. the sidebar's edge-to-edge margins. */
+  className?: string;
   /**
    * Hide the snapshot-reference header. Used when the thread is rendered
    * directly on the screenshot it points to, where the reference is redundant.

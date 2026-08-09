@@ -280,6 +280,9 @@ function CommentRow(props: {
         canReply={canReply}
         onReply={onReply}
         draftKeyPrefix={`test.${testId}`}
+        // Wider than the activity column on purpose, flirting with the
+        // panel's edge — the card carries its own inset.
+        className="-mx-2.5"
       />
     </motion.div>
   );

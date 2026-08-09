@@ -20,24 +20,39 @@ export type ScreenPoint = { left: number; top: number };
 export function useImageProjection(params: {
   paneSize: PaneSize | null;
   imgSize: { width: number; height: number };
+  /**
+   * How the image sits in the pane before any pan/zoom: the build's snapshots
+   * are top-aligned, the media share page centers its image. Must match the
+   * CSS, or every projected point drifts by the alignment offset.
+   */
+  verticalAlign?: "top" | "center";
 }) {
-  const { paneSize, imgSize } = params;
+  const { paneSize, imgSize, verticalAlign = "top" } = params;
   const transform = useZoomTransform();
   const [imgScale] = useScaleContext();
 
+  const getOffsets = useCallback(
+    (): { x: number; y: number } => ({
+      x: paneSize ? (paneSize.width - imgSize.width * imgScale) / 2 : 0,
+      y:
+        paneSize && verticalAlign === "center"
+          ? Math.max(0, (paneSize.height - imgSize.height * imgScale) / 2)
+          : 0,
+    }),
+    [paneSize, imgSize.width, imgSize.height, imgScale, verticalAlign],
+  );
+
   const toScreen = useCallback(
     (point: NormalizedPoint): ScreenPoint => {
-      const offsetX = paneSize
-        ? (paneSize.width - imgSize.width * imgScale) / 2
-        : 0;
-      const workspaceX = point.x * imgSize.width * imgScale + offsetX;
-      const workspaceY = point.y * imgSize.height * imgScale;
+      const offsets = getOffsets();
+      const workspaceX = point.x * imgSize.width * imgScale + offsets.x;
+      const workspaceY = point.y * imgSize.height * imgScale + offsets.y;
       return {
         left: workspaceX * transform.scale + transform.x,
         top: workspaceY * transform.scale + transform.y,
       };
     },
-    [paneSize, imgSize.width, imgSize.height, imgScale, transform],
+    [getOffsets, imgSize.width, imgSize.height, imgScale, transform],
   );
 
   const toNormalized = useCallback(
@@ -45,15 +60,15 @@ export function useImageProjection(params: {
       if (!paneSize || !imgScale) {
         return null;
       }
-      const offsetX = (paneSize.width - imgSize.width * imgScale) / 2;
+      const offsets = getOffsets();
       const workspaceX = (paneX - transform.x) / transform.scale;
       const workspaceY = (paneY - transform.y) / transform.scale;
       return {
-        x: (workspaceX - offsetX) / (imgSize.width * imgScale),
-        y: workspaceY / (imgSize.height * imgScale),
+        x: (workspaceX - offsets.x) / (imgSize.width * imgScale),
+        y: (workspaceY - offsets.y) / (imgSize.height * imgScale),
       };
     },
-    [paneSize, imgSize.width, imgSize.height, imgScale, transform],
+    [paneSize, getOffsets, imgSize.width, imgSize.height, imgScale, transform],
   );
 
   return { toScreen, toNormalized, ready: Boolean(paneSize && imgScale) };
