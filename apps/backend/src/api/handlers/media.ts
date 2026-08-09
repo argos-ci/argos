@@ -29,6 +29,7 @@ import {
   getLatestMediaVersions,
   getMediaVersionCounts,
   getMediaVersions,
+  getNewestMediaVersion,
 } from "@/media/version";
 import { boom } from "@/util/error";
 
@@ -729,12 +730,17 @@ async function serializeMediaWithVersion(
   media: Media,
   version: MediaVersion | null,
 ) {
-  const [resolved, counts, prNumbers] = await Promise.all([
+  const [latest, counts, prNumbers] = await Promise.all([
     version ?? getLatestMediaVersion(media.id),
     getMediaVersionCounts([media.id]),
     getPullRequestNumbers([media]),
   ]);
-  invariant(resolved, "media has no version to serve");
+  // A media whose only upload has not landed yet still has to serialize. It is
+  // addressable the moment it is created and `PATCH` can edit it, so answering
+  // its own committed write with a 500 is not an option. It comes back
+  // `status: "pending"`, exactly as the create response does.
+  const resolved = latest ?? (await getNewestMediaVersion(media.id));
+  invariant(resolved, "media has no version at all");
   return serializeMedia(
     media,
     resolved,

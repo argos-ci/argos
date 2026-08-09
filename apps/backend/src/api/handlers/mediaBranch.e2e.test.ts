@@ -400,6 +400,28 @@ describe("updateMedia", () => {
     expect(res.body.description).toBeNull();
   });
 
+  test("edits a media whose upload has not landed yet", async ({
+    token,
+    project,
+  }) => {
+    // The row exists from the moment the upload is signed, and it is exactly the
+    // window an agent corrects a branch in. Serializing it used to resolve only
+    // *uploaded* versions and then assert one existed — a 500 answering its own
+    // committed write.
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "pending.png", branch: "feat/a" },
+      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+    });
+
+    const res = await request(app)
+      .patch(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ branch: "feat/b" })
+      .expect(200);
+
+    expect(res.body).toMatchObject({ branch: "feat/b", status: "pending" });
+  });
+
   test("refuses to edit a published media", async ({
     token,
     project,

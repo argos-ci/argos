@@ -43,6 +43,26 @@ export async function getLatestMediaVersion(
 }
 
 /**
+ * The newest version of one media, uploaded or not.
+ *
+ * Distinct from {@link getLatestMediaVersion}, and the distinction matters: for
+ * anything a viewer looks at, a version whose bytes never landed must not become
+ * "the latest" and blank out a share page that was working a moment ago. But a
+ * media whose *only* version is still pending is a real, addressable row — it
+ * has an id, a share URL and a branch — and the API has to be able to describe
+ * it rather than fail on it.
+ */
+export async function getNewestMediaVersion(
+  mediaId: string,
+): Promise<MediaVersion | null> {
+  const version = await MediaVersion.query()
+    .where("mediaId", mediaId)
+    .orderBy("number", "desc")
+    .first();
+  return version ?? null;
+}
+
+/**
  * How many uploaded versions each of these media has.
  *
  * On every media response, because it is what tells a caller whether the history
