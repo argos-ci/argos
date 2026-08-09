@@ -483,10 +483,14 @@ async function loadMediaForAuth(args: {
     throw boom(404, "Media not found");
   }
 
-  const projectPermissions = await media.project.$getPermissions(auth.user);
+  // Membership permissions, not `$getPermissions`: the "view" a public project
+  // hands to anyone must not reach its team-only media.
+  const membershipPermissions = await media.project.$getMembershipPermissions(
+    auth.user,
+  );
   const permissions = getMediaPermissions({
     visibility: media.visibility,
-    projectPermissions,
+    membershipPermissions,
   });
   if (!permissions.includes(permission)) {
     throw boom(404, "Media not found");

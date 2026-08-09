@@ -6,6 +6,11 @@ export type MediaPermission = "view" | "comment" | "delete";
  * Compute the permissions a viewer has on a media, given its visibility and what
  * they can do on the project it belongs to.
  *
+ * `membershipPermissions` must come from `Project.getMembershipPermissions` —
+ * never from `getPermissions`, whose public-project default hands "view" to
+ * anyone, including anonymous visitors. Feeding that in here would open a
+ * team-only media to the world whenever its project is a public one.
+ *
  * Media is project-scoped, so writes follow the same access control that governs
  * the project's builds — fine-grained contributor access included. Reading is the
  * exception: a `public` media is readable by anyone holding the link, so `view`
@@ -15,21 +20,21 @@ export type MediaPermission = "view" | "comment" | "delete";
  */
 export function getMediaPermissions(args: {
   visibility: "team" | "public";
-  projectPermissions: ProjectPermission[];
+  membershipPermissions: ProjectPermission[];
 }): MediaPermission[] {
-  const { projectPermissions } = args;
+  const { membershipPermissions } = args;
   const permissions: MediaPermission[] = [];
   if (checkCanViewMedia(args)) {
     permissions.push("view");
   }
   // Commenting is a write on the project's review surface, which is the same
   // trust posting a build comment takes.
-  if (projectPermissions.includes("review")) {
+  if (membershipPermissions.includes("review")) {
     permissions.push("comment");
   }
   // Deleting is an administrator's call: a share URL may already be pasted
   // somewhere, and removing the media breaks it.
-  if (projectPermissions.includes("admin")) {
+  if (membershipPermissions.includes("admin")) {
     permissions.push("delete");
   }
   return permissions;
@@ -40,7 +45,9 @@ export function getMediaPermissions(args: {
  *
  * A `public` media needs nothing at all — it is what a pull request reviewer with
  * no Argos account opens, and the whole feature depends on that working. A `team`
- * media needs a session that can see the owning project.
+ * media needs a viewer whose *membership* grants "view" on the owning project:
+ * the project being public is not enough, or a public project would leak its
+ * team-only media to anyone holding the link.
  *
  * This governs the *page*, not the bytes: the file itself is served from an
  * unauthenticated CDN URL, because GitHub fetches embedded images server-side
@@ -48,10 +55,10 @@ export function getMediaPermissions(args: {
  */
 export function checkCanViewMedia(args: {
   visibility: "team" | "public";
-  projectPermissions: ProjectPermission[];
+  membershipPermissions: ProjectPermission[];
 }): boolean {
   if (args.visibility === "public") {
     return true;
   }
-  return args.projectPermissions.includes("view");
+  return args.membershipPermissions.includes("view");
 }

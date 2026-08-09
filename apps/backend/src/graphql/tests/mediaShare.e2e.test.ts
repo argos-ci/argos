@@ -202,6 +202,52 @@ describe("mediaByShareToken", () => {
     expect(res.body.data.mediaByShareToken).toBeNull();
   });
 
+  it("hides a team media from an anonymous visitor even on a public project", async () => {
+    // The exact leak this guards against: a public project hands anyone "view"
+    // on the project itself, which must not open its team-only media — "team"
+    // means members, not whoever may browse the project.
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({
+      accountId: account.id,
+      private: false,
+    });
+    const media = await createMediaScenario({ projectId: project.id });
+
+    const [teamRes, publicRes] = await Promise.all([
+      query({ auth: null, shareToken: media.after.shareToken }),
+      query({ auth: null, shareToken: media.video.shareToken }),
+    ]);
+
+    expectNoGraphQLError(teamRes);
+    expect(teamRes.body.data.mediaByShareToken).toBeNull();
+
+    // Only the team-only visibility narrows: the public media on the very same
+    // project keeps answering.
+    expectNoGraphQLError(publicRes);
+    expect(publicRes.body.data.mediaByShareToken).not.toBeNull();
+  });
+
+  it("hides a public project's team media from a signed-in outsider", async () => {
+    const outsider = await factory.User.create();
+    const outsiderAccount = await factory.UserAccount.create({
+      userId: outsider.id,
+    });
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({
+      accountId: account.id,
+      private: false,
+    });
+    const media = await createMediaScenario({ projectId: project.id });
+
+    const res = await query({
+      auth: { user: outsider, account: outsiderAccount },
+      shareToken: media.after.shareToken,
+    });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken).toBeNull();
+  });
+
   it("serves a public media to an anonymous visitor, without the project", async () => {
     const account = await factory.TeamAccount.create();
     const project = await factory.Project.create({ accountId: account.id });

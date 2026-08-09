@@ -12,7 +12,9 @@ import { forbidden, notFound } from "./util";
  *
  * Mirrors {@link getTestForUser}: `view` for reading a media's comments, `review`
  * for posting one. Media is project-scoped, so this is the project's own access
- * control — fine-grained contributor access included.
+ * control — fine-grained contributor access included. Membership permissions,
+ * deliberately: the "view" a public project hands to anyone must not reach a
+ * team-only media through here.
  */
 export async function getMediaForUser(input: {
   id: string;
@@ -31,7 +33,7 @@ export async function getMediaForUser(input: {
     throw notFound("Media not found");
   }
   invariant(media.project?.account, "Media project account not found");
-  const permissions = await media.project.$getPermissions(user);
+  const permissions = await media.project.$getMembershipPermissions(user);
   if (!permissions.includes(permission)) {
     throw forbidden(message);
   }

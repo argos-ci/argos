@@ -259,10 +259,12 @@ export const resolvers: IResolvers = {
       }
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const projectPermissions = await project.$getPermissions(ctx.auth.user);
+      const membershipPermissions = await project.$getMembershipPermissions(
+        ctx.auth.user,
+      );
       const permissions = getMediaPermissions({
         visibility: media.visibility,
-        projectPermissions,
+        membershipPermissions,
       });
       if (!permissions.includes("comment")) {
         return [];
@@ -289,12 +291,12 @@ export const resolvers: IResolvers = {
     permissions: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const projectPermissions = await project.$getPermissions(
+      const membershipPermissions = await project.$getMembershipPermissions(
         ctx.auth?.user ?? null,
       );
       return getMediaPermissions({
         visibility: media.visibility,
-        projectPermissions,
+        membershipPermissions,
       }).map((permission) => GRAPHQL_PERMISSION[permission]);
     },
   },
@@ -346,13 +348,15 @@ export const resolvers: IResolvers = {
 
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const projectPermissions = await project.$getPermissions(
+      // Membership permissions, not `$getPermissions`: a public project grants
+      // anyone "view", which must not open its team-only media to the world.
+      const membershipPermissions = await project.$getMembershipPermissions(
         ctx.auth?.user ?? null,
       );
 
       return checkCanViewMedia({
         visibility: media.visibility,
-        projectPermissions,
+        membershipPermissions,
       })
         ? media
         : null;

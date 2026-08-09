@@ -276,19 +276,32 @@ export class Project extends Model {
     project: Project,
     user: User | null,
   ): Promise<ProjectPermission[]> {
-    const [isPublic] = await Promise.all([
+    const [isPublic, membershipPermissions] = await Promise.all([
       project.$checkIsPublic(),
-      project.$fetchGraph("account", { skipFetched: true }),
+      Project.getMembershipPermissions(project, user),
     ]);
-    invariant(project.account);
+    if (membershipPermissions.length > 0) {
+      return membershipPermissions;
+    }
+    // A public project can at least be viewed by anyone, member or not.
+    return isPublic ? ["view"] : [];
+  }
 
-    // If the project is public, the default permissions is "view"
-    // else no one can access the project by default.
-    const defaultPermissions: ProjectPermission[] = isPublic ? ["view"] : [];
-
-    // If it's an non-authenticated user, we apply the default permissions.
+  /**
+   * The permissions granted by who the viewer is — staff, the owner of a
+   * personal project, or team membership (fine-grained contributor access
+   * included). Unlike {@link Project.getPermissions}, the project being public
+   * grants nothing here: this is the input for anything scoped to "team members
+   * only", such as team-visibility media, which must not open up just because
+   * the project is a public one anyone may view.
+   */
+  static async getMembershipPermissions(
+    project: Project,
+    user: User | null,
+  ): Promise<ProjectPermission[]> {
+    // An anonymous visitor is a member of nothing.
     if (!user) {
-      return defaultPermissions;
+      return [];
     }
 
     // If it's a staff user, they have all permissions.
@@ -296,15 +309,12 @@ export class Project extends Model {
       return ALL_PROJECT_PERMISSIONS;
     }
 
-    // If it's a personal project.
-    if (project.account.type === "user") {
-      // Only the owner can access the project.
-      if (project.account.userId === user.id) {
-        return ALL_PROJECT_PERMISSIONS;
-      }
+    await project.$fetchGraph("account", { skipFetched: true });
+    invariant(project.account);
 
-      // Otherwise, we apply the default permissions.
-      return defaultPermissions;
+    // If it's a personal project, only the owner can access the project.
+    if (project.account.type === "user") {
+      return project.account.userId === user.id ? ALL_PROJECT_PERMISSIONS : [];
     }
 
     const [projectUser, teamUser] = await Promise.all([
@@ -317,9 +327,9 @@ export class Project extends Model {
       }),
     ]);
 
-    // If the user is not part of the project or the team, we apply the default permissions.
+    // If the user is not part of the team, they are a member of nothing.
     if (!teamUser) {
-      return defaultPermissions;
+      return [];
     }
 
     // If the user is part of the team, we apply permissions based on their level.
@@ -335,10 +345,9 @@ export class Project extends Model {
         // we use it, else we fallback to the default user level of the project.
         const userLevel = projectUser?.userLevel ?? project.defaultUserLevel;
 
-        // If there is no user level.
+        // If there is no user level, the contributor has no access of their own.
         if (!userLevel) {
-          // We apply the default permissions.
-          return defaultPermissions;
+          return [];
         }
 
         // Else we apply permissions based on the user level.
@@ -361,6 +370,10 @@ export class Project extends Model {
 
   async $getPermissions(user: User | null) {
     return Project.getPermissions(this, user);
+  }
+
+  async $getMembershipPermissions(user: User | null) {
+    return Project.getMembershipPermissions(this, user);
   }
 
   async $checkIsPublic(trx?: TransactionOrKnex) {
