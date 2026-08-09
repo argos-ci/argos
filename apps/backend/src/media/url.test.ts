@@ -172,6 +172,30 @@ describe("getMediaTableMarkdown", () => {
     ).toContain("| First.<br>Second. |");
   });
 
+  it("collapses a newline in a name, which sits inside the embed", () => {
+    // The alt text is a cell of its own that `escapeTableCell` cannot reach, so
+    // a raw newline there ends the row mid-embed and leaks the rest as body
+    // text — the break the cell escaping exists to stop.
+    const table = getMediaTableMarkdown([
+      {
+        name: "a\nb.png",
+        description: null,
+        before: null,
+        after: { name: "a\nb.png", shareUrl, posterUrl: null, isVideo: false },
+      },
+    ]);
+
+    expect(table).toBe(
+      [
+        "| Name | Preview |",
+        "| --- | --- |",
+        `| a<br>b.png | ![a<br>b.png](${shareUrl}) |`,
+      ].join("\n"),
+    );
+    // One row per group, whatever the name contains.
+    expect(table.split("\n")).toHaveLength(3);
+  });
+
   it("turns a newline in a note into a line break instead of a new row", () => {
     expect(
       getMediaTableMarkdown([

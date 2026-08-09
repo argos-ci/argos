@@ -124,11 +124,12 @@ function collapseLineBreaks(value: string): string {
  * are caller-controlled, and `]` alone is enough to truncate the label and leak
  * the rest as body text.
  *
- * `|` is in the set even though it means nothing to a link, because these labels
- * are rendered into table cells and a raw pipe there opens a column mid-embed.
- * The cell escaping cannot do it: by then the label is glued to a URL that must
- * not be escaped.
+ * `|` is in the set, and line endings are collapsed, even though neither means
+ * anything to a link: these labels are rendered into table cells, where a raw
+ * pipe opens a column mid-embed and a raw newline ends the row outright. The
+ * cell escaping cannot reach them — by then the label is glued to a URL that
+ * must not be escaped — so the label has to arrive already safe.
  */
 function escapeMarkdownText(value: string): string {
-  return value.replace(/([[\]\\|])/g, "\\$1");
+  return collapseLineBreaks(value.replace(/([[\]\\|])/g, "\\$1"));
 }
