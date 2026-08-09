@@ -230,6 +230,7 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
 
     const finalized = await finalizeMedia(pending);
 
+    let published = 0;
     if (media.githubPullRequestId) {
       await updatePullRequestComment(media.githubPullRequestId);
     } else if (media.branch) {
@@ -239,14 +240,23 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
       // just as common, and nothing else would ever connect them.
       const project = media.project ?? (await media.$relatedQuery("project"));
       if (project?.githubRepositoryId) {
-        await publishMediaForBranch({
+        published = await publishMediaForBranch({
           githubRepositoryId: project.githubRepositoryId,
           branch: media.branch,
         });
       }
     }
 
-    res.send(await serializeMediaWithVersion(media, finalized));
+    // Publishing attached the pull request in the database but not to the copy
+    // in hand, and `stage` is derived from it — so answering with the stale row
+    // would report a media as staged that is already published and listed in the
+    // pull request comment. A caller branching on `stage`, as the docs tell it
+    // to, would take the wrong path.
+    const current =
+      published > 0 ? await Media.query().findById(media.id) : media;
+    invariant(current, "the media was just finalized");
+
+    res.send(await serializeMediaWithVersion(current, finalized));
   });
 };
 
