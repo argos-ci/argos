@@ -11,6 +11,7 @@ import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
+import { uploadedVersions } from "./query";
 import { getMediaPosterUrl } from "./serve";
 import {
   getMediaTableMarkdown,
@@ -40,12 +41,7 @@ export async function updatePullRequestComment(
 
   const media = await Media.query()
     .where("githubPullRequestId", githubPullRequestId)
-    .whereExists(
-      MediaVersion.query()
-        .select(1)
-        .whereColumn("media_versions.mediaId", "media.id")
-        .whereNotNull("media_versions.uploadedAt"),
-    )
+    .whereExists(uploadedVersions())
     .orderBy("createdAt", "asc")
     .limit(MAX_LISTED_MEDIA);
 

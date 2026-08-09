@@ -1,9 +1,10 @@
 import { isUniqueViolationError } from "@/database/error";
-import { Media, MediaVersion, Project } from "@/database/models";
+import { Media, Project } from "@/database/models";
 import { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import logger from "@/logger";
 
 import { updatePullRequestComment } from "./pull-request-comment";
+import { uploadedVersions } from "./query";
 
 /**
  * Publish a branch's staged media to the pull request that is already open for
@@ -97,12 +98,7 @@ export async function publishBranchMedia(
     // Only what actually landed. A media created to sign an upload that never
     // completed has nothing to show, and publishing it would put a row in the
     // comment for bytes that do not exist.
-    .whereExists(
-      MediaVersion.query()
-        .select(1)
-        .whereColumn("media_versions.mediaId", "media.id")
-        .whereNotNull("media_versions.uploadedAt"),
-    );
+    .whereExists(uploadedVersions());
 
   if (staged.length === 0) {
     return 0;

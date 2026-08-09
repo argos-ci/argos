@@ -94,8 +94,15 @@ export function queryProjectMedia(args: {
   return query;
 }
 
-/** Correlated "this media has landed at least one upload". */
-function uploadedVersions() {
+/**
+ * Correlated "this media has landed at least one upload".
+ *
+ * The line between a media that exists and one that is only a signed upload, and
+ * every path that reads media has to draw it the same way — the list endpoints,
+ * the pull request comment and branch publishing all shared a copy of it. If
+ * they ever disagree, media appear in the comment that the list hides.
+ */
+export function uploadedVersions() {
   return MediaVersion.query()
     .select(1)
     .whereColumn("media_versions.mediaId", "media.id")
