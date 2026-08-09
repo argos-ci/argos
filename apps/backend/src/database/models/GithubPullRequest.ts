@@ -26,7 +26,7 @@ export class GithubPullRequest extends Model {
           title: {
             oneOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
           },
-          headRef: { type: ["string", "null"] },
+          headRef: { type: ["string", "null"], maxLength: 255 },
           baseRef: { type: ["string", "null"] },
           baseSha: { type: ["string", "null"] },
           state: { type: ["string", "null"], enum: ["open", "closed"] },

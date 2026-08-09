@@ -51,7 +51,11 @@ export function parsePullRequestData(data: {
     // In GitHub we can have more than 255 characters for a title
     // but it's useless to display more in Argos
     title: truncate(data.title, 255),
-    headRef: data.head.ref,
+    // Truncated for the same reason as the title: the column is a varchar(255)
+    // and a branch name has no length limit worth relying on. Overflowing it
+    // fails `githubPullRequestJob`, which `performBuild` awaits — so an
+    // over-long branch name would wedge every build on the pull request.
+    headRef: truncate(data.head.ref, 255),
     baseRef: data.base.ref,
     baseSha: data.base.sha,
     state: data.state,
