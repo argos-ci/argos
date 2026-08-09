@@ -214,7 +214,12 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      permission: "view",
+      // A write, not a read: it marks a version uploaded, bills the account's
+      // screenshot meter and makes Argos post to GitHub. `view` is granted
+      // unconditionally for a `public` media, so gating on it let anyone whose
+      // token is scoped to the account finalize uploads in projects they hold
+      // nothing on.
+      permission: "delete",
     });
 
     // The version waiting on bytes is the newest one, uploaded or not — a caller
@@ -229,6 +234,15 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
     }
 
     const finalized = await finalizeMedia(pending);
+
+    // Nothing landed, so nothing downstream has anything new to say. Without
+    // this, re-finalizing an already-uploaded media still drove a GitHub write
+    // on every call — an amplifier pointed at the installation's shared API
+    // budget, which every project on it depends on.
+    if (pending.uploadedAt) {
+      res.send(await serializeMediaWithVersion(media, finalized));
+      return;
+    }
 
     let published = 0;
     if (media.githubPullRequestId) {
