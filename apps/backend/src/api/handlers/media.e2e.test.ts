@@ -105,8 +105,12 @@ const test = base.extend<{
   },
 });
 
-beforeAll(() => {
+beforeAll(async () => {
   z.globalRegistry.clear();
+  // The `user` fixture truncates, but only for tests that ask for a fixture. A
+  // test taking none would otherwise inherit whatever the previous *file* left
+  // in this worker's database.
+  await setupDatabase();
 });
 
 describe("createMedia", () => {
@@ -201,7 +205,7 @@ describe("createMedia", () => {
     expect(res.body.error).toContain("requires a paid plan");
   });
 
-  test("refuses a team that has never subscribed", async () => {
+  test("refuses a team that has never subscribed", async ({ user: _user }) => {
     // Same answer build creation gives: team features are not free, and the free
     // tier lives on personal accounts.
     const unpaid = await factory.TeamAccount.create({ slug: "unpaid" });

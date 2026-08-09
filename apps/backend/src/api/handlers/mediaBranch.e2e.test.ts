@@ -588,10 +588,16 @@ describe("publishing when the pull request opens", () => {
         branch: "feat/other",
       },
     });
-    const pending = await factory.Media.create({
-      projectId: project.id,
-      name: "pending.png",
-      branch: "feat/checkout",
+    // A signed upload whose bytes never landed. It must have a *version row* —
+    // building it with no versions at all satisfies the `whereExists` guard
+    // vacuously and would pass even if the `uploadedAt` predicate were deleted.
+    const { media: pending } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "pending.png",
+        branch: "feat/checkout",
+      },
+      version: { number: 1, uploadedAt: null, billedUnits: 0 },
     });
 
     const pullRequest = await factory.PullRequest.create({
