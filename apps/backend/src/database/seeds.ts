@@ -1676,6 +1676,12 @@ export async function seed() {
     accountSlug: smoothAccount.slug,
     projectName: bigProject.name,
   });
+
+  await createDemoMediaScenario({
+    projectId: bigProject.id,
+    authorUserId: greg.user.id,
+    replierUserId: jeremy.user.id,
+  });
 }
 
 /**
@@ -1851,6 +1857,292 @@ export async function createMediaScenario(input: {
   }
 
   return { before, after, video, afterV2 };
+}
+
+/**
+ * The demo media files living under `media-seed/` in the **development** bucket
+ * (uploaded once by hand — see the keys' `dummy-*` neighbours for the same
+ * convention on screenshots). Sizes and dimensions are the real files' and the
+ * share page sizes its frame from them, so they must not drift.
+ */
+const DEMO_MEDIA_FILES = {
+  dashboard: {
+    key: "media-seed/dashboard.png",
+    sizeBytes: "46189",
+    width: 1440,
+    height: 900,
+  },
+  checkoutBefore: {
+    key: "media-seed/checkout-before.png",
+    sizeBytes: "27612",
+    width: 720,
+    height: 1080,
+  },
+  checkoutAfter: {
+    key: "media-seed/checkout-after.png",
+    sizeBytes: "27597",
+    width: 720,
+    height: 1080,
+  },
+  pricingV1: {
+    key: "media-seed/pricing-v1.png",
+    sizeBytes: "22514",
+    width: 1200,
+    height: 800,
+  },
+  pricingV2: {
+    key: "media-seed/pricing-v2.png",
+    sizeBytes: "25081",
+    width: 1200,
+    height: 800,
+  },
+  pricingV3: {
+    key: "media-seed/pricing-v3.png",
+    sizeBytes: "31353",
+    width: 1200,
+    height: 800,
+  },
+  onboardingVideo: {
+    key: "media-seed/onboarding.mp4",
+    sizeBytes: "56244",
+    width: 1280,
+    height: 720,
+  },
+} satisfies Record<
+  string,
+  { key: string; sizeBytes: string; width: number; height: number }
+>;
+
+/**
+ * Share tokens of the demo media, deliberately memorable: the whole point of the
+ * scenario is opening `/m/demo-image` by hand to look at the share page.
+ */
+const DEMO_MEDIA_TOKENS = [
+  "demo-image",
+  "demo-before",
+  "demo-after",
+  "demo-versions",
+  "demo-video",
+] as const;
+
+/**
+ * Every share-page state on checkable URLs, in the development database:
+ *
+ * - `/m/demo-image` — a lone screenshot, one version.
+ * - `/m/demo-before` / `/m/demo-after` — a before/after pair (team-only, so the
+ *   header chip differs from the public ones), with a pinned thread on the after.
+ * - `/m/demo-versions` — three versions, with a thread pinned to **v2**: its pin
+ *   only shows after switching the picker off the latest version.
+ * - `/m/demo-video` — a real MP4 the player can actually play, poster derived by
+ *   the CDN.
+ *
+ * Unlike {@link createMediaScenario} (whose fixed clock keeps Playwright
+ * baselines stable), dates here are relative to the seeding run so "Uploaded 2
+ * hours ago" and the expiry countdown read like live data. Existing demo rows
+ * are deleted first — the tokens are constants — so the scenario can be re-run
+ * against a database that already has them.
+ */
+async function createDemoMediaScenario(input: {
+  projectId: string;
+  /** Authors the demo media and comments. */
+  authorUserId: string;
+  /** Replies in the pinned thread, so two avatars show. */
+  replierUserId: string;
+}) {
+  const { projectId, authorUserId, replierUserId } = input;
+
+  const hoursAgo = (hours: number) =>
+    new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  // Far enough out that nothing expires under whoever is checking, near enough
+  // that the countdown shows a value worth reading.
+  const expiresAt = new Date(
+    Date.now() + 90 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // Cascades take the versions and comments along.
+  await Media.query()
+    .delete()
+    .whereIn("shareToken", [...DEMO_MEDIA_TOKENS]);
+
+  const [image, before, after, versions, video] =
+    await Media.query().insertAndFetch([
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "dashboard.png",
+        state: null,
+        description: "Overview screen after the sidebar redesign.",
+        visibility: "public" as const,
+        shareToken: "demo-image",
+        createdAt: hoursAgo(50),
+        updatedAt: hoursAgo(50),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "checkout.png",
+        state: "before" as const,
+        description: "Checkout before the spacing fix.",
+        visibility: "team" as const,
+        shareToken: "demo-before",
+        createdAt: hoursAgo(26),
+        updatedAt: hoursAgo(26),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "checkout.png",
+        state: "after" as const,
+        description: "Checkout after the spacing fix.",
+        visibility: "team" as const,
+        shareToken: "demo-after",
+        createdAt: hoursAgo(25),
+        updatedAt: hoursAgo(25),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "pricing.png",
+        state: null,
+        description: "Pricing page — iterating on the plan lineup.",
+        visibility: "public" as const,
+        shareToken: "demo-versions",
+        createdAt: hoursAgo(72),
+        updatedAt: hoursAgo(72),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "onboarding.mp4",
+        state: null,
+        description: "The onboarding flow, end to end.",
+        visibility: "public" as const,
+        shareToken: "demo-video",
+        createdAt: hoursAgo(5),
+        updatedAt: hoursAgo(5),
+      },
+    ]);
+  invariant(image && before && after && versions && video, "media created");
+
+  const imageVersion = (args: {
+    mediaId: string;
+    number: number;
+    file: { key: string; sizeBytes: string; width: number; height: number };
+    at: string;
+    mimeType?: string;
+  }) => ({
+    mediaId: args.mediaId,
+    number: args.number,
+    createdByUserId: authorUserId,
+    key: args.file.key,
+    mimeType: args.mimeType ?? "image/png",
+    sizeBytes: args.file.sizeBytes,
+    width: args.file.width,
+    height: args.file.height,
+    expiresAt,
+    uploadedAt: args.at,
+    billedUnits: 1,
+    createdAt: args.at,
+    updatedAt: args.at,
+  });
+
+  const [, , afterVersion, , pricingV2] =
+    await MediaVersion.query().insertAndFetch([
+      imageVersion({
+        mediaId: image.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.dashboard,
+        at: hoursAgo(50),
+      }),
+      imageVersion({
+        mediaId: before.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.checkoutBefore,
+        at: hoursAgo(26),
+      }),
+      imageVersion({
+        mediaId: after.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.checkoutAfter,
+        at: hoursAgo(25),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.pricingV1,
+        at: hoursAgo(72),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 2,
+        file: DEMO_MEDIA_FILES.pricingV2,
+        at: hoursAgo(30),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 3,
+        file: DEMO_MEDIA_FILES.pricingV3,
+        at: hoursAgo(2),
+      }),
+      {
+        ...imageVersion({
+          mediaId: video.id,
+          number: 1,
+          file: DEMO_MEDIA_FILES.onboardingVideo,
+          at: hoursAgo(5),
+          mimeType: "video/mp4",
+        }),
+        billedUnits: 25,
+      },
+    ]);
+  invariant(afterVersion && pricingV2, "versions created");
+
+  // A pinned thread with a reply on the "after" image — the pin sits on the pay
+  // button the pair exists to talk about — plus a plain comment on the whole
+  // image.
+  const pinned = await Comment.query().insertAndFetch({
+    mediaId: after.id,
+    mediaVersionId: afterVersion.id,
+    userId: authorUserId,
+    content: commentDoc("The pay button finally lines up with the field grid."),
+    anchor: { type: "point" as const, x: 0.5, y: 0.49 },
+    createdAt: hoursAgo(24),
+    updatedAt: hoursAgo(24),
+  });
+  await Comment.query().insert([
+    {
+      mediaId: after.id,
+      mediaVersionId: afterVersion.id,
+      userId: replierUserId,
+      threadId: pinned.id,
+      content: commentDoc("Much better than the before — approving."),
+      createdAt: hoursAgo(23),
+      updatedAt: hoursAgo(23),
+    },
+    {
+      mediaId: after.id,
+      mediaVersionId: afterVersion.id,
+      userId: authorUserId,
+      content: commentDoc(
+        "Spacing between the fields breathes a lot better too.",
+      ),
+      createdAt: hoursAgo(22),
+      updatedAt: hoursAgo(22),
+    },
+    // Pinned to v2 while v3 is the latest: the pin must stay withheld until the
+    // picker is switched to the version it was drawn on.
+    {
+      mediaId: versions.id,
+      mediaVersionId: pricingV2.id,
+      userId: replierUserId,
+      content: commentDoc(
+        "Is $120 the final price for Pro? Feels steep next to Starter.",
+      ),
+      anchor: { type: "point" as const, x: 0.72, y: 0.38 },
+      createdAt: hoursAgo(28),
+      updatedAt: hoursAgo(28),
+    },
+  ]);
 }
 
 /**
