@@ -1,9 +1,44 @@
 import { isUniqueViolationError } from "@/database/error";
 import { Media, MediaVersion, Project } from "@/database/models";
-import type { GithubPullRequest } from "@/database/models/GithubPullRequest";
+import { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import logger from "@/logger";
 
 import { updatePullRequestComment } from "./pull-request-comment";
+
+/**
+ * Publish a branch's staged media to the pull request that is already open for
+ * it, if there is one.
+ *
+ * The other direction of {@link publishBranchMedia}, and the feature does not
+ * work without both. That one fires when a pull request arrives and asks "what
+ * is waiting on this branch"; this one fires when media arrives and asks "is
+ * there already a pull request for it". Uploading to a branch whose pull request
+ * opened an hour ago is at least as common as the reverse, and nothing would
+ * ever have connected them.
+ *
+ * Called once the bytes land, because that is when the media becomes something
+ * the comment can show.
+ */
+export async function publishMediaForBranch(args: {
+  githubRepositoryId: string;
+  branch: string;
+}): Promise<number> {
+  const pullRequest = await GithubPullRequest.query()
+    .where("githubRepositoryId", args.githubRepositoryId)
+    .where("headRef", args.branch)
+    .where("headFromFork", false)
+    .whereNot("state", "closed")
+    // Newest wins if a branch somehow has two open pull requests: it is the one
+    // people are looking at.
+    .orderBy("number", "desc")
+    .first();
+
+  if (!pullRequest) {
+    return 0;
+  }
+
+  return publishBranchMedia(pullRequest);
+}
 
 /**
  * Attach a branch's staged media to the pull request that just opened for it,

@@ -22,6 +22,7 @@ import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
 import { deleteUnreferencedMediaObjects } from "@/media/object";
 import { getMediaPermissions, type MediaPermission } from "@/media/permissions";
+import { publishMediaForBranch } from "@/media/publish";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { queryProjectMedia } from "@/media/query";
 import {
@@ -229,6 +230,18 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
 
     if (media.githubPullRequestId) {
       await updatePullRequestComment(media.githubPullRequestId);
+    } else if (media.branch) {
+      // The bytes landing is what makes a staged media publishable, so this is
+      // the moment to ask whether its pull request is already open. Waiting for
+      // one to *open* only covers uploads that came first — the reverse order is
+      // just as common, and nothing else would ever connect them.
+      const project = media.project ?? (await media.$relatedQuery("project"));
+      if (project?.githubRepositoryId) {
+        await publishMediaForBranch({
+          githubRepositoryId: project.githubRepositoryId,
+          branch: media.branch,
+        });
+      }
     }
 
     res.send(await serializeMediaWithVersion(media, finalized));

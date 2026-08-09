@@ -22,6 +22,7 @@ import { notifySubscriptionStatusUpdate } from "@/database/services/subscription
 import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { parsePullRequestData } from "@/github-pull-request/remote";
 import parentLogger from "@/logger";
+import { publishBranchMedia } from "@/media/publish";
 
 import { synchronizeFromInstallationId } from "../helpers";
 import {
@@ -166,6 +167,7 @@ export async function handleGitHubEvents(
     case "pull_request": {
       if (
         ![
+          "opened",
           "closed",
           "edited",
           "reopened",
@@ -185,6 +187,31 @@ export async function handleGitHubEvents(
         return;
       }
 
+      // `opened` is the event a branch's staged media are waiting for, and it is
+      // the one case where Argos has no row yet — every other action bails below
+      // when it finds none. The payload carries everything the row needs, so
+      // this costs no API call.
+      if (payload.action === "opened" || payload.action === "reopened") {
+        const opened = await GithubPullRequest.query()
+          .findOne({
+            githubRepositoryId: repository.id,
+            number: payload.pull_request.number,
+          })
+          .then(async (existing) => {
+            const data = parsePullRequestData(payload.pull_request);
+            return existing
+              ? existing.$clone().$query().patchAndFetch(data)
+              : GithubPullRequest.query().insertAndFetch({
+                  githubRepositoryId: repository.id,
+                  number: payload.pull_request.number,
+                  jobStatus: "complete",
+                  ...data,
+                });
+          });
+        await publishBranchMedia(opened);
+        return;
+      }
+
       const pr = await GithubPullRequest.query().findOne({
         githubRepositoryId: repository.id,
         number: payload.pull_request.number,
@@ -195,13 +222,9 @@ export async function handleGitHubEvents(
       }
 
       if (
-        [
-          "closed",
-          "edited",
-          "reopened",
-          "ready_for_review",
-          "converted_to_draft",
-        ].includes(payload.action)
+        ["closed", "edited", "ready_for_review", "converted_to_draft"].includes(
+          payload.action,
+        )
       ) {
         invariant(payload.pull_request);
         await pr
