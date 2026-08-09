@@ -18,6 +18,8 @@ import {
 } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
+import { githubPullRequestJob } from "@/github-pull-request/job";
+import logger from "@/logger";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
 import { deleteUnreferencedMediaObjects } from "@/media/object";
@@ -711,10 +713,36 @@ async function resolvePullRequest(args: {
     );
   }
 
-  return getOrCreatePullRequest({
+  const pullRequest = await getOrCreatePullRequest({
     githubRepositoryId: project.githubRepositoryId,
     number: prNumber,
   });
+
+  if (pullRequest.headRef) {
+    return pullRequest;
+  }
+
+  // A pull request Argos has not synced yet has no `headRef`, and without it
+  // this upload cannot tell that a media is already staged on its branch — so it
+  // would create a second one, which then collides forever when publishing tries
+  // to attach the first. Run the sync now rather than after the damage.
+  //
+  // Only ever on the first upload for a pull request Argos has not seen; the
+  // same thing `performBuild` does, and for the same reason. Best effort: no
+  // installation, a deleted repository or a GitHub outage should not fail the
+  // upload, it just means the branch stays unknown.
+  await githubPullRequestJob
+    .run(pullRequest.id, { logger })
+    .catch((error: unknown) => {
+      logger.warn(
+        { err: error, pullRequestId: pullRequest.id },
+        "Could not sync the pull request before an upload",
+      );
+    });
+
+  return (
+    (await GithubPullRequest.query().findById(pullRequest.id)) ?? pullRequest
+  );
 }
 
 /**
