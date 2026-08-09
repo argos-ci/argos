@@ -28,12 +28,16 @@ import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   type PaneSize,
 } from "@/containers/Build/Zoomer";
+import { CommentDraftPopover } from "@/containers/Comment/CommentDraftPopover";
+import { CommentMarker } from "@/containers/Comment/CommentMarker";
 import { CommentPin } from "@/containers/Comment/CommentPin";
+import { CommentThreadPopover } from "@/containers/Comment/CommentThreadPopover";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
+import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { toast } from "@/ui/Toaster";
@@ -41,9 +45,6 @@ import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { useCanAddToReview } from "../ReviewCommentSubmitButton";
-import { CommentDraftPopover } from "./CommentDraftPopover";
-import { CommentMarker } from "./CommentMarker";
-import { CommentThreadPopover } from "./CommentThreadPopover";
 
 const _BuildFragment = graphql(`
   fragment ScreenshotCommentLayer_Build on Build {
@@ -424,11 +425,26 @@ export function ScreenshotCommentLayer(props: {
               y: openThread.root.anchor.y,
             }),
           )}
-          comment={openThread.root}
-          replies={openThread.replies}
-          canReply={canComment}
-          buildId={build.id}
-        />
+          authorName={
+            openThread.root.user?.name ||
+            openThread.root.user?.slug ||
+            "Unknown user"
+          }
+        >
+          {/* The build's own card: it carries the snapshot reference and the
+              build reply mutation, which is why the popover takes it rather than
+              building one itself. */}
+          <BuildCommentCard
+            buildId={build.id}
+            comment={openThread.root}
+            replies={openThread.replies}
+            highlightedCommentId={null}
+            canReply={canComment}
+            hideScreenshotReference
+            embedded
+            autoFocusReply
+          />
+        </CommentThreadPopover>
       ) : null}
       {draftShown ? (
         <CommentDraftPopover

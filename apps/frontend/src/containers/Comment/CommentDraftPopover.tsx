@@ -1,14 +1,14 @@
 import { useId, useState } from "react";
 
 import type { ScreenPoint } from "@/containers/Build/projection";
-import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
+import { ReviewCommentSubmitButton } from "@/pages/Build/ReviewCommentSubmitButton";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
-import { ReviewCommentSubmitButton } from "../ReviewCommentSubmitButton";
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
+import { useMentionableUsers } from "./MentionableUsersContext";
 
 /**
  * The compact floating "Add a comment" prompt shown to the right of the pin
