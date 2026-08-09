@@ -21,7 +21,6 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
-import { queryMediaPullRequests } from "@/media/pull-requests";
 import {
   getAccountMetrics,
   InvalidAccountMetricsInputError,
@@ -177,14 +176,6 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
-    """
-    Pull requests with media uploaded to them, across the projects the viewer can
-    see, most recent first.
-    """
-    mediaPullRequests(
-      after: Int = 0
-      first: Int = 30
-    ): MediaPullRequestConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -313,31 +304,6 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       first: args.first,
       result,
     });
-  },
-  mediaPullRequests: async (account, { first, after }, ctx) => {
-    const { auth } = ctx;
-    if (!auth) {
-      throw unauthenticated();
-    }
-    // Media is project-scoped, so the list shows what the viewer can already see —
-    // the same shape the tests dashboard uses.
-    const projectIds = await getVisibleProjectIds({
-      account,
-      user: auth.user,
-    });
-    const { rows, totalCount } = await queryMediaPullRequests({
-      projectIds,
-      after,
-      first,
-    });
-    return {
-      pageInfo: {
-        totalCount,
-        hasNextPage: after + rows.length < totalCount,
-        isEmpty: totalCount === 0,
-      },
-      edges: rows,
-    };
   },
   tests: async (account, { first, after, period, filters }, ctx) => {
     const { auth } = ctx;

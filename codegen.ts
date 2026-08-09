@@ -71,7 +71,6 @@ const config: CodegenConfig = {
           MediaVersion: "../../database/models/index.js#MediaVersion",
           // Not a model: a grouped row, so the resolvers receive what the query
           // actually selected rather than a shape nothing produces.
-          MediaPullRequest: "../../media/pull-requests.js#MediaPullRequestRow",
           MsTeamsWebhook: "../../database/models/index.js#MsTeamsWebhook",
           OAuthClient: "../../database/models/index.js#OAuthClient",
           Plan: "../../database/models/index.js#Plan",

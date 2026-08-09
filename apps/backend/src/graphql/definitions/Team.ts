@@ -121,14 +121,6 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
-    """
-    Pull requests with media uploaded to them, across the projects the viewer can
-    see, most recent first.
-    """
-    mediaPullRequests(
-      after: Int = 0
-      first: Int = 30
-    ): MediaPullRequestConnection!
     avatar: AccountAvatar!
     hasForcedPlan: Boolean!
     gitlabAccessToken: String

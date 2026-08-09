@@ -1052,53 +1052,6 @@ function createMediaCommentsLoader() {
   );
 }
 
-/**
- * The most recent Argos build for a pull request.
- *
- * The pull request list shows it so a reviewer can get from "here are the
- * screenshots somebody uploaded" to "here is what the visual tests said" without
- * hunting for the build themselves.
- */
-function createLatestPullRequestBuildLoader() {
-  return new DataLoader<string, Build | null>(async (pullRequestIds) => {
-    const builds = await Build.query()
-      .distinctOn("githubPullRequestId")
-      .whereIn("githubPullRequestId", [...pullRequestIds])
-      .orderBy("githubPullRequestId")
-      .orderBy("number", "desc");
-    const byPullRequestId = new Map(
-      builds.map((build) => [build.githubPullRequestId, build]),
-    );
-    return pullRequestIds.map((id) => byPullRequestId.get(id) ?? null);
-  });
-}
-
-/** The media uploaded to a pull request, oldest first. */
-function createPullRequestMediaLoader() {
-  return new DataLoader<string, Media[]>(async (pullRequestIds) => {
-    const media = await Media.query()
-      .whereIn("githubPullRequestId", [...pullRequestIds])
-      .whereExists(
-        MediaVersion.query()
-          .select(1)
-          .whereColumn("media_versions.mediaId", "media.id")
-          .whereNotNull("media_versions.uploadedAt"),
-      )
-      .orderBy("createdAt", "asc");
-    const byPullRequestId = media.reduce<Record<string, Media[]>>(
-      (map, item) => {
-        invariant(item.githubPullRequestId, "filtered on a pull request");
-        const array = map[item.githubPullRequestId] ?? [];
-        array.push(item);
-        map[item.githubPullRequestId] = array;
-        return map;
-      },
-      {},
-    );
-    return pullRequestIds.map((id) => byPullRequestId[id] ?? []);
-  });
-}
-
 /** The newest uploaded version of a media, batched across a request. */
 function createLatestMediaVersionLoader() {
   return new DataLoader<string, MediaVersion | null>(async (mediaIds) => {
@@ -1844,8 +1797,6 @@ export const createLoaders = () => ({
   BuildCommentsCount: createBuildCommentsCountLoader(),
   MediaComments: createMediaCommentsLoader(),
   LatestMediaVersion: createLatestMediaVersionLoader(),
-  LatestPullRequestBuild: createLatestPullRequestBuildLoader(),
-  PullRequestMedia: createPullRequestMediaLoader(),
   MediaVersions: createMediaVersionsLoader(),
   MediaCounterpart: createMediaCounterpartLoader(),
   TestComments: createTestCommentsLoader(),
