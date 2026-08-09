@@ -26,6 +26,7 @@ import { queryProjectMedia } from "@/media/query";
 import {
   getLatestMediaVersion,
   getLatestMediaVersions,
+  getMediaVersionCounts,
   getMediaVersions,
 } from "@/media/version";
 import { boom } from "@/util/error";
@@ -36,7 +37,9 @@ import {
   MediaInputSchema,
   MediaSchema,
   MediaUploadTargetSchema,
+  MediaVersionSchema,
   serializeMedia,
+  serializeMediaVersion,
 } from "../schema/primitives/media";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -90,7 +93,7 @@ export const createMediaOperation = {
     "",
     "When `upload` comes back `null`, Argos already holds this exact file and steps 2 and 3 are unnecessary.",
     "",
-    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is a **draft**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment — nothing has to come back and connect the two.",
+    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is **staged**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment — nothing has to come back and connect the two.",
     "",
     "The `argos media upload` CLI command does all of this in one step.",
   ].join("\n"),
@@ -265,6 +268,52 @@ export const getMediaHandler: CreateAPIHandler = ({ get }) => {
   });
 };
 
+export const listMediaVersionsOperation = {
+  operationId: "listMediaVersions",
+  summary: "List a media's versions",
+  description: [
+    "Every uploaded version of a media, newest first.",
+    "",
+    "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first — at 1 there is nothing here you do not already have.",
+    "",
+    "When you do need it, it is because a comment carries the `mediaVersionId` it was written against. A pin describes a spot on *those* bytes, so feedback written on an earlier upload has to be read against that upload — match the id here to get its file.",
+  ].join("\n"),
+  tags: ["Media"],
+  security: anyTokenOrOAuthAuth(["media:read"]),
+  requestParams: {
+    path: z.object({
+      mediaId: z.string().meta({ description: "The media ID" }),
+    }),
+  },
+  responses: {
+    "200": {
+      description: "The media's versions, newest first",
+      content: {
+        "application/json": {
+          schema: z.array(MediaVersionSchema),
+        },
+      },
+    },
+    "400": invalidParameters,
+    "401": unauthorized,
+    "403": forbidden,
+    "404": notFound,
+    "500": serverError,
+  },
+} satisfies ZodOpenApiOperationObject;
+
+export const listMediaVersionsHandler: CreateAPIHandler = ({ get }) => {
+  get("/media/{mediaId}/versions", async (req, res) => {
+    const media = await loadMediaForAuth({
+      authPromise: req.ctx.auth(),
+      mediaId: req.ctx.params.mediaId,
+      permission: "view",
+    });
+    const versions = await getMediaVersions(media.id);
+    res.send(versions.map(serializeMediaVersion));
+  });
+};
+
 export const deleteMediaOperation = {
   operationId: "deleteMedia",
   summary: "Delete a media",
@@ -337,7 +386,7 @@ export const listMediaOperation = {
         .optional()
         .meta({
           description:
-            "Only media uploaded for this branch, drafts and published alike.",
+            "Only media uploaded for this branch, staged and published alike.",
           examples: ["feat/checkout"],
         }),
       prNumber: z.coerce
@@ -348,7 +397,7 @@ export const listMediaOperation = {
         .meta({ description: "Only media published to this pull request." }),
       stage: MediaStageSchema.optional().meta({
         description:
-          "Restrict to drafts (no pull request yet) or to published media.",
+          "Restrict to staged media (no pull request yet) or to published media.",
       }),
       search: z.string().optional().meta({
         description: "Match media on their file name or slug.",
@@ -414,11 +463,11 @@ const UpdateMediaRequestSchema = z.object({
 
 export const updateMediaOperation = {
   operationId: "updateMedia",
-  summary: "Update a draft media",
+  summary: "Update a staged media",
   description: [
-    "Change a draft's name, description or branch.",
+    "Change a staged media's name, description or branch.",
     "",
-    "Drafts only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a draft.",
+    "Staged media only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
     "",
     "Omitted fields are left alone. Sending `null` clears a field.",
   ].join("\n"),
@@ -483,7 +532,8 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     }
 
     // Name and branch are both in the identity index, so a rename onto another
-    // draft of the same name is a constraint violation rather than a merge.
+    // staged media of the same name is a constraint violation rather than a
+    // merge.
     // Answered as a 409 instead of a 500: the caller can act on it.
     const updated = await media
       .$query()
@@ -687,16 +737,16 @@ async function serializeMediaWithVersion(
   media: Media,
   version: MediaVersion | null,
 ) {
-  const [resolved, versions, prNumbers] = await Promise.all([
+  const [resolved, counts, prNumbers] = await Promise.all([
     version ?? getLatestMediaVersion(media.id),
-    getMediaVersions([media.id]),
+    getMediaVersionCounts([media.id]),
     getPullRequestNumbers([media]),
   ]);
   invariant(resolved, "media has no version to serve");
   return serializeMedia(
     media,
     resolved,
-    versions.get(media.id) ?? [],
+    counts.get(media.id) ?? 1,
     prNumbers.get(media.id) ?? null,
   );
 }
@@ -745,9 +795,9 @@ async function getPullRequestNumbers(
  */
 async function serializeMediaListWithVersions(list: Media[]) {
   const ids = list.map((media) => media.id);
-  const [latest, versions, prNumbers] = await Promise.all([
+  const [latest, counts, prNumbers] = await Promise.all([
     getLatestMediaVersions(ids),
-    getMediaVersions(ids),
+    getMediaVersionCounts(ids),
     getPullRequestNumbers(list),
   ]);
   return list.flatMap((media) => {
@@ -761,7 +811,7 @@ async function serializeMediaListWithVersions(list: Media[]) {
       serializeMedia(
         media,
         version,
-        versions.get(media.id) ?? [],
+        counts.get(media.id) ?? 1,
         prNumbers.get(media.id) ?? null,
       ),
     ];

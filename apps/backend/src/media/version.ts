@@ -43,33 +43,43 @@ export async function getLatestMediaVersion(
 }
 
 /**
- * Every uploaded version of each of these media, newest first.
+ * How many uploaded versions each of these media has.
  *
- * One query for the whole batch, which is what lets the API list a media's whole
- * history inline instead of behind an endpoint of its own: a comment records the
- * version it was written against, so acting on feedback means reaching an older
- * file, and a per-version round trip to fetch what the list already had is the
- * cost worth avoiding.
+ * On every media response, because it is what tells a caller whether the history
+ * is worth a second call at all — most media have one version, and a caller that
+ * sees 1 never asks.
  */
-export async function getMediaVersions(
+export async function getMediaVersionCounts(
   mediaIds: string[],
-): Promise<Map<string, MediaVersion[]>> {
+): Promise<Map<string, number>> {
   if (mediaIds.length === 0) {
     return new Map();
   }
 
-  const versions = await MediaVersion.query()
+  const rows = await MediaVersion.query()
+    .select("mediaId")
+    .count({ count: "*" })
     .whereIn("mediaId", mediaIds)
     .whereNotNull("uploadedAt")
-    .orderBy("number", "desc");
+    .groupBy("mediaId")
+    .castTo<{ mediaId: string; count: string }[]>();
 
-  const byMediaId = new Map<string, MediaVersion[]>();
-  for (const version of versions) {
-    const list = byMediaId.get(version.mediaId) ?? [];
-    list.push(version);
-    byMediaId.set(version.mediaId, list);
-  }
-  return byMediaId;
+  return new Map(rows.map((row) => [row.mediaId, Number(row.count)]));
+}
+
+/**
+ * Every uploaded version of one media, newest first.
+ *
+ * Unfinalized versions are left out: those rows exist to sign an upload, and
+ * listing one hands out a URL for bytes that are not there.
+ */
+export async function getMediaVersions(
+  mediaId: string,
+): Promise<MediaVersion[]> {
+  return MediaVersion.query()
+    .where("mediaId", mediaId)
+    .whereNotNull("uploadedAt")
+    .orderBy("number", "desc");
 }
 
 /**

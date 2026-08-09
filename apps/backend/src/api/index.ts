@@ -60,6 +60,7 @@ import {
   finalizeMediaHandler,
   getMediaHandler,
   listMediaHandler,
+  listMediaVersionsHandler,
   updateMediaHandler,
 } from "./handlers/media";
 import {
@@ -207,6 +208,7 @@ registerHandler(router, getMediaHandler);
 registerHandler(router, deleteMediaHandler);
 registerHandler(router, updateMediaHandler);
 registerHandler(router, listMediaHandler);
+registerHandler(router, listMediaVersionsHandler);
 
 // Error handlers
 router.use(errorHandler);

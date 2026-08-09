@@ -87,6 +87,7 @@ import {
   finalizeMediaOperation,
   getMediaOperation,
   listMediaOperation,
+  listMediaVersionsOperation,
   updateMediaOperation,
 } from "./handlers/media";
 import {
@@ -291,6 +292,9 @@ export const zodSchema = {
       patch: updateMediaOperation,
       get: getMediaOperation,
       delete: deleteMediaOperation,
+    },
+    "/media/{mediaId}/versions": {
+      get: listMediaVersionsOperation,
     },
     "/media/{mediaId}/finalize": {
       post: finalizeMediaOperation,

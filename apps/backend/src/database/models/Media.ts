@@ -105,7 +105,7 @@ export class Media extends Model {
   /**
    * The branch this media was uploaded for, kept after publishing as provenance.
    * With no pull request attached it is what the media is attached to, and the
-   * media is a draft.
+   * media is staged.
    */
   branch!: string | null;
   buildId!: string | null;

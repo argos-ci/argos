@@ -132,7 +132,7 @@ async function createOnBranch(args: {
 }
 
 describe("createMedia with a branch", () => {
-  test("registers a draft with no pull request and no GitHub call", async ({
+  test("registers a staged media with no pull request and no GitHub call", async ({
     token,
     project: _project,
   }) => {
@@ -145,7 +145,7 @@ describe("createMedia with a branch", () => {
     });
 
     expect(media).toMatchObject({
-      stage: "draft",
+      stage: "staged",
       branch: "feat/checkout",
       prNumber: null,
     });
@@ -238,7 +238,7 @@ describe("listMedia filters", () => {
       },
     });
     await factory.createMediaWithVersion({
-      media: { projectId: project.id, name: "draft.png", branch: "feat/a" },
+      media: { projectId: project.id, name: "staged.png", branch: "feat/a" },
     });
 
     const res = await request(app)
@@ -283,16 +283,16 @@ describe("listMedia filters", () => {
       },
     });
     await factory.createMediaWithVersion({
-      media: { projectId: project.id, name: "draft.png", branch: "feat/a" },
+      media: { projectId: project.id, name: "staged.png", branch: "feat/a" },
     });
 
-    const drafts = await request(app)
-      .get(`/projects/${PROJECT_PATH}/media?stage=draft`)
+    const stagedRes = await request(app)
+      .get(`/projects/${PROJECT_PATH}/media?stage=staged`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
-    expect(drafts.body.results.map((m: { name: string }) => m.name)).toEqual([
-      "draft.png",
-    ]);
+    expect(stagedRes.body.results.map((m: { name: string }) => m.name)).toEqual(
+      ["staged.png"],
+    );
 
     const published = await request(app)
       .get(`/projects/${PROJECT_PATH}/media?stage=published`)
@@ -334,7 +334,7 @@ describe("listMedia filters", () => {
 });
 
 describe("updateMedia", () => {
-  test("edits a draft's name, description and branch", async ({
+  test("edits a staged media's name, description and branch", async ({
     token,
     project,
   }) => {
@@ -356,7 +356,7 @@ describe("updateMedia", () => {
       name: "new.png",
       description: "Now with the fix.",
       branch: "feat/b",
-      stage: "draft",
+      stage: "staged",
     });
   });
 
@@ -447,21 +447,21 @@ describe("updateMedia", () => {
 });
 
 describe("publishing when the pull request opens", () => {
-  test("attaches a branch's drafts and comments once", async ({
+  test("attaches a branch's staged media and comments once", async ({
     project,
     repository,
   }) => {
     updatePullRequestComment.mockClear();
 
-    const { media: draft } = await factory.createMediaWithVersion({
+    const { media: staged } = await factory.createMediaWithVersion({
       media: {
         projectId: project.id,
         name: "checkout.png",
         branch: "feat/checkout",
       },
     });
-    // A draft on another branch, and one whose upload never landed: neither
-    // belongs on this pull request.
+    // A staged media on another branch, and one whose upload never landed:
+    // neither belongs on this pull request.
     await factory.createMediaWithVersion({
       media: {
         projectId: project.id,
@@ -483,7 +483,7 @@ describe("publishing when the pull request opens", () => {
 
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(1);
 
-    await expect(Media.query().findById(draft.id)).resolves.toMatchObject({
+    await expect(Media.query().findById(staged.id)).resolves.toMatchObject({
       githubPullRequestId: pullRequest.id,
     });
     await expect(Media.query().findById(pending.id)).resolves.toMatchObject({
@@ -506,7 +506,7 @@ describe("publishing when the pull request opens", () => {
     });
 
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(1);
-    // Re-processing a pull request is routine — nothing is a draft any more.
+    // Re-processing a pull request is routine — nothing is staged any more.
     await expect(publishBranchMedia(pullRequest)).resolves.toBe(0);
     expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
   });

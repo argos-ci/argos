@@ -89,21 +89,21 @@ export type MediaVisibility = z.infer<typeof MediaVisibilitySchema>;
 /**
  * How far along a media is towards being shown on a pull request.
  *
- * - `draft` — attached to a branch, with no pull request yet. Real and shareable,
- *   but nothing has been posted anywhere. This is what lets an agent upload while
+ * - `staged` — attached to a branch, with no pull request yet. Real and
+ *   shareable, but nothing has been posted anywhere. This is what lets an agent upload while
  *   it is still working: the screenshots exist before the pull request does.
  * - `published` — attached to a pull request, and listed in the comment Argos
  *   maintains on it. Reached either by uploading with a pull request number, or
- *   by opening the pull request for a branch that has drafts waiting.
+ *   by opening the pull request for a branch that has staged media waiting.
  *
  * Derived from whether a pull request is attached rather than stored, so it can
  * never disagree with the attachment it describes.
  */
-export const MEDIA_STAGES = ["draft", "published"] as const;
+export const MEDIA_STAGES = ["staged", "published"] as const;
 
 export const MediaStageSchema = z.enum(MEDIA_STAGES).meta({
   description:
-    "`draft` while the media is only attached to a branch, `published` once a pull request is attached and Argos lists it in that pull request's comment. A media attached to neither is `draft`.",
+    "`staged` while the media is only attached to a branch, `published` once a pull request is attached and Argos lists it in that pull request's comment. A media attached to neither is `staged`.",
 });
 
 export type MediaStage = z.infer<typeof MediaStageSchema>;
@@ -112,7 +112,7 @@ export type MediaStage = z.infer<typeof MediaStageSchema>;
 export function getMediaStage(media: {
   githubPullRequestId: string | null;
 }): MediaStage {
-  return media.githubPullRequestId ? "published" : "draft";
+  return media.githubPullRequestId ? "published" : "staged";
 }
 
 /**

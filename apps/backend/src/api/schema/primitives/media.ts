@@ -20,14 +20,18 @@ export const MediaId = z.string().meta({
 /**
  * One stored upload of a media.
  *
- * Listed on the media rather than reachable through an endpoint of its own. A
- * comment records the version its author was looking at — a pin describes a spot
- * on those bytes, so feedback on v1 that resolved to v3 would point at the wrong
- * pixel — which means anything acting on comments needs the old file, not just
- * the current one. An extra round trip per version to fetch what is already in
- * hand is the bloat, not these few fields.
+ * Behind `GET /media/{mediaId}/versions` rather than inlined on the media. Most
+ * media have one version and most callers want the newest, which the media
+ * already carries flattened onto it — so listing every version on every response
+ * would pay for the rare case in every read. `versionCount` is the signal: a
+ * caller that sees 1 never has to ask.
+ *
+ * The rare case is real, though. A comment records the version its author was
+ * looking at, because a pin describes a spot on *those* bytes — feedback written
+ * on v1 and resolved against v3 points at the wrong pixel. Acting on that
+ * feedback is what this endpoint is for.
  */
-const MediaVersionSchema = z
+export const MediaVersionSchema = z
   .object({
     id: z.string().meta({
       description:
@@ -76,7 +80,7 @@ export const MediaSchema = z
     }),
     prNumber: z.number().nullable().meta({
       description:
-        "Pull request this media is published to, or `null` while it is a draft.",
+        "Pull request this media is published to, or `null` while it is staged.",
     }),
     url: z.url().meta({
       description:
@@ -90,9 +94,9 @@ export const MediaSchema = z
       description:
         "Which version this response describes: 1 for a first upload, incrementing each time the same name is uploaded again.",
     }),
-    versions: z.array(MediaVersionSchema).meta({
+    versionCount: z.number().meta({
       description:
-        "Every uploaded version, newest first. A comment carries the `mediaVersionId` it was written against, so this is how you reach the file it is actually about.",
+        "How many uploaded versions this media has. Above 1, `GET /media/{mediaId}/versions` lists them — which is how a comment's `mediaVersionId` resolves to the file it was written against.",
     }),
     fileUrl: z.url().meta({
       description:
@@ -145,7 +149,7 @@ export const MediaBranchSchema = z
   .max(255)
   .meta({
     description:
-      "Branch this media belongs to. Upload against a branch when the pull request does not exist yet: the media is a draft until one opens for that branch, and Argos publishes it — and posts the comment — on its own at that point. No GitHub connection is needed to name a branch.",
+      "Branch this media belongs to. Upload against a branch when the pull request does not exist yet: the media is staged until one opens for that branch, and Argos publishes it — and posts the comment — on its own at that point. No GitHub connection is needed to name a branch.",
     examples: ["feat/checkout"],
   });
 
@@ -181,7 +185,7 @@ export const MediaInputSchema = z.object({
 });
 
 /** Serialize one stored upload. */
-function serializeMediaVersion(
+export function serializeMediaVersion(
   version: MediaVersion,
 ): z.infer<typeof MediaVersionSchema> {
   return {
@@ -203,13 +207,13 @@ function serializeMediaVersion(
  *
  * The version carries the bytes and everything read off them; the media carries
  * the identity and the share URL. A caller gets one flat object because that is
- * what it wants to act on — the newest screenshot, at a stable link — with the
- * history alongside it for the cases that are about an older one.
+ * what it wants to act on — the newest screenshot, at a stable link. The history
+ * is a separate call, for the callers that need it.
  */
 export function serializeMedia(
   media: Media,
   version: MediaVersion,
-  versions: MediaVersion[],
+  versionCount: number,
   prNumber: number | null,
 ): MediaResponse {
   const posterUrl = getMediaPosterUrl(version);
@@ -229,7 +233,7 @@ export function serializeMedia(
       isVideo: version.isVideo(),
     }),
     version: version.number,
-    versions: versions.map(serializeMediaVersion),
+    versionCount,
     fileUrl: getMediaFileUrl(version),
     posterUrl,
     contentType: version.mimeType,

@@ -5,13 +5,13 @@
  * pull request comes after, if it comes at all. Making the pull request the only
  * thing a media can be attached to forced the ordering the other way round, so
  * the uploads either had to wait or land unattached and stay that way. A media on
- * a branch is a *draft*: it is real, it has a share URL, and it is waiting for a
+ * a branch is *staged*: it is real, it has a share URL, and it is waiting for a
  * pull request to publish it to.
  *
  * `headRef` on the pull request is the other half. It is the branch a pull request
  * is *from*, which Argos never stored — only `baseRef`, the branch it merges
- * into. Publishing a branch's drafts when its pull request opens is a lookup on
- * that column, so without it there is nothing to match on.
+ * into. Publishing a branch's staged media when its pull request opens is a lookup
+ * on that column, so without it there is nothing to match on.
  *
  * @param {import('knex').Knex} knex
  */
@@ -24,8 +24,8 @@ export const up = async (knex) => {
 
   await knex.schema.alterTable("github_pull_requests", (table) => {
     table.string("headRef");
-    // Publishing looks drafts up by (repository, branch) the moment a pull
-    // request's data lands.
+    // Publishing looks staged media up by (repository, branch) the moment a
+    // pull request's data lands.
     table.index(["githubRepositoryId", "headRef"]);
   });
 
@@ -33,7 +33,7 @@ export const up = async (knex) => {
   // state)", where the attachment is the pull request when there is one and the
   // branch otherwise.
   //
-  // The `CASE` is what lets a draft publish without changing identity. A draft
+  // The `CASE` is what lets staged media publish without changing identity. It
   // keeps its branch after the pull request is attached — it is worth knowing
   // where it came from — but the branch stops counting the moment there is a
   // pull request. Without that, `checkout.png` uploaded to branch `feat/x` and
@@ -53,8 +53,8 @@ export const up = async (knex) => {
 };
 
 /**
- * Drops the branch, so drafts lose the only thing attaching them to anything.
- * They stay as media with no pull request — the state an unattached upload was
+ * Drops the branch, so staged media lose the only thing attaching them to
+ * anything. They stay as media with no pull request — the state an unattached upload was
  * already in before this — rather than being deleted.
  *
  * @param {import('knex').Knex} knex
@@ -62,8 +62,8 @@ export const up = async (knex) => {
 export const down = async (knex) => {
   await knex.raw(`DROP INDEX media_identity_unique`);
 
-  // Two drafts on different branches can share a name, which the restored index
-  // has no room for. Keep the oldest of each colliding group so the index can be
+  // Two staged media on different branches can share a name, which the restored
+  // index has no room for. Keep the oldest of each colliding group so the index can be
   // rebuilt; the rest were only distinguishable by the column being dropped.
   await knex.raw(`
     DELETE FROM media

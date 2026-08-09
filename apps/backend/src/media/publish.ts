@@ -5,8 +5,8 @@ import logger from "@/logger";
 import { updatePullRequestComment } from "./pull-request-comment";
 
 /**
- * Attach a branch's draft media to the pull request that just opened for it, and
- * post the comment listing them.
+ * Attach a branch's staged media to the pull request that just opened for it,
+ * and post the comment listing them.
  *
  * This is what makes uploading before the pull request exists worth doing. An
  * agent working on `feat/checkout` uploads its screenshots as it goes; whether a
@@ -17,8 +17,8 @@ import { updatePullRequestComment } from "./pull-request-comment";
  * Runs when the pull request's data lands from GitHub, because that is when its
  * head branch is known — Argos only ever stored the base branch before.
  *
- * Idempotent: a media that already has a pull request is not a draft and is left
- * alone, so re-processing a pull request republishes nothing.
+ * Idempotent: a media that already has a pull request is no longer staged and is
+ * left alone, so re-processing a pull request republishes nothing.
  */
 export async function publishBranchMedia(
   pullRequest: GithubPullRequest,
@@ -32,7 +32,7 @@ export async function publishBranchMedia(
   // Through the projects on this repository, not globally: a branch name is not
   // unique across an installation, and `feat/checkout` in one repository must
   // never publish to another's pull request. More than one project can point at
-  // one repository, and each of their drafts belongs on this pull request.
+  // one repository, and what is staged on each belongs on this pull request.
   const projects = await Project.query()
     .select("id")
     .where("githubRepositoryId", githubRepositoryId);
@@ -41,7 +41,7 @@ export async function publishBranchMedia(
     return 0;
   }
 
-  const drafts = await Media.query()
+  const staged = await Media.query()
     .whereIn(
       "projectId",
       projects.map((project) => project.id),
@@ -58,24 +58,24 @@ export async function publishBranchMedia(
         .whereNotNull("media_versions.uploadedAt"),
     );
 
-  if (drafts.length === 0) {
+  if (staged.length === 0) {
     return 0;
   }
 
   // One at a time, and tolerating a failure: identity is
-  // `(project, pull request, name, state)`, so a draft whose name is already
-  // taken on this pull request — someone uploaded it there directly in the
-  // meantime — cannot be attached. It stays a draft rather than taking the whole
-  // batch down with it.
+  // `(project, pull request, name, state)`, so a staged media whose name is
+  // already taken on this pull request — someone uploaded it there directly in
+  // the meantime — cannot be attached. It stays staged rather than taking the
+  // whole batch down with it.
   let published = 0;
-  for (const draft of drafts) {
+  for (const media of staged) {
     try {
-      await draft.$query().patch({ githubPullRequestId: pullRequest.id });
+      await media.$query().patch({ githubPullRequestId: pullRequest.id });
       published += 1;
     } catch (error) {
       logger.info(
-        { mediaId: draft.id, pullRequestId: pullRequest.id, error },
-        "Could not publish a draft media to its pull request",
+        { mediaId: media.id, pullRequestId: pullRequest.id, error },
+        "Could not publish a staged media to its pull request",
       );
     }
   }

@@ -9,7 +9,7 @@ export type MediaFilters = {
   /** Restrict to images or to videos. */
   type?: "image" | "video" | null | undefined;
   /**
-   * The branch the media was uploaded for. Matches drafts and published media
+   * The branch the media was uploaded for. Matches staged and published media
    * alike, since a media keeps its branch after a pull request is attached —
    * which is what makes "everything for this work" one query either side of the
    * pull request opening.
@@ -17,7 +17,7 @@ export type MediaFilters = {
   branch?: string | null | undefined;
   /** The pull request the media is published to. */
   githubPullRequestId?: string | null | undefined;
-  /** Restrict to drafts (no pull request) or to published media. */
+  /** Restrict to staged media (no pull request) or to published media. */
   stage?: MediaStage | null | undefined;
 };
 

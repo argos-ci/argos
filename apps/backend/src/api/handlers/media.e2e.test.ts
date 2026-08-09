@@ -18,6 +18,7 @@ import {
   deleteMediaHandler,
   getMediaHandler,
   listMediaHandler,
+  listMediaVersionsHandler,
 } from "./media";
 
 const app = createTestHandlerApp(
@@ -25,6 +26,7 @@ const app = createTestHandlerApp(
   getMediaHandler,
   deleteMediaHandler,
   listMediaHandler,
+  listMediaVersionsHandler,
 );
 
 const HASH = "a".repeat(64);
@@ -352,6 +354,36 @@ describe("getMedia", () => {
       .expect(400);
   });
 
+  test("reports the newest version and how many there are", async ({
+    projectToken,
+    project,
+  }) => {
+    // What the media carries about its history: the newest upload flattened onto
+    // it, and a count. The count is the whole point — a caller seeing 1 knows
+    // there is nothing to go and fetch.
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+      version: { number: 1, key: "media/1/v1.png" },
+    });
+    await factory.MediaVersion.create({
+      mediaId: media.id,
+      number: 2,
+      key: "media/1/v2.png",
+    });
+
+    const res = await request(app)
+      .get(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${projectToken}`)
+      .expect(200);
+
+    expect(res.body.version).toBe(2);
+    expect(res.body.versionCount).toBe(2);
+    // The history itself is a separate call, so it stays off this response.
+    expect(res.body.versions).toBeUndefined();
+  });
+});
+
+describe("listMediaVersions", () => {
   test("lists every version, newest first, each with its own file", async ({
     projectToken,
     project,
@@ -370,24 +402,23 @@ describe("getMedia", () => {
     });
 
     const res = await request(app)
-      .get(`/media/${media.id}`)
+      .get(`/media/${media.id}/versions`)
       .set("Authorization", `Bearer ${projectToken}`)
       .expect(200);
 
-    expect(res.body.version).toBe(2);
-    expect(res.body.versions.map((v: { id: string }) => v.id)).toEqual([
+    expect(res.body.map((v: { id: string }) => v.id)).toEqual([
       second.id,
       first.id,
     ]);
     // Each version points at its own bytes: resolving a comment's
     // `mediaVersionId` here has to reach a different file, or the list is
     // decoration.
-    const [latest, previous] = res.body.versions;
+    const [latest, previous] = res.body;
     expect(latest.fileUrl).not.toBe(previous.fileUrl);
-    expect(res.body.fileUrl).toBe(latest.fileUrl);
+    expect(latest.number).toBe(2);
   });
 
-  test("leaves an unfinalized upload out of the version list", async ({
+  test("leaves an unfinalized upload out", async ({
     projectToken,
     project,
   }) => {
@@ -405,13 +436,29 @@ describe("getMedia", () => {
     });
 
     const res = await request(app)
-      .get(`/media/${media.id}`)
+      .get(`/media/${media.id}/versions`)
       .set("Authorization", `Bearer ${projectToken}`)
       .expect(200);
 
-    expect(res.body.versions.map((v: { id: string }) => v.id)).toEqual([
-      version.id,
-    ]);
+    expect(res.body.map((v: { id: string }) => v.id)).toEqual([version.id]);
+  });
+
+  test("404s on another project's media rather than 403", async ({
+    projectToken,
+    account,
+  }) => {
+    const otherProject = await factory.Project.create({
+      accountId: account.id,
+      name: "other-versions",
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: otherProject.id },
+    });
+
+    await request(app)
+      .get(`/media/${media.id}/versions`)
+      .set("Authorization", `Bearer ${projectToken}`)
+      .expect(404);
   });
 });
 
