@@ -480,7 +480,10 @@ export const listMediaHandler: CreateAPIHandler = ({ get }) => {
 };
 
 const UpdateMediaRequestSchema = z.object({
-  name: MediaInputSchema.shape.name.nullish(),
+  // `.optional()`, not `.nullish()`: a media's name is required, so there is no
+  // "cleared" state to ask for. Accepting `null` and dropping it answered 200
+  // to a request that changed nothing.
+  name: MediaInputSchema.shape.name.optional(),
   description: MediaInputSchema.shape.description,
   branch: MediaBranchSchema.nullish(),
 });
@@ -493,7 +496,7 @@ export const updateMediaOperation = {
     "",
     "Staged media only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
     "",
-    "Omitted fields are left alone. Sending `null` clears a field.",
+    "Omitted fields are left alone. `description` and `branch` accept `null` to clear them; `name` is required and has no cleared state. Clearing a staged media's branch leaves it attached to nothing, so no pull request will ever publish it.",
   ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:write"]),
@@ -540,15 +543,20 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     }
 
     const body = req.ctx.body;
-    const patchProps = {
-      ...(body.name === undefined || body.name === null
-        ? {}
-        : { name: body.name }),
-      ...(body.description === undefined
-        ? {}
-        : { description: body.description ?? null }),
-      ...(body.branch === undefined ? {} : { branch: body.branch ?? null }),
-    };
+    const patchProps: {
+      name?: string;
+      description?: string | null;
+      branch?: string | null;
+    } = {};
+    if (body.name !== undefined) {
+      patchProps.name = body.name;
+    }
+    if (body.description !== undefined) {
+      patchProps.description = body.description ?? null;
+    }
+    if (body.branch !== undefined) {
+      patchProps.branch = body.branch ?? null;
+    }
 
     if (Object.keys(patchProps).length === 0) {
       res.send(await serializeMediaWithVersion(media, null));
