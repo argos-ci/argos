@@ -66,7 +66,9 @@ export async function inspectMediaObject(args: {
   // WebM's `DocType` instead of trusting the EBML magic every Matroska file
   // shares, and an ISO base media `ftyp` brand instead of assuming MP4 — two
   // distinctions a hand-rolled matcher gets wrong quietly.
-  const detected = (await fileTypeFromBuffer(header))?.mime ?? null;
+  const detected = normalizeDetectedType(
+    (await fileTypeFromBuffer(header))?.mime ?? null,
+  );
 
   if (!detected || !isMediaContentType(detected)) {
     throw new MediaContentMismatchError(args.declaredContentType, detected);
@@ -88,6 +90,34 @@ export async function inspectMediaObject(args: {
   }
 
   return readImageDimensions(header);
+}
+
+/**
+ * Container types `file-type` names more precisely than the accepted list does.
+ *
+ * These are the *same file* as the type they map to — an APNG is a PNG with an
+ * `acTL` chunk, an M4V is an MP4 with a different `ftyp` brand — so a caller
+ * declaring the general type is telling the truth. The old hand-rolled sniffer
+ * answered with the general type and accepted them; `file-type` answers with the
+ * specific one, and without this every one of them became a hard 400 at finalize
+ * with the uploaded bytes already deleted.
+ *
+ * Deliberately a fixed table rather than a prefix rule: the point of the check
+ * is that only known-inert raster and video containers reach an unauthenticated
+ * CDN URL, and "starts with image/" would readmit SVG.
+ */
+const DETECTED_TYPE_ALIASES: Record<string, string> = {
+  "image/apng": "image/png",
+  "video/x-m4v": "video/mp4",
+  "video/3gpp": "video/mp4",
+  "video/3gpp2": "video/mp4",
+};
+
+function normalizeDetectedType(mime: string | null): string | null {
+  if (!mime) {
+    return null;
+  }
+  return DETECTED_TYPE_ALIASES[mime] ?? mime;
 }
 
 /** Read the leading bytes of an object, without pulling the whole thing. */

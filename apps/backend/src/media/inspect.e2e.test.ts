@@ -44,6 +44,32 @@ function ebmlHeader(docType: string): Buffer {
   ]);
 }
 
+/** A PNG header carrying an `acTL` chunk, which is what makes it an APNG. */
+function apngHeader(): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    // The CRC is never validated by the detector, so zero is fine here.
+    return Buffer.concat([
+      length,
+      Buffer.from(type, "ascii"),
+      data,
+      Buffer.alloc(4),
+    ]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(1, 0);
+  ihdr.writeUInt32BE(1, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("acTL", Buffer.alloc(8)),
+    chunk("IDAT", Buffer.alloc(10)),
+  ]);
+}
+
 /** An ISO base media header with the given `ftyp` brand. */
 function isoBmffHeader(brand: string): Buffer {
   const buffer = Buffer.alloc(64);
@@ -126,6 +152,34 @@ describe("inspectMediaObject", () => {
         declaredContentType: "image/png",
       }),
     ).rejects.toThrow(/video\/webm/);
+  });
+
+  it("accepts an APNG declared as a PNG", async () => {
+    // An APNG *is* a PNG with an `acTL` chunk, and `image/apng` is not a type a
+    // caller can even declare. `file-type` names it precisely where the old
+    // matcher said `image/png`, so without the alias this became a hard 400 at
+    // finalize with the uploaded bytes already deleted.
+    respondWith(apngHeader());
+
+    // Accepted, and read as the image it is — the 1×1 header this builds.
+    await expect(
+      inspectMediaObject({
+        key: "media/1/a.png",
+        declaredContentType: "image/png",
+      }),
+    ).resolves.toEqual({ width: 1, height: 1 });
+  });
+
+  it("accepts an M4V declared as an MP4", async () => {
+    // Same container, different `ftyp` brand.
+    respondWith(isoBmffHeader("M4V "));
+
+    await expect(
+      inspectMediaObject({
+        key: "media/1/a.mp4",
+        declaredContentType: "video/mp4",
+      }),
+    ).resolves.toEqual({ width: null, height: null });
   });
 
   it("rejects Matroska declared as WebM, which shares its magic bytes", async () => {
