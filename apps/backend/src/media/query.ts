@@ -1,3 +1,4 @@
+import type { MediaStage } from "@argos/schemas/media";
 import type { QueryBuilder } from "objection";
 
 import { Media, MediaVersion } from "@/database/models";
@@ -7,6 +8,17 @@ export type MediaFilters = {
   search?: string | null | undefined;
   /** Restrict to images or to videos. */
   type?: "image" | "video" | null | undefined;
+  /**
+   * The branch the media was uploaded for. Matches drafts and published media
+   * alike, since a media keeps its branch after a pull request is attached —
+   * which is what makes "everything for this work" one query either side of the
+   * pull request opening.
+   */
+  branch?: string | null | undefined;
+  /** The pull request the media is published to. */
+  githubPullRequestId?: string | null | undefined;
+  /** Restrict to drafts (no pull request) or to published media. */
+  stage?: MediaStage | null | undefined;
 };
 
 /**
@@ -29,7 +41,26 @@ export function queryProjectMedia(args: {
     .whereExists(uploadedVersions())
     .orderBy("media.createdAt", "desc");
 
-  const { search, type } = args.filters ?? {};
+  const { search, type, branch, githubPullRequestId, stage } =
+    args.filters ?? {};
+
+  if (branch) {
+    query.where("media.branch", branch);
+  }
+
+  if (githubPullRequestId) {
+    query.where("media.githubPullRequestId", githubPullRequestId);
+  }
+
+  if (stage) {
+    // The stage *is* the attachment, so it filters on the column it is derived
+    // from rather than on anything stored.
+    if (stage === "published") {
+      query.whereNotNull("media.githubPullRequestId");
+    } else {
+      query.whereNull("media.githubPullRequestId");
+    }
+  }
 
   if (search) {
     const pattern = `%${escapeLikePattern(search)}%`;

@@ -8,6 +8,7 @@ import {
 import { getInstallationOctokit } from "@/github/client";
 import { unretryable } from "@/job-core/error";
 import logger from "@/logger";
+import { publishBranchMedia } from "@/media/publish";
 
 import { fetchPullRequest, parsePullRequestData } from "./remote";
 
@@ -81,4 +82,8 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     });
 
   await subscribePullRequestCreatorToAllBuilds(updatedPullRequest);
+
+  // The head branch is only known now, which is what makes this the moment a
+  // branch's drafts can find their pull request.
+  await publishBranchMedia(updatedPullRequest);
 }

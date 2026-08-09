@@ -1,5 +1,7 @@
 import {
+  getMediaStage,
   MediaContentTypeSchema,
+  MediaStageSchema,
   MediaStateSchema,
   MediaVisibilitySchema,
 } from "@argos/schemas/media";
@@ -67,6 +69,15 @@ export const MediaSchema = z
     description: z.string().nullable().meta({
       description: "Prose shown under the media in the pull request comment.",
     }),
+    stage: MediaStageSchema,
+    branch: z.string().nullable().meta({
+      description:
+        "Branch this media was uploaded for. Kept after publishing, as a record of where it came from.",
+    }),
+    prNumber: z.number().nullable().meta({
+      description:
+        "Pull request this media is published to, or `null` while it is a draft.",
+    }),
     url: z.url().meta({
       description:
         "Share page URL. This is the link to put in a pull request or a chat message, and it keeps working across versions — it always shows the newest one.",
@@ -126,6 +137,16 @@ export const MediaUploadTargetSchema = z
   .meta({
     description: "Signed upload target",
     id: "MediaUploadTarget",
+  });
+
+export const MediaBranchSchema = z
+  .string()
+  .min(1)
+  .max(255)
+  .meta({
+    description:
+      "Branch this media belongs to. Upload against a branch when the pull request does not exist yet: the media is a draft until one opens for that branch, and Argos publishes it — and posts the comment — on its own at that point. No GitHub connection is needed to name a branch.",
+    examples: ["feat/checkout"],
   });
 
 export const MediaInputSchema = z.object({
@@ -189,6 +210,7 @@ export function serializeMedia(
   media: Media,
   version: MediaVersion,
   versions: MediaVersion[],
+  prNumber: number | null,
 ): MediaResponse {
   const posterUrl = getMediaPosterUrl(version);
   return {
@@ -196,6 +218,9 @@ export function serializeMedia(
     name: media.name,
     state: media.state,
     description: media.description,
+    stage: getMediaStage(media),
+    branch: media.branch,
+    prNumber,
     url: media.url,
     markdown: getMediaMarkdown({
       name: media.name,

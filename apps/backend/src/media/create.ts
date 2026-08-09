@@ -55,6 +55,11 @@ export type CreateMediaParams = {
    * identity: the same name on another pull request is a different media.
    */
   githubPullRequestId: string | null;
+  /**
+   * Branch this media was uploaded for. Without a pull request it is what the
+   * media is attached to, and the media is a draft waiting for one to open.
+   */
+  branch: string | null;
   contentType: string;
   /** Size the caller says the file is, enforced by S3 on upload. */
   sizeBytes: number;
@@ -158,6 +163,7 @@ async function upsertMediaVersion(
   const {
     project,
     githubPullRequestId,
+    branch,
     name,
     state,
     description,
@@ -166,12 +172,26 @@ async function upsertMediaVersion(
     expiresAt,
   } = params;
 
+  // What the media is attached to, and so what its identity is keyed on: the
+  // pull request when there is one, the branch otherwise. Mirrors
+  // `media_identity_unique` — the lock has to serialize exactly what the index
+  // rejects, or two racing uploads take different locks and one gets a
+  // constraint violation instead of a version.
+  const attachment = githubPullRequestId ? "" : (branch ?? "");
+
   // Two agents racing on the same identity — a re-run of the same CI job, say —
   // must not both insert: `media_identity_unique` would reject one of them with a
   // constraint violation rather than a usable answer, and the version number is
   // read-then-written so it needs serializing too.
   return redisLock.acquire(
-    ["media-identity", project.id, githubPullRequestId ?? 0, name, state ?? ""],
+    [
+      "media-identity",
+      project.id,
+      githubPullRequestId ?? 0,
+      attachment,
+      name,
+      state ?? "",
+    ],
     async () => {
       const existing = await Media.query()
         .findOne({
@@ -180,11 +200,18 @@ async function upsertMediaVersion(
           state: state ?? null,
         })
         // A null pull request is its own identity, and `= NULL` never matches.
+        // With no pull request the branch takes over as the attachment, so two
+        // drafts of `checkout.png` on different branches are two media.
         .where((builder) => {
           if (githubPullRequestId) {
             builder.where("githubPullRequestId", githubPullRequestId);
+            return;
+          }
+          builder.whereNull("githubPullRequestId");
+          if (branch) {
+            builder.where("branch", branch);
           } else {
-            builder.whereNull("githubPullRequestId");
+            builder.whereNull("branch");
           }
         });
 
@@ -194,10 +221,16 @@ async function upsertMediaVersion(
           await existing.$query().patchAndFetch({
             visibility,
             ...(description === null ? {} : { description }),
+            // A published media learns the branch it came from when a later
+            // upload names one. It never loses it: identity ignores the branch
+            // once a pull request is attached, so clearing it would drop
+            // provenance for nothing.
+            ...(branch === null ? {} : { branch }),
           })
         : await Media.query().insertAndFetch({
             projectId: project.id,
             githubPullRequestId,
+            branch,
             createdByUserId: params.userId,
             name,
             state,

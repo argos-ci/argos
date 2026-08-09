@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict SqOSc1ZPPIGdRkKikIdjqWrEwbq9y4VSA6GOtMiiIgblCT5EKWT79g4RfBFpFmn
+\restrict 07kqib1lKMSQLditB71hpPJD7CjKtRGbFDG6rVbJQEfNWPmXqB3Rg1n1zRO6kOS
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1075,6 +1075,7 @@ CREATE TABLE public.github_pull_requests (
     draft boolean,
     "mediaCommentId" character varying(255),
     "mediaCommentDeleted" boolean DEFAULT false NOT NULL,
+    "headRef" character varying(255),
     CONSTRAINT github_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
 );
 
@@ -1458,7 +1459,8 @@ CREATE TABLE public.media (
     description text,
     visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
     "shareToken" character varying(255) NOT NULL,
-    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY ((ARRAY['before'::character varying, 'after'::character varying])::text[]))))
+    branch character varying(255),
+    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY (ARRAY[('before'::character varying)::text, ('after'::character varying)::text]))))
 );
 
 
@@ -4595,6 +4597,13 @@ CREATE INDEX github_accounts_type_index ON public.github_accounts USING btree (t
 
 
 --
+-- Name: github_pull_requests_githubrepositoryid_headref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_pull_requests_githubrepositoryid_headref_index ON public.github_pull_requests USING btree ("githubRepositoryId", "headRef");
+
+
+--
 -- Name: github_repositories_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4647,7 +4656,18 @@ CREATE INDEX media_githubpullrequestid_index ON public.media USING btree ("githu
 -- Name: media_identity_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE UNIQUE INDEX media_identity_unique ON public.media USING btree ("projectId", COALESCE("githubPullRequestId", (0)::bigint), name, COALESCE(state, ''::character varying));
+CREATE UNIQUE INDEX media_identity_unique ON public.media USING btree ("projectId", COALESCE("githubPullRequestId", (0)::bigint), (
+CASE
+    WHEN ("githubPullRequestId" IS NULL) THEN COALESCE(branch, ''::character varying)
+    ELSE ''::character varying
+END), name, COALESCE(state, ''::character varying));
+
+
+--
+-- Name: media_projectid_branch_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_projectid_branch_index ON public.media USING btree ("projectId", branch);
 
 
 --
@@ -6119,7 +6139,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SqOSc1ZPPIGdRkKikIdjqWrEwbq9y4VSA6GOtMiiIgblCT5EKWT79g4RfBFpFmn
+\unrestrict 07kqib1lKMSQLditB71hpPJD7CjKtRGbFDG6rVbJQEfNWPmXqB3Rg1n1zRO6kOS
 
 -- Knex migrations
 
@@ -6361,3 +6381,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808120000_fix-storybook-count-overflow.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808130000_media.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808140000_comment-media.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260809203017_media-branch.js', 1, NOW());

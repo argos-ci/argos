@@ -46,6 +46,7 @@ export class Media extends Model {
         properties: {
           projectId: { type: "string" },
           githubPullRequestId: { type: ["string", "null"] },
+          branch: { type: ["string", "null"], maxLength: 255 },
           buildId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
           createdByUserId: { type: ["string", "null"] },
@@ -101,6 +102,12 @@ export class Media extends Model {
 
   projectId!: string;
   githubPullRequestId!: string | null;
+  /**
+   * The branch this media was uploaded for, kept after publishing as provenance.
+   * With no pull request attached it is what the media is attached to, and the
+   * media is a draft.
+   */
+  branch!: string | null;
   buildId!: string | null;
   screenshotDiffId!: string | null;
   createdByUserId!: string | null;

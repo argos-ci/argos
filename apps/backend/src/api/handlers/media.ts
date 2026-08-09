@@ -1,3 +1,4 @@
+import { getMediaStage, MediaStageSchema } from "@argos/schemas/media";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -7,7 +8,13 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
-import { Account, Media, MediaVersion, Project } from "@/database/models";
+import {
+  Account,
+  GithubPullRequest,
+  Media,
+  MediaVersion,
+  Project,
+} from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { createMedia } from "@/media/create";
@@ -25,6 +32,7 @@ import { boom } from "@/util/error";
 
 import { getProjectForAuth } from "../auth/project";
 import {
+  MediaBranchSchema,
   MediaInputSchema,
   MediaSchema,
   MediaUploadTargetSchema,
@@ -57,6 +65,7 @@ const CreateMediaRequestSchema = MediaInputSchema.extend({
     description:
       "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time — attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
   }),
+  branch: MediaBranchSchema.nullish(),
 });
 
 const CreateMediaResponseSchema = z.object({
@@ -80,6 +89,8 @@ export const createMediaOperation = {
     "3. `POST /media/{mediaId}/finalize` — confirm the bytes landed.",
     "",
     "When `upload` comes back `null`, Argos already holds this exact file and steps 2 and 3 are unnecessary.",
+    "",
+    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is a **draft**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment — nothing has to come back and connect the two.",
     "",
     "The `argos media upload` CLI command does all of this in one step.",
   ].join("\n"),
@@ -135,6 +146,7 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
       state: body.state ?? null,
       description: body.description ?? null,
       githubPullRequestId,
+      branch: body.branch ?? null,
       contentType: body.contentType,
       sizeBytes: body.size,
       hash: body.hash,
@@ -307,8 +319,11 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
 export const listMediaOperation = {
   operationId: "listMedia",
   summary: "List a project's media",
-  description:
+  description: [
     "List the standalone images and videos uploaded to a project, most recent first.",
+    "",
+    "`branch` and `prNumber` are what this is usually for: everything uploaded for the work in hand, whether or not a pull request exists yet. `branch` covers both — a media keeps its branch after publishing — so it stays a single query across the moment the pull request opens.",
+  ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
   requestParams: {
@@ -317,6 +332,24 @@ export const listMediaOperation = {
       project: ProjectName,
     }),
     query: PageParamsSchema.extend({
+      branch: z
+        .string()
+        .optional()
+        .meta({
+          description:
+            "Only media uploaded for this branch, drafts and published alike.",
+          examples: ["feat/checkout"],
+        }),
+      prNumber: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .meta({ description: "Only media published to this pull request." }),
+      stage: MediaStageSchema.optional().meta({
+        description:
+          "Restrict to drafts (no pull request yet) or to published media.",
+      }),
       search: z.string().optional().meta({
         description: "Match media on their file name or slug.",
       }),
@@ -344,14 +377,26 @@ export const listMediaOperation = {
 
 export const listMediaHandler: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/media", async (req, res) => {
-    const { page, perPage, search, type } = req.ctx.query;
+    const { page, perPage, search, type, branch, prNumber, stage } =
+      req.ctx.query;
     const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
 
-    // The same query the GraphQL connection uses, so the two agree on filtering
-    // and ordering.
+    // Resolved to an id rather than joined on the number: the pull request has to
+    // be one of *this* repository's, and a project with no repository has no pull
+    // requests to filter by at all.
+    const githubPullRequestId =
+      prNumber === undefined
+        ? null
+        : await findPullRequestId({ project, prNumber });
+
+    if (prNumber !== undefined && !githubPullRequestId) {
+      res.send({ results: [], pageInfo: { total: 0, page, perPage } });
+      return;
+    }
+
     const media = await queryProjectMedia({
       projectIds: [project.id],
-      filters: { search, type },
+      filters: { search, type, branch, githubPullRequestId, stage },
     }).range((page - 1) * perPage, page * perPage - 1);
 
     res.send({
@@ -360,6 +405,137 @@ export const listMediaHandler: CreateAPIHandler = ({ get }) => {
     });
   });
 };
+
+const UpdateMediaRequestSchema = z.object({
+  name: MediaInputSchema.shape.name.nullish(),
+  description: MediaInputSchema.shape.description,
+  branch: MediaBranchSchema.nullish(),
+});
+
+export const updateMediaOperation = {
+  operationId: "updateMedia",
+  summary: "Update a draft media",
+  description: [
+    "Change a draft's name, description or branch.",
+    "",
+    "Drafts only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a draft.",
+    "",
+    "Omitted fields are left alone. Sending `null` clears a field.",
+  ].join("\n"),
+  tags: ["Media"],
+  security: anyTokenOrOAuthAuth(["media:write"]),
+  requestParams: {
+    path: z.object({
+      mediaId: z.string().meta({ description: "The media ID" }),
+    }),
+  },
+  requestBody: {
+    content: {
+      "application/json": { schema: UpdateMediaRequestSchema },
+    },
+  },
+  responses: {
+    "200": {
+      description: "The updated media",
+      content: {
+        "application/json": { schema: MediaSchema },
+      },
+    },
+    "400": invalidParameters,
+    "401": unauthorized,
+    "403": forbidden,
+    "404": notFound,
+    "500": serverError,
+  },
+} satisfies ZodOpenApiOperationObject;
+
+export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
+  patch("/media/{mediaId}", async (req, res) => {
+    const media = await loadMediaForAuth({
+      authPromise: req.ctx.auth(),
+      mediaId: req.ctx.params.mediaId,
+      // Editing identity is not something a viewer does, and it is the same
+      // authority as removing the media.
+      permission: "delete",
+    });
+
+    if (getMediaStage(media) === "published") {
+      throw boom(
+        400,
+        "This media is published to a pull request. Its name and branch are what that pull request's comment and its review threads are built on, so they are fixed once it is published.",
+      );
+    }
+
+    const body = req.ctx.body;
+    const patchProps = {
+      ...(body.name === undefined || body.name === null
+        ? {}
+        : { name: body.name }),
+      ...(body.description === undefined
+        ? {}
+        : { description: body.description ?? null }),
+      ...(body.branch === undefined ? {} : { branch: body.branch ?? null }),
+    };
+
+    if (Object.keys(patchProps).length === 0) {
+      res.send(await serializeMediaWithVersion(media, null));
+      return;
+    }
+
+    // Name and branch are both in the identity index, so a rename onto another
+    // draft of the same name is a constraint violation rather than a merge.
+    // Answered as a 409 instead of a 500: the caller can act on it.
+    const updated = await media
+      .$query()
+      .patchAndFetch(patchProps)
+      .catch((error: unknown) => {
+        if (isUniqueViolation(error)) {
+          throw boom(
+            409,
+            "Another media on this branch already has that name.",
+          );
+        }
+        throw error;
+      });
+
+    res.send(await serializeMediaWithVersion(updated, null));
+  });
+};
+
+/** This project's pull request with that number, if Argos knows of one. */
+async function findPullRequestId(args: {
+  project: Project;
+  prNumber: number;
+}): Promise<string | null> {
+  const { project, prNumber } = args;
+
+  if (!project.githubRepositoryId) {
+    throw boom(
+      400,
+      "This project is not connected to a GitHub repository, so it has no pull requests.",
+    );
+  }
+
+  const pullRequest = await GithubPullRequest.query().select("id").findOne({
+    githubRepositoryId: project.githubRepositoryId,
+    number: prNumber,
+  });
+
+  return pullRequest?.id ?? null;
+}
+
+/** Postgres' unique-violation code, which Objection wraps rather than replaces. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "nativeError" in error &&
+    typeof error.nativeError === "object" &&
+    error.nativeError !== null &&
+    "code" in error.nativeError &&
+    error.nativeError.code === "23505"
+  );
+}
 
 /**
  * Resolve the project a new media belongs to, and its account.
@@ -511,12 +687,56 @@ async function serializeMediaWithVersion(
   media: Media,
   version: MediaVersion | null,
 ) {
-  const [resolved, versions] = await Promise.all([
+  const [resolved, versions, prNumbers] = await Promise.all([
     version ?? getLatestMediaVersion(media.id),
     getMediaVersions([media.id]),
+    getPullRequestNumbers([media]),
   ]);
   invariant(resolved, "media has no version to serve");
-  return serializeMedia(media, resolved, versions.get(media.id) ?? []);
+  return serializeMedia(
+    media,
+    resolved,
+    versions.get(media.id) ?? [],
+    prNumbers.get(media.id) ?? null,
+  );
+}
+
+/**
+ * The pull request *number* each of these media is published to.
+ *
+ * The row stores the internal id; a caller only ever knows the number, which is
+ * what it passed in and what it would filter by. One query for the batch.
+ */
+async function getPullRequestNumbers(
+  list: Media[],
+): Promise<Map<string, number>> {
+  const ids = [
+    ...new Set(
+      list
+        .map((media) => media.githubPullRequestId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const pullRequests = await GithubPullRequest.query()
+    .select("id", "number")
+    .findByIds(ids);
+  const numberById = new Map(pullRequests.map((pr) => [pr.id, pr.number]));
+
+  const result = new Map<string, number>();
+  for (const media of list) {
+    const number = media.githubPullRequestId
+      ? numberById.get(media.githubPullRequestId)
+      : undefined;
+    if (number !== undefined) {
+      result.set(media.id, number);
+    }
+  }
+  return result;
 }
 
 /**
@@ -525,9 +745,10 @@ async function serializeMediaWithVersion(
  */
 async function serializeMediaListWithVersions(list: Media[]) {
   const ids = list.map((media) => media.id);
-  const [latest, versions] = await Promise.all([
+  const [latest, versions, prNumbers] = await Promise.all([
     getLatestMediaVersions(ids),
     getMediaVersions(ids),
+    getPullRequestNumbers(list),
   ]);
   return list.flatMap((media) => {
     const version = latest.get(media.id);
@@ -536,6 +757,13 @@ async function serializeMediaListWithVersions(list: Media[]) {
     if (!version) {
       return [];
     }
-    return [serializeMedia(media, version, versions.get(media.id) ?? [])];
+    return [
+      serializeMedia(
+        media,
+        version,
+        versions.get(media.id) ?? [],
+        prNumbers.get(media.id) ?? null,
+      ),
+    ];
   });
 }

@@ -26,6 +26,7 @@ export class GithubPullRequest extends Model {
           title: {
             oneOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
           },
+          headRef: { type: ["string", "null"] },
           baseRef: { type: ["string", "null"] },
           baseSha: { type: ["string", "null"] },
           state: { type: ["string", "null"], enum: ["open", "closed"] },
@@ -53,6 +54,9 @@ export class GithubPullRequest extends Model {
   githubRepositoryId!: string;
   number!: number;
   title!: string | null;
+  /** The branch the pull request is *from* — what publishes a branch's drafts. */
+  headRef!: string | null;
+  /** The branch the pull request merges *into*. */
   baseRef!: string | null;
   baseSha!: string | null;
   state!: "open" | "closed" | null;

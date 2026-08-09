@@ -38,6 +38,7 @@ export async function fetchPullRequest(
  */
 export function parsePullRequestData(data: {
   title: string;
+  head: { ref: string };
   base: { ref: string; sha: string };
   state: "open" | "closed";
   created_at: string;
@@ -50,6 +51,7 @@ export function parsePullRequestData(data: {
     // In GitHub we can have more than 255 characters for a title
     // but it's useless to display more in Argos
     title: truncate(data.title, 255),
+    headRef: data.head.ref,
     baseRef: data.base.ref,
     baseSha: data.base.sha,
     state: data.state,

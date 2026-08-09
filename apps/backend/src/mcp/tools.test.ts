@@ -96,6 +96,7 @@ describe("buildMcpTools", () => {
         "updateAccount",
         "updateAutomationRule",
         "updateBuildComment",
+        "updateMedia",
         "updateMediaComment",
         "updateProject",
         "updateProjectDomain",

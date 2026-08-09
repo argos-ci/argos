@@ -60,6 +60,7 @@ import {
   finalizeMediaHandler,
   getMediaHandler,
   listMediaHandler,
+  updateMediaHandler,
 } from "./handlers/media";
 import {
   listProjectContributors,
@@ -204,6 +205,7 @@ registerHandler(router, createMediaHandler);
 registerHandler(router, finalizeMediaHandler);
 registerHandler(router, getMediaHandler);
 registerHandler(router, deleteMediaHandler);
+registerHandler(router, updateMediaHandler);
 registerHandler(router, listMediaHandler);
 
 // Error handlers

@@ -87,6 +87,7 @@ import {
   finalizeMediaOperation,
   getMediaOperation,
   listMediaOperation,
+  updateMediaOperation,
 } from "./handlers/media";
 import {
   listProjectContributorsOperation,
@@ -287,6 +288,7 @@ export const zodSchema = {
       post: createMediaOperation,
     },
     "/media/{mediaId}": {
+      patch: updateMediaOperation,
       get: getMediaOperation,
       delete: deleteMediaOperation,
     },
