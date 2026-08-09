@@ -22,6 +22,7 @@ import { createRedisStore } from "@/util/rate-limit";
 
 import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
+import { installAgentDiscoveryRoutes } from "./agent-discovery";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
 import { requireCsrf } from "./middlewares/csrf";
@@ -225,6 +226,10 @@ export const installAppRouter = async (app: express.Application) => {
   // before the static handler and SPA catch-all so `/.well-known/agent-skills/*`
   // returns the index / repo redirects instead of the SPA shell.
   installSkillsRoutes(router);
+
+  // Agent-discovery documents (API catalog, protected resource metadata, MCP
+  // server card) — `argos-ci.com` redirects `/.well-known/*` here.
+  installAgentDiscoveryRoutes(router);
 
   router.use(getSlackMiddleware());
 
