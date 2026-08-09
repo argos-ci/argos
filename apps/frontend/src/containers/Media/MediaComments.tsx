@@ -1,24 +1,30 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { MapPinIcon, XIcon } from "lucide-react";
+import { FileUpIcon, MapPinPenIcon, UploadIcon, XIcon } from "lucide-react";
 import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { CommentCard } from "@/containers/Comment/CommentCard";
-import { getCommentThreads } from "@/containers/Comment/commentThreads";
+import {
+  getCommentThreads,
+  type CommentThread,
+} from "@/containers/Comment/commentThreads";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { DocumentType, graphql } from "@/gql";
 import { MediaPermission } from "@/gql/graphql";
-import { Badge } from "@/ui/Badge";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Activity, ActivityItem } from "@/ui/Activity";
+import { Button } from "@/ui/Button";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Link } from "@/ui/Link";
 import { MediaWell } from "@/ui/MediaFrame";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
+import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -28,10 +34,12 @@ const _MediaCommentsFragment = graphql(`
   fragment MediaComments_Media on Media {
     id
     url
+    createdAt
     permissions
     versions {
       id
       number
+      createdAt
       fileUrl
       posterUrl
       isVideo
@@ -53,6 +61,7 @@ const _MediaCommentsFragment = graphql(`
 `);
 
 type Media = DocumentType<typeof _MediaCommentsFragment>;
+type Comment = Media["comments"][number];
 
 const AddMediaCommentMutation = graphql(`
   mutation MediaComments_addMediaComment(
@@ -79,14 +88,52 @@ const AddMediaCommentMutation = graphql(`
   }
 `);
 
+type ActivityEntry =
+  | { kind: "created"; date: string }
+  | { kind: "version"; date: string; version: Media["versions"][number] }
+  | { kind: "comment"; date: string; thread: CommentThread<Comment> };
+
 /**
- * The comment panel of the share page: every thread on the media, and a composer.
+ * Everything that happened to the media, oldest first: its creation, each
+ * re-upload, and the comment threads — the same flow the build sidebar tells.
+ */
+function getActivityEntries(media: Media): ActivityEntry[] {
+  const entries: ActivityEntry[] = [{ kind: "created", date: media.createdAt }];
+  for (const version of media.versions) {
+    // The first upload *is* the creation; an entry for it would say the same
+    // thing twice with the same timestamp.
+    if (version.number > 1) {
+      entries.push({ kind: "version", date: version.createdAt, version });
+    }
+  }
+  for (const thread of getCommentThreads(media.comments)) {
+    entries.push({ kind: "comment", date: thread.root.date, thread });
+  }
+  return entries.sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+}
+
+function getActivityEntryKey(entry: ActivityEntry): string {
+  switch (entry.kind) {
+    case "created":
+      return "created";
+    case "version":
+      return `version-${entry.version.id}`;
+    case "comment":
+      return `comment-${entry.thread.root.id}`;
+  }
+}
+
+/**
+ * The activity panel of the share page: the media's timeline and its comment
+ * threads, with a composer.
  *
- * The same panel-of-comment-cards the build sidebar renders — shared
- * {@link CommentCard} inside a {@link Panel} — so the two surfaces cannot drift
- * apart. Threads pinned to a point also live as markers on the image itself
- * (see `MediaCommentLayer`); the panel is the complete record, including pins
- * on other versions and resolved threads.
+ * The same panel the build sidebar renders — shared {@link CommentCard} rows in
+ * the shared {@link Activity} flow — so the two surfaces cannot drift apart.
+ * Threads pinned to a point also live as markers on the image itself (see
+ * `MediaCommentLayer`); the panel is the complete record, including pins on
+ * other versions and resolved threads.
  */
 export function MediaComments(props: {
   media: Media;
@@ -107,7 +154,7 @@ export function MediaComments(props: {
   const [replyPending, setReplyPending] = useState(false);
 
   const canComment = media.permissions.includes(MediaPermission.Comment);
-  const threads = getCommentThreads(media.comments);
+  const entries = getActivityEntries(media);
   const highlightedCommentId = useHighlightedCommentId(
     media.comments.map((comment) => comment.id),
   );
@@ -138,19 +185,12 @@ export function MediaComments(props: {
   return (
     <Panel>
       <PanelHeader>
-        <PanelTitle>
-          Comments
-          {threads.length > 0 ? <Badge>{threads.length}</Badge> : null}
-        </PanelTitle>
+        <PanelTitle>Activity</PanelTitle>
         {canComment ? (
-          <Button
-            variant={placing ? "primary" : "secondary"}
-            size="small"
-            onPress={() => onPlacingChange(!placing)}
-          >
-            <ButtonIcon>{placing ? <XIcon /> : <MapPinIcon />}</ButtonIcon>
-            {placing ? "Cancel" : "Pin a comment"}
-          </Button>
+          <PinCommentToggle
+            placing={placing}
+            onPlacingChange={onPlacingChange}
+          />
         ) : null}
       </PanelHeader>
 
@@ -161,69 +201,33 @@ export function MediaComments(props: {
           </p>
         ) : null}
 
-        {/* `px-1` mirrors the build's `Activity` wrapper, so the cards' edges
-            land exactly where the build sidebar puts them. */}
-        <div className="flex flex-col gap-4 px-1 select-none">
-          {threads.map((thread) => {
-            const pinned =
-              thread.root.anchor?.__typename === "CommentPointAnchor";
-            return (
-              <CommentCard
-                key={thread.root.id}
-                comment={thread.root}
-                replies={thread.replies}
-                highlightedCommentId={highlightedCommentId}
-                canReply={canComment}
-                // The build sidebar's exact geometry: wider than the column
-                // on purpose, flirting with the panel's edge.
-                className="-mx-2.5"
-                onReply={async (body) => {
-                  setReplyPending(true);
-                  try {
-                    await postComment({ body, threadId: thread.root.id });
-                  } finally {
-                    setReplyPending(false);
-                  }
-                }}
-                draftKeyPrefix={`media.${media.id}`}
-                threadPrompt={createHandleMediaCommentsPrompt({
-                  shareUrl: media.url,
-                  threadId: thread.root.id,
-                })}
-                screenshotReference={
-                  pinned
-                    ? {
-                        node: (
-                          <MediaPinnedReference
-                            media={media}
-                            mediaVersionId={thread.root.mediaVersionId ?? null}
-                            viewedVersionId={viewedVersionId}
-                            onNavigate={() =>
-                              onOpenPinned({
-                                id: thread.root.id,
-                                mediaVersionId:
-                                  thread.root.mediaVersionId ?? null,
-                              })
-                            }
-                          />
-                        ),
-                        onNavigate: () =>
-                          onOpenPinned({
-                            id: thread.root.id,
-                            mediaVersionId: thread.root.mediaVersionId ?? null,
-                          }),
-                      }
-                    : null
+        <Activity gap={false}>
+          {entries.map((entry, index) => (
+            <ActivityEntryRow
+              key={getActivityEntryKey(entry)}
+              entry={entry}
+              isFirst={index === 0}
+              media={media}
+              viewedVersionId={viewedVersionId}
+              highlightedCommentId={highlightedCommentId}
+              canReply={canComment}
+              onOpenPinned={onOpenPinned}
+              onReply={async (thread, body) => {
+                setReplyPending(true);
+                try {
+                  await postComment({ body, threadId: thread.root.id });
+                } finally {
+                  setReplyPending(false);
                 }
-              />
-            );
-          })}
-        </div>
+              }}
+            />
+          ))}
+        </Activity>
 
         {canComment ? (
           // The build sidebar's composer inset, between the cards' edge and
           // the column's.
-          <div className={clsx("-mx-1.5 -mb-1.5", threads.length && "mt-3")}>
+          <div className="-mx-1.5 mt-3 -mb-1.5">
             <StandaloneEditor
               onSubmit={handleSubmit}
               draftKey={`media.${media.id}.comment`}
@@ -238,7 +242,7 @@ export function MediaComments(props: {
             />
           </div>
         ) : (
-          <ReadOnlyNotice hasThreads={threads.length > 0} />
+          <ReadOnlyNotice />
         )}
       </div>
     </Panel>
@@ -246,27 +250,158 @@ export function MediaComments(props: {
 }
 
 /**
- * The composer's stand-in for a viewer who cannot comment: an anonymous visitor
- * gets the fix (logging in), a signed-in visitor without the permission gets the
- * plain fact — but only when there is nothing to read, because next to a live
- * discussion "no comments" would be false and a notice would be noise.
+ * Arm or put away the pin tool — an icon so the panel header stays one line,
+ * with the shortcut on its tooltip. Escape also puts the tool away, which is
+ * what the cancel state advertises.
  */
-function ReadOnlyNotice(props: { hasThreads: boolean }) {
-  const { hasThreads } = props;
+function PinCommentToggle(props: {
+  placing: boolean;
+  onPlacingChange: (placing: boolean) => void;
+}) {
+  const { placing, onPlacingChange } = props;
+  const hotkey = useBuildHotkey(
+    "toggleCommentTool",
+    () => onPlacingChange(!placing),
+    { preventDefault: true },
+  );
+  return placing ? (
+    <HotkeyTooltip description="Cancel" keys={["Esc"]}>
+      <Button
+        variant="primary"
+        size="small"
+        iconOnly
+        aria-label="Cancel"
+        onPress={() => onPlacingChange(false)}
+      >
+        <XIcon />
+      </Button>
+    </HotkeyTooltip>
+  ) : (
+    <HotkeyTooltip description="Pin a comment" keys={hotkey.displayKeys}>
+      <Button
+        variant="secondary"
+        size="small"
+        iconOnly
+        aria-label="Pin a comment"
+        onPress={() => onPlacingChange(true)}
+      >
+        <MapPinPenIcon />
+      </Button>
+    </HotkeyTooltip>
+  );
+}
+
+function ActivityEntryRow(props: {
+  entry: ActivityEntry;
+  isFirst: boolean;
+  media: Media;
+  viewedVersionId: string;
+  highlightedCommentId: string | null;
+  canReply: boolean;
+  onOpenPinned: (comment: {
+    id: string;
+    mediaVersionId: string | null;
+  }) => void;
+  onReply: (thread: CommentThread<Comment>, body: EditorValue) => Promise<void>;
+}) {
+  const {
+    entry,
+    isFirst,
+    media,
+    viewedVersionId,
+    highlightedCommentId,
+    canReply,
+    onOpenPinned,
+    onReply,
+  } = props;
+  // Each row carries its own top spacing so the timeline reads as one flow,
+  // matching the build sidebar's activity rhythm.
+  const spacing = isFirst ? undefined : "pt-4";
+
+  switch (entry.kind) {
+    case "created":
+      return (
+        <div className={spacing}>
+          <ActivityItem icon={<FileUpIcon className="size-3.5" />}>
+            Media created · <Time date={entry.date} />
+          </ActivityItem>
+        </div>
+      );
+    case "version":
+      return (
+        <div className={spacing}>
+          <ActivityItem icon={<UploadIcon className="size-3.5" />}>
+            <span className="font-medium">v{entry.version.number}</span>{" "}
+            uploaded · <Time date={entry.date} />
+          </ActivityItem>
+        </div>
+      );
+    case "comment": {
+      const { thread } = entry;
+      const pinned = thread.root.anchor?.__typename === "CommentPointAnchor";
+      return (
+        <div className={clsx("pb-px", spacing)}>
+          <CommentCard
+            comment={thread.root}
+            replies={thread.replies}
+            highlightedCommentId={highlightedCommentId}
+            canReply={canReply}
+            // The build sidebar's exact geometry: wider than the column on
+            // purpose, flirting with the panel's edge.
+            className="-mx-2.5"
+            onReply={(body) => onReply(thread, body)}
+            draftKeyPrefix={`media.${media.id}`}
+            threadPrompt={createHandleMediaCommentsPrompt({
+              shareUrl: media.url,
+              threadId: thread.root.id,
+            })}
+            screenshotReference={
+              pinned
+                ? {
+                    node: (
+                      <MediaPinnedReference
+                        media={media}
+                        mediaVersionId={thread.root.mediaVersionId ?? null}
+                        viewedVersionId={viewedVersionId}
+                        onNavigate={() =>
+                          onOpenPinned({
+                            id: thread.root.id,
+                            mediaVersionId: thread.root.mediaVersionId ?? null,
+                          })
+                        }
+                      />
+                    ),
+                    onNavigate: () =>
+                      onOpenPinned({
+                        id: thread.root.id,
+                        mediaVersionId: thread.root.mediaVersionId ?? null,
+                      }),
+                  }
+                : null
+            }
+          />
+        </div>
+      );
+    }
+  }
+}
+
+/**
+ * The composer's stand-in for a viewer who cannot comment: an anonymous visitor
+ * gets the fix (logging in). A signed-in visitor without the permission gets
+ * nothing — the timeline above speaks for itself.
+ */
+function ReadOnlyNotice() {
   const auth = useAuth();
   const { pathname } = useLocation();
 
   if (auth.status === "anonymous") {
     return (
-      <p className={clsx("text-low text-sm", hasThreads && "mt-3")}>
+      <p className="text-low mt-3 text-sm">
         <Link href={`/login?r=${encodeURIComponent(pathname)}`}>Login</Link> to
         comment on this media.
       </p>
     );
-  }
-
-  if (!hasThreads) {
-    return <p className="text-low text-sm">No comments yet.</p>;
   }
 
   return null;
@@ -313,7 +448,7 @@ function MediaPinnedReference(props: {
         </MediaWell>
       ) : null}
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-      <MapPinIcon aria-hidden="true" className="size-3.5 shrink-0" />
+      <MapPinPenIcon aria-hidden="true" className="size-3.5 shrink-0" />
     </RACButton>
   );
 }

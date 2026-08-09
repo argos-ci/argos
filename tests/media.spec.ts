@@ -22,8 +22,9 @@ loggedTest("media share page", async ({ page, auth, project }) => {
     page.getByRole("heading", { name: "checkout.png" }),
   ).toBeVisible();
   await expect(page.getByText("375×720")).toBeVisible();
-  // Two uploads, so the version is worth naming.
-  await expect(page.getByText("v2")).toBeVisible();
+  // Two uploads, so the version is worth naming — as the picker's pill (the
+  // activity timeline also says "v2 uploaded").
+  await expect(page.getByRole("button", { name: "v2" })).toBeVisible();
   // A pair, so both halves are on the page and the alt text distinguishes them.
   await expect(
     page.getByRole("img", { name: "checkout.png (before)" }),
@@ -36,8 +37,9 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
 
   // Two threads, one of them pinned to a point on the image — the pin is a
-  // floating marker on the image itself.
-  await expect(page.getByRole("heading", { name: "Comments 2" })).toBeVisible();
+  // floating marker on the image itself, and the panel tells the media's
+  // whole story.
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
   await expect(
     page.getByText("The primary button is misaligned here."),
   ).toBeVisible();

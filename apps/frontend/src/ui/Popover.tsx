@@ -16,7 +16,9 @@ function getPopoverAnimationClassName(values: PopoverRenderProps): string {
         right: "origin-left",
         center: "origin-center",
       }[values.placement],
-    values.isEntering && "animate-in fade-in",
+    // Mirrors the exit: without the zoom the menu just fades in mid-air
+    // instead of growing out of its trigger.
+    values.isEntering && "animate-in fade-in zoom-in-95",
     values.isExiting && "animate-out fade-out zoom-out-95",
   );
 }

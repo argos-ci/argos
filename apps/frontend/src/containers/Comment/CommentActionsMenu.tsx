@@ -66,7 +66,7 @@ export function CommentActionsMenu(props: {
   return (
     <MenuTrigger>
       <Button
-        variant="secondary"
+        variant="ghost"
         iconOnly
         size="small"
         aria-label="Comment actions"

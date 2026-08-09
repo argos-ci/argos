@@ -1983,7 +1983,7 @@ async function createDemoMediaScenario(input: {
         name: "checkout.png",
         state: "before" as const,
         description: "Checkout before the spacing fix.",
-        visibility: "team" as const,
+        visibility: "public" as const,
         shareToken: "demo-before",
         createdAt: hoursAgo(26),
         updatedAt: hoursAgo(26),
@@ -1994,7 +1994,7 @@ async function createDemoMediaScenario(input: {
         name: "checkout.png",
         state: "after" as const,
         description: "Checkout after the spacing fix.",
-        visibility: "team" as const,
+        visibility: "public" as const,
         shareToken: "demo-after",
         createdAt: hoursAgo(25),
         updatedAt: hoursAgo(25),
@@ -2016,7 +2016,9 @@ async function createDemoMediaScenario(input: {
         name: "onboarding.mp4",
         state: null,
         description: "The onboarding flow, end to end.",
-        visibility: "public" as const,
+        // The team-only sample: opening it logged out shows the unavailable
+        // page, which is itself a state worth checking.
+        visibility: "team" as const,
         shareToken: "demo-video",
         createdAt: hoursAgo(5),
         updatedAt: hoursAgo(5),

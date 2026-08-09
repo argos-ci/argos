@@ -239,11 +239,12 @@ function MediaViewToolbar(props: {
   const { mode, onModeChange } = props;
   const comparing = mode !== "single";
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-3">
+    // `mb-4` + the viewer column's `gap-2` puts 24px between the toolbar and
+    // the panes, level with the sidebar's action strip.
+    <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
       <ButtonGroup>
         <Button
           variant="secondary"
-          size="small"
           aria-pressed={!comparing}
           onPress={() => onModeChange("single")}
         >
@@ -251,7 +252,6 @@ function MediaViewToolbar(props: {
         </Button>
         <Button
           variant="secondary"
-          size="small"
           aria-pressed={comparing}
           onPress={() => onModeChange("split")}
         >
@@ -270,7 +270,6 @@ function MediaViewToolbar(props: {
             <Button
               key={value}
               variant="secondary"
-              size="small"
               aria-pressed={mode === value}
               onPress={() => onModeChange(value)}
             >
@@ -297,16 +296,20 @@ function MediaPane(props: {
       : undefined;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      {labelled ? (
-        <div className="text-low text-xxs font-medium tracking-wide uppercase">
-          {media.state}
-        </div>
-      ) : null}
+    <div className="flex min-w-0 flex-1 flex-col">
       {/* The inspection surface: the same dark checkerboard as the library
           thumbnails, so a white screenshot has a known ground to end on. The
           pane draws no chrome of its own — the well is the chrome. */}
       <MediaWell className="relative flex min-h-0 flex-1">
+        {labelled ? (
+          // Floating over the pixels rather than above the frame, so the two
+          // halves stay named while panning, zooming, or leaning in close.
+          // Near-opaque with a hairline edge: readable over any pixels,
+          // light or dark, without hiding much of what it sits on.
+          <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-neutral-950/90 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm">
+            {media.state}
+          </div>
+        ) : null}
         <ZoomPane
           surface="bare"
           dimensions={dimensions}
