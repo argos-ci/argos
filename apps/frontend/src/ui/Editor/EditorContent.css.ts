@@ -31,3 +31,17 @@ export const EDITOR_PROSE_CLASS = clsx(
   // Mentions
   "[&_.mention]:font-medium",
 );
+
+// The boxed variant's dimensions live here rather than in `EditorImpl` so the
+// loading fallback (which must not import the lazy chunk) mirrors the exact
+// same chrome: one source of truth, and nothing shifts when the editor lands.
+
+/** Chrome of the `boxed` editor variant. */
+export const EDITOR_BOXED_CLASS =
+  "bg-app focus-within:border-active border-thin rounded-md text-sm";
+
+/** Internal padding of the editable area, only applied in the `boxed` variant. */
+export const EDITOR_BOXED_CONTENT_PADDING_CLASS = "px-3 py-2";
+
+/** Editable-area height when the caller doesn't size it via `contentClassName`. */
+export const EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS = "min-h-20";
