@@ -219,6 +219,11 @@ export function MediaViewer(props: {
                 // this is. Drawing them on the counterpart would attach feedback
                 // to the wrong image.
                 comments={pane.interactive ? comments : null}
+                // Only side by side puts two panes on screen, and only then is
+                // "which one takes the pin" a question the viewer has to answer.
+                // A single pane — alone, or with both halves blended into it —
+                // has nowhere else the pin could land.
+                ringTarget={panes.length > 1 && pane.interactive}
               />
             ))}
           </div>
@@ -287,20 +292,44 @@ function MediaPane(props: {
   labelled: boolean;
   blend: BlendState | null;
   comments: ViewerComments | null;
+  /**
+   * Whether this pane should announce itself as the one a pin would land on,
+   * while the comment tool is armed. See {@link MediaViewer} for when that
+   * question is worth answering.
+   */
+  ringTarget: boolean;
 }) {
-  const { media, labelled, blend, comments } = props;
+  const { media, labelled, blend, comments, ringTarget } = props;
   const version = media.version;
   const dimensions =
     version.width && version.height
       ? { width: version.width, height: version.height }
       : undefined;
+  // Only while the tool is armed. A ring that is always on reads as "selected"
+  // and says nothing about where the click goes; one that appears with the
+  // crosshair answers exactly the question the crosshair raises.
+  const targeted = ringTarget && Boolean(comments?.placing);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div
+      className="flex min-w-0 flex-1 flex-col"
+      data-media-pane=""
+      // The pane a pin would land on, while the tool is armed. An attribute
+      // rather than a class in the test, so the guard survives restyling the
+      // ring.
+      {...(targeted ? { "data-pin-target": "" } : null)}
+    >
       {/* The inspection surface: the same dark checkerboard as the library
           thumbnails, so a white screenshot has a known ground to end on. The
           pane draws no chrome of its own — the well is the chrome. */}
-      <MediaWell className="relative flex min-h-0 flex-1">
+      <MediaWell
+        className={clsx(
+          "relative flex min-h-0 flex-1",
+          // Inset so it draws over the pixels rather than in the gap between
+          // the panes, which is where the eye is already looking.
+          targeted && "ring-primary-active ring-2 ring-inset",
+        )}
+      >
         {labelled ? (
           // Floating over the pixels rather than above the frame, so the two
           // halves stay named while panning, zooming, or leaning in close.
@@ -479,7 +508,7 @@ function MediaImage(props: {
     : undefined;
 
   return (
-    <div className="flex h-full min-w-0 items-center">
+    <div className="flex h-full min-w-0 items-center justify-center">
       <div
         className="relative max-h-full min-h-0 max-w-full min-w-0"
         style={
@@ -497,7 +526,12 @@ function MediaImage(props: {
             alt=""
             draggable={false}
             className={clsx(
-              "absolute inset-0 size-full",
+              // `object-contain`, because the box carries the *base* half's
+              // aspect ratio and a pair's halves need not share one — a
+              // 16:9 "before" against a 4:3 "after" would otherwise be
+              // stretched to fit, comparing two differently-shaped renderings
+              // of the same pixels.
+              "absolute inset-0 size-full object-contain",
               // The "after" paints on top of the base; z-10 clears the base's
               // own stacking position.
               blend.counterpartIsAfter && "z-10",
@@ -512,7 +546,13 @@ function MediaImage(props: {
           width={dimensions?.width}
           height={dimensions?.height}
           onLoad={updateScale}
-          className="relative size-full"
+          // `object-contain` is the guarantee, not the layout: the box already
+          // carries the image's own ratio, but a media whose recorded
+          // dimensions disagree with its bytes — or one with none recorded at
+          // all — must letterbox rather than stretch. A distorted screenshot is
+          // worse than a small one: it is a picture of something that never
+          // rendered.
+          className="relative size-full object-contain"
           style={blend && !blend.counterpartIsAfter ? afterStyle : undefined}
         />
       </div>
