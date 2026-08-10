@@ -378,7 +378,7 @@ export class Account extends Model {
       .joinRelated("plan")
       .whereIn("subscriptions.accountId", accountIdsNeedingSubscriptions)
       .whereRaw("?? < now()", "subscriptions.startDate")
-      .whereIn("subscriptions.status", ["active", "trialing", "past_due"])
+      .whereIn("subscriptions.status", SUBSCRIBED_DB_STATUSES)
       .where((query) =>
         query
           .whereNull("subscriptions.endDate")

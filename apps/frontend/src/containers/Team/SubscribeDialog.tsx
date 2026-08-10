@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import {
-  checkHasSubscriptionStatus,
-  checkIsTrialingSubscriptionStatus,
-} from "@argos/schemas/subscription-status";
+import { checkHasSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { AccountSelector } from "@/containers/AccountSelector";
 import { graphql } from "@/gql";
+import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
@@ -78,16 +76,20 @@ export function TeamSubscribeDialog({
         (a) =>
           [
             a.id,
-            checkIsTrialingSubscriptionStatus(a.subscriptionStatus)
+            a.subscriptionStatus === AccountSubscriptionStatus.Trialing
               ? "Trial already running"
               : "Already on a paid plan",
           ] as const,
       ),
   );
   // The initial team can itself be subscribed — the dialog opens from a banner
-  // that only knows the team it renders on — so guard the button too.
-  const teamHasSubscription =
-    !team || checkHasSubscriptionStatus(team.subscriptionStatus);
+  // that only knows the team it renders on — so guard the button too. A team
+  // that is not in the list is not known to be subscribed: staff browsing a
+  // team they are not a member of still gets the dialog, and so does everyone
+  // while the query is in flight.
+  const teamHasSubscription = team
+    ? checkHasSubscriptionStatus(team.subscriptionStatus)
+    : false;
 
   return (
     <DialogTrigger>
@@ -108,8 +110,9 @@ export function TeamSubscribeDialog({
             </div>
 
             <p className="text-default mt-4 font-medium">
-              {team && checkHasSubscriptionStatus(team.subscriptionStatus) ? (
-                checkIsTrialingSubscriptionStatus(team.subscriptionStatus) ? (
+              {teamHasSubscription ? (
+                team?.subscriptionStatus ===
+                AccountSubscriptionStatus.Trialing ? (
                   <>
                     This team is already on a Pro plan trial. Add a payment
                     method from its settings to keep it after the trial.
