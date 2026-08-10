@@ -117,7 +117,7 @@ export const MediaSchema = z
     }),
     expiresAt: z.string().nullable().meta({
       description:
-        "When this version is deleted. Counted from its upload, not from the last view.",
+        "When this version is deleted. Set from your plan's retention, counted from the upload rather than from the last view.",
     }),
     createdAt: z.string(),
   })
@@ -178,10 +178,6 @@ export const MediaInputSchema = z.object({
       "SHA-256 of the file contents, hex encoded. Uploading the same file twice is free: Argos recognizes the hash and skips the transfer, and byte-identical bytes do not create a new version.",
   }),
   visibility: MediaVisibilitySchema.nullish(),
-  retentionDays: z.number().int().min(1).max(365).nullish().meta({
-    description:
-      "How long to keep the media, in days. Clamped to your plan's maximum.",
-  }),
 });
 
 /** Serialize one stored upload. */

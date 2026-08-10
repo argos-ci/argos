@@ -185,7 +185,6 @@ export const createMediaHandler: CreateAPIHandler = ({ post }) => {
       sizeBytes: body.size,
       hash: body.hash,
       visibility: body.visibility ?? null,
-      retentionDays: body.retentionDays ?? null,
     });
 
     // Nothing to comment about until the bytes are there. When the file was

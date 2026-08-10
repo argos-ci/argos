@@ -67,7 +67,6 @@ export type CreateMediaParams = {
   /** SHA-256 of the file contents, hex encoded. Makes the key content-addressed. */
   hash: string;
   visibility: MediaVisibility | null;
-  retentionDays: number | null;
 };
 
 export type CreateMediaResult = {
@@ -109,10 +108,7 @@ export async function createMedia(
     hash: params.hash,
     contentType: params.contentType,
   });
-  const expiresAt = resolveExpiresAt({
-    limits,
-    requestedRetentionDays: params.retentionDays,
-  });
+  const expiresAt = resolveExpiresAt({ limits });
 
   const { media, version } = await upsertMediaVersion({
     ...params,

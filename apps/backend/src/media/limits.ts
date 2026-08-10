@@ -15,10 +15,14 @@ import { Plan } from "@/database/models";
 export type MediaLimits = {
   /** Largest single file accepted, in bytes. Enforced by S3 before bytes land. */
   maxFileBytes: number;
-  /** Retention applied when the caller doesn't ask for one, in days. */
-  defaultRetentionDays: number;
-  /** Longest retention the caller may ask for, in days. */
-  maxRetentionDays: number;
+  /**
+   * How long a version is kept, in days.
+   *
+   * The plan's, not the caller's: retention is what the tier sells, and letting
+   * an upload name its own would make the promise a per-request detail nobody
+   * can reason about — including the account paying for it.
+   */
+  retentionDays: number;
   /** Visibilities the caller may choose from. */
   allowedVisibilities: MediaVisibility[];
   /** Visibility applied when the caller doesn't choose one. */
@@ -27,8 +31,7 @@ export type MediaLimits = {
 
 const HOBBY_LIMITS: MediaLimits = {
   maxFileBytes: 50 * 1024 * 1024,
-  defaultRetentionDays: 30,
-  maxRetentionDays: 30,
+  retentionDays: 30,
   // Public-only on purpose: a team-scoped link is the paid wedge. It also keeps
   // the free tier usable for its actual job — reviewers of a pull request who
   // have never heard of Argos can still open the link.
@@ -38,8 +41,7 @@ const HOBBY_LIMITS: MediaLimits = {
 
 const PRO_LIMITS: MediaLimits = {
   maxFileBytes: 500 * 1024 * 1024,
-  defaultRetentionDays: 365,
-  maxRetentionDays: 365,
+  retentionDays: 365,
   allowedVisibilities: ["team", "public"],
   // Private by default. Uploading a screenshot of a private product must not
   // make it world-readable, which is exactly what every free alternative does.
@@ -71,16 +73,11 @@ export async function getMediaLimits(account: Account): Promise<MediaLimits> {
  */
 export function resolveExpiresAt(args: {
   limits: MediaLimits;
-  requestedRetentionDays: number | null;
   now?: Date;
 }): Date {
-  const { limits, requestedRetentionDays } = args;
+  const { limits } = args;
   const now = args.now ?? new Date();
-  const days = Math.min(
-    requestedRetentionDays ?? limits.defaultRetentionDays,
-    limits.maxRetentionDays,
-  );
   const expiresAt = new Date(now);
-  expiresAt.setUTCDate(expiresAt.getUTCDate() + days);
+  expiresAt.setUTCDate(expiresAt.getUTCDate() + limits.retentionDays);
   return expiresAt;
 }
