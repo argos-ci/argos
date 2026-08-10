@@ -171,9 +171,12 @@ describe("mediaByShareToken", () => {
     expect(result.counterpart.state).toBe("before");
     expect(result.counterpart.latestVersion.fileUrl).toContain("http");
 
-    // The single embed points at this half; the pair snippet is the same
-    // side-by-side table the managed pull request comment renders.
-    expect(result.markdown).toBe(`![checkout.png](${result.url})`);
+    // The single embed shows this half's bytes and links to its page — an embed
+    // built from the share URL alone renders as a broken image. The pair snippet
+    // is the same side-by-side table the managed pull request comment renders.
+    expect(result.markdown).toBe(
+      `[![checkout.png](${result.latestVersion.fileUrl})](${result.url})`,
+    );
     expect(result.markdownPair).toContain("| Name | Before | After |");
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);

@@ -140,7 +140,11 @@ describe("createMedia", () => {
     // The share URL exists before the bytes do, so a caller can print it
     // without waiting on a large upload.
     expect(res.body.media.url).toMatch(/\/m\/.+/);
-    expect(res.body.media.markdown).toContain(res.body.media.url);
+    // The embed shows the file and links to the page. Pointing the image part at
+    // the share URL renders as a broken image wherever it is pasted.
+    expect(res.body.media.markdown).toBe(
+      `[![before.png](${res.body.media.fileUrl})](${res.body.media.url})`,
+    );
     expect(res.body.upload).toMatchObject({
       url: "https://s3.example.com/bucket",
     });

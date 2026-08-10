@@ -103,6 +103,43 @@ loggedTest(
   },
 );
 
+loggedTest(
+  "rings the half a pin would land on, in compare mode",
+  async ({ page, auth, project }) => {
+    // Side by side puts two images on screen and only one of them takes
+    // comments. Arming the tool without saying which is which leaves the
+    // reviewer to click and find out.
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+    await page.getByRole("button", { name: "Compare" }).click();
+    await page.getByRole("button", { name: "Side by side" }).click();
+
+    const panes = page.locator("[data-media-pane]");
+    await expect(panes).toHaveCount(2);
+    // Nothing is singled out until the tool is armed: a ring that is always on
+    // reads as "selected" and says nothing about where a click goes.
+    await expect(page.locator("[data-media-pane][data-pin-target]")).toHaveCount(
+      0,
+    );
+
+    await page.getByRole("button", { name: "Pin a comment" }).click();
+
+    const target = page.locator("[data-media-pane][data-pin-target]");
+    await expect(target).toHaveCount(1);
+    // The commentable half is this media's own — the "after" — not the
+    // counterpart drawn beside it.
+    await expect(
+      target.getByRole("img", { name: "checkout.png (after)" }),
+    ).toBeVisible();
+
+    await screenshot(page, "media-share-pin-target");
+  },
+);
+
 loggedTest("media share page for a video", async ({ page, project }) => {
   const media = await createMediaScenario({
     projectId: project.id,

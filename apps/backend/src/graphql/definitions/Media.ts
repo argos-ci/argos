@@ -7,7 +7,11 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
-import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
+import {
+  getMediaEmbedArgs,
+  getMediaFileUrl,
+  getMediaPosterUrl,
+} from "@/media/serve";
 import { getMediaMarkdown, getMediaTableMarkdown } from "@/media/url";
 import { getLatestMediaVersion } from "@/media/version";
 import { getProjectMemberIds } from "@/project/members";
@@ -85,7 +89,12 @@ export const typeDefs = gql`
     description: String
     "Share page URL, the one to paste into a pull request"
     url: String!
-    "Ready-to-paste Markdown embed, always pointing at the newest version"
+    """
+    Ready-to-paste Markdown embed, always pointing at the newest version: the
+    picture served from the CDN, linked to the share page. Never built from
+    \`url\` — that is an HTML page, and an image embed pointing at it renders as
+    a broken image.
+    """
     markdown: String!
     """
     Ready-to-paste Markdown table showing the before/after pair side by side —
@@ -193,12 +202,9 @@ export const resolvers: IResolvers = {
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
       invariant(version, "media has no uploaded version");
-      return getMediaMarkdown({
-        name: media.name,
-        shareUrl: media.url,
-        posterUrl: getMediaPosterUrl(version),
-        isVideo: version.isVideo(),
-      });
+      return getMediaMarkdown(
+        getMediaEmbedArgs({ name: media.name, shareUrl: media.url, version }),
+      );
     },
     markdownPair: async (media, _args, ctx) => {
       // The pair's side-by-side table — the exact rendering the managed pull
@@ -216,18 +222,16 @@ export const resolvers: IResolvers = {
 
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
       invariant(version, "media has no uploaded version");
-      const embed = {
+      const embed = getMediaEmbedArgs({
         name: media.name,
         shareUrl: media.url,
-        posterUrl: getMediaPosterUrl(version),
-        isVideo: version.isVideo(),
-      };
-      const counterpartEmbed = {
+        version,
+      });
+      const counterpartEmbed = getMediaEmbedArgs({
         name: counterpart.name,
         shareUrl: counterpart.url,
-        posterUrl: getMediaPosterUrl(counterpartVersion),
-        isVideo: counterpartVersion.isVideo(),
-      };
+        version: counterpartVersion,
+      });
       const [beforeMedia, afterMedia] =
         media.state === "before" ? [media, counterpart] : [counterpart, media];
       const [before, after] =

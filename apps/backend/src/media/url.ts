@@ -15,6 +15,12 @@ export function getMediaShareUrl(shareToken: string): string {
 export type MediaEmbedArgs = {
   name: string;
   shareUrl: string;
+  /**
+   * CDN URL of the bytes. This — never the share URL — is what an image embed
+   * points at: the share URL is an HTML page, and `![](page)` renders as a
+   * broken image everywhere it is pasted.
+   */
+  fileUrl: string;
   posterUrl: string | null;
   isVideo: boolean;
 };
@@ -22,25 +28,30 @@ export type MediaEmbedArgs = {
 /**
  * Markdown ready to paste into a pull request comment.
  *
- * Images embed directly. Videos embed their **poster frame** wrapped in a link to
- * the share page, because GitHub only renders an inline video player for media it
- * hosts itself — an `<video>` tag or a bare `.mp4` link pointing at Argos would
- * render as a dead link. A video whose poster hasn't been extracted yet
- * degrades to a plain link rather than an image that 404s.
+ * A picture wrapped in a link to the share page: the embed shows the media
+ * inline, and clicking it lands on the page where it can be compared, versioned
+ * and commented on.
+ *
+ * The picture is the file itself for an image, and the **poster frame** for a
+ * video — GitHub only renders an inline player for media it hosts itself, so a
+ * `<video>` tag or a bare `.mp4` link pointing at Argos renders as a dead link.
+ * Both come from the image CDN, which serves them unauthenticated: GitHub
+ * fetches embedded images server-side through its camo proxy, carrying no
+ * session of ours, so an embed that needed one could not render at all.
+ *
+ * A video whose poster hasn't been extracted yet degrades to a plain link rather
+ * than an image that 404s.
  */
 export function getMediaMarkdown(args: MediaEmbedArgs): string {
-  const { name, shareUrl, posterUrl, isVideo } = args;
+  const { name, shareUrl, fileUrl, posterUrl, isVideo } = args;
   const alt = escapeMarkdownText(name);
+  const previewUrl = isVideo ? posterUrl : fileUrl;
 
-  if (!isVideo) {
-    return `![${alt}](${shareUrl})`;
+  if (!previewUrl) {
+    return `[▶ ${alt}](${shareUrl})`;
   }
 
-  if (posterUrl) {
-    return `[![${alt}](${posterUrl})](${shareUrl})`;
-  }
-
-  return `[▶ ${alt}](${shareUrl})`;
+  return `[![${alt}](${previewUrl})](${shareUrl})`;
 }
 
 /** One row of the media table: a pair's two halves, or a lone media. */
