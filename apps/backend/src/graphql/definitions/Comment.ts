@@ -142,7 +142,17 @@ async function assertCanAccessCommentThread(input: {
   const { thread, user, permission } = input;
   const target = await resolveCommentTarget(thread);
   const project = await getCommentTargetProject(target);
-  const permissions = await project.$getPermissions(user);
+  // Membership permissions for a media, the same rule the REST comment helper
+  // applies. `$getPermissions` falls back to `view` for any public project,
+  // which is right for its builds and tests — they are public too — but a media
+  // carries its own `visibility`, so a `team` one in a public project stays
+  // team-only. Writes were never exposed by the fallback (it grants `view` and
+  // nothing else), but subscribing to a thread is gated on `view`, and a
+  // subscriber receives every later comment by email.
+  const permissions =
+    target.type === "media"
+      ? await project.$getMembershipPermissions(user)
+      : await project.$getPermissions(user);
   if (!permissions.includes(permission)) {
     throw forbidden("You cannot access this thread");
   }
