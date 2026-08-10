@@ -52,17 +52,16 @@ export function TeamSubscribeDialog({
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;
   const team = teams?.find((a) => a.id === accountId);
-  // Teams that already hold a subscription sink to the bottom and cannot be
-  // picked. A running trial counts even without a card on file: it unlocks
-  // nothing yet, but Stripe still refuses a second subscription on top of it.
+  // Teams that already have a subscription sink to the bottom and cannot be
+  // picked.
   const sortedTeams = teams
     ? Array.from(teams).sort((a, b) => {
-        const aSubscribed = checkHasSubscriptionStatus(a.subscriptionStatus);
-        const bSubscribed = checkHasSubscriptionStatus(b.subscriptionStatus);
-        if (aSubscribed && !bSubscribed) {
+        const aActive = checkHasSubscriptionStatus(a.subscriptionStatus);
+        const bActive = checkHasSubscriptionStatus(b.subscriptionStatus);
+        if (aActive && !bActive) {
           return 1;
         }
-        if (!aSubscribed && bSubscribed) {
+        if (!aActive && bActive) {
           return -1;
         }
         return 0;
@@ -73,12 +72,6 @@ export function TeamSubscribeDialog({
       .filter((a) => checkHasSubscriptionStatus(a.subscriptionStatus))
       .map((a) => [a.id, "Already subscribed"] as const),
   );
-  // A team that is not in the list is not known to be subscribed: staff
-  // browsing a team they are not a member of still gets the dialog, and so does
-  // everyone while the query is in flight.
-  const teamHasSubscription = team
-    ? checkHasSubscriptionStatus(team.subscriptionStatus)
-    : false;
 
   return (
     <DialogTrigger>
@@ -111,7 +104,11 @@ export function TeamSubscribeDialog({
             <DialogDismiss>Cancel</DialogDismiss>
 
             <StripeCheckoutButton
-              isDisabled={teamHasSubscription}
+              isDisabled={
+                team
+                  ? checkHasSubscriptionStatus(team.subscriptionStatus)
+                  : false
+              }
               accountId={accountId}
               successUrl={
                 team
