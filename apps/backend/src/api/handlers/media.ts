@@ -19,7 +19,7 @@ import {
 import type { ProjectPermission } from "@/database/models/Project";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
-import { githubPullRequestJob } from "@/github-pull-request/job";
+import { processPullRequest } from "@/github-pull-request/process";
 import logger from "@/logger";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
@@ -254,13 +254,19 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
       throw boom(400, "This media has no upload to finalize.");
     }
 
+    // Read *before* finalizing: Objection's `patchAndFetch` calls `$set` on the
+    // instance it was invoked on, so `pending.uploadedAt` is filled in by the
+    // call below and testing it afterwards reports every successful finalize as
+    // a no-op.
+    const wasAlreadyUploaded = Boolean(pending.uploadedAt);
+
     const finalized = await finalizeMedia(pending);
 
     // Nothing landed, so nothing downstream has anything new to say. Without
     // this, re-finalizing an already-uploaded media still drove a GitHub write
     // on every call — an amplifier pointed at the installation's shared API
     // budget, which every project on it depends on.
-    if (pending.uploadedAt) {
+    if (wasAlreadyUploaded) {
       res.send(await serializeMediaWithVersion(media, finalized));
       return;
     }
@@ -781,18 +787,21 @@ async function resolvePullRequest(args: {
   // would create a second one, which then collides forever when publishing tries
   // to attach the first. Run the sync now rather than after the damage.
   //
-  // Only ever on the first upload for a pull request Argos has not seen; the
-  // same thing `performBuild` does, and for the same reason. Best effort: no
-  // installation, a deleted repository or a GitHub outage should not fail the
-  // upload, it just means the branch stays unknown.
-  await githubPullRequestJob
-    .run(pullRequest.id, { logger })
-    .catch((error: unknown) => {
-      logger.warn(
-        { err: error, pullRequestId: pullRequest.id },
-        "Could not sync the pull request before an upload",
-      );
-    });
+  // Only ever on the first upload for a pull request Argos has not seen. Best
+  // effort: no installation, a deleted repository or a GitHub outage should not
+  // fail the upload, it just means the branch stays unknown.
+  //
+  // `processPullRequest` directly rather than `githubPullRequestJob.run`: the
+  // job module opens the shared AMQP channel as soon as it is imported, and a
+  // request handler has no business holding one. It also skips its work when
+  // `jobStatus` is already `complete`, which is exactly the row this needs to
+  // refresh — an old pull request that predates the `headRef` column.
+  await processPullRequest(pullRequest).catch((error: unknown) => {
+    logger.warn(
+      { err: error, pullRequestId: pullRequest.id },
+      "Could not sync the pull request before an upload",
+    );
+  });
 
   return (
     (await GithubPullRequest.query().findById(pullRequest.id)) ?? pullRequest

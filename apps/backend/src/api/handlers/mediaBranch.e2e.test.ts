@@ -16,12 +16,14 @@ import { factory, setupDatabase } from "@/database/testing";
 import { createTestHandlerApp } from "../test-util";
 import {
   createMediaHandler,
+  finalizeMediaHandler,
   listMediaHandler,
   updateMediaHandler,
 } from "./media";
 
 const app = createTestHandlerApp(
   createMediaHandler,
+  finalizeMediaHandler,
   listMediaHandler,
   updateMediaHandler,
 );
@@ -29,9 +31,22 @@ const app = createTestHandlerApp(
 const HASH = "b".repeat(64);
 const PROJECT_PATH = "acme/awesome-project";
 
+// Overridable per test: `null` is "the bytes are not there", which is what the
+// create tests want; the finalize tests hand back a real object instead.
+const headMediaObject = vi.hoisted(() =>
+  vi.fn<() => Promise<{ size: number; contentType: string } | null>>(
+    async () => null,
+  ),
+);
 vi.mock("@/media/object", () => ({
-  headMediaObject: vi.fn(async () => null),
+  headMediaObject,
   deleteUnreferencedMediaObjects: vi.fn(async () => undefined),
+}));
+
+// Reading the object back is S3's job and has its own tests.
+vi.mock("@/media/inspect", () => ({
+  inspectMediaObject: vi.fn(async () => ({ width: 12, height: 34 })),
+  MediaContentMismatchError: class MediaContentMismatchError extends Error {},
 }));
 
 vi.mock("@aws-sdk/s3-presigned-post", () => ({
@@ -562,6 +577,109 @@ describe("updateMedia", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "mine.png" })
       .expect(404);
+  });
+});
+
+describe("finalize", () => {
+  test("publishes the branch's staged media once the bytes land", async ({
+    token,
+    project,
+    repository,
+  }) => {
+    // The other half of the feature: the pull request already exists, and the
+    // upload arrives afterwards. Bytes landing is what makes the media
+    // publishable, so finalize is the moment — and nothing else would ever
+    // connect the two.
+    updatePullRequestComment.mockClear();
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 90,
+      headRef: "feat/late",
+      headFromFork: false,
+      state: "open",
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "late.png", branch: "feat/late" },
+      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+    });
+
+    const res = await request(app)
+      .post(`/media/${media.id}/finalize`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    await expect(Media.query().findById(media.id)).resolves.toMatchObject({
+      githubPullRequestId: pullRequest.id,
+    });
+    expect(res.body).toMatchObject({ stage: "published", prNumber: 90 });
+    expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
+  });
+
+  test("updates the comment of a media already on a pull request", async ({
+    token,
+    project,
+    repository,
+  }) => {
+    updatePullRequestComment.mockClear();
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 91,
+      headRef: "feat/attached",
+      headFromFork: false,
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "attached.png",
+        githubPullRequestId: pullRequest.id,
+      },
+      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+    });
+
+    await request(app)
+      .post(`/media/${media.id}/finalize`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not touch GitHub when the upload already landed", async ({
+    token,
+    project,
+    repository,
+  }) => {
+    // Re-finalizing is a no-op, and it must stay one: every call used to drive
+    // an `issues.updateComment` against the installation's shared API budget.
+    updatePullRequestComment.mockClear();
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 92,
+      headRef: "feat/done",
+      headFromFork: false,
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "done.png",
+        githubPullRequestId: pullRequest.id,
+      },
+    });
+
+    await request(app)
+      .post(`/media/${media.id}/finalize`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(updatePullRequestComment).not.toHaveBeenCalled();
   });
 });
 
