@@ -21,7 +21,6 @@ import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { useStoredNames } from "../Project/Flows/util";
 import { useProjectParams } from "../Project/ProjectParams";
 import { getTestURL } from "../Test/TestParams";
 import {
@@ -122,22 +121,18 @@ function BuildDetailIgnoreButton(props: { diff: Diff }) {
 }
 
 /**
- * Journey context above the screenshot name: the flow's display name and the
- * step position, secondary and single-line, with a link to the flow view.
+ * Journey context above the screenshot name: the flow's name and the step
+ * position, secondary and single-line, with a link to the flow view.
  */
 function FlowLine() {
   const flow = useActiveDiffFlow();
-  const params = useProjectParams();
-  invariant(params, "can't be used outside of a project route");
-  const { names } = useStoredNames(params);
   if (!flow) {
     return null;
   }
-  const displayName = names[flow.identity.key] ?? flow.identity.title;
   return (
     <div className="text-low flex min-w-0 items-center gap-1.5 text-xs">
       <span className="truncate" title={flow.identity.key}>
-        {displayName}
+        {flow.identity.title}
         {flow.stepIndex !== -1
           ? ` · ${flow.stepIndex + 1}/${flow.steps.length}`
           : null}

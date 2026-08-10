@@ -24,7 +24,6 @@ import {
   orderSteps,
   pickVariant,
   useProjectFlows,
-  useStoredNames,
   useStoredOrders,
   type Flow,
 } from "./util";
@@ -33,9 +32,8 @@ function FlowCard(props: {
   flow: Flow;
   params: ProjectParams;
   storedOrder: string[] | undefined;
-  displayName: string;
 }) {
-  const { flow, params, storedOrder, displayName } = props;
+  const { flow, params, storedOrder } = props;
   const cover = orderSteps(flow.steps, storedOrder)[0];
   invariant(cover, "a flow always has at least one step");
   const coverVariant = pickVariant(cover, null);
@@ -63,7 +61,7 @@ function FlowCard(props: {
           </div>
         )}
         <div className="flex items-baseline justify-between gap-2">
-          <div className="truncate text-sm font-medium">{displayName}</div>
+          <div className="truncate text-sm font-medium">{flow.title}</div>
           <div className="text-low shrink-0 text-xs">
             {flow.steps.length} step{flow.steps.length > 1 ? "s" : ""}
             {flow.variantLabels.length > 1
@@ -81,7 +79,6 @@ function PageContent(props: { params: ProjectParams }) {
   const { project, build, flows, ungroupedCount, singleStepCount, truncated } =
     useProjectFlows(params);
   const { orders } = useStoredOrders(params);
-  const { names } = useStoredNames(params);
 
   if (!project) {
     return <NotFound />;
@@ -178,7 +175,6 @@ function PageContent(props: { params: ProjectParams }) {
             flow={flow}
             params={params}
             storedOrder={orders[flow.key]}
-            displayName={names[flow.key] ?? flow.title}
           />
         ))}
       </div>

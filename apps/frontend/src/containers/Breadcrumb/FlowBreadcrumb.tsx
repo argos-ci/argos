@@ -1,6 +1,5 @@
 import { WaypointsIcon } from "lucide-react";
 
-import { useStoredNames } from "@/pages/Project/Flows/util";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
@@ -13,8 +12,7 @@ export function FlowBreadcrumbItem(props: {
   flowId: string;
 }) {
   const { accountSlug, projectName, flowId } = props;
-  const { names } = useStoredNames({ accountSlug, projectName });
-  const title = names[flowId] ?? flowId.split(" › ").at(-1) ?? flowId;
+  const title = flowId.split(" › ").at(-1) ?? flowId;
 
   return (
     <BreadcrumbItem>

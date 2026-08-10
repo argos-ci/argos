@@ -4,7 +4,7 @@ import { WaypointsIcon } from "lucide-react";
 import { ChipLink } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getFlowURL, useStoredNames } from "../../../Project/Flows/util";
+import { getFlowURL } from "../../../Project/Flows/util";
 import { useProjectParams } from "../../../Project/ProjectParams";
 import { useActiveDiffFlow } from "../../BuildDiffState";
 import { MetadataRow } from "./MetadataRow";
@@ -16,11 +16,9 @@ export function FlowRow() {
   const flow = useActiveDiffFlow();
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
-  const { names } = useStoredNames(params);
   if (!flow) {
     return null;
   }
-  const displayName = names[flow.identity.key] ?? flow.identity.title;
   return (
     <MetadataRow>
       <Tooltip content="Open flow">
@@ -29,7 +27,7 @@ export function FlowRow() {
           aria-label="Open flow"
           icon={<WaypointsIcon />}
         >
-          {displayName}
+          {flow.identity.title}
           {flow.stepIndex !== -1
             ? ` · step ${flow.stepIndex + 1}/${flow.steps.length}`
             : null}

@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChevronRightIcon,
-  PencilIcon,
-} from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from "lucide-react";
 import { Link, useParams } from "react-router";
 
 import { Button } from "@/ui/Button";
@@ -33,7 +28,6 @@ import {
   orderSteps,
   pickVariant,
   useProjectFlows,
-  useStoredNames,
   useStoredOrders,
   type Flow,
   type FlowDimensions,
@@ -292,11 +286,9 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
   const { params, flowId } = props;
   const { project, build, flows, truncated } = useProjectFlows(params);
   const { orders, setFlowOrder, resetFlowOrder } = useStoredOrders(params);
-  const { names, setFlowName } = useStoredNames(params);
   const [partialSelection, setPartialSelection] = useState<
     Partial<VariantSelection>
   >({});
-  const [editingName, setEditingName] = useState(false);
 
   const flow = flows.find((candidate) => candidate.key === flowId) ?? null;
   const storedOrder = flow ? orders[flow.key] : undefined;
@@ -363,49 +355,7 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
           would both have to be fought here, and the fixed height is what lets
           the minimap park right under it in CSS alone. */}
       <div className="bg-subtle sticky top-0 z-20 flex h-12 items-center justify-between gap-x-4">
-        <div className="flex items-center gap-1">
-          {editingName ? (
-            <input
-              autoFocus
-              defaultValue={names[flow.key] ?? flow.title}
-              aria-label="Flow name"
-              className="rounded-sm border px-2 py-0.5 text-lg font-semibold outline-hidden"
-              onBlur={(event) => {
-                const value = event.currentTarget.value.trim();
-                setFlowName(
-                  flow.key,
-                  value && value !== flow.title ? value : null,
-                );
-                setEditingName(false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-                if (event.key === "Escape") {
-                  setEditingName(false);
-                }
-              }}
-            />
-          ) : (
-            <>
-              <h1 className="text-lg font-medium">
-                {names[flow.key] ?? flow.title}
-              </h1>
-              <Tooltip content="Rename flow">
-                <Button
-                  variant="ghost"
-                  iconOnly
-                  size="small"
-                  aria-label="Rename flow"
-                  onPress={() => setEditingName(true)}
-                >
-                  <PencilIcon />
-                </Button>
-              </Tooltip>
-            </>
-          )}
-        </div>
+        <h1 className="text-lg font-medium">{flow.title}</h1>
         <div className="flex gap-4">
           {storedOrder && (
             <>
@@ -434,10 +384,7 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
       <div className="text-low flex min-w-0 flex-wrap items-center gap-x-1.5 pb-4 text-sm">
         {flow.prefix ? (
           <>
-            <span className="truncate font-mono text-xs">
-              {flow.prefix}
-              {names[flow.key] ? ` › ${flow.title}` : ""}
-            </span>
+            <span className="truncate font-mono text-xs">{flow.prefix}</span>
             <span>·</span>
           </>
         ) : null}
