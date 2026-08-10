@@ -15,6 +15,7 @@ import { DeploymentAlias } from "./models/DeploymentAlias";
 import { File } from "./models/File";
 import { GithubAccount } from "./models/GithubAccount";
 import { GithubInstallation } from "./models/GithubInstallation";
+import { GithubPullRequest } from "./models/GithubPullRequest";
 import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
 import { Media } from "./models/Media";
@@ -1695,8 +1696,17 @@ export async function createMediaScenario(input: {
   projectId: string;
   /** When given, seeds a pinned thread and a plain comment on the "after" image. */
   commentAuthorId?: string;
+  /**
+   * Publish the pair to a pull request, creating the GitHub rows it needs — a
+   * seeded project is not connected to a repository. What the share header's
+   * pull request button needs to have something to show.
+   */
+  withPullRequest?: boolean;
 }) {
-  const { projectId, commentAuthorId } = input;
+  const { projectId, commentAuthorId, withPullRequest } = input;
+  const githubPullRequestId = withPullRequest
+    ? await createMediaPullRequest(projectId)
+    : null;
   const beforeTs = "2026-04-20T08:00:00.000Z";
   const afterV1Ts = "2026-04-20T09:00:00.000Z";
   const afterV2Ts = "2026-04-20T10:00:00.000Z";
@@ -1711,7 +1721,7 @@ export async function createMediaScenario(input: {
       state: "before" as const,
       description: "Checkout before the spacing fix.",
       visibility: "team" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-before-${projectId}`,
       createdAt: beforeTs,
       updatedAt: beforeTs,
@@ -1722,7 +1732,7 @@ export async function createMediaScenario(input: {
       state: "after" as const,
       description: "Checkout after the spacing fix.",
       visibility: "team" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-after-${projectId}`,
       createdAt: afterV1Ts,
       updatedAt: afterV1Ts,
@@ -2134,6 +2144,51 @@ async function createDemoMediaScenario(input: {
       updatedAt: hoursAgo(28),
     },
   ]);
+}
+
+/**
+ * The GitHub rows a pull request needs, plus the pull request.
+ *
+ * A seeded project is not connected to a repository, so this creates one and
+ * links it — enough for the share header to render a real number, title and URL.
+ */
+async function createMediaPullRequest(projectId: string): Promise<string> {
+  const project = await Project.query().findById(projectId);
+  invariant(project, "project should exist");
+
+  const githubAccount = await GithubAccount.query().insertAndFetch({
+    githubId: 90000000 + Number(projectId),
+    name: "Acme",
+    login: `acme-${projectId}`,
+    email: null,
+    type: "organization",
+  });
+
+  const repository = await GithubRepository.query().insertAndFetch({
+    name: "sparkle",
+    private: false,
+    defaultBranch: "main",
+    githubId: 91000000 + Number(projectId),
+    githubAccountId: githubAccount.id,
+  });
+
+  await project.$query().patch({ githubRepositoryId: repository.id });
+
+  const pullRequest = await GithubPullRequest.query().insertAndFetch({
+    githubRepositoryId: repository.id,
+    number: 1234,
+    title: "Tighten the checkout spacing",
+    state: "open",
+    merged: false,
+    draft: false,
+    jobStatus: "complete",
+    creatorId: githubAccount.id,
+    date: "2026-04-19T09:00:00.000Z",
+    createdAt: "2026-04-19T09:00:00.000Z",
+    updatedAt: "2026-04-19T09:00:00.000Z",
+  });
+
+  return pullRequest.id;
 }
 
 /** A one-paragraph TipTap document, the shape the comment editor produces. */

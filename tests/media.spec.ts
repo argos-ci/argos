@@ -12,6 +12,7 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   const media = await createMediaScenario({
     projectId: project.id,
     commentAuthorId: auth.user.id,
+    withPullRequest: true,
   });
 
   await page.goto(`/m/${media.after.shareToken}`);
@@ -36,6 +37,12 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   // The pane label (uppercased by CSS, so the DOM text is the raw state).
   await expect(page.getByText("before", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Argos" })).toBeVisible();
+  // The pull request this media was published to, in the header — the same
+  // widget the build header uses. Only ever rendered for a viewer with access
+  // to the project, which this logged-in owner has.
+  await expect(
+    page.getByRole("link", { name: /Tighten the checkout spacing/ }),
+  ).toBeVisible();
 
   // Two threads, one of them pinned to a point on the image — the pin is a
   // floating marker on the image itself, and the panel tells the media's
