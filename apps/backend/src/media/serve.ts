@@ -1,6 +1,8 @@
 import type { MediaVersion } from "@/database/models";
 import { getImageKitUrl } from "@/storage";
 
+import type { MediaEmbedArgs } from "./url";
+
 /**
  * Seconds into a video to grab the poster frame from.
  *
@@ -45,4 +47,28 @@ export function getMediaPosterUrl(version: MediaVersion): string | null {
   url.pathname = `${url.pathname}/ik-thumbnail.jpg`;
   url.searchParams.set("tr", `so-${POSTER_SEEK_SECONDS}`);
   return url.href;
+}
+
+/**
+ * Everything a Markdown embed of a media needs, read off the version whose bytes
+ * it should show.
+ *
+ * One helper because every caller that renders an embed — the pull request
+ * comment, the REST response, the share page's copy formats — has to derive the
+ * same three URLs from a version, and a caller that derives them itself is a
+ * caller that can point the embed at the share page again.
+ */
+export function getMediaEmbedArgs(args: {
+  name: string;
+  shareUrl: string;
+  version: MediaVersion;
+}): MediaEmbedArgs {
+  const { name, shareUrl, version } = args;
+  return {
+    name,
+    shareUrl,
+    fileUrl: getMediaFileUrl(version),
+    posterUrl: getMediaPosterUrl(version),
+    isVideo: version.isVideo(),
+  };
 }

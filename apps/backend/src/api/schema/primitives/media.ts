@@ -8,7 +8,11 @@ import {
 import { z } from "zod";
 
 import type { Media, MediaVersion } from "@/database/models";
-import { getMediaFileUrl, getMediaPosterUrl } from "@/media/serve";
+import {
+  getMediaEmbedArgs,
+  getMediaFileUrl,
+  getMediaPosterUrl,
+} from "@/media/serve";
 import { getMediaMarkdown } from "@/media/url";
 import { SHA256_REGEX } from "@/util/validation";
 
@@ -88,7 +92,7 @@ export const MediaSchema = z
     }),
     markdown: z.string().meta({
       description:
-        "Ready-to-paste Markdown. Images embed directly; videos embed their poster frame linked to the share page, because GitHub only renders inline players for media it hosts itself.",
+        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
     }),
     version: z.number().meta({
       description:
@@ -222,12 +226,9 @@ export function serializeMedia(
     branch: media.branch,
     prNumber,
     url: media.url,
-    markdown: getMediaMarkdown({
-      name: media.name,
-      shareUrl: media.url,
-      posterUrl,
-      isVideo: version.isVideo(),
-    }),
+    markdown: getMediaMarkdown(
+      getMediaEmbedArgs({ name: media.name, shareUrl: media.url, version }),
+    ),
     version: version.number,
     versionCount,
     fileUrl: getMediaFileUrl(version),

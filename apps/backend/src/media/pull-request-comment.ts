@@ -13,7 +13,7 @@ import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
 import { uploadedVersions } from "./query";
-import { getMediaPosterUrl } from "./serve";
+import { getMediaEmbedArgs } from "./serve";
 import {
   getMediaTableMarkdown,
   type MediaEmbedArgs,
@@ -129,11 +129,8 @@ export async function updatePullRequestComment(
  * — which is the whole reason `state` exists, and reads far better than two
  * unrelated rows a reviewer has to match up themselves.
  *
- * Videos embed their poster frame wrapped in a link to the share page, because
- * GitHub renders an inline player only for media it hosts itself — pointing a
- * `<video>` tag at Argos produces a blank box, which is the single easiest way to
- * make this feature look broken. The poster is a CDN URL, so it needs no session:
- * GitHub fetches embedded images server-side, with no cookie of ours.
+ * Each cell is a CDN picture linked to its share page; {@link getMediaMarkdown}
+ * owns why it is built that way.
  */
 function buildCommentBody(
   media: Media[],
@@ -147,12 +144,11 @@ function buildCommentBody(
     if (!version) {
       return null;
     }
-    return {
+    return getMediaEmbedArgs({
       name: item.name,
       shareUrl: item.url,
-      posterUrl: getMediaPosterUrl(version),
-      isVideo: version.isVideo(),
-    };
+      version,
+    });
   };
 
   const groups = groupByPair(media).flatMap((group): MediaMarkdownGroup[] => {

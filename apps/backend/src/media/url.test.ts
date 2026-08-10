@@ -3,18 +3,35 @@ import { describe, expect, it } from "vitest";
 import { getMediaMarkdown, getMediaTableMarkdown } from "./url";
 
 const shareUrl = "https://app.argos-ci.dev/m/abc123";
+const fileUrl = "https://files.example.com/media/abc123.webp";
 const posterUrl = "https://files.example.com/poster.webp";
 
 describe("getMediaMarkdown", () => {
-  it("embeds an image directly", () => {
+  it("embeds the file and links it to the share page", () => {
+    // The embed must point at the bytes, not at the share page: `![](page)`
+    // renders as a broken image everywhere it is pasted, which is exactly what
+    // it used to do.
     expect(
       getMediaMarkdown({
         name: "before.png",
         shareUrl,
+        fileUrl,
         posterUrl: null,
         isVideo: false,
       }),
-    ).toBe(`![before.png](${shareUrl})`);
+    ).toBe(`[![before.png](${fileUrl})](${shareUrl})`);
+  });
+
+  it("never points an image embed at the share page", () => {
+    const markdown = getMediaMarkdown({
+      name: "before.png",
+      shareUrl,
+      fileUrl,
+      posterUrl: null,
+      isVideo: false,
+    });
+
+    expect(markdown).not.toContain(`![before.png](${shareUrl})`);
   });
 
   it("wraps a video's poster in a link to the share page", () => {
@@ -25,6 +42,7 @@ describe("getMediaMarkdown", () => {
       getMediaMarkdown({
         name: "checkout.mp4",
         shareUrl,
+        fileUrl,
         posterUrl,
         isVideo: true,
       }),
@@ -32,12 +50,13 @@ describe("getMediaMarkdown", () => {
   });
 
   it("degrades a video with no poster yet to a plain link", () => {
-    // Better than an image tag pointing at a poster that does not exist: that
-    // renders as a broken-image icon in the comment.
+    // Better than an image tag pointing at the video file: that renders as a
+    // broken-image icon in the comment.
     expect(
       getMediaMarkdown({
         name: "checkout.mp4",
         shareUrl,
+        fileUrl,
         posterUrl: null,
         isVideo: true,
       }),
@@ -49,10 +68,11 @@ describe("getMediaMarkdown", () => {
       getMediaMarkdown({
         name: "before [v2].png",
         shareUrl,
+        fileUrl,
         posterUrl: null,
         isVideo: false,
       }),
-    ).toBe(`![before \\[v2\\].png](${shareUrl})`);
+    ).toBe(`[![before \\[v2\\].png](${fileUrl})](${shareUrl})`);
   });
 });
 
@@ -66,12 +86,14 @@ describe("getMediaTableMarkdown", () => {
           before: {
             name: "checkout.png",
             shareUrl: "https://app/m/before",
+            fileUrl: "https://files/before.webp",
             posterUrl: null,
             isVideo: false,
           },
           after: {
             name: "checkout.png",
             shareUrl: "https://app/m/after",
+            fileUrl: "https://files/after.webp",
             posterUrl: null,
             isVideo: false,
           },
@@ -81,7 +103,7 @@ describe("getMediaTableMarkdown", () => {
       [
         "| Name | Before | After | Notes |",
         "| --- | --- | --- | --- |",
-        "| checkout.png | ![checkout.png](https://app/m/before) | ![checkout.png](https://app/m/after) | Checkout after the spacing fix. |",
+        "| checkout.png | [![checkout.png](https://files/before.webp)](https://app/m/before) | [![checkout.png](https://files/after.webp)](https://app/m/after) | Checkout after the spacing fix. |",
       ].join("\n"),
     );
   });
@@ -96,6 +118,7 @@ describe("getMediaTableMarkdown", () => {
           after: {
             name: "dashboard.png",
             shareUrl,
+            fileUrl,
             posterUrl: null,
             isVideo: false,
           },
@@ -105,7 +128,7 @@ describe("getMediaTableMarkdown", () => {
       [
         "| Name | Preview |",
         "| --- | --- |",
-        `| dashboard.png | ![dashboard.png](${shareUrl}) |`,
+        `| dashboard.png | [![dashboard.png](${fileUrl})](${shareUrl}) |`,
       ].join("\n"),
     );
   });
@@ -117,7 +140,13 @@ describe("getMediaTableMarkdown", () => {
           name: "a|b.png",
           description: null,
           before: null,
-          after: { name: "a|b.png", shareUrl, posterUrl: null, isVideo: false },
+          after: {
+            name: "a|b.png",
+            shareUrl,
+            fileUrl,
+            posterUrl: null,
+            isVideo: false,
+          },
         },
       ]),
     ).toBe(
@@ -126,7 +155,7 @@ describe("getMediaTableMarkdown", () => {
         "| --- | --- |",
         // Both cells: the pipe is escaped in the name column and again inside
         // the embed's alt text, which is a cell of its own.
-        `| a\\|b.png | ![a\\|b.png](${shareUrl}) |`,
+        `| a\\|b.png | [![a\\|b.png](${fileUrl})](${shareUrl}) |`,
       ].join("\n"),
     );
   });
@@ -143,6 +172,7 @@ describe("getMediaTableMarkdown", () => {
           after: {
             name: "dashboard.png",
             shareUrl,
+            fileUrl,
             posterUrl: null,
             isVideo: false,
           },
@@ -164,6 +194,7 @@ describe("getMediaTableMarkdown", () => {
           after: {
             name: "dashboard.png",
             shareUrl,
+            fileUrl,
             posterUrl: null,
             isVideo: false,
           },
@@ -181,7 +212,13 @@ describe("getMediaTableMarkdown", () => {
         name: "a\nb.png",
         description: null,
         before: null,
-        after: { name: "a\nb.png", shareUrl, posterUrl: null, isVideo: false },
+        after: {
+          name: "a\nb.png",
+          shareUrl,
+          fileUrl,
+          posterUrl: null,
+          isVideo: false,
+        },
       },
     ]);
 
@@ -189,7 +226,7 @@ describe("getMediaTableMarkdown", () => {
       [
         "| Name | Preview |",
         "| --- | --- |",
-        `| a<br>b.png | ![a<br>b.png](${shareUrl}) |`,
+        `| a<br>b.png | [![a<br>b.png](${fileUrl})](${shareUrl}) |`,
       ].join("\n"),
     );
     // One row per group, whatever the name contains.
@@ -206,6 +243,7 @@ describe("getMediaTableMarkdown", () => {
           after: {
             name: "dashboard.png",
             shareUrl,
+            fileUrl,
             posterUrl: null,
             isVideo: false,
           },
