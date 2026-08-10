@@ -443,9 +443,11 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
       const img = imageRef.current;
       if (img && img.complete) {
         const imgScale = getImageScale(img);
-        startTransition(() => {
-          setImgScale(imgScale);
-        });
+        if (imgScale !== null) {
+          startTransition(() => {
+            setImgScale(imgScale);
+          });
+        }
       }
     }
   }, [setImgScale, canAffectScale]);

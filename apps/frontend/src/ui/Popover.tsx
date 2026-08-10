@@ -6,54 +6,37 @@ import {
 } from "react-aria-components";
 
 /**
- * Where the pop-in animation grows from: the corner touching the trigger.
+ * Which way the popover moves on the way in and out: towards the viewer, from
+ * the edge that touches its trigger.
  *
- * The render values only carry the resolved *side* ("bottom"), not the
- * requested alignment — so an end-aligned menu used to zoom from its top
- * center, visibly detached from the button that opened it. The alignment is
- * read back from the `placement` prop, while the side comes from the render
- * values so a flipped popover still animates from the right edge.
+ * A translate rather than a scale. Scaling the whole box moves both of its
+ * edges, and on a menu wider than its trigger that reads as the popover
+ * stretching itself out to fit its longest row — an animation about the menu's
+ * own layout rather than about where it came from. Sliding it keeps the box the
+ * size it will settle at from the very first frame.
+ *
+ * Keyed on the *resolved* side, so a popover flipped for want of room animates
+ * from the edge it actually opened against.
  */
-function getPopoverOriginClassName(
-  side: PopoverRenderProps["placement"],
-  requestedPlacement: PopoverProps["placement"],
-): string | null {
-  const alignment = requestedPlacement?.split(" ")[1];
-  switch (side) {
-    case "bottom":
-      return {
-        start: "origin-top-left",
-        end: "origin-top-right",
-        default: "origin-top",
-      }[alignment ?? "default"]!;
-    case "top":
-      return {
-        start: "origin-bottom-left",
-        end: "origin-bottom-right",
-        default: "origin-bottom",
-      }[alignment ?? "default"]!;
-    case "left":
-      return "origin-right";
-    case "right":
-      return "origin-left";
-    case "center":
-      return "origin-center";
-    default:
-      return null;
-  }
-}
+const POPOVER_SLIDE_CLASS_NAMES: Record<
+  NonNullable<PopoverRenderProps["placement"]>,
+  { in: string; out: string }
+> = {
+  bottom: { in: "slide-in-from-top-1", out: "slide-out-to-top-1" },
+  top: { in: "slide-in-from-bottom-1", out: "slide-out-to-bottom-1" },
+  left: { in: "slide-in-from-right-1", out: "slide-out-to-right-1" },
+  right: { in: "slide-in-from-left-1", out: "slide-out-to-left-1" },
+  center: { in: "", out: "" },
+};
 
-function getPopoverAnimationClassName(
-  values: PopoverRenderProps,
-  requestedPlacement: PopoverProps["placement"],
-): string {
+function getPopoverAnimationClassName(values: PopoverRenderProps): string {
+  const slide = values.placement
+    ? POPOVER_SLIDE_CLASS_NAMES[values.placement]
+    : null;
   return clsx(
     "fill-mode-forwards",
-    getPopoverOriginClassName(values.placement, requestedPlacement),
-    // Mirrors the exit: without the zoom the menu just fades in mid-air
-    // instead of growing out of its trigger.
-    values.isEntering && "animate-in fade-in zoom-in-95",
-    values.isExiting && "animate-out fade-out zoom-out-95",
+    values.isEntering && clsx("animate-in fade-in", slide?.in),
+    values.isExiting && clsx("animate-out fade-out", slide?.out),
   );
 }
 
@@ -69,7 +52,7 @@ export function Popover(
       className={(values) =>
         clsx(
           "bg-app shadow-menu border-thin z-50 flex rounded-xl bg-clip-padding",
-          getPopoverAnimationClassName(values, props.placement),
+          getPopoverAnimationClassName(values),
           props.className,
         )
       }

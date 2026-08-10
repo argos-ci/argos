@@ -104,6 +104,39 @@ loggedTest(
 );
 
 loggedTest(
+  "pins a comment on a media that stands alone",
+  async ({ page, auth, project }) => {
+    // A lone media has no counterpart, so no compare toolbar and a single pane —
+    // the pin tool has to work there exactly as it does beside a pair. This one
+    // also has no recorded dimensions, which used to take the comment layer off
+    // the page entirely: the tool armed, showed its crosshair, and dropped every
+    // click.
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+    });
+
+    await page.goto(`/m/${media.solo.shareToken}`);
+
+    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await page
+      .getByRole("button", { name: "Pick the spot to comment on" })
+      .click({ position: { x: 200, y: 150 } });
+
+    const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
+    const editor = draftDialog.getByLabel("Add a comment");
+    await editor.click();
+    await editor.fill("The sidebar is cropped here.");
+    await draftDialog
+      .getByRole("button", { name: "Submit the comment" })
+      .click();
+
+    await expect(page.getByText("The sidebar is cropped here.")).toHaveCount(2);
+    await expect(page.getByText("pinned on the image")).toBeVisible();
+  },
+);
+
+loggedTest(
   "rings the half a pin would land on, in compare mode",
   async ({ page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes
@@ -122,9 +155,9 @@ loggedTest(
     await expect(panes).toHaveCount(2);
     // Nothing is singled out until the tool is armed: a ring that is always on
     // reads as "selected" and says nothing about where a click goes.
-    await expect(page.locator("[data-media-pane][data-pin-target]")).toHaveCount(
-      0,
-    );
+    await expect(
+      page.locator("[data-media-pane][data-pin-target]"),
+    ).toHaveCount(0);
 
     await page.getByRole("button", { name: "Pin a comment" }).click();
 
