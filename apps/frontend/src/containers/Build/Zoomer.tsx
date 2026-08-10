@@ -21,6 +21,7 @@ import { useObjectRef } from "react-aria";
 
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { getCheckerboardStyle } from "@/ui/MediaFrame";
 import { Tooltip } from "@/ui/Tooltip";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 
@@ -431,9 +432,22 @@ export function ZoomPane(props: {
    * those children still bubble to the pane, so pan/zoom keep working.
    */
   overlay?: (paneSize: PaneSize | null) => React.ReactNode;
+  /**
+   * The pane's own chrome. `"app"` (default) is the build page's bordered
+   * surface; `"bare"` draws none so a parent provides it — the media share
+   * page puts the pane on a `MediaWell`.
+   */
+  surface?: "app" | "bare";
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { dimensions, children, controls, overlay, ref } = props;
+  const {
+    dimensions,
+    children,
+    controls,
+    overlay,
+    surface = "app",
+    ref,
+  } = props;
   const paneRef = useObjectRef(ref);
   const { register, getInitialTransform } = useZoomerSyncContext();
   const [imgScale] = useScaleContext();
@@ -486,7 +500,18 @@ export function ZoomPane(props: {
   return (
     <div
       ref={setPaneNode}
-      className="group/pane bg-app border-thin relative flex min-h-0 flex-1 cursor-grab overflow-hidden rounded-md shadow-xs select-none"
+      className={clsx(
+        "group/pane relative flex min-h-0 flex-1 cursor-grab overflow-hidden select-none",
+        // A bare pane draws no chrome at all — not even a radius: its host
+        // (the media page's `MediaWell`) owns the border and the corner clip,
+        // and a second rounding inside it would nick the ground through at
+        // every corner.
+        surface === "app" && "border-thin rounded-md shadow-xs",
+      )}
+      // The transparency checkerboard under the content: the universal mark
+      // for "these are the actual pixels, nothing added" (see `MediaWell`,
+      // which is how the media share page draws the same ground).
+      style={surface === "app" ? getCheckerboardStyle() : undefined}
     >
       <div
         className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"

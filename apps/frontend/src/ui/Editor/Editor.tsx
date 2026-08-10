@@ -1,7 +1,12 @@
 import { lazy, Suspense } from "react";
 import { clsx } from "clsx";
 
-import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
+import {
+  EDITOR_BOXED_CLASS,
+  EDITOR_BOXED_CONTENT_PADDING_CLASS,
+  EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS,
+  EDITOR_PROSE_CLASS,
+} from "./EditorContent.css";
 import type { EditorProps } from "./EditorImpl";
 
 export type { EditorProps, EditorValue, EditorVariant } from "./EditorImpl";
@@ -20,23 +25,44 @@ export type { EditorProps, EditorValue, EditorVariant } from "./EditorImpl";
 const EditorImpl = lazy(() => import("./EditorImpl"));
 
 /**
- * Placeholder standing in for the editor while it loads. Mirrors the real
- * padding and minimum height so nothing shifts when it swaps in, and is marked
- * `aria-busy` so Argos waits for the editor rather than screenshotting the gap.
+ * Stand-in rendered while the editor chunk loads: the same box, the same
+ * content padding and height (`contentClassName` sizes it exactly like the
+ * real editable area), the same placeholder text and the same footer — so the
+ * loaded editor swaps in without a single pixel moving. Marked `aria-busy` so
+ * Argos waits for the editor rather than screenshotting the stand-in.
  */
-function EditorFallback(props: Pick<EditorProps, "variant" | "className">) {
-  const { variant = "boxed", className } = props;
-  const boxed = variant === "boxed";
+function EditorFallback(
+  props: Pick<
+    EditorProps,
+    "variant" | "className" | "contentClassName" | "placeholder" | "footer"
+  >,
+) {
+  const {
+    variant = "boxed",
+    className,
+    contentClassName,
+    placeholder,
+    footer,
+  } = props;
+  const isBoxed = variant === "boxed";
   return (
-    <div
-      aria-busy
-      className={clsx(
-        EDITOR_PROSE_CLASS,
-        boxed && "bg-app rounded-lg border px-3 py-2",
-        "min-h-20",
-        className,
-      )}
-    />
+    <div aria-busy className={clsx(isBoxed && EDITOR_BOXED_CLASS, className)}>
+      <div
+        className={clsx(
+          EDITOR_PROSE_CLASS,
+          isBoxed && EDITOR_BOXED_CONTENT_PADDING_CLASS,
+          isBoxed
+            ? (contentClassName ?? EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS)
+            : contentClassName,
+        )}
+      >
+        {/* The placeholder a caller supplies is shown by the editor itself
+            once loaded; painting it here too means the text doesn't blink in
+            after the fact. */}
+        {placeholder ? <p className="text-placeholder">{placeholder}</p> : null}
+      </div>
+      {footer}
+    </div>
   );
 }
 
@@ -55,6 +81,13 @@ export function Editor(props: EditorProps) {
           {...(props.className !== undefined
             ? { className: props.className }
             : {})}
+          {...(props.contentClassName !== undefined
+            ? { contentClassName: props.contentClassName }
+            : {})}
+          {...(props.placeholder !== undefined
+            ? { placeholder: props.placeholder }
+            : {})}
+          {...(props.footer !== undefined ? { footer: props.footer } : {})}
         />
       }
     >

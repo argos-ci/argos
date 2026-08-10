@@ -50,6 +50,8 @@
       "GlApiNamespace",
       "GlApiProject",
       "GoogleUser",
+      "Media",
+      "MediaVersion",
       "MsTeamsWebhook",
       "Plan",
       "Project",

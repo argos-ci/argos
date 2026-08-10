@@ -10,7 +10,12 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import { clsx } from "clsx";
 
-import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
+import {
+  EDITOR_BOXED_CLASS,
+  EDITOR_BOXED_CONTENT_PADDING_CLASS,
+  EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS,
+  EDITOR_PROSE_CLASS,
+} from "./EditorContent.css";
 import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
 import { createMentionExtension, type MentionUser } from "./mention";
@@ -129,11 +134,6 @@ const EDITOR_CONTENT_CLASS = clsx(
   "[&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_p.is-editor-empty:first-child]:before:text-placeholder [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0",
 );
 
-// Internal padding of the editable area, only applied in the `boxed` variant.
-const BOXED_CONTENT_PADDING_CLASS = "px-3 py-2";
-
-const DEFAULT_CONTENT_HEIGHT_CLASS = "min-h-20";
-
 export default function Editor(props: EditorProps) {
   const {
     defaultValue,
@@ -205,9 +205,9 @@ export default function Editor(props: EditorProps) {
       attributes: {
         class: clsx(
           EDITOR_CONTENT_CLASS,
-          isBoxed && BOXED_CONTENT_PADDING_CLASS,
+          isBoxed && EDITOR_BOXED_CONTENT_PADDING_CLASS,
           isBoxed
-            ? (contentClassName ?? DEFAULT_CONTENT_HEIGHT_CLASS)
+            ? (contentClassName ?? EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS)
             : contentClassName,
         ),
         ...(props["aria-label"] ? { "aria-label": props["aria-label"] } : {}),
@@ -332,7 +332,7 @@ export default function Editor(props: EditorProps) {
       onMouseDown={isBoxed ? handleContainerMouseDown : undefined}
       className={clsx(
         isBoxed && [
-          "bg-app focus-within:border-active border-thin rounded-md text-sm",
+          EDITOR_BOXED_CLASS,
           "data-disabled:opacity-disabled",
           editable && "cursor-text",
         ],

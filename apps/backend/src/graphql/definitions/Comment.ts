@@ -42,6 +42,7 @@ import {
   subscribeUserToCommentThread,
   unsubscribeUserFromCommentThread,
 } from "@/database/services/comment-notification-subscription";
+import { resolveCommentMediaVersionId } from "@/media/version";
 
 import {
   ICommentChangeType,
@@ -53,6 +54,7 @@ import {
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import type { Context } from "../context";
+import { getMediaForUser } from "../mediaAccess";
 import { getTestForUser } from "../testAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
@@ -140,7 +142,17 @@ async function assertCanAccessCommentThread(input: {
   const { thread, user, permission } = input;
   const target = await resolveCommentTarget(thread);
   const project = await getCommentTargetProject(target);
-  const permissions = await project.$getPermissions(user);
+  // Membership permissions for a media, the same rule the REST comment helper
+  // applies. `$getPermissions` falls back to `view` for any public project,
+  // which is right for its builds and tests — they are public too — but a media
+  // carries its own `visibility`, so a `team` one in a public project stays
+  // team-only. Writes were never exposed by the fallback (it grants `view` and
+  // nothing else), but subscribing to a thread is gated on `view`, and a
+  // subscriber receives every later comment by email.
+  const permissions =
+    target.type === "media"
+      ? await project.$getMembershipPermissions(user)
+      : await project.$getPermissions(user);
   if (!permissions.includes(permission)) {
     throw forbidden("You cannot access this thread");
   }
@@ -234,6 +246,14 @@ export const typeDefs = gql`
     screenshotDiff: ScreenshotDiff
     "Where on the screenshot diff the comment points; null means the whole diff"
     anchor: CommentAnchor
+    """
+    The media version this comment was written on, for a comment on a media.
+
+    A pin describes a spot on the bytes its author was looking at, so it is only
+    meaningful drawn over that version. Null for a comment written before versions
+    existed, or on a version since purged by retention.
+    """
+    mediaVersionId: ID
     "Whether the current user is subscribed to this comment thread"
     threadSubscribed: Boolean!
     "Whether the comment belongs to a pending (unsubmitted) review and is only visible to its author"
@@ -285,6 +305,24 @@ export const typeDefs = gql`
     body: JSONObject!
   }
 
+  input AddMediaCommentInput {
+    mediaId: ID!
+    "Root comment ID to reply to"
+    threadId: ID
+    """
+    Where on the media the comment points, as normalized coordinates. Omit for a
+    comment about the whole thing. A reply inherits its thread's anchor.
+    """
+    anchor: CommentAnchorInput
+    """
+    The media version being looked at, so a pin is only drawn over the bytes it
+    describes. Defaults to the newest.
+    """
+    mediaVersionId: ID
+    "Rich-text JSON content of the comment"
+    body: JSONObject!
+  }
+
   input UpdateCommentInput {
     id: ID!
     "Rich-text JSON content of the comment"
@@ -322,6 +360,8 @@ export const typeDefs = gql`
     addBuildComment(input: AddBuildCommentInput!): Build!
     "Post a comment on a test"
     addTestComment(input: AddTestCommentInput!): Test!
+    "Post a comment on an uploaded media, optionally pinned to a point on it"
+    addMediaComment(input: AddMediaCommentInput!): Media!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
     "Delete an existing comment"
@@ -626,6 +666,61 @@ export const resolvers: IResolvers = {
       });
 
       return test;
+    },
+    addMediaComment: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const media = await getMediaForUser({
+        id: input.mediaId,
+        user: auth.user,
+        permission: "review",
+        message: "You cannot comment on this media",
+      });
+
+      // The version the author is looking at, which is not necessarily the
+      // newest: the share page lets them go back through the history.
+      const mediaVersionId = await resolveCommentMediaVersionId({
+        media,
+        requested: input.mediaVersionId ?? null,
+      });
+
+      const target: CommentTarget = { type: "media", media, mediaVersionId };
+
+      const thread = input.threadId
+        ? await getCommentThreadForUser({
+            id: input.threadId,
+            user: auth.user,
+            permission: "review",
+            target,
+          })
+        : null;
+
+      // A reply inherits its thread's anchor, so it may not carry its own.
+      if (thread && input.anchor) {
+        throw badUserInput("A reply cannot carry its own anchor");
+      }
+
+      const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
+
+      // A line range describes a textual snapshot; an image has no lines.
+      if (anchor && anchor.type !== "point") {
+        throw badUserInput("A media comment can only be anchored to a point");
+      }
+
+      await createComment({
+        target,
+        userId: auth.user.id,
+        body: input.body as JSONContent,
+        threadId: thread?.id ?? null,
+        anchor,
+      });
+
+      return media;
     },
     updateComment: async (_root, args, ctx) => {
       const { auth } = ctx;

@@ -8,6 +8,7 @@ import type { ModelClass } from "objection";
 import { getPresences, type UserPresence } from "@/auth/presence";
 import {
   filterVisibleComments,
+  getVisibleMediaCommentsQuery,
   getVisibleTestCommentsQuery,
 } from "@/comment/getVisibleComments";
 import { knex } from "@/database";
@@ -34,6 +35,8 @@ import {
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
+  Media,
+  MediaVersion,
   IgnoredChange,
   Model,
   MsTeamsWebhook,
@@ -65,6 +68,7 @@ import {
   getAppOctokit,
   GhApiInstallation,
 } from "@/github";
+import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
@@ -1013,6 +1017,129 @@ function createBuildCommentsCountLoader() {
 }
 
 /**
+ * Loads the comments posted on a media, capped per media — see
+ * {@link getVisibleMediaCommentsQuery}, shared with the REST endpoint.
+ */
+function createMediaCommentsLoader() {
+  return new DataLoader<
+    { mediaId: string; viewerUserId: string | null },
+    Comment[],
+    string
+  >(
+    async (inputs) => {
+      const mediaIds = inputs.map((input) => input.mediaId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId ?? null;
+      const comments = await getVisibleMediaCommentsQuery({
+        mediaIds,
+        viewerUserId,
+      });
+      const commentsMap = comments.reduce<Record<string, Comment[]>>(
+        (map, comment) => {
+          invariant(comment.mediaId, "Media comments have a mediaId");
+          const array = map[comment.mediaId] ?? [];
+          array.push(comment);
+          map[comment.mediaId] = array;
+          return map;
+        },
+        {},
+      );
+      return inputs.map((input) => commentsMap[input.mediaId] ?? []);
+    },
+    {
+      cacheKeyFn: (input) => `${input.mediaId}:${input.viewerUserId ?? ""}`,
+    },
+  );
+}
+
+/** The newest uploaded version of a media, batched across a request. */
+function createLatestMediaVersionLoader() {
+  return new DataLoader<string, MediaVersion | null>(async (mediaIds) => {
+    const latest = await getLatestMediaVersions([...mediaIds]);
+    return mediaIds.map((mediaId) => latest.get(mediaId) ?? null);
+  });
+}
+
+/** Every uploaded version of a media, newest first — the version picker. */
+function createMediaVersionsLoader() {
+  return new DataLoader<string, MediaVersion[]>(async (mediaIds) => {
+    const versions = await MediaVersion.query()
+      .whereIn("mediaId", [...mediaIds])
+      .whereNotNull("uploadedAt")
+      .orderBy("number", "desc");
+    const byMediaId = versions.reduce<Record<string, MediaVersion[]>>(
+      (map, version) => {
+        const array = map[version.mediaId] ?? [];
+        array.push(version);
+        map[version.mediaId] = array;
+        return map;
+      },
+      {},
+    );
+    return mediaIds.map((mediaId) => byMediaId[mediaId] ?? []);
+  });
+}
+
+/**
+ * The other half of a media's before/after pair.
+ *
+ * Matched on the same project and attachment and name with the opposite state —
+ * the same tuple `media_identity_unique` is built on, so there is at most one.
+ *
+ * "Attachment" is the pull request when there is one and the branch otherwise,
+ * exactly as the index computes it. Keying on the pull request alone would
+ * collapse every staged media onto one empty segment, so two branches staging
+ * `checkout.png` would pair across each other and which one won would depend on
+ * the order the unordered candidate query happened to return.
+ */
+function createMediaCounterpartLoader() {
+  return new DataLoader<string, Media | null>(async (mediaIds) => {
+    const media = await Media.query().whereIn("id", [...mediaIds]);
+    const paired = media.filter((item) => item.state !== null);
+
+    if (paired.length === 0) {
+      return mediaIds.map(() => null);
+    }
+
+    const candidates = await Media.query()
+      .whereIn(
+        "name",
+        paired.map((item) => item.name),
+      )
+      .whereIn(
+        "projectId",
+        paired.map((item) => item.projectId),
+      )
+      .whereNotNull("state");
+
+    const key = (item: {
+      projectId: string;
+      githubPullRequestId: string | null;
+      branch: string | null;
+      name: string;
+      state: string | null;
+    }) => {
+      const attachment = item.githubPullRequestId
+        ? `pr:${item.githubPullRequestId}`
+        : `branch:${item.branch ?? ""}`;
+      return `${item.projectId}:${attachment}:${item.name}:${item.state}`;
+    };
+
+    const byKey = new Map(candidates.map((item) => [key(item), item]));
+    const byId = new Map(media.map((item) => [item.id, item]));
+
+    return mediaIds.map((mediaId) => {
+      const item = byId.get(mediaId);
+      if (!item?.state) {
+        return null;
+      }
+      const opposite = item.state === "before" ? "after" : "before";
+      return byKey.get(key({ ...item, state: opposite })) ?? null;
+    });
+  });
+}
+
+/**
  * Loads the comments posted on a test, capped per test — see
  * {@link getVisibleTestCommentsQuery}, shared with the REST endpoint.
  */
@@ -1679,6 +1806,10 @@ export const createLoaders = () => ({
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   BuildCommentsCount: createBuildCommentsCountLoader(),
+  MediaComments: createMediaCommentsLoader(),
+  LatestMediaVersion: createLatestMediaVersionLoader(),
+  MediaVersions: createMediaVersionsLoader(),
+  MediaCounterpart: createMediaCounterpartLoader(),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

@@ -12,6 +12,7 @@ import {
 } from "./handlers/accountInvites";
 import {
   addBuildCommentReactionOperation,
+  addMediaCommentReactionOperation,
   addTestCommentReactionOperation,
 } from "./handlers/addCommentReaction";
 import {
@@ -29,6 +30,7 @@ import {
 import { createBuildOperation } from "./handlers/createBuild";
 import {
   createBuildCommentOperation,
+  createMediaCommentOperation,
   createTestCommentOperation,
 } from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
@@ -36,6 +38,7 @@ import { createProjectOperation } from "./handlers/createProject";
 import { createReviewOperation } from "./handlers/createReview";
 import {
   deleteBuildCommentOperation,
+  deleteMediaCommentOperation,
   deleteTestCommentOperation,
 } from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
@@ -54,6 +57,7 @@ import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import {
   getBuildCommentOperation,
+  getMediaCommentOperation,
   getTestCommentOperation,
 } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
@@ -69,6 +73,7 @@ import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import {
   listBuildCommentsOperation,
+  listMediaCommentsOperation,
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
@@ -76,6 +81,15 @@ import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
 import { listTestsOperation } from "./handlers/listTests";
+import {
+  createMediaOperation,
+  deleteMediaOperation,
+  finalizeMediaOperation,
+  getMediaOperation,
+  listMediaOperation,
+  listMediaVersionsOperation,
+  updateMediaOperation,
+} from "./handlers/media";
 import {
   listProjectContributorsOperation,
   removeProjectContributorOperation,
@@ -88,12 +102,15 @@ import {
 } from "./handlers/projectDeployments";
 import {
   removeBuildCommentReactionOperation,
+  removeMediaCommentReactionOperation,
   removeTestCommentReactionOperation,
 } from "./handlers/removeCommentReaction";
 import {
   resolveBuildCommentThreadOperation,
+  resolveMediaCommentThreadOperation,
   resolveTestCommentThreadOperation,
   unresolveBuildCommentThreadOperation,
+  unresolveMediaCommentThreadOperation,
   unresolveTestCommentThreadOperation,
 } from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
@@ -105,8 +122,10 @@ import {
 } from "./handlers/subscribeBuild";
 import {
   subscribeBuildCommentThreadOperation,
+  subscribeMediaCommentThreadOperation,
   subscribeTestCommentThreadOperation,
   unsubscribeBuildCommentThreadOperation,
+  unsubscribeMediaCommentThreadOperation,
   unsubscribeTestCommentThreadOperation,
 } from "./handlers/subscribeCommentThread";
 import {
@@ -122,6 +141,7 @@ import {
 import { updateBuildOperation } from "./handlers/updateBuild";
 import {
   updateBuildCommentOperation,
+  updateMediaCommentOperation,
   updateTestCommentOperation,
 } from "./handlers/updateComment";
 import { updateProjectOperation } from "./handlers/updateProject";
@@ -214,6 +234,12 @@ export const zodSchema = {
       "x-page-icon": "workflow",
     },
     {
+      name: "Media",
+      description:
+        "Upload standalone images and videos, with no build or test run behind them, and get back a shareable URL plus ready-to-paste Markdown. Built for embedding a screenshot or a screen recording in the pull request an agent just opened.",
+      "x-page-icon": "image-play",
+    },
+    {
       name: "Members",
       description:
         "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
@@ -258,6 +284,43 @@ export const zodSchema = {
     },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
+    },
+    "/media": {
+      post: createMediaOperation,
+    },
+    "/media/{mediaId}": {
+      patch: updateMediaOperation,
+      get: getMediaOperation,
+      delete: deleteMediaOperation,
+    },
+    "/media/{mediaId}/versions": {
+      get: listMediaVersionsOperation,
+    },
+    "/media/{mediaId}/finalize": {
+      post: finalizeMediaOperation,
+    },
+    "/media/{mediaId}/comments": {
+      get: listMediaCommentsOperation,
+      post: createMediaCommentOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}": {
+      get: getMediaCommentOperation,
+      patch: updateMediaCommentOperation,
+      delete: deleteMediaCommentOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/reactions": {
+      post: addMediaCommentReactionOperation,
+      delete: removeMediaCommentReactionOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/resolve": {
+      post: resolveMediaCommentThreadOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/unresolve": {
+      post: unresolveMediaCommentThreadOperation,
+    },
+    "/media/{mediaId}/comments/{commentId}/subscription": {
+      post: subscribeMediaCommentThreadOperation,
+      delete: unsubscribeMediaCommentThreadOperation,
     },
     "/builds": {
       post: createBuildOperation,
@@ -325,6 +388,9 @@ export const zodSchema = {
     },
     "/projects/{owner}/{project}/transfer": {
       post: transferProjectOperation,
+    },
+    "/projects/{owner}/{project}/media": {
+      get: listMediaOperation,
     },
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,

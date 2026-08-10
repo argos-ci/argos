@@ -148,6 +148,22 @@ export const typeDefs = gql`
     all: Int!
     neutral: Int!
     storybook: Int!
+    "Standalone media uploaded in the period, already counted in the totals above."
+    media: MediaUsageCount!
+  }
+
+  """
+  What standalone media contributed to the screenshot meter.
+
+  Two numbers because they answer two questions: how many images and videos were
+  uploaded, and what they cost. A video is 25 units, so a total that jumped is
+  not readable without both.
+  """
+  type MediaUsageCount {
+    "Uploads. Every version of a media is an upload, and every upload is billed."
+    count: Int!
+    "Screenshot units they cost, already included in the totals."
+    units: Int!
   }
 
   interface Account implements Node {

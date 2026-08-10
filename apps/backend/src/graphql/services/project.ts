@@ -12,6 +12,8 @@ import {
   BuildReview,
   BuildShard,
   IgnoredChange,
+  Media,
+  MediaVersion,
   Project,
   ProjectUser,
   Screenshot,
@@ -25,6 +27,7 @@ import {
 import { applyProjectVisibility } from "@/database/services/project";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { deleteUnreferencedMediaObjects } from "@/media/object";
 import { sendNotification } from "@/notification";
 
 import { invalidId } from "../util";
@@ -149,6 +152,11 @@ export async function unsafe_deleteProject(args: {
   projectId: string;
   trx?: TransactionOrKnex;
 }) {
+  // Collected inside the transaction, dropped after it commits: storage is not
+  // transactional, so deleting the files first would lose them if the rollback
+  // came after.
+  let mediaKeys: string[] = [];
+
   await transaction(args.trx, async (trx) => {
     await ScreenshotDiffReview.query(trx)
       .whereIn(
@@ -203,10 +211,25 @@ export async function unsafe_deleteProject(args: {
       .join("tests", "test_stats_fingerprints.testId", "tests.id")
       .where("tests.projectId", args.projectId)
       .delete();
+    // Keys live on the versions, so they are collected before the media rows go —
+    // `media_versions` cascades on delete, which would take them with it.
+    const versions = await MediaVersion.query(trx)
+      .select("media_versions.key")
+      .joinRelated("media")
+      .where("media.projectId", args.projectId);
+    mediaKeys = versions.map((row) => row.key);
+    await Media.query(trx).where("projectId", args.projectId).delete();
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
     await AuditTrail.query(trx).where("projectId", args.projectId).delete();
     await Test.query(trx).where("projectId", args.projectId).delete();
     await Project.query(trx).findById(args.projectId).delete();
+  });
+
+  // The rows are gone, so nothing references these keys any more — but another
+  // project's media could share one, which the check inside handles.
+  await deleteUnreferencedMediaObjects({
+    keys: mediaKeys,
+    excludeVersionIds: [],
   });
 }

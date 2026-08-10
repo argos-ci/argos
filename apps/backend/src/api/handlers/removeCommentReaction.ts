@@ -17,6 +17,7 @@ import {
   serializeComment,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -57,6 +58,23 @@ export const removeTestCommentReactionOperation = {
       owner: AccountSlug,
       project: ProjectName,
       testId: TestId,
+      commentId: CommentId,
+    }),
+    query: RemoveReactionQuerySchema,
+  },
+  responses: commentResponses("Reaction removed — returns the comment"),
+} satisfies ZodOpenApiOperationObject;
+
+export const removeMediaCommentReactionOperation = {
+  operationId: "removeMediaCommentReaction",
+  summary: "Remove an emoji reaction from a comment on a media",
+  description:
+    "Remove an emoji reaction previously added by the authenticated user from a comment on a media.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
       commentId: CommentId,
     }),
     query: RemoveReactionQuerySchema,
@@ -122,4 +140,14 @@ export const removeCommentReaction: CreateAPIHandler = ({ delete: del }) => {
       );
     },
   );
+
+  del("/media/{mediaId}/comments/{commentId}/reactions", async (req, res) => {
+    res.send(
+      await removeTargetCommentReaction({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        query: req.ctx.query,
+      }),
+    );
+  });
 };

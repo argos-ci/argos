@@ -12,56 +12,44 @@ import {
 } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { captureException } from "@sentry/react";
 import { clsx } from "clsx";
 import { useAtom, useAtomValue } from "jotai/react";
 import {
   BlendIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ChevronUpIcon,
-  CodeIcon,
-  CopyIcon,
   DownloadIcon,
-  EllipsisVerticalIcon,
   FileDownIcon,
   Layers2Icon,
-  LinkIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useObjectRef } from "react-aria";
-import { useClipboard } from "use-clipboard-copy";
 
+import {
+  CopyImageSubmenu,
+  downloadBlob,
+  DownloadImageSubmenu,
+  downloadWithToast,
+  fetchBlob,
+  ImageActionsMenu,
+} from "@/containers/Build/ScreenshotActions";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
-import { Button } from "@/ui/Button";
 import { Code } from "@/ui/Code";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
-import {
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  MenuSeparator,
-  MenuTrigger,
-  SubmenuTrigger,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
-import { Slider, SliderThumb, SliderTrack } from "@/ui/Slider";
+import { MenuItem, MenuItemIcon, MenuSeparator } from "@/ui/Menu";
 import { Time } from "@/ui/Time";
-import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { checkIsImageContentType } from "@/util/content-type";
-import { getErrorMessage } from "@/util/error";
-import { fetchImage } from "@/util/image";
 import { useTextContent } from "@/util/text";
 
+import { OnionOpacityControl, SwipeDivider } from "./BlendControls";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getDiffGroupDefinition } from "./BuildDiffGroup";
 import {
@@ -88,14 +76,10 @@ import {
   overlayVisibleAtom,
   useOverlayStyle,
 } from "./OverlayStyle";
+import { getImageScale } from "./projection";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
-import {
-  useZoomerSyncContext,
-  useZoomTransform,
-  ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-  ZoomPane,
-} from "./Zoomer";
+import { useZoomerSyncContext, useZoomTransform, ZoomPane } from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDiffDetail_Build on Build {
@@ -271,134 +255,6 @@ const _DiffFragment = graphql(`
 type BuildFragmentDocument = DocumentType<typeof _BuildFragment>;
 export type BuildDiffDetailDocument = DocumentType<typeof _DiffFragment>;
 
-const SCREENSHOT_COPY_TOAST_ID = "screenshot-copied";
-
-/**
- * Menu shell rendered as a generic actions button for a screenshot pane.
- */
-function ScreenshotActionsMenu(props: {
-  tooltip: string;
-  ariaLabel: string;
-  children: ReactNode;
-}) {
-  return (
-    <MenuTrigger>
-      <Tooltip placement="left" content={props.tooltip}>
-        <Button variant="secondary" iconOnly>
-          <EllipsisVerticalIcon />
-        </Button>
-      </Tooltip>
-      <Popover placement="bottom end">
-        <Menu aria-label={props.ariaLabel}>{props.children}</Menu>
-      </Popover>
-    </MenuTrigger>
-  );
-}
-
-/**
- * "Copy" submenu sharing the link and Markdown embed actions across screenshot
- * panes.
- *
- * `publicUrl` should be the screenshot's public (files.argos-ci.com CDN) URL — a
- * stable, shareable link — not the expiring signed original: a copied link or
- * Markdown embed needs to keep working for whoever it's shared with.
- */
-function CopyScreenshotSubmenu(props: { publicUrl: string; alt: string }) {
-  const { publicUrl, alt } = props;
-  const clipboard = useClipboard();
-  return (
-    <SubmenuTrigger>
-      <MenuItem>
-        <MenuItemIcon>
-          <CopyIcon />
-        </MenuItemIcon>
-        Copy
-      </MenuItem>
-      <Popover>
-        <Menu aria-label="Copy screenshot">
-          <MenuItem
-            onAction={() => {
-              clipboard.copy(publicUrl);
-              toast.success("Link copied", {
-                id: SCREENSHOT_COPY_TOAST_ID,
-                description:
-                  "The screenshot link was copied to your clipboard.",
-              });
-            }}
-          >
-            <MenuItemIcon>
-              <LinkIcon />
-            </MenuItemIcon>
-            Copy link
-          </MenuItem>
-          <MenuItem
-            onAction={() => {
-              clipboard.copy(`![${alt}](${publicUrl})`);
-              toast.success("Markdown copied", {
-                id: SCREENSHOT_COPY_TOAST_ID,
-                description:
-                  "The screenshot embed as Markdown was copied to your clipboard.",
-              });
-            }}
-          >
-            <MenuItemIcon>
-              <CodeIcon />
-            </MenuItemIcon>
-            Copy embed as Markdown
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </SubmenuTrigger>
-  );
-}
-
-/**
- * "Download" submenu grouping the download variants of a screenshot pane.
- */
-function DownloadScreenshotSubmenu(props: { children: ReactNode }) {
-  return (
-    <SubmenuTrigger>
-      <MenuItem>
-        <MenuItemIcon>
-          <DownloadIcon />
-        </MenuItemIcon>
-        Download
-      </MenuItem>
-      <Popover>
-        <Menu aria-label="Download screenshot">{props.children}</Menu>
-      </Popover>
-    </SubmenuTrigger>
-  );
-}
-
-function downloadWithToast(promise: Promise<void>) {
-  toast.promise(promise, {
-    loading: "Downloading image…",
-    success: "Image downloaded",
-    error: (data) => {
-      console.error(data);
-      captureException(data);
-      return getErrorMessage(data);
-    },
-  });
-}
-
-function downloadBlob(blob: Blob, name: string) {
-  const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = objectUrl;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(objectUrl);
-}
-
-async function fetchBlob(url: string) {
-  const response = await fetchImage(url);
-  return response.blob();
-}
-
 async function loadImageElement(url: string) {
   return await new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
@@ -559,16 +415,6 @@ function getScreenshotPictureProps(screenshot: {
   };
 }
 
-/**
- * Returns the scale of the image.
- */
-function getImageScale(element: HTMLImageElement) {
-  if (element.naturalWidth > element.naturalHeight) {
-    return element.width / element.naturalWidth;
-  }
-  return element.height / element.naturalHeight;
-}
-
 type ScreenshotPictureProps = Omit<
   React.ComponentProps<typeof ImageKitPicture>,
   "width" | "height"
@@ -680,11 +526,11 @@ function BaseScreenshotActionsMenu({
   const { baseScreenshot } = diff;
   invariant(baseScreenshot);
   return (
-    <ScreenshotActionsMenu
+    <ImageActionsMenu
       tooltip="Baseline screenshot actions"
       ariaLabel="Baseline screenshot actions"
     >
-      <CopyScreenshotSubmenu publicUrl={baseScreenshot.url} alt={diff.name} />
+      <CopyImageSubmenu publicUrl={baseScreenshot.url} alt={diff.name} />
       <MenuSeparator />
       <MenuItem
         onAction={() => {
@@ -703,7 +549,7 @@ function BaseScreenshotActionsMenu({
         </MenuItemIcon>
         Download
       </MenuItem>
-    </ScreenshotActionsMenu>
+    </ImageActionsMenu>
   );
 }
 
@@ -862,16 +708,13 @@ function CompareScreenshotActionsMenu({
   invariant(compareScreenshot);
 
   return (
-    <ScreenshotActionsMenu
+    <ImageActionsMenu
       tooltip="Changes screenshot actions"
       ariaLabel="Changes screenshot actions"
     >
-      <CopyScreenshotSubmenu
-        publicUrl={compareScreenshot.url}
-        alt={diff.name}
-      />
+      <CopyImageSubmenu publicUrl={compareScreenshot.url} alt={diff.name} />
       <MenuSeparator />
-      <DownloadScreenshotSubmenu>
+      <DownloadImageSubmenu>
         <MenuItem
           onAction={() => {
             downloadWithToast(
@@ -923,8 +766,8 @@ function CompareScreenshotActionsMenu({
             </MenuItem>
           </>
         ) : null}
-      </DownloadScreenshotSubmenu>
-    </ScreenshotActionsMenu>
+      </DownloadImageSubmenu>
+    </ImageActionsMenu>
   );
 }
 
@@ -1128,7 +971,10 @@ function CompareScreenshotChanged(props: {
                       paneSize={paneSize}
                     />
                     {blendMode === "swipe" && paneSize && (
-                      <SwipeDivider paneSize={paneSize} imgSize={dimensions} />
+                      <BuildSwipeDivider
+                        paneSize={paneSize}
+                        imgSize={dimensions}
+                      />
                     )}
                   </>
                 )
@@ -1194,7 +1040,7 @@ function CompareScreenshotChanged(props: {
             />
           </div>
         )}
-        {blendMode === "onion" && <OnionOpacityControl />}
+        {blendMode === "onion" && <BuildOnionOpacityControl />}
       </div>
       {dimensions && paneSize && (
         <DiffIndicator url={jpgUrl} imgSize={dimensions} />
@@ -1204,151 +1050,31 @@ function CompareScreenshotChanged(props: {
 }
 
 /**
- * Draggable divider revealing the changes screenshot on its right side in swipe
- * view.
- *
- * Drawn in the pane's screen space rather than over the image. Sizing it in
- * image space meant dividing every length by the zoom, and those tiny lengths
- * get quantized by layout before being scaled back up, which is what made the
- * bar thicken and the chevrons wobble once zoomed in. Here the lengths are
- * plain pixels and only the position goes through the transform.
+ * The shared swipe divider wired to the build's view-mode atoms.
  */
-function SwipeDivider(props: {
+function BuildSwipeDivider(props: {
   paneSize: { width: number; height: number };
   imgSize: { width: number; height: number };
 }) {
-  const { paneSize, imgSize } = props;
   const [position, setPosition] = useAtom(swipePositionAtom);
   const [handleY, setHandleY] = useAtom(swipeHandleYAtom);
-  const transform = useZoomTransform();
-  const [imgScale] = useScaleContext();
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // The image is centered in the pane and laid out at `imgScale`, then the zoom
-  // transform applies on top of that.
-  const imageWidth = imgSize.width * imgScale;
-  const imageHeight = imgSize.height * imgScale;
-  const offsetX = (paneSize.width - imageWidth) / 2;
-  const toPaneX = (fraction: number) =>
-    (fraction * imageWidth + offsetX) * transform.scale + transform.x;
-  const toPaneY = (fraction: number) =>
-    fraction * imageHeight * transform.scale + transform.y;
-
-  const paneX = toPaneX(position);
-  const imageTop = toPaneY(0);
-
-  /**
-   * Moves the divider to the pointer, and the handle along with it when the
-   * handle itself is the one being dragged.
-   */
-  const moveToPointer = useEventCallback(
-    (event: React.PointerEvent, moveHandle: boolean) => {
-      const root = rootRef.current;
-      if (!root || imageWidth === 0 || imageHeight === 0) {
-        return;
-      }
-      const rect = root.getBoundingClientRect();
-      const x =
-        (event.clientX - rect.left - transform.x) / transform.scale - offsetX;
-      setPosition(clampFraction(x / imageWidth));
-      if (moveHandle) {
-        const y = (event.clientY - rect.top - transform.y) / transform.scale;
-        setHandleY(clampFraction(y / imageHeight));
-      }
-    },
-  );
-
   return (
-    <div ref={rootRef} className="pointer-events-none absolute inset-0">
-      <div
-        className={clsx(
-          ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-          "pointer-events-auto absolute w-6 -translate-x-1/2 cursor-ew-resize",
-        )}
-        style={{
-          left: paneX,
-          top: imageTop,
-          height: toPaneY(1) - imageTop,
-        }}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.currentTarget.setPointerCapture(event.pointerId);
-          moveToPointer(event, false);
-        }}
-        onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            moveToPointer(event, false);
-          }
-        }}
-      >
-        {/* No shadow: anything bleeding out of the bar would tint the pixels on
-            both sides, which are the ones being compared. */}
-        <div className="bg-solid absolute inset-y-0 left-1/2 w-px -translate-x-1/2" />
-      </div>
-      {/* Sibling of the bar rather than a child, so dragging it does not also
-          bubble into the bar's horizontal-only drag. The box itself is
-          transparent: only the two chevrons flanking the bar are drawn, so
-          nothing covers the pixels being compared. */}
-      <div
-        className={clsx(
-          ZOOMER_OVERLAY_INTERACTIVE_CLASS,
-          "pointer-events-auto absolute flex h-5 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center gap-0.75 text-(--background-color-solid) active:cursor-grabbing",
-        )}
-        style={{ left: paneX, top: toPaneY(handleY) }}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.currentTarget.setPointerCapture(event.pointerId);
-          moveToPointer(event, true);
-        }}
-        onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            moveToPointer(event, true);
-          }
-        }}
-      >
-        <ChevronLeftIcon className="size-3" />
-        <ChevronRightIcon className="size-3" />
-      </div>
-    </div>
+    <SwipeDivider
+      {...props}
+      position={position}
+      onPositionChange={setPosition}
+      handleY={handleY}
+      onHandleYChange={setHandleY}
+    />
   );
-}
-
-function clampFraction(value: number): number {
-  return Math.min(1, Math.max(0, value));
 }
 
 /**
- * Floating slider fading the changes screenshot over the baseline in onion
- * skin view.
+ * The shared onion-skin slider wired to the build's opacity atom.
  */
-function OnionOpacityControl() {
+function BuildOnionOpacityControl() {
   const [opacity, setOpacity] = useAtom(onionOpacityAtom);
-  return (
-    // Keyboard-adjusting the slider uses arrow keys, which are also view
-    // hotkeys: disable hotkeys while the focus is inside the control.
-    <div
-      data-hotkeys-disabled=""
-      className="bg-app border-thin absolute bottom-3 left-1/2 z-10 flex w-72 -translate-x-1/2 items-center gap-3 rounded-md px-3 py-1.5 shadow-sm"
-    >
-      <span className="text-low text-xs select-none">Baseline</span>
-      <Slider
-        aria-label="Onion skin opacity"
-        className="flex-1"
-        minValue={0}
-        maxValue={100}
-        value={opacity * 100}
-        onChange={(value) => {
-          invariant(typeof value === "number", "Opacity must be a number");
-          setOpacity(value / 100);
-        }}
-      >
-        <SliderTrack>
-          <SliderThumb />
-        </SliderTrack>
-      </Slider>
-      <span className="text-low text-xs select-none">Changes</span>
-    </div>
-  );
+  return <OnionOpacityControl value={opacity} onChange={setOpacity} />;
 }
 
 function RectHighlights(props: {

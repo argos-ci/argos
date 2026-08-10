@@ -67,6 +67,10 @@ const config: CodegenConfig = {
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           GoogleUser: "../../database/models/index.js#GoogleUser",
+          Media: "../../database/models/index.js#Media",
+          MediaVersion: "../../database/models/index.js#MediaVersion",
+          // Not a model: a grouped row, so the resolvers receive what the query
+          // actually selected rather than a shape nothing produces.
           MsTeamsWebhook: "../../database/models/index.js#MsTeamsWebhook",
           OAuthClient: "../../database/models/index.js#OAuthClient",
           Plan: "../../database/models/index.js#Plan",

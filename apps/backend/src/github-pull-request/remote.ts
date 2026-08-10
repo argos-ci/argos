@@ -38,7 +38,8 @@ export async function fetchPullRequest(
  */
 export function parsePullRequestData(data: {
   title: string;
-  base: { ref: string; sha: string };
+  head: { ref: string; repo?: { id: number } | null };
+  base: { ref: string; sha: string; repo?: { id: number } | null };
   state: "open" | "closed";
   created_at: string;
   closed_at: string | null;
@@ -50,6 +51,18 @@ export function parsePullRequestData(data: {
     // In GitHub we can have more than 255 characters for a title
     // but it's useless to display more in Argos
     title: truncate(data.title, 255),
+    // Truncated for the same reason as the title: the column is a varchar(255)
+    // and a branch name has no length limit worth relying on. Overflowing it
+    // fails `githubPullRequestJob`, which `performBuild` awaits — so an
+    // over-long branch name would wedge every build on the pull request.
+    headRef: truncate(data.head.ref, 255),
+    // A fork's head repository differs from the base's. An unknown id reads as a
+    // fork: this gates who may claim a branch's staged media, so the safe
+    // default is "not ours".
+    headFromFork:
+      !data.head.repo || !data.base.repo
+        ? true
+        : data.head.repo.id !== data.base.repo.id,
     baseRef: data.base.ref,
     baseSha: data.base.sha,
     state: data.state,

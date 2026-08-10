@@ -432,6 +432,57 @@ export const AutomationRun = defineFactory(models.AutomationRun, () => ({
   buildId: Build.associate("id") as unknown as string,
 }));
 
+export const Media = defineFactory(models.Media, () => ({
+  projectId: Project.associate("id") as unknown as string,
+  // A sequence, because a media's identity is its name within its pull request:
+  // two `Media.create()` calls with no overrides would otherwise collide on
+  // `media_identity_unique` instead of giving a test two media.
+  name: FactoryGirl.sequence(
+    "media.name",
+    (n) => `screenshot-${n}.png`,
+  ) as unknown as string,
+  state: null,
+  description: null,
+  visibility: "team" as const,
+  shareToken: FactoryGirl.sequence(
+    "media.shareToken",
+    (n) => `share-token-${n}`,
+  ),
+}));
+
+export const MediaVersion = defineFactory(models.MediaVersion, () => ({
+  mediaId: Media.associate("id") as unknown as string,
+  number: 1,
+  key: `media/test/${bytesToString(randomBytes(32))}.png`,
+  mimeType: "image/png",
+  sizeBytes: "1024",
+  // Uploaded and billed: an unfinalized version is the state the two-step upload
+  // passes through, not the one tests usually mean.
+  uploadedAt: new Date().toISOString(),
+  billedUnits: 1,
+}));
+
+/**
+ * A media with one uploaded version, which is what every read path requires: a
+ * media with no landed version is an in-progress upload, and the list query, the
+ * share page and the pull request comment all filter it out.
+ *
+ * Returns both, because a test usually asserts on the identity (name, share
+ * token) and sets up the bytes (key, content type, units) at the same time.
+ */
+export async function createMediaWithVersion(attributes?: {
+  media?: Partial<models.Media>;
+  version?: Partial<models.MediaVersion>;
+}) {
+  const media = await Media.create(attributes?.media ?? {});
+  const version = await MediaVersion.create({
+    mediaId: media.id,
+    number: 1,
+    ...attributes?.version,
+  });
+  return { media, version };
+}
+
 export const PullRequest = defineFactory(models.GithubPullRequest, () => ({
   number: 99,
   title: "Fix bug",

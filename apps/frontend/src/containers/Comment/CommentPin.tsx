@@ -1,16 +1,18 @@
 import { MessageSquareIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import type { ScreenPoint } from "@/containers/Build/projection";
 import { ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "@/containers/Build/Zoomer";
-
-import type { ScreenPoint } from "./geometry";
 
 type Avatar = React.ComponentProps<typeof AccountAvatar>["avatar"];
 
 /**
- * A static indicator for the comment being drafted, drawn at the click point
- * with the current user's avatar. It mirrors a {@link CommentMarker}'s collapsed
- * (pin) look so the spot reads as "your comment will go here".
+ * A static indicator for the comment being drafted, drawn at the click point with
+ * the current user's avatar. It mirrors a `CommentMarker`'s collapsed (pin) look so
+ * the spot reads as "your comment will go here".
+ *
+ * Shared by a build's screenshot comments and an uploaded media's: a draft pin
+ * means the same thing on both, and a second implementation of it would drift.
  */
 export function CommentPin(props: {
   point: ScreenPoint;

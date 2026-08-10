@@ -224,6 +224,14 @@ export const router: ReturnType<typeof createBrowserRouter> =
           lazy: () => import("./pages/Build"),
         },
         {
+          // Outside the app layout, and deliberately short: this URL is pasted
+          // into pull requests and chat messages, and read by people who have
+          // never signed in.
+          path: "/m/:shareToken",
+          HydrateFallback,
+          lazy: () => import("./pages/MediaShare"),
+        },
+        {
           path: "/verify",
           HydrateFallback,
           lazy: () => import("./pages/VerifyEmail"),

@@ -74,6 +74,14 @@ export const CommentSchema = z
       description:
         "Test this comment is posted on, null when it is posted on a build.",
     }),
+    mediaId: z.string().nullable().meta({
+      description:
+        "Media this comment is posted on, null when it is posted on a build or a test.",
+    }),
+    mediaVersionId: z.string().nullable().meta({
+      description:
+        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload — match this id against `GET /media/{mediaId}/versions` to get the right file.",
+    }),
     threadId: z
       .string()
       .nullable()
@@ -231,6 +239,8 @@ export async function serializeComments(
       id: formatCommentId(comment.id),
       buildId: comment.buildId,
       testId: comment.testId,
+      mediaId: comment.mediaId,
+      mediaVersionId: comment.mediaVersionId,
       threadId: comment.threadId ? formatCommentId(comment.threadId) : null,
       body: comment.content,
       text: commentText(comment.content),

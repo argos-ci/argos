@@ -5,19 +5,32 @@ import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import type { ScreenPoint } from "@/containers/Build/projection";
 import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
 } from "@/containers/Build/Zoomer";
-import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
 
-import type { ScreenPoint } from "./geometry";
-
-type CommentCardProps = React.ComponentProps<typeof BuildCommentCard>;
-type Comment = CommentCardProps["comment"];
+/**
+ * What the marker reads — deliberately narrower than any one page's fragment.
+ *
+ * It used to be typed against `BuildCommentCard`'s comment, which tied a purely
+ * presentational pin to the build's data requirements. These are the fields the
+ * preview actually renders, and every comment fragment has them.
+ */
+type Comment = {
+  user: {
+    name?: string | null;
+    slug: string;
+    avatar: React.ComponentProps<typeof AccountAvatar>["avatar"];
+  } | null;
+  date: string;
+  content: React.ComponentProps<typeof ReadOnlyEditor>["content"];
+  mentionedUsers: Parameters<typeof getMentionUser>[0][];
+};
 
 /** Pin badge size: a size-7 (28px) avatar with 4px (`p-1`) padding all around. */
 const PIN_SIZE = 36;

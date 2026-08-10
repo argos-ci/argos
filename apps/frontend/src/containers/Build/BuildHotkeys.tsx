@@ -13,7 +13,7 @@ import {
   useBuildHotkeysDialogState,
 } from "./BuildHotkeysDialogState";
 
-type HotkeyEnv = "test" | "build";
+type HotkeyEnv = "test" | "build" | "media";
 
 export type Hotkey = {
   keys: string[];
@@ -35,7 +35,7 @@ const hotkeyGroups = [
         keys: ["?"],
         displayKeys: ["?"],
         description: "Open this dialog",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       enterSearchMode: {
         keys: ["⌘", "KeyF"],
@@ -225,13 +225,36 @@ const hotkeyGroups = [
         keys: ["KeyC"],
         displayKeys: ["C"],
         description: "Toggle comment tool",
-        envs: ["build"],
+        envs: ["build", "media"],
       },
       showDetails: {
         keys: ["["],
         displayKeys: ["["],
         description: "Show details",
         envs: ["build"],
+      },
+    },
+  },
+  {
+    name: "Share",
+    hotkeys: {
+      copyAsSelectedFormat: {
+        keys: ["⌘", "KeyC"],
+        displayKeys: ["⌘", "C"],
+        description: "Copy as the selected format",
+        envs: ["media"],
+      },
+      copyMediaLink: {
+        keys: ["⌘", "⇧", "Comma"],
+        displayKeys: ["⌘", "⇧", ","],
+        description: "Copy link",
+        envs: ["media"],
+      },
+      downloadMedia: {
+        keys: ["⌘", "⇧", "KeyD"],
+        displayKeys: ["⌘", "⇧", "D"],
+        description: "Download",
+        envs: ["media"],
       },
     },
   },
@@ -306,6 +329,7 @@ type HotkeyRegistration = {
 function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
   const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
   const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
+  const shiftShouldBePressed = hotkey.keys.some((key) => key === "⇧");
   const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
 
   if (hasDigits && altShouldBePressed !== event.altKey) {
@@ -316,9 +340,15 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
+  // Only demanded, never forbidden: plenty of existing keys ("?") are typed
+  // *with* shift without declaring it.
+  if (shiftShouldBePressed && !event.shiftKey) {
+    return false;
+  }
+
   return hotkey.keys.every((key) => {
     // Ignore modifier keys
-    if (key === "⌘") {
+    if (key === "⌘" || key === "⇧") {
       return true;
     }
     if (key.startsWith("Key")) {

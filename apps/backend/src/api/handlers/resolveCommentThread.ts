@@ -20,6 +20,7 @@ import {
   ThreadCommentId,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -36,6 +37,11 @@ const TestPathParams = z.object({
   owner: AccountSlug,
   project: ProjectName,
   testId: TestId,
+  commentId: ThreadCommentId,
+});
+
+const MediaPathParams = z.object({
+  mediaId: MediaId,
   commentId: ThreadCommentId,
 });
 
@@ -69,6 +75,16 @@ export const resolveTestCommentThreadOperation = {
   responses: commentResponses("Thread resolved — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
+export const resolveMediaCommentThreadOperation = {
+  operationId: "resolveMediaCommentThread",
+  summary: "Mark a media comment thread as resolved",
+  description: "Mark a comment thread on a media as resolved.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: { path: MediaPathParams },
+  responses: commentResponses("Thread resolved — returns the root comment"),
+} satisfies ZodOpenApiOperationObject;
+
 export const unresolveTestCommentThreadOperation = {
   operationId: "unresolveTestCommentThread",
   summary: "Reopen a resolved test comment thread",
@@ -76,6 +92,16 @@ export const unresolveTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
+  responses: commentResponses("Thread reopened — returns the root comment"),
+} satisfies ZodOpenApiOperationObject;
+
+export const unresolveMediaCommentThreadOperation = {
+  operationId: "unresolveMediaCommentThread",
+  summary: "Reopen a resolved media comment thread",
+  description: "Reopen a previously resolved comment thread on a media.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: { path: MediaPathParams },
   responses: commentResponses("Thread reopened — returns the root comment"),
 } satisfies ZodOpenApiOperationObject;
 
@@ -141,6 +167,16 @@ export const resolveCommentThread: CreateAPIHandler = ({ post }) => {
       );
     },
   );
+
+  post("/media/{mediaId}/comments/{commentId}/resolve", async (req, res) => {
+    res.send(
+      await setTargetThreadResolution({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        resolved: true,
+      }),
+    );
+  });
 };
 
 export const unresolveCommentThread: CreateAPIHandler = ({ post }) => {
@@ -169,4 +205,14 @@ export const unresolveCommentThread: CreateAPIHandler = ({ post }) => {
       );
     },
   );
+
+  post("/media/{mediaId}/comments/{commentId}/unresolve", async (req, res) => {
+    res.send(
+      await setTargetThreadResolution({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        resolved: false,
+      }),
+    );
+  });
 };

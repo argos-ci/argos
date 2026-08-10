@@ -62,6 +62,10 @@ const _PlanCardFragment = graphql(`
           all
           neutral
           storybook
+          media {
+            count
+            units
+          }
         }
       }
     }
@@ -69,15 +73,21 @@ const _PlanCardFragment = graphql(`
   }
 `);
 
+type ScreenshotsCount = {
+  all: number;
+  neutral: number;
+  storybook: number;
+  media: {
+    count: number;
+    units: number;
+  };
+};
+
 type Project = {
   id: string;
   name: string;
   public: boolean;
-  currentPeriodScreenshots: {
-    all: number;
-    neutral: number;
-    storybook: number;
-  };
+  currentPeriodScreenshots: ScreenshotsCount;
 };
 
 function PlanStatus(props: {
@@ -226,6 +236,54 @@ function PlanStatus(props: {
   }
 }
 
+/**
+ * What a screenshot total is made of, when it is made of more than one thing.
+ *
+ * Storybook screenshots and standalone media ride the same meter as classic
+ * screenshots but at their own rates — one media upload is 1 unit for an image
+ * and 25 for a video — so a total that moved says nothing on its own about what
+ * moved it. Media reports both numbers because they answer different questions:
+ * the units are what got billed, the count is what the account actually did.
+ *
+ * The parts add up to the total, which is why media units come back out of the
+ * classic figure: they are folded into `neutral` on the way in.
+ */
+function UsageBreakdown({ screenshots }: { screenshots: ScreenshotsCount }) {
+  const { storybook, media } = screenshots;
+
+  if (storybook === 0 && media.count === 0) {
+    return null;
+  }
+
+  const classic = screenshots.neutral - media.units;
+  const parts = [
+    storybook > 0 ? `${storybook.toLocaleString()} Storybook` : null,
+    classic > 0 ? `${classic.toLocaleString()} classic` : null,
+    media.count > 0
+      ? `${media.units.toLocaleString()} from ${media.count.toLocaleString()} ${
+          media.count > 1 ? "media" : "media upload"
+        }`
+      : null,
+  ].filter(Boolean);
+
+  return (
+    <span className="text-low ml-4 text-sm font-normal">
+      ({parts.join(" + ")})
+    </span>
+  );
+}
+
+/** "1,234 screenshots", with the breakdown when there is one to give. */
+function UsageCount({ screenshots }: { screenshots: ScreenshotsCount }) {
+  return (
+    <>
+      {screenshots.all.toLocaleString()}{" "}
+      {screenshots.all > 1 ? "screenshots" : "screenshot"}{" "}
+      <UsageBreakdown screenshots={screenshots} />
+    </>
+  );
+}
+
 function ConsumptionBlock({
   projects,
   includedScreenshots,
@@ -233,16 +291,20 @@ function ConsumptionBlock({
   projects: Project[];
   includedScreenshots: number;
 }) {
-  const screenshotsSum = projects.reduce(
+  const screenshotsSum = projects.reduce<ScreenshotsCount>(
     (sum, project) => {
       const s = project.currentPeriodScreenshots;
       return {
         all: sum.all + s.all,
         neutral: sum.neutral + s.neutral,
         storybook: sum.storybook + s.storybook,
+        media: {
+          count: sum.media.count + s.media.count,
+          units: sum.media.units + s.media.units,
+        },
       };
     },
-    { all: 0, neutral: 0, storybook: 0 },
+    { all: 0, neutral: 0, storybook: 0, media: { count: 0, units: 0 } },
   );
 
   return (
@@ -251,14 +313,7 @@ function ConsumptionBlock({
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-medium">
           <div>
-            {screenshotsSum.all.toLocaleString()}{" "}
-            {screenshotsSum.all > 1 ? "screenshots" : "screenshot"}{" "}
-            {screenshotsSum.storybook > 0 ? (
-              <span className="text-low ml-4 text-sm font-normal">
-                ({screenshotsSum.storybook.toLocaleString()} Storybook +{" "}
-                {screenshotsSum.neutral.toLocaleString()} classic)
-              </span>
-            ) : null}
+            <UsageCount screenshots={screenshotsSum} />
           </div>
           <div className="text-low">
             / {includedScreenshots.toLocaleString()}
@@ -276,35 +331,22 @@ function ConsumptionBlock({
         <Details className="text-sm">
           <Summary>Show usage detail</Summary>
           <ul className="text-low">
-            {projects.map((project) => (
-              <li
-                key={project.id}
-                className="flex items-center justify-between border-b p-1 last:border-b-0"
-              >
-                <span>{project.name}</span>
-                <span
-                  className={
-                    project.currentPeriodScreenshots.storybook > 0
-                      ? undefined
-                      : "tabular-nums"
-                  }
+            {projects.map((project) => {
+              const screenshots = project.currentPeriodScreenshots;
+              const plain =
+                screenshots.storybook === 0 && screenshots.media.count === 0;
+              return (
+                <li
+                  key={project.id}
+                  className="flex items-center justify-between border-b p-1 last:border-b-0"
                 >
-                  {project.currentPeriodScreenshots.all.toLocaleString()}{" "}
-                  {project.currentPeriodScreenshots.all > 1
-                    ? "screenshots"
-                    : "screenshot"}{" "}
-                  {project.currentPeriodScreenshots.storybook > 0 ? (
-                    <span className="text-low ml-4 text-sm font-normal">
-                      (
-                      {project.currentPeriodScreenshots.storybook.toLocaleString()}{" "}
-                      Storybook +{" "}
-                      {project.currentPeriodScreenshots.neutral.toLocaleString()}{" "}
-                      classic)
-                    </span>
-                  ) : null}
-                </span>
-              </li>
-            ))}
+                  <span>{project.name}</span>
+                  <span className={plain ? "tabular-nums" : undefined}>
+                    <UsageCount screenshots={screenshots} />
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </Details>
       )}

@@ -24,6 +24,7 @@ import * as GlApiNamespace from "./GlApiNamespace";
 import * as GlApiProject from "./GlApiProject";
 import * as GoogleUser from "./GoogleUser";
 import * as JobStatus from "./JobStatus";
+import * as Media from "./Media";
 import * as MetricsPeriod from "./MetricsPeriod";
 import * as MsTeamsWebhook from "./MsTeamsWebhook";
 import * as Node from "./Node";
@@ -77,6 +78,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GlApiProject,
   GoogleUser,
   JobStatus,
+  Media,
   MetricsPeriod,
   MsTeamsWebhook,
   Node,

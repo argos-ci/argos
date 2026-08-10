@@ -17,6 +17,7 @@ import {
   serializeComment,
   type CommentPayload,
 } from "../schema/primitives/comment";
+import { MediaId } from "../schema/primitives/media";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
 import { patOrOAuthAuth } from "../security";
@@ -66,6 +67,23 @@ export const addTestCommentReactionOperation = {
       owner: AccountSlug,
       project: ProjectName,
       testId: TestId,
+      commentId: CommentId,
+    }),
+  },
+  requestBody,
+  responses: commentResponses("Reaction added — returns the comment"),
+} satisfies ZodOpenApiOperationObject;
+
+export const addMediaCommentReactionOperation = {
+  operationId: "addMediaCommentReaction",
+  summary: "Add an emoji reaction to a comment on a media",
+  description:
+    "Add an emoji reaction to a comment on a media, on behalf of the authenticated user.",
+  tags: ["Comments"],
+  security: patOrOAuthAuth(["comments:write"]),
+  requestParams: {
+    path: z.object({
+      mediaId: MediaId,
       commentId: CommentId,
     }),
   },
@@ -131,4 +149,14 @@ export const addCommentReaction: CreateAPIHandler = ({ post }) => {
       );
     },
   );
+
+  post("/media/{mediaId}/comments/{commentId}/reactions", async (req, res) => {
+    res.send(
+      await addTargetCommentReaction({
+        authPromise: req.ctx.auth(),
+        params: req.ctx.params,
+        body: req.ctx.body,
+      }),
+    );
+  });
 };

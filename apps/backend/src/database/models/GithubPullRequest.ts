@@ -19,11 +19,15 @@ export class GithubPullRequest extends Model {
         properties: {
           commentDeleted: { type: "boolean" },
           commentId: { type: ["string", "null"] },
+          mediaCommentDeleted: { type: "boolean" },
+          mediaCommentId: { type: ["string", "null"] },
           githubRepositoryId: { type: "string" },
           number: { type: "integer" },
           title: {
             oneOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
           },
+          headRef: { type: ["string", "null"], maxLength: 255 },
+          headFromFork: { type: ["boolean", "null"] },
           baseRef: { type: ["string", "null"] },
           baseSha: { type: ["string", "null"] },
           state: { type: ["string", "null"], enum: ["open", "closed"] },
@@ -40,10 +44,25 @@ export class GithubPullRequest extends Model {
 
   commentDeleted!: boolean;
   commentId!: string | null;
+  /**
+   * The managed comment listing the standalone media uploaded for this pull
+   * request. A second comment, deliberately not the build-status one: media has
+   * no build behind it.
+   */
+  mediaCommentDeleted!: boolean;
+  mediaCommentId!: string | null;
   jobStatus!: JobStatus;
   githubRepositoryId!: string;
   number!: number;
   title!: string | null;
+  /** The branch the pull request is *from* — what publishes a branch's staged media. */
+  headRef!: string | null;
+  /**
+   * Whether {@link headRef} names a branch in a *fork* rather than in the base
+   * repository. Null until Argos has fetched the pull request.
+   */
+  headFromFork!: boolean | null;
+  /** The branch the pull request merges *into*. */
   baseRef!: string | null;
   baseSha!: string | null;
   state!: "open" | "closed" | null;

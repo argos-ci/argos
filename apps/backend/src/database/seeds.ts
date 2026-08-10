@@ -9,13 +9,17 @@ import { UserEmail } from "./models";
 import { Account } from "./models/Account";
 import { Build } from "./models/Build";
 import { BuildReview } from "./models/BuildReview";
+import { Comment } from "./models/Comment";
 import { Deployment } from "./models/Deployment";
 import { DeploymentAlias } from "./models/DeploymentAlias";
 import { File } from "./models/File";
 import { GithubAccount } from "./models/GithubAccount";
 import { GithubInstallation } from "./models/GithubInstallation";
+import { GithubPullRequest } from "./models/GithubPullRequest";
 import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
+import { Media } from "./models/Media";
+import { MediaVersion } from "./models/MediaVersion";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
@@ -1672,4 +1676,525 @@ export async function seed() {
     accountSlug: smoothAccount.slug,
     projectName: bigProject.name,
   });
+
+  await createDemoMediaScenario({
+    projectId: bigProject.id,
+    authorUserId: greg.user.id,
+    replierUserId: jeremy.user.id,
+  });
+}
+
+/**
+ * Standalone media for the team media library and the share page.
+ *
+ * Reuses the `dummy-*` image keys the screenshot seeds use — the only ones that
+ * exist in the test bucket — so the thumbnails and the share page load real images.
+ * The recorded dimensions have to match those files, because the share page sizes
+ * its frame from them. Fixed timestamps keep the visual baselines stable.
+ */
+export async function createMediaScenario(input: {
+  projectId: string;
+  /** When given, seeds a pinned thread and a plain comment on the "after" image. */
+  commentAuthorId?: string;
+  /**
+   * Publish the pair to a pull request, creating the GitHub rows it needs — a
+   * seeded project is not connected to a repository. What the share header's
+   * pull request button needs to have something to show.
+   */
+  withPullRequest?: boolean;
+}) {
+  const { projectId, commentAuthorId, withPullRequest } = input;
+  const githubPullRequestId = withPullRequest
+    ? await createMediaPullRequest(projectId)
+    : null;
+  const beforeTs = "2026-04-20T08:00:00.000Z";
+  const afterV1Ts = "2026-04-20T09:00:00.000Z";
+  const afterV2Ts = "2026-04-20T10:00:00.000Z";
+  const videoTs = "2026-04-20T09:30:00.000Z";
+
+  // A before/after pair sharing one name, which is what lets the share page show
+  // them together and compare them, plus a video that stands alone.
+  const [before, after, video] = await Media.query().insertAndFetch([
+    {
+      projectId,
+      name: "checkout.png",
+      state: "before" as const,
+      description: "Checkout before the spacing fix.",
+      visibility: "team" as const,
+      githubPullRequestId,
+      shareToken: `seed-media-before-${projectId}`,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
+    },
+    {
+      projectId,
+      name: "checkout.png",
+      state: "after" as const,
+      description: "Checkout after the spacing fix.",
+      visibility: "team" as const,
+      githubPullRequestId,
+      shareToken: `seed-media-after-${projectId}`,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+    {
+      projectId,
+      name: "checkout-flow.mp4",
+      state: null,
+      description: null,
+      visibility: "public" as const,
+      githubPullRequestId: null,
+      shareToken: `seed-media-video-${projectId}`,
+      createdAt: videoTs,
+      updatedAt: videoTs,
+    },
+  ]);
+
+  invariant(before && after && video, "media should be created");
+
+  // The "after" image has two versions: the reviewer asked for a change and the
+  // second upload answered it. That is the state the version UI has to render.
+  const [, afterV2] = await MediaVersion.query().insertAndFetch([
+    {
+      mediaId: after.id,
+      number: 1,
+      key: "dummy-375x1024.png",
+      mimeType: "image/png",
+      sizeBytes: "196608",
+      width: 375,
+      height: 1024,
+      // Far enough out that the "expiring soon" colour never fires in a baseline.
+      expiresAt: "2027-04-20T09:00:00.000Z",
+      uploadedAt: afterV1Ts,
+      billedUnits: 1,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+    {
+      mediaId: after.id,
+      number: 2,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      sizeBytes: "188416",
+      width: 375,
+      height: 720,
+      expiresAt: "2027-04-20T10:00:00.000Z",
+      uploadedAt: afterV2Ts,
+      billedUnits: 1,
+      createdAt: afterV2Ts,
+      updatedAt: afterV2Ts,
+    },
+  ]);
+  invariant(afterV2, "the after media should have two versions");
+
+  const [beforeV1, videoV1] = await MediaVersion.query().insertAndFetch([
+    {
+      mediaId: before.id,
+      number: 1,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      sizeBytes: "184320",
+      width: 375,
+      height: 720,
+      expiresAt: "2027-04-20T08:00:00.000Z",
+      uploadedAt: beforeTs,
+      billedUnits: 1,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
+    },
+    {
+      mediaId: video.id,
+      number: 1,
+      key: "dummy-375x1024.png",
+      mimeType: "video/mp4",
+      sizeBytes: "8388608",
+      expiresAt: "2027-04-20T09:30:00.000Z",
+      uploadedAt: videoTs,
+      billedUnits: 25,
+      createdAt: videoTs,
+      updatedAt: videoTs,
+    },
+  ]);
+  invariant(beforeV1 && videoV1, "versions should be created");
+
+  if (commentAuthorId) {
+    const commentTs = "2026-04-20T11:00:00.000Z";
+    // A pinned root with a reply, plus one comment about the whole image: the
+    // three states the share page has to lay out at once. Pinned to version 1,
+    // which is the version the reviewer was looking at when they wrote it.
+    const [pinned] = await Comment.query().insertAndFetch([
+      {
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
+        userId: commentAuthorId,
+        content: commentDoc("The primary button is misaligned here."),
+        anchor: { type: "point" as const, x: 0.62, y: 0.34 },
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+    ]);
+    invariant(pinned, "comment should be created");
+    await Comment.query().insert([
+      {
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
+        userId: commentAuthorId,
+        threadId: pinned.id,
+        content: commentDoc("Agreed — it should align with the input above."),
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+      {
+        mediaId: after.id,
+        mediaVersionId: afterV2.id,
+        userId: commentAuthorId,
+        content: commentDoc("Otherwise this looks good to ship."),
+        createdAt: commentTs,
+        updatedAt: commentTs,
+      },
+    ]);
+  }
+
+  return { before, after, video, afterV2 };
+}
+
+/**
+ * The demo media files living under `media-seed/` in the **development** bucket
+ * (uploaded once by hand — see the keys' `dummy-*` neighbours for the same
+ * convention on screenshots). Sizes and dimensions are the real files' and the
+ * share page sizes its frame from them, so they must not drift.
+ */
+const DEMO_MEDIA_FILES = {
+  dashboard: {
+    key: "media-seed/dashboard.png",
+    sizeBytes: "46189",
+    width: 1440,
+    height: 900,
+  },
+  checkoutBefore: {
+    key: "media-seed/checkout-before.png",
+    sizeBytes: "27612",
+    width: 720,
+    height: 1080,
+  },
+  checkoutAfter: {
+    key: "media-seed/checkout-after.png",
+    sizeBytes: "27597",
+    width: 720,
+    height: 1080,
+  },
+  pricingV1: {
+    key: "media-seed/pricing-v1.png",
+    sizeBytes: "22514",
+    width: 1200,
+    height: 800,
+  },
+  pricingV2: {
+    key: "media-seed/pricing-v2.png",
+    sizeBytes: "25081",
+    width: 1200,
+    height: 800,
+  },
+  pricingV3: {
+    key: "media-seed/pricing-v3.png",
+    sizeBytes: "31353",
+    width: 1200,
+    height: 800,
+  },
+  onboardingVideo: {
+    key: "media-seed/onboarding.mp4",
+    sizeBytes: "56244",
+    width: 1280,
+    height: 720,
+  },
+} satisfies Record<
+  string,
+  { key: string; sizeBytes: string; width: number; height: number }
+>;
+
+/**
+ * Share tokens of the demo media, deliberately memorable: the whole point of the
+ * scenario is opening `/m/demo-image` by hand to look at the share page.
+ */
+const DEMO_MEDIA_TOKENS = [
+  "demo-image",
+  "demo-before",
+  "demo-after",
+  "demo-versions",
+  "demo-video",
+] as const;
+
+/**
+ * Every share-page state on checkable URLs, in the development database:
+ *
+ * - `/m/demo-image` — a lone screenshot, one version.
+ * - `/m/demo-before` / `/m/demo-after` — a before/after pair (team-only, so the
+ *   header chip differs from the public ones), with a pinned thread on the after.
+ * - `/m/demo-versions` — three versions, with a thread pinned to **v2**: its pin
+ *   only shows after switching the picker off the latest version.
+ * - `/m/demo-video` — a real MP4 the player can actually play, poster derived by
+ *   the CDN.
+ *
+ * Unlike {@link createMediaScenario} (whose fixed clock keeps Playwright
+ * baselines stable), dates here are relative to the seeding run so "Uploaded 2
+ * hours ago" and the expiry countdown read like live data. Existing demo rows
+ * are deleted first — the tokens are constants — so the scenario can be re-run
+ * against a database that already has them.
+ */
+async function createDemoMediaScenario(input: {
+  projectId: string;
+  /** Authors the demo media and comments. */
+  authorUserId: string;
+  /** Replies in the pinned thread, so two avatars show. */
+  replierUserId: string;
+}) {
+  const { projectId, authorUserId, replierUserId } = input;
+
+  const hoursAgo = (hours: number) =>
+    new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  // Far enough out that nothing expires under whoever is checking, near enough
+  // that the countdown shows a value worth reading.
+  const expiresAt = new Date(
+    Date.now() + 90 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // Cascades take the versions and comments along.
+  await Media.query()
+    .delete()
+    .whereIn("shareToken", [...DEMO_MEDIA_TOKENS]);
+
+  const [image, before, after, versions, video] =
+    await Media.query().insertAndFetch([
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "dashboard.png",
+        state: null,
+        description: "Overview screen after the sidebar redesign.",
+        visibility: "public" as const,
+        shareToken: "demo-image",
+        createdAt: hoursAgo(50),
+        updatedAt: hoursAgo(50),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "checkout.png",
+        state: "before" as const,
+        description: "Checkout before the spacing fix.",
+        visibility: "public" as const,
+        shareToken: "demo-before",
+        createdAt: hoursAgo(26),
+        updatedAt: hoursAgo(26),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "checkout.png",
+        state: "after" as const,
+        description: "Checkout after the spacing fix.",
+        visibility: "public" as const,
+        shareToken: "demo-after",
+        createdAt: hoursAgo(25),
+        updatedAt: hoursAgo(25),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "pricing.png",
+        state: null,
+        description: "Pricing page — iterating on the plan lineup.",
+        visibility: "public" as const,
+        shareToken: "demo-versions",
+        createdAt: hoursAgo(72),
+        updatedAt: hoursAgo(72),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "onboarding.mp4",
+        state: null,
+        description: "The onboarding flow, end to end.",
+        // The team-only sample: opening it logged out shows the unavailable
+        // page, which is itself a state worth checking.
+        visibility: "team" as const,
+        shareToken: "demo-video",
+        createdAt: hoursAgo(5),
+        updatedAt: hoursAgo(5),
+      },
+    ]);
+  invariant(image && before && after && versions && video, "media created");
+
+  const imageVersion = (args: {
+    mediaId: string;
+    number: number;
+    file: { key: string; sizeBytes: string; width: number; height: number };
+    at: string;
+    mimeType?: string;
+  }) => ({
+    mediaId: args.mediaId,
+    number: args.number,
+    createdByUserId: authorUserId,
+    key: args.file.key,
+    mimeType: args.mimeType ?? "image/png",
+    sizeBytes: args.file.sizeBytes,
+    width: args.file.width,
+    height: args.file.height,
+    expiresAt,
+    uploadedAt: args.at,
+    billedUnits: 1,
+    createdAt: args.at,
+    updatedAt: args.at,
+  });
+
+  const [, , afterVersion, , pricingV2] =
+    await MediaVersion.query().insertAndFetch([
+      imageVersion({
+        mediaId: image.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.dashboard,
+        at: hoursAgo(50),
+      }),
+      imageVersion({
+        mediaId: before.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.checkoutBefore,
+        at: hoursAgo(26),
+      }),
+      imageVersion({
+        mediaId: after.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.checkoutAfter,
+        at: hoursAgo(25),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 1,
+        file: DEMO_MEDIA_FILES.pricingV1,
+        at: hoursAgo(72),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 2,
+        file: DEMO_MEDIA_FILES.pricingV2,
+        at: hoursAgo(30),
+      }),
+      imageVersion({
+        mediaId: versions.id,
+        number: 3,
+        file: DEMO_MEDIA_FILES.pricingV3,
+        at: hoursAgo(2),
+      }),
+      {
+        ...imageVersion({
+          mediaId: video.id,
+          number: 1,
+          file: DEMO_MEDIA_FILES.onboardingVideo,
+          at: hoursAgo(5),
+          mimeType: "video/mp4",
+        }),
+        billedUnits: 25,
+      },
+    ]);
+  invariant(afterVersion && pricingV2, "versions created");
+
+  // A pinned thread with a reply on the "after" image — the pin sits on the pay
+  // button the pair exists to talk about — plus a plain comment on the whole
+  // image.
+  const pinned = await Comment.query().insertAndFetch({
+    mediaId: after.id,
+    mediaVersionId: afterVersion.id,
+    userId: authorUserId,
+    content: commentDoc("The pay button finally lines up with the field grid."),
+    anchor: { type: "point" as const, x: 0.5, y: 0.49 },
+    createdAt: hoursAgo(24),
+    updatedAt: hoursAgo(24),
+  });
+  await Comment.query().insert([
+    {
+      mediaId: after.id,
+      mediaVersionId: afterVersion.id,
+      userId: replierUserId,
+      threadId: pinned.id,
+      content: commentDoc("Much better than the before — approving."),
+      createdAt: hoursAgo(23),
+      updatedAt: hoursAgo(23),
+    },
+    {
+      mediaId: after.id,
+      mediaVersionId: afterVersion.id,
+      userId: authorUserId,
+      content: commentDoc(
+        "Spacing between the fields breathes a lot better too.",
+      ),
+      createdAt: hoursAgo(22),
+      updatedAt: hoursAgo(22),
+    },
+    // Pinned to v2 while v3 is the latest: the pin must stay withheld until the
+    // picker is switched to the version it was drawn on.
+    {
+      mediaId: versions.id,
+      mediaVersionId: pricingV2.id,
+      userId: replierUserId,
+      content: commentDoc(
+        "Is $120 the final price for Pro? Feels steep next to Starter.",
+      ),
+      anchor: { type: "point" as const, x: 0.72, y: 0.38 },
+      createdAt: hoursAgo(28),
+      updatedAt: hoursAgo(28),
+    },
+  ]);
+}
+
+/**
+ * The GitHub rows a pull request needs, plus the pull request.
+ *
+ * A seeded project is not connected to a repository, so this creates one and
+ * links it — enough for the share header to render a real number, title and URL.
+ */
+async function createMediaPullRequest(projectId: string): Promise<string> {
+  const project = await Project.query().findById(projectId);
+  invariant(project, "project should exist");
+
+  const githubAccount = await GithubAccount.query().insertAndFetch({
+    githubId: 90000000 + Number(projectId),
+    name: "Acme",
+    login: `acme-${projectId}`,
+    email: null,
+    type: "organization",
+  });
+
+  const repository = await GithubRepository.query().insertAndFetch({
+    name: "sparkle",
+    private: false,
+    defaultBranch: "main",
+    githubId: 91000000 + Number(projectId),
+    githubAccountId: githubAccount.id,
+  });
+
+  await project.$query().patch({ githubRepositoryId: repository.id });
+
+  const pullRequest = await GithubPullRequest.query().insertAndFetch({
+    githubRepositoryId: repository.id,
+    number: 1234,
+    title: "Tighten the checkout spacing",
+    state: "open",
+    merged: false,
+    draft: false,
+    jobStatus: "complete",
+    creatorId: githubAccount.id,
+    date: "2026-04-19T09:00:00.000Z",
+    createdAt: "2026-04-19T09:00:00.000Z",
+    updatedAt: "2026-04-19T09:00:00.000Z",
+  });
+
+  return pullRequest.id;
+}
+
+/** A one-paragraph TipTap document, the shape the comment editor produces. */
+function commentDoc(text: string) {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
 }

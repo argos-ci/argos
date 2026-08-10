@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
-import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
   ArrowUpIcon,
@@ -14,9 +13,9 @@ import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
-import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
@@ -162,6 +161,8 @@ export function CommentCard(props: {
   replies?: Comment[];
   highlightedCommentId: string | null;
   canReply: boolean;
+  /** Extra classes on the card root, e.g. a selection ring. */
+  className?: string;
   /** Posts a reply in this thread. Only called when `canReply` is set. */
   onReply: (body: EditorValue) => Promise<void>;
   /**
@@ -201,6 +202,7 @@ export function CommentCard(props: {
     replies = [],
     highlightedCommentId,
     canReply,
+    className,
     onReply,
     draftKeyPrefix,
     screenshotReference = null,
@@ -372,11 +374,12 @@ export function CommentCard(props: {
       onMouseDown={cardNavigates ? handleCardMouseDown : undefined}
       onClick={cardNavigates ? handleCardClick : undefined}
       className={clsx(
-        !embedded && "border-thin bg-app -mx-2.5 rounded-md",
+        !embedded && "border-thin bg-app rounded-md",
         // Interactive children keep their own cursor (UA styles on buttons,
         // links, editors), so the pointer only shows where a click navigates.
         cardNavigates &&
           "hover:ring-primary-hover cursor-pointer hover:ring-1 **:data-no-card-nav:cursor-auto",
+        className,
       )}
     >
       {screenshotReference ? (
@@ -512,8 +515,7 @@ function CommentMessage(props: {
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
-  const projectParams = useProjectParams();
-  invariant(projectParams);
+  const roleScope = useCommentRoleScope();
   const mentions = useMentionableUsers();
   // Resolve the comment's own mentions (which persist only an id) to render
   // their name/avatar/role — these may include users no longer mentionable.
@@ -544,8 +546,7 @@ function CommentMessage(props: {
         mutation: UpdateCommentMutation,
         variables: {
           input: { id: comment.id, body },
-          accountSlug: projectParams.accountSlug,
-          projectName: projectParams.projectName,
+          ...roleScope,
         },
       });
       setIsEditing(false);
@@ -639,7 +640,7 @@ function CommentMessage(props: {
               {comment.pending ? <PendingCommentBadge /> : null}
             </div>
           </div>
-          <div className="bg-app before:from-app pointer-events-none absolute top-1 right-1 flex items-center rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 before:absolute before:inset-y-0 before:right-full before:w-8 before:bg-linear-to-l before:to-transparent before:content-[''] has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
+          <div className="bg-app before:from-app pointer-events-none absolute top-1 right-1 flex items-center gap-0.5 rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 before:absolute before:inset-y-0 before:right-full before:w-8 before:bg-linear-to-l before:to-transparent before:content-[''] has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
             <CommentAddReactionButton comment={comment} />
             <CommentActionsMenu
               onCopyLink={copyLink}

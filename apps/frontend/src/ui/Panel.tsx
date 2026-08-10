@@ -46,7 +46,11 @@ export function PanelHeader(props: {
   return (
     <div
       className={clsx(
-        "flex shrink-0 items-center justify-between gap-4 px-4 pr-3",
+        // The row is exactly one title line tall whatever it carries: an
+        // action button taller than the text centers on the title and
+        // overflows the row, instead of pushing the title down and making
+        // this panel's top padding read bigger than its neighbours'.
+        "flex h-5 shrink-0 items-center justify-between gap-4 px-4 pr-3",
         // The default spacing suits the denser sidebar; main-area panels pass a
         // tighter margin (e.g. `mb-2`) through className.
         className ?? "mb-3",

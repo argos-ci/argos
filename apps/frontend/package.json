@@ -6,7 +6,7 @@
     "build": "rm -rf dist && NODE_ENV=production vite build",
     "check-types": "tsc --noEmit",
     "check-format": "oxfmt --check .",
-    "watch-build": "vite --logLevel silent",
+    "watch-build": "vite --logLevel error",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test-storybook": "vitest --config ./vitest.config.mjs --project storybook",

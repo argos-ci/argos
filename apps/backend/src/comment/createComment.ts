@@ -187,6 +187,12 @@ async function autoSubscribeUserToTarget(input: {
     case "test":
       await autoSubscribeUserToTest({ testId: target.test.id, userId });
       return;
+    case "media":
+      // Nothing to subscribe to. A build gets new builds and a test keeps
+      // running, so both have a stream worth following; a media is one file that
+      // never changes. Following the *thread* is what matters here, and
+      // `comment_notifications_subscriptions` handles that for every target.
+      return;
     default:
       assertNever(target);
   }
@@ -201,6 +207,10 @@ async function getTargetSubscribedUserIds(
       return getBuildSubscribedUserIds(target.build.id);
     case "test":
       return getTestSubscribedUserIds(target.test.id);
+    case "media":
+      // No target-level followers exist for a media — see
+      // `autoSubscribeUserToTarget`. Thread subscribers are notified separately.
+      return [];
     default:
       assertNever(target);
   }
