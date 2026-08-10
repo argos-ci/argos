@@ -4,7 +4,6 @@ import { checkHasSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { AccountSelector } from "@/containers/AccountSelector";
 import { graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
@@ -72,21 +71,11 @@ export function TeamSubscribeDialog({
   const disabledReasons = Object.fromEntries(
     (teams ?? [])
       .filter((a) => checkHasSubscriptionStatus(a.subscriptionStatus))
-      .map(
-        (a) =>
-          [
-            a.id,
-            a.subscriptionStatus === AccountSubscriptionStatus.Trialing
-              ? "Trial already running"
-              : "Already on a paid plan",
-          ] as const,
-      ),
+      .map((a) => [a.id, "Already subscribed"] as const),
   );
-  // The initial team can itself be subscribed — the dialog opens from a banner
-  // that only knows the team it renders on — so guard the button too. A team
-  // that is not in the list is not known to be subscribed: staff browsing a
-  // team they are not a member of still gets the dialog, and so does everyone
-  // while the query is in flight.
+  // A team that is not in the list is not known to be subscribed: staff
+  // browsing a team they are not a member of still gets the dialog, and so does
+  // everyone while the query is in flight.
   const teamHasSubscription = team
     ? checkHasSubscriptionStatus(team.subscriptionStatus)
     : false;
@@ -110,28 +99,11 @@ export function TeamSubscribeDialog({
             </div>
 
             <p className="text-default mt-4 font-medium">
-              {teamHasSubscription ? (
-                team?.subscriptionStatus ===
-                AccountSubscriptionStatus.Trialing ? (
-                  <>
-                    This team is already on a Pro plan trial. Add a payment
-                    method from its settings to keep it after the trial.
-                  </>
-                ) : (
-                  <>
-                    This team already has a subscription. Manage it from its
-                    settings.
-                  </>
-                )
-              ) : (
-                <>
-                  You will be redirected to Stripe to{" "}
-                  {!hasSubscribedToTrial
-                    ? "start a 14-day Pro plan trial"
-                    : "complete the subscription"}
-                  .
-                </>
-              )}
+              You will be redirected to Stripe to{" "}
+              {!hasSubscribedToTrial
+                ? "start a 14-day Pro plan trial"
+                : "complete the subscription"}
+              .
             </p>
           </DialogBody>
 
