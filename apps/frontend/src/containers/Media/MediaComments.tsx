@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { FileUpIcon, MapPinPenIcon, UploadIcon, XIcon } from "lucide-react";
+import {
+  FileUpIcon,
+  MapPinPenIcon,
+  MapPinPlusInsideIcon,
+  UploadIcon,
+  XIcon,
+} from "lucide-react";
 import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
@@ -285,7 +291,7 @@ function PinCommentToggle(props: {
         aria-label="Pin a comment"
         onPress={() => onPlacingChange(true)}
       >
-        <MapPinPenIcon />
+        <MapPinPlusInsideIcon />
       </Button>
     </HotkeyTooltip>
   );

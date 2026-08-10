@@ -4,10 +4,9 @@ import { invariant } from "@argos/util/invariant";
 import {
   ChevronDownIcon,
   ClockFadingIcon,
-  CloudDownloadIcon,
+  DownloadIcon,
   FileTextIcon,
   GlobeIcon,
-  ImageDownIcon,
   LinkIcon,
   LockIcon,
 } from "lucide-react";
@@ -388,9 +387,7 @@ function MediaActions(props: {
           aria-label="Download"
           onPress={download}
         >
-          {/* What is being saved, not just that something is: a video is the
-              one media a reviewer might not want to wait on. */}
-          {version.isVideo ? <CloudDownloadIcon /> : <ImageDownIcon />}
+          <DownloadIcon />
         </Button>
       </HotkeyTooltip>
       {/* One format is a button, not a menu: a chevron opening a list with a
