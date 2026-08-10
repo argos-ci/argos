@@ -24,6 +24,7 @@ import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
+import { installMediaShareRoutes } from "./media-share";
 import { requireCsrf } from "./middlewares/csrf";
 import { createAppSecurityHeaders } from "./security-headers";
 import { asyncHandler, subdomain } from "./util";
@@ -260,6 +261,12 @@ export const installAppRouter = async (app: express.Application) => {
     }
     res.sendFile(join(distDir, "index.html"));
   };
+
+  // Ahead of the catch-all, and after the security headers so an unfurled share
+  // page carries the same ones as every other: a share link has to arrive at a
+  // crawler with its OpenGraph tags already in the HTML, which the SPA shell
+  // cannot do. Anything it declines to handle falls through to the shell below.
+  installMediaShareRoutes(router, { shell: shell?.html ?? null });
 
   router.get("/{*splat}", sendAppShell);
 

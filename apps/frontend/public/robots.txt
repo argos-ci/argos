@@ -1,2 +1,16 @@
+# The app is not a site to crawl — it is behind a login, and nothing in it
+# belongs in a search result.
+#
+# Share pages are the exception, and only so they can be *unfurled*: Slackbot,
+# facebookexternalhit and LinkedIn all check robots.txt before fetching a link
+# somebody pasted, so a blanket disallow means a shared screenshot arrives as a
+# bare URL. `/oembed` is allowed for the same reason.
+#
+# They stay out of search results all the same: every share page serves
+# `<meta name="robots" content="noindex, nofollow">`, and a crawler has to be
+# allowed to fetch a page before it can be told not to index it. Blocking the
+# fetch is what leaves a URL indexable on links alone.
 User-agent: *
+Allow: /m/
+Allow: /oembed
 Disallow: /
