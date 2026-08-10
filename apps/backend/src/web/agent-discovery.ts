@@ -10,6 +10,8 @@
  *   Protected Resource Metadata (the API origin serves the canonical copy).
  * - `/.well-known/mcp/server-card.json` (SEP-1649): the MCP Server Card (the
  *   MCP origin serves the canonical copy).
+ * - `/auth.md`: the agent-registration recipe (`argos-ci.com/auth.md` proxies
+ *   it), pointed at by `agent_auth.skill` in the authorization server metadata.
  *
  * Everything is derived from config and the shared oauth/mcp modules, so the
  * documents cannot disagree with the servers they describe. Mounted on the app
@@ -19,6 +21,7 @@ import cors from "cors";
 import { Router } from "express";
 
 import { getServerCard, MCP_DOCS_URL } from "@/mcp/server-card";
+import { getAuthMd } from "@/oauth/auth-md";
 import {
   getApiResourceUrl,
   getMcpProtectedResourceMetadataUrl,
@@ -89,4 +92,12 @@ export function installAgentDiscoveryRoutes(router: Router): void {
   });
 
   router.use("/.well-known", wellKnown);
+
+  // Auth.md: the registration recipe `agent_auth.skill` points at.
+  // `argos-ci.com/auth.md` proxies this document.
+  router.get("/auth.md", cors({ origin: "*" }), (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.type("text/markdown");
+    res.send(getAuthMd());
+  });
 }

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getServerCard } from "@/mcp/server-card";
 import {
   getApiResourceUrl,
+  getAuthorizationServerMetadata,
   getMcpResourceUrl,
   getProtectedResourceMetadata,
 } from "@/oauth/metadata";
@@ -51,5 +52,31 @@ describe("agent discovery routes", () => {
       .get("/.well-known/mcp/server-card.json")
       .expect(200);
     expect(res.body).toEqual(getServerCard());
+  });
+
+  describe("auth.md", () => {
+    it("serves markdown with the heading scanners look for", async () => {
+      const res = await request(app).get("/auth.md").expect(200);
+      expect(res.headers["content-type"]).toContain("text/markdown");
+      expect(res.headers["access-control-allow-origin"]).toBe("*");
+      expect(res.text.split("\n")[0]).toBe("# Argos auth.md");
+    });
+
+    it("documents the endpoints the authorization server actually advertises", async () => {
+      const res = await request(app).get("/auth.md").expect(200);
+      const meta = getAuthorizationServerMetadata();
+      // The recipe is worthless if it names endpoints the server doesn't serve.
+      for (const endpoint of [
+        meta.registration_endpoint,
+        meta.authorization_endpoint,
+        meta.token_endpoint,
+        meta.revocation_endpoint,
+      ]) {
+        expect(res.text).toContain(endpoint);
+      }
+      for (const scope of meta.scopes_supported) {
+        expect(res.text).toContain(`\`${scope}\``);
+      }
+    });
   });
 });
