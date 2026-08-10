@@ -1711,10 +1711,13 @@ export async function createMediaScenario(input: {
   const afterV1Ts = "2026-04-20T09:00:00.000Z";
   const afterV2Ts = "2026-04-20T10:00:00.000Z";
   const videoTs = "2026-04-20T09:30:00.000Z";
+  const soloTs = "2026-04-20T07:00:00.000Z";
 
   // A before/after pair sharing one name, which is what lets the share page show
-  // them together and compare them, plus a video that stands alone.
-  const [before, after, video] = await Media.query().insertAndFetch([
+  // them together and compare them, plus a video and a lone screenshot that
+  // stand alone — the share page has no counterpart to draw beside those, which
+  // is a different layout from the pair's.
+  const [before, after, video, solo] = await Media.query().insertAndFetch([
     {
       projectId,
       name: "checkout.png",
@@ -1748,9 +1751,20 @@ export async function createMediaScenario(input: {
       createdAt: videoTs,
       updatedAt: videoTs,
     },
+    {
+      projectId,
+      name: "dashboard.png",
+      state: null,
+      description: "Overview screen after the sidebar redesign.",
+      visibility: "public" as const,
+      githubPullRequestId: null,
+      shareToken: `seed-media-solo-${projectId}`,
+      createdAt: soloTs,
+      updatedAt: soloTs,
+    },
   ]);
 
-  invariant(before && after && video, "media should be created");
+  invariant(before && after && video && solo, "media should be created");
 
   // The "after" image has two versions: the reviewer asked for a change and the
   // second upload answered it. That is the state the version UI has to render.
@@ -1787,35 +1801,58 @@ export async function createMediaScenario(input: {
   ]);
   invariant(afterV2, "the after media should have two versions");
 
-  const [beforeV1, videoV1] = await MediaVersion.query().insertAndFetch([
-    {
-      mediaId: before.id,
-      number: 1,
-      key: "dummy-375x720.png",
-      mimeType: "image/png",
-      sizeBytes: "184320",
-      width: 375,
-      height: 720,
-      expiresAt: "2027-04-20T08:00:00.000Z",
-      uploadedAt: beforeTs,
-      billedUnits: 1,
-      createdAt: beforeTs,
-      updatedAt: beforeTs,
-    },
-    {
-      mediaId: video.id,
-      number: 1,
-      key: "dummy-375x1024.png",
-      mimeType: "video/mp4",
-      sizeBytes: "8388608",
-      expiresAt: "2027-04-20T09:30:00.000Z",
-      uploadedAt: videoTs,
-      billedUnits: 25,
-      createdAt: videoTs,
-      updatedAt: videoTs,
-    },
-  ]);
-  invariant(beforeV1 && videoV1, "versions should be created");
+  const [beforeV1, videoV1, soloV1] = await MediaVersion.query().insertAndFetch(
+    [
+      {
+        mediaId: before.id,
+        number: 1,
+        key: "dummy-375x720.png",
+        mimeType: "image/png",
+        sizeBytes: "184320",
+        width: 375,
+        height: 720,
+        expiresAt: "2027-04-20T08:00:00.000Z",
+        uploadedAt: beforeTs,
+        billedUnits: 1,
+        createdAt: beforeTs,
+        updatedAt: beforeTs,
+      },
+      {
+        mediaId: video.id,
+        number: 1,
+        key: "dummy-375x1024.png",
+        mimeType: "video/mp4",
+        sizeBytes: "8388608",
+        expiresAt: "2027-04-20T09:30:00.000Z",
+        uploadedAt: videoTs,
+        billedUnits: 25,
+        createdAt: videoTs,
+        updatedAt: videoTs,
+      },
+      {
+        // Landscape, unlike the pair: a lone media fills its pane on the axis
+        // its shape gives it, and the pin projection has to follow.
+        //
+        // Deliberately with no recorded dimensions. Processing reads them from
+        // the file's header and tolerates not finding them, so this is a state
+        // real uploads reach — and the viewer has to project pins against the
+        // image it measured rather than give up on the whole comment layer.
+        mediaId: solo.id,
+        number: 1,
+        key: "bear-1440x1024.jpg",
+        mimeType: "image/jpeg",
+        sizeBytes: "131072",
+        width: null,
+        height: null,
+        expiresAt: "2027-04-20T07:00:00.000Z",
+        uploadedAt: soloTs,
+        billedUnits: 1,
+        createdAt: soloTs,
+        updatedAt: soloTs,
+      },
+    ],
+  );
+  invariant(beforeV1 && videoV1 && soloV1, "versions should be created");
 
   if (commentAuthorId) {
     const commentTs = "2026-04-20T11:00:00.000Z";
@@ -1855,7 +1892,7 @@ export async function createMediaScenario(input: {
     ]);
   }
 
-  return { before, after, video, afterV2 };
+  return { before, after, video, solo, afterV2 };
 }
 
 /**

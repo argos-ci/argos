@@ -1,20 +1,25 @@
 import clsx from "clsx";
 
 /**
- * The transparency ground drawn under inspected pixels: a dark two-tone
- * checkerboard, always dark whatever the viewer's theme (a light surround
- * shifts how you read an image's own values — every tool built for looking at
- * pixels is dark for that reason). Two offset gradients make the classic grid,
- * drawn in CSS so there is no asset to load before the content has a ground.
- * Shared by `MediaWell` and the build's `ZoomPane`, so a screenshot sits on
- * the same ground wherever it is inspected.
+ * The transparency ground drawn under inspected pixels: the classic two-tone
+ * checkerboard, made of two offset gradients in CSS so there is no asset to
+ * load before the content has a ground. Shared by `MediaWell` and the build's
+ * `ZoomPane`, so a screenshot sits on the same ground wherever it is inspected.
+ *
+ * It follows the viewer's theme (`--checkerboard-*`), rather than staying dark
+ * under a light page. The point of the ground is being *known* — screenshots
+ * routinely have alpha or white edges, and without one you cannot tell where
+ * the image stops and the page starts — and a slab of near-black under a light
+ * UI is read as part of the picture, which is the same confusion by the other
+ * door.
  */
 export function getCheckerboardStyle(checkerSize = 8): React.CSSProperties {
+  const square = "var(--checkerboard-square)";
   return {
-    backgroundColor: "#16161a",
+    backgroundColor: "var(--checkerboard-base)",
     backgroundImage: `
-      linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%),
-      linear-gradient(45deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.045) 75%)
+      linear-gradient(45deg, ${square} 25%, transparent 25%, transparent 75%, ${square} 75%),
+      linear-gradient(45deg, ${square} 25%, transparent 25%, transparent 75%, ${square} 75%)
     `,
     backgroundSize: `${checkerSize * 2}px ${checkerSize * 2}px`,
     backgroundPosition: `0 0, ${checkerSize}px ${checkerSize}px`,

@@ -223,7 +223,13 @@ export function MediaViewer(props: {
                 // "which one takes the pin" a question the viewer has to answer.
                 // A single pane — alone, or with both halves blended into it —
                 // has nowhere else the pin could land.
-                ringTarget={panes.length > 1 && pane.interactive}
+                pinState={
+                  panes.length > 1 && comments.placing
+                    ? pane.interactive
+                      ? "target"
+                      : "excluded"
+                    : null
+                }
               />
             ))}
           </div>
@@ -293,23 +299,54 @@ function MediaPane(props: {
   blend: BlendState | null;
   comments: ViewerComments | null;
   /**
-   * Whether this pane should announce itself as the one a pin would land on,
-   * while the comment tool is armed. See {@link MediaViewer} for when that
-   * question is worth answering.
+   * This pane's part in the armed comment tool: the half a pin would land on,
+   * or the half it would not. Null while the question doesn't arise — the tool
+   * at rest, or one pane on screen. See {@link MediaViewer}.
    */
-  ringTarget: boolean;
+  pinState: "target" | "excluded" | null;
 }) {
-  const { media, labelled, blend, comments, ringTarget } = props;
+  const { media, labelled, blend, comments, pinState } = props;
   const version = media.version;
-  const dimensions =
-    version.width && version.height
-      ? { width: version.width, height: version.height }
-      : undefined;
-  // Only while the tool is armed. A ring that is always on reads as "selected"
-  // and says nothing about where the click goes; one that appears with the
-  // crosshair answers exactly the question the crosshair raises.
-  const targeted = ringTarget && Boolean(comments?.placing);
+  // What the browser measured off the bytes, once they are in.
+  const [measured, setMeasured] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  // A new upload is a different image, so the old measurement stops describing
+  // it — dropped during render (the prior-props pattern) so a frame of the
+  // wrong shape never paints.
+  const [prevFileUrl, setPrevFileUrl] = useState(version.fileUrl);
+  if (prevFileUrl !== version.fileUrl) {
+    setPrevFileUrl(version.fileUrl);
+    setMeasured(null);
+  }
+  const handleMeasured = useCallback(
+    (size: { width: number; height: number }) => {
+      setMeasured((prev) =>
+        prev && prev.width === size.width && prev.height === size.height
+          ? prev
+          : size,
+      );
+    },
+    [],
+  );
 
+  // The image's own size wins once it is known, and the recorded one only
+  // reserves the frame until then. Two reasons, both of which cost the pin
+  // layer its whole reason for existing:
+  //
+  // - Dimensions are read from the file's header at upload and processing
+  //   tolerates failing to find them, so a media can render perfectly well with
+  //   none recorded. Gating the overlay on them left the tool arming, showing
+  //   its crosshair, and dropping every click on the floor.
+  // - When the recorded pair disagrees with the bytes, the image letterboxes
+  //   inside a box of the recorded shape, and points projected against the
+  //   recorded size land somewhere the image isn't.
+  const dimensions =
+    measured ??
+    (version.width && version.height
+      ? { width: version.width, height: version.height }
+      : undefined);
   return (
     <div
       className="flex min-w-0 flex-1 flex-col"
@@ -317,17 +354,24 @@ function MediaPane(props: {
       // The pane a pin would land on, while the tool is armed. An attribute
       // rather than a class in the test, so the guard survives restyling the
       // ring.
-      {...(targeted ? { "data-pin-target": "" } : null)}
+      {...(pinState === "target" ? { "data-pin-target": "" } : null)}
     >
       {/* The inspection surface: the same dark checkerboard as the library
           thumbnails, so a white screenshot has a known ground to end on. The
           pane draws no chrome of its own — the well is the chrome. */}
       <MediaWell
         className={clsx(
-          "relative flex min-h-0 flex-1",
+          "relative flex min-h-0 flex-1 transition-opacity",
+          // Both marks appear only with the crosshair, and answer exactly the
+          // question it raises: a ring that is always on reads as "selected"
+          // and says nothing about where a click goes.
+          //
           // Inset so it draws over the pixels rather than in the gap between
           // the panes, which is where the eye is already looking.
-          targeted && "ring-primary-active ring-2 ring-inset",
+          pinState === "target" && "ring-primary-active ring-2 ring-inset",
+          // The other half recedes: naming the target is only half the answer
+          // if the pane beside it looks just as clickable.
+          pinState === "excluded" && "opacity-50",
         )}
       >
         {labelled ? (
@@ -335,7 +379,7 @@ function MediaPane(props: {
           // halves stay named while panning, zooming, or leaning in close.
           // Near-opaque with a hairline edge: readable over any pixels,
           // light or dark, without hiding much of what it sits on.
-          <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-neutral-950/90 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm">
+          <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-(--gray-12)/70 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm dark:bg-(--gray-1)/70">
             {media.state}
           </div>
         ) : null}
@@ -379,6 +423,7 @@ function MediaPane(props: {
             // projected against *its* image, and a pair's halves can have
             // different intrinsic sizes.
             trackScale={comments != null}
+            onMeasured={handleMeasured}
           />
         </ZoomPane>
         {blend?.mode === "onion" ? (
@@ -459,7 +504,9 @@ export function getMediaDownloadName(media: {
  *
  * The pinned pane also reports its rendered scale to `ScaleContext` — the
  * pin projection multiplies by it, so without this a pin on any image larger
- * than the pane would drift off the pixel it marks.
+ * than the pane would drift off the pixel it marks — and its intrinsic size to
+ * the pane, which is the only source for a media whose dimensions processing
+ * never recorded.
  */
 function MediaImage(props: {
   src: string;
@@ -467,31 +514,39 @@ function MediaImage(props: {
   dimensions: { width: number; height: number } | undefined;
   blend: BlendState | null;
   trackScale: boolean;
+  /** Reports the image's intrinsic size, once the bytes are in. */
+  onMeasured: (size: { width: number; height: number }) => void;
 }) {
-  const { src, alt, dimensions, blend, trackScale } = props;
+  const { src, alt, dimensions, blend, trackScale, onMeasured } = props;
   const [, setImgScale] = useScaleContext();
   const imageRef = useRef<HTMLImageElement>(null);
 
-  const updateScale = useCallback(() => {
+  const measure = useCallback(() => {
+    const img = imageRef.current;
+    // A broken image is `complete` too, with a zero natural size — nothing
+    // measured, and nothing worth reporting.
+    if (!img?.complete || !img.naturalWidth || !img.naturalHeight) {
+      return;
+    }
+    onMeasured({ width: img.naturalWidth, height: img.naturalHeight });
     if (!trackScale) {
       return;
     }
-    const img = imageRef.current;
-    if (img && img.complete) {
-      const imgScale = getImageScale(img);
+    const imgScale = getImageScale(img);
+    if (imgScale !== null) {
       startTransition(() => {
         setImgScale(imgScale);
       });
     }
-  }, [trackScale, setImgScale]);
+  }, [trackScale, setImgScale, onMeasured]);
 
-  const ref = useResizeObserver(() => updateScale(), imageRef);
+  const ref = useResizeObserver(() => measure(), imageRef);
 
-  // Update scale when the image is loaded, and reset it on unmount so the next
-  // media starts from a clean slate.
+  // Measure when the image is loaded, and reset the scale on unmount so the
+  // next media starts from a clean slate.
   useEffect(() => {
-    updateScale();
-  }, [updateScale]);
+    measure();
+  }, [measure]);
   useEffect(() => {
     if (!trackScale) {
       return undefined;
@@ -545,7 +600,7 @@ function MediaImage(props: {
           alt={alt}
           width={dimensions?.width}
           height={dimensions?.height}
-          onLoad={updateScale}
+          onLoad={measure}
           // `object-contain` is the guarantee, not the layout: the box already
           // carries the image's own ratio, but a media whose recorded
           // dimensions disagree with its bytes — or one with none recorded at

@@ -82,10 +82,21 @@ export function isPointInImage(point: NormalizedPoint): boolean {
 /**
  * The scale a contain-fitted image is rendered at — what `ScaleContext` carries,
  * and what makes the projection above agree with the pixels on screen.
+ *
+ * The smaller of the two axis ratios, which is what `object-contain` itself
+ * picks: whichever axis runs out first is the one the image is fitted to. Taking
+ * the axis the image's *orientation* suggests instead reads the wrong number
+ * whenever the box it sits in doesn't share the image's ratio — and then every
+ * projected point is off by that factor.
+ *
+ * Null when there is nothing to scale yet (or ever): an image that failed to
+ * load reports zero natural size, and dividing by it yields an `Infinity` that
+ * looks like a valid scale and turns every projection into `NaN`.
  */
-export function getImageScale(element: HTMLImageElement): number {
-  if (element.naturalWidth > element.naturalHeight) {
-    return element.width / element.naturalWidth;
+export function getImageScale(element: HTMLImageElement): number | null {
+  const { naturalWidth, naturalHeight } = element;
+  if (!naturalWidth || !naturalHeight) {
+    return null;
   }
-  return element.height / element.naturalHeight;
+  return Math.min(element.width / naturalWidth, element.height / naturalHeight);
 }

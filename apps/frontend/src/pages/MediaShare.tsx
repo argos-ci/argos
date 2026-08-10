@@ -3,9 +3,9 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
   ChevronDownIcon,
-  ClipboardListIcon,
   ClockFadingIcon,
   DownloadIcon,
+  FileTextIcon,
   GlobeIcon,
   LinkIcon,
   LockIcon,
@@ -48,6 +48,7 @@ import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
+import { Truncable } from "@/ui/Truncable";
 import { getMentionUser } from "@/ui/UserCard";
 import { formatBytes, formatDimensions, formatExpiry } from "@/util/media";
 
@@ -263,7 +264,10 @@ function SharePage(props: { media: Media }) {
 /** What the page can put on the clipboard. */
 type ShareFormat = {
   id: string;
+  /** The action itself, spelled out — the menu row and the button's own label. */
   label: string;
+  /** What landed on the clipboard, for the toast to name. */
+  copied: string;
   value: string;
 };
 
@@ -273,7 +277,19 @@ type ShareFormat = {
  */
 const SHARE_FORMAT_STORAGE_KEY = "preferences.mediaShareFormat";
 
+/**
+ * The Markdown embeds this page can hand over: the pair's table when the media
+ * has a counterpart, and the media's own.
+ *
+ * No page link among them — the strip's own link button is already that, and a
+ * menu whose rows are "the thing beside me" reads as a second way to do the
+ * same thing.
+ */
 function getShareFormats(media: Media): ShareFormat[] {
+  // Which half this is, when it is one. A pair's two halves embed different
+  // images under one name, so "Markdown" alone would not say which is going on
+  // the clipboard.
+  const own = media.state ? `Markdown for ${media.state}` : "Markdown";
   return [
     // First is the default: the pair's table when there is one — pasting it
     // shows before and after together, like the page does.
@@ -281,13 +297,18 @@ function getShareFormats(media: Media): ShareFormat[] {
       ? [
           {
             id: "markdown-pair",
-            label: "Markdown (before + after)",
+            label: "Copy Markdown for before and after",
+            copied: "Markdown for before and after",
             value: media.markdownPair,
           },
         ]
       : []),
-    { id: "markdown", label: "Markdown", value: media.markdown },
-    { id: "link", label: "Page link", value: media.url },
+    {
+      id: "markdown",
+      label: `Copy ${own}`,
+      copied: own,
+      value: media.markdown,
+    },
   ];
 }
 
@@ -316,9 +337,7 @@ function MediaActions(props: {
 
   const copyFormat = (target: ShareFormat) => {
     clipboard.copy(target.value);
-    toast.success(`Copied as ${target.label.toLowerCase()}`, {
-      id: SHARE_COPY_TOAST_ID,
-    });
+    toast.success(`${target.copied} copied`, { id: SHARE_COPY_TOAST_ID });
   };
   const copyLink = () => {
     clipboard.copy(media.url);
@@ -371,50 +390,54 @@ function MediaActions(props: {
           <DownloadIcon />
         </Button>
       </HotkeyTooltip>
+      {/* One format is a button, not a menu: a chevron opening a list with a
+          single row is furniture, and the button already says what it copies. */}
       <ButtonGroup>
         <HotkeyTooltip
-          description={`Copy as ${format.label.toLowerCase()}`}
+          description={format.label}
           keys={copyAsHotkey.displayKeys}
         >
           <Button
             variant="secondary"
             iconOnly
-            aria-label={`Copy as ${format.label}`}
+            aria-label={format.label}
             onPress={() => copyFormat(format)}
           >
-            <ClipboardListIcon />
+            <FileTextIcon />
           </Button>
         </HotkeyTooltip>
-        <MenuTrigger>
-          <Button
-            variant="secondary"
-            iconOnly
-            aria-label="Choose a copy format"
-          >
-            <ChevronDownIcon />
-          </Button>
-          <Popover placement="bottom end">
-            <Menu aria-label="Copy formats">
-              {formats.map((candidate) => (
-                <MenuItem
-                  key={candidate.id}
-                  onAction={() => {
-                    // Copy right away *and* make it the button's format: the
-                    // menu is how the default is changed.
-                    setStoredFormatId(candidate.id);
-                    localStorage.setItem(
-                      SHARE_FORMAT_STORAGE_KEY,
-                      candidate.id,
-                    );
-                    copyFormat(candidate);
-                  }}
-                >
-                  {candidate.label}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Popover>
-        </MenuTrigger>
+        {formats.length > 1 ? (
+          <MenuTrigger>
+            <Button
+              variant="secondary"
+              iconOnly
+              aria-label="Choose a copy format"
+            >
+              <ChevronDownIcon />
+            </Button>
+            <Popover placement="bottom end">
+              <Menu aria-label="Copy formats">
+                {formats.map((candidate) => (
+                  <MenuItem
+                    key={candidate.id}
+                    onAction={() => {
+                      // Copy right away *and* make it the button's format: the
+                      // menu is how the default is changed.
+                      setStoredFormatId(candidate.id);
+                      localStorage.setItem(
+                        SHARE_FORMAT_STORAGE_KEY,
+                        candidate.id,
+                      );
+                      copyFormat(candidate);
+                    }}
+                  >
+                    {candidate.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Popover>
+          </MenuTrigger>
+        ) : null}
       </ButtonGroup>
     </div>
   );
@@ -489,12 +512,14 @@ function PageHeader(props: {
             {media.name}
           </h1>
           {media.description ? (
-            <span className="text-low min-w-0 truncate text-xs leading-tight">
+            // Truncated with its full text on hover: the prose that shipped
+            // with the upload is often a sentence, and the header is one line.
+            <Truncable className="text-low min-w-0 text-xs leading-tight">
               <span aria-hidden="true" className="mr-1.5 opacity-60">
                 ·
               </span>
               {media.description}
-            </span>
+            </Truncable>
           ) : null}
         </div>
         <div className="text-default flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 font-mono text-xs leading-tight">

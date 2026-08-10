@@ -353,6 +353,25 @@
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
 
+/* The ground a screenshot is inspected on — the checkerboard `MediaWell` and
+   the build's `ZoomPane` draw (see `getCheckerboardStyle`).
+
+   A surface half a step under the page, so the frame reads as recessed, with a
+   checker just visible against it. Literal values rather than palette steps:
+   this is one specific surface whose whole job is to be a *known* ground, and
+   it has to keep saying the same thing at either end of the gray scale. */
+@layer base {
+  :root {
+    --checkerboard-base: #f1f1f4;
+    --checkerboard-square: rgb(0 0 0 / 0.045);
+  }
+
+  .dark {
+    --checkerboard-base: #16161a;
+    --checkerboard-square: rgb(255 255 255 / 0.045);
+  }
+}
+
 @layer base {
   :root {
     --chart-1: 12 76% 61%;
