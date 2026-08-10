@@ -104,6 +104,14 @@ export const typeDefs = gql`
     what lets the share page show the two together and compare them.
     """
     counterpart: Media
+    """
+    The pull request this media is published to.
+
+    Null for a viewer without access to the project, whatever the media's own
+    visibility — a public share link exists so a reviewer can see the *picture*,
+    and the pull request's title, author and number are not part of that.
+    """
+    pullRequest: PullRequest
     visibility: MediaVisibility!
     project: Project
     permissions: [MediaPermission!]!
@@ -163,6 +171,24 @@ export const resolvers: IResolvers = {
         return null;
       }
       return resolveVisibleCounterpart(media, ctx);
+    },
+    pullRequest: async (media, _args, ctx) => {
+      if (!media.githubPullRequestId) {
+        return null;
+      }
+      // Project membership, not the media's visibility and not merely being
+      // signed in: a stranger with an account is still a stranger. The media
+      // being `public` says the picture may be shown, not that the work around
+      // it may be.
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const membershipPermissions = await project.$getMembershipPermissions(
+        ctx.auth?.user ?? null,
+      );
+      if (!membershipPermissions.includes("view")) {
+        return null;
+      }
+      return ctx.loaders.GithubPullRequest.load(media.githubPullRequestId);
     },
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);

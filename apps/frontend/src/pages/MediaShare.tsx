@@ -35,6 +35,7 @@ import {
 } from "@/containers/Media/MediaViewer";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
@@ -66,6 +67,10 @@ const MediaShareQuery = graphql(`
       markdownPair
       visibility
       permissions
+      pullRequest {
+        id
+        ...PullRequestButton_PullRequest
+      }
       latestVersion {
         id
         number
@@ -508,6 +513,15 @@ function PageHeader(props: {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-3">
+        {/* Null unless the viewer has access to the project — the resolver
+            decides, so nothing here has to remember not to leak it. */}
+        {media.pullRequest ? (
+          <PullRequestButton
+            pullRequest={media.pullRequest}
+            size="small"
+            target="_blank"
+          />
+        ) : null}
         <VisibilityChip visibility={media.visibility} />
         <NavUserControl />
       </div>

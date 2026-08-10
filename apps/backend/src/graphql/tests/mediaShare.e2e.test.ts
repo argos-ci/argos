@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import type { Account, User } from "@/database/models";
-import { Comment } from "@/database/models";
+import { Comment, Project } from "@/database/models";
 import { createMediaScenario } from "@/database/seeds";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -46,6 +46,11 @@ const MEDIA_SHARE_QUERY = `
       versions {
         id
         number
+      }
+      pullRequest {
+        id
+        number
+        title
       }
       counterpart {
         id
@@ -376,6 +381,77 @@ describe("mediaByShareToken", () => {
 
     expectNoGraphQLError(res);
     expect(res.body.data.mediaByShareToken.counterpart.id).toBe(other.id);
+  });
+
+  it("hides the pull request from a viewer outside the project", async () => {
+    // A public share link exists so a reviewer can see the *picture*. Which pull
+    // request it belongs to, its title and its author are the work around it,
+    // and a stranger holding the link is not entitled to that — nor is a signed
+    // -in stranger, which is why the gate is project membership rather than
+    // "is there a session".
+    const { project } = await createTeamOwner();
+    const repository = await factory.GithubRepository.create();
+    await Project.query().findById(project.id).patch({
+      githubRepositoryId: repository.id,
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 4242,
+      title: "Tighten the checkout spacing",
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        visibility: "public",
+        shareToken: "pr-public-half",
+        githubPullRequestId: pullRequest.id,
+      },
+    });
+
+    const anonymous = await query({ auth: null, shareToken: media.shareToken });
+    expectNoGraphQLError(anonymous);
+    expect(anonymous.body.data.mediaByShareToken.id).toBe(media.id);
+    expect(anonymous.body.data.mediaByShareToken.pullRequest).toBeNull();
+
+    // Someone with an account, but not on this team.
+    const outsider = await factory.User.create();
+    const outsiderAccount = await factory.UserAccount.create({
+      userId: outsider.id,
+    });
+    const signedIn = await query({
+      auth: { user: outsider, account: outsiderAccount },
+      shareToken: media.shareToken,
+    });
+    expectNoGraphQLError(signedIn);
+    expect(signedIn.body.data.mediaByShareToken.pullRequest).toBeNull();
+  });
+
+  it("shows the pull request to a project member", async () => {
+    const { auth, project } = await createTeamOwner();
+    const repository = await factory.GithubRepository.create();
+    await Project.query().findById(project.id).patch({
+      githubRepositoryId: repository.id,
+    });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+      number: 77,
+      title: "Tighten the checkout spacing",
+    });
+    const { media } = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        shareToken: "pr-member-view",
+        githubPullRequestId: pullRequest.id,
+      },
+    });
+
+    const res = await query({ auth, shareToken: media.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken.pullRequest).toMatchObject({
+      number: 77,
+      title: "Tighten the checkout spacing",
+    });
   });
 
   it("counts only unresolved threads", async () => {
