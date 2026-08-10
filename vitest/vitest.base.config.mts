@@ -6,6 +6,14 @@ export default defineConfig({
   },
   test: {
     globalSetup: "./vitest/vitest.global-setup.mts",
-    exclude: ["./tests", "**/node_modules", "**/dist", "**/.claude/**"],
+    // "poc" holds Playwright specs driven by their own config and seed data,
+    // not vitest suites.
+    exclude: [
+      "./tests",
+      "**/node_modules",
+      "**/dist",
+      "**/.claude/**",
+      "**/poc/**",
+    ],
   },
 });
