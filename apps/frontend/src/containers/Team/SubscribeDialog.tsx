@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
+import { checkHasSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { AccountSelector } from "@/containers/AccountSelector";
 import { graphql } from "@/gql";
@@ -52,11 +52,12 @@ export function TeamSubscribeDialog({
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;
   const team = teams?.find((a) => a.id === accountId);
-  // Teams that already have a plan sink to the bottom and cannot be picked.
+  // Teams that already have a subscription sink to the bottom and cannot be
+  // picked.
   const sortedTeams = teams
     ? Array.from(teams).sort((a, b) => {
-        const aActive = checkIsActiveSubscriptionStatus(a.subscriptionStatus);
-        const bActive = checkIsActiveSubscriptionStatus(b.subscriptionStatus);
+        const aActive = checkHasSubscriptionStatus(a.subscriptionStatus);
+        const bActive = checkHasSubscriptionStatus(b.subscriptionStatus);
         if (aActive && !bActive) {
           return 1;
         }
@@ -68,8 +69,8 @@ export function TeamSubscribeDialog({
     : null;
   const disabledReasons = Object.fromEntries(
     (teams ?? [])
-      .filter((a) => checkIsActiveSubscriptionStatus(a.subscriptionStatus))
-      .map((a) => [a.id, "Already on a paid plan"] as const),
+      .filter((a) => checkHasSubscriptionStatus(a.subscriptionStatus))
+      .map((a) => [a.id, "Already subscribed"] as const),
   );
 
   return (
@@ -103,6 +104,11 @@ export function TeamSubscribeDialog({
             <DialogDismiss>Cancel</DialogDismiss>
 
             <StripeCheckoutButton
+              isDisabled={
+                team
+                  ? checkHasSubscriptionStatus(team.subscriptionStatus)
+                  : false
+              }
               accountId={accountId}
               successUrl={
                 team
