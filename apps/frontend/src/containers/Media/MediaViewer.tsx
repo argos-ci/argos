@@ -379,7 +379,7 @@ function MediaPane(props: {
           // halves stay named while panning, zooming, or leaning in close.
           // Near-opaque with a hairline edge: readable over any pixels,
           // light or dark, without hiding much of what it sits on.
-          <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-neutral-950/90 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm">
+          <div className="text-xxs bg-ui/70 pointer-events-none absolute top-2 left-2 z-10 rounded px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm">
             {media.state}
           </div>
         ) : null}
