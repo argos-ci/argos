@@ -13,7 +13,7 @@ import {
   stripe,
 } from "@/stripe";
 import type { Stripe } from "@/stripe";
-import { boom } from "@/util/error";
+import { boom, HTTPError } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -138,6 +138,12 @@ router.use(
 
       res.json({ sessionUrl: session.url });
     } catch (error) {
+      // Client errors (e.g. the team is already subscribed) are answered as
+      // such: the caller is a fetch(), and a redirect to /error hides the
+      // reason from it while filling the logs with a false alarm.
+      if (error instanceof HTTPError && error.statusCode < 500) {
+        throw error;
+      }
       logger.error(
         { error },
         "An error occurred while creating Stripe checkout session.",

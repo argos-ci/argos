@@ -24,6 +24,35 @@ export function checkIsActiveSubscriptionStatus(
 }
 
 /**
+ * The statuses that mean the account already holds a subscription, whether or
+ * not it currently unlocks team features.
+ *
+ * Wider than `ACTIVE_SUBSCRIPTION_STATUSES` on purpose, and it answers a
+ * different question: not "may this team use team features?" but "would
+ * subscribing again collide with an existing subscription?". A card-less trial
+ * or a past-due subscription unlocks nothing, yet Stripe checkout refuses to
+ * create a second subscription over it.
+ *
+ * This must mirror the statuses `Account#getActiveSubscription` selects on:
+ * anything it can return is a subscription checkout would collide with.
+ */
+export const SUBSCRIBED_SUBSCRIPTION_STATUSES = [
+  "active",
+  "trialing",
+  "trialing_with_payment_method",
+  "past_due",
+] as const;
+
+export function checkHasSubscriptionStatus(
+  status: string | null | undefined,
+): boolean {
+  return (
+    status != null &&
+    (SUBSCRIBED_SUBSCRIPTION_STATUSES as readonly string[]).includes(status)
+  );
+}
+
+/**
  * The statuses of a running trial, with or without a payment method.
  */
 export const TRIALING_SUBSCRIPTION_STATUSES = [

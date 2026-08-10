@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
+import {
+  checkHasSubscriptionStatus,
+  checkIsTrialingSubscriptionStatus,
+} from "@argos/schemas/subscription-status";
 
 import { AccountSelector } from "@/containers/AccountSelector";
 import { graphql } from "@/gql";
@@ -52,15 +55,17 @@ export function TeamSubscribeDialog({
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;
   const team = teams?.find((a) => a.id === accountId);
-  // Teams that already have a plan sink to the bottom and cannot be picked.
+  // Teams that already hold a subscription sink to the bottom and cannot be
+  // picked. A running trial counts even without a card on file: it unlocks
+  // nothing yet, but Stripe still refuses a second subscription on top of it.
   const sortedTeams = teams
     ? Array.from(teams).sort((a, b) => {
-        const aActive = checkIsActiveSubscriptionStatus(a.subscriptionStatus);
-        const bActive = checkIsActiveSubscriptionStatus(b.subscriptionStatus);
-        if (aActive && !bActive) {
+        const aSubscribed = checkHasSubscriptionStatus(a.subscriptionStatus);
+        const bSubscribed = checkHasSubscriptionStatus(b.subscriptionStatus);
+        if (aSubscribed && !bSubscribed) {
           return 1;
         }
-        if (!aActive && bActive) {
+        if (!aSubscribed && bSubscribed) {
           return -1;
         }
         return 0;
@@ -68,9 +73,21 @@ export function TeamSubscribeDialog({
     : null;
   const disabledReasons = Object.fromEntries(
     (teams ?? [])
-      .filter((a) => checkIsActiveSubscriptionStatus(a.subscriptionStatus))
-      .map((a) => [a.id, "Already on a paid plan"] as const),
+      .filter((a) => checkHasSubscriptionStatus(a.subscriptionStatus))
+      .map(
+        (a) =>
+          [
+            a.id,
+            checkIsTrialingSubscriptionStatus(a.subscriptionStatus)
+              ? "Trial already running"
+              : "Already on a paid plan",
+          ] as const,
+      ),
   );
+  // The initial team can itself be subscribed — the dialog opens from a banner
+  // that only knows the team it renders on — so guard the button too.
+  const teamHasSubscription =
+    !team || checkHasSubscriptionStatus(team.subscriptionStatus);
 
   return (
     <DialogTrigger>
@@ -91,11 +108,27 @@ export function TeamSubscribeDialog({
             </div>
 
             <p className="text-default mt-4 font-medium">
-              You will be redirected to Stripe to{" "}
-              {!hasSubscribedToTrial
-                ? "start a 14-day Pro plan trial"
-                : "complete the subscription"}
-              .
+              {team && checkHasSubscriptionStatus(team.subscriptionStatus) ? (
+                checkIsTrialingSubscriptionStatus(team.subscriptionStatus) ? (
+                  <>
+                    This team is already on a Pro plan trial. Add a payment
+                    method from its settings to keep it after the trial.
+                  </>
+                ) : (
+                  <>
+                    This team already has a subscription. Manage it from its
+                    settings.
+                  </>
+                )
+              ) : (
+                <>
+                  You will be redirected to Stripe to{" "}
+                  {!hasSubscribedToTrial
+                    ? "start a 14-day Pro plan trial"
+                    : "complete the subscription"}
+                  .
+                </>
+              )}
             </p>
           </DialogBody>
 
@@ -103,6 +136,7 @@ export function TeamSubscribeDialog({
             <DialogDismiss>Cancel</DialogDismiss>
 
             <StripeCheckoutButton
+              isDisabled={teamHasSubscription}
               accountId={accountId}
               successUrl={
                 team

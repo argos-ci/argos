@@ -1,9 +1,10 @@
 import { useState } from "react";
 
-import { fetchApi } from "@/util/api";
+import { APIError, fetchApi } from "@/util/api";
 
 import { Button, ButtonProps } from "./Button";
 import { LinkButton } from "./Link";
+import { toast } from "./Toaster";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
@@ -106,6 +107,11 @@ const useRedirectToStripeCheckout = () => {
         .catch((e) => {
           console.error(e);
           setStatus("error");
+          toast.error(
+            e instanceof APIError
+              ? e.message
+              : "Something went wrong, please try again.",
+          );
         });
     },
   );

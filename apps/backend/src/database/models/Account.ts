@@ -1,4 +1,7 @@
-import { ACTIVE_SUBSCRIPTION_STATUSES } from "@argos/schemas/subscription-status";
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  SUBSCRIBED_SUBSCRIPTION_STATUSES,
+} from "@argos/schemas/subscription-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { slugJsonSchema } from "@argos/util/slug";
@@ -61,6 +64,21 @@ export function checkIsActiveSubscriptionStatus(
 ): boolean {
   return status != null && ACTIVE_STATUSES.has(status);
 }
+
+/**
+ * The database statuses a live subscription can hold. Derived from the shared
+ * list so the query and the frontend guard cannot drift: a status the frontend
+ * treats as "already subscribed" but this query ignores would let someone start
+ * a second checkout on the same team.
+ */
+const SUBSCRIBED_DB_STATUSES = SUBSCRIBED_SUBSCRIPTION_STATUSES.filter(
+  (
+    status,
+  ): status is Exclude<
+    (typeof SUBSCRIBED_SUBSCRIPTION_STATUSES)[number],
+    "trialing_with_payment_method"
+  > => status !== "trialing_with_payment_method",
+) satisfies Subscription["status"][];
 
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
@@ -442,7 +460,7 @@ export class Account extends Model {
       const subscription = await Subscription.query()
         .where("accountId", this.id)
         .whereRaw("?? < now()", "startDate")
-        .whereIn("status", ["active", "trialing", "past_due"])
+        .whereIn("status", SUBSCRIBED_DB_STATUSES)
         .where((query) =>
           query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
         )

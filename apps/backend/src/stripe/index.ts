@@ -13,6 +13,7 @@ import {
   notifySubscriptionStatusUpdate,
 } from "@/database/services/subscription";
 import { sendNotification } from "@/notification";
+import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 export type { Stripe };
@@ -1024,7 +1025,14 @@ export async function createStripeCheckoutSession(args: {
     getDefaultTeamPlanItems(plan),
   ]);
 
-  invariant(!activeSubscription, "account already has an active subscription");
+  // Reachable from the UI — a stale page, a second tab, or a browser back onto
+  // the dialog after checkout — so it is a client error, not a broken
+  // invariant: Stripe would create a duplicate subscription on the same team.
+  if (activeSubscription) {
+    throw boom(409, "This team already has an active subscription.", {
+      retryable: false,
+    });
+  }
 
   return stripe.checkout.sessions.create({
     line_items: items,
