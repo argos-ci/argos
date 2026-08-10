@@ -79,6 +79,23 @@ export function getAuthorizationServerMetadata() {
       "client_secret_post",
     ],
     service_documentation: "https://argos-ci.com/docs/api-reference",
+    // Auth.md (https://workos.com/auth-md) agent-registration discovery. The
+    // `skill` document is the recipe agents actually follow — keep it in sync
+    // with these endpoints (it lives in the argos-ci.com repo). Argos maps to
+    // the profile's "anonymous" registration method: `register_uri` (RFC 7591
+    // dynamic client registration) is open to anonymous agents, and the
+    // registered client holds no credentials until a user claims it by
+    // granting consent at `claim_uri` (authorization code + PKCE).
+    agent_auth: {
+      skill: "https://argos-ci.com/auth.md",
+      register_uri: `${issuer}/oauth/register`,
+      identity_types_supported: ["anonymous"],
+      anonymous: {
+        credential_types_supported: ["access_token", "refresh_token"],
+      },
+      claim_uri: `${issuer}/oauth/authorize`,
+      revocation_uri: `${issuer}/oauth/revoke`,
+    },
   };
 }
 

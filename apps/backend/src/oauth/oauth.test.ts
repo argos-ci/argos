@@ -158,6 +158,21 @@ describe("metadata", () => {
     expect(meta.scopes_supported).toEqual(OAUTH_SCOPE_LIST);
   });
 
+  it("advertises the Auth.md agent-registration surface", () => {
+    const meta = getAuthorizationServerMetadata();
+    expect(meta.agent_auth.skill).toBe("https://argos-ci.com/auth.md");
+    // The agent_auth URLs are aliases of the standard endpoints — they must
+    // never drift apart.
+    expect(meta.agent_auth.register_uri).toBe(meta.registration_endpoint);
+    expect(meta.agent_auth.claim_uri).toBe(meta.authorization_endpoint);
+    expect(meta.agent_auth.revocation_uri).toBe(meta.revocation_endpoint);
+    expect(meta.agent_auth.identity_types_supported).toEqual(["anonymous"]);
+    expect(meta.agent_auth.anonymous.credential_types_supported).toEqual([
+      "access_token",
+      "refresh_token",
+    ]);
+  });
+
   it("exposes RFC 9728 protected resource metadata pointing at the AS", () => {
     const prm = getProtectedResourceMetadata();
     const as = getAuthorizationServerMetadata();
