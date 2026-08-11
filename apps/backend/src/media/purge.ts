@@ -44,21 +44,24 @@ export async function purgeExpiredMedia(
     const ids = batch.map((version) => version.id);
     const mediaIds = [...new Set(batch.map((version) => version.mediaId))];
 
-    // Keys are content-addressed, so one still referenced by a version that has
-    // not expired must survive this batch.
-    await deleteUnreferencedMediaObjects({
-      keys: batch.map((version) => version.key),
-      excludeVersionIds: ids,
-    });
-
     // The before/after masks computed from these versions go with them. Their
     // rows cascade off the foreign key, but the objects are ours to collect, and
-    // they have to go before the cascade takes the rows that name them.
+    // they have to be read before the cascade takes the rows that name them.
     const diffs = await getMediaDiffObjects(ids);
-    await deleteUnreferencedMediaDiffObjects({
-      keys: diffs.keys,
-      excludeDiffIds: diffs.diffIds,
-    });
+
+    // Keys are content-addressed, so one still referenced by a version that has
+    // not expired must survive this batch. Two independent key namespaces, so
+    // the two passes go together.
+    await Promise.all([
+      deleteUnreferencedMediaObjects({
+        keys: batch.map((version) => version.key),
+        excludeVersionIds: ids,
+      }),
+      deleteUnreferencedMediaDiffObjects({
+        keys: diffs.keys,
+        excludeDiffIds: diffs.diffIds,
+      }),
+    ]);
 
     await MediaVersion.query().delete().whereIn("id", ids);
 

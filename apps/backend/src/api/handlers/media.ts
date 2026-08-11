@@ -17,6 +17,7 @@ import {
   Project,
 } from "@/database/models";
 import type { ProjectPermission } from "@/database/models/Project";
+import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { processPullRequest } from "@/github-pull-request/process";
@@ -420,26 +421,42 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
       action: "destroy",
     });
 
+    // One transaction for the rows, storage once it commits — the order
+    // `unsafe_deleteProject` uses, and for its reason: storage is not
+    // transactional, so dropping the bytes first would lose them for a media
+    // that is still there if the delete rolled back afterwards.
+    //
     // Every version, not just the latest: deleting a media deletes its whole
-    // history. Objects first — a row deleted while its bytes survive leaves
-    // storage nobody references, and there is no second pass that would find it.
-    // Keys another version still points at are kept, which versions make routine:
-    // reverting a screenshot produces a version sharing an older one's key.
-    const versions = await MediaVersion.query().where("mediaId", media.id);
-    const versionIds = versions.map((version) => version.id);
-    // The pair's diff masks are derived bytes hanging off those versions, and
-    // their rows cascade away with them — so they have to be collected here,
-    // while something still names them.
-    const diffs = await getMediaDiffObjects(versionIds);
-    await deleteUnreferencedMediaObjects({
-      keys: versions.map((version) => version.key),
-      excludeVersionIds: versionIds,
+    // history. The before/after diff masks are derived bytes hanging off those
+    // versions and their rows cascade away with them, so both sets of keys have
+    // to be read here, while something still names them.
+    const { versionKeys, diffKeys } = await transaction(async (trx) => {
+      const versions = await MediaVersion.query(trx).where("mediaId", media.id);
+      const diffs = await getMediaDiffObjects(
+        versions.map((version) => version.id),
+        trx,
+      );
+      await media.$query(trx).delete();
+      return {
+        versionKeys: versions.map((version) => version.key),
+        diffKeys: diffs.keys,
+      };
     });
-    await deleteUnreferencedMediaDiffObjects({
-      keys: diffs.keys,
-      excludeDiffIds: diffs.diffIds,
-    });
-    await media.$query().delete();
+
+    // Nothing references these rows any more, so no exclusions: the checks
+    // inside read the real post-delete state. They are still needed — keys are
+    // content-addressed, so another media can be serving the same bytes.
+    // Two independent key namespaces, so the two passes go together.
+    await Promise.all([
+      deleteUnreferencedMediaObjects({
+        keys: versionKeys,
+        excludeVersionIds: [],
+      }),
+      deleteUnreferencedMediaDiffObjects({
+        keys: diffKeys,
+        excludeDiffIds: [],
+      }),
+    ]);
 
     // The comment lists what is still there, so it has to lose this entry.
     if (media.githubPullRequestId) {

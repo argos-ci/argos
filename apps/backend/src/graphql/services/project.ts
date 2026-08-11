@@ -239,14 +239,21 @@ export async function unsafe_deleteProject(args: {
     await Project.query(trx).findById(args.projectId).delete();
   });
 
-  // The rows are gone, so nothing references these keys any more — but another
-  // project's media could share one, which the check inside handles.
-  await deleteUnreferencedMediaObjects({
-    keys: mediaKeys,
-    excludeVersionIds: [],
-  });
-  await deleteUnreferencedMediaDiffObjects({
-    keys: mediaDiffKeys,
-    excludeDiffIds: [],
-  });
+  // Outside the transaction on purpose — see where the keys are collected:
+  // storage is not transactional, and a rollback after the files were dropped
+  // would leave a live project whose media is gone. The rows are committed by
+  // now, so nothing references these keys any more — but another project's media
+  // could share one, which the checks inside handle.
+  //
+  // Two independent key namespaces, so the two passes go together.
+  await Promise.all([
+    deleteUnreferencedMediaObjects({
+      keys: mediaKeys,
+      excludeVersionIds: [],
+    }),
+    deleteUnreferencedMediaDiffObjects({
+      keys: mediaDiffKeys,
+      excludeDiffIds: [],
+    }),
+  ]);
 }

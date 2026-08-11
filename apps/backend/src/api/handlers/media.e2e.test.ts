@@ -599,10 +599,16 @@ describe("deleteMedia", () => {
       .set("Authorization", `Bearer ${projectToken}`)
       .expect(204);
 
-    expect(getMediaDiffObjects).toHaveBeenCalledWith([version.id]);
+    // Read inside the transaction, while the rows still name the objects.
+    expect(getMediaDiffObjects).toHaveBeenCalledWith(
+      [version.id],
+      expect.anything(),
+    );
+    // Dropped after it commits, so the reference check reads the real
+    // post-delete state and needs no exclusions.
     expect(deleteUnreferencedMediaDiffObjects).toHaveBeenCalledWith({
       keys: ["media/1/diffs/mask.png"],
-      excludeDiffIds: ["1"],
+      excludeDiffIds: [],
     });
   });
 });
