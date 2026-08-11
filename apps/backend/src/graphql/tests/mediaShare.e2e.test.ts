@@ -185,7 +185,9 @@ describe("mediaByShareToken", () => {
     expect(result.markdown).toBe(
       `[![checkout.png](${result.latestVersion.fileUrl})](${result.url})`,
     );
-    expect(result.markdownPair).toContain("| Name | Before | After |");
+    expect(result.markdownPair).toContain(
+      "<tr><th>Name</th><th>Before</th><th>After</th></tr>",
+    );
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);
 
