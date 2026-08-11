@@ -709,6 +709,29 @@ function VisibilityChip(props: { visibility: MediaVisibility }) {
 }
 
 /**
+ * Whose infrastructure served this page, for a visitor who has never seen Argos
+ * — the only branding either state of a share URL carries, now that the name is
+ * over the media and the footer is gone.
+ */
+function BrandLink() {
+  return (
+    <Tooltip content="Visual testing for your pull requests">
+      <HeadlessLink
+        href="https://argos-ci.com"
+        target="_blank"
+        // The mark is the link; the usual arrow beside it would hang off a logo
+        // rather than off a phrase.
+        external={false}
+        aria-label="Argos"
+        className="shrink-0 transition hover:brightness-125"
+      >
+        <BrandShield height={32} />
+      </HeadlessLink>
+    </Tooltip>
+  );
+}
+
+/**
  * The bar over the page: whose infrastructure served it on the left, and on the
  * right where the media came from, who can open it, and the same
  * login-or-avatar control as the app's.
@@ -722,19 +745,7 @@ function PageHeader(props: { media: Media }) {
   return (
     <header className="border-b-thin flex shrink-0 items-center justify-between gap-4 px-4 py-2">
       <div className="flex min-w-0 items-center gap-3">
-        <Tooltip content="Visual testing for your pull requests">
-          <HeadlessLink
-            href="https://argos-ci.com"
-            target="_blank"
-            // The mark is the link; the usual arrow beside it would hang off a
-            // logo rather than off a phrase.
-            external={false}
-            aria-label="Argos"
-            className="shrink-0 transition hover:brightness-125"
-          >
-            <BrandShield height={32} />
-          </HeadlessLink>
-        </Tooltip>
+        <BrandLink />
         {/* Null unless the viewer can reach the project — the resolver decides,
             so nothing here has to remember not to leak it. Reads as the build
             header's breadcrumb does: whose infrastructure, then whose work. */}
@@ -803,6 +814,12 @@ function UnavailableState() {
         <title>Media unavailable</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+      {/* The same corner as a working share page's, so a dead link still says
+          whose page it was — the empty state sells Argos in words, and this is
+          the one thing that shows it. */}
+      <header className="border-b-thin flex shrink-0 items-center px-4 py-2">
+        <BrandLink />
+      </header>
       <div className="bg-subtle flex flex-1 flex-col justify-center py-8">
         <EmptyState>
           <EmptyStateIllustration>
