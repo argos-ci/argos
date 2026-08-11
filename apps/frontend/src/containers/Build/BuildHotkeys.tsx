@@ -188,35 +188,39 @@ const hotkeyGroups = [
         description: "Go to previous changes",
         envs: ["test", "build", "media"],
       },
+      // A media pair is compared with the same controls as a build's snapshot,
+      // so it answers to the same keys. The wording is the build's because the
+      // two sides are the same two things: a media's "before" is the baseline
+      // it is compared against, and its "after" is what changed.
       showBaseline: {
         keys: ["ArrowLeft"],
         displayKeys: ["←"],
         description: "Show only baseline",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       showChanges: {
         keys: ["ArrowRight"],
         displayKeys: ["→"],
         description: "Show only changes",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       showOnion: {
         keys: ["KeyO"],
         displayKeys: ["O"],
         description: "Show onion skin view",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       showSwipe: {
         keys: ["KeyW"],
         displayKeys: ["W"],
         description: "Show swipe view",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       toggleSplitView: {
         keys: ["KeyS"],
         displayKeys: ["S"],
         description: "Toggle side by side mode",
-        envs: ["test", "build"],
+        envs: ["test", "build", "media"],
       },
       toggleDiffFit: {
         keys: ["Space"],

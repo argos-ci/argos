@@ -309,6 +309,50 @@ loggedTest(
 );
 
 loggedTest(
+  "switches between the two halves with the build's own controls",
+  async ({ page, project }) => {
+    // A pair and a build's baseline-against-changes are the same question, so
+    // they are looked at with the same controls and the same shortcuts — only
+    // the two words differ.
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const panes = page.locator("[data-media-pane]");
+    await expect(panes).toHaveCount(2);
+
+    // `S` leaves side by side for one image at a time, and the toggle appears.
+    await page.keyboard.press("s");
+    await expect(panes).toHaveCount(1);
+    const after = page.getByRole("button", { name: "After", exact: true });
+    const before = page.getByRole("button", { name: "Before", exact: true });
+    await expect(after).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("img", { name: "checkout.png (after)" }),
+    ).toBeVisible();
+
+    // `←` shows the other half alone, `→` comes back — the build's keys.
+    await page.keyboard.press("ArrowLeft");
+    await expect(before).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+    await expect(panes).toHaveCount(1);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(after).toHaveAttribute("aria-pressed", "true");
+
+    // And the buttons do what the keys do.
+    await before.click();
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+
+    await screenshot(page, "media-share-single-half");
+  },
+);
+
+loggedTest(
   "rings the half a pin would land on, in compare mode",
   async ({ page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes
@@ -320,9 +364,8 @@ loggedTest(
     });
 
     await page.goto(`/m/${media.after.shareToken}`);
-    await page.getByRole("button", { name: "Compare" }).click();
-    await page.getByRole("button", { name: "Side by side" }).click();
 
+    // Side by side is the default, the same one a build opens with.
     const panes = page.locator("[data-media-pane]");
     await expect(panes).toHaveCount(2);
     // Nothing is singled out until the tool is armed: a ring that is always on

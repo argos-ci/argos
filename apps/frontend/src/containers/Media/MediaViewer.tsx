@@ -7,7 +7,6 @@ import {
 } from "react";
 import { clsx } from "clsx";
 import { useAtom, useAtomValue } from "jotai/react";
-import { atomWithStorage } from "jotai/utils";
 import { DownloadIcon } from "lucide-react";
 
 import {
@@ -15,6 +14,14 @@ import {
   SwipeDivider,
 } from "@/containers/Build/BlendControls";
 import { BuildDiffHighlighterProvider } from "@/containers/Build/BuildDiffHighlighterContext";
+import {
+  buildViewModeAtom,
+  checkIsBlendViewMode,
+  onionOpacityAtom,
+  swipeHandleYAtom,
+  swipePositionAtom,
+  type ViewMode,
+} from "@/containers/Build/BuildViewMode";
 import {
   ChangesHighlights,
   ChangesMask,
@@ -42,9 +49,11 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
+import {
+  SplitViewToggle,
+  ViewToggle,
+} from "@/containers/Build/toolbar/ViewToggle";
 import { ZoomerSyncProvider, ZoomPane } from "@/containers/Build/Zoomer";
-import { Button } from "@/ui/Button";
-import { ButtonGroup } from "@/ui/ButtonGroup";
 import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Separator } from "@/ui/Separator";
@@ -93,16 +102,14 @@ export type ViewerDiff = {
 };
 
 /**
- * How a before/after pair is looked at. `split` and `single` mirror the build's
- * side-by-side and one-image views; `onion` and `swipe` blend the two halves
- * into one pane, exactly like the build's diff viewer.
+ * How a pair is looked at — the build's own modes, on the build's own atom.
+ *
+ * A pair of media and a build's baseline against its changes are the same
+ * question, so they are looked at with the same controls and the same
+ * preference: someone who works side by side on builds gets side by side here
+ * without having to say so twice. `baseline` is the "before" and `changes` is
+ * the "after".
  */
-type MediaViewMode = "single" | "split" | "onion" | "swipe";
-
-const mediaViewModeAtom = atomWithStorage<MediaViewMode>(
-  "preferences.mediaViewMode",
-  "split",
-);
 
 /** Wiring for the comment layer drawn over the media's own pane. */
 type ViewerComments = Omit<
@@ -194,10 +201,10 @@ export function MediaViewer(props: {
 }) {
   const { media, counterpart, comments, diff, nav } = props;
   const version = media.version;
-  const [storedMode, setMode] = useAtom(mediaViewModeAtom);
-  const [onionOpacity, setOnionOpacity] = useState(0.5);
-  const [swipePosition, setSwipePosition] = useState(0.5);
-  const [swipeHandleY, setSwipeHandleY] = useState(0.5);
+  const storedMode = useAtomValue(buildViewModeAtom);
+  const [onionOpacity, setOnionOpacity] = useAtom(onionOpacityAtom);
+  const [swipePosition, setSwipePosition] = useAtom(swipePositionAtom);
+  const [swipeHandleY, setSwipeHandleY] = useAtom(swipeHandleYAtom);
 
   if (version.isVideo) {
     return (
@@ -226,15 +233,24 @@ export function MediaViewer(props: {
     );
   }
 
-  // The compare modes need the other half; without one the media stands alone.
-  const mode: MediaViewMode = counterpart ? storedMode : "single";
+  // Every mode but one needs the other half; without it the media stands alone,
+  // which is what "changes" means here — this media, on its own.
+  const mode: ViewMode = counterpart ? storedMode : "changes";
 
+  // Which half is which, whichever one this page is for. A pair is ordered so
+  // the "before" is always on the left: one that read right-to-left depending on
+  // which link the reviewer clicked would be actively misleading.
+  const beforeMedia = media.state === "before" ? media : (counterpart ?? media);
+  const afterMedia = media.state === "before" ? counterpart : media;
+
+  // Blended, the pane shows the "after" with the "before" laid over it — the
+  // same base the mask goes on, so the two describe the same image.
   const blend: BlendState | null =
-    counterpart && (mode === "onion" || mode === "swipe")
+    counterpart && checkIsBlendViewMode(mode)
       ? {
           mode,
-          counterpart: counterpart.version,
-          counterpartIsAfter: counterpart.state === "after",
+          counterpart: beforeMedia.version,
+          counterpartIsAfter: beforeMedia.state === "after",
           onionOpacity,
           onOnionOpacityChange: setOnionOpacity,
           swipe: {
@@ -246,27 +262,49 @@ export function MediaViewer(props: {
         }
       : null;
 
-  // Ordered so "before" is always on the left, whichever half was opened. A pair
-  // that read right-to-left depending on which link the reviewer clicked would be
-  // actively misleading.
-  //
-  // `changes` marks the pane the mask belongs on. Side by side, that is the
-  // "after" — the build's rule, and the one that reads right: the overlay says
-  // "here is what this half changed". Everywhere else there is a single pane,
-  // showing the after alone or both halves blended into it, and the mask goes
-  // there.
-  const panes =
-    counterpart && mode === "split"
-      ? media.state === "before"
-        ? [
-            { media, interactive: true, changes: false },
-            { media: counterpart, interactive: false, changes: true },
-          ]
-        : [
-            { media: counterpart, interactive: false, changes: false },
-            { media, interactive: true, changes: true },
-          ]
-      : [{ media, interactive: true, changes: true }];
+  // `changes` marks the pane the mask belongs on: the "after", the build's rule
+  // and the one that reads right — the overlay says "here is what this half
+  // changed". `interactive` marks the pane this page's comments belong to;
+  // drawing them on the counterpart would attach feedback to the wrong image.
+  const panes = (() => {
+    if (!counterpart || !afterMedia) {
+      return [{ media, interactive: true, changes: true }];
+    }
+    switch (mode) {
+      case "split":
+        return [
+          {
+            media: beforeMedia,
+            interactive: beforeMedia === media,
+            changes: false,
+          },
+          {
+            media: afterMedia,
+            interactive: afterMedia === media,
+            changes: true,
+          },
+        ];
+      case "baseline":
+        // The "before" on its own — nothing changed *it*, so no mask.
+        return [
+          {
+            media: beforeMedia,
+            interactive: beforeMedia === media,
+            changes: false,
+          },
+        ];
+      // The "after" alone, or both halves blended into one pane. Either way the
+      // mask describes what is under it.
+      default:
+        return [
+          {
+            media: afterMedia,
+            interactive: afterMedia === media,
+            changes: true,
+          },
+        ];
+    }
+  })();
 
   // Where the page stacks (below `lg`), the viewer sizes itself from the
   // media's own shape instead of claiming a fixed slice of the viewport: a
@@ -292,11 +330,7 @@ export function MediaViewer(props: {
             nav={nav}
             compare={
               counterpart
-                ? {
-                    mode,
-                    onModeChange: setMode,
-                    hasChanges: diff !== null,
-                  }
+                ? { blendEnabled: true, hasChanges: diff !== null }
                 : null
             }
           />
@@ -321,10 +355,9 @@ export function MediaViewer(props: {
                 // is still one side of a comparison. Blended panes show both
                 // halves, and their controls already name the two layers.
                 labelled={
-                  panes.length > 1 ||
-                  Boolean(mode === "single" && pane.media.state && counterpart)
+                  panes.length > 1 || Boolean(pane.media.state && counterpart)
                 }
-                blend={pane.interactive ? blend : null}
+                blend={pane.changes ? blend : null}
                 // Comments and the version picker belong to the media whose page
                 // this is. Drawing them on the counterpart would attach feedback
                 // to the wrong image.
@@ -368,14 +401,13 @@ function MediaViewToolbar(props: {
   nav: MediaViewerNav | null;
   /** The pair's controls, absent when the media stands alone or is a video. */
   compare: {
-    mode: MediaViewMode;
-    onModeChange: (mode: MediaViewMode) => void;
+    /** Whether the two halves can be blended into one pane. */
+    blendEnabled: boolean;
     /** Whether there is a mask to draw — the overlay controls act on nothing without one. */
     hasChanges: boolean;
   } | null;
 }) {
   const { title, facts, nav, compare } = props;
-  const comparing = compare !== null && compare.mode !== "single";
   return (
     // `mb-4` + the viewer column's `gap-2` puts 24px between the toolbar and
     // the panes, level with the sidebar's action strip.
@@ -406,54 +438,25 @@ function MediaViewToolbar(props: {
             narrow to hold them and they wrap under the title. */}
         <div className="ml-auto flex flex-wrap items-center gap-3">
           {compare ? (
-            <>
-              <ButtonGroup>
-                <Button
-                  variant="secondary"
-                  aria-pressed={!comparing}
-                  onPress={() => compare.onModeChange("single")}
-                >
-                  Single
-                </Button>
-                <Button
-                  variant="secondary"
-                  aria-pressed={comparing}
-                  onPress={() => compare.onModeChange("split")}
-                >
-                  Compare
-                </Button>
-              </ButtonGroup>
-              {comparing ? (
-                <ButtonGroup>
-                  {(
-                    [
-                      ["split", "Side by side"],
-                      ["onion", "Onion"],
-                      ["swipe", "Swipe"],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <Button
-                      key={value}
-                      variant="secondary"
-                      aria-pressed={compare.mode === value}
-                      onPress={() => compare.onModeChange(value)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </ButtonGroup>
-              ) : null}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {/* The build's own controls, on the build's own state: which half
+                  to look at, or both at once, with the same shortcuts. Only the
+                  two words change, because here the baseline is the "before"
+                  and the changes are the "after". */}
+              <ViewToggle
+                blendEnabled={compare.blendEnabled}
+                labels={{ baseline: "Before", changes: "After" }}
+              />
+              <SplitViewToggle />
               {compare.hasChanges ? (
                 <>
-                  <Separator orientation="vertical" className="h-6" />
-                  {/* The build's own cluster, unchanged: the same buttons, the
-                      same tooltips, the same D / H / J / K shortcuts. */}
-                  <div className="flex items-center gap-1.5">
-                    <ChangesOverlayControls />
-                  </div>
+                  <Separator orientation="vertical" className="mx-1 h-6" />
+                  {/* Same again: the same buttons, the same tooltips, the same
+                      D / H / J / K shortcuts. */}
+                  <ChangesOverlayControls />
                 </>
               ) : null}
-            </>
+            </div>
           ) : null}
         </div>
       </DetailToolbar>
