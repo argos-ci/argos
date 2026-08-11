@@ -101,9 +101,18 @@ describe("getMediaTableMarkdown", () => {
       ]),
     ).toBe(
       [
-        "| Name | Before | After | Notes |",
-        "| --- | --- | --- | --- |",
-        "| checkout.png | [![checkout.png](https://files/before.webp)](https://app/m/before) | [![checkout.png](https://files/after.webp)](https://app/m/after) | Checkout after the spacing fix. |",
+        "<table>",
+        "<thead>",
+        "<tr><th>Name</th><th>Before</th><th>After</th></tr>",
+        "</thead>",
+        "<tbody>",
+        "<tr>",
+        "<td><strong>checkout.png</strong><br>Checkout after the spacing fix.</td>",
+        '<td><a href="https://app/m/before"><img src="https://files/before.webp" alt="checkout.png"></a></td>',
+        '<td><a href="https://app/m/after"><img src="https://files/after.webp" alt="checkout.png"></a></td>',
+        "</tr>",
+        "</tbody>",
+        "</table>",
       ].join("\n"),
     );
   });
@@ -126,65 +135,112 @@ describe("getMediaTableMarkdown", () => {
       ]),
     ).toBe(
       [
-        "| Name | Preview |",
-        "| --- | --- |",
-        `| dashboard.png | [![dashboard.png](${fileUrl})](${shareUrl}) |`,
+        "<table>",
+        "<thead>",
+        "<tr><th>Name</th><th>Preview</th></tr>",
+        "</thead>",
+        "<tbody>",
+        "<tr>",
+        "<td><strong>dashboard.png</strong></td>",
+        `<td><a href="${shareUrl}"><img src="${fileUrl}" alt="dashboard.png"></a></td>`,
+        "</tr>",
+        "</tbody>",
+        "</table>",
       ].join("\n"),
     );
   });
 
-  it("escapes pipes so a name cannot break out of its cell", () => {
-    expect(
-      getMediaTableMarkdown([
-        {
-          name: "a|b.png",
-          description: null,
-          before: null,
-          after: {
-            name: "a|b.png",
-            shareUrl,
-            fileUrl,
-            posterUrl: null,
-            isVideo: false,
-          },
+  it("spans a lone media across both columns of a table that has pairs", () => {
+    // Without the colspan the lone media sits in one column with a hole beside
+    // it, reading as a pair whose other half went missing.
+    const table = getMediaTableMarkdown([
+      {
+        name: "checkout.png",
+        description: null,
+        before: {
+          name: "checkout.png",
+          shareUrl: "https://app/m/before",
+          fileUrl: "https://files/before.webp",
+          posterUrl: null,
+          isVideo: false,
         },
-      ]),
-    ).toBe(
-      [
-        "| Name | Preview |",
-        "| --- | --- |",
-        // Both cells: the pipe is escaped in the name column and again inside
-        // the embed's alt text, which is a cell of its own.
-        `| a\\|b.png | [![a\\|b.png](${fileUrl})](${shareUrl}) |`,
-      ].join("\n"),
+        after: {
+          name: "checkout.png",
+          shareUrl: "https://app/m/after",
+          fileUrl: "https://files/after.webp",
+          posterUrl: null,
+          isVideo: false,
+        },
+      },
+      {
+        name: "dashboard.png",
+        description: null,
+        before: null,
+        after: {
+          name: "dashboard.png",
+          shareUrl,
+          fileUrl,
+          posterUrl: null,
+          isVideo: false,
+        },
+      },
+    ]);
+
+    expect(table).toContain(
+      `<td colspan="2"><a href="${shareUrl}"><img src="${fileUrl}" alt="dashboard.png"></a></td>`,
     );
   });
 
-  it("escapes a trailing backslash so it cannot escape the pipe escape", () => {
-    // `a\` + `|` naively escaped gives `a\\|`, which renders a literal backslash
-    // followed by a live pipe — a new column, from a file name.
-    expect(
-      getMediaTableMarkdown([
-        {
-          name: "a\\|b.png",
-          description: null,
-          before: null,
-          after: {
-            name: "dashboard.png",
-            shareUrl,
-            fileUrl,
-            posterUrl: null,
-            isVideo: false,
-          },
+  it("escapes a name so it cannot inject markup into the table", () => {
+    // The whole table is raw HTML to GitHub, so an unescaped name is markup —
+    // in the label as a tag, in the alt attribute by closing the quote.
+    const table = getMediaTableMarkdown([
+      {
+        name: '<img src=x> "b.png',
+        description: null,
+        before: null,
+        after: {
+          name: '<img src=x> "b.png',
+          shareUrl,
+          fileUrl,
+          posterUrl: null,
+          isVideo: false,
         },
-      ]),
-    ).toContain("| a\\\\\\|b.png |");
+      },
+    ]);
+
+    expect(table).toContain(
+      "<td><strong>&lt;img src=x&gt; &quot;b.png</strong></td>",
+    );
+    expect(table).toContain('alt="&lt;img src=x&gt; &quot;b.png"');
+    expect(table).not.toContain("<img src=x>");
   });
 
-  it("collapses a lone carriage return, which also ends a row", () => {
-    // CommonMark and GFM treat a bare `\r` as a line ending, so matching only
-    // `\r?\n` leaves it to end the row and drop the rest into the comment as
-    // top-level Markdown.
+  it("keeps a blank line in a note from ending the HTML block", () => {
+    // GFM resumes Markdown parsing after a blank line inside an HTML block, so
+    // an unescaped one dumps the rest of the table into the comment as text.
+    const table = getMediaTableMarkdown([
+      {
+        name: "dashboard.png",
+        description: "First.\n\nSecond.",
+        before: null,
+        after: {
+          name: "dashboard.png",
+          shareUrl,
+          fileUrl,
+          posterUrl: null,
+          isVideo: false,
+        },
+      },
+    ]);
+
+    expect(table).toContain("First.<br><br>Second.");
+    expect(table).not.toContain("\n\n");
+  });
+
+  it("collapses a lone carriage return, which is also a line ending", () => {
+    // CommonMark and GFM treat a bare `\r` as a line ending too, so matching
+    // only `\r?\n` leaves it able to form the blank line that ends the block.
     expect(
       getMediaTableMarkdown([
         {
@@ -200,13 +256,10 @@ describe("getMediaTableMarkdown", () => {
           },
         },
       ]),
-    ).toContain("| First.<br>Second. |");
+    ).toContain("First.<br>Second.");
   });
 
-  it("collapses a newline in a name, which sits inside the embed", () => {
-    // The alt text is a cell of its own that `escapeTableCell` cannot reach, so
-    // a raw newline there ends the row mid-embed and leaks the rest as body
-    // text — the break the cell escaping exists to stop.
+  it("collapses a newline in a name, in the label and in the alt attribute", () => {
     const table = getMediaTableMarkdown([
       {
         name: "a\nb.png",
@@ -222,33 +275,28 @@ describe("getMediaTableMarkdown", () => {
       },
     ]);
 
-    expect(table).toBe(
-      [
-        "| Name | Preview |",
-        "| --- | --- |",
-        `| a<br>b.png | [![a<br>b.png](${fileUrl})](${shareUrl}) |`,
-      ].join("\n"),
-    );
-    // One row per group, whatever the name contains.
-    expect(table.split("\n")).toHaveLength(3);
+    expect(table).toContain("<td><strong>a<br>b.png</strong></td>");
+    // A `<br>` means nothing inside an attribute, so there the newline becomes
+    // a space instead.
+    expect(table).toContain('alt="a b.png"');
   });
 
-  it("turns a newline in a note into a line break instead of a new row", () => {
+  it("degrades a poster-less video cell to a plain link", () => {
     expect(
       getMediaTableMarkdown([
         {
-          name: "dashboard.png",
-          description: "First line.\nSecond line.",
+          name: "checkout.mp4",
+          description: null,
           before: null,
           after: {
-            name: "dashboard.png",
+            name: "checkout.mp4",
             shareUrl,
             fileUrl,
             posterUrl: null,
-            isVideo: false,
+            isVideo: true,
           },
         },
       ]),
-    ).toContain("| First line.<br>Second line. |");
+    ).toContain(`<td><a href="${shareUrl}">▶ checkout.mp4</a></td>`);
   });
 });

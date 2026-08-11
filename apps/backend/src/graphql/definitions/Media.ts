@@ -144,9 +144,10 @@ export const typeDefs = gql`
     """
     markdown: String!
     """
-    Ready-to-paste Markdown table showing the before/after pair side by side —
-    the same rendering the managed pull request comment uses. Null when this
-    media is not half of an uploaded pair.
+    Ready-to-paste table showing the before/after pair side by side — the same
+    rendering the managed pull request comment uses (an HTML table, which
+    GitHub-flavored Markdown renders as-is). Null when this media is not half
+    of an uploaded pair.
     """
     markdownPair: String
     "The newest uploaded version — what the share page and the comment show"

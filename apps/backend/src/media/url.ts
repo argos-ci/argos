@@ -57,65 +57,115 @@ export function getMediaMarkdown(args: MediaEmbedArgs): string {
 /** One row of the media table: a pair's two halves, or a lone media. */
 export type MediaMarkdownGroup = {
   name: string;
-  /** The pair's note — shown in a Notes column when any group has one. */
+  /** The pair's note — shown under the name in the Name cell. */
   description: string | null;
   before: MediaEmbedArgs | null;
   after: MediaEmbedArgs | null;
 };
 
 /**
- * The Markdown table presenting media, a before/after pair side by side in one
- * row. One rendering shared by the managed pull request comment and by the
- * share page's copyable snippet, so what a reviewer pastes by hand shows up
- * exactly like what the bot posts.
+ * The table presenting media, a before/after pair side by side in one row. One
+ * rendering shared by the managed pull request comment and by the share page's
+ * copyable snippet, so what a reviewer pastes by hand shows up exactly like
+ * what the bot posts.
+ *
+ * An HTML table rather than a pipe table, for two things Markdown cannot say:
+ * the description sits under the name in the same cell instead of in a Notes
+ * column at the far end, and a lone media in a table that has pairs spans both
+ * columns with `colspan` instead of leaving a hole. GitHub does not process
+ * Markdown inside an HTML block, so every cell — embeds included — is written
+ * as HTML.
  */
 export function getMediaTableMarkdown(groups: MediaMarkdownGroup[]): string {
   const hasPairs = groups.some((group) => group.before && group.after);
-  const hasNotes = groups.some((group) => group.description);
 
   const rows = groups.flatMap((group) => {
     const solo = group.after ?? group.before;
     if (!solo) {
       return [];
     }
-    const cells = hasPairs
-      ? [
-          escapeTableCell(group.name),
-          group.before ? getMediaMarkdown(group.before) : "",
-          group.after ? getMediaMarkdown(group.after) : "",
-        ]
-      : [escapeTableCell(group.name), getMediaMarkdown(solo)];
-    if (group.description) {
-      cells.push(escapeTableCell(group.description));
-    } else if (hasNotes) {
-      cells.push("");
-    }
-    return [`| ${cells.join(" | ")} |`];
+    const name = `<strong>${escapeHtmlText(group.name)}</strong>`;
+    const label = group.description
+      ? `${name}<br>${escapeHtmlText(group.description)}`
+      : name;
+    const cells =
+      group.before && group.after
+        ? [
+            `<td>${getMediaCellHtml(group.before)}</td>`,
+            `<td>${getMediaCellHtml(group.after)}</td>`,
+          ]
+        : [
+            hasPairs
+              ? `<td colspan="2">${getMediaCellHtml(solo)}</td>`
+              : `<td>${getMediaCellHtml(solo)}</td>`,
+          ];
+    return [["<tr>", `<td>${label}</td>`, ...cells, "</tr>"].join("\n")];
   });
 
-  const headers = hasPairs ? ["Name", "Before", "After"] : ["Name", "Preview"];
-  if (hasNotes) {
-    headers.push("Notes");
-  }
+  const headers = hasPairs
+    ? "<tr><th>Name</th><th>Before</th><th>After</th></tr>"
+    : "<tr><th>Name</th><th>Preview</th></tr>";
 
   return [
-    `| ${headers.join(" | ")} |`,
-    `| ${headers.map(() => "---").join(" | ")} |`,
+    "<table>",
+    "<thead>",
+    headers,
+    "</thead>",
+    "<tbody>",
     ...rows,
+    "</tbody>",
+    "</table>",
   ].join("\n");
 }
 
 /**
- * Escape a value so it stays inside its table cell.
- *
- * Backslashes go first, and skipping them is not cosmetic: escaping turns `|`
- * into `\|`, so a value already ending in a backslash would have that backslash
- * escaped by ours and let the pipe through — the very break this prevents. A
- * newline has no escape at all, since it ends the row outright, so it becomes the
- * `<br>` GitHub renders a line break with inside a cell.
+ * The embed for one table cell: the picture linked to its share page, mirroring
+ * {@link getMediaMarkdown} — same preview choice (the file for an image, the
+ * poster frame for a video, a plain link for a video with no poster yet) —
+ * spelled as HTML because Markdown is inert inside the table.
  */
-function escapeTableCell(value: string): string {
-  return collapseLineBreaks(value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|"));
+function getMediaCellHtml(args: MediaEmbedArgs): string {
+  const { name, shareUrl, fileUrl, posterUrl, isVideo } = args;
+  const previewUrl = isVideo ? posterUrl : fileUrl;
+  const href = escapeHtmlAttribute(shareUrl);
+
+  if (!previewUrl) {
+    return `<a href="${href}">▶ ${escapeHtmlText(name)}</a>`;
+  }
+
+  return `<a href="${href}"><img src="${escapeHtmlAttribute(previewUrl)}" alt="${escapeHtmlAttribute(name)}"></a>`;
+}
+
+/**
+ * Escape the characters HTML assigns meaning to. `"` is in the set so the same
+ * escaping is safe inside double-quoted attribute values, where a stray quote
+ * would close the attribute and let a file name inject markup.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Escape a value for a cell's text content. Line endings become `<br>`: a
+ * blank line anywhere inside the table ends the HTML block — GFM resumes
+ * Markdown parsing after one — and dumps the rest of the table into the
+ * comment as body text.
+ */
+function escapeHtmlText(value: string): string {
+  return collapseLineBreaks(escapeHtml(value));
+}
+
+/**
+ * Escape a value for an attribute. Line endings become spaces rather than
+ * `<br>` — a tag means nothing inside `alt="…"` — but they still have to go,
+ * because a blank line ends the HTML block even mid-attribute.
+ */
+function escapeHtmlAttribute(value: string): string {
+  return escapeHtml(value).replace(/\r\n|[\r\n]/g, " ");
 }
 
 /**
@@ -136,10 +186,10 @@ function collapseLineBreaks(value: string): string {
  * the rest as body text.
  *
  * `|` is in the set, and line endings are collapsed, even though neither means
- * anything to a link: these labels are rendered into table cells, where a raw
- * pipe opens a column mid-embed and a raw newline ends the row outright. The
- * cell escaping cannot reach them — by then the label is glued to a URL that
- * must not be escaped — so the label has to arrive already safe.
+ * anything to a link: this snippet exists to be pasted, and a pipe-table cell
+ * is one of the places it lands — where a raw pipe opens a column mid-embed
+ * and a raw newline ends the row outright — so the label has to arrive
+ * already safe.
  */
 function escapeMarkdownText(value: string): string {
   return collapseLineBreaks(value.replace(/([[\]\\|])/g, "\\$1"));
