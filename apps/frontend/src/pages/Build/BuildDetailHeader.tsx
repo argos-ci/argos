@@ -4,6 +4,11 @@ import { Link } from "react-router";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
 import { AriaSnapshotToggle } from "@/containers/Build/toolbar/AriaSnapshotToggle";
+import {
+  DetailToolbar,
+  DetailToolbarNav,
+  DetailToolbarTitle,
+} from "@/containers/Build/toolbar/DetailToolbar";
 import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import {
   NextButton,
@@ -46,41 +51,41 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
+  const testId = diff.test?.id;
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <BuildNavButtons />
-      <div className="flex min-w-0 flex-1">
-        {diff.test ? (
-          <Tooltip content="View test details">
-            <Link
-              to={getTestURL(
-                { ...params, testId: diff.test.id },
-                { change: diff.change?.id },
-              )}
-              className="group hover:underline-link"
-            >
-              <span
-                role="heading"
-                aria-level={1}
-                className="line-clamp-2 text-sm font-medium"
-              >
-                {diff.name}
-              </span>
-            </Link>
-          </Tooltip>
-        ) : (
-          <div role="heading" className="line-clamp-2 text-sm font-medium">
-            {diff.name}
-          </div>
-        )}
-      </div>
+    <DetailToolbar>
+      <DetailToolbarNav>
+        <BuildNavButtons />
+      </DetailToolbarNav>
+      <DetailToolbarTitle
+        render={
+          testId
+            ? (title) => (
+                <Tooltip content="View test details">
+                  <Link
+                    to={getTestURL(
+                      { ...params, testId },
+                      { change: diff.change?.id },
+                    )}
+                    className="group hover:underline-link"
+                  >
+                    {title}
+                  </Link>
+                </Tooltip>
+              )
+            : undefined
+        }
+      >
+        {diff.name}
+      </DetailToolbarTitle>
       <BuildDiffDetailToolbar diff={diff} fitControls={<AriaSnapshotToggle />}>
         <BuildDetailIgnoreButton diff={diff} />
         <TrackButtons diff={diff} disabled={!canBeReviewed} />
         <Separator orientation="vertical" className="mx-1 h-6" />
         <RightSidebarToggle />
       </BuildDiffDetailToolbar>
-    </div>
+    </DetailToolbar>
   );
 });
 
@@ -114,7 +119,7 @@ const BuildNavButtons = memo(function BuildNavButtons() {
   const hasPreviousDiff = useHasPreviousDiff();
   const goToBuildOverview = useGoToBuildOverview();
   return (
-    <div className="flex shrink-0 gap-1">
+    <>
       <PreviousButton
         toOverview={!hasPreviousDiff}
         onPress={() =>
@@ -122,6 +127,6 @@ const BuildNavButtons = memo(function BuildNavButtons() {
         }
       />
       <NextButton onPress={goToNextDiff} isDisabled={!hasNextDiff} />
-    </div>
+    </>
   );
 });

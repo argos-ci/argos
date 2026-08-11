@@ -8,6 +8,7 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
+import { queryProjectMedia } from "@/media/query";
 import {
   getMediaDiffUrl,
   getMediaEmbedArgs,
@@ -26,6 +27,15 @@ import {
 import type { Context } from "../context";
 
 const { gql } = gqlTag;
+
+/**
+ * How many of a pull request's media the share page's sidebar lists.
+ *
+ * The list is not paginated — it is a sidebar the reviewer scrolls — so the cap
+ * is what keeps a pull request with hundreds of uploads from being one enormous
+ * response. Well above what a pull request realistically carries.
+ */
+const MAX_PULL_REQUEST_MEDIAS = 100;
 
 /** The service's permission names, as the schema's enum members. */
 const GRAPHQL_PERMISSION: Record<MediaPermission, IMediaPermission> = {
@@ -136,6 +146,8 @@ export const typeDefs = gql`
     description: String
     "Share page URL, the one to paste into a pull request"
     url: String!
+    "The token the share URL carries — the handle that opens this media's page"
+    shareToken: String!
     """
     Ready-to-paste Markdown embed, always pointing at the newest version: the
     picture served from the CDN, linked to the share page. Never built from
@@ -177,6 +189,17 @@ export const typeDefs = gql`
     and the pull request's title, author and number are not part of that.
     """
     pullRequest: PullRequest
+    """
+    Every media published to the same pull request, this one included, oldest
+    first — the order the managed pull request comment lists them in, so the
+    share page's sidebar reads like the comment the reviewer arrived from.
+
+    Empty when this media is not published to a pull request. Filtered by what
+    the viewer may see: without membership on the project, only the public ones
+    — which is what lets a public share link offer the rest of the public set
+    without opening the team-only uploads beside it.
+    """
+    pullRequestMedias: [Media!]!
     visibility: MediaVisibility!
     project: Project
     permissions: [MediaPermission!]!
@@ -238,6 +261,7 @@ export const resolvers: IResolvers = {
   },
   Media: {
     url: (media) => media.url,
+    shareToken: (media) => media.shareToken,
     latestVersion: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
       // `mediaByShareToken` refuses a media with no uploaded version, and nothing
@@ -299,6 +323,34 @@ export const resolvers: IResolvers = {
         return null;
       }
       return ctx.loaders.GithubPullRequest.load(media.githubPullRequestId);
+    },
+    pullRequestMedias: async (media, _args, ctx) => {
+      if (!media.githubPullRequestId) {
+        return [];
+      }
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const membershipPermissions = await project.$getMembershipPermissions(
+        ctx.auth?.user ?? null,
+      );
+      // Scoped to this media's own project: a pull request can carry media from
+      // several projects, and access is decided per project.
+      const query = queryProjectMedia({
+        projectIds: [media.projectId],
+        filters: { githubPullRequestId: media.githubPullRequestId },
+        order: "asc",
+      }).limit(MAX_PULL_REQUEST_MEDIAS);
+      if (!membershipPermissions.includes("view")) {
+        // The per-item form of `checkCanViewMedia`, for the same reason
+        // `resolveVisibleCounterpart` re-checks: the halves of a pair are
+        // separate uploads with their own visibility, so a public link must not
+        // list the team-only media published beside it.
+        query.where("media.visibility", "public");
+      }
+      // Expiry is not filtered here, matching the REST list: a version can
+      // expire between this query and the click, and the share page already has
+      // one state for a media that is no longer there.
+      return query;
     },
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);

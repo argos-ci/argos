@@ -78,6 +78,21 @@ const hotkeyGroups = [
         description: "Go to next snapshot",
         envs: ["test", "build"],
       },
+      // The same keys as the two above, named apart so the `?` dialog can say
+      // "media" where a media page is what the reader is looking at. Only one
+      // pair is ever mounted, so they never contend.
+      goToPreviousMedia: {
+        keys: ["ArrowUp"],
+        displayKeys: ["↑"],
+        description: "Go to previous media",
+        envs: ["media"],
+      },
+      goToNextMedia: {
+        keys: ["ArrowDown"],
+        displayKeys: ["↓"],
+        description: "Go to next media",
+        envs: ["media"],
+      },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],

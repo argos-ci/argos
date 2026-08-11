@@ -33,6 +33,15 @@ import {
   fetchBlob,
   ImageActionsMenu,
 } from "@/containers/Build/ScreenshotActions";
+import {
+  DetailToolbar,
+  DetailToolbarNav,
+  DetailToolbarTitle,
+} from "@/containers/Build/toolbar/DetailToolbar";
+import {
+  NextButton,
+  PreviousButton,
+} from "@/containers/Build/toolbar/NavButtons";
 import { ZoomerSyncProvider, ZoomPane } from "@/containers/Build/Zoomer";
 import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -40,6 +49,7 @@ import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Separator } from "@/ui/Separator";
 import { useResizeObserver } from "@/ui/useResizeObserver";
+import { formatBytes, formatDimensions } from "@/util/media";
 
 import { MediaCommentLayer } from "./MediaCommentLayer";
 
@@ -52,7 +62,6 @@ type ViewerVersion = {
   isVideo: boolean;
   sizeBytes: number;
   createdAt: string;
-  expiresAt: string | null;
 };
 
 /**
@@ -101,6 +110,42 @@ type ViewerComments = Omit<
   "paneSize" | "imgSize"
 >;
 
+/**
+ * Moving between the media of one pull request. Null when there is nothing to
+ * move between — a media shared on its own has no arrows rather than two dead
+ * ones.
+ */
+export type MediaViewerNav = {
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+};
+
+/**
+ * The shape and weight of what is on screen, for the line beside its name.
+ *
+ * The version's, not the media's: looking back at an older upload has to say
+ * that upload's numbers.
+ */
+function getMediaFacts(media: ViewerMedia, hasCounterpart: boolean): string[] {
+  const facts: string[] = [];
+  if (media.state && !hasCounterpart) {
+    // Which half of a pair this is. With both halves on screen the panes label
+    // themselves; alone, the fact lives here.
+    facts.push(media.state);
+  }
+  const dimensions = formatDimensions(
+    media.version.width,
+    media.version.height,
+  );
+  if (dimensions) {
+    facts.push(dimensions);
+  }
+  facts.push(formatBytes(media.version.sizeBytes));
+  return facts;
+}
+
 /** Everything a blended (onion/swipe) pane needs beyond its base media. */
 type BlendState = {
   mode: "onion" | "swipe";
@@ -144,8 +189,10 @@ export function MediaViewer(props: {
   comments: ViewerComments;
   /** The pair's computed comparison, once there is a mask to draw. */
   diff: ViewerDiff | null;
+  /** Moving through the pull request's media. */
+  nav: MediaViewerNav | null;
 }) {
-  const { media, counterpart, comments, diff } = props;
+  const { media, counterpart, comments, diff, nav } = props;
   const version = media.version;
   const [storedMode, setMode] = useAtom(mediaViewModeAtom);
   const [onionOpacity, setOnionOpacity] = useState(0.5);
@@ -154,17 +201,27 @@ export function MediaViewer(props: {
 
   if (version.isVideo) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-1.5">
-        <MediaWell
-          aspectRatio={
-            version.width && version.height
-              ? { width: version.width, height: version.height }
-              : null
-          }
-          className="flex max-h-[70dvh] min-h-64 w-auto max-w-full items-center justify-center lg:max-h-full lg:min-h-0"
-        >
-          <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
-        </MediaWell>
+      <div className="flex h-full min-h-0 flex-col">
+        {/* A recording gets the same bar as a screenshot — nothing to compare,
+            but the same name in the same place and the same way out of it. */}
+        <MediaViewToolbar
+          title={media.name}
+          facts={getMediaFacts(media, false)}
+          nav={nav}
+          compare={null}
+        />
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5">
+          <MediaWell
+            aspectRatio={
+              version.width && version.height
+                ? { width: version.width, height: version.height }
+                : null
+            }
+            className="flex max-h-[70dvh] min-h-64 w-auto max-w-full items-center justify-center lg:max-h-full lg:min-h-0"
+          >
+            <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
+          </MediaWell>
+        </div>
       </div>
     );
   }
@@ -229,13 +286,21 @@ export function MediaViewer(props: {
           one provider. */}
       <BuildDiffHighlighterProvider>
         <div className="flex h-full min-h-0 flex-col gap-2">
-          {counterpart ? (
-            <MediaViewToolbar
-              mode={mode}
-              onModeChange={setMode}
-              hasChanges={diff !== null}
-            />
-          ) : null}
+          <MediaViewToolbar
+            title={media.name}
+            facts={getMediaFacts(media, counterpart !== null)}
+            nav={nav}
+            compare={
+              counterpart
+                ? {
+                    mode,
+                    onModeChange: setMode,
+                    hasChanges: diff !== null,
+                  }
+                : null
+            }
+          />
+
           <div
             className={clsx(
               "flex max-h-[70dvh] min-h-72 w-full gap-3 lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1",
@@ -286,69 +351,112 @@ export function MediaViewer(props: {
 }
 
 /**
- * The compare toolbar over a pair, in the build toolbar's grammar: whether to
- * compare at all, when comparing — the build's own three ways to do it — and,
- * once Argos has found changes, the build's own controls over the overlay
- * marking them.
+ * The bar over the media, in the build's own layout and built from the build's
+ * own components: where to go next on the left, what is on screen in the middle,
+ * what can be done to it on the right.
+ *
+ * The compare controls only exist for a pair — whether to compare at all, and
+ * the build's three ways to do it — and the overlay controls only once Argos has
+ * found changes to mark. The rest of the bar is there either way, which is what
+ * makes a video's page and a screenshot's page the same page.
  */
 function MediaViewToolbar(props: {
-  mode: MediaViewMode;
-  onModeChange: (mode: MediaViewMode) => void;
-  /** Whether there is a mask to draw — the overlay controls act on nothing without one. */
-  hasChanges: boolean;
+  title: string;
+  /** The version's plain facts, beside the name. */
+  facts: string[];
+  /** Moving through the pull request's media, when there is more than one. */
+  nav: MediaViewerNav | null;
+  /** The pair's controls, absent when the media stands alone or is a video. */
+  compare: {
+    mode: MediaViewMode;
+    onModeChange: (mode: MediaViewMode) => void;
+    /** Whether there is a mask to draw — the overlay controls act on nothing without one. */
+    hasChanges: boolean;
+  } | null;
 }) {
-  const { mode, onModeChange, hasChanges } = props;
-  const comparing = mode !== "single";
+  const { title, facts, nav, compare } = props;
+  const comparing = compare !== null && compare.mode !== "single";
   return (
     // `mb-4` + the viewer column's `gap-2` puts 24px between the toolbar and
     // the panes, level with the sidebar's action strip.
-    <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
-      <ButtonGroup>
-        <Button
-          variant="secondary"
-          aria-pressed={!comparing}
-          onPress={() => onModeChange("single")}
+    <div className="mb-4 shrink-0">
+      <DetailToolbar>
+        {nav ? (
+          <DetailToolbarNav>
+            <PreviousButton
+              hotkeyName="goToPreviousMedia"
+              onPress={nav.onPrevious}
+              isDisabled={!nav.hasPrevious}
+            />
+            <NextButton
+              hotkeyName="goToNextMedia"
+              onPress={nav.onNext}
+              isDisabled={!nav.hasNext}
+            />
+          </DetailToolbarNav>
+        ) : null}
+        {/* Monospace, unlike a snapshot's name: this one is a file name. */}
+        <DetailToolbarTitle
+          className="font-mono"
+          meta={facts.length > 0 ? facts.join(" · ") : null}
         >
-          Single
-        </Button>
-        <Button
-          variant="secondary"
-          aria-pressed={comparing}
-          onPress={() => onModeChange("split")}
-        >
-          Compare
-        </Button>
-      </ButtonGroup>
-      {comparing ? (
-        <ButtonGroup>
-          {(
-            [
-              ["split", "Side by side"],
-              ["onion", "Onion"],
-              ["swipe", "Swipe"],
-            ] as const
-          ).map(([value, label]) => (
-            <Button
-              key={value}
-              variant="secondary"
-              aria-pressed={mode === value}
-              onPress={() => onModeChange(value)}
-            >
-              {label}
-            </Button>
-          ))}
-        </ButtonGroup>
-      ) : null}
-      {hasChanges ? (
-        <>
-          <Separator orientation="vertical" className="h-6" />
-          {/* The build's own cluster, unchanged: the same buttons, the same
-              tooltips, the same D / H / J / K shortcuts. */}
-          <div className="flex items-center gap-1.5">
-            <ChangesOverlayControls />
-          </div>
-        </>
-      ) : null}
+          {title}
+        </DetailToolbarTitle>
+        {/* `ml-auto` so the controls stay on the right even when the row is too
+            narrow to hold them and they wrap under the title. */}
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          {compare ? (
+            <>
+              <ButtonGroup>
+                <Button
+                  variant="secondary"
+                  aria-pressed={!comparing}
+                  onPress={() => compare.onModeChange("single")}
+                >
+                  Single
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-pressed={comparing}
+                  onPress={() => compare.onModeChange("split")}
+                >
+                  Compare
+                </Button>
+              </ButtonGroup>
+              {comparing ? (
+                <ButtonGroup>
+                  {(
+                    [
+                      ["split", "Side by side"],
+                      ["onion", "Onion"],
+                      ["swipe", "Swipe"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      variant="secondary"
+                      aria-pressed={compare.mode === value}
+                      onPress={() => compare.onModeChange(value)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              ) : null}
+              {compare.hasChanges ? (
+                <>
+                  <Separator orientation="vertical" className="h-6" />
+                  {/* The build's own cluster, unchanged: the same buttons, the
+                      same tooltips, the same D / H / J / K shortcuts. */}
+                  <div className="flex items-center gap-1.5">
+                    <ChangesOverlayControls />
+                  </div>
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </DetailToolbar>
     </div>
   );
 }

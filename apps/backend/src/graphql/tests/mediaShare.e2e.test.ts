@@ -27,10 +27,22 @@ const MEDIA_SHARE_QUERY = `
       state
       description
       url
+      shareToken
       markdown
       markdownPair
       permissions
       unresolvedCommentCount
+      pullRequestMedias {
+        id
+        name
+        state
+        shareToken
+        latestVersion {
+          id
+          fileUrl
+          isVideo
+        }
+      }
       latestVersion {
         id
         number
@@ -479,5 +491,192 @@ describe("mediaByShareToken", () => {
 
     expectNoGraphQLError(res);
     expect(res.body.data.mediaByShareToken.unresolvedCommentCount).toBe(1);
+  });
+});
+
+describe("Media.pullRequestMedias", () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  /**
+   * A pull request with media on it, in the shape the sidebar has to render: a
+   * before/after pair, a lone screenshot, and a video — with each half's
+   * visibility given separately, because that is what decides who sees what.
+   */
+  async function createPullRequestMedia(input: {
+    projectId: string;
+    pairVisibility: "public" | "team";
+    soloVisibility: "public" | "team";
+  }) {
+    const { projectId, pairVisibility, soloVisibility } = input;
+    const repository = await factory.GithubRepository.create();
+    await Project.query()
+      .findById(projectId)
+      .patch({ githubRepositoryId: repository.id });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+    });
+
+    // Inserted out of order on purpose: the field promises upload order, and
+    // `createdAt` is what has to decide it rather than the insert sequence.
+    const solo = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "dashboard.png",
+        visibility: soloVisibility,
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-solo-${projectId}`,
+        createdAt: "2026-04-20T09:00:00.000Z",
+      },
+    });
+    const before = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "checkout.png",
+        state: "before",
+        visibility: pairVisibility,
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-before-${projectId}`,
+        createdAt: "2026-04-20T08:00:00.000Z",
+      },
+    });
+    const after = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "checkout.png",
+        state: "after",
+        visibility: "public",
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-after-${projectId}`,
+        createdAt: "2026-04-20T08:30:00.000Z",
+      },
+    });
+
+    return {
+      before: before.media,
+      after: after.media,
+      solo: solo.media,
+    };
+  }
+
+  it("lists the pull request's media to a member, oldest first", async () => {
+    const { auth, project } = await createTeamOwner();
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    // Upload order, both halves of the pair, and the media being looked at is
+    // one of them — the sidebar highlights a row rather than a nothing.
+    expect(
+      result.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([
+      media.before.shareToken,
+      media.after.shareToken,
+      media.solo.shareToken,
+    ]);
+    // The token is what the sidebar navigates with.
+    expect(result.shareToken).toBe(media.after.shareToken);
+  });
+
+  it("lists only the public media to an anonymous visitor", async () => {
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({ accountId: account.id });
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "public",
+    });
+
+    const res = await query({ auth: null, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    // The team-only half of the pair is not in the list, and neither is
+    // anything else the visitor could not open by its own link.
+    expect(
+      result.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([media.after.shareToken, media.solo.shareToken]);
+    // The list is not the pull request: a public link still says nothing about
+    // the work it belongs to.
+    expect(result.pullRequest).toBeNull();
+  });
+
+  it("lists only the public media to a signed-in outsider", async () => {
+    const outsider = await factory.User.create();
+    const outsiderAccount = await factory.UserAccount.create({
+      userId: outsider.id,
+    });
+    const account = await factory.TeamAccount.create();
+    // Public project, so `$getPermissions` would grant "view" to anyone — an
+    // account is not membership, and must not open the team-only uploads.
+    const project = await factory.Project.create({
+      accountId: account.id,
+      private: false,
+    });
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+
+    const res = await query({
+      auth: { user: outsider, account: outsiderAccount },
+      shareToken: media.after.shareToken,
+    });
+
+    expectNoGraphQLError(res);
+    expect(
+      res.body.data.mediaByShareToken.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([media.after.shareToken]);
+  });
+
+  it("is empty for a media that is not published to a pull request", async () => {
+    const { auth, project } = await createTeamOwner();
+    const scenario = await createMediaScenario({ projectId: project.id });
+
+    const res = await query({ auth, shareToken: scenario.after.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken.pullRequestMedias).toEqual([]);
+  });
+
+  it("leaves out a media whose upload never landed", async () => {
+    // A media created to sign an upload that never completed is a step of the
+    // two-step flow, not something the sidebar should offer a link to.
+    const { auth, project } = await createTeamOwner();
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+    await factory.Media.create({
+      projectId: project.id,
+      name: "never-uploaded.png",
+      visibility: "team",
+      githubPullRequestId: media.after.githubPullRequestId,
+      shareToken: `prm-pending-${project.id}`,
+    });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(
+      res.body.data.mediaByShareToken.pullRequestMedias.map(
+        (item: { name: string }) => item.name,
+      ),
+    ).toEqual(["checkout.png", "checkout.png", "dashboard.png"]);
   });
 });

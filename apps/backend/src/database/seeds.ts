@@ -1724,9 +1724,10 @@ export async function createMediaScenario(input: {
   /** When given, seeds a pinned thread and a plain comment on the "after" image. */
   commentAuthorId?: string;
   /**
-   * Publish the pair to a pull request, creating the GitHub rows it needs — a
-   * seeded project is not connected to a repository. What the share header's
-   * pull request button needs to have something to show.
+   * Publish all four media to a pull request, creating the GitHub rows they
+   * need — a seeded project is not connected to a repository. What the share
+   * page's pull request button and its sidebar both need to have something to
+   * show: three entries, since the pair counts once.
    */
   withPullRequest?: boolean;
 }) {
@@ -1773,7 +1774,7 @@ export async function createMediaScenario(input: {
       state: null,
       description: null,
       visibility: "public" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-video-${projectId}`,
       createdAt: videoTs,
       updatedAt: videoTs,
@@ -1784,7 +1785,7 @@ export async function createMediaScenario(input: {
       state: null,
       description: "Overview screen after the sidebar redesign.",
       visibility: "public" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-solo-${projectId}`,
       createdAt: soloTs,
       updatedAt: soloTs,

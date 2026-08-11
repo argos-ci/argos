@@ -44,6 +44,14 @@ loggedTest("media share page", async ({ page, auth, project }) => {
     page.getByRole("link", { name: /Tighten the checkout spacing/ }),
   ).toBeVisible();
 
+  // Everything else uploaded to the same pull request, in a sidebar: three
+  // rows, because the pair counts once.
+  const sidebar = page.getByRole("region", { name: "Pull request media" });
+  await expect(sidebar.locator("[aria-current]")).toHaveCount(1);
+  await expect(sidebar.getByText("checkout.png")).toBeVisible();
+  await expect(sidebar.getByText("dashboard.png")).toBeVisible();
+  await expect(sidebar.getByText("checkout-flow.mp4")).toBeVisible();
+
   // Two threads, one of them pinned to a point on the image — the pin is a
   // floating marker on the image itself, and the panel tells the media's
   // whole story.
@@ -60,6 +68,88 @@ loggedTest("media share page", async ({ page, auth, project }) => {
 
   await screenshot(page, "media-share-page");
 });
+
+loggedTest(
+  "navigates the pull request's media with the sidebar and the keyboard",
+  async ({ page, project }) => {
+    // Uploaded oldest first: dashboard.png (07:00), the checkout.png pair
+    // (08:00), then checkout-flow.mp4 (09:30).
+    const media = await createMediaScenario({
+      projectId: project.id,
+      withPullRequest: true,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const sidebar = page.getByRole("region", { name: "Pull request media" });
+    const previous = page
+      .getByRole("main")
+      .locator("button:has(.lucide-arrow-up)");
+    const next = page
+      .getByRole("main")
+      .locator("button:has(.lucide-arrow-down)");
+    await expect(previous).toBeVisible();
+    await expect(next).toBeVisible();
+
+    // Up from the pair reaches the lone screenshot, which is the first upload —
+    // so there is nothing before it.
+    await page.keyboard.press("ArrowUp");
+    await expect(page).toHaveURL(`/m/${media.solo.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "dashboard.png" }),
+    ).toBeVisible();
+    await expect(previous).toBeDisabled();
+
+    // Down twice: back through the pair and on to the recording. A video used
+    // to render no toolbar at all, which took the arrows and the name with it.
+    //
+    // Waiting for the name between the two presses, not just the URL: the next
+    // media is still being fetched when the URL changes, and the arrows are
+    // deliberately shut while it is.
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "checkout.png" }),
+    ).toBeVisible();
+    await expect(next).toBeEnabled();
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(`/m/${media.video.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "checkout-flow.mp4" }),
+    ).toBeVisible();
+    await expect(page.locator("video")).toBeVisible();
+    await expect(next).toBeDisabled();
+
+    // Clicking the pair opens the "after": both halves are one row, and the
+    // after is the state of the work being reviewed.
+    await sidebar.getByText("checkout.png").click();
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+
+    await screenshot(page, "media-share-sidebar");
+  },
+);
+
+loggedTest(
+  "keeps a pair on one row whichever half is opened",
+  async ({ page, project }) => {
+    const media = await createMediaScenario({
+      projectId: project.id,
+      withPullRequest: true,
+    });
+
+    // Landing on the "before" shows the same comparison and marks the same row.
+    await page.goto(`/m/${media.before.shareToken}`);
+
+    const sidebar = page.getByRole("region", { name: "Pull request media" });
+    const active = sidebar.locator("[aria-current]");
+    await expect(active).toHaveCount(1);
+    await expect(active).toContainText("checkout.png");
+
+    // And navigating on from it moves relative to the row, not to the half.
+    await page.keyboard.press("ArrowUp");
+    await expect(page).toHaveURL(`/m/${media.solo.shareToken}`);
+  },
+);
 
 loggedTest(
   "pins a comment to a point on the image",

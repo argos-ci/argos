@@ -35,11 +35,17 @@ export type MediaFilters = {
 export function queryProjectMedia(args: {
   projectIds: string[];
   filters: MediaFilters | null;
+  /**
+   * Newest first by default, which is what a list of recent uploads wants.
+   * "asc" is upload order — how the pull request comment reads, and how the
+   * share page's sidebar has to read to match it.
+   */
+  order?: "asc" | "desc";
 }): QueryBuilder<Media, Media[]> {
   const query = Media.query()
     .whereIn("media.projectId", args.projectIds)
     .whereExists(uploadedVersions())
-    .orderBy("media.createdAt", "desc");
+    .orderBy("media.createdAt", args.order ?? "desc");
 
   const { search, type, branch, githubPullRequestId, stage } =
     args.filters ?? {};
