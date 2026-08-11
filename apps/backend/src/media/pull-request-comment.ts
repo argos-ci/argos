@@ -129,8 +129,8 @@ export async function updatePullRequestComment(
  * — which is the whole reason `state` exists, and reads far better than two
  * unrelated rows a reviewer has to match up themselves.
  *
- * Each cell is a CDN picture linked to its share page; {@link getMediaMarkdown}
- * owns why it is built that way.
+ * Each cell is a CDN picture linked to its share page;
+ * {@link getMediaTableMarkdown} owns why it is built that way.
  */
 function buildCommentBody(
   media: Media[],
@@ -178,12 +178,33 @@ function buildCommentBody(
     : "";
 
   return [
-    "**Media uploaded by Argos**",
+    formatCommentTitle(groups),
     "",
     getMediaTableMarkdown(groups),
     "",
-    `<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.${versionNote}</sub>`,
+    `<sub>Uploaded with <a href="https://argos-ci.com/docs/learn/media/standalone-media-upload">Argos ↗︎</a>. This comment is updated in place.${versionNote}</sub>`,
   ].join("\n");
+}
+
+/**
+ * The headline counts the table's rows, not the uploads: a before/after pair is
+ * one screenshot to a reviewer, whatever the upload count says. The noun
+ * follows the content — "videos" when that is all there is, the generic
+ * "media" only for a mix.
+ */
+function formatCommentTitle(groups: MediaMarkdownGroup[]): string {
+  const embeds = groups.flatMap((group) =>
+    [group.before, group.after].filter((embed) => embed !== null),
+  );
+  const noun = embeds.every((embed) => embed.isVideo)
+    ? "video"
+    : embeds.some((embed) => embed.isVideo)
+      ? "media"
+      : "screenshot";
+  const count = groups.length;
+  // "media" is its own plural; the others take an "s" past one.
+  const label = noun === "media" || count === 1 ? noun : `${noun}s`;
+  return `**${count} ${label} uploaded by Argos**`;
 }
 
 type MediaPair = { before: Media | null; after: Media | null };
