@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FilmIcon } from "lucide-react";
 
 import {
@@ -182,21 +182,32 @@ function MediaThumbnail(props: {
   dimensions: { width: number; height: number };
 }) {
   const { version, dimensions } = props;
-  // Decorative: the name is spelled out in the footer right under it, and a
-  // poster that fails to load should leave a gap rather than print the file
-  // name a second time.
+  const [posterFailed, setPosterFailed] = useState(false);
+  // Decorative: the name is spelled out in the footer right under it, so the
+  // image says nothing the row does not already say.
   const imgProps = {
     alt: "",
     className: "max-h-full max-w-full object-contain",
   };
 
   if (version.isVideo) {
+    // A recording that has no frame to show yet, or whose frame did not load:
+    // the film icon says what it is, where a broken image would only say that
+    // something went wrong with a thumbnail nobody asked about.
+    if (!version.posterUrl || posterFailed) {
+      return <FilmIcon className="text-low size-8" />;
+    }
     // The poster comes out of the CDN already transformed — it is a frame taken
     // from the video — so it is used as it is. Handing it to `ImageKitPicture`
     // would append a second set of transformations to a URL that has one.
-    return version.posterUrl ? (
-      <img src={version.posterUrl} {...dimensions} {...imgProps} />
-    ) : null;
+    return (
+      <img
+        src={version.posterUrl}
+        onError={() => setPosterFailed(true)}
+        {...dimensions}
+        {...imgProps}
+      />
+    );
   }
 
   return (
