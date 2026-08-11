@@ -173,13 +173,18 @@ describe("mediaByShareToken", () => {
 
     // The single embed shows this half's bytes and links to its page — an embed
     // built from the share URL alone renders as a broken image. The pair snippet
-    // is the same side-by-side table the managed pull request comment renders.
+    // is the same side-by-side block the managed pull request comment renders,
+    // each half reachable from its own header.
     expect(result.markdown).toBe(
       `[![checkout.png](${result.latestVersion.fileUrl})](${result.url})`,
     );
-    expect(result.markdownPair).toContain("| Name | Before | After |");
-    expect(result.markdownPair).toContain(result.url);
-    expect(result.markdownPair).toContain(result.counterpart.url);
+    expect(result.markdownPair).toContain(
+      `| [Before ↗](${result.counterpart.url}) | [After ↗](${result.url}) |`,
+    );
+    expect(result.markdownPair).toContain(result.latestVersion.fileUrl);
+    expect(result.markdownPair).toContain(
+      result.counterpart.latestVersion.fileUrl,
+    );
 
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
