@@ -130,15 +130,27 @@ loggedTest(
 );
 
 loggedTest(
-  "keeps a pair on one row whichever half is opened",
-  async ({ page, project }) => {
+  "sends the before half to the after, so a pair has one page",
+  async ({ page, auth, project }) => {
+    // Both halves show the same two images, so two pages meant one subject with
+    // two comment threads on it, split by which link was clicked.
     const media = await createMediaScenario({
       projectId: project.id,
+      commentAuthorId: auth.user.id,
       withPullRequest: true,
     });
 
-    // Landing on the "before" shows the same comparison and marks the same row.
     await page.goto(`/m/${media.before.shareToken}`);
+
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+    // Arriving from the "before" link and reading the conversation that was
+    // left on the "after" — the point of the redirect.
+    await expect(
+      page.getByText("The primary button is misaligned here."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
 
     const sidebar = page.getByRole("region", { name: "Pull request media" });
     const active = sidebar.locator("[aria-current]");

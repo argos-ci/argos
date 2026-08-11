@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Heading, MenuTrigger, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { useClipboard } from "use-clipboard-copy";
 
 import {
@@ -52,7 +52,7 @@ import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
-import { MediaDiffStatus, MediaVisibility } from "@/gql/graphql";
+import { MediaDiffStatus, MediaState, MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -156,6 +156,7 @@ const MediaShareQuery = graphql(`
         name
         state
         url
+        shareToken
         latestVersion {
           id
           ...MediaShare_ViewerVersion
@@ -209,6 +210,22 @@ export function Component() {
 
   if (!media) {
     return <UnavailableState />;
+  }
+
+  // A pair has one page, and it is the "after".
+  //
+  // Both halves show the same two images side by side, so two pages meant one
+  // subject with two comment threads on it, split by which link the reviewer
+  // happened to click — a remark about the change landing where whoever came
+  // the other way would never see it. The "after" is the state being reviewed,
+  // so it is the one that keeps the conversation, and the "before" sends its
+  // visitors there.
+  //
+  // Only when the counterpart is actually visible: the field is filtered by
+  // what the viewer may see, so a public "before" whose "after" is team-only
+  // stays where it is rather than bouncing someone into a dead end.
+  if (media.state === MediaState.Before && media.counterpart) {
+    return <Navigate replace to={`/m/${media.counterpart.shareToken}`} />;
   }
 
   return (
