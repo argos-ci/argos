@@ -571,8 +571,19 @@ describe("MediaVersion.diff", () => {
       mimeType: "image/png",
       uploadedAt: new Date().toISOString(),
     });
+    // …and a second "after", so the version under test is not the newest of its
+    // own half. Without this the resolver answers from its newest-version
+    // branch, which pairs with the counterpart's newest directly and never
+    // reaches the preference this test is about.
+    const afterV2 = await factory.MediaVersion.create({
+      mediaId: after.media.id,
+      number: 2,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      uploadedAt: new Date().toISOString(),
+    });
 
-    const [stale, current] = await MediaDiff.query().insertAndFetch([
+    const [stale, current, newest] = await MediaDiff.query().insertAndFetch([
       {
         beforeMediaVersionId: before.version.id,
         afterMediaVersionId: after.version.id,
@@ -585,15 +596,27 @@ describe("MediaVersion.diff", () => {
         jobStatus: "complete",
         score: 0.2,
       },
+      // The newest pair, so reading it settles rather than queueing work.
+      {
+        beforeMediaVersionId: beforeV2.id,
+        afterMediaVersionId: afterV2.id,
+        jobStatus: "complete",
+        score: 0.1,
+      },
     ]);
-    invariant(stale && current, "both comparisons should be created");
+    invariant(stale && current && newest, "the comparisons should be created");
 
     const res = await query({ auth, shareToken: "many-after" });
 
     expectNoGraphQLError(res);
-    const [version] = res.body.data.mediaByShareToken.versions;
-    expect(version.diff.id).toBe(String(current.id));
-    expect(version.diff.beforeVersion.id).toBe(String(beforeV2.id));
+    // Newest first: v2 answers with the newest pair, and v1 — which sits in two
+    // comparisons — answers with the one against the newest "before", the half
+    // shown beside it.
+    const [second, first] = res.body.data.mediaByShareToken.versions;
+    expect(second.diff.id).toBe(String(newest.id));
+    expect(first.id).toBe(String(after.version.id));
+    expect(first.diff.id).toBe(String(current.id));
+    expect(first.diff.beforeVersion.id).toBe(String(beforeV2.id));
   });
 });
 

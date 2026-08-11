@@ -375,7 +375,11 @@ function SharePage(props: { media: Media }) {
   );
   // One entry is this media itself, and a list of one is a list of where you
   // already are.
-  const showList = entries.length > 1;
+  //
+  // And nothing at all if this media is not among them: the list is capped, so
+  // a pull request with more media than the cap can leave the one being viewed
+  // out of it — a hundred rows, none of them this page, with both arrows dead.
+  const showList = entries.length > 1 && activeIndex !== -1;
   const navigate = useNavigate();
   // The next media has to be fetched, and until it is, the page still shows the
   // current one. Marking that wait as a transition keeps the media on screen

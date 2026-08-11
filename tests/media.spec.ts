@@ -349,6 +349,19 @@ loggedTest(
     ).toBeVisible();
 
     await screenshot(page, "media-share-single-half");
+
+    // Comments belong to the "after", so with only the "before" on screen there
+    // is nowhere for a pin to land — the tool puts itself away rather than
+    // leaving the reviewer clicking at an image that cannot take one.
+    await after.click();
+    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await expect(
+      page.getByText("Click the spot on the image you want to comment on."),
+    ).toBeVisible();
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      page.getByText("Click the spot on the image you want to comment on."),
+    ).toBeHidden();
   },
 );
 

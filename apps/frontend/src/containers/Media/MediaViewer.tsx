@@ -233,9 +233,23 @@ export function MediaViewer(props: {
     );
   }
 
+  // Blending lays one half over the other as an image, so it needs two images.
+  // A pair is two uploads under one name and nothing stops one of them being a
+  // recording.
+  const blendEnabled = Boolean(counterpart && !counterpart.version.isVideo);
+
   // Every mode but one needs the other half; without it the media stands alone,
-  // which is what "changes" means here — this media, on its own.
-  const mode: ViewMode = counterpart ? storedMode : "changes";
+  // which is what "changes" means here — this media, on its own. A stored blend
+  // mode that this pair cannot do falls back to side by side rather than
+  // rendering a video where an image should be.
+  const mode: ViewMode = (() => {
+    if (!counterpart) {
+      return "changes";
+    }
+    return checkIsBlendViewMode(storedMode) && !blendEnabled
+      ? "split"
+      : storedMode;
+  })();
 
   // Which half is which, whichever one this page is for. A pair is ordered so
   // the "before" is always on the left: one that read right-to-left depending on
@@ -306,6 +320,11 @@ export function MediaViewer(props: {
     }
   })();
 
+  // Looking at the "before" alone puts the commentable half off screen, so
+  // there is nowhere for a pin to land — the tool has to come back down rather
+  // than leave the reviewer clicking at an image that cannot take it.
+  const commentable = panes.some((pane) => pane.interactive);
+
   // Where the page stacks (below `lg`), the viewer sizes itself from the
   // media's own shape instead of claiming a fixed slice of the viewport: a
   // wide screenshot on a phone would otherwise sit in a mostly-empty well.
@@ -323,15 +342,18 @@ export function MediaViewer(props: {
           pane registered itself as the highlighter, so both have to be under
           one provider. */}
       <BuildDiffHighlighterProvider>
+        <DisarmCommentTool
+          enabled={commentable}
+          placing={comments.placing}
+          onPlacingChange={comments.onPlacingChange}
+        />
         <div className="flex h-full min-h-0 flex-col gap-2">
           <MediaViewToolbar
             title={media.name}
             facts={getMediaFacts(media, counterpart !== null)}
             nav={nav}
             compare={
-              counterpart
-                ? { blendEnabled: true, hasChanges: diff !== null }
-                : null
+              counterpart ? { blendEnabled, hasChanges: diff !== null } : null
             }
           />
 
@@ -351,11 +373,17 @@ export function MediaViewer(props: {
               <MediaPane
                 key={pane.media.state ?? "solo"}
                 media={pane.media}
-                // A pair's half also names itself when shown alone — "single"
-                // is still one side of a comparison. Blended panes show both
-                // halves, and their controls already name the two layers.
+                // A pair's half names itself beside the other, and still does
+                // when shown alone — it is one side of a comparison either way.
+                // Not when blended: that pane is both halves at once, and its
+                // own controls already name the two layers.
                 labelled={
-                  panes.length > 1 || Boolean(pane.media.state && counterpart)
+                  panes.length > 1 ||
+                  Boolean(
+                    pane.media.state &&
+                    counterpart &&
+                    !checkIsBlendViewMode(mode),
+                  )
                 }
                 blend={pane.changes ? blend : null}
                 // Comments and the version picker belong to the media whose page
@@ -381,6 +409,28 @@ export function MediaViewer(props: {
       </BuildDiffHighlighterProvider>
     </ZoomerSyncProvider>
   );
+}
+
+/**
+ * Puts the comment tool away when the view has nothing that can take a pin —
+ * switching to the "before" alone, whose comments belong to the other half.
+ *
+ * Its own component so the effect can sit under the early return a recording
+ * takes, and rendering nothing because there is nothing to say: the tool simply
+ * stops being armed, the same as pressing Escape.
+ */
+function DisarmCommentTool(props: {
+  enabled: boolean;
+  placing: boolean;
+  onPlacingChange: (placing: boolean) => void;
+}) {
+  const { enabled, placing, onPlacingChange } = props;
+  useEffect(() => {
+    if (!enabled && placing) {
+      onPlacingChange(false);
+    }
+  }, [enabled, placing, onPlacingChange]);
+  return null;
 }
 
 /**

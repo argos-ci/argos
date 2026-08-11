@@ -54,6 +54,7 @@ import {
   Test,
   User,
 } from "@/database/models";
+import type { ProjectPermission } from "@/database/models/Project";
 import {
   getAccountPeriodUsages,
   type AccountPeriodUsage,
@@ -1083,6 +1084,33 @@ function createMediaVersionsLoader() {
 }
 
 /**
+ * What a viewer's membership grants them on a project, once per request.
+ *
+ * The check is two queries and every media field that gates on "is this viewer
+ * a member" runs it — including one now reached per *version*, where the answer
+ * cannot differ between them. Caching is the whole point here; the calls are
+ * still made one by one, because the check reads a `Project` instance rather
+ * than an id.
+ */
+function createProjectMembershipPermissionsLoader() {
+  return new DataLoader<
+    { project: Project; user: User | null },
+    ProjectPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) =>
+          Project.getMembershipPermissions(input.project, input.user),
+        ),
+      ),
+    {
+      cacheKeyFn: (input) => `${input.project.id}:${input.user?.id ?? ""}`,
+    },
+  );
+}
+
+/**
  * Every comparison a version took part in, on either side of it.
  *
  * Keyed on the version rather than the media because that is how the rows are
@@ -1822,6 +1850,7 @@ export const createLoaders = () => ({
   MediaVersions: createMediaVersionsLoader(),
   MediaVersion: createModelLoader(MediaVersion),
   MediaVersionDiffs: createMediaVersionDiffsLoader(),
+  ProjectMembershipPermissions: createProjectMembershipPermissionsLoader(),
   MediaCounterpart: createMediaCounterpartLoader(),
   Media: createModelLoader(Media),
   TestComments: createTestCommentsLoader(),

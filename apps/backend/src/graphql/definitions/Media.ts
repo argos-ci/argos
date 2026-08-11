@@ -381,9 +381,11 @@ export const resolvers: IResolvers = {
       // it may be.
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
       if (!membershipPermissions.includes("view")) {
         return null;
       }
@@ -395,9 +397,11 @@ export const resolvers: IResolvers = {
       }
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
       // Scoped to this media's own project: a pull request can carry media from
       // several projects, and access is decided per project.
       const query = queryProjectMedia({
@@ -488,9 +492,11 @@ export const resolvers: IResolvers = {
       }
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth.user,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth.user,
+        });
       const permissions = getMediaPermissions({
         visibility: media.visibility,
         membershipPermissions,
@@ -520,9 +526,11 @@ export const resolvers: IResolvers = {
     permissions: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
       return getMediaPermissions({
         visibility: media.visibility,
         membershipPermissions,
@@ -558,9 +566,11 @@ export const resolvers: IResolvers = {
       invariant(project, "project not found");
       // Membership permissions, not `$getPermissions`: a public project grants
       // anyone "view", which must not open its team-only media to the world.
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
 
       return checkCanViewMedia({
         visibility: media.visibility,
@@ -596,9 +606,13 @@ async function resolveVisibleCounterpart(
   }
   const project = await ctx.loaders.Project.load(counterpart.projectId);
   invariant(project, "project not found");
-  const membershipPermissions = await project.$getMembershipPermissions(
-    ctx.auth?.user ?? null,
-  );
+  // Through the loader because this is now reached once per version, and the
+  // answer cannot differ between the versions of one media.
+  const membershipPermissions =
+    await ctx.loaders.ProjectMembershipPermissions.load({
+      project,
+      user: ctx.auth?.user ?? null,
+    });
   return checkCanViewMedia({
     visibility: counterpart.visibility,
     membershipPermissions,
