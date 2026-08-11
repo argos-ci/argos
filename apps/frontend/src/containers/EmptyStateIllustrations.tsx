@@ -1,4 +1,4 @@
-import { FlagOffIcon, GitBranchIcon, LockIcon } from "lucide-react";
+import { FlagOffIcon, GitBranchIcon, LinkIcon, LockIcon } from "lucide-react";
 
 import {
   ACCENT,
@@ -644,6 +644,125 @@ export function AutomationsIllustration(props: IllustrationProps) {
         gap={9}
         height={4}
         fill={CONTENT}
+      />
+    </Frame>
+  );
+}
+
+/**
+ * A shared recording embedded in a pull-request comment: the media itself,
+ * a review comment pinned to its pixels, and the share link that carries it
+ * around.
+ */
+export function MediaSharingIllustration(props: IllustrationProps) {
+  return (
+    <Frame className={props.className}>
+      <defs>
+        <linearGradient id="media-share-hero" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={ACCENT_MID} />
+          <stop offset="100%" stopColor={ACCENT_SOFT} />
+        </linearGradient>
+      </defs>
+
+      {/* The pull-request comment the media lives in. */}
+      <rect
+        x={36}
+        y={16}
+        width={248}
+        height={176}
+        rx={10}
+        fill={SURFACE}
+        stroke={LINE}
+      />
+
+      {/* Author line. */}
+      <circle cx={62} cy={41} r={10} fill={CONTENT} />
+      <rect
+        x={78}
+        y={34}
+        width={52}
+        height={5}
+        rx={2.5}
+        fill={CONTENT_STRONG}
+      />
+      <rect x={136} y={34} width={26} height={5} rx={2.5} fill={LINE_SOFT} />
+      <rect x={78} y={44} width={118} height={4} rx={2} fill={CONTENT} />
+
+      {/* The embedded media — a recording, poster frame and play button. */}
+      <rect
+        x={52}
+        y={64}
+        width={216}
+        height={96}
+        rx={7}
+        fill="url(#media-share-hero)"
+        stroke={ACCENT_LINE}
+        strokeOpacity={0.4}
+      />
+      <circle cx={84} cy={90} r={8} fill={ACCENT} opacity={0.55} />
+      <path d="M58 156l38-32 24 20 18-15 36 27Z" fill={ACCENT} opacity={0.35} />
+      <circle cx={160} cy={112} r={16} fill={ACCENT} />
+      <path d="M155 104.5 169 112l-14 7.5Z" fill="var(--violet-1)" />
+
+      {/* A review comment, pinned to the pixels it is about. */}
+      <circle
+        cx={246}
+        cy={86}
+        r={9}
+        fill={SURFACE}
+        stroke={ACCENT}
+        strokeWidth={1.5}
+      />
+      <circle cx={246} cy={86} r={3} fill={ACCENT} />
+
+      {/* Caption and the version the pin lives on. */}
+      <rect x={52} y={170} width={110} height={5} rx={2.5} fill={CONTENT} />
+      <rect
+        x={232}
+        y={165}
+        width={36}
+        height={15}
+        rx={7.5}
+        fill={SURFACE_SUNKEN}
+        stroke={LINE}
+      />
+      <rect
+        x={241}
+        y={170}
+        width={18}
+        height={5}
+        rx={2.5}
+        fill={CONTENT_STRONG}
+      />
+
+      {/* The share link itself, resolving to the embed. */}
+      <path
+        d="M254 26c0 16-78 12-94 38"
+        stroke={LINE}
+        strokeWidth={1.6}
+        strokeDasharray="4 4"
+        fill="none"
+      />
+      <rect
+        x={208}
+        y={2}
+        width={94}
+        height={24}
+        rx={12}
+        fill={SURFACE}
+        stroke={LINE}
+      />
+      {/* Centred in the 24-unit chip: 24 * 0.5 = 12 tall. */}
+      <g transform="translate(220, 8) scale(0.5)">
+        <LinkIcon width={24} height={24} stroke={ACCENT} strokeWidth={2.4} />
+      </g>
+      <rect
+        x={238}
+        y={11.5}
+        width={52}
+        height={5}
+        rx={2.5}
+        fill={CONTENT_STRONG}
       />
     </Frame>
   );

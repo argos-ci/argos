@@ -3,16 +3,18 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
   ChevronDownIcon,
-  ClockFadingIcon,
   DownloadIcon,
   FileTextIcon,
+  GitPullRequestIcon,
   GlobeIcon,
   LinkIcon,
   LockIcon,
+  MessagesSquareIcon,
+  TerminalIcon,
 } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
+import { Heading, MenuTrigger, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { useClipboard } from "use-clipboard-copy";
 
 import {
@@ -27,6 +29,7 @@ import {
 } from "@/containers/Build/ScreenshotActions";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
+import { MediaSharingIllustration } from "@/containers/EmptyStateIllustrations";
 import { MediaComments } from "@/containers/Media/MediaComments";
 import { MediaVersions } from "@/containers/Media/MediaVersions";
 import {
@@ -39,10 +42,19 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
-import { Button } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip } from "@/ui/Chip";
+import { Code } from "@/ui/Code";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateIllustration,
+  EmptyStateLearnMore,
+  EmptyStateStep,
+  EmptyStateSteps,
+} from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
@@ -585,31 +597,73 @@ function PageFooter() {
  * One state for every reason a link stops working — expired, deleted, never
  * finished uploading, or never valid at all.
  *
- * Deliberately does not say which. Telling them apart would let anyone holding a
- * token learn whether it ever pointed at something, and for the person reading it
- * the answer is the same either way. The footer keeps its login control: for a
- * team-only media, signing in *is* the fix.
+ * Deliberately does not say which. Telling them apart would let anyone holding
+ * a token learn whether it ever pointed at something, and for the person
+ * reading it the answer is the same either way. What the page does say is what
+ * the link *was* — media shared through Argos — because the two people who
+ * land here need different exits: a teammate signs in and gets the media back,
+ * anyone else gets to find out what their own team could be sharing.
  */
 function UnavailableState() {
+  const { pathname } = useLocation();
   return (
     <div className="flex min-h-dvh flex-col">
       <Helmet>
         <title>Media unavailable</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
-      <div className="bg-subtle flex flex-1 flex-col items-center justify-center p-8">
-        <div className="flex max-w-md flex-col items-center text-center">
-          <div className="text-low mb-4">
-            <ClockFadingIcon className="size-8" strokeWidth={1.5} />
-          </div>
-          <h1 className="mb-2 text-base font-medium">
-            This media is no longer available
-          </h1>
-          <p className="text-low text-sm text-balance">
+      <div className="bg-subtle flex flex-1 flex-col justify-center py-8">
+        <EmptyState>
+          <EmptyStateIllustration>
+            <MediaSharingIllustration />
+          </EmptyStateIllustration>
+          {/* Still the page's `h1`: the empty state is the whole document. */}
+          <Heading level={1}>This media is no longer available</Heading>
+          <Text slot="description">
             The link has expired, the file was deleted, or you need to be signed
-            in to a team that has access to it.
-          </p>
-        </div>
+            in to a team that has access to it. Links like this one are how
+            teams on Argos share screenshots and recordings in their pull
+            requests.
+          </Text>
+          <EmptyStateActions>
+            <LinkButton
+              variant="secondary"
+              href={`/login?r=${encodeURIComponent(pathname)}`}
+            >
+              Sign in
+            </LinkButton>
+            <LinkButton href="/signup">Try Argos for free</LinkButton>
+          </EmptyStateActions>
+          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/media/standalone-media-upload">
+            Learn how media sharing works
+          </EmptyStateLearnMore>
+          <EmptyStateSteps>
+            <EmptyStateStep
+              icon={<TerminalIcon />}
+              step="From your terminal"
+              title="Upload a screenshot or recording"
+            >
+              One <Code>argos upload</Code> from a shell or a CI job hosts the
+              file and hands back a link with ready-to-paste Markdown.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<GitPullRequestIcon />}
+              step="In your pull request"
+              title="Embed it where you review"
+            >
+              Drop the Markdown into a pull request, an issue or a changelog —
+              before and after render side by side.
+            </EmptyStateStep>
+            <EmptyStateStep
+              icon={<MessagesSquareIcon />}
+              step="With your team"
+              title="Review it together"
+            >
+              Teammates pin comments straight onto the pixels, follow new
+              versions, and choose who can open the link.
+            </EmptyStateStep>
+          </EmptyStateSteps>
+        </EmptyState>
       </div>
       <PageFooter />
     </div>
