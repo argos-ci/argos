@@ -15,7 +15,7 @@ import { redisLock } from "@/util/redis";
 import { uploadedVersions } from "./query";
 import { getMediaEmbedArgs } from "./serve";
 import {
-  getMediaTableMarkdown,
+  getMediaListMarkdown,
   type MediaEmbedArgs,
   type MediaMarkdownGroup,
 } from "./url";
@@ -23,6 +23,31 @@ import { getLatestMediaVersions } from "./version";
 
 /** How many media the comment lists before it stops growing. */
 const MAX_LISTED_MEDIA = 20;
+
+const expiryFormatter = Intl.DateTimeFormat("en-US", {
+  dateStyle: "long",
+  timeZone: "UTC",
+});
+
+/** Every media this pull request should currently be showing. */
+function pullRequestMediaQuery(githubPullRequestId: string) {
+  return (
+    Media.query()
+      .where("githubPullRequestId", githubPullRequestId)
+      .whereExists(uploadedVersions())
+      // The setting the build and deployment paths both honour, and the media
+      // path did not: an owner who turned Argos pull request comments off was
+      // still getting them. Per project, because one pull request can carry media
+      // from several — the ones that opted out drop out of the list rather than
+      // suppressing the whole comment.
+      .whereExists(
+        Project.query()
+          .select(1)
+          .whereColumn("projects.id", "media.projectId")
+          .where("projects.prCommentEnabled", true),
+      )
+  );
+}
 
 /**
  * Rebuild the comment for a pull request from every media currently attached to
@@ -40,26 +65,24 @@ export async function updatePullRequestComment(
 
   const { pullRequest, octokit, owner, repo } = context;
 
-  const media = await Media.query()
-    .where("githubPullRequestId", githubPullRequestId)
-    .whereExists(uploadedVersions())
-    // The setting the build and deployment paths both honour, and the media
-    // path did not: an owner who turned Argos pull request comments off was
-    // still getting them. Per project, because one pull request can carry media
-    // from several — the ones that opted out drop out of the table rather than
-    // suppressing the whole comment.
-    .whereExists(
-      Project.query()
-        .select(1)
-        .whereColumn("projects.id", "media.projectId")
-        .where("projects.prCommentEnabled", true),
-    )
-    .orderBy("createdAt", "asc")
-    .limit(MAX_LISTED_MEDIA);
+  // Newest first to decide what the cap keeps, then reversed for display. Taking
+  // the oldest would drop precisely the media the pull request is being updated
+  // for — the one just uploaded — while keeping twenty stale ones.
+  const [total, newestFirst] = await Promise.all([
+    pullRequestMediaQuery(githubPullRequestId).resultSize(),
+    pullRequestMediaQuery(githubPullRequestId)
+      .orderBy("createdAt", "desc")
+      // Same-timestamp uploads would otherwise sort arbitrarily, and the cap
+      // would keep a different subset on every rebuild.
+      .orderBy("id", "desc")
+      .limit(MAX_LISTED_MEDIA),
+  ]);
 
-  if (media.length === 0) {
+  if (newestFirst.length === 0) {
     return;
   }
+
+  const media = newestFirst.toReversed();
 
   // The comment always shows the newest upload of each media, which is what makes
   // re-uploading after a review update the pull request without touching it.
@@ -67,7 +90,7 @@ export async function updatePullRequestComment(
     media.map((item) => item.id),
   );
 
-  const body = buildCommentBody(media, latestVersions);
+  const body = buildCommentBody(media, latestVersions, { total });
 
   // Two uploads finishing at once would otherwise both read "no comment yet" and
   // both create one.
@@ -125,16 +148,17 @@ export async function updatePullRequestComment(
 /**
  * Render the comment.
  *
- * A before/after pair shares a name, so the two are shown in one row side by side
- * — which is the whole reason `state` exists, and reads far better than two
- * unrelated rows a reviewer has to match up themselves.
+ * A before/after pair shares a name, so the two are shown side by side — which is
+ * the whole reason `state` exists, and reads far better than two unrelated blocks
+ * a reviewer has to match up themselves.
  *
- * Each cell is a CDN picture linked to its share page; {@link getMediaMarkdown}
+ * Every picture is a CDN file linked to its share page; {@link getMediaMarkdown}
  * owns why it is built that way.
  */
-function buildCommentBody(
+export function buildCommentBody(
   media: Media[],
   latestVersions: Map<string, MediaVersion>,
+  args: { total: number },
 ): string {
   const embed = (item: Media | null): MediaEmbedArgs | null => {
     if (!item) {
@@ -152,38 +176,94 @@ function buildCommentBody(
   };
 
   const groups = groupByPair(media).flatMap((group): MediaMarkdownGroup[] => {
-    const item = group.after ?? group.before;
-    invariant(item, "a group has at least one media");
     const before = embed(group.before);
     const after = embed(group.after);
     if (!before && !after) {
       return [];
     }
+    // The half whose bytes are on show — the one the badges have to describe.
+    const item = after ? group.after : group.before;
+    invariant(item, "an embedded group has the media it was embedded from");
+    const version = latestVersions.get(item.id);
+    invariant(version, "an embedded media has an uploaded version");
     return [
       {
         name: item.name,
         // The description belongs to the pair, not to either half.
         description:
           group.after?.description ?? group.before?.description ?? null,
+        versionNumber: version.number,
+        teamOnly: item.visibility !== "public",
         before,
         after,
       },
     ];
   });
 
-  const versionNote = media.some(
-    (item) => (latestVersions.get(item.id)?.number ?? 1) > 1,
-  )
-    ? " Re-uploading a screenshot adds a version, and this comment always shows the newest."
+  // Stated rather than left to be discovered: the media outlive neither the pull
+  // request nor the comment, so a reader coming back to a merged pull request
+  // months later would otherwise find dead pictures and no explanation.
+  const expiresAt = getEarliestExpiry(media, latestVersions);
+  const expiryNote = expiresAt
+    ? ` Media expire on ${expiryFormatter.format(expiresAt)}.`
     : "";
 
   return [
-    "**Media uploaded by Argos**",
+    `**${getUploadCount(groups)} uploaded by Argos**`,
     "",
-    getMediaTableMarkdown(groups),
+    getMediaListMarkdown(groups),
     "",
-    `<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.${versionNote}</sub>`,
+    // A truncated list that does not say so reads as a complete one, which is
+    // worse than the truncation.
+    ...(args.total > media.length
+      ? [`Showing the ${media.length} most recent of ${args.total} media.`, ""]
+      : []),
+    `<sub>Uploaded with [Argos ↗︎](https://argos-ci.com/docs/learn/media/standalone-media-upload). This comment is updated in place.${expiryNote}</sub>`,
   ].join("\n");
+}
+
+/**
+ * What the comment is showing, counted by kind — "3 screenshots", "2 screenshots
+ * and 1 recording".
+ *
+ * The first line of a comment is the only part that survives into an email
+ * notification and into the collapsed view of a long thread, so spending it on a
+ * label that says nothing wastes the one place a reader is guaranteed to look.
+ */
+function getUploadCount(groups: MediaMarkdownGroup[]): string {
+  const recordings = groups.filter(
+    (group) => (group.after ?? group.before)?.isVideo,
+  ).length;
+  const screenshots = groups.length - recordings;
+  return [
+    ...(screenshots > 0 ? [pluralize(screenshots, "screenshot")] : []),
+    ...(recordings > 0 ? [pluralize(recordings, "recording")] : []),
+  ].join(" and ");
+}
+
+function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count > 1 ? "s" : ""}`;
+}
+
+/**
+ * When the first of the listed media stops resolving.
+ *
+ * The earliest of them, because that is the date the comment starts being wrong:
+ * retention is stamped per version at upload, so a comment holding uploads from
+ * different weeks has its pictures die one by one.
+ */
+function getEarliestExpiry(
+  media: Media[],
+  latestVersions: Map<string, MediaVersion>,
+): Date | null {
+  const dates = media.flatMap((item) => {
+    const expiresAt = latestVersions.get(item.id)?.expiresAt;
+    return expiresAt ? [new Date(expiresAt)] : [];
+  });
+  if (dates.length === 0) {
+    return null;
+  }
+  return dates.reduce((earliest, date) => (date < earliest ? date : earliest));
 }
 
 type MediaPair = { before: Media | null; after: Media | null };

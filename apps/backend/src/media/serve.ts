@@ -70,5 +70,7 @@ export function getMediaEmbedArgs(args: {
     fileUrl: getMediaFileUrl(version),
     posterUrl: getMediaPosterUrl(version),
     isVideo: version.isVideo(),
+    width: version.width,
+    height: version.height,
   };
 }

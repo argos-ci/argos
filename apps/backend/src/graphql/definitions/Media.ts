@@ -12,7 +12,7 @@ import {
   getMediaFileUrl,
   getMediaPosterUrl,
 } from "@/media/serve";
-import { getMediaMarkdown, getMediaTableMarkdown } from "@/media/url";
+import { getMediaBlockMarkdown, getMediaMarkdown } from "@/media/url";
 import { getLatestMediaVersion } from "@/media/version";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -97,9 +97,9 @@ export const typeDefs = gql`
     """
     markdown: String!
     """
-    Ready-to-paste Markdown table showing the before/after pair side by side —
-    the same rendering the managed pull request comment uses. Null when this
-    media is not half of an uploaded pair.
+    Ready-to-paste Markdown block showing the before/after pair side by side under
+    its name and description — the same rendering the managed pull request comment
+    uses. Null when this media is not half of an uploaded pair.
     """
     markdownPair: String
     "The newest uploaded version — what the share page and the comment show"
@@ -207,7 +207,7 @@ export const resolvers: IResolvers = {
       );
     },
     markdownPair: async (media, _args, ctx) => {
-      // The pair's side-by-side table — the exact rendering the managed pull
+      // The pair's side-by-side block — the exact rendering the managed pull
       // request comment uses — so pasting it by hand shows before and after
       // together, like the page does.
       const counterpart = media.state
@@ -238,16 +238,18 @@ export const resolvers: IResolvers = {
         media.state === "before"
           ? [embed, counterpartEmbed]
           : [counterpartEmbed, embed];
-      return getMediaTableMarkdown([
-        {
-          name: media.name,
-          // The description belongs to the pair, not to either half.
-          description:
-            afterMedia.description ?? beforeMedia.description ?? null,
-          before,
-          after,
-        },
-      ]);
+      const afterVersion =
+        media.state === "before" ? counterpartVersion : version;
+      return getMediaBlockMarkdown({
+        name: media.name,
+        // The description belongs to the pair, not to either half.
+        description: afterMedia.description ?? beforeMedia.description ?? null,
+        // The badges describe the half on show, which for a pair is the after.
+        versionNumber: afterVersion.number,
+        teamOnly: afterMedia.visibility !== "public",
+        before,
+        after,
+      });
     },
     project: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
