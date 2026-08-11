@@ -13,6 +13,7 @@ const ctx = { user: { id: "user-1", name: "James" }, preferencesUrl: null };
 
 const BUILD_TARGET = { buildNumber: 42, buildName: "default" };
 const TEST_TARGET = { testName: "Header renders" };
+const MEDIA_TARGET = { mediaName: "checkout.png" };
 const NO_TARGET = {};
 
 /**
@@ -29,6 +30,7 @@ function withTarget(
     buildNumber: undefined,
     buildName: undefined,
     testName: undefined,
+    mediaName: undefined,
     ...target,
   };
 }
@@ -50,7 +52,12 @@ describe("getCommentTargetLabel", () => {
     expect(getCommentTargetLabel(TEST_TARGET)).toBe("test Header renders");
   });
 
-  it("throws when the payload names neither", () => {
+  it("names a media by its file name alone", () => {
+    // No noun in front: "media checkout.png" reads like a category nobody uses.
+    expect(getCommentTargetLabel(MEDIA_TARGET)).toBe("checkout.png");
+  });
+
+  it("throws when the payload names none of them", () => {
     expect(() => getCommentTargetLabel(NO_TARGET)).toThrow(
       "A comment notification must name its target",
     );
@@ -79,12 +86,25 @@ describe.each(handlers)("$name", ({ handler }) => {
     expect(html).not.toContain("build default");
   });
 
-  it("accepts either target and rejects a payload naming none", () => {
+  it("renders the media it was posted on", async () => {
+    const rendered = handler.email({
+      ...withTarget(handler, MEDIA_TARGET),
+      ctx,
+    });
+    const html = await emailToText(rendered);
+    expect(html).toContain("checkout.png");
+    expect(html).not.toContain("build default");
+  });
+
+  it("accepts any target and rejects a payload naming none", () => {
     expect(
       handler.schema.safeParse(withTarget(handler, BUILD_TARGET)).success,
     ).toBe(true);
     expect(
       handler.schema.safeParse(withTarget(handler, TEST_TARGET)).success,
+    ).toBe(true);
+    expect(
+      handler.schema.safeParse(withTarget(handler, MEDIA_TARGET)).success,
     ).toBe(true);
     expect(
       handler.schema.safeParse(withTarget(handler, NO_TARGET)).success,
