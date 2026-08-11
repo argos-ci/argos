@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { MediaDiff } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 const deleteObjects = vi.hoisted(() => vi.fn());
@@ -8,7 +9,11 @@ vi.mock("@/storage/s3", () => ({
   getS3Client: () => ({ send: deleteObjects }),
 }));
 
-const { deleteUnreferencedMediaObjects } = await import("./object");
+const {
+  deleteUnreferencedMediaDiffObjects,
+  deleteUnreferencedMediaObjects,
+  getMediaDiffObjects,
+} = await import("./object");
 
 /**
  * Media keys are content-addressed and namespaced per project, so the same
@@ -115,6 +120,91 @@ describe("deleteUnreferencedMediaObjects", () => {
       keys: [null, undefined, ""],
       excludeVersionIds: [],
     });
+    expect(deleteObjects).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The diff masks are derived bytes: nothing regenerates them on demand, and their
+ * rows cascade off the versions they were computed from. So every path that
+ * deletes a version has to read them *first* — once the cascade runs there is
+ * nothing left naming the objects and no later pass can find them.
+ */
+describe("media diff masks", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+    deleteObjects.mockClear();
+  });
+
+  /** The keys the last delete call was asked to remove. */
+  function deletedKeys(): string[] {
+    const call = deleteObjects.mock.calls[0]?.[0];
+    if (!call) {
+      return [];
+    }
+    return call.input.Delete.Objects.map((o: { Key: string }) => o.Key);
+  }
+
+  /** A pair of versions with a computed mask between them. */
+  async function createDiff(key: string | null) {
+    const media = await factory.Media.create();
+    const [before, after] = await Promise.all([
+      factory.MediaVersion.create({ mediaId: media.id, number: 1 }),
+      factory.MediaVersion.create({ mediaId: media.id, number: 2 }),
+    ]);
+    const diff = await MediaDiff.query().insertAndFetch({
+      beforeMediaVersionId: before.id,
+      afterMediaVersionId: after.id,
+      jobStatus: "complete",
+      key,
+    });
+    return { before, after, diff };
+  }
+
+  it("finds the masks computed from a version, either side of the pair", async () => {
+    const { before, after, diff } = await createDiff("media/1/diffs/a.png");
+
+    // A version is the "before" of one pair and can be the "after" of another,
+    // so both columns have to be searched or half the masks are missed.
+    await expect(getMediaDiffObjects([before.id])).resolves.toEqual({
+      keys: ["media/1/diffs/a.png"],
+      diffIds: [diff.id],
+    });
+    await expect(getMediaDiffObjects([after.id])).resolves.toEqual({
+      keys: ["media/1/diffs/a.png"],
+      diffIds: [diff.id],
+    });
+  });
+
+  it("skips a pair that produced no mask", async () => {
+    // Two identical halves compare to nothing, so the row carries no key.
+    const { before } = await createDiff(null);
+
+    await expect(getMediaDiffObjects([before.id])).resolves.toEqual({
+      keys: [],
+      diffIds: [],
+    });
+  });
+
+  it("deletes a mask nothing else shows", async () => {
+    const { before, diff } = await createDiff("media/1/diffs/only.png");
+    const { keys, diffIds } = await getMediaDiffObjects([before.id]);
+
+    await deleteUnreferencedMediaDiffObjects({ keys, excludeDiffIds: diffIds });
+
+    expect(deletedKeys()).toEqual(["media/1/diffs/only.png"]);
+    expect(diffIds).toEqual([diff.id]);
+  });
+
+  it("keeps a mask another pair still shows", async () => {
+    // Mask keys are content-addressed too, so a pair that changed in exactly the
+    // way another pair did shares one object.
+    const { before } = await createDiff("media/1/diffs/shared.png");
+    await createDiff("media/1/diffs/shared.png");
+    const { keys, diffIds } = await getMediaDiffObjects([before.id]);
+
+    await deleteUnreferencedMediaDiffObjects({ keys, excludeDiffIds: diffIds });
+
     expect(deleteObjects).not.toHaveBeenCalled();
   });
 });

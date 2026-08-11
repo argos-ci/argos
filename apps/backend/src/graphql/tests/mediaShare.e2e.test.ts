@@ -61,6 +61,14 @@ const MEDIA_SHARE_QUERY = `
           fileUrl
         }
       }
+      diff {
+        id
+        status
+        url
+        width
+        height
+        score
+      }
       project {
         id
         slug
@@ -181,6 +189,14 @@ describe("mediaByShareToken", () => {
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);
 
+    // The pair's comparison, which is what the viewer's changes overlay draws.
+    expect(result.diff).toMatchObject({
+      status: "complete",
+      width: 375,
+      height: 1024,
+    });
+    expect(result.diff.url).toContain("diff-1024-to-720.png");
+
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
     );
@@ -190,6 +206,30 @@ describe("mediaByShareToken", () => {
       x: 0.62,
       y: 0.34,
     });
+  });
+
+  it("hides the pair's diff from a viewer who cannot see the other half", async () => {
+    // The mask marks pixels of the *counterpart*, and its dimensions are the two
+    // halves' union — so it is gated on being allowed to see that half, the same
+    // gate `counterpart` and `markdownPair` are on. A pair can be mixed because
+    // its halves are two uploads carrying their own visibility, and returning the
+    // diff unchecked would describe a team-only image to whoever holds the public
+    // link.
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({ accountId: account.id });
+    const media = await createMediaScenario({ projectId: project.id });
+    await media.after.$query().patch({ visibility: "public" });
+
+    const res = await query({ auth: null, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    // The public half itself still answers — only what it says about the other
+    // half narrows.
+    expect(result).not.toBeNull();
+    expect(result.counterpart).toBeNull();
+    expect(result.markdownPair).toBeNull();
+    expect(result.diff).toBeNull();
   });
 
   it("hides a team media from someone outside the team", async () => {

@@ -23,7 +23,11 @@ import { processPullRequest } from "@/github-pull-request/process";
 import logger from "@/logger";
 import { createMedia } from "@/media/create";
 import { finalizeMedia } from "@/media/finalize";
-import { deleteUnreferencedMediaObjects } from "@/media/object";
+import {
+  deleteUnreferencedMediaDiffObjects,
+  deleteUnreferencedMediaObjects,
+  getMediaDiffObjects,
+} from "@/media/object";
 import { publishMediaForBranch } from "@/media/publish";
 import { updatePullRequestComment } from "@/media/pull-request-comment";
 import { queryProjectMedia } from "@/media/query";
@@ -259,7 +263,7 @@ export const finalizeMediaHandler: CreateAPIHandler = ({ post }) => {
     // a no-op.
     const wasAlreadyUploaded = Boolean(pending.uploadedAt);
 
-    const finalized = await finalizeMedia(pending);
+    const finalized = await finalizeMedia(pending, media);
 
     // Nothing landed, so nothing downstream has anything new to say. Without
     // this, re-finalizing an already-uploaded media still drove a GitHub write
@@ -422,9 +426,18 @@ export const deleteMediaHandler: CreateAPIHandler = ({ delete: del }) => {
     // Keys another version still points at are kept, which versions make routine:
     // reverting a screenshot produces a version sharing an older one's key.
     const versions = await MediaVersion.query().where("mediaId", media.id);
+    const versionIds = versions.map((version) => version.id);
+    // The pair's diff masks are derived bytes hanging off those versions, and
+    // their rows cascade away with them — so they have to be collected here,
+    // while something still names them.
+    const diffs = await getMediaDiffObjects(versionIds);
     await deleteUnreferencedMediaObjects({
       keys: versions.map((version) => version.key),
-      excludeVersionIds: versions.map((version) => version.id),
+      excludeVersionIds: versionIds,
+    });
+    await deleteUnreferencedMediaDiffObjects({
+      keys: diffs.keys,
+      excludeDiffIds: diffs.diffIds,
     });
     await media.$query().delete();
 

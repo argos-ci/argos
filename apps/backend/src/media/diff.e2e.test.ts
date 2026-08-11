@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { invariant } from "@argos/util/invariant";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import config from "@/config";
@@ -114,11 +115,12 @@ describe("computeMediaDiff", () => {
       // The row pointing at a mask nobody uploaded is the failure this asserts
       // against: the page would render a broken overlay and nothing would report
       // it.
+      invariant(diff.key, "the mask was recorded");
       await expect(
         checkIfExists({
           s3: getS3Client(),
           Bucket: config.get("s3.screenshotsBucket"),
-          Key: diff.key!,
+          Key: diff.key,
         }),
       ).resolves.toBe(true);
     },

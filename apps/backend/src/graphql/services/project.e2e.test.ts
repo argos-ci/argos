@@ -6,6 +6,7 @@ import {
   AutomationRun,
   Build,
   IgnoredChange,
+  MediaDiff,
   Project,
   ProjectUser,
   Screenshot,
@@ -16,12 +17,25 @@ import {
   User,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import {
+  deleteUnreferencedMediaDiffObjects,
+  deleteUnreferencedMediaObjects,
+} from "@/media/object";
 import { sendNotification } from "@/notification";
 
 import { deleteProject, unsafe_deleteProject } from "./project";
 
 vi.mock("@/notification", () => ({
   sendNotification: vi.fn(),
+}));
+
+// Deleting a project drops its media bytes. Nothing here is testing AWS — what
+// matters is *which* keys are handed over, because the rows naming them are gone
+// by the time this runs and no later pass could find them again.
+vi.mock("@/media/object", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/media/object")>()),
+  deleteUnreferencedMediaObjects: vi.fn(async () => undefined),
+  deleteUnreferencedMediaDiffObjects: vi.fn(async () => undefined),
 }));
 
 type SeededProject = {
@@ -175,6 +189,44 @@ describe("unsafe_deleteProject", () => {
     expect(ignoredChanges).toHaveLength(0);
     expect(tests).toHaveLength(0);
     expect(projects).toHaveLength(0);
+  });
+
+  test("drops the media bytes, masks included", async ({ factory }) => {
+    // The diff masks are derived from the versions and cascade away with them,
+    // so their keys have to be read inside the transaction. Reading them after
+    // the commit — or not at all — leaves objects in the bucket that nothing
+    // references and nothing will ever collect.
+    const project = await factory.Project.create();
+    const media = await factory.Media.create({ projectId: project.id });
+    const [before, after] = await Promise.all([
+      factory.MediaVersion.create({
+        mediaId: media.id,
+        number: 1,
+        key: "media/1/before.png",
+      }),
+      factory.MediaVersion.create({
+        mediaId: media.id,
+        number: 2,
+        key: "media/1/after.png",
+      }),
+    ]);
+    await MediaDiff.query().insert({
+      beforeMediaVersionId: before.id,
+      afterMediaVersionId: after.id,
+      jobStatus: "complete",
+      key: "media/1/diffs/mask.png",
+    });
+
+    await unsafe_deleteProject({ projectId: project.id });
+
+    expect(deleteUnreferencedMediaObjects).toHaveBeenCalledWith({
+      keys: expect.arrayContaining(["media/1/before.png", "media/1/after.png"]),
+      excludeVersionIds: [],
+    });
+    expect(deleteUnreferencedMediaDiffObjects).toHaveBeenCalledWith({
+      keys: ["media/1/diffs/mask.png"],
+      excludeDiffIds: [],
+    });
   });
 });
 

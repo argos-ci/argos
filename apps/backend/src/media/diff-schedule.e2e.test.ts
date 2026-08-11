@@ -1,9 +1,14 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { knex } from "@/database";
 import { MediaDiff } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-const push = vi.hoisted(() => vi.fn());
+// Resolves by default, like the real `push`: the scheduler hands the job over
+// without awaiting it and attaches its own rejection handler, so a mock that
+// returned `undefined` would not stand in for the queue at all.
+const push = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("./diff-job", () => ({ mediaDiffJob: { push } }));
 
@@ -89,21 +94,70 @@ describe("ensureMediaDiff", () => {
     await expect(MediaDiff.query().resultSize()).resolves.toBe(1);
   });
 
-  it("leaves nothing behind when the queue refuses the job", async () => {
-    // A row nobody queued would sit `pending` forever and make every later call
-    // idempotent against work that is never going to happen.
+  it("does not wait for the broker", async () => {
+    // This runs on the share page's read path, and `push` opens an AMQP channel
+    // on first use: with the broker down its retry ladder can hold a caller for
+    // minutes. The row has to come back regardless.
+    const { beforeVersion, afterVersion } = await createPair();
+    let release: () => void = () => {};
+    push.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+
+    const diff = await ensureMediaDiff({ beforeVersion, afterVersion });
+
+    expect(diff).not.toBeNull();
+    expect(push).toHaveBeenCalledOnce();
+    release();
+  });
+
+  it("queues a pair again once it has gone stale", async () => {
+    // A push lost to a broker outage or a worker that died mid-job leaves the row
+    // unfinished with nobody working on it. Without this the pair would be
+    // permanently uncompared: the row exists, so every later call finds it and
+    // queues nothing.
     push.mockRejectedValueOnce(new Error("queue is down"));
     const { beforeVersion, afterVersion } = await createPair();
 
-    await expect(
-      ensureMediaDiff({ beforeVersion, afterVersion }),
-    ).resolves.toBeNull();
-    await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
+    const first = await ensureMediaDiff({ beforeVersion, afterVersion });
+    invariant(first);
 
-    // So the next caller starts over rather than finding a dead row.
-    const retried = await ensureMediaDiff({ beforeVersion, afterVersion });
-    expect(retried).not.toBeNull();
+    // Still fresh, so the next caller leaves the job alone rather than racing
+    // the worker that may well be running it.
+    await ensureMediaDiff({ beforeVersion, afterVersion });
+    expect(push).toHaveBeenCalledOnce();
+
+    // Past the window, and `updatedAt` is written outside Objection so the
+    // model's own timestamping doesn't undo it.
+    await knex("media_diffs")
+      .where("id", first.id)
+      .update({ updatedAt: new Date(Date.now() - 60 * 60 * 1000) });
+
+    const requeued = await ensureMediaDiff({ beforeVersion, afterVersion });
+    expect(requeued?.id).toBe(first.id);
     expect(push).toHaveBeenCalledTimes(2);
+
+    // And the window restarts, so a hot share link cannot re-push on every load.
+    await ensureMediaDiff({ beforeVersion, afterVersion });
+    expect(push).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves a finished diff alone however old it is", async () => {
+    const { beforeVersion, afterVersion } = await createPair();
+    const diff = await ensureMediaDiff({ beforeVersion, afterVersion });
+    invariant(diff);
+    await knex("media_diffs")
+      .where("id", diff.id)
+      .update({
+        jobStatus: "complete",
+        updatedAt: new Date(Date.now() - 60 * 60 * 1000),
+      });
+
+    await ensureMediaDiff({ beforeVersion, afterVersion });
+
+    expect(push).toHaveBeenCalledOnce();
   });
 
   it("refuses a pair that is not two images", async () => {
@@ -127,9 +181,9 @@ describe("scheduleMediaDiff", () => {
   });
 
   it("pairs a landed upload with the other half's newest version", async () => {
-    const { beforeVersion, afterVersion } = await createPair();
+    const { after, beforeVersion, afterVersion } = await createPair();
 
-    await scheduleMediaDiff(afterVersion);
+    await scheduleMediaDiff(afterVersion, after);
 
     await expect(MediaDiff.query()).resolves.toMatchObject([
       {
@@ -144,14 +198,14 @@ describe("scheduleMediaDiff", () => {
     // pair, so it gets a row of its own rather than overwriting the one a
     // reviewer may be looking at.
     const { after, beforeVersion, afterVersion } = await createPair();
-    await scheduleMediaDiff(afterVersion);
+    await scheduleMediaDiff(afterVersion, after);
 
     const afterV2 = await factory.MediaVersion.create({
       mediaId: after.id,
       number: 2,
       key: "media/1/after-v2.png",
     });
-    await scheduleMediaDiff(afterV2);
+    await scheduleMediaDiff(afterV2, after);
 
     const diffs = await MediaDiff.query().orderBy("id");
     expect(diffs).toMatchObject([
@@ -164,9 +218,9 @@ describe("scheduleMediaDiff", () => {
   });
 
   it("ignores a media that stands alone", async () => {
-    const { version } = await factory.createMediaWithVersion();
+    const { media, version } = await factory.createMediaWithVersion();
 
-    await scheduleMediaDiff(version);
+    await scheduleMediaDiff(version, media);
 
     await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
     expect(push).not.toHaveBeenCalled();
@@ -193,7 +247,7 @@ describe("scheduleMediaDiff", () => {
       number: 1,
     });
 
-    await scheduleMediaDiff(beforeVersion);
+    await scheduleMediaDiff(beforeVersion, before);
 
     await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
   });
@@ -220,7 +274,7 @@ describe("scheduleMediaDiff", () => {
       number: 1,
     });
 
-    await scheduleMediaDiff(afterVersion);
+    await scheduleMediaDiff(afterVersion, after);
 
     await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
   });
@@ -230,8 +284,10 @@ describe("scheduleMediaDiff", () => {
     // working share URL, so a queue that is down must not turn a finished upload
     // into a failed one.
     push.mockRejectedValueOnce(new Error("queue is down"));
-    const { afterVersion } = await createPair();
+    const { after, afterVersion } = await createPair();
 
-    await expect(scheduleMediaDiff(afterVersion)).resolves.toBeUndefined();
+    await expect(
+      scheduleMediaDiff(afterVersion, after),
+    ).resolves.toBeUndefined();
   });
 });

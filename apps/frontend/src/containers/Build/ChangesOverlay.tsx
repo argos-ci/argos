@@ -154,7 +154,12 @@ export function ChangesHighlights(props: {
   const [index, setIndex] = useState<number | null>(null);
   const { zoomTo } = useZoomerSyncContext();
   const go: Highlighter["go"] = useEventCallback((direction) => {
-    invariant(rects);
+    // Nothing to step through. The render below unregisters this highlighter in
+    // that case, so this only guards the gap before it does — but the arithmetic
+    // below divides by the count, and `% 0` is `NaN`.
+    if (!rects || rects.length === 0) {
+      return;
+    }
     const i = index === null ? (direction === 1 ? -1 : rects.length) : index;
     const nextIndex = (i + direction + rects.length) % rects.length;
     const rect = rects[nextIndex];
@@ -185,7 +190,10 @@ export function ChangesHighlights(props: {
     },
   );
 
-  if (!rects || !realScale) {
+  // An empty list is a real answer — a mask the detector read and found nothing
+  // in — and it has to be treated like no answer at all: registering for it
+  // enables the highlight and next/previous buttons over nothing to step to.
+  if (!rects || rects.length === 0 || !realScale) {
     return null;
   }
 

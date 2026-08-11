@@ -27,7 +27,11 @@ import {
 import { applyProjectVisibility } from "@/database/services/project";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
-import { deleteUnreferencedMediaObjects } from "@/media/object";
+import {
+  deleteUnreferencedMediaDiffObjects,
+  deleteUnreferencedMediaObjects,
+  getMediaDiffObjects,
+} from "@/media/object";
 import { sendNotification } from "@/notification";
 
 import { invalidId } from "../util";
@@ -156,6 +160,7 @@ export async function unsafe_deleteProject(args: {
   // transactional, so deleting the files first would lose them if the rollback
   // came after.
   let mediaKeys: string[] = [];
+  let mediaDiffKeys: string[] = [];
 
   await transaction(args.trx, async (trx) => {
     await ScreenshotDiffReview.query(trx)
@@ -212,12 +217,20 @@ export async function unsafe_deleteProject(args: {
       .where("tests.projectId", args.projectId)
       .delete();
     // Keys live on the versions, so they are collected before the media rows go —
-    // `media_versions` cascades on delete, which would take them with it.
+    // `media_versions` cascades on delete, which would take them with it. The
+    // before/after diff masks hang off those versions and cascade the same way,
+    // so their keys have to be read here too or nothing is left naming them.
     const versions = await MediaVersion.query(trx)
-      .select("media_versions.key")
+      .select("media_versions.id", "media_versions.key")
       .joinRelated("media")
       .where("media.projectId", args.projectId);
     mediaKeys = versions.map((row) => row.key);
+    mediaDiffKeys = (
+      await getMediaDiffObjects(
+        versions.map((row) => row.id),
+        trx,
+      )
+    ).keys;
     await Media.query(trx).where("projectId", args.projectId).delete();
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
@@ -231,5 +244,9 @@ export async function unsafe_deleteProject(args: {
   await deleteUnreferencedMediaObjects({
     keys: mediaKeys,
     excludeVersionIds: [],
+  });
+  await deleteUnreferencedMediaDiffObjects({
+    keys: mediaDiffKeys,
+    excludeDiffIds: [],
   });
 }

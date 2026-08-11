@@ -256,7 +256,10 @@ function useAwaitPendingDiff(props: {
         return;
       }
       startTransition(() => {
-        void refetch();
+        // A failed poll is not worth reporting: the media is already on screen,
+        // and the next tick asks again. Left unhandled it would be an unhandled
+        // rejection every three seconds through a network blip.
+        refetch().catch(() => undefined);
       });
     }, DIFF_POLL_INTERVAL);
     return () => window.clearInterval(interval);

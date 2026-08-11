@@ -1,9 +1,10 @@
-import { Media, MediaDiff, MediaVersion } from "@/database/models";
+import { Media, MediaVersion } from "@/database/models";
 import logger from "@/logger";
 
 import {
   deleteUnreferencedMediaDiffObjects,
   deleteUnreferencedMediaObjects,
+  getMediaDiffObjects,
 } from "./object";
 
 /** Rows purged per pass, so one statement never locks the table for long. */
@@ -53,18 +54,10 @@ export async function purgeExpiredMedia(
     // The before/after masks computed from these versions go with them. Their
     // rows cascade off the foreign key, but the objects are ours to collect, and
     // they have to go before the cascade takes the rows that name them.
-    const diffs = await MediaDiff.query()
-      .select("id", "key")
-      .whereNotNull("key")
-      .where((builder) => {
-        builder
-          .whereIn("beforeMediaVersionId", ids)
-          .orWhereIn("afterMediaVersionId", ids);
-      });
-
+    const diffs = await getMediaDiffObjects(ids);
     await deleteUnreferencedMediaDiffObjects({
-      keys: diffs.map((diff) => diff.key),
-      excludeDiffIds: diffs.map((diff) => diff.id),
+      keys: diffs.keys,
+      excludeDiffIds: diffs.diffIds,
     });
 
     await MediaVersion.query().delete().whereIn("id", ids);

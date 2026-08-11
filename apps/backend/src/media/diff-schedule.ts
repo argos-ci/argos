@@ -8,18 +8,64 @@ import { findMediaCounterpart } from "./pair";
 import { getLatestMediaVersion } from "./version";
 
 /**
- * The diff row for exactly these two versions, queueing it the first time.
+ * How long a diff may sit unfinished before another caller queues it again.
+ *
+ * Comfortably past the job's own budget (60s) and its retry ladder (10s, 1m,
+ * 5m), so a job that is merely slow is never queued twice — and short enough
+ * that a pair stranded by a broker outage, a worker restart, or a job that
+ * exhausted its retries is picked up the next time anyone looks at it.
+ */
+const REQUEUE_AFTER_MS = 10 * 60 * 1000;
+
+/**
+ * Whether a diff that already exists should be handed to the queue again.
+ *
+ * Anything but `complete` is unfinished, and unfinished past the window means
+ * nobody is working on it: the push was lost, the worker died mid-job, or the
+ * retry ladder ran out. Bounded by the window rather than retried on sight, so a
+ * pair that genuinely cannot be computed is attempted once every ten minutes
+ * instead of on every page load.
+ */
+function checkNeedsQueueing(diff: MediaDiff, now: number): boolean {
+  if (diff.jobStatus === "complete") {
+    return false;
+  }
+  return now - Date.parse(diff.updatedAt) > REQUEUE_AFTER_MS;
+}
+
+/**
+ * Hand a diff to the queue without making the caller wait for the broker.
+ *
+ * Deliberately not awaited. This runs on the share page's read path, and
+ * `push` opens an AMQP channel on first use — with a broker that is down, its
+ * retry ladder can hold a caller for minutes. A page whose job is to show two
+ * images already on the CDN must not be able to hang on the message broker.
+ *
+ * A push that never lands leaves the row unfinished, which
+ * {@link checkNeedsQueueing} picks up later. That is the same recovery a worker
+ * crash gets, so it needs no path of its own.
+ */
+function queueMediaDiff(diffId: string): void {
+  mediaDiffJob.push(diffId).catch((error: unknown) => {
+    logger.error(
+      { error, mediaDiffId: diffId },
+      "Failed to queue the media diff",
+    );
+  });
+}
+
+/**
+ * The diff row for exactly these two versions, queueing it when nobody else is.
  *
  * Idempotent, and it has to be: an upload schedules it, and the share page asks
  * for it on every load. The insert is atomic rather than gated on the lookup
  * above it — two uploads landing at once would both pass a check-then-insert —
- * and only the caller whose insert actually produced a row queues the job, so a
- * pair is never computed twice.
+ * and a row that already exists is only re-queued once it has gone stale, so a
+ * pair in flight is never computed twice.
  *
  * Null when there is nothing to diff: a pair is only comparable when both halves
- * are images (videos have no mask, and Argos does not transcode them to make
- * one), and null too when the queue would not take the job — the pair is simply
- * left uncompared rather than recorded as pending forever.
+ * are images. Videos have no mask, and Argos does not transcode them to make
+ * one.
  */
 export async function ensureMediaDiff(args: {
   beforeVersion: MediaVersion;
@@ -38,6 +84,15 @@ export async function ensureMediaDiff(args: {
 
   const existing = await MediaDiff.query().findOne(identity);
   if (existing) {
+    if (checkNeedsQueueing(existing, Date.now())) {
+      // Touched before the push, not after: the window has to restart even when
+      // the queue is still unreachable, or every caller from here on re-pushes.
+      const requeued = await existing
+        .$query()
+        .patchAndFetch({ jobStatus: "pending" });
+      queueMediaDiff(requeued.id);
+      return requeued;
+    }
     return existing;
   }
 
@@ -55,20 +110,7 @@ export async function ensureMediaDiff(args: {
     return raced;
   }
 
-  try {
-    await mediaDiffJob.push(inserted.id);
-  } catch (error) {
-    // The row is what makes this idempotent, so a row nobody queued would sit
-    // `pending` forever and every later call would find it and queue nothing.
-    // Taking it back leaves the pair uncompared, which the next upload — or the
-    // next time the page is opened — retries from scratch.
-    await MediaDiff.query().deleteById(inserted.id);
-    logger.error(
-      { error, mediaDiffId: inserted.id },
-      "Failed to queue the media diff",
-    );
-    return null;
-  }
+  queueMediaDiff(inserted.id);
   return inserted;
 }
 
@@ -85,12 +127,11 @@ export async function ensureMediaDiff(args: {
  * could not be queued would trade a working feature for a missing one. The share
  * page schedules the pair again the next time it is opened.
  */
-export async function scheduleMediaDiff(version: MediaVersion): Promise<void> {
+export async function scheduleMediaDiff(
+  version: MediaVersion,
+  media: Media,
+): Promise<void> {
   try {
-    const media =
-      version.media ?? (await Media.query().findById(version.mediaId));
-    invariant(media, "no media for the version");
-
     if (!media.state) {
       return;
     }

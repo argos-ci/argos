@@ -3,6 +3,7 @@ import type { S3Client } from "@aws-sdk/client-s3";
 import * as Sentry from "@sentry/node";
 
 import { MediaDiff } from "@/database/models";
+import logger from "@/logger";
 import { diffImages } from "@/screenshot-diff/diff/image";
 import type { DiffResult } from "@/screenshot-diff/diff/types";
 import { S3FileHandle } from "@/storage";
@@ -73,26 +74,47 @@ export async function computeMediaDiff(
   const afterImage = afterHandle.getImageHandle();
   invariant(beforeImage && afterImage, "both halves are images");
 
-  const result = await diffImages(beforeImage, afterImage, {});
+  try {
+    const result = await diffImages(beforeImage, afterImage, {});
 
-  const mask = result.file
-    ? await uploadMediaDiffMask({
-        projectId: afterMedia.projectId,
-        resultFile: result.file,
-        context,
-      })
-    : null;
+    const mask = result.file
+      ? await uploadMediaDiffMask({
+          projectId: afterMedia.projectId,
+          resultFile: result.file,
+          context,
+        })
+      : null;
 
-  await MediaDiff.query()
-    .findById(mediaDiff.id)
-    .patch({
-      score: result.score,
-      key: mask?.key ?? null,
-      width: mask?.width ?? null,
-      height: mask?.height ?? null,
-    });
+    await MediaDiff.query()
+      .findById(mediaDiff.id)
+      .patch({
+        score: result.score,
+        key: mask?.key ?? null,
+        width: mask?.width ?? null,
+        height: mask?.height ?? null,
+      });
+  } finally {
+    // In a `finally`, because the job retries: a pair the engine cannot handle
+    // would otherwise leave both downloads on the worker's disk once per
+    // attempt, with nothing that ever collects them.
+    await Promise.all([discardFile(beforeHandle), discardFile(afterHandle)]);
+  }
+}
 
-  await Promise.all([beforeHandle.unlink(), afterHandle.unlink()]);
+/**
+ * Drop a handle's temporary file, reporting rather than raising.
+ *
+ * Cleanup runs on the failure path too, where the handle may be holding the very
+ * error being propagated — a download that never completed rejects again here.
+ * Letting that through would replace the real reason the job failed with a
+ * cleanup error.
+ */
+async function discardFile(handle: S3FileHandle): Promise<void> {
+  try {
+    await handle.unlink();
+  } catch (error) {
+    logger.warn({ error }, "Failed to remove a media diff temporary file");
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 import { getMediaUnits } from "@argos/schemas/media";
 
-import { MediaVersion } from "@/database/models";
+import { Media, MediaVersion } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { scheduleMediaDiff } from "./diff-schedule";
@@ -23,6 +23,12 @@ import { deleteUnreferencedMediaObjects, headMediaObject } from "./object";
  */
 export async function finalizeMedia(
   version: MediaVersion,
+  /**
+   * The media the version belongs to. Passed in rather than looked up: both
+   * callers are holding it, and the comparison scheduled below would otherwise
+   * refetch it on the upload's hot path.
+   */
+  media: Media,
 ): Promise<MediaVersion> {
   if (version.uploadedAt) {
     return version;
@@ -67,7 +73,11 @@ export async function finalizeMedia(
   // Landing bytes is what renews half of a before/after pair, so it is where the
   // comparison against the other half gets queued. Deliberately after the patch:
   // the job reads the version back, and it has to see the uploaded row.
-  await scheduleMediaDiff(finalized);
+  //
+  // Cheap enough to await: the broker publish is detached, so what is left is a
+  // counterpart lookup for a media that is half of a pair, and nothing at all
+  // for one that is not.
+  await scheduleMediaDiff(finalized, media);
 
   return finalized;
 }
