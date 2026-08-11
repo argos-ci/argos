@@ -8,7 +8,6 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
-import { queryProjectMedia } from "@/media/query";
 import {
   getMediaDiffUrl,
   getMediaEmbedArgs,
@@ -27,15 +26,6 @@ import {
 import type { Context } from "../context";
 
 const { gql } = gqlTag;
-
-/**
- * How many of a pull request's media the share page's sidebar lists.
- *
- * The list is not paginated — it is a sidebar the reviewer scrolls — so the cap
- * is what keeps a pull request with hundreds of uploads from being one enormous
- * response. Well above what a pull request realistically carries.
- */
-const MAX_PULL_REQUEST_MEDIAS = 100;
 
 /** The service's permission names, as the schema's enum members. */
 const GRAPHQL_PERMISSION: Record<MediaPermission, IMediaPermission> = {
@@ -404,22 +394,20 @@ export const resolvers: IResolvers = {
         });
       // Scoped to this media's own project: a pull request can carry media from
       // several projects, and access is decided per project.
-      const query = queryProjectMedia({
-        projectIds: [media.projectId],
-        filters: { githubPullRequestId: media.githubPullRequestId },
-        order: "asc",
-      }).limit(MAX_PULL_REQUEST_MEDIAS);
-      if (!membershipPermissions.includes("view")) {
+      //
+      // Through a loader because every media this returns has the same project
+      // and the same pull request, so each of them answers this field with the
+      // identical list — asking again once per element is the same query over
+      // and over.
+      return ctx.loaders.PullRequestMedia.load({
+        projectId: media.projectId,
+        githubPullRequestId: media.githubPullRequestId,
         // The per-item form of `checkCanViewMedia`, for the same reason
         // `resolveVisibleCounterpart` re-checks: the halves of a pair are
         // separate uploads with their own visibility, so a public link must not
         // list the team-only media published beside it.
-        query.where("media.visibility", "public");
-      }
-      // Expiry is not filtered here, matching the REST list: a version can
-      // expire between this query and the click, and the share page already has
-      // one state for a media that is no longer there.
-      return query;
+        includeTeamOnly: membershipPermissions.includes("view"),
+      });
     },
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);

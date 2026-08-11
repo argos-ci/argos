@@ -3,6 +3,15 @@ import type { QueryBuilder } from "objection";
 
 import { Media, MediaVersion } from "@/database/models";
 
+/**
+ * How many of a pull request's media the share page's sidebar lists.
+ *
+ * The list is not paginated — it is a sidebar the reviewer scrolls — so the cap
+ * is what keeps a pull request with hundreds of uploads from being one enormous
+ * response. Well above what a pull request realistically carries.
+ */
+export const MAX_PULL_REQUEST_MEDIAS = 100;
+
 export type MediaFilters = {
   /** Match on the media's name or its description. */
   search?: string | null | undefined;

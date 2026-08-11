@@ -71,6 +71,7 @@ import {
   GhApiInstallation,
 } from "@/github";
 import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
+import { MAX_PULL_REQUEST_MEDIAS, queryProjectMedia } from "@/media/query";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
@@ -1111,6 +1112,48 @@ function createProjectMembershipPermissionsLoader() {
 }
 
 /**
+ * Everything published to one pull request, as one media's sidebar sees it.
+ *
+ * Keyed on what decides the answer rather than on the media asking: every media
+ * in the list shares this project and this pull request, so each of them would
+ * otherwise re-run the same query and get the same rows back.
+ */
+function createPullRequestMediaLoader() {
+  return new DataLoader<
+    {
+      projectId: string;
+      githubPullRequestId: string;
+      /** False for a viewer without membership, who sees only public media. */
+      includeTeamOnly: boolean;
+    },
+    Media[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => {
+          const query = queryProjectMedia({
+            projectIds: [input.projectId],
+            filters: { githubPullRequestId: input.githubPullRequestId },
+            order: "asc",
+          }).limit(MAX_PULL_REQUEST_MEDIAS);
+          if (!input.includeTeamOnly) {
+            query.where("media.visibility", "public");
+          }
+          // Expiry is not filtered here, matching the REST list: a version can
+          // expire between this query and the click, and the share page already
+          // has one state for a media that is no longer there.
+          return query;
+        }),
+      ),
+    {
+      cacheKeyFn: (input) =>
+        `${input.projectId}:${input.githubPullRequestId}:${input.includeTeamOnly}`,
+    },
+  );
+}
+
+/**
  * Every comparison a version took part in, on either side of it.
  *
  * Keyed on the version rather than the media because that is how the rows are
@@ -1850,6 +1893,7 @@ export const createLoaders = () => ({
   MediaVersions: createMediaVersionsLoader(),
   MediaVersion: createModelLoader(MediaVersion),
   MediaVersionDiffs: createMediaVersionDiffsLoader(),
+  PullRequestMedia: createPullRequestMediaLoader(),
   ProjectMembershipPermissions: createProjectMembershipPermissionsLoader(),
   MediaCounterpart: createMediaCounterpartLoader(),
   Media: createModelLoader(Media),
