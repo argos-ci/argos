@@ -268,6 +268,35 @@ loggedTest(
 );
 
 loggedTest(
+  "shows each version its own comparison",
+  async ({ page, project }) => {
+    // Two uploads of the "after", each compared against the "before" when it
+    // landed. Picking an older one used to hide the overlay entirely, because
+    // the only comparison the page could reach was the newest pair's.
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const mask = page.locator(
+      '[data-media-pane] span[style*="diff-1024-to-720.png"]',
+    );
+    await expect(mask).toHaveCount(1);
+
+    // v1 is the same file as the "before", so its comparison found nothing to
+    // mark — a real answer, and a different one from v2's.
+    await page.getByRole("button", { name: /^v1/ }).click();
+    await expect(mask).toHaveCount(0);
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+
+    // And back: the newest version's mask returns.
+    await page.getByRole("button", { name: /^v2/ }).click();
+    await expect(mask).toHaveCount(1);
+  },
+);
+
+loggedTest(
   "rings the half a pin would land on, in compare mode",
   async ({ page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes

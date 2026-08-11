@@ -105,6 +105,10 @@ export const typeDefs = gql`
     0 when the two halves are identical, and 1 when their layouts differ.
     """
     score: Float
+    "The version this was computed from on the \`before\` side"
+    beforeVersion: MediaVersion!
+    "The version this was computed from on the \`after\` side"
+    afterVersion: MediaVersion!
   }
 
   """
@@ -130,6 +134,21 @@ export const typeDefs = gql`
     expiresAt: DateTime
     "Screenshot units this upload charged"
     billedUnits: Int!
+    """
+    The comparison this version took part in — the changed pixels between it and
+    the other half of its pair.
+
+    On the version rather than on the media because that is what a comparison is
+    of: re-uploading either half makes a new pair and a new comparison, and the
+    old one still describes the two versions it was computed from. Looking back
+    at an older version therefore gets that version's own comparison, and
+    \`afterVersion\` / \`beforeVersion\` say which two images it describes — the
+    pair to put on screen beside it.
+
+    Null when the media is not half of a visible pair, when the two halves were
+    never compared, and when the pair is not two images.
+    """
+    diff: MediaDiff
   }
 
   type Media implements Node {
@@ -173,14 +192,6 @@ export const typeDefs = gql`
     what lets the share page show the two together and compare them.
     """
     counterpart: Media
-    """
-    The comparison between this media's newest version and its counterpart's,
-    which is what the viewer draws its changes overlay from.
-
-    Null when this media is not half of a visible pair, and when the pair is not
-    two images — Argos does not compare videos frame by frame.
-    """
-    diff: MediaDiff
     """
     The pull request this media is published to.
 
@@ -251,6 +262,22 @@ export const resolvers: IResolvers = {
       }
     },
     url: (diff) => (diff.key ? getMediaDiffUrl(diff.key) : null),
+    beforeVersion: async (diff, _args, ctx) => {
+      const version = await ctx.loaders.MediaVersion.load(
+        diff.beforeMediaVersionId,
+      );
+      // The columns are `notNullable` foreign keys that cascade on delete, so a
+      // diff whose versions are gone is a diff that is gone.
+      invariant(version, "diff has no before version");
+      return version;
+    },
+    afterVersion: async (diff, _args, ctx) => {
+      const version = await ctx.loaders.MediaVersion.load(
+        diff.afterMediaVersionId,
+      );
+      invariant(version, "diff has no after version");
+      return version;
+    },
   },
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
@@ -258,6 +285,72 @@ export const resolvers: IResolvers = {
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,
     isVideo: (version) => version.isVideo(),
+    diff: async (version, _args, ctx) => {
+      const media = await ctx.loaders.Media.load(version.mediaId);
+      invariant(media, "version has no media");
+      if (!media.state) {
+        return null;
+      }
+      // Gated on the *visible* counterpart, like `markdownPair`: the mask marks
+      // pixels of the other half, and a viewer who may not see that half may not
+      // see where it changed either.
+      const counterpart = await resolveVisibleCounterpart(media, ctx);
+      if (!counterpart) {
+        return null;
+      }
+      // Newest first, which is the order this version's comparisons are
+      // preferred in below.
+      const counterpartVersions = await ctx.loaders.MediaVersions.load(
+        counterpart.id,
+      );
+      const newestCounterpartVersion = counterpartVersions[0];
+      if (!newestCounterpartVersion) {
+        return null;
+      }
+
+      const ownNewest = await ctx.loaders.LatestMediaVersion.load(media.id);
+      if (ownNewest?.id === version.id) {
+        const [beforeVersion, afterVersion] =
+          media.state === "before"
+            ? [version, newestCounterpartVersion]
+            : [newestCounterpartVersion, version];
+        // Scheduling here as well as on upload is what makes the overlay show up
+        // for a pair that came together some other way — one half adopted onto a
+        // pull request, or a pair that predates the feature. The insert is
+        // idempotent, so a pair already computed costs one lookup.
+        //
+        // Only for the newest version: an older one is history, and asking for
+        // a comparison that was never made would queue a job per version the
+        // reviewer clicks through.
+        return ensureMediaDiff({ beforeVersion, afterVersion });
+      }
+
+      const ownSide =
+        media.state === "before"
+          ? "beforeMediaVersionId"
+          : "afterMediaVersionId";
+      const counterpartSide =
+        media.state === "before"
+          ? "afterMediaVersionId"
+          : "beforeMediaVersionId";
+      const diffs = await ctx.loaders.MediaVersionDiffs.load(version.id);
+      const byCounterpartVersion = new Map(
+        diffs
+          .filter((diff) => diff[ownSide] === version.id)
+          .map((diff) => [diff[counterpartSide], diff]),
+      );
+      // While this version was the newest of its half, every re-upload of the
+      // other half made another comparison against it — so it can sit in
+      // several. The newest of them is the one to show, because it is the half
+      // the page puts beside it.
+      for (const counterpartVersion of counterpartVersions) {
+        const diff = byCounterpartVersion.get(counterpartVersion.id);
+        if (diff) {
+          return diff;
+        }
+      }
+      return null;
+    },
   },
   Media: {
     url: (media) => media.url,
@@ -277,34 +370,6 @@ export const resolvers: IResolvers = {
         return null;
       }
       return resolveVisibleCounterpart(media, ctx);
-    },
-    diff: async (media, _args, ctx) => {
-      if (!media.state) {
-        return null;
-      }
-      // Gated on the *visible* counterpart, like `markdownPair`: the mask marks
-      // pixels of the other half, and a viewer who may not see that half may not
-      // see where it changed either.
-      const counterpart = await resolveVisibleCounterpart(media, ctx);
-      if (!counterpart) {
-        return null;
-      }
-      const [ownVersion, counterpartVersion] = await Promise.all([
-        ctx.loaders.LatestMediaVersion.load(media.id),
-        ctx.loaders.LatestMediaVersion.load(counterpart.id),
-      ]);
-      if (!ownVersion || !counterpartVersion) {
-        return null;
-      }
-      const [beforeVersion, afterVersion] =
-        media.state === "before"
-          ? [ownVersion, counterpartVersion]
-          : [counterpartVersion, ownVersion];
-      // Scheduling here as well as on upload is what makes the overlay show up
-      // for a pair that came together some other way — one half adopted onto a
-      // pull request, or a pair that predates the feature. The insert is
-      // idempotent, so a pair already computed costs one lookup.
-      return ensureMediaDiff({ beforeVersion, afterVersion });
     },
     pullRequest: async (media, _args, ctx) => {
       if (!media.githubPullRequestId) {

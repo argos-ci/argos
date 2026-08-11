@@ -1800,7 +1800,7 @@ export async function createMediaScenario(input: {
   // Its newest version is deliberately a different file — and a different shape
   // — from the "before": a pair of identical bytes compares to nothing, and the
   // page's whole compare surface would have no changes to mark.
-  const [, afterV2] = await MediaVersion.query().insertAndFetch([
+  const [afterV1, afterV2] = await MediaVersion.query().insertAndFetch([
     {
       mediaId: after.id,
       number: 1,
@@ -1831,7 +1831,7 @@ export async function createMediaScenario(input: {
       updatedAt: afterV2Ts,
     },
   ]);
-  invariant(afterV2, "the after media should have two versions");
+  invariant(afterV1 && afterV2, "the after media should have two versions");
 
   const [beforeV1, videoV1, soloV1] = await MediaVersion.query().insertAndFetch(
     [
@@ -1891,17 +1891,37 @@ export async function createMediaScenario(input: {
   // no bucket to write to, so the finished row is seeded with a mask that really
   // is the diff of these two dummies — 375×1024, the union of a 720-tall
   // "before" and a 1024-tall "after".
-  await MediaDiff.query().insert({
-    beforeMediaVersionId: beforeV1.id,
-    afterMediaVersionId: afterV2.id,
-    jobStatus: "complete",
-    score: 0.3,
-    key: "diff-1024-to-720.png",
-    width: 375,
-    height: 1024,
-    createdAt: afterV2Ts,
-    updatedAt: afterV2Ts,
-  });
+  await MediaDiff.query().insert([
+    {
+      beforeMediaVersionId: beforeV1.id,
+      afterMediaVersionId: afterV2.id,
+      jobStatus: "complete",
+      score: 0.3,
+      key: "diff-1024-to-720.png",
+      width: 375,
+      height: 1024,
+      createdAt: afterV2Ts,
+      updatedAt: afterV2Ts,
+    },
+    // The first upload's own comparison, kept as history: v1 was compared
+    // against the same "before" when it landed, and picking v1 in the version
+    // list has to show *that* result rather than the newest one.
+    //
+    // No mask, because there is nothing to mark: this seed gives v1 the same
+    // file as the "before", and two identical uploads compare to a score of 0
+    // and no mask — what `computeMediaDiff` short-circuits to when the two keys
+    // match. So the reviewer switching to v1 sees the pair without an overlay,
+    // and switching back to v2 sees the changed pixels again.
+    {
+      beforeMediaVersionId: beforeV1.id,
+      afterMediaVersionId: afterV1.id,
+      jobStatus: "complete",
+      score: 0,
+      key: null,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+  ]);
 
   if (commentAuthorId) {
     const commentTs = "2026-04-20T11:00:00.000Z";

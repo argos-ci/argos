@@ -36,6 +36,7 @@ import {
   GithubRepository,
   GitlabProject,
   Media,
+  MediaDiff,
   MediaVersion,
   IgnoredChange,
   Model,
@@ -1082,6 +1083,31 @@ function createMediaVersionsLoader() {
 }
 
 /**
+ * Every comparison a version took part in, on either side of it.
+ *
+ * Keyed on the version rather than the media because that is how the rows are
+ * keyed: a version is compared against whatever the other half's newest was
+ * when it landed, and re-uploading either half writes another row rather than
+ * replacing this one. Batched because the share page asks for the comparison of
+ * every version it lists at once.
+ */
+function createMediaVersionDiffsLoader() {
+  return new DataLoader<string, MediaDiff[]>(async (versionIds) => {
+    const ids = [...versionIds];
+    const diffs = await MediaDiff.query()
+      .whereIn("beforeMediaVersionId", ids)
+      .orWhereIn("afterMediaVersionId", ids);
+    return ids.map((versionId) =>
+      diffs.filter(
+        (diff) =>
+          diff.beforeMediaVersionId === versionId ||
+          diff.afterMediaVersionId === versionId,
+      ),
+    );
+  });
+}
+
+/**
  * The other half of a media's before/after pair.
  *
  * The batched form of `findMediaCounterpart`: same pairing tuple, built once
@@ -1794,7 +1820,10 @@ export const createLoaders = () => ({
   MediaComments: createMediaCommentsLoader(),
   LatestMediaVersion: createLatestMediaVersionLoader(),
   MediaVersions: createMediaVersionsLoader(),
+  MediaVersion: createModelLoader(MediaVersion),
+  MediaVersionDiffs: createMediaVersionDiffsLoader(),
   MediaCounterpart: createMediaCounterpartLoader(),
+  Media: createModelLoader(Media),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

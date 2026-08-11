@@ -74,6 +74,20 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
 
+/** What the viewer needs to draw one version of a media. */
+const _ViewerVersionFragment = graphql(`
+  fragment MediaShare_ViewerVersion on MediaVersion {
+    id
+    createdAt
+    fileUrl
+    posterUrl
+    sizeBytes
+    width
+    height
+    isVideo
+  }
+`);
+
 const MediaShareQuery = graphql(`
   query MediaShare_media(
     $shareToken: String!
@@ -119,6 +133,23 @@ const MediaShareQuery = graphql(`
         width
         height
         isVideo
+        # Per version, not per media: an older version has its own comparison,
+        # and it names the two images to put on screen.
+        diff {
+          id
+          status
+          url
+          width
+          height
+          beforeVersion {
+            id
+            ...MediaShare_ViewerVersion
+          }
+          afterVersion {
+            id
+            ...MediaShare_ViewerVersion
+          }
+        }
       }
       counterpart {
         id
@@ -127,21 +158,8 @@ const MediaShareQuery = graphql(`
         url
         latestVersion {
           id
-          createdAt
-          fileUrl
-          posterUrl
-          sizeBytes
-          width
-          height
-          isVideo
+          ...MediaShare_ViewerVersion
         }
-      }
-      diff {
-        id
-        status
-        url
-        width
-        height
       }
       project {
         id
@@ -180,7 +198,12 @@ export function Component() {
   const media = data.mediaByShareToken;
 
   useAwaitPendingDiff({
-    pending: media?.diff?.status === MediaDiffStatus.Pending,
+    // The newest version's, which is the only comparison that can still be
+    // queued: an older one was settled back when it was the newest.
+    pending:
+      media?.versions.find(
+        (candidate) => candidate.id === media.latestVersion.id,
+      )?.diff?.status === MediaDiffStatus.Pending,
     refetch,
   });
 
@@ -210,22 +233,44 @@ export function Component() {
  * them is an error, and the page says the same thing about all of them — it
  * shows the pair without an overlay.
  *
- * Also null while the reviewer is looking back at an older version. The mask was
- * computed from the newest bytes of each half; drawing it over a version it did
- * not come from would mark pixels nothing said had changed.
+ * The comparison comes from the version on screen, so looking back at an older
+ * upload draws the mask that was computed from *it* — together with
+ * {@link getCounterpartVersion}, which puts the half it was computed against
+ * beside it. A mask only describes the two images it came from.
  */
-function getViewerDiff(
-  media: Media,
-  version: Media["versions"][number],
-): ViewerDiff | null {
-  const { diff } = media;
+function getViewerDiff(version: Media["versions"][number]): ViewerDiff | null {
+  const { diff } = version;
   if (!diff?.url || !diff.width || !diff.height) {
     return null;
   }
-  if (version.id !== media.latestVersion.id) {
+  return { url: diff.url, width: diff.width, height: diff.height };
+}
+
+/**
+ * The other half to show beside this version: the one its comparison was
+ * computed against.
+ *
+ * Falls back to the counterpart's newest when the two were never compared —
+ * that is the pair the reviewer would otherwise expect, and there is no mask to
+ * contradict it.
+ */
+function getCounterpartVersion(
+  media: Media,
+  version: Media["versions"][number],
+): DocumentType<typeof _ViewerVersionFragment> | null {
+  const { counterpart } = media;
+  if (!counterpart) {
     return null;
   }
-  return { url: diff.url, width: diff.width, height: diff.height };
+  const { diff } = version;
+  if (!diff) {
+    return counterpart.latestVersion;
+  }
+  // The sides are named after the pair, not after this media: whichever one is
+  // not this version is the other half.
+  return diff.beforeVersion.id === version.id
+    ? diff.afterVersion
+    : diff.beforeVersion;
 }
 
 /** How often the page asks whether the pair's comparison has landed. */
@@ -287,9 +332,15 @@ function SharePage(props: { media: Media }) {
 
   // Falls back to the latest if the selected version went away under us — a
   // retention purge can take an old one while the page is open.
+  // The newest is the fallback, and `versions` is newest first. Read from that
+  // list rather than from `latestVersion` because only these carry the
+  // comparison the viewer draws.
+  const newestVersion = media.versions[0];
+  invariant(newestVersion, "a listed media has an uploaded version");
   const version =
     media.versions.find((candidate) => candidate.id === versionId) ??
-    media.latestVersion;
+    newestVersion;
+  const counterpartVersion = getCounterpartVersion(media, version);
 
   const mentionUsers = useMemo(
     () => media.mentionableUsers.map(getMentionUser),
@@ -373,17 +424,18 @@ function SharePage(props: { media: Media }) {
                   nav={nav}
                   media={{ ...media, version }}
                   counterpart={
-                    media.counterpart
+                    media.counterpart && counterpartVersion
                       ? {
                           ...media.counterpart,
-                          // Its own newest, not the selected version number: the two
-                          // media have independent histories, and "v2 of the after" has
-                          // no counterpart "v2 of the before" to line up with.
-                          version: media.counterpart.latestVersion,
+                          // The half the selected version was compared against,
+                          // not simply the counterpart's newest: the two media
+                          // have independent histories, and the pair on screen
+                          // has to be the pair the mask describes.
+                          version: counterpartVersion,
                         }
                       : null
                   }
-                  diff={getViewerDiff(media, version)}
+                  diff={getViewerDiff(version)}
                   comments={{
                     media,
                     viewedVersionId: version.id,

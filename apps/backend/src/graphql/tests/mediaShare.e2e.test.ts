@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import type { Account, User } from "@/database/models";
-import { Comment, Project } from "@/database/models";
+import { Comment, MediaDiff, Project } from "@/database/models";
 import { createMediaScenario } from "@/database/seeds";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -58,6 +58,20 @@ const MEDIA_SHARE_QUERY = `
       versions {
         id
         number
+        diff {
+          id
+          status
+          url
+          width
+          height
+          score
+          beforeVersion {
+            id
+          }
+          afterVersion {
+            id
+          }
+        }
       }
       pullRequest {
         id
@@ -72,14 +86,6 @@ const MEDIA_SHARE_QUERY = `
           id
           fileUrl
         }
-      }
-      diff {
-        id
-        status
-        url
-        width
-        height
-        score
       }
       project {
         id
@@ -203,13 +209,24 @@ describe("mediaByShareToken", () => {
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);
 
-    // The pair's comparison, which is what the viewer's changes overlay draws.
-    expect(result.diff).toMatchObject({
+    // The comparison the viewer's changes overlay draws, carried by the version
+    // it was computed from. `versions` is newest first.
+    const [newest, first] = result.versions;
+    expect(newest.diff).toMatchObject({
       status: "complete",
       width: 375,
       height: 1024,
     });
-    expect(result.diff.url).toContain("diff-1024-to-720.png");
+    expect(newest.diff.url).toContain("diff-1024-to-720.png");
+    expect(newest.diff.afterVersion.id).toBe(newest.id);
+
+    // The first upload kept its own comparison: the same "before", its own
+    // result. Identical bytes, so it is complete with nothing to mark — which is
+    // a different answer from the newest version's, not a missing one.
+    expect(first.diff).toMatchObject({ status: "complete", score: 0 });
+    expect(first.diff.url).toBeNull();
+    expect(first.diff.afterVersion.id).toBe(first.id);
+    expect(first.diff.beforeVersion.id).toBe(newest.diff.beforeVersion.id);
 
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
@@ -369,7 +386,11 @@ describe("mediaByShareToken", () => {
     // and so does the diff, whose mask marks the counterpart's pixels and whose
     // dimensions are the two halves' union.
     expect(result.markdownPair).toBeNull();
-    expect(result.diff).toBeNull();
+    expect(
+      result.versions.every(
+        (version: { diff: unknown }) => version.diff === null,
+      ),
+    ).toBe(true);
   });
 
   it("still shows a counterpart the viewer may see", async () => {
@@ -491,6 +512,88 @@ describe("mediaByShareToken", () => {
 
     expectNoGraphQLError(res);
     expect(res.body.data.mediaByShareToken.unresolvedCommentCount).toBe(1);
+  });
+});
+
+describe("MediaVersion.diff", () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  it("gives a version the comparison it took part in, not the newest", async () => {
+    const { auth, project } = await createTeamOwner();
+    const media = await createMediaScenario({ projectId: project.id });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const versions = res.body.data.mediaByShareToken.versions;
+    // Two uploads, two comparisons — each naming its own version on the "after"
+    // side, and both against the same "before".
+    expect(
+      versions.map((version: { diff: { id: string } }) => version.diff.id),
+    ).toHaveLength(2);
+    expect(versions[0].diff.id).not.toBe(versions[1].diff.id);
+    expect(versions[0].diff.afterVersion.id).toBe(versions[0].id);
+    expect(versions[1].diff.afterVersion.id).toBe(versions[1].id);
+  });
+
+  it("prefers the newest counterpart a version was compared against", async () => {
+    // A version stays the newest of its half while the other half is uploaded
+    // again, so it can sit in several comparisons. The one to show is the one
+    // against the counterpart the page puts beside it — its newest.
+    const { auth, project } = await createTeamOwner();
+    const before = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "before",
+        branch: "feat/a",
+        shareToken: "many-before",
+      },
+      version: { key: "dummy-375x720.png", mimeType: "image/png" },
+    });
+    const after = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/a",
+        shareToken: "many-after",
+      },
+      version: { key: "dummy-375x1024.png", mimeType: "image/png" },
+    });
+    // A second "before", landed after the pair was first compared.
+    const beforeV2 = await factory.MediaVersion.create({
+      mediaId: before.media.id,
+      number: 2,
+      key: "dummy-375x1024.png",
+      mimeType: "image/png",
+      uploadedAt: new Date().toISOString(),
+    });
+
+    const [stale, current] = await MediaDiff.query().insertAndFetch([
+      {
+        beforeMediaVersionId: before.version.id,
+        afterMediaVersionId: after.version.id,
+        jobStatus: "complete",
+        score: 0.4,
+      },
+      {
+        beforeMediaVersionId: beforeV2.id,
+        afterMediaVersionId: after.version.id,
+        jobStatus: "complete",
+        score: 0.2,
+      },
+    ]);
+    invariant(stale && current, "both comparisons should be created");
+
+    const res = await query({ auth, shareToken: "many-after" });
+
+    expectNoGraphQLError(res);
+    const [version] = res.body.data.mediaByShareToken.versions;
+    expect(version.diff.id).toBe(String(current.id));
+    expect(version.diff.beforeVersion.id).toBe(String(beforeV2.id));
   });
 });
 
