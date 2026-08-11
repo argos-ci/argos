@@ -68,6 +68,7 @@ import {
   getAppOctokit,
   GhApiInstallation,
 } from "@/github";
+import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
@@ -1083,14 +1084,9 @@ function createMediaVersionsLoader() {
 /**
  * The other half of a media's before/after pair.
  *
- * Matched on the same project and attachment and name with the opposite state —
- * the same tuple `media_identity_unique` is built on, so there is at most one.
- *
- * "Attachment" is the pull request when there is one and the branch otherwise,
- * exactly as the index computes it. Keying on the pull request alone would
- * collapse every staged media onto one empty segment, so two branches staging
- * `checkout.png` would pair across each other and which one won would depend on
- * the order the unordered candidate query happened to return.
+ * The batched form of `findMediaCounterpart`: same pairing tuple, built once
+ * per request instead of one query per media. Both go through
+ * {@link getMediaPairKey}, so they cannot drift apart.
  */
 function createMediaCounterpartLoader() {
   return new DataLoader<string, Media | null>(async (mediaIds) => {
@@ -1112,20 +1108,9 @@ function createMediaCounterpartLoader() {
       )
       .whereNotNull("state");
 
-    const key = (item: {
-      projectId: string;
-      githubPullRequestId: string | null;
-      branch: string | null;
-      name: string;
-      state: string | null;
-    }) => {
-      const attachment = item.githubPullRequestId
-        ? `pr:${item.githubPullRequestId}`
-        : `branch:${item.branch ?? ""}`;
-      return `${item.projectId}:${attachment}:${item.name}:${item.state}`;
-    };
-
-    const byKey = new Map(candidates.map((item) => [key(item), item]));
+    const byKey = new Map(
+      candidates.map((item) => [getMediaPairKey(item), item]),
+    );
     const byId = new Map(media.map((item) => [item.id, item]));
 
     return mediaIds.map((mediaId) => {
@@ -1133,8 +1118,8 @@ function createMediaCounterpartLoader() {
       if (!item?.state) {
         return null;
       }
-      const opposite = item.state === "before" ? "after" : "before";
-      return byKey.get(key({ ...item, state: opposite })) ?? null;
+      const opposite = getOppositeMediaState(item.state);
+      return byKey.get(getMediaPairKey({ ...item, state: opposite })) ?? null;
     });
   });
 }

@@ -2,12 +2,14 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { Media } from "@/database/models";
+import { ensureMediaDiff } from "@/media/diff-schedule";
 import {
   checkCanViewMedia,
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
 import {
+  getMediaDiffUrl,
   getMediaEmbedArgs,
   getMediaFileUrl,
   getMediaPosterUrl,
@@ -17,6 +19,7 @@ import { getLatestMediaVersion } from "@/media/version";
 import { getProjectMemberIds } from "@/project/members";
 
 import {
+  IMediaDiffStatus,
   IMediaPermission,
   type IResolvers,
 } from "../__generated__/resolver-types";
@@ -48,6 +51,50 @@ export const typeDefs = gql`
   enum MediaState {
     before
     after
+  }
+
+  enum MediaDiffStatus {
+    "Queued or being computed. Nothing to draw yet."
+    pending
+    "Computed. \`url\` is the mask, or null when the two halves are identical."
+    complete
+    "Could not be computed. The pair is still shown, without an overlay."
+    error
+  }
+
+  """
+  The pixel difference between the two halves of a before/after pair, computed
+  with the same engine — and therefore the same tolerances — that compares a
+  build's screenshots.
+
+  Identified by the two versions it was computed from, so it can never describe
+  bytes other than the ones on screen: re-uploading either half makes a new pair
+  and a new diff, and until that one is computed there is simply no diff rather
+  than a stale one.
+  """
+  type MediaDiff implements Node {
+    id: ID!
+    status: MediaDiffStatus!
+    """
+    CDN URL of the diff mask — a transparent PNG whose opaque pixels are the ones
+    that changed, meant to be drawn over the "after".
+
+    Null while the diff is pending, when it failed, and when the two halves are
+    identical: there is nothing to mark.
+    """
+    url: String
+    """
+    The mask's dimensions — the union of the two halves, since both are padded to
+    a common canvas before being compared. Place each half at the top left of a
+    frame this size and the mask lines up with them.
+    """
+    width: Int
+    height: Int
+    """
+    Share of pixels that differ, 0 to 1. Null until the diff has been computed,
+    0 when the two halves are identical, and 1 when their layouts differ.
+    """
+    score: Float
   }
 
   """
@@ -114,6 +161,14 @@ export const typeDefs = gql`
     """
     counterpart: Media
     """
+    The comparison between this media's newest version and its counterpart's,
+    which is what the viewer draws its changes overlay from.
+
+    Null when this media is not half of a visible pair, and when the pair is not
+    two images — Argos does not compare videos frame by frame.
+    """
+    diff: MediaDiff
+    """
     The pull request this media is published to.
 
     Null for a viewer without access to the project, whatever the media's own
@@ -156,6 +211,23 @@ export const typeDefs = gql`
 `;
 
 export const resolvers: IResolvers = {
+  MediaDiff: {
+    status: (diff) => {
+      switch (diff.jobStatus) {
+        case "complete":
+          return IMediaDiffStatus.Complete;
+        case "error":
+        case "aborted":
+          return IMediaDiffStatus.Error;
+        // "progress" is queued from the reader's point of view: there is still
+        // nothing to draw, and a client that distinguished them would only be
+        // able to word its spinner differently.
+        default:
+          return IMediaDiffStatus.Pending;
+      }
+    },
+    url: (diff) => (diff.key ? getMediaDiffUrl(diff.key) : null),
+  },
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
     posterUrl: (version) => getMediaPosterUrl(version),
@@ -180,6 +252,34 @@ export const resolvers: IResolvers = {
         return null;
       }
       return resolveVisibleCounterpart(media, ctx);
+    },
+    diff: async (media, _args, ctx) => {
+      if (!media.state) {
+        return null;
+      }
+      // Gated on the *visible* counterpart, like `markdownPair`: the mask marks
+      // pixels of the other half, and a viewer who may not see that half may not
+      // see where it changed either.
+      const counterpart = await resolveVisibleCounterpart(media, ctx);
+      if (!counterpart) {
+        return null;
+      }
+      const [ownVersion, counterpartVersion] = await Promise.all([
+        ctx.loaders.LatestMediaVersion.load(media.id),
+        ctx.loaders.LatestMediaVersion.load(counterpart.id),
+      ]);
+      if (!ownVersion || !counterpartVersion) {
+        return null;
+      }
+      const [beforeVersion, afterVersion] =
+        media.state === "before"
+          ? [ownVersion, counterpartVersion]
+          : [counterpartVersion, ownVersion];
+      // Scheduling here as well as on upload is what makes the overlay show up
+      // for a pair that came together some other way — one half adopted onto a
+      // pull request, or a pair that predates the feature. The insert is
+      // idempotent, so a pair already computed costs one lookup.
+      return ensureMediaDiff({ beforeVersion, afterVersion });
     },
     pullRequest: async (media, _args, ctx) => {
       if (!media.githubPullRequestId) {

@@ -50,6 +50,17 @@ export function getMediaPosterUrl(version: MediaVersion): string | null {
 }
 
 /**
+ * The URL a browser fetches a before/after diff mask from.
+ *
+ * The same unauthenticated, content-addressed CDN URL the media themselves are
+ * served from — the mask is drawn over one of them, so anything that can see the
+ * pair can already see the pixels it marks.
+ */
+export function getMediaDiffUrl(key: string): string {
+  return getImageKitUrl(key);
+}
+
+/**
  * Everything a Markdown embed of a media needs, read off the version whose bytes
  * it should show.
  *

@@ -40,3 +40,19 @@ export function getMediaKey(args: {
   const extension = getExtensionForContentType(args.contentType);
   return `media/${args.projectId}/${args.hash}.${extension}`;
 }
+
+/**
+ * The S3 key for the diff mask between the two halves of a before/after pair.
+ *
+ * Content-addressed on the mask's own bytes, like a media's, so two pairs that
+ * changed in the same way share one object — a screenshot re-uploaded unchanged
+ * across pull requests produces the same mask every time. Under a `diffs/`
+ * segment of the project's own prefix so a purge or an audit can tell derived
+ * bytes from uploaded ones without reading the database.
+ */
+export function getMediaDiffKey(args: {
+  projectId: string;
+  hash: string;
+}): string {
+  return `media/${args.projectId}/diffs/${args.hash}.png`;
+}

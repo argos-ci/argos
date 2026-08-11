@@ -126,7 +126,11 @@ export async function createMedia(
   // then costs one HEAD instead of re-transferring a 500 MB video.
   const existingObject = await headMediaObject(key);
   if (existingObject) {
-    return { media, version: await finalizeMedia(version), upload: null };
+    return {
+      media,
+      version: await finalizeMedia(version, media),
+      upload: null,
+    };
   }
 
   const upload = await createUploadTarget({

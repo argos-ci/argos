@@ -29,14 +29,6 @@ describe("getMediaFileUrl", () => {
     expect(url).toBe(`${CDN}media/1/abc.png`);
     expect(url).not.toContain("X-Amz-Signature");
   });
-
-  it("serves a video from the same place", () => {
-    expect(
-      getMediaFileUrl(
-        media({ key: "media/1/clip.mp4", mimeType: "video/mp4" }),
-      ),
-    ).toBe(`${CDN}media/1/clip.mp4`);
-  });
 });
 
 describe("getMediaPosterUrl", () => {

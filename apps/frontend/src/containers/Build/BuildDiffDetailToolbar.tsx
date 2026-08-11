@@ -4,23 +4,16 @@ import { invariant } from "@argos/util/invariant";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission, ScreenshotDiffStatus } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
-import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 import { checkDiffCanBeBlended } from "./BuildViewMode";
+import { ChangesOverlayControls } from "./ChangesOverlay";
 import { CommentsEnabledContext } from "./CommentsContext";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
 import { FitToggle } from "./toolbar/FitToggle";
-import { HighlightButton } from "./toolbar/HighlightButton";
-import {
-  GoToNextChangesButton,
-  GoToPreviousChangesButton,
-} from "./toolbar/NavChangesButton";
-import { OverlayToggle } from "./toolbar/OverlayToggle";
-import { SettingsButton } from "./toolbar/SettingsButton";
 import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
 
 interface BuildDiffDetailToolbarProps {
@@ -87,13 +80,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       {shouldShowToolbarControls && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
-          <OverlayToggle />
-          <ButtonGroup>
-            <GoToPreviousChangesButton />
-            <HighlightButton />
-            <GoToNextChangesButton />
-          </ButtonGroup>
-          <SettingsButton />
+          <ChangesOverlayControls />
         </>
       )}
       {showComments && (

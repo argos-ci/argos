@@ -22,7 +22,7 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   await expect(
     page.getByRole("heading", { name: "checkout.png" }),
   ).toBeVisible();
-  await expect(page.getByText("375×720")).toBeVisible();
+  await expect(page.getByText("375×1024")).toBeVisible();
   // Two uploads, so the versions get their own panel — one row per upload
   // (the activity timeline also says "v2 uploaded").
   await expect(page.getByRole("heading", { name: "Versions" })).toBeVisible();
@@ -133,6 +133,47 @@ loggedTest(
 
     await expect(page.getByText("The sidebar is cropped here.")).toHaveCount(2);
     await expect(page.getByText("pinned on the image")).toBeVisible();
+  },
+);
+
+loggedTest(
+  "marks the changed pixels of a before/after pair",
+  async ({ page, project }) => {
+    // The pair has been compared, so the share page offers the build's own
+    // overlay controls and draws the mask over the "after".
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    // IconButtons take their name from a tooltip, which is not an accessible
+    // name — the lucide class is the handle.
+    const viewer = page.getByRole("main");
+    const toggle = viewer.locator("button:has(.lucide-eye)");
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      viewer.locator("button:has(.lucide-locate-fixed)"),
+    ).toBeVisible();
+    await expect(
+      viewer.locator("button:has(.lucide-paintbrush)"),
+    ).toBeVisible();
+
+    // The mask is a CSS mask on a span rather than an `img`, so it is located
+    // through the style that draws it.
+    const mask = page.locator(
+      '[data-media-pane] span[style*="diff-1024-to-720.png"]',
+    );
+    await expect(mask).toHaveCount(1);
+
+    await screenshot(page, "media-share-changes-overlay");
+
+    // Hiding it leaves the pair on screen, untouched — which is the point of
+    // having a toggle rather than a mode.
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await expect(mask).toHaveCSS("opacity", "0");
+    await expect(
+      page.getByRole("img", { name: "checkout.png (after)" }),
+    ).toBeVisible();
   },
 );
 

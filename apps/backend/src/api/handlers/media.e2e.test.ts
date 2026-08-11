@@ -11,6 +11,10 @@ import {
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
+import {
+  deleteUnreferencedMediaDiffObjects,
+  getMediaDiffObjects,
+} from "@/media/object";
 
 import { createTestHandlerApp } from "../test-util";
 import {
@@ -40,6 +44,11 @@ const PROJECT_PATH = "acme/awesome-project";
 vi.mock("@/media/object", () => ({
   headMediaObject: vi.fn(async () => null),
   deleteUnreferencedMediaObjects: vi.fn(async () => undefined),
+  deleteUnreferencedMediaDiffObjects: vi.fn(async () => undefined),
+  getMediaDiffObjects: vi.fn(async () => ({
+    keys: ["media/1/diffs/mask.png"],
+    diffIds: ["1"],
+  })),
 }));
 
 vi.mock("@aws-sdk/s3-presigned-post", () => ({
@@ -572,6 +581,35 @@ describe("deleteMedia", () => {
       .expect(204);
 
     expect(await Media.query().findById(media.id)).toBeUndefined();
+  });
+
+  test("takes the pair's diff masks with it", async ({
+    projectToken,
+    project,
+  }) => {
+    // The masks hang off the versions and their rows cascade away with them, so
+    // if they are not collected here nothing is left naming the objects — and
+    // unlike an expired version, the retention purge will never see them.
+    const { media, version } = await factory.createMediaWithVersion({
+      media: { projectId: project.id },
+    });
+
+    await request(app)
+      .delete(`/media/${media.id}`)
+      .set("Authorization", `Bearer ${projectToken}`)
+      .expect(204);
+
+    // Read inside the transaction, while the rows still name the objects.
+    expect(getMediaDiffObjects).toHaveBeenCalledWith(
+      [version.id],
+      expect.anything(),
+    );
+    // Dropped after it commits, so the reference check reads the real
+    // post-delete state and needs no exclusions.
+    expect(deleteUnreferencedMediaDiffObjects).toHaveBeenCalledWith({
+      keys: ["media/1/diffs/mask.png"],
+      excludeDiffIds: [],
+    });
   });
 });
 

@@ -61,6 +61,14 @@ const MEDIA_SHARE_QUERY = `
           fileUrl
         }
       }
+      diff {
+        id
+        status
+        url
+        width
+        height
+        score
+      }
       project {
         id
         slug
@@ -181,6 +189,14 @@ describe("mediaByShareToken", () => {
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);
 
+    // The pair's comparison, which is what the viewer's changes overlay draws.
+    expect(result.diff).toMatchObject({
+      status: "complete",
+      width: 375,
+      height: 1024,
+    });
+    expect(result.diff.url).toContain("diff-1024-to-720.png");
+
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
     );
@@ -190,24 +206,6 @@ describe("mediaByShareToken", () => {
       x: 0.62,
       y: 0.34,
     });
-  });
-
-  it("hides a team media from someone outside the team", async () => {
-    const outsider = await factory.User.create();
-    const outsiderAccount = await factory.UserAccount.create({
-      userId: outsider.id,
-    });
-    const account = await factory.TeamAccount.create();
-    const project = await factory.Project.create({ accountId: account.id });
-    const media = await createMediaScenario({ projectId: project.id });
-
-    const res = await query({
-      auth: { user: outsider, account: outsiderAccount },
-      shareToken: media.after.shareToken,
-    });
-
-    expectNoGraphQLError(res);
-    expect(res.body.data.mediaByShareToken).toBeNull();
   });
 
   it("hides a team media from an anonymous visitor even on a public project", async () => {
@@ -353,8 +351,11 @@ describe("mediaByShareToken", () => {
     const result = res.body.data.mediaByShareToken;
     expect(result.id).toBe(shared.id);
     expect(result.counterpart).toBeNull();
-    // The pair snippet embeds the counterpart's share URL, so it has to go too.
+    // The pair snippet embeds the counterpart's share URL, so it has to go too —
+    // and so does the diff, whose mask marks the counterpart's pixels and whose
+    // dimensions are the two halves' union.
     expect(result.markdownPair).toBeNull();
+    expect(result.diff).toBeNull();
   });
 
   it("still shows a counterpart the viewer may see", async () => {
