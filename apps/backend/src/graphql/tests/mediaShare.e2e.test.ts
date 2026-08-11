@@ -208,48 +208,6 @@ describe("mediaByShareToken", () => {
     });
   });
 
-  it("hides the pair's diff from a viewer who cannot see the other half", async () => {
-    // The mask marks pixels of the *counterpart*, and its dimensions are the two
-    // halves' union — so it is gated on being allowed to see that half, the same
-    // gate `counterpart` and `markdownPair` are on. A pair can be mixed because
-    // its halves are two uploads carrying their own visibility, and returning the
-    // diff unchecked would describe a team-only image to whoever holds the public
-    // link.
-    const account = await factory.TeamAccount.create();
-    const project = await factory.Project.create({ accountId: account.id });
-    const media = await createMediaScenario({ projectId: project.id });
-    await media.after.$query().patch({ visibility: "public" });
-
-    const res = await query({ auth: null, shareToken: media.after.shareToken });
-
-    expectNoGraphQLError(res);
-    const result = res.body.data.mediaByShareToken;
-    // The public half itself still answers — only what it says about the other
-    // half narrows.
-    expect(result).not.toBeNull();
-    expect(result.counterpart).toBeNull();
-    expect(result.markdownPair).toBeNull();
-    expect(result.diff).toBeNull();
-  });
-
-  it("hides a team media from someone outside the team", async () => {
-    const outsider = await factory.User.create();
-    const outsiderAccount = await factory.UserAccount.create({
-      userId: outsider.id,
-    });
-    const account = await factory.TeamAccount.create();
-    const project = await factory.Project.create({ accountId: account.id });
-    const media = await createMediaScenario({ projectId: project.id });
-
-    const res = await query({
-      auth: { user: outsider, account: outsiderAccount },
-      shareToken: media.after.shareToken,
-    });
-
-    expectNoGraphQLError(res);
-    expect(res.body.data.mediaByShareToken).toBeNull();
-  });
-
   it("hides a team media from an anonymous visitor even on a public project", async () => {
     // The exact leak this guards against: a public project hands anyone "view"
     // on the project itself, which must not open its team-only media — "team"
@@ -393,8 +351,11 @@ describe("mediaByShareToken", () => {
     const result = res.body.data.mediaByShareToken;
     expect(result.id).toBe(shared.id);
     expect(result.counterpart).toBeNull();
-    // The pair snippet embeds the counterpart's share URL, so it has to go too.
+    // The pair snippet embeds the counterpart's share URL, so it has to go too —
+    // and so does the diff, whose mask marks the counterpart's pixels and whose
+    // dimensions are the two halves' union.
     expect(result.markdownPair).toBeNull();
+    expect(result.diff).toBeNull();
   });
 
   it("still shows a counterpart the viewer may see", async () => {

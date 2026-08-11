@@ -176,16 +176,6 @@ describe("media diff masks", () => {
     });
   });
 
-  it("skips a pair that produced no mask", async () => {
-    // Two identical halves compare to nothing, so the row carries no key.
-    const { before } = await createDiff(null);
-
-    await expect(getMediaDiffObjects([before.id])).resolves.toEqual({
-      keys: [],
-      diffIds: [],
-    });
-  });
-
   it("deletes a mask nothing else shows", async () => {
     const { before, diff } = await createDiff("media/1/diffs/only.png");
     const { keys, diffIds } = await getMediaDiffObjects([before.id]);

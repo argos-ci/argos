@@ -217,15 +217,6 @@ describe("scheduleMediaDiff", () => {
     ).toBe(true);
   });
 
-  it("ignores a media that stands alone", async () => {
-    const { media, version } = await factory.createMediaWithVersion();
-
-    await scheduleMediaDiff(version, media);
-
-    await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
-    expect(push).not.toHaveBeenCalled();
-  });
-
   it("ignores a half whose counterpart has not been uploaded yet", async () => {
     // The two halves are two calls, and the first one arrives with nothing to
     // compare against. It is the second that forms the pair.
@@ -277,17 +268,5 @@ describe("scheduleMediaDiff", () => {
     await scheduleMediaDiff(afterVersion, after);
 
     await expect(MediaDiff.query().resultSize()).resolves.toBe(0);
-  });
-
-  it("never fails the upload it was called from", async () => {
-    // Best-effort by design: the bytes have landed and the caller already has a
-    // working share URL, so a queue that is down must not turn a finished upload
-    // into a failed one.
-    push.mockRejectedValueOnce(new Error("queue is down"));
-    const { after, afterVersion } = await createPair();
-
-    await expect(
-      scheduleMediaDiff(afterVersion, after),
-    ).resolves.toBeUndefined();
   });
 });

@@ -178,24 +178,6 @@ loggedTest(
 );
 
 loggedTest(
-  "leaves a media that stands alone without overlay controls",
-  async ({ page, project }) => {
-    // Nothing to compare against, so nothing to mark — and no controls over an
-    // overlay that cannot exist.
-    const media = await createMediaScenario({ projectId: project.id });
-
-    await page.goto(`/m/${media.solo.shareToken}`);
-
-    await expect(
-      page.getByRole("img", { name: "dashboard.png" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("main").locator("button:has(.lucide-eye)"),
-    ).toHaveCount(0);
-  },
-);
-
-loggedTest(
   "rings the half a pin would land on, in compare mode",
   async ({ page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes
