@@ -1,0 +1,4 @@
+interface:
+  display_name: "Argos Media Upload"
+  short_description: "Share a screenshot or video by link, embeddable in a PR"
+  default_prompt: "Use $argos-upload to upload a screenshot or recording and embed it in this pull request."

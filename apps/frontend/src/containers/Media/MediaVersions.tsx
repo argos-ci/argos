@@ -61,12 +61,12 @@ export function MediaVersions(props: {
               {({ isSelected }) => (
                 <>
                   {thumbnailUrl ? (
-                    <MediaWell checkerSize={3} className="size-8 shrink-0">
+                    <MediaWell className="size-8 shrink-0">
                       {/* Contained, not cropped: what this thumbnail is for is
                           telling one version from another at a glance, and a
                           square crop out of the middle of a wide screenshot
                           shows the same patch of background for every one of
-                          them. The checkerboard is the letterbox. */}
+                          them. The well's ground is the letterbox. */}
                       <img
                         src={thumbnailUrl}
                         alt=""

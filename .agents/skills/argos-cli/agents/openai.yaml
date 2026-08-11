@@ -1,0 +1,4 @@
+interface:
+  display_name: "Argos CLI"
+  short_description: "Use the Argos CLI safely and correctly"
+  default_prompt: "Use $argos-cli to run or interpret Argos CLI commands in this repository."

@@ -1,6 +1,27 @@
 {
   "version": 1,
   "skills": {
+    "argos-cli": {
+      "source": "argos-ci.com",
+      "sourceUrl": "https://argos-ci.com",
+      "sourceType": "well-known",
+      "computedHash": "75a8ec5a57174ee40b14ac0c1dcbbc9eaf29ffa6b9474316025dd9268f1b0ee6",
+      "wellKnownDigest": "sha256:10da94bb43b0cb32f5312e367c3733cefbb99e005547238882791b9a2f6a61cf"
+    },
+    "argos-pr-review": {
+      "source": "argos-ci.com",
+      "sourceUrl": "https://argos-ci.com",
+      "sourceType": "well-known",
+      "computedHash": "16d35f86c5573ac68e2aae45a40dbf25527ef6edeb871c0a79f36538cf4f7315",
+      "wellKnownDigest": "sha256:e343537b1757b4de8391e7fea67e9febc4b02187500dcca7dd199758b6e70286"
+    },
+    "argos-upload": {
+      "source": "argos-ci.com",
+      "sourceUrl": "https://argos-ci.com",
+      "sourceType": "well-known",
+      "computedHash": "4af4d8471ef047f40043a4fcb363478f00e457c1b4fef08aa737d7f02e4f6e34",
+      "wellKnownDigest": "sha256:76196f8559bba88f4d4c94098f457fe82af333fdbd6c53ab8571ac39d5302d76"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",

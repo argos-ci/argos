@@ -1,0 +1,4 @@
+interface:
+  display_name: "Argos PR Review"
+  short_description: "Review Argos builds as part of PR review"
+  default_prompt: "Use $argos-pr-review to review this pull request when an Argos build is available."

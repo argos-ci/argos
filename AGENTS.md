@@ -112,6 +112,8 @@ flight — never track that with a local `loading` boolean.
   `role="alertdialog"`, `variant="destructive"` for destructive actions, and
   `toast.success(...)` on completion.
 
+If possible, put some screenshots or videos using `/argos-upload` skill.
+
 ## Notifications
 
 Two-stage async pipeline in `apps/backend/src/notification/`:

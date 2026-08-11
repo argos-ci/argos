@@ -449,7 +449,7 @@ function MediaPinnedReference(props: {
       className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
     >
       {thumbnailUrl ? (
-        <MediaWell checkerSize={3} className="size-6 shrink-0">
+        <MediaWell className="size-6 shrink-0">
           {/* Contained rather than cropped, like the version rows: a crop out
               of a wide screenshot's middle identifies nothing. */}
           <img src={thumbnailUrl} alt="" className="size-full object-contain" />
