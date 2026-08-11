@@ -356,9 +356,9 @@ function MediaPane(props: {
       // ring.
       {...(pinState === "target" ? { "data-pin-target": "" } : null)}
     >
-      {/* The inspection surface: the same dark checkerboard as the library
-          thumbnails, so a white screenshot has a known ground to end on. The
-          pane draws no chrome of its own — the well is the chrome. */}
+      {/* The inspection surface: the same ground as the library thumbnails, so
+          a white screenshot has a known ground to end on. The pane draws no
+          chrome of its own — the well is the chrome. */}
       <MediaWell
         className={clsx(
           "relative flex min-h-0 flex-1 transition-opacity",
