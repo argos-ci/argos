@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   FolderIcon,
   ImageIcon,
+  ImagesIcon,
   LockIcon,
   MessageSquareIcon,
   UserIcon,
@@ -118,6 +119,7 @@ const SCOPE_GROUPS: Record<string, { label: string; icon: LucideIcon }> = {
   builds: { label: "Builds", icon: ImageIcon },
   reviews: { label: "Reviews", icon: CheckCheckIcon },
   comments: { label: "Comments", icon: MessageSquareIcon },
+  media: { label: "Media", icon: ImagesIcon },
   account: { label: "Organization", icon: Building2Icon },
 };
 

@@ -20,6 +20,7 @@ import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
 import { Media } from "./models/Media";
 import { MediaVersion } from "./models/MediaVersion";
+import { OAuthClient } from "./models/OAuthClient";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
@@ -146,6 +147,31 @@ export async function createProject(input: {
     ...(input.defaultBaseBranch !== undefined && {
       defaultBaseBranch: input.defaultBaseBranch,
     }),
+  });
+}
+
+/**
+ * A public OAuth client, as `argos login` registers one. `knownAppId` is what
+ * confers the verified badge, the official display name and the bundled logo —
+ * the stored `clientName` is only a fallback for unrecognized apps.
+ */
+export async function createOAuthClient(input: {
+  clientId: string;
+  redirectUris: string[];
+  knownAppId?: string | null;
+  clientName?: string;
+}): Promise<OAuthClient> {
+  const knownAppId = input.knownAppId ?? null;
+  return OAuthClient.query().insertAndFetch({
+    clientId: input.clientId,
+    clientName: input.clientName ?? "Argos CLI",
+    redirectUris: input.redirectUris,
+    grantTypes: ["authorization_code", "refresh_token"],
+    responseTypes: ["code"],
+    tokenEndpointAuthMethod: "none",
+    isFirstParty: true,
+    knownAppId,
+    verified: knownAppId !== null,
   });
 }
 
