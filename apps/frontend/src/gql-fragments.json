@@ -51,6 +51,7 @@
       "GlApiProject",
       "GoogleUser",
       "Media",
+      "MediaDiff",
       "MediaVersion",
       "MsTeamsWebhook",
       "Plan",

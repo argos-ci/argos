@@ -68,6 +68,7 @@ const config: CodegenConfig = {
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           GoogleUser: "../../database/models/index.js#GoogleUser",
           Media: "../../database/models/index.js#Media",
+          MediaDiff: "../../database/models/index.js#MediaDiff",
           MediaVersion: "../../database/models/index.js#MediaVersion",
           // Not a model: a grouped row, so the resolvers receive what the query
           // actually selected rather than a shape nothing produces.

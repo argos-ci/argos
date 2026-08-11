@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Media, MediaVersion } from "@/database/models";
+import { Media, MediaDiff, MediaVersion } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 const s3Send = vi.hoisted(() => vi.fn());
@@ -123,6 +123,66 @@ describe("purgeExpiredMedia", () => {
     await purgeExpiredMedia(NOW);
 
     expect(deletedKeys()).toEqual(["media/1/abandoned.png"]);
+  });
+
+  it("deletes the mask computed from an expired version", async () => {
+    // The row cascades off the foreign key, but the object is ours to collect —
+    // and it is bytes Argos derived, so nothing else in the system would ever
+    // notice it had been left behind.
+    const { version: before } = await factory.createMediaWithVersion({
+      version: { key: "media/1/before.png", expiresAt: PAST },
+    });
+    const { version: after } = await factory.createMediaWithVersion({
+      version: { key: "media/1/after.png", expiresAt: FUTURE },
+    });
+    const diff = await MediaDiff.query().insertAndFetch({
+      beforeMediaVersionId: before.id,
+      afterMediaVersionId: after.id,
+      jobStatus: "complete",
+      key: "media/1/diffs/mask.png",
+    });
+
+    await purgeExpiredMedia(NOW);
+
+    expect(deletedKeys()).toEqual(
+      expect.arrayContaining(["media/1/before.png", "media/1/diffs/mask.png"]),
+    );
+    await expect(MediaDiff.query().findById(diff.id)).resolves.toBeUndefined();
+  });
+
+  it("keeps a mask another pair still shows", async () => {
+    // Mask keys are content-addressed too, so a pair that changed in exactly the
+    // way another pair did shares one object. These bytes are derived and never
+    // regenerated on demand, so deleting one still in use leaves a live pair with
+    // a broken overlay.
+    const { version: before } = await factory.createMediaWithVersion({
+      version: { key: "media/1/before.png", expiresAt: PAST },
+    });
+    const { version: after } = await factory.createMediaWithVersion({
+      version: { key: "media/1/after.png", expiresAt: FUTURE },
+    });
+    const { version: otherBefore } = await factory.createMediaWithVersion({
+      version: { key: "media/1/other-before.png", expiresAt: FUTURE },
+    });
+    await MediaDiff.query().insert([
+      {
+        beforeMediaVersionId: before.id,
+        afterMediaVersionId: after.id,
+        jobStatus: "complete",
+        key: "media/1/diffs/shared.png",
+      },
+      {
+        beforeMediaVersionId: otherBefore.id,
+        afterMediaVersionId: after.id,
+        jobStatus: "complete",
+        key: "media/1/diffs/shared.png",
+      },
+    ]);
+
+    await purgeExpiredMedia(NOW);
+
+    expect(deletedKeys()).toEqual(["media/1/before.png"]);
+    await expect(MediaDiff.query().resultSize()).resolves.toBe(1);
   });
 
   it("leaves unexpired media alone", async () => {

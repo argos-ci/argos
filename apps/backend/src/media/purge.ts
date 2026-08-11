@@ -1,7 +1,10 @@
-import { Media, MediaVersion } from "@/database/models";
+import { Media, MediaDiff, MediaVersion } from "@/database/models";
 import logger from "@/logger";
 
-import { deleteUnreferencedMediaObjects } from "./object";
+import {
+  deleteUnreferencedMediaDiffObjects,
+  deleteUnreferencedMediaObjects,
+} from "./object";
 
 /** Rows purged per pass, so one statement never locks the table for long. */
 const BATCH_SIZE = 200;
@@ -45,6 +48,23 @@ export async function purgeExpiredMedia(
     await deleteUnreferencedMediaObjects({
       keys: batch.map((version) => version.key),
       excludeVersionIds: ids,
+    });
+
+    // The before/after masks computed from these versions go with them. Their
+    // rows cascade off the foreign key, but the objects are ours to collect, and
+    // they have to go before the cascade takes the rows that name them.
+    const diffs = await MediaDiff.query()
+      .select("id", "key")
+      .whereNotNull("key")
+      .where((builder) => {
+        builder
+          .whereIn("beforeMediaVersionId", ids)
+          .orWhereIn("afterMediaVersionId", ids);
+      });
+
+    await deleteUnreferencedMediaDiffObjects({
+      keys: diffs.map((diff) => diff.key),
+      excludeDiffIds: diffs.map((diff) => diff.id),
     });
 
     await MediaVersion.query().delete().whereIn("id", ids);

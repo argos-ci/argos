@@ -19,6 +19,7 @@ import { GithubPullRequest } from "./models/GithubPullRequest";
 import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
 import { Media } from "./models/Media";
+import { MediaDiff } from "./models/MediaDiff";
 import { MediaVersion } from "./models/MediaVersion";
 import { OAuthClient } from "./models/OAuthClient";
 import { Plan } from "./models/Plan";
@@ -1794,15 +1795,19 @@ export async function createMediaScenario(input: {
 
   // The "after" image has two versions: the reviewer asked for a change and the
   // second upload answered it. That is the state the version UI has to render.
+  //
+  // Its newest version is deliberately a different file — and a different shape
+  // — from the "before": a pair of identical bytes compares to nothing, and the
+  // page's whole compare surface would have no changes to mark.
   const [, afterV2] = await MediaVersion.query().insertAndFetch([
     {
       mediaId: after.id,
       number: 1,
-      key: "dummy-375x1024.png",
+      key: "dummy-375x720.png",
       mimeType: "image/png",
-      sizeBytes: "196608",
+      sizeBytes: "188416",
       width: 375,
-      height: 1024,
+      height: 720,
       // Far enough out that the "expiring soon" colour never fires in a baseline.
       expiresAt: "2027-04-20T09:00:00.000Z",
       uploadedAt: afterV1Ts,
@@ -1813,11 +1818,11 @@ export async function createMediaScenario(input: {
     {
       mediaId: after.id,
       number: 2,
-      key: "dummy-375x720.png",
+      key: "dummy-375x1024.png",
       mimeType: "image/png",
-      sizeBytes: "188416",
+      sizeBytes: "196608",
       width: 375,
-      height: 720,
+      height: 1024,
       expiresAt: "2027-04-20T10:00:00.000Z",
       uploadedAt: afterV2Ts,
       billedUnits: 1,
@@ -1879,6 +1884,23 @@ export async function createMediaScenario(input: {
     ],
   );
   invariant(beforeV1 && videoV1 && soloV1, "versions should be created");
+
+  // The pair's comparison, already computed. In the app a worker produces this a
+  // few seconds after the second half lands; a Playwright run has no worker and
+  // no bucket to write to, so the finished row is seeded with a mask that really
+  // is the diff of these two dummies — 375×1024, the union of a 720-tall
+  // "before" and a 1024-tall "after".
+  await MediaDiff.query().insert({
+    beforeMediaVersionId: beforeV1.id,
+    afterMediaVersionId: afterV2.id,
+    jobStatus: "complete",
+    score: 0.3,
+    key: "diff-1024-to-720.png",
+    width: 375,
+    height: 1024,
+    createdAt: afterV2Ts,
+    updatedAt: afterV2Ts,
+  });
 
   if (commentAuthorId) {
     const commentTs = "2026-04-20T11:00:00.000Z";

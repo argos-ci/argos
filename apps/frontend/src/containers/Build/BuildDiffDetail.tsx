@@ -38,24 +38,18 @@ import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { Code } from "@/ui/Code";
-import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
+import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { MenuItem, MenuItemIcon, MenuSeparator } from "@/ui/Menu";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
-import { useEventCallback } from "@/ui/useEventCallback";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
-import { Rect } from "@/util/color-detection/types";
 import { checkIsImageContentType } from "@/util/content-type";
 import { useTextContent } from "@/util/text";
 
 import { OnionOpacityControl, SwipeDivider } from "./BlendControls";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getDiffGroupDefinition } from "./BuildDiffGroup";
-import {
-  Highlighter,
-  useBuildDiffHighlighterContext,
-} from "./BuildDiffHighlighterContext";
 import {
   NoScreenshotsBuildEmptyState,
   SkippedBuildEmptyState,
@@ -69,17 +63,21 @@ import {
   swipePositionAtom,
   type BlendViewMode,
 } from "./BuildViewMode";
+import {
+  ChangesHighlights,
+  ChangesMask,
+  getChangesDetectionUrl,
+} from "./ChangesOverlay";
 import { Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
   overlayOpacityAtom,
   overlayVisibleAtom,
-  useOverlayStyle,
 } from "./OverlayStyle";
 import { getImageScale } from "./projection";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
-import { useZoomerSyncContext, useZoomTransform, ZoomPane } from "./Zoomer";
+import { useZoomTransform, ZoomPane } from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDiffDetail_Build on Build {
@@ -952,7 +950,7 @@ function CompareScreenshotChanged(props: {
       });
     });
   });
-  const jpgUrl = useMemo(() => imgkit(url, ["f-jpg"]), [url]);
+  const jpgUrl = useMemo(() => getChangesDetectionUrl(url), [url]);
   return (
     <>
       <div className="relative flex min-h-0 min-w-0 flex-1 select-none">
@@ -1035,8 +1033,8 @@ function CompareScreenshotChanged(props: {
         </ZoomPane>
         {dimensions && paneSize && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
-            <RectHighlights
-              url={jpgUrl}
+            <ChangesHighlights
+              url={url}
               paneSize={paneSize}
               imgSize={dimensions}
             />
@@ -1079,138 +1077,16 @@ function BuildOnionOpacityControl() {
   return <OnionOpacityControl value={opacity} onChange={setOpacity} />;
 }
 
-function RectHighlights(props: {
-  url: string;
-  paneSize: { width: number; height: number };
-  imgSize: { width: number; height: number };
-}) {
-  const { url, paneSize, imgSize } = props;
-  const color = useAtomValue(overlayColorAtom);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const transform = useZoomTransform();
-  const { rects } = useColoredRects({ url, blockSize: 24 });
-  const [imgScale] = useScaleContext();
-  const realScale = imgScale ? imgScale * transform.scale : null;
-  // Convert image coordinates to pane coordinates.
-  // Image is centered in the pane and scaled with imgScale.
-  const imgToWorkspace = (x: number, y: number): [number, number] => {
-    const x1 = (paneSize.width - imgSize.width * imgScale) / 2;
-    return [x * imgScale + x1, y * imgScale];
-  };
-  const { registerHighlighter } = useBuildDiffHighlighterContext();
-  const highlight: Highlighter["highlight"] = useEventCallback(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-    const elements = Array.from(container.children);
-    elements.forEach((element) => {
-      const circle = element.firstChild;
-      invariant(circle instanceof SVGCircleElement);
-      const className = "animate-highlight-svg";
-      if (!circle.classList.contains(className)) {
-        circle.classList.add(className);
-        circle.addEventListener("animationend", () => {
-          circle.classList.remove(className);
-        });
-      }
-    });
-  });
-
-  const [index, setIndex] = useState<number | null>(null);
-  const { zoomTo } = useZoomerSyncContext();
-  const go: Highlighter["go"] = useEventCallback((direction) => {
-    invariant(rects);
-    const i = index === null ? (direction === 1 ? -1 : rects.length) : index;
-    const nextIndex = (i + direction + rects.length) % rects.length;
-    const rect = rects[nextIndex];
-    invariant(rect);
-    const [x, y] = imgToWorkspace(rect.x, rect.y);
-    const maxScale = 2 / imgScale;
-    zoomTo(
-      {
-        x,
-        y,
-        width: rect.width * imgScale,
-        height: rect.height * imgScale,
-      },
-      { maxScale },
-    );
-    setIndex(nextIndex);
-  });
-
-  const highlighter: Highlighter = useMemo(
-    () => ({ highlight, go }),
-    [highlight, go],
-  );
-
-  const registerContainer = useEventCallback(
-    (element: HTMLDivElement | null) => {
-      containerRef.current = element;
-      return registerHighlighter(highlighter);
-    },
-  );
-
-  if (!rects || !realScale) {
-    return null;
-  }
-
-  return (
-    <div ref={registerContainer}>
-      {rects.map((rect, index) => {
-        const square = rectToSquare(rect, 40 / realScale);
-        const [x, y] = imgToWorkspace(square.x, square.y);
-
-        return (
-          <svg
-            key={index}
-            className="pointer-events-none absolute z-10 origin-center overflow-visible"
-            style={{
-              top: y * transform.scale + transform.y,
-              left: x * transform.scale + transform.x,
-              width: square.width * imgScale * transform.scale,
-              height: square.height * imgScale * transform.scale,
-            }}
-          >
-            <circle
-              className="opacity-0"
-              cx="50%"
-              cy="50%"
-              r="50%"
-              fill="none"
-              stroke={color}
-              strokeWidth="1"
-            />
-          </svg>
-        );
-      })}
-    </div>
-  );
-}
-
-function rectToSquare(rect: Rect, minSize: number): Rect {
-  const size = Math.max(rect.width, rect.height, minSize);
-  const x = rect.x + (rect.width - size) / 2;
-  const y = rect.y + (rect.height - size) / 2;
-  return {
-    x,
-    y,
-    width: size,
-    height: size,
-  };
-}
-
 function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
-  const style = useOverlayStyle({ src: props.src });
   const imageRendering = useImageRendering();
   return (
-    <span style={{ ...style, imageRendering, ...props.style }}>
+    <ChangesMask url={props.src} style={{ imageRendering, ...props.style }}>
       <ScreenshotPicture
         alt="Changes screenshot"
         {...props}
         style={{ opacity: 0, display: "block" }}
       />
-    </span>
+    </ChangesMask>
   );
 }
 

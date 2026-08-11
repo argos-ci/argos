@@ -6,6 +6,7 @@ import { job as buildNotificationJob } from "@/build-notification";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { createJobWorker } from "@/job-core";
+import { mediaDiffJob } from "@/media/diff-job";
 import { purgeExpiredMedia } from "@/media/purge";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
@@ -30,6 +31,7 @@ createJobWorker(
   buildNotificationJob,
   deploymentNotificationJob,
   githubPullRequestJob,
+  mediaDiffJob,
   notificationMessageJob,
   notificationWorkflowJob,
   synchronizeJob,

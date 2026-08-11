@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 6xh3I6aSCIcY2grWvUe7sbrPneblrhCs0daGrfbPkU4EH4JcgdWRZwtVXU0yjE7
+\restrict SJMOjW7fwlbG5V9h9dOw91WWYjjnPhrNmOhMNNy0ftDq9k87kzZthcc2phDVXnb
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1466,6 +1466,47 @@ CREATE TABLE public.media (
 
 
 ALTER TABLE public.media OWNER TO postgres;
+
+--
+-- Name: media_diffs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.media_diffs (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "beforeMediaVersionId" bigint NOT NULL,
+    "afterMediaVersionId" bigint NOT NULL,
+    "jobStatus" public.job_status DEFAULT 'pending'::public.job_status,
+    score numeric(10,5),
+    key character varying(255),
+    width integer,
+    height integer
+);
+
+
+ALTER TABLE public.media_diffs OWNER TO postgres;
+
+--
+-- Name: media_diffs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.media_diffs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.media_diffs_id_seq OWNER TO postgres;
+
+--
+-- Name: media_diffs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.media_diffs_id_seq OWNED BY public.media_diffs.id;
+
 
 --
 -- Name: media_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -3138,6 +3179,13 @@ ALTER TABLE ONLY public.media ALTER COLUMN id SET DEFAULT nextval('public.media_
 
 
 --
+-- Name: media_diffs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_diffs ALTER COLUMN id SET DEFAULT nextval('public.media_diffs_id_seq'::regclass);
+
+
+--
 -- Name: media_versions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3791,6 +3839,22 @@ ALTER TABLE ONLY public.knex_migrations_lock
 
 ALTER TABLE ONLY public.knex_migrations
     ADD CONSTRAINT knex_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_diffs media_diffs_beforemediaversionid_aftermediaversionid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_diffs
+    ADD CONSTRAINT media_diffs_beforemediaversionid_aftermediaversionid_unique UNIQUE ("beforeMediaVersionId", "afterMediaVersionId");
+
+
+--
+-- Name: media_diffs media_diffs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_diffs
+    ADD CONSTRAINT media_diffs_pkey PRIMARY KEY (id);
 
 
 --
@@ -4644,6 +4708,20 @@ CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github
 --
 
 CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: media_diffs_aftermediaversionid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_diffs_aftermediaversionid_index ON public.media_diffs USING btree ("afterMediaVersionId");
+
+
+--
+-- Name: media_diffs_key_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX media_diffs_key_index ON public.media_diffs USING btree (key);
 
 
 --
@@ -5625,6 +5703,22 @@ ALTER TABLE ONLY public.media
 
 
 --
+-- Name: media_diffs media_diffs_aftermediaversionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_diffs
+    ADD CONSTRAINT media_diffs_aftermediaversionid_foreign FOREIGN KEY ("afterMediaVersionId") REFERENCES public.media_versions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: media_diffs media_diffs_beforemediaversionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.media_diffs
+    ADD CONSTRAINT media_diffs_beforemediaversionid_foreign FOREIGN KEY ("beforeMediaVersionId") REFERENCES public.media_versions(id) ON DELETE CASCADE;
+
+
+--
 -- Name: media media_githubpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6140,7 +6234,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 6xh3I6aSCIcY2grWvUe7sbrPneblrhCs0daGrfbPkU4EH4JcgdWRZwtVXU0yjE7
+\unrestrict SJMOjW7fwlbG5V9h9dOw91WWYjjnPhrNmOhMNNy0ftDq9k87kzZthcc2phDVXnb
 
 -- Knex migrations
 
@@ -6383,3 +6477,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808130000_media.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808140000_comment-media.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260809203017_media-branch.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260811133709_media-diffs.js', 1, NOW());

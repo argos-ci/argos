@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -35,12 +35,13 @@ import { MediaVersions } from "@/containers/Media/MediaVersions";
 import {
   getMediaDownloadName,
   MediaViewer,
+  type ViewerDiff,
 } from "@/containers/Media/MediaViewer";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
-import { MediaVisibility } from "@/gql/graphql";
+import { MediaDiffStatus, MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -125,6 +126,13 @@ const MediaShareQuery = graphql(`
           expiresAt
         }
       }
+      diff {
+        id
+        status
+        url
+        width
+        height
+      }
       project {
         id
         slug
@@ -155,11 +163,16 @@ export function Component() {
   invariant(shareToken, "no share token");
 
   const roleScope = useCommentRoleScope();
-  const { data } = useSuspenseQuery(MediaShareQuery, {
+  const { data, refetch } = useSuspenseQuery(MediaShareQuery, {
     variables: { shareToken, ...roleScope },
   });
 
   const media = data.mediaByShareToken;
+
+  useAwaitPendingDiff({
+    pending: media?.diff?.status === MediaDiffStatus.Pending,
+    refetch,
+  });
 
   if (!media) {
     return <UnavailableState />;
@@ -177,6 +190,77 @@ export function Component() {
       <SharePage media={media} />
     </>
   );
+}
+
+/**
+ * The mask to draw over the pair, or null when there is nothing to draw.
+ *
+ * Four ways there is nothing: the media stands alone, the comparison has not
+ * landed yet, it failed, or it ran and found the two halves identical. None of
+ * them is an error, and the page says the same thing about all of them — it
+ * shows the pair without an overlay.
+ *
+ * Also null while the reviewer is looking back at an older version. The mask was
+ * computed from the newest bytes of each half; drawing it over a version it did
+ * not come from would mark pixels nothing said had changed.
+ */
+function getViewerDiff(
+  media: Media,
+  version: Media["versions"][number],
+): ViewerDiff | null {
+  const { diff } = media;
+  if (!diff?.url || !diff.width || !diff.height) {
+    return null;
+  }
+  if (version.id !== media.latestVersion.id) {
+    return null;
+  }
+  return { url: diff.url, width: diff.width, height: diff.height };
+}
+
+/** How often the page asks whether the pair's comparison has landed. */
+const DIFF_POLL_INTERVAL = 3000;
+
+/**
+ * How long to keep asking. A comparison is queued the moment a share page is
+ * opened on an uncompared pair and takes seconds; past a couple of minutes the
+ * worker is not coming, and a page left open overnight must not keep asking
+ * about it.
+ */
+const DIFF_POLL_ATTEMPTS = 40;
+
+/**
+ * Wait for a queued comparison the way the reviewer would: keep asking, and stop
+ * as soon as there is an answer.
+ *
+ * The diff is computed off the request — an upload does not wait for it and the
+ * first page load usually beats it — so without this the overlay would only
+ * appear on a manual reload. `startTransition` keeps the refetch from
+ * re-suspending the page: the media is already on screen and nothing about it
+ * is changing.
+ */
+function useAwaitPendingDiff(props: {
+  pending: boolean;
+  refetch: () => Promise<unknown>;
+}) {
+  const { pending, refetch } = props;
+  useEffect(() => {
+    if (!pending) {
+      return undefined;
+    }
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      attempts += 1;
+      if (attempts > DIFF_POLL_ATTEMPTS) {
+        window.clearInterval(interval);
+        return;
+      }
+      startTransition(() => {
+        void refetch();
+      });
+    }, DIFF_POLL_INTERVAL);
+    return () => window.clearInterval(interval);
+  }, [pending, refetch]);
 }
 
 function SharePage(props: { media: Media }) {
@@ -225,6 +309,7 @@ function SharePage(props: { media: Media }) {
                         }
                       : null
                   }
+                  diff={getViewerDiff(media, version)}
                   comments={{
                     media,
                     viewedVersionId: version.id,

@@ -1,7 +1,7 @@
 import { DeleteObjectsCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
 import config from "@/config";
-import { MediaVersion } from "@/database/models";
+import { MediaDiff, MediaVersion } from "@/database/models";
 import { getS3Client } from "@/storage/s3";
 
 /**
@@ -107,6 +107,43 @@ async function findReferencedKeys(args: {
 
   const rows = await query;
   return new Set(rows.map((row) => row.key));
+}
+
+/**
+ * Delete before/after diff masks, keeping any that another pair still shows.
+ *
+ * The same shape as {@link deleteUnreferencedMediaObjects} and for the same
+ * reason: mask keys are content-addressed too, so a pair that changed in exactly
+ * the way another pair did shares one object. These bytes are derived rather
+ * than uploaded, so nothing regenerates them on demand — deleting one another
+ * pair still points at would leave that pair showing a broken overlay.
+ */
+export async function deleteUnreferencedMediaDiffObjects(args: {
+  keys: (string | null | undefined)[];
+  /** Diffs whose references don't count — the rows being deleted. */
+  excludeDiffIds: string[];
+}): Promise<void> {
+  const keys = [
+    ...new Set(
+      args.keys.filter(
+        (key): key is string => typeof key === "string" && key.length > 0,
+      ),
+    ),
+  ];
+
+  if (keys.length === 0) {
+    return;
+  }
+
+  const query = MediaDiff.query().select("key").whereIn("key", keys);
+
+  if (args.excludeDiffIds.length > 0) {
+    query.whereNotIn("id", args.excludeDiffIds);
+  }
+
+  const inUse = new Set((await query).map((row) => row.key));
+
+  await deleteMediaObjects(keys.filter((key) => !inUse.has(key)));
 }
 
 function isNotFoundError(error: unknown): boolean {
