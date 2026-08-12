@@ -45,15 +45,7 @@ export const handler = defineNotificationHandler({
           <H1>Updated terms of service and privacy policy</H1>
           <Hi name={props.ctx.user.name} />
           <Paragraph>
-            We have rewritten our terms of service and privacy policy. They now
-            properly name Smooth Code SAS, the company behind Argos, and they
-            are governed by French law rather than the terms we started out with
-            years ago.
-          </Paragraph>
-          <Paragraph>
-            The privacy policy also publishes the full list of subprocessors
-            that handle your data, so you can see exactly where your screenshots
-            are stored and who touches them.
+            We have updated our terms of service and privacy policy.
           </Paragraph>
           <Paragraph>
             The new terms take effect on {effectiveDate} for existing paid
