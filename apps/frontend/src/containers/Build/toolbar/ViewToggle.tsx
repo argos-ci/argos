@@ -1,10 +1,17 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ColumnsIcon, GalleryHorizontalIcon } from "lucide-react";
 
 import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import {
+  BaselineViewIcon,
+  ChangesViewIcon,
+  OnionViewIcon,
+  SplitViewIcon,
+  SwipeViewIcon,
+} from "@/ui/Icons";
+import { useEventCallback } from "@/ui/useEventCallback";
 
 import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
 import { buildViewModeAtom, type ViewMode } from "../BuildViewMode";
@@ -22,66 +29,121 @@ const DEFAULT_LABELS: ViewToggleLabels = {
   changes: "Changes",
 };
 
+/**
+ * Every way of looking at the comparison, in one control: one side alone, both
+ * sides apart, or both sides merged. Reading left to right, the two sides come
+ * together — which is also why side by side sits in the middle rather than
+ * beside the group as its own button.
+ *
+ * Icons rather than words because five words do not fit a toolbar that also
+ * carries the overlay, comment and fit controls, and because the drawings say
+ * what the words could not: which side is being held back.
+ */
 export const ViewToggle = memo(
   (props: { blendEnabled: boolean; labels?: ViewToggleLabels }) => {
     const { blendEnabled, labels = DEFAULT_LABELS } = props;
     const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
+    const { reset } = useZoomerSyncContext();
+
+    const select = useEventCallback((next: ViewMode) => {
+      // Entering or leaving side by side changes how many panes the zoom is
+      // spread over, so the shared transform no longer means anything. Every
+      // other switch keeps one pane and keeps the reviewer where they were —
+      // resetting there would throw away the spot they are looking at.
+      if ((viewMode === "split") !== (next === "split")) {
+        reset();
+      }
+      startTransition(() => {
+        setViewMode(next);
+      });
+    });
+
     const showBaselineHotkey = useBuildHotkey(
       "showBaseline",
       () => {
-        startTransition(() => {
-          setViewMode("baseline");
-        });
+        select("baseline");
       },
       { preventDefault: true },
     );
     const showChangesHotkey = useBuildHotkey(
       "showChanges",
       () => {
-        startTransition(() => {
-          setViewMode("changes");
-        });
+        select("changes");
+      },
+      { preventDefault: true },
+    );
+    // The key stays a toggle even though the button is a plain selection: it is
+    // the way back out of side by side, and there is no second key for that.
+    const toggleSplitViewHotkey = useBuildHotkey(
+      "toggleSplitView",
+      () => {
+        select(viewMode === "split" ? "changes" : "split");
       },
       { preventDefault: true },
     );
     const showOnionHotkey = useBuildHotkey(
       "showOnion",
       () => {
-        startTransition(() => {
-          setViewMode("onion");
-        });
+        select("onion");
       },
       { preventDefault: true, enabled: blendEnabled },
     );
     const showSwipeHotkey = useBuildHotkey(
       "showSwipe",
       () => {
-        startTransition(() => {
-          setViewMode("swipe");
-        });
+        select("swipe");
       },
       { preventDefault: true, enabled: blendEnabled },
     );
 
-    if (viewMode === "split") {
-      return null;
-    }
-
     return (
       <ButtonGroup>
-        <ViewButton viewMode="baseline" hotkey={showBaselineHotkey}>
-          {labels.baseline}
+        <ViewButton
+          viewMode="baseline"
+          currentViewMode={viewMode}
+          label={labels.baseline}
+          hotkey={showBaselineHotkey}
+          onSelect={select}
+        >
+          <BaselineViewIcon />
         </ViewButton>
-        <ViewButton viewMode="changes" hotkey={showChangesHotkey}>
-          {labels.changes}
+        <ViewButton
+          viewMode="changes"
+          currentViewMode={viewMode}
+          label={labels.changes}
+          hotkey={showChangesHotkey}
+          onSelect={select}
+        >
+          <ChangesViewIcon />
+        </ViewButton>
+        <ViewButton
+          viewMode="split"
+          currentViewMode={viewMode}
+          label="Side by side"
+          hotkey={toggleSplitViewHotkey}
+          onSelect={select}
+        >
+          <SplitViewIcon />
         </ViewButton>
         {blendEnabled && (
           <>
-            <ViewButton viewMode="onion" hotkey={showOnionHotkey}>
-              Onion
+            <ViewButton
+              viewMode="onion"
+              currentViewMode={viewMode}
+              label="Onion skin"
+              hotkey={showOnionHotkey}
+              onSelect={select}
+            >
+              <OnionViewIcon />
             </ViewButton>
-            <ViewButton viewMode="swipe" hotkey={showSwipeHotkey}>
-              Swipe
+            <ViewButton
+              viewMode="swipe"
+              currentViewMode={viewMode}
+              label="Swipe"
+              hotkey={showSwipeHotkey}
+              onSelect={select}
+            >
+              <SwipeViewIcon />
             </ViewButton>
           </>
         )}
@@ -91,57 +153,34 @@ export const ViewToggle = memo(
 );
 
 function ViewButton(props: {
-  viewMode: Exclude<ViewMode, "split">;
+  viewMode: ViewMode;
+  currentViewMode: ViewMode;
+  /** Names the button, and names it the same way to a screen reader. */
+  label: string;
   hotkey: Hotkey;
+  onSelect: (viewMode: ViewMode) => void;
   children: React.ReactNode;
 }) {
-  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
-  const activate = () => {
-    startTransition(() => {
-      setViewMode(props.viewMode);
-    });
-  };
+  const { viewMode, currentViewMode, label, hotkey, onSelect, children } =
+    props;
+  const isCurrent = currentViewMode === viewMode;
   return (
     <HotkeyTooltip
-      description={props.hotkey.description}
-      keys={props.hotkey.displayKeys}
-      keysEnabled={viewMode !== props.viewMode}
+      description={label}
+      keys={hotkey.displayKeys}
+      keysEnabled={!isCurrent}
     >
       <Button
         variant="secondary"
-        aria-pressed={viewMode === props.viewMode}
-        onPress={activate}
+        iconOnly
+        aria-pressed={isCurrent}
+        aria-label={label}
+        onPress={() => {
+          onSelect(viewMode);
+        }}
       >
-        {props.children}
+        {children}
       </Button>
     </HotkeyTooltip>
   );
 }
-
-export const SplitViewToggle = memo(() => {
-  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
-  const { reset } = useZoomerSyncContext();
-  const toggleSplitView = () => {
-    setViewMode((viewMode) => (viewMode === "split" ? "changes" : "split"));
-    reset();
-  };
-  const hotkey = useBuildHotkey("toggleSplitView", toggleSplitView, {
-    preventDefault: true,
-  });
-  return (
-    <HotkeyTooltip
-      description={
-        viewMode === "split"
-          ? "Show only one image at a time"
-          : "Show baseline and changes side by side"
-      }
-      keys={hotkey.displayKeys}
-    >
-      {/* Two panes or one: the icon is the state, so there is no pressed
-          state on top of it. */}
-      <Button variant="secondary" iconOnly onPress={toggleSplitView}>
-        {viewMode === "split" ? <GalleryHorizontalIcon /> : <ColumnsIcon />}
-      </Button>
-    </HotkeyTooltip>
-  );
-});

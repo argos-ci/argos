@@ -321,7 +321,7 @@ loggedTest(
     const panes = page.locator("[data-media-pane]");
     await expect(panes).toHaveCount(2);
 
-    // `S` leaves side by side for one image at a time, and the toggle appears.
+    // `S` leaves side by side for one image at a time.
     await page.keyboard.press("s");
     await expect(panes).toHaveCount(1);
     const after = page.getByRole("button", { name: "After", exact: true });

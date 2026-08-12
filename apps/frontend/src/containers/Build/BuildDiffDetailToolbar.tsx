@@ -14,7 +14,7 @@ import { CommentsEnabledContext } from "./CommentsContext";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
 import { FitToggle } from "./toolbar/FitToggle";
-import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
+import { ViewToggle } from "./toolbar/ViewToggle";
 
 interface BuildDiffDetailToolbarProps {
   diff: BuildDiffDetailDocument;
@@ -74,7 +74,6 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
-      <SplitViewToggle />
       <FitToggle />
       {fitControls}
       {shouldShowToolbarControls && (
