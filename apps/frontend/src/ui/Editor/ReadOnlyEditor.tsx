@@ -12,6 +12,11 @@ export interface ReadOnlyEditorProps {
    * hover card.
    */
   mentionedUsers?: MentionUser[];
+  /**
+   * Web URL of the repository the content is about. Commit shas in the content
+   * are linked to it; without it they stay plain text.
+   */
+  repositoryUrl?: string | null;
 }
 
 /**
@@ -22,7 +27,7 @@ export interface ReadOnlyEditorProps {
 export const ReadOnlyEditor = memo(function ReadOnlyEditor(
   props: ReadOnlyEditorProps,
 ) {
-  const { content, className, mentionedUsers } = props;
+  const { content, className, mentionedUsers, repositoryUrl } = props;
   if (!content) {
     return null;
   }
@@ -33,6 +38,7 @@ export const ReadOnlyEditor = memo(function ReadOnlyEditor(
       value={content}
       className={className}
       mentionedUsers={mentionedUsers}
+      repositoryUrl={repositoryUrl}
     />
   );
 });

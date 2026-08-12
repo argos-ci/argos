@@ -14,6 +14,7 @@ import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
+import { useProjectRepositoryUrl } from "@/containers/Project/RepositoryContext";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -520,6 +521,7 @@ function CommentMessage(props: {
   // Resolve the comment's own mentions (which persist only an id) to render
   // their name/avatar/role — these may include users no longer mentionable.
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
+  const repositoryUrl = useProjectRepositoryUrl();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const client = useApolloClient();
@@ -683,6 +685,7 @@ function CommentMessage(props: {
               content={comment.content}
               className={contentClassName}
               mentionedUsers={mentionedUsers}
+              repositoryUrl={repositoryUrl}
             />
           )}
         </div>

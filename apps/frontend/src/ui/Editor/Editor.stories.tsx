@@ -40,6 +40,78 @@ function ControlledEditor(props: { initialValue?: EditorValue }) {
   );
 }
 
+/** A paragraph of plain text, the shape stored content takes. */
+function paragraph(text: string): EditorValue {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
+}
+
+export const CommitAutolink: Story = {
+  name: "Commit autolink",
+  render: () => (
+    <div className="flex max-w-xl flex-col">
+      <StoryTitle>Linked</StoryTitle>
+      <Editor
+        variant="plain"
+        readOnly
+        repositoryUrl="https://github.com/argos-ci/argos"
+        value={paragraph("Pushed to the PR in d15cba5.")}
+      />
+      <Editor
+        variant="plain"
+        readOnly
+        repositoryUrl="https://github.com/argos-ci/argos"
+        value={paragraph(
+          "Reverted 9f2c1a7b3e4d5c6a8b0f1e2d3c4b5a6978d0e1f2, then squashed abc1234 and 7fed210.",
+        )}
+      />
+
+      <StoryTitle>Left alone</StoryTitle>
+      {/* Shape heuristics: a plain number, a hex-only word, an asset name, a
+          color, and a sha the author chose to write as code. */}
+      <Editor
+        variant="plain"
+        readOnly
+        repositoryUrl="https://github.com/argos-ci/argos"
+        value={paragraph(
+          "2000000 pixels, acceded, chunk-abc1234.js and #a1b2c3d4 are not commits.",
+        )}
+      />
+      <Editor
+        variant="plain"
+        readOnly
+        repositoryUrl="https://github.com/argos-ci/argos"
+        value={{
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                { type: "text", text: "Run " },
+                {
+                  type: "text",
+                  text: "git show d15cba5",
+                  marks: [{ type: "code" }],
+                },
+                { type: "text", text: " to see it." },
+              ],
+            },
+          ],
+        }}
+      />
+
+      <StoryTitle>No repository linked</StoryTitle>
+      <Editor
+        variant="plain"
+        readOnly
+        value={paragraph("Pushed to the PR in d15cba5.")}
+      />
+    </div>
+  ),
+};
+
 export const Default: Story = {
   render: () => (
     <div className="flex flex-col">

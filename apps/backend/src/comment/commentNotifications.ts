@@ -60,7 +60,7 @@ export async function getCommentNotificationData(input: {
   const [author, commentUrl, bodyHtml] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
     getCommentUrl({ target, comment }),
-    renderCommentHtmlWithMentions(comment),
+    renderCommentHtmlWithMentions(comment, { project }),
   ]);
   return {
     accountSlug: project.account.slug,

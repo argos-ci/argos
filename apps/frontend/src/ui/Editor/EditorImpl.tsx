@@ -10,6 +10,7 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import { clsx } from "clsx";
 
+import { createCommitAutolinkExtension } from "./commitAutolink";
 import {
   EDITOR_BOXED_CLASS,
   EDITOR_BOXED_CONTENT_PADDING_CLASS,
@@ -118,6 +119,13 @@ export interface EditorProps {
    * into "@name" + a hover card. Falls back to the `mentions` list.
    */
   mentionedUsers?: MentionUser[];
+  /**
+   * Web URL of the repository the content is about (e.g.
+   * `https://github.com/argos-ci/argos`). Commit shas in the content are linked
+   * to it when rendering read-only; without it they stay plain text. Read
+   * lazily, so it can change without recreating the editor.
+   */
+  repositoryUrl?: string | null;
 }
 
 /**
@@ -152,6 +160,7 @@ export default function Editor(props: EditorProps) {
     readOnly = false,
     mentions,
     mentionedUsers,
+    repositoryUrl,
   } = props;
 
   const isBoxed = variant === "boxed";
@@ -161,15 +170,18 @@ export default function Editor(props: EditorProps) {
   const onBlurRef = useRef(onBlur);
   const onSubmitRef = useRef(onSubmit);
   // Read lazily by the mention suggestion/resolution so the lists can update
-  // without recreating the editor.
+  // without recreating the editor. Same for the repository the commit autolink
+  // resolves shas against.
   const mentionsRef = useRef(mentions);
   const mentionedUsersRef = useRef(mentionedUsers);
+  const repositoryUrlRef = useRef(repositoryUrl);
   useEffect(() => {
     onChangeRef.current = onChange;
     onBlurRef.current = onBlur;
     onSubmitRef.current = onSubmit;
     mentionsRef.current = mentions;
     mentionedUsersRef.current = mentionedUsers;
+    repositoryUrlRef.current = repositoryUrl;
   });
 
   const editor = useEditor({
@@ -193,6 +205,9 @@ export default function Editor(props: EditorProps) {
         resolveUser: (id) =>
           mentionedUsersRef.current?.find((user) => user.id === id) ??
           mentionsRef.current?.find((user) => user.id === id),
+      }),
+      createCommitAutolinkExtension({
+        getRepositoryUrl: () => repositoryUrlRef.current,
       }),
       /* oxlint-enable react/react-compiler */
       SlashCommand,

@@ -109,7 +109,7 @@ async function notifyCommentThreadSubscribers(input: {
       commentAuthorId: comment.userId,
       reactorName,
       emoji,
-      bodyHtml: await renderCommentHtmlWithMentions(comment),
+      bodyHtml: await renderCommentHtmlWithMentions(comment, { project }),
     },
     recipients,
   });

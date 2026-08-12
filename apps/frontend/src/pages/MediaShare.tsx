@@ -50,6 +50,7 @@ import {
 } from "@/containers/Media/MediaViewer";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { ProjectRepositoryUrlProvider } from "@/containers/Project/RepositoryContext";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { MediaDiffStatus, MediaState, MediaVisibility } from "@/gql/graphql";
@@ -166,6 +167,10 @@ const MediaShareQuery = graphql(`
         id
         slug
         permissions
+        repository {
+          id
+          url
+        }
       }
       ...MediaComments_Media
       ...MediaCommentLayer_Media
@@ -419,88 +424,95 @@ function SharePage(props: { media: Media }) {
   // The comment components ask the project what the viewer may do — reacting is a
   // `review`, same as commenting. An anonymous visitor on a public link is not
   // shown the project at all, so they get no permissions, which is exactly right:
-  // they can read the discussion and change nothing.
+  // they can read the discussion and change nothing. Same reason the commit shas
+  // in those comments only link for someone who can see the project: the
+  // repository's name is not part of what a share link hands out.
   return (
     <ProjectPermissionsContext value={media.project?.permissions ?? []}>
-      <MentionableUsersProvider value={mentionUsers}>
-        <BuildHotkeysDialogStateProvider>
-          <BuildHotkeysDialog env="media" />
-          <div className="flex min-h-dvh flex-col lg:h-dvh">
-            <PageHeader media={media} />
-            <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
-              {showList ? (
-                // Below `lg` the page stacks, and the list goes last: every
-                // pixel above the media is a pixel of it the visitor cannot
-                // see. Beside it, the list is where a build puts its own.
-                <aside className="flex w-full flex-col max-lg:order-last lg:min-h-0 lg:w-56 lg:shrink-0">
-                  <MediaPullRequestList
-                    entries={entries}
-                    activeEntryKey={entries[activeIndex]?.key ?? null}
-                    onSelect={goToEntry}
+      <ProjectRepositoryUrlProvider
+        value={media.project?.repository?.url ?? null}
+      >
+        <MentionableUsersProvider value={mentionUsers}>
+          <BuildHotkeysDialogStateProvider>
+            <BuildHotkeysDialog env="media" />
+            <div className="flex min-h-dvh flex-col lg:h-dvh">
+              <PageHeader media={media} />
+              <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
+                {showList ? (
+                  // Below `lg` the page stacks, and the list goes last: every
+                  // pixel above the media is a pixel of it the visitor cannot
+                  // see. Beside it, the list is where a build puts its own.
+                  <aside className="flex w-full flex-col max-lg:order-last lg:min-h-0 lg:w-56 lg:shrink-0">
+                    <MediaPullRequestList
+                      entries={entries}
+                      activeEntryKey={entries[activeIndex]?.key ?? null}
+                      onSelect={goToEntry}
+                    />
+                  </aside>
+                ) : null}
+                <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
+                  <MediaViewer
+                    nav={nav}
+                    media={{ ...media, version }}
+                    counterpart={
+                      media.counterpart && counterpartVersion
+                        ? {
+                            ...media.counterpart,
+                            // The half the selected version was compared against,
+                            // not simply the counterpart's newest: the two media
+                            // have independent histories, and the pair on screen
+                            // has to be the pair the mask describes.
+                            version: counterpartVersion,
+                          }
+                        : null
+                    }
+                    diff={getViewerDiff(version)}
+                    comments={{
+                      media,
+                      viewedVersionId: version.id,
+                      placing,
+                      onPlacingChange: setPlacing,
+                      requestedThreadId,
+                      onRequestedThreadConsumed: () =>
+                        setRequestedThreadId(null),
+                    }}
                   />
-                </aside>
-              ) : null}
-              <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
-                <MediaViewer
-                  nav={nav}
-                  media={{ ...media, version }}
-                  counterpart={
-                    media.counterpart && counterpartVersion
-                      ? {
-                          ...media.counterpart,
-                          // The half the selected version was compared against,
-                          // not simply the counterpart's newest: the two media
-                          // have independent histories, and the pair on screen
-                          // has to be the pair the mask describes.
-                          version: counterpartVersion,
-                        }
-                      : null
-                  }
-                  diff={getViewerDiff(version)}
-                  comments={{
-                    media,
-                    viewedVersionId: version.id,
-                    placing,
-                    onPlacingChange: setPlacing,
-                    requestedThreadId,
-                    onRequestedThreadConsumed: () => setRequestedThreadId(null),
-                  }}
-                />
-              </main>
+                </main>
 
-              <aside className="flex w-full flex-col lg:min-h-0 lg:w-80 lg:shrink-0">
-                <MediaActions media={media} version={version} />
-                {/* Only the panels scroll: the action strip is page chrome and
+                <aside className="flex w-full flex-col lg:min-h-0 lg:w-80 lg:shrink-0">
+                  <MediaActions media={media} version={version} />
+                  {/* Only the panels scroll: the action strip is page chrome and
                     stays put, instead of getting clipped at the fold. `pb-6`
                     is the build sidebar's: without it the scroll container
                     crops the last panel's shadow. */}
-                <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pb-6">
-                  <MediaDescription media={media} />
-                  <MediaVersions
-                    versions={media.versions}
-                    selectedId={version.id}
-                    onSelect={setVersionId}
-                  />
-                  <MediaComments
-                    media={media}
-                    viewedVersionId={version.id}
-                    placing={placing}
-                    onPlacingChange={setPlacing}
-                    onOpenPinned={(comment) => {
-                      // The marker only exists on the version the pin was dropped
-                      // on, so showing the thread may mean switching to it first.
-                      if (comment.mediaVersionId) {
-                        setVersionId(comment.mediaVersionId);
-                      }
-                      setRequestedThreadId(comment.id);
-                    }}
-                  />
-                </div>
-              </aside>
+                  <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pb-6">
+                    <MediaDescription media={media} />
+                    <MediaVersions
+                      versions={media.versions}
+                      selectedId={version.id}
+                      onSelect={setVersionId}
+                    />
+                    <MediaComments
+                      media={media}
+                      viewedVersionId={version.id}
+                      placing={placing}
+                      onPlacingChange={setPlacing}
+                      onOpenPinned={(comment) => {
+                        // The marker only exists on the version the pin was dropped
+                        // on, so showing the thread may mean switching to it first.
+                        if (comment.mediaVersionId) {
+                          setVersionId(comment.mediaVersionId);
+                        }
+                        setRequestedThreadId(comment.id);
+                      }}
+                    />
+                  </div>
+                </aside>
+              </div>
             </div>
-          </div>
-        </BuildHotkeysDialogStateProvider>
-      </MentionableUsersProvider>
+          </BuildHotkeysDialogStateProvider>
+        </MentionableUsersProvider>
+      </ProjectRepositoryUrlProvider>
     </ProjectPermissionsContext>
   );
 }

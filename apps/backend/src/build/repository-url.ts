@@ -40,3 +40,22 @@ export function getRepositoryUrl(project: Project): string | null {
 
   return null;
 }
+
+/**
+ * Same as {@link getRepositoryUrl}, for callers holding a project whose
+ * repository relations aren't loaded. Loads them into the given instance, so
+ * asking a second time (e.g. once per comment of a review) costs no query.
+ */
+export async function fetchRepositoryUrl(
+  project: Project,
+): Promise<string | null> {
+  if (!project.githubRepositoryId && !project.gitlabProjectId) {
+    return null;
+  }
+  if (!project.githubRepository && !project.gitlabProject) {
+    await project.$fetchGraph(
+      "[githubRepository.githubAccount, gitlabProject]",
+    );
+  }
+  return getRepositoryUrl(project);
+}

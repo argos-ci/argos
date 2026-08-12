@@ -65,6 +65,12 @@ loggedTest("media share page", async ({ page, auth, project }) => {
   await expect(
     page.getByRole("button", { name: /^Open comment from/ }),
   ).toBeVisible();
+  // A commit sha written in a comment links to that commit on the repository the
+  // project is connected to — the seed's is `acme-<projectId>/sparkle`.
+  await expect(page.getByRole("link", { name: "d15cba5" })).toHaveAttribute(
+    "href",
+    `https://github.com/acme-${project.id}/sparkle/commit/d15cba5`,
+  );
 
   await screenshot(page, "media-share-page");
 });

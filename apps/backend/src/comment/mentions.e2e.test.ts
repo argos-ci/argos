@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Account, Comment, CommentMention } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getCommentMentionLabels, syncCommentMentions } from "./mentions";
+import {
+  getCommentMentionLabels,
+  renderCommentHtmlWithMentions,
+  syncCommentMentions,
+} from "./mentions";
 
 function mentionDoc(accountIds: string[]) {
   return {
@@ -154,5 +158,61 @@ describe("getCommentMentionLabels", () => {
     const comment = await factory.Comment.create({ buildId: build.id });
     const labels = await getCommentMentionLabels(comment.id);
     expect(labels.size).toBe(0);
+  });
+});
+
+describe("renderCommentHtmlWithMentions", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  /** A one-paragraph comment mentioning a commit sha. */
+  async function createCommentAboutACommit() {
+    const build = await factory.Build.create();
+    return factory.Comment.create({
+      buildId: build.id,
+      content: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Pushed to the PR in d15cba5." }],
+          },
+        ],
+      },
+    });
+  }
+
+  it("links a commit sha to the project's repository", async () => {
+    const githubAccount = await factory.GithubAccount.create({
+      login: "argos-ci",
+    });
+    const githubRepository = await factory.GithubRepository.create({
+      name: "argos",
+      githubAccountId: githubAccount.id,
+    });
+    // The project comes with none of its repository relations loaded, which is
+    // the state every notification job hands over.
+    const project = await factory.Project.create({
+      githubRepositoryId: githubRepository.id,
+    });
+    const comment = await createCommentAboutACommit();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("leaves the sha alone for a project with no repository", async () => {
+    const project = await factory.Project.create({
+      githubRepositoryId: null,
+    });
+    const comment = await createCommentAboutACommit();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toBe("<p>Pushed to the PR in d15cba5.</p>");
   });
 });
