@@ -109,13 +109,20 @@ function getChipClassName(props: {
     sm: "text-xs",
     md: "text-sm",
   };
-  // For an icon-only chip we mirror the non-empty vertical padding on every
-  // side so it ends up square (a circle) and the same height as a text chip of
-  // the same scale.
+  // Spacing tokens of a scale. `--chip-gap` is the internal rhythm: icon to
+  // label, and one segment of a button group to the next. `--chip-edge` is the
+  // padding at the two outer edges of a button group — tighter than a lone
+  // chip's, because there the pill is the whole group and a segment does not
+  // have to carry a full chip's worth of padding.
   const spacingClassName: Record<ChipScale, string> = {
-    xs: clsx(isEmpty ? "p-0" : "px-2.5", "[--chip-gap:--spacing(1)]"),
-    sm: clsx(isEmpty ? "p-1" : "px-2.5 py-1", "[--chip-gap:--spacing(1.5)]"),
-    md: clsx(isEmpty ? "p-2" : "px-4.5 py-2", "[--chip-gap:--spacing(2)]"),
+    xs: "[--chip-py:--spacing(0)] [--chip-gap:--spacing(1)] [--chip-edge:--spacing(2)]",
+    sm: "[--chip-py:--spacing(1)] [--chip-gap:--spacing(1.5)] [--chip-edge:--spacing(2)]",
+    md: "[--chip-py:--spacing(2)] [--chip-gap:--spacing(2)] [--chip-edge:--spacing(3.5)]",
+  };
+  const paddingXClassName: Record<ChipScale, string> = {
+    xs: "px-2.5",
+    sm: "px-2.5",
+    md: "px-4.5",
   };
   const colorClassNames: Record<ChipColor, string> = {
     primary: clsx(
@@ -149,7 +156,16 @@ function getChipClassName(props: {
     interactive && "rac-focus",
     textSizeClassName[scale],
     spacingClassName[scale],
-    "group-[*]/button-group:not-first:pl-(--chip-gap) group-[*]/button-group:not-last:pr-(--chip-gap)",
+    "py-(--chip-py)",
+    // An icon-only chip mirrors its vertical padding horizontally, so it ends
+    // up square — a circle the same height as a text chip of the same scale.
+    // The padding sits on the chip rather than on the icon so that a button
+    // group can override it at its edges.
+    isEmpty
+      ? "px-[calc(var(--chip-py)+(1lh-1em)/2)]"
+      : paddingXClassName[scale],
+    "group-[*]/button-group:first:pl-(--chip-edge) group-[*]/button-group:not-first:pl-(--chip-gap)",
+    "group-[*]/button-group:last:pr-(--chip-edge) group-[*]/button-group:not-last:pr-(--chip-gap)",
     "group-[*]/button-group:rounded-none",
     "group-[*]/button-group:first:rounded-l-chip group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-chip",
@@ -188,13 +204,8 @@ function useChip<
         <>
           {(() => {
             // The margin pads the 1em icon out to a full line box so it aligns
-            // with the text. With no text, applying it on every side keeps that
-            // box square, so the chip is a circle the same height as a text
-            // chip of the same scale.
-            const iconClassName = clsx(
-              "size-[1em] shrink-0",
-              isEmpty ? "m-[calc((1lh-1em)/2)]" : "my-[calc((1lh-1em)/2)]",
-            );
+            // with the text.
+            const iconClassName = "size-[1em] my-[calc((1lh-1em)/2)] shrink-0";
             if (isValidElement(icon)) {
               return cloneElement(icon, {
                 className: clsx(icon.props.className, iconClassName),
