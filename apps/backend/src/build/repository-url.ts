@@ -43,8 +43,16 @@ export function getRepositoryUrl(project: Project): string | null {
 
 /**
  * Same as {@link getRepositoryUrl}, for callers holding a project whose
- * repository relations aren't loaded. Loads them into the given instance, so
- * asking a second time (e.g. once per comment of a review) costs no query.
+ * repository relations aren't loaded.
+ *
+ * Fetches into a clone rather than into the caller's instance, and without
+ * consulting what is already on it. A project that has been through a permission
+ * check carries a *partially* loaded graph — `$checkIsPublic` fetches
+ * `githubRepository` alone, for its `private` flag — so "the relation is already
+ * there" says nothing about `githubAccount` being there with it, and skipping the
+ * fetch on that basis throws. Loading unconditionally into a copy keeps this
+ * independent of whatever the caller happened to load, and leaves that graph
+ * alone for whoever else reads it.
  */
 export async function fetchRepositoryUrl(
   project: Project,
@@ -52,10 +60,8 @@ export async function fetchRepositoryUrl(
   if (!project.githubRepositoryId && !project.gitlabProjectId) {
     return null;
   }
-  if (!project.githubRepository && !project.gitlabProject) {
-    await project.$fetchGraph(
-      "[githubRepository.githubAccount, gitlabProject]",
-    );
-  }
-  return getRepositoryUrl(project);
+  const richProject = await project
+    .$clone()
+    .$fetchGraph("[githubRepository.githubAccount, gitlabProject]");
+  return getRepositoryUrl(richProject);
 }

@@ -183,7 +183,8 @@ describe("renderCommentHtmlWithMentions", () => {
     });
   }
 
-  it("links a commit sha to the project's repository", async () => {
+  /** A project on `argos-ci/argos`, so the expected commit URL is readable. */
+  async function createProjectOnARepository() {
     const githubAccount = await factory.GithubAccount.create({
       login: "argos-ci",
     });
@@ -191,12 +192,34 @@ describe("renderCommentHtmlWithMentions", () => {
       name: "argos",
       githubAccountId: githubAccount.id,
     });
-    // The project comes with none of its repository relations loaded, which is
-    // the state every notification job hands over.
-    const project = await factory.Project.create({
+    return factory.Project.create({
       githubRepositoryId: githubRepository.id,
     });
+  }
+
+  it("links a commit sha to the project's repository", async () => {
+    // The project comes with none of its repository relations loaded, which is
+    // the state every notification job hands over.
+    const project = await createProjectOnARepository();
     const comment = await createCommentAboutACommit();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("links the sha on a project that has been through a permission check", async () => {
+    const project = await createProjectOnARepository();
+    const comment = await createCommentAboutACommit();
+    // Every mutation authorizes before it notifies, and `$checkIsPublic` caches
+    // `githubRepository` on the project *without* its account to read the
+    // `private` flag. Treating that half-loaded graph as good enough is how the
+    // render used to throw "githubAccount relation not found".
+    await project.$getPermissions(null);
+    expect(project.githubRepository).toBeTruthy();
+    expect(project.githubRepository?.githubAccount).toBeUndefined();
 
     await expect(
       renderCommentHtmlWithMentions(comment, { project }),
