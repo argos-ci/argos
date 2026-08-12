@@ -109,15 +109,15 @@ function getChipClassName(props: {
     sm: "text-xs",
     md: "text-sm",
   };
-  // Spacing tokens of a scale. `--chip-gap` is the internal rhythm: icon to
-  // label, and one segment of a button group to the next. `--chip-edge` is the
-  // padding at the two outer edges of a button group — tighter than a lone
-  // chip's, because there the pill is the whole group and a segment does not
-  // have to carry a full chip's worth of padding.
+  // Spacing tokens of a scale. `--chip-gap` is the one horizontal unit a button
+  // group is built from: icon to label, one segment to the next, and each end
+  // of the group to its round cap. A lone chip is a pill and carries a pill's
+  // padding; in a group the pill is the whole group, so every gap in it — the
+  // outer two included — is the same.
   const spacingClassName: Record<ChipScale, string> = {
-    xs: "[--chip-py:--spacing(0)] [--chip-gap:--spacing(1)] [--chip-edge:--spacing(2)]",
-    sm: "[--chip-py:--spacing(1)] [--chip-gap:--spacing(1.5)] [--chip-edge:--spacing(2)]",
-    md: "[--chip-py:--spacing(2)] [--chip-gap:--spacing(2)] [--chip-edge:--spacing(3.5)]",
+    xs: "[--chip-py:--spacing(0)] [--chip-gap:--spacing(1)]",
+    sm: "[--chip-py:--spacing(1)] [--chip-gap:--spacing(1.5)]",
+    md: "[--chip-py:--spacing(2)] [--chip-gap:--spacing(2)]",
   };
   const paddingXClassName: Record<ChipScale, string> = {
     xs: "px-2.5",
@@ -160,12 +160,11 @@ function getChipClassName(props: {
     // An icon-only chip mirrors its vertical padding horizontally, so it ends
     // up square — a circle the same height as a text chip of the same scale.
     // The padding sits on the chip rather than on the icon so that a button
-    // group can override it at its edges.
+    // group can override it.
     isEmpty
       ? "px-[calc(var(--chip-py)+(1lh-1em)/2)]"
       : paddingXClassName[scale],
-    "group-[*]/button-group:first:pl-(--chip-edge) group-[*]/button-group:not-first:pl-(--chip-gap)",
-    "group-[*]/button-group:last:pr-(--chip-edge) group-[*]/button-group:not-last:pr-(--chip-gap)",
+    "group-[*]/button-group:px-(--chip-gap)",
     "group-[*]/button-group:rounded-none",
     "group-[*]/button-group:first:rounded-l-chip group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-chip",
