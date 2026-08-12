@@ -1,6 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CircleIcon, FlameIcon, ZapIcon } from "lucide-react";
+import {
+  CircleIcon,
+  FlameIcon,
+  SunIcon,
+  SunMoonIcon,
+  XIcon,
+  ZapIcon,
+} from "lucide-react";
 
+import { ButtonGroup } from "./ButtonGroup";
 import { Chip, ChipButton, ChipLink } from "./Chip";
 import type { ChipColor } from "./Chip";
 import { StoryTitle } from "./StoryTitle";
@@ -76,6 +84,27 @@ export const Default: Story = {
         <ChipLink color="info" href="#">
           Link Chip
         </ChipLink>
+      </div>
+
+      <StoryTitle>Filter group</StoryTitle>
+      <div className="flex flex-col items-start gap-3">
+        {(["xs", "sm", "md"] as const).map((scale) => (
+          <ButtonGroup key={scale}>
+            <Chip scale={scale} icon={SunMoonIcon}>
+              Color scheme
+            </Chip>
+            <Chip scale={scale}>is</Chip>
+            <ChipButton scale={scale} icon={SunIcon} onPress={() => {}}>
+              light
+            </ChipButton>
+            <ChipButton
+              scale={scale}
+              icon={XIcon}
+              onPress={() => {}}
+              aria-label="Remove Color scheme filter"
+            />
+          </ButtonGroup>
+        ))}
       </div>
     </div>
   ),
