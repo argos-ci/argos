@@ -1,4 +1,5 @@
-import { atom, useAtom } from "jotai";
+import { useCallback } from "react";
+import { atom, useAtom, useAtomValue } from "jotai";
 import { atomFamily } from "jotai-family";
 import { atomWithStorage, RESET } from "jotai/utils";
 
@@ -50,4 +51,32 @@ export function useCollapsedThread(
     collapsedThreadAtomFamily(commentId),
   );
   return [resolved && collapsed, setCollapsed] as const;
+}
+
+/**
+ * The expanded ids as a set, derived once so membership tests share an identity
+ * that only changes when the preference does — unlike the per-thread family,
+ * this one re-renders its readers on every toggle, which is the point.
+ */
+const expandedThreadIdsAtom = atom((get) => new Set(get(expandedThreadsAtom)));
+
+/**
+ * Whether a thread is drawn where it is anchored — its pin on a screenshot, its
+ * inline card on a diff. An unresolved thread always is; a resolved one only
+ * while the user keeps it expanded, so the anchor comes back with the thread it
+ * explains. "The primary button is misaligned here" needs the pin to say where
+ * *here* is, and a resolved thread whose pin is gone for good reads as a riddle.
+ *
+ * A predicate rather than the set itself, so the rule lives next to the collapse
+ * state it reads and the three anchored surfaces cannot drift apart.
+ */
+export function useIsThreadAnchorShown(): (root: {
+  id: string;
+  resolvedAt: string | null;
+}) => boolean {
+  const expandedThreadIds = useAtomValue(expandedThreadIdsAtom);
+  return useCallback(
+    (root) => !root.resolvedAt || expandedThreadIds.has(root.id),
+    [expandedThreadIds],
+  );
 }

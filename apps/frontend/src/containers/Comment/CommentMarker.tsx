@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { clsx } from "clsx";
-import { MessageSquareIcon } from "lucide-react";
+import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
@@ -30,6 +30,8 @@ type Comment = {
   date: string;
   content: React.ComponentProps<typeof ReadOnlyEditor>["content"];
   mentionedUsers: Parameters<typeof getMentionUser>[0][];
+  /** Set on a thread that is done: the pin then wears a check. */
+  resolvedAt: string | null;
 };
 
 /** Pin badge size: a size-7 (28px) avatar with 4px (`p-1`) padding all around. */
@@ -45,6 +47,11 @@ const TRANSITION = { duration: 0.18, ease: [0.4, 0, 0.2, 1] } as const;
  * in beside it and the comment appears below. Clicking opens the full thread,
  * shown as a separate popover beside the pin (see {@link CommentThreadPopover}),
  * so while open the pin stays put as a selected marker.
+ *
+ * A resolved thread's pin is only on the image because the reviewer expanded the
+ * thread (see `useIsThreadAnchorShown`), so it wears a check: an expansion
+ * outlives the session it was made in, and a pin that still looked open would
+ * hand back work that is already done.
  */
 export function CommentMarker(props: {
   /** Anchor point (the pin's bottom-left tip) in viewport coordinates. */
@@ -57,6 +64,7 @@ export function CommentMarker(props: {
   const [hovered, setHovered] = useState(false);
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const name = comment.user?.name || comment.user?.slug || "Unknown user";
+  const resolved = Boolean(comment.resolvedAt);
   // The preview only shows on hover while the thread popover is closed; once
   // open the pin is just a selected marker beside the popover.
   const expanded = hovered && !open;
@@ -81,7 +89,11 @@ export function CommentMarker(props: {
       <motion.div
         role="button"
         tabIndex={0}
-        aria-label={`Open comment from ${name}`}
+        aria-label={
+          resolved
+            ? `Open resolved comment from ${name}`
+            : `Open comment from ${name}`
+        }
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
         onClick={onOpen}
@@ -102,7 +114,7 @@ export function CommentMarker(props: {
         {/* Top row, laid out at the full preview width so the avatar stays put
             while the author/time are revealed as the card widens. */}
         <div className="flex w-72 items-center">
-          <div className="shrink-0 p-1">
+          <div className="relative shrink-0 p-1">
             {comment.user ? (
               <AccountAvatar
                 avatar={comment.user.avatar}
@@ -113,6 +125,17 @@ export function CommentMarker(props: {
                 <MessageSquareIcon className="size-4" />
               </div>
             )}
+            {/* On the avatar rather than on the pin's corner: the corner is
+                rounded and the card clips its overflow, and the badge has to
+                hold the same spot once the card grows into the preview. */}
+            {resolved ? (
+              <div
+                aria-hidden
+                className="bg-app border-thin text-low absolute right-1 bottom-1 flex size-3.5 items-center justify-center rounded-full"
+              >
+                <CheckIcon className="size-2.5" />
+              </div>
+            ) : null}
           </div>
           <div className="flex min-w-0 items-baseline gap-1.5 pr-3 pl-1">
             <span className="text-default min-w-0 truncate text-xs font-medium">

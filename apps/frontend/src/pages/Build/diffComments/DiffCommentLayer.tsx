@@ -16,6 +16,7 @@ import {
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
 import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
+import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -148,17 +149,19 @@ export function DiffCommentLayer(props: {
     [accountId, build.members],
   );
 
-  // Threads anchored to a line range on this diff. Resolved threads drop off the
-  // diff (they remain in the sidebar).
+  // Threads anchored to a line range on this diff. A resolved thread drops off
+  // the diff until the reviewer expands it again (it remains in the sidebar),
+  // the same rule the pinned threads follow on an image diff.
+  const isAnchorShown = useIsThreadAnchorShown();
   const threads = useMemo(
     () =>
       getCommentThreads(build.comments).filter(
         (thread) =>
           thread.root.screenshotDiff?.id === screenshotDiffId &&
           thread.root.anchor?.__typename === "CommentLinesAnchor" &&
-          !thread.root.resolvedAt,
+          isAnchorShown(thread.root),
       ),
-    [build.comments, screenshotDiffId],
+    [build.comments, screenshotDiffId, isAnchorShown],
   );
 
   // The hovered thread's line range, derived from the live list so it resolves

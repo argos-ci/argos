@@ -212,6 +212,48 @@ loggedTest(
 );
 
 loggedTest(
+  "brings a resolved thread's pin back with the thread",
+  async ({ page, auth, project }) => {
+    // "The primary button is misaligned here" only says something next to its
+    // pin, so a resolved thread the reviewer expands gets its pin back — wearing
+    // a check, since the expansion outlives the session that made it.
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const openPin = page.getByRole("button", { name: /^Open comment from/ });
+    const resolvedPin = page.getByRole("button", {
+      name: /^Open resolved comment from/,
+    });
+    await openPin.click();
+
+    // Resolve from the pin's own popover: the thread is done, so the marker
+    // leaves the image with it.
+    const thread = page.getByRole("dialog", { name: /^Comment from/ });
+    await thread.getByText("The primary button is misaligned here.").hover();
+    await thread
+      .getByRole("button", { name: "Comment actions" })
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: "Resolve thread" }).click();
+    await expect(openPin).toBeHidden();
+    await expect(resolvedPin).toBeHidden();
+
+    // Expanding the thread in the panel puts the pin back on the image.
+    await page.getByRole("button", { name: "Expand thread" }).click();
+    await expect(resolvedPin).toBeVisible();
+    await screenshot(page, "media-resolved-pin-expanded");
+
+    // And collapsing it takes the pin away again.
+    await page.getByRole("button", { name: "Collapse thread" }).click();
+    await expect(resolvedPin).toBeHidden();
+  },
+);
+
+loggedTest(
   "pins a comment on a media that stands alone",
   async ({ page, auth, project }) => {
     // A lone media has no counterpart, so no compare toolbar and a single pane —
