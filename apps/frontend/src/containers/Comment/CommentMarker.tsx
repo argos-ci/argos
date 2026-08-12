@@ -136,6 +136,10 @@ export function CommentMarker(props: {
               transition={TRANSITION}
               className="w-72 overflow-hidden"
             >
+              {/* No `repositoryUrl`: the preview is a clamped teaser whose only
+                  click opens the thread, and a commit link inside it would take
+                  that click to the code host instead. Shas are linked in the
+                  card the pin opens. */}
               <div className="text-default line-clamp-4 px-2 pb-2 text-sm">
                 <ReadOnlyEditor
                   content={comment.content}

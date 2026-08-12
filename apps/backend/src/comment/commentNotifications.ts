@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
+import { loadRepositoryGraph } from "@/build/repository-url";
 import { Build, BuildReview, Comment, Project, User } from "@/database/models";
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
@@ -60,7 +61,7 @@ export async function getCommentNotificationData(input: {
   const [author, commentUrl, bodyHtml] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
     getCommentUrl({ target, comment }),
-    renderCommentHtmlWithMentions(comment),
+    renderCommentHtmlWithMentions(comment, { project }),
   ]);
   return {
     accountSlug: project.account.slug,
@@ -136,6 +137,10 @@ export async function notifyReviewCommentsWentLive(input: {
   if (comments.length === 0) {
     return;
   }
+  // Every comment below renders against this one project, and rendering resolves
+  // its repository to link the commit shas — load that graph once here rather
+  // than once per comment.
+  await loadRepositoryGraph(project);
   const target: CommentTarget = { type: "build", build };
   await Promise.all(
     comments.map(async (comment) => {

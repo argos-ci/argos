@@ -1954,7 +1954,12 @@ export async function createMediaScenario(input: {
         mediaId: after.id,
         mediaVersionId: afterV2.id,
         userId: commentAuthorId,
-        content: commentDoc("Otherwise this looks good to ship."),
+        // Mentions a commit sha, which the page autolinks to the repository the
+        // project is connected to — only seeded with `withPullRequest`, so a
+        // scenario without one is also the "nothing to link to" case.
+        content: commentDoc(
+          "Otherwise this looks good to ship. Pushed to the PR in d15cba5.",
+        ),
         createdAt: commentTs,
         updatedAt: commentTs,
       },

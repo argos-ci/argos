@@ -33,6 +33,7 @@ import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { PeriodSelect } from "@/containers/PeriodSelect";
 import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { ProjectRepositoryProvider } from "@/containers/Project/RepositoryContext";
 import {
   useTestPeriodState,
   type TestMetricPeriodState,
@@ -88,6 +89,10 @@ const TestQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
+      repository {
+        id
+        url
+      }
       ignoreConfig {
         enabled
       }
@@ -179,91 +184,95 @@ export function Component() {
           </PageHeaderContent>
         </PageHeader>
         <ProjectPermissionsContext value={project.permissions}>
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-10">
-              <div className="flex flex-col items-start gap-4 self-stretch">
-                <PeriodSelect state={periodState} />
-                {/* The counters size to their content and the chart takes the
+          <ProjectRepositoryProvider url={project.repository?.url ?? null}>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+              <div className="flex min-w-0 flex-1 flex-col gap-10">
+                <div className="flex flex-col items-start gap-4 self-stretch">
+                  <PeriodSelect state={periodState} />
+                  {/* The counters size to their content and the chart takes the
                     rest, so the chart keeps as much width as the column has to
                     spare. */}
+                  <div
+                    className={clsx(
+                      "flex flex-col gap-4 self-stretch lg:flex-row",
+                      isPeriodPending && "animate-pulse",
+                    )}
+                  >
+                    <Panel>
+                      <div className="flex flex-wrap items-center gap-3 gap-y-6 px-4">
+                        <FlakinessGauge value={test.metrics.all.flakiness} />
+                        <div className="flex flex-col justify-between self-stretch">
+                          <BuildsCounter
+                            value={test.metrics.all.total}
+                            periodLabel={periodLabel}
+                          />
+                          <ChangesCounter
+                            value={test.metrics.all.changes}
+                            periodLabel={periodLabel}
+                          />
+                        </div>
+                        <div className="flex flex-col justify-between self-stretch">
+                          <StabilityCounter
+                            value={test.metrics.all.stability}
+                          />
+                          <ConsistencyCounter
+                            value={test.metrics.all.consistency}
+                          />
+                        </div>
+                      </div>
+                    </Panel>
+                    <Panel className="flex min-w-0 flex-1 items-center">
+                      <ChangesChart
+                        className="h-22 min-w-0 flex-1 px-4"
+                        series={test.metrics.series}
+                        from={period.from}
+                      />
+                    </Panel>
+                  </div>
+                </div>
+                {/* The title and the filter label the card rather than sit in it,
+                  so `px-4` keeps both ends aligned with its content. */}
                 <div
                   className={clsx(
-                    "flex flex-col gap-4 self-stretch lg:flex-row",
-                    isPeriodPending && "animate-pulse",
+                    "flex flex-col gap-2",
+                    areChangesPending && "animate-pulse",
                   )}
                 >
-                  <Panel>
-                    <div className="flex flex-wrap items-center gap-3 gap-y-6 px-4">
-                      <FlakinessGauge value={test.metrics.all.flakiness} />
-                      <div className="flex flex-col justify-between self-stretch">
-                        <BuildsCounter
-                          value={test.metrics.all.total}
-                          periodLabel={periodLabel}
-                        />
-                        <ChangesCounter
-                          value={test.metrics.all.changes}
-                          periodLabel={periodLabel}
-                        />
-                      </div>
-                      <div className="flex flex-col justify-between self-stretch">
-                        <StabilityCounter value={test.metrics.all.stability} />
-                        <ConsistencyCounter
-                          value={test.metrics.all.consistency}
-                        />
-                      </div>
-                    </div>
-                  </Panel>
-                  <Panel className="flex min-w-0 flex-1 items-center">
-                    <ChangesChart
-                      className="h-22 min-w-0 flex-1 px-4"
-                      series={test.metrics.series}
-                      from={period.from}
-                    />
+                  <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
+                    <Heading level={2} className="font-medium">
+                      {filterState.value === "ignored"
+                        ? "Ignored changes"
+                        : "Changes"}{" "}
+                      <span className="text-low">over the {periodLabel}</span>
+                    </Heading>
+                    <ChangesFilterToggle state={filterState} />
+                  </div>
+                  <Panel spacing={false}>
+                    <ProjectIgnoreEnabledProvider
+                      enabled={project.ignoreConfig.enabled}
+                    >
+                      <ChangesExplorer
+                        test={test}
+                        periodState={periodState}
+                        filterState={filterState}
+                      />
+                    </ProjectIgnoreEnabledProvider>
                   </Panel>
                 </div>
               </div>
-              {/* The title and the filter label the card rather than sit in it,
-                  so `px-4` keeps both ends aligned with its content. */}
-              <div
-                className={clsx(
-                  "flex flex-col gap-2",
-                  areChangesPending && "animate-pulse",
-                )}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 pl-4">
-                  <Heading level={2} className="font-medium">
-                    {filterState.value === "ignored"
-                      ? "Ignored changes"
-                      : "Changes"}{" "}
-                    <span className="text-low">over the {periodLabel}</span>
-                  </Heading>
-                  <ChangesFilterToggle state={filterState} />
-                </div>
-                <Panel spacing={false}>
-                  <ProjectIgnoreEnabledProvider
-                    enabled={project.ignoreConfig.enabled}
-                  >
-                    <ChangesExplorer
-                      test={test}
-                      periodState={periodState}
-                      filterState={filterState}
-                    />
-                  </ProjectIgnoreEnabledProvider>
-                </Panel>
-              </div>
-            </div>
-            <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
-              <ChangeHistorySection test={test} params={params} />
-              {/* The prompt quotes the metrics, so it labels itself with the
+              <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80">
+                <ChangeHistorySection test={test} params={params} />
+                {/* The prompt quotes the metrics, so it labels itself with the
                   period they were fetched for, not the one being switched to. */}
-              <FixFlakinessSection
-                test={test}
-                period={deferredPeriodValue}
-                periodLabel={period.label.toLowerCase()}
-              />
-              <ActivitySection test={test} />
+                <FixFlakinessSection
+                  test={test}
+                  period={deferredPeriodValue}
+                  periodLabel={period.label.toLowerCase()}
+                />
+                <ActivitySection test={test} />
+              </div>
             </div>
-          </div>
+          </ProjectRepositoryProvider>
         </ProjectPermissionsContext>
       </PageContainer>
     </Page>

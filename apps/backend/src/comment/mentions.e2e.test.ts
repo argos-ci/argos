@@ -1,10 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { loadRepositoryGraph } from "@/build/repository-url";
 import { Account, Comment, CommentMention } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getCommentMentionLabels, syncCommentMentions } from "./mentions";
+import {
+  getCommentMentionLabels,
+  renderCommentHtmlWithMentions,
+  syncCommentMentions,
+} from "./mentions";
 
 function mentionDoc(accountIds: string[]) {
   return {
@@ -154,5 +159,99 @@ describe("getCommentMentionLabels", () => {
     const comment = await factory.Comment.create({ buildId: build.id });
     const labels = await getCommentMentionLabels(comment.id);
     expect(labels.size).toBe(0);
+  });
+});
+
+describe("renderCommentHtmlWithMentions", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  /** A one-paragraph comment mentioning a commit sha. */
+  async function createCommentAboutACommit() {
+    const build = await factory.Build.create();
+    return factory.Comment.create({
+      buildId: build.id,
+      content: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Pushed to the PR in d15cba5." }],
+          },
+        ],
+      },
+    });
+  }
+
+  /** A project on `argos-ci/argos`, so the expected commit URL is readable. */
+  async function createProjectOnARepository() {
+    const githubAccount = await factory.GithubAccount.create({
+      login: "argos-ci",
+    });
+    const githubRepository = await factory.GithubRepository.create({
+      name: "argos",
+      githubAccountId: githubAccount.id,
+    });
+    return factory.Project.create({
+      githubRepositoryId: githubRepository.id,
+    });
+  }
+
+  it("links a commit sha to the project's repository", async () => {
+    // The project comes with none of its repository relations loaded, which is
+    // the state every notification job hands over.
+    const project = await createProjectOnARepository();
+    const comment = await createCommentAboutACommit();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("links the sha on a project that has been through a permission check", async () => {
+    const project = await createProjectOnARepository();
+    const comment = await createCommentAboutACommit();
+    // Every mutation authorizes before it notifies, and `$checkIsPublic` caches
+    // `githubRepository` on the project *without* its account to read the
+    // `private` flag. Treating that half-loaded graph as good enough is how the
+    // render used to throw "githubAccount relation not found".
+    await project.$getPermissions(null);
+    expect(project.githubRepository).toBeTruthy();
+    expect(project.githubRepository?.githubAccount).toBeUndefined();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("links the sha from a graph loaded once for a batch", async () => {
+    const project = await createProjectOnARepository();
+    const comment = await createCommentAboutACommit();
+    // What `notifyReviewCommentsWentLive` does before rendering a review's
+    // comments: load the graph once so the renders don't query for it each.
+    await loadRepositoryGraph(project);
+    expect(project.githubRepository?.githubAccount).toBeTruthy();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("leaves the sha alone for a project with no repository", async () => {
+    const project = await factory.Project.create({
+      githubRepositoryId: null,
+    });
+    const comment = await createCommentAboutACommit();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toBe("<p>Pushed to the PR in d15cba5.</p>");
   });
 });

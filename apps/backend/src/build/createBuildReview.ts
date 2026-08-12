@@ -255,7 +255,9 @@ async function notifyBuildSubscribers(input: {
       buildUrl,
       reviewerName,
       state,
-      bodyHtml: comment ? await renderCommentHtmlWithMentions(comment) : null,
+      bodyHtml: comment
+        ? await renderCommentHtmlWithMentions(comment, { project })
+        : null,
     },
     recipients,
   });

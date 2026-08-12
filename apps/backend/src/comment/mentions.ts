@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 
+import { fetchRepositoryUrl } from "@/build/repository-url";
 import { Account, Comment, CommentMention, Project } from "@/database/models";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -111,15 +112,22 @@ export async function getCommentMentionLabels(
 
 /**
  * Render a stored comment to HTML with its persisted mentions resolved to their
- * current display labels. Combines the mention-label lookup and the HTML
- * rendering that every comment notification needs, so callers don't have to
- * repeat the two-step dance (or forget to pass the labels).
+ * current display labels, and its commit shas linked to the project's
+ * repository. Combines the lookups and the HTML rendering that every comment
+ * notification needs, so callers don't have to repeat the dance (or forget one).
  */
 export async function renderCommentHtmlWithMentions(
   comment: Comment,
+  options: { project: Project },
 ): Promise<string> {
-  const mentionLabels = await getCommentMentionLabels(comment.id);
-  return renderCommentHtml(comment.content as JSONContent, { mentionLabels });
+  const [mentionLabels, repositoryUrl] = await Promise.all([
+    getCommentMentionLabels(comment.id),
+    fetchRepositoryUrl(options.project),
+  ]);
+  return renderCommentHtml(comment.content as JSONContent, {
+    mentionLabels,
+    repositoryUrl,
+  });
 }
 
 /**
