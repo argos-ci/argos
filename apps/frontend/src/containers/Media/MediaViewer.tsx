@@ -49,10 +49,7 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
-import {
-  SplitViewToggle,
-  ViewToggle,
-} from "@/containers/Build/toolbar/ViewToggle";
+import { ViewToggle } from "@/containers/Build/toolbar/ViewToggle";
 import { ZoomerSyncProvider, ZoomPane } from "@/containers/Build/Zoomer";
 import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { MenuItem, MenuItemIcon } from "@/ui/Menu";
@@ -491,13 +488,12 @@ function MediaViewToolbar(props: {
             <div className="flex shrink-0 items-center gap-1.5">
               {/* The build's own controls, on the build's own state: which half
                   to look at, or both at once, with the same shortcuts. Only the
-                  two words change, because here the baseline is the "before"
+                  two names change, because here the baseline is the "before"
                   and the changes are the "after". */}
               <ViewToggle
                 blendEnabled={compare.blendEnabled}
                 labels={{ baseline: "Before", changes: "After" }}
               />
-              <SplitViewToggle />
               {compare.hasChanges ? (
                 <>
                   <Separator orientation="vertical" className="mx-1 h-6" />

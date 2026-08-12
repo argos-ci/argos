@@ -467,7 +467,13 @@ function BuildHeader(props: {
         />
         <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
       </div>
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 max-2xl:-order-1 max-2xl:basis-full max-2xl:border-b max-2xl:pb-4 xl:gap-4">
+      <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff}>
+        <IgnoreButton diff={change.stats.lastSeenDiff} />
+      </BuildDiffDetailToolbar>
+      {/* A line of its own, under the controls: these are facts about the
+          change, and squeezing them onto the row that also carries the
+          arrows and the toolbar left them wrapping mid-phrase. */}
+      <div className="flex min-w-0 basis-full flex-wrap items-center gap-3 xl:gap-4">
         <Counter>
           <Tooltip
             content={
@@ -509,9 +515,6 @@ function BuildHeader(props: {
           />
         </div>
       </div>
-      <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff}>
-        <IgnoreButton diff={change.stats.lastSeenDiff} />
-      </BuildDiffDetailToolbar>
     </div>
   );
 }
