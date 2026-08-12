@@ -18,6 +18,7 @@ import {
   PointCommentLayer,
   type PointCommentThread,
 } from "@/containers/Comment/PointCommentLayer";
+import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -87,8 +88,10 @@ export function ScreenshotCommentLayer(props: {
     auth.status === "authenticated" ? auth.account?.id : undefined;
   const client = useApolloClient();
 
-  // Threads anchored to a point on this diff. Resolved threads drop off the
-  // image (they remain in the sidebar), and hiding comments drops them all.
+  // Threads anchored to a point on this diff. A resolved thread's pin drops off
+  // the image until the reviewer expands the thread again (the thread itself
+  // remains in the sidebar), and hiding comments drops them all.
+  const isAnchorShown = useIsThreadAnchorShown();
   const threads = useMemo(
     () =>
       visible
@@ -98,7 +101,7 @@ export function ScreenshotCommentLayer(props: {
               if (
                 root.screenshotDiff?.id !== screenshotDiffId ||
                 root.anchor?.__typename !== "CommentPointAnchor" ||
-                root.resolvedAt
+                !isAnchorShown(root)
               ) {
                 return [];
               }
@@ -108,7 +111,7 @@ export function ScreenshotCommentLayer(props: {
             },
           )
         : [],
-    [visible, build.comments, screenshotDiffId],
+    [visible, build.comments, screenshotDiffId, isAnchorShown],
   );
 
   // Honor a request to open a specific thread, set when jumping to a comment

@@ -145,6 +145,14 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
   const openThread =
     threads.find((thread) => thread.root.id === openThreadId) ?? null;
 
+  // A thread that leaves the layer — resolved, deleted, filtered out — closes
+  // with its marker instead of lingering as a stale id that would reopen the
+  // popover if the thread ever came back (a resolved thread the reviewer
+  // expands again does). Adjusted during render, like `placing` below.
+  if (openThreadId !== null && !openThread) {
+    setOpenThreadId(null);
+  }
+
   // Honor a request to open a specific thread, set when jumping to a comment
   // from outside the viewer. Once the requested comment is one of this image's
   // threads, open it and report the request consumed. Any in-progress draft is

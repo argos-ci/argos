@@ -10,6 +10,7 @@ import {
   PointCommentLayer,
   type PointCommentThread,
 } from "@/containers/Comment/PointCommentLayer";
+import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { DocumentType, graphql } from "@/gql";
 import { MediaPermission } from "@/gql/graphql";
@@ -112,6 +113,9 @@ export function MediaCommentLayer(props: {
 
   const canComment = media.permissions.includes(MediaPermission.Comment);
 
+  // A resolved thread's pin drops off the image until the reviewer expands the
+  // thread again; the panel keeps the thread either way.
+  const isAnchorShown = useIsThreadAnchorShown();
   const threads = useMemo(
     () =>
       getCommentThreads(media.comments).flatMap(
@@ -120,14 +124,14 @@ export function MediaCommentLayer(props: {
           if (
             root.anchor?.__typename !== "CommentPointAnchor" ||
             root.mediaVersionId !== viewedVersionId ||
-            root.resolvedAt
+            !isAnchorShown(root)
           ) {
             return [];
           }
           return [{ ...thread, point: { x: root.anchor.x, y: root.anchor.y } }];
         },
       ),
-    [media.comments, viewedVersionId],
+    [media.comments, viewedVersionId, isAnchorShown],
   );
 
   const currentAvatar = useMemo(() => {
