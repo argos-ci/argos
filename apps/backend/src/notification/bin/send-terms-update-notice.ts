@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { callbackify } from "node:util";
-
-import { Account, TeamUser, User } from "@/database/models";
-import logger from "@/logger";
+import { knex } from "@/database";
+import { TeamUser, User } from "@/database/models";
+import { quitAmqp } from "@/job-core/amqp";
 import { sendNotification } from "@/notification";
 
 /**
@@ -13,54 +12,47 @@ import { sendNotification } from "@/notification";
 const EFFECTIVE_DATE = "2026-09-11";
 
 /**
- * Users who own an account. A personal account is owned by its user, and a team
- * account by its `owner` members. Those are the people who accepted the terms
- * on behalf of the customer, which is who section 28 owes notice to.
+ * Owners of a team account. They are the people who accepted the terms on
+ * behalf of the organization, which is the "Customer" section 28 owes notice
+ * to. Personal accounts are deliberately out of scope.
  *
- * Users without an email address are left out: the message job skips them
- * anyway, and counting them would overstate the reach of the notice.
+ * Addressing goes through `users.email`, like every other notification: the
+ * `user_emails` table records which addresses belong to a user, for domain
+ * auto-join and invite matching, and is not a delivery list. Users without an
+ * email are left out, since the message job skips them anyway and counting
+ * them would overstate the reach of the notice.
  */
-async function getAccountOwnerIds(): Promise<string[]> {
+async function getTeamOwnerIds(): Promise<string[]> {
   const users = await User.query()
     .select("users.id")
     .whereNotNull("users.email")
-    .where((builder) => {
-      builder
-        .whereIn(
-          "users.id",
-          Account.query().select("accounts.userId").whereNotNull("userId"),
-        )
-        .orWhereIn(
-          "users.id",
-          TeamUser.query()
-            .select("team_users.userId")
-            .join("accounts", "accounts.teamId", "team_users.teamId")
-            .where("team_users.userLevel", "owner"),
-        );
-    });
+    .whereIn(
+      "users.id",
+      TeamUser.query()
+        .select("team_users.userId")
+        .join("accounts", "accounts.teamId", "team_users.teamId")
+        .where("team_users.userLevel", "owner"),
+    );
   return users.map((user) => user.id);
 }
 
-const main = callbackify(async () => {
-  const recipients = await getAccountOwnerIds();
-  logger.info(`${recipients.length} account owners resolved`);
+const recipients = await getTeamOwnerIds();
+console.log(`${recipients.length} team owners resolved`);
 
-  // Emailing the whole customer base is not something a stray run should do.
-  if (!process.argv.includes("--send")) {
-    logger.info("Dry run. Re-run with --send to queue the notification.");
-    return;
-  }
-
+// Emailing every customer is not something a stray run should do.
+if (process.argv.includes("--send")) {
   await sendNotification({
     type: "terms_updated",
     data: { effectiveDate: EFFECTIVE_DATE },
     recipients,
   });
-  logger.info(`Notification queued for ${recipients.length} recipients`);
-});
+  console.log(`Notification queued for ${recipients.length} recipients`);
+} else {
+  console.log("Dry run. Re-run with --send to queue the notification.");
+}
 
-main((err) => {
-  if (err) {
-    throw err;
-  }
-});
+// Close what the script opened so the process ends on its own. A one-off task
+// has to terminate, and exiting explicitly instead would risk truncating the
+// output above, since stdout is asynchronous when it is a pipe.
+await knex.destroy();
+await quitAmqp();
