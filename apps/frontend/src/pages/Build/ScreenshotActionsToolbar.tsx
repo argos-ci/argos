@@ -26,6 +26,7 @@ import {
   useBuildDiffStatusState,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { VariantMenu } from "./metadata/VariantMenu";
 import { TrackButtons } from "./TrackButtons";
 
 /**
@@ -79,6 +80,7 @@ export const ScreenshotActionsToolbar = memo(
               <Separator orientation="vertical" className="mx-0.5 h-6" />
             </>
           ) : null}
+          <VariantMenu />
           <AriaSnapshotToggle />
           {showCommentTool ? <CommentToolToggle /> : null}
           <Separator orientation="vertical" className="mx-0.5 h-6" />

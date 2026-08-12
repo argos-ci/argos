@@ -1,107 +1,28 @@
-import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
-import { invariant } from "@argos/util/invariant";
-import { useNavigate } from "react-router";
-
-import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { Tooltip } from "@/ui/Tooltip";
+import { Chip } from "@/ui/Chip";
 
 import type { Diff } from "../../BuildDiffState";
 import { BrowserIcon } from "../../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../../metadata/browser/browserLabels";
 import { MetadataRow } from "./MetadataRow";
-import {
-  getUniqueBrowsers,
-  hashBrowser,
-  resolveDiffMetadata,
-  useGetDiffPath,
-  type MetadataBrowser,
-} from "./utils";
+import { resolveDiffMetadata } from "./utils";
 
-export function BrowserRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
-  const { diff, siblingDiffs } = props;
-  const getDiffPath = useGetDiffPath();
-  const metadata = resolveDiffMetadata(diff);
-  const browsers = getUniqueBrowsers(
-    siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
-  );
-  if (browsers.length === 0) {
+/**
+ * The browser this capture ran in, with its version — a fact about the snapshot,
+ * not a way out of it. Moving between browsers belongs to the variant switcher
+ * over the snapshot, which is on screen whether or not this sidebar is open.
+ */
+export function BrowserRow(props: { diff: Diff }) {
+  const { diff } = props;
+  const browser = resolveDiffMetadata(diff)?.browser;
+  if (!browser) {
     return null;
   }
-  if (browsers.length === 1) {
-    const browser = browsers[0]!;
-    return (
-      <MetadataRow>
-        <Chip icon={<BrowserIcon browser={browser} />}>
-          {getBrowserLabel(browser.name)}
-          <span className="text-low ml-1">v{browser.version}</span>
-        </Chip>
-      </MetadataRow>
-    );
-  }
-  const activeKey = metadata?.browser ? hashBrowser(metadata.browser) : null;
-  const activeIndex = browsers.findIndex((b) => hashBrowser(b) === activeKey);
   return (
     <MetadataRow>
-      <ButtonGroup>
-        {browsers.map((browser, index) => {
-          const key = hashBrowser(browser);
-          const isActive = activeKey === key;
-          const isNextActive = (activeIndex + 1) % browsers.length === index;
-          const resolvedDiff = isActive
-            ? diff
-            : siblingDiffs.find((d) => {
-                const m = resolveDiffMetadata(d);
-                return m?.browser && hashBrowser(m.browser) === key;
-              });
-          invariant(resolvedDiff, "diff cannot be null");
-          return (
-            <BrowserChipLink
-              key={key}
-              browser={browser}
-              aria-current={isActive ? "page" : undefined}
-              href={getDiffPath(resolvedDiff.id) ?? ""}
-              shortcutEnabled={isNextActive}
-            />
-          );
-        })}
-      </ButtonGroup>
+      <Chip icon={<BrowserIcon browser={browser} />}>
+        {getBrowserLabel(browser.name)}
+        <span className="text-low ml-1">v{browser.version}</span>
+      </Chip>
     </MetadataRow>
-  );
-}
-
-function BrowserChipLink(props: {
-  browser: MetadataBrowser;
-  href: string;
-  shortcutEnabled: boolean;
-  "aria-current"?: "page";
-}) {
-  const { browser, shortcutEnabled, ...rest } = props;
-  const navigate = useNavigate();
-  const tooltipContent = `${browser.name} v${browser.version}`;
-  const hotkey = useBuildHotkey("switchBrowser", () => navigate(props.href), {
-    enabled: shortcutEnabled,
-  });
-
-  const chipLink = (
-    <ChipLink
-      {...rest}
-      className="shrink-0 cursor-default"
-      icon={<BrowserIcon browser={browser} />}
-    >
-      {getBrowserLabel(browser.name)}
-    </ChipLink>
-  );
-
-  if (!shortcutEnabled) {
-    return <Tooltip content={tooltipContent}>{chipLink}</Tooltip>;
-  }
-
-  return (
-    <HotkeyTooltip keys={hotkey.displayKeys} description={tooltipContent}>
-      {chipLink}
-    </HotkeyTooltip>
   );
 }

@@ -63,9 +63,9 @@ export function MetadataSection(props: MetadataSectionProps) {
           <AutomationLibraryRow
             automationLibrary={metadata?.automationLibrary ?? null}
           />
-          <BrowserRow diff={diff} siblingDiffs={siblingDiffs} />
-          <ViewportRow diff={diff} siblingDiffs={siblingDiffs} />
-          <ColorSchemeRow diff={diff} siblingDiffs={siblingDiffs} />
+          <BrowserRow diff={diff} />
+          <ViewportRow diff={diff} />
+          <ColorSchemeRow diff={diff} />
           <MediaTypeRow mediaType={metadata?.mediaType ?? null} />
           <ThresholdRow threshold={diff.threshold ?? null} />
           <BaselineRow diff={diff} />

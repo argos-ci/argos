@@ -1,21 +1,13 @@
 import { assertNever } from "@argos/util/assertNever";
-import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
-import { invariant } from "@argos/util/invariant";
 
 import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
+import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
 import { colorSchemeIcons } from "../../metadata/metadataIcons";
 import { MetadataRow } from "./MetadataRow";
-import {
-  getUniqueColorSchemes,
-  resolveColorScheme,
-  resolveDiffMetadata,
-  useGetDiffPath,
-} from "./utils";
+import { resolveColorScheme, resolveDiffMetadata } from "./utils";
 
 /** Chip label. Short: the row is a column of chips in a narrow sidebar. */
 function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
@@ -29,64 +21,28 @@ function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
   }
 }
 
-function getColorSchemeLabel(colorScheme: ScreenshotMetadataColorScheme) {
-  return `${getColorSchemeName(colorScheme)} color scheme`;
-}
-
-export function ColorSchemeRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
-  const { diff, siblingDiffs } = props;
-  const getDiffPath = useGetDiffPath();
-  const metadata = resolveDiffMetadata(diff);
-  const colorSchemes = getUniqueColorSchemes(
-    siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
-  );
-  if (!colorSchemes.includes(ScreenshotMetadataColorScheme.Dark)) {
+/**
+ * The color scheme this capture was taken in.
+ *
+ * Only shown when the snapshot was captured in dark: every other suite would get
+ * a row saying "Light" on every snapshot, which is the default and tells nobody
+ * anything. Switching to the other scheme is the variant switcher's job.
+ */
+export function ColorSchemeRow(props: { diff: Diff }) {
+  const { diff } = props;
+  const colorScheme = resolveColorScheme(resolveDiffMetadata(diff));
+  if (colorScheme !== ScreenshotMetadataColorScheme.Dark) {
     return null;
   }
-  if (colorSchemes.length === 1) {
-    const colorScheme = colorSchemes[0]!;
-    return (
-      <MetadataRow>
-        {/* Named, not just an icon: with nothing to switch to, a lone moon is a
-            symbol the reader has to decode. */}
-        <Tooltip content={getColorSchemeLabel(colorScheme)}>
-          <Chip icon={colorSchemeIcons[colorScheme]} className="cursor-default">
-            {getColorSchemeName(colorScheme)}
-          </Chip>
-        </Tooltip>
-      </MetadataRow>
-    );
-  }
-  const active = resolveColorScheme(metadata);
   return (
     <MetadataRow>
-      <ButtonGroup>
-        {colorSchemes.map((colorScheme) => {
-          const isActive = active === colorScheme;
-          const resolvedDiff = isActive
-            ? diff
-            : siblingDiffs.find(
-                (d) =>
-                  resolveColorScheme(resolveDiffMetadata(d)) === colorScheme,
-              );
-          invariant(resolvedDiff, "diff cannot be null");
-          return (
-            <Tooltip
-              key={colorScheme}
-              content={getColorSchemeLabel(colorScheme)}
-            >
-              <ChipLink
-                icon={colorSchemeIcons[colorScheme]}
-                className="cursor-default"
-                aria-current={isActive ? "page" : undefined}
-                href={getDiffPath(resolvedDiff.id) ?? ""}
-              >
-                {getColorSchemeName(colorScheme)}
-              </ChipLink>
-            </Tooltip>
-          );
-        })}
-      </ButtonGroup>
+      {/* Named, not just an icon: a lone moon is a symbol the reader has to
+          decode. */}
+      <Tooltip content={`${getColorSchemeName(colorScheme)} color scheme`}>
+        <Chip icon={colorSchemeIcons[colorScheme]} className="cursor-default">
+          {getColorSchemeName(colorScheme)}
+        </Chip>
+      </Tooltip>
     </MetadataRow>
   );
 }

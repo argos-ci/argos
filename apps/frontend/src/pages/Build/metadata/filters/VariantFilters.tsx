@@ -1,15 +1,19 @@
 import { memo, use, useMemo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { clsx } from "clsx";
 
-import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Tooltip } from "@/ui/Tooltip";
 import { capitalize } from "@/util/string";
 
-import { useBuildDiffState, type Diff } from "../../BuildDiffState";
+import {
+  checkDiffCanBeReviewed,
+  useBuildDiffState,
+  type Diff,
+} from "../../BuildDiffState";
+import { useBuildReviewState } from "../../BuildReviewState";
+import { EvaluationStatus } from "../../EvaluationStatus";
 import { getBrowserLabel } from "../browser/browserLabels";
 import { MetadataCategory } from "../metadataCategories";
 import { parseViewport } from "../viewports/util";
@@ -58,10 +62,14 @@ const INDICATED_CATEGORIES: readonly MetadataCategory[] = [
 export const VariantFilters = memo(function VariantFilters() {
   const state = use(FilterStateContext);
   invariant(state, "VariantFilters must be used in a filter context");
-  const { siblingDiffs } = useBuildDiffState();
+  const { siblingDiffs, isSubsetBuild } = useBuildDiffState();
+  const reviewState = useBuildReviewState();
   const indicators = useMemo(
-    () => getVariantIndicators(siblingDiffs),
-    [siblingDiffs],
+    () =>
+      getVariantIndicators(siblingDiffs, reviewState?.diffStatuses, {
+        isSubsetBuild,
+      }),
+    [siblingDiffs, reviewState?.diffStatuses, isSubsetBuild],
   );
   const groups = VARIANT_CATEGORIES.map((category) =>
     state.filterGroups.find((group) => group.category === category),
@@ -85,52 +93,39 @@ export const VariantFilters = memo(function VariantFilters() {
   );
 });
 
-/** The color a variant's dot takes, or `null` when that variant did not move. */
-type VariantIndicator = "danger" | "warning";
-
 /**
- * The dot to show on each variant of the snapshot under review, keyed by filter
- * key. Colored like the group the variant's diff sits in, so the dot and the
- * list say the same thing: red for a failure, amber for a change.
+ * The filter keys where the snapshot under review still has a change waiting for
+ * a verdict — its own variant included.
+ *
+ * One dot, one meaning: still to review. Grading it by status turned a glance
+ * into a legend to decode, and it goes out as soon as the variant is approved or
+ * rejected rather than staying lit for the rest of the review.
  */
 function getVariantIndicators(
   siblingDiffs: Diff[],
-): Map<string, VariantIndicator> {
-  const indicators = new Map<string, VariantIndicator>();
+  diffStatuses: Record<string, EvaluationStatus> | undefined,
+  context: { isSubsetBuild: boolean },
+): Set<string> {
+  const indicators = new Set<string>();
   for (const diff of siblingDiffs) {
-    const indicator = getDiffIndicator(diff.status);
-    if (!indicator) {
+    const reviewStatus = diffStatuses?.[diff.id] ?? EvaluationStatus.Pending;
+    if (
+      !checkDiffCanBeReviewed(diff.status, context) ||
+      reviewStatus !== EvaluationStatus.Pending
+    ) {
       continue;
     }
     for (const key of getVariantFilterKeys(diff)) {
-      // A browser covering several viewports takes the loudest of them.
-      if (indicator === "danger" || !indicators.has(key)) {
-        indicators.set(key, indicator);
-      }
+      indicators.add(key);
     }
   }
   return indicators;
 }
 
-function getDiffIndicator(
-  status: ScreenshotDiffStatus,
-): VariantIndicator | null {
-  switch (status) {
-    case ScreenshotDiffStatus.Failure:
-      return "danger";
-    case ScreenshotDiffStatus.Changed:
-    case ScreenshotDiffStatus.Added:
-    case ScreenshotDiffStatus.Removed:
-      return "warning";
-    default:
-      return null;
-  }
-}
-
 function VariantFilterGroup(props: {
   filterGroup: FilterGroup;
   state: FilterState;
-  indicators: Map<string, VariantIndicator>;
+  indicators: Set<string>;
 }) {
   const { filterGroup, state, indicators } = props;
   const categoryDef = getFilterCategoryDefinition(filterGroup.category);
@@ -148,10 +143,9 @@ function VariantFilterGroup(props: {
           state={state}
           siblingKeys={filterGroup.filterKeys}
           categoryLabel={categoryDef.label}
-          indicator={
-            INDICATED_CATEGORIES.includes(filterGroup.category)
-              ? (indicators.get(filter.key) ?? null)
-              : null
+          needsReview={
+            INDICATED_CATEGORIES.includes(filterGroup.category) &&
+            indicators.has(filter.key)
           }
         />
       ))}
@@ -159,20 +153,15 @@ function VariantFilterGroup(props: {
   );
 }
 
-const INDICATOR_DESCRIPTIONS: Record<VariantIndicator, string> = {
-  danger: "Failed on this snapshot",
-  warning: "Changed on this snapshot",
-};
-
 function VariantFilterButton(props: {
   filter: Filter;
   state: FilterState;
   /** Every key of the filter's category, its own included. */
   siblingKeys: Set<string>;
   categoryLabel: string;
-  indicator: VariantIndicator | null;
+  needsReview: boolean;
 }) {
-  const { filter, state, siblingKeys, categoryLabel, indicator } = props;
+  const { filter, state, siblingKeys, categoryLabel, needsReview } = props;
   const { active, setActive } = state;
   const isPressed = active.has(filter.key);
   return (
@@ -184,8 +173,8 @@ function VariantFilterButton(props: {
               ? `Review every ${categoryLabel.toLowerCase()} again`
               : `Review ${getVariantTooltipLabel(filter)} only`}
           </div>
-          {indicator ? (
-            <div className="text-low">{INDICATOR_DESCRIPTIONS[indicator]}</div>
+          {needsReview ? (
+            <div className="text-low">Still to review on this snapshot</div>
           ) : null}
         </>
       }
@@ -200,12 +189,10 @@ function VariantFilterButton(props: {
           <FilterIcon filter={filter} />
         </ButtonIcon>
         {getVariantLabel(filter)}
-        {indicator ? (
+        {needsReview ? (
           <span
-            className={clsx(
-              "ml-1.5 size-1.5 shrink-0 rounded-full",
-              indicator === "danger" ? "bg-danger-solid" : "bg-warning-solid",
-            )}
+            aria-hidden
+            className="bg-warning-solid ml-1.5 size-1.5 shrink-0 rounded-full"
           />
         ) : null}
       </Button>
