@@ -50,7 +50,7 @@ import {
 } from "@/containers/Media/MediaViewer";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
-import { ProjectRepositoryUrlProvider } from "@/containers/Project/RepositoryContext";
+import { ProjectRepositoryProvider } from "@/containers/Project/RepositoryContext";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { MediaDiffStatus, MediaState, MediaVisibility } from "@/gql/graphql";
@@ -429,9 +429,7 @@ function SharePage(props: { media: Media }) {
   // repository's name is not part of what a share link hands out.
   return (
     <ProjectPermissionsContext value={media.project?.permissions ?? []}>
-      <ProjectRepositoryUrlProvider
-        value={media.project?.repository?.url ?? null}
-      >
+      <ProjectRepositoryProvider url={media.project?.repository?.url ?? null}>
         <MentionableUsersProvider value={mentionUsers}>
           <BuildHotkeysDialogStateProvider>
             <BuildHotkeysDialog env="media" />
@@ -512,7 +510,7 @@ function SharePage(props: { media: Media }) {
             </div>
           </BuildHotkeysDialogStateProvider>
         </MentionableUsersProvider>
-      </ProjectRepositoryUrlProvider>
+      </ProjectRepositoryProvider>
     </ProjectPermissionsContext>
   );
 }

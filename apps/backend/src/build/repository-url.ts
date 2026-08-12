@@ -41,18 +41,45 @@ export function getRepositoryUrl(project: Project): string | null {
   return null;
 }
 
+/** The relations {@link getRepositoryUrl} reads. */
+const REPOSITORY_GRAPH = "[githubRepository.githubAccount, gitlabProject]";
+
+/** Whether a project carries the *whole* graph {@link getRepositoryUrl} needs. */
+function hasRepositoryGraph(project: Project): boolean {
+  if (project.githubRepositoryId) {
+    // The nested account, not just the repository: a project that has been
+    // through a permission check carries `githubRepository` alone —
+    // `$checkIsPublic` fetches it for its `private` flag — and reading that as
+    // "loaded" is what makes `getRepositoryUrl` throw.
+    return Boolean(project.githubRepository?.githubAccount);
+  }
+  return Boolean(project.gitlabProject);
+}
+
+/**
+ * Load the graph {@link getRepositoryUrl} needs onto a project.
+ *
+ * Call this once before a batch of renders that share a project (see
+ * `notifyReviewCommentsWentLive`), so {@link fetchRepositoryUrl} answers each of
+ * them from the instance instead of querying per render. Loads the complete
+ * graph, so it can only ever improve what is on the project.
+ */
+export async function loadRepositoryGraph(project: Project): Promise<void> {
+  if (!project.githubRepositoryId && !project.gitlabProjectId) {
+    return;
+  }
+  await project.$fetchGraph(REPOSITORY_GRAPH);
+}
+
 /**
  * Same as {@link getRepositoryUrl}, for callers holding a project whose
  * repository relations aren't loaded.
  *
- * Fetches into a clone rather than into the caller's instance, and without
- * consulting what is already on it. A project that has been through a permission
- * check carries a *partially* loaded graph — `$checkIsPublic` fetches
- * `githubRepository` alone, for its `private` flag — so "the relation is already
- * there" says nothing about `githubAccount` being there with it, and skipping the
- * fetch on that basis throws. Loading unconditionally into a copy keeps this
- * independent of whatever the caller happened to load, and leaves that graph
- * alone for whoever else reads it.
+ * Fetches into a clone, so this neither depends on nor disturbs the graph the
+ * caller happened to load — a half-loaded one is the norm rather than the
+ * exception (see {@link hasRepositoryGraph}). The only state it trusts is a
+ * *complete* graph, which is what lets {@link loadRepositoryGraph} spare a batch
+ * of renders a query each.
  */
 export async function fetchRepositoryUrl(
   project: Project,
@@ -60,8 +87,9 @@ export async function fetchRepositoryUrl(
   if (!project.githubRepositoryId && !project.gitlabProjectId) {
     return null;
   }
-  const richProject = await project
-    .$clone()
-    .$fetchGraph("[githubRepository.githubAccount, gitlabProject]");
+  if (hasRepositoryGraph(project)) {
+    return getRepositoryUrl(project);
+  }
+  const richProject = await project.$clone().$fetchGraph(REPOSITORY_GRAPH);
   return getRepositoryUrl(richProject);
 }

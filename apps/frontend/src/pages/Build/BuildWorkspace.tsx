@@ -6,7 +6,7 @@ import { BuildDiffHighlighterProvider } from "@/containers/Build/BuildDiffHighli
 import { snapshotTypeAtom } from "@/containers/Build/SnapshotType";
 import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
-import { ProjectRepositoryUrlProvider } from "@/containers/Project/RepositoryContext";
+import { ProjectRepositoryProvider } from "@/containers/Project/RepositoryContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
@@ -113,7 +113,7 @@ export function BuildWorkspace(props: {
   return (
     // Every comment surface of the build page hangs below here (the activity
     // sidebar, the screenshot and diff pins), so one provider covers them all.
-    <ProjectRepositoryUrlProvider value={repoUrl}>
+    <ProjectRepositoryProvider url={repoUrl}>
       <div className="flex min-h-0 flex-1">
         <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -173,7 +173,7 @@ export function BuildWorkspace(props: {
           </BuildDetailProviders>
         </div>
       </div>
-    </ProjectRepositoryUrlProvider>
+    </ProjectRepositoryProvider>
   );
 }
 

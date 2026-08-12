@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { loadRepositoryGraph } from "@/build/repository-url";
 import { Account, Comment, CommentMention } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -220,6 +221,21 @@ describe("renderCommentHtmlWithMentions", () => {
     await project.$getPermissions(null);
     expect(project.githubRepository).toBeTruthy();
     expect(project.githubRepository?.githubAccount).toBeUndefined();
+
+    await expect(
+      renderCommentHtmlWithMentions(comment, { project }),
+    ).resolves.toContain(
+      'href="https://github.com/argos-ci/argos/commit/d15cba5"',
+    );
+  });
+
+  it("links the sha from a graph loaded once for a batch", async () => {
+    const project = await createProjectOnARepository();
+    const comment = await createCommentAboutACommit();
+    // What `notifyReviewCommentsWentLive` does before rendering a review's
+    // comments: load the graph once so the renders don't query for it each.
+    await loadRepositoryGraph(project);
+    expect(project.githubRepository?.githubAccount).toBeTruthy();
 
     await expect(
       renderCommentHtmlWithMentions(comment, { project }),

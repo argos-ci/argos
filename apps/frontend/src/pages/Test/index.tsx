@@ -33,7 +33,7 @@ import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { PeriodSelect } from "@/containers/PeriodSelect";
 import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
-import { ProjectRepositoryUrlProvider } from "@/containers/Project/RepositoryContext";
+import { ProjectRepositoryProvider } from "@/containers/Project/RepositoryContext";
 import {
   useTestPeriodState,
   type TestMetricPeriodState,
@@ -184,7 +184,7 @@ export function Component() {
           </PageHeaderContent>
         </PageHeader>
         <ProjectPermissionsContext value={project.permissions}>
-          <ProjectRepositoryUrlProvider value={project.repository?.url ?? null}>
+          <ProjectRepositoryProvider url={project.repository?.url ?? null}>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
               <div className="flex min-w-0 flex-1 flex-col gap-10">
                 <div className="flex flex-col items-start gap-4 self-stretch">
@@ -272,7 +272,7 @@ export function Component() {
                 <ActivitySection test={test} />
               </div>
             </div>
-          </ProjectRepositoryUrlProvider>
+          </ProjectRepositoryProvider>
         </ProjectPermissionsContext>
       </PageContainer>
     </Page>
