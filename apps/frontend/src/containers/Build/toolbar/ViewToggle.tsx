@@ -10,71 +10,85 @@ import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
 import { buildViewModeAtom, type ViewMode } from "../BuildViewMode";
 import { useZoomerSyncContext } from "../Zoomer";
 
-export const ViewToggle = memo((props: { blendEnabled: boolean }) => {
-  const { blendEnabled } = props;
-  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
-  const showBaselineHotkey = useBuildHotkey(
-    "showBaseline",
-    () => {
-      startTransition(() => {
-        setViewMode("baseline");
-      });
-    },
-    { preventDefault: true },
-  );
-  const showChangesHotkey = useBuildHotkey(
-    "showChanges",
-    () => {
-      startTransition(() => {
-        setViewMode("changes");
-      });
-    },
-    { preventDefault: true },
-  );
-  const showOnionHotkey = useBuildHotkey(
-    "showOnion",
-    () => {
-      startTransition(() => {
-        setViewMode("onion");
-      });
-    },
-    { preventDefault: true, enabled: blendEnabled },
-  );
-  const showSwipeHotkey = useBuildHotkey(
-    "showSwipe",
-    () => {
-      startTransition(() => {
-        setViewMode("swipe");
-      });
-    },
-    { preventDefault: true, enabled: blendEnabled },
-  );
+/**
+ * What the two sides of the comparison are called. A build compares a baseline
+ * against its changes; a media pair compares a "before" against an "after" —
+ * the same two things under different names.
+ */
+type ViewToggleLabels = { baseline: string; changes: string };
 
-  if (viewMode === "split") {
-    return null;
-  }
+const DEFAULT_LABELS: ViewToggleLabels = {
+  baseline: "Baseline",
+  changes: "Changes",
+};
 
-  return (
-    <ButtonGroup>
-      <ViewButton viewMode="baseline" hotkey={showBaselineHotkey}>
-        Baseline
-      </ViewButton>
-      <ViewButton viewMode="changes" hotkey={showChangesHotkey}>
-        Changes
-      </ViewButton>
-      {blendEnabled && (
-        <>
-          <ViewButton viewMode="onion" hotkey={showOnionHotkey}>
-            Onion
-          </ViewButton>
-          <ViewButton viewMode="swipe" hotkey={showSwipeHotkey}>
-            Swipe
-          </ViewButton>
-        </>
-      )}
-    </ButtonGroup>
-  );
-});
+export const ViewToggle = memo(
+  (props: { blendEnabled: boolean; labels?: ViewToggleLabels }) => {
+    const { blendEnabled, labels = DEFAULT_LABELS } = props;
+    const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
+    const showBaselineHotkey = useBuildHotkey(
+      "showBaseline",
+      () => {
+        startTransition(() => {
+          setViewMode("baseline");
+        });
+      },
+      { preventDefault: true },
+    );
+    const showChangesHotkey = useBuildHotkey(
+      "showChanges",
+      () => {
+        startTransition(() => {
+          setViewMode("changes");
+        });
+      },
+      { preventDefault: true },
+    );
+    const showOnionHotkey = useBuildHotkey(
+      "showOnion",
+      () => {
+        startTransition(() => {
+          setViewMode("onion");
+        });
+      },
+      { preventDefault: true, enabled: blendEnabled },
+    );
+    const showSwipeHotkey = useBuildHotkey(
+      "showSwipe",
+      () => {
+        startTransition(() => {
+          setViewMode("swipe");
+        });
+      },
+      { preventDefault: true, enabled: blendEnabled },
+    );
+
+    if (viewMode === "split") {
+      return null;
+    }
+
+    return (
+      <ButtonGroup>
+        <ViewButton viewMode="baseline" hotkey={showBaselineHotkey}>
+          {labels.baseline}
+        </ViewButton>
+        <ViewButton viewMode="changes" hotkey={showChangesHotkey}>
+          {labels.changes}
+        </ViewButton>
+        {blendEnabled && (
+          <>
+            <ViewButton viewMode="onion" hotkey={showOnionHotkey}>
+              Onion
+            </ViewButton>
+            <ViewButton viewMode="swipe" hotkey={showSwipeHotkey}>
+              Swipe
+            </ViewButton>
+          </>
+        )}
+      </ButtonGroup>
+    );
+  },
+);
 
 function ViewButton(props: {
   viewMode: Exclude<ViewMode, "split">;

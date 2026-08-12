@@ -44,6 +44,14 @@ loggedTest("media share page", async ({ page, auth, project }) => {
     page.getByRole("link", { name: /Tighten the checkout spacing/ }),
   ).toBeVisible();
 
+  // Everything else uploaded to the same pull request, in a sidebar: three
+  // rows, because the pair counts once.
+  const sidebar = page.getByRole("region", { name: "Pull request media" });
+  await expect(sidebar.locator("[aria-current]")).toHaveCount(1);
+  await expect(sidebar.getByText("checkout.png")).toBeVisible();
+  await expect(sidebar.getByText("dashboard.png")).toBeVisible();
+  await expect(sidebar.getByText("checkout-flow.mp4")).toBeVisible();
+
   // Two threads, one of them pinned to a point on the image — the pin is a
   // floating marker on the image itself, and the panel tells the media's
   // whole story.
@@ -60,6 +68,100 @@ loggedTest("media share page", async ({ page, auth, project }) => {
 
   await screenshot(page, "media-share-page");
 });
+
+loggedTest(
+  "navigates the pull request's media with the sidebar and the keyboard",
+  async ({ page, project }) => {
+    // Uploaded oldest first: dashboard.png (07:00), the checkout.png pair
+    // (08:00), then checkout-flow.mp4 (09:30).
+    const media = await createMediaScenario({
+      projectId: project.id,
+      withPullRequest: true,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const sidebar = page.getByRole("region", { name: "Pull request media" });
+    const previous = page
+      .getByRole("main")
+      .locator("button:has(.lucide-arrow-up)");
+    const next = page
+      .getByRole("main")
+      .locator("button:has(.lucide-arrow-down)");
+    await expect(previous).toBeVisible();
+    await expect(next).toBeVisible();
+
+    // Up from the pair reaches the lone screenshot, which is the first upload —
+    // so there is nothing before it.
+    await page.keyboard.press("ArrowUp");
+    await expect(page).toHaveURL(`/m/${media.solo.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "dashboard.png" }),
+    ).toBeVisible();
+    await expect(previous).toBeDisabled();
+
+    // Down twice: back through the pair and on to the recording. A video used
+    // to render no toolbar at all, which took the arrows and the name with it.
+    //
+    // Waiting for the name between the two presses, not just the URL: the next
+    // media is still being fetched when the URL changes, and the arrows are
+    // deliberately shut while it is.
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "checkout.png" }),
+    ).toBeVisible();
+    await expect(next).toBeEnabled();
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(`/m/${media.video.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "checkout-flow.mp4" }),
+    ).toBeVisible();
+    await expect(page.locator("video")).toBeVisible();
+    await expect(next).toBeDisabled();
+
+    // Clicking the pair opens the "after": both halves are one row, and the
+    // after is the state of the work being reviewed.
+    await sidebar.getByText("checkout.png").click();
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+
+    await screenshot(page, "media-share-sidebar");
+  },
+);
+
+loggedTest(
+  "sends the before half to the after, so a pair has one page",
+  async ({ page, auth, project }) => {
+    // Both halves show the same two images, so two pages meant one subject with
+    // two comment threads on it, split by which link was clicked.
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+      withPullRequest: true,
+    });
+
+    await page.goto(`/m/${media.before.shareToken}`);
+
+    await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
+    // Arriving from the "before" link and reading the conversation that was
+    // left on the "after" — the point of the redirect.
+    await expect(
+      page.getByText("The primary button is misaligned here."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+
+    const sidebar = page.getByRole("region", { name: "Pull request media" });
+    const active = sidebar.locator("[aria-current]");
+    await expect(active).toHaveCount(1);
+    await expect(active).toContainText("checkout.png");
+
+    // And navigating on from it moves relative to the row, not to the half.
+    await page.keyboard.press("ArrowUp");
+    await expect(page).toHaveURL(`/m/${media.solo.shareToken}`);
+  },
+);
 
 loggedTest(
   "pins a comment to a point on the image",
@@ -178,6 +280,92 @@ loggedTest(
 );
 
 loggedTest(
+  "shows each version its own comparison",
+  async ({ page, project }) => {
+    // Two uploads of the "after", each compared against the "before" when it
+    // landed. Picking an older one used to hide the overlay entirely, because
+    // the only comparison the page could reach was the newest pair's.
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const mask = page.locator(
+      '[data-media-pane] span[style*="diff-1024-to-720.png"]',
+    );
+    await expect(mask).toHaveCount(1);
+
+    // v1 is the same file as the "before", so its comparison found nothing to
+    // mark — a real answer, and a different one from v2's.
+    await page.getByRole("button", { name: /^v1/ }).click();
+    await expect(mask).toHaveCount(0);
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+
+    // And back: the newest version's mask returns.
+    await page.getByRole("button", { name: /^v2/ }).click();
+    await expect(mask).toHaveCount(1);
+  },
+);
+
+loggedTest(
+  "switches between the two halves with the build's own controls",
+  async ({ page, project }) => {
+    // A pair and a build's baseline-against-changes are the same question, so
+    // they are looked at with the same controls and the same shortcuts — only
+    // the two words differ.
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const panes = page.locator("[data-media-pane]");
+    await expect(panes).toHaveCount(2);
+
+    // `S` leaves side by side for one image at a time, and the toggle appears.
+    await page.keyboard.press("s");
+    await expect(panes).toHaveCount(1);
+    const after = page.getByRole("button", { name: "After", exact: true });
+    const before = page.getByRole("button", { name: "Before", exact: true });
+    await expect(after).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("img", { name: "checkout.png (after)" }),
+    ).toBeVisible();
+
+    // `←` shows the other half alone, `→` comes back — the build's keys.
+    await page.keyboard.press("ArrowLeft");
+    await expect(before).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+    await expect(panes).toHaveCount(1);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(after).toHaveAttribute("aria-pressed", "true");
+
+    // And the buttons do what the keys do.
+    await before.click();
+    await expect(
+      page.getByRole("img", { name: "checkout.png (before)" }),
+    ).toBeVisible();
+
+    await screenshot(page, "media-share-single-half");
+
+    // Comments belong to the "after", so with only the "before" on screen there
+    // is nowhere for a pin to land — the tool puts itself away rather than
+    // leaving the reviewer clicking at an image that cannot take one.
+    await after.click();
+    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await expect(
+      page.getByText("Click the spot on the image you want to comment on."),
+    ).toBeVisible();
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      page.getByText("Click the spot on the image you want to comment on."),
+    ).toBeHidden();
+  },
+);
+
+loggedTest(
   "rings the half a pin would land on, in compare mode",
   async ({ page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes
@@ -189,9 +377,8 @@ loggedTest(
     });
 
     await page.goto(`/m/${media.after.shareToken}`);
-    await page.getByRole("button", { name: "Compare" }).click();
-    await page.getByRole("button", { name: "Side by side" }).click();
 
+    // Side by side is the default, the same one a build opens with.
     const panes = page.locator("[data-media-pane]");
     await expect(panes).toHaveCount(2);
     // Nothing is singled out until the tool is armed: a ring that is always on

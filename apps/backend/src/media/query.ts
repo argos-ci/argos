@@ -3,6 +3,15 @@ import type { QueryBuilder } from "objection";
 
 import { Media, MediaVersion } from "@/database/models";
 
+/**
+ * How many of a pull request's media the share page's sidebar lists.
+ *
+ * The list is not paginated — it is a sidebar the reviewer scrolls — so the cap
+ * is what keeps a pull request with hundreds of uploads from being one enormous
+ * response. Well above what a pull request realistically carries.
+ */
+export const MAX_PULL_REQUEST_MEDIAS = 100;
+
 export type MediaFilters = {
   /** Match on the media's name or its description. */
   search?: string | null | undefined;
@@ -35,11 +44,17 @@ export type MediaFilters = {
 export function queryProjectMedia(args: {
   projectIds: string[];
   filters: MediaFilters | null;
+  /**
+   * Newest first by default, which is what a list of recent uploads wants.
+   * "asc" is upload order — how the pull request comment reads, and how the
+   * share page's sidebar has to read to match it.
+   */
+  order?: "asc" | "desc";
 }): QueryBuilder<Media, Media[]> {
   const query = Media.query()
     .whereIn("media.projectId", args.projectIds)
     .whereExists(uploadedVersions())
-    .orderBy("media.createdAt", "desc");
+    .orderBy("media.createdAt", args.order ?? "desc");
 
   const { search, type, branch, githubPullRequestId, stage } =
     args.filters ?? {};

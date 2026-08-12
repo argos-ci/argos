@@ -3,8 +3,8 @@ import { z } from "zod";
 
 /**
  * Fields describing what a comment was posted on, shared by every comment
- * notification. A comment lives either on a build (`buildNumber`, with an
- * optional `buildName`) or on a test (`testName`) — see
+ * notification. A comment lives on a build (`buildNumber`, with an optional
+ * `buildName`), on a test (`testName`) or on a media (`mediaName`) — see
  * `getCommentTargetNotificationFields`.
  *
  * Each field is individually optional so a workflow queued before tests could be
@@ -16,13 +16,18 @@ const commentTargetSchema = z.object({
   buildNumber: z.number().nullish(),
   buildName: z.string().nullish(),
   testName: z.string().nullish(),
+  mediaName: z.string().nullish(),
 });
 
 export type CommentTargetFields = z.infer<typeof commentTargetSchema>;
 
 /** Whether a payload names what the comment was posted on. */
 function namesTarget(fields: CommentTargetFields): boolean {
-  return fields.buildNumber != null || fields.testName != null;
+  return (
+    fields.buildNumber != null ||
+    fields.testName != null ||
+    fields.mediaName != null
+  );
 }
 
 /**
@@ -44,9 +49,9 @@ export function commentNotificationSchema<TShape extends z.ZodRawShape>(
 }
 
 /**
- * Human label for what a comment was posted on, e.g. `build default #42` or
- * `test Header renders`. Used in email subjects and copy, so the same sentence
- * reads correctly for both kinds of comment.
+ * Human label for what a comment was posted on, e.g. `build default #42`,
+ * `test Header renders` or `checkout.png`. Used in email subjects and copy, so
+ * the same sentence reads correctly for every kind of comment.
  */
 export function getCommentTargetLabel(fields: CommentTargetFields): string {
   if (fields.buildNumber != null) {
@@ -55,6 +60,11 @@ export function getCommentTargetLabel(fields: CommentTargetFields): string {
       : `#${fields.buildNumber}`;
     return `build ${build}`;
   }
-  invariant(fields.testName, "A comment notification must name its target");
-  return `test ${fields.testName}`;
+  if (fields.testName != null) {
+    return `test ${fields.testName}`;
+  }
+  // No noun in front of it: a media's name is a file name, and "media
+  // checkout.png" reads like a category nobody uses out loud.
+  invariant(fields.mediaName, "A comment notification must name its target");
+  return fields.mediaName;
 }

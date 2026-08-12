@@ -1724,9 +1724,10 @@ export async function createMediaScenario(input: {
   /** When given, seeds a pinned thread and a plain comment on the "after" image. */
   commentAuthorId?: string;
   /**
-   * Publish the pair to a pull request, creating the GitHub rows it needs — a
-   * seeded project is not connected to a repository. What the share header's
-   * pull request button needs to have something to show.
+   * Publish all four media to a pull request, creating the GitHub rows they
+   * need — a seeded project is not connected to a repository. What the share
+   * page's pull request button and its sidebar both need to have something to
+   * show: three entries, since the pair counts once.
    */
   withPullRequest?: boolean;
 }) {
@@ -1773,7 +1774,7 @@ export async function createMediaScenario(input: {
       state: null,
       description: null,
       visibility: "public" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-video-${projectId}`,
       createdAt: videoTs,
       updatedAt: videoTs,
@@ -1784,7 +1785,7 @@ export async function createMediaScenario(input: {
       state: null,
       description: "Overview screen after the sidebar redesign.",
       visibility: "public" as const,
-      githubPullRequestId: null,
+      githubPullRequestId,
       shareToken: `seed-media-solo-${projectId}`,
       createdAt: soloTs,
       updatedAt: soloTs,
@@ -1799,7 +1800,7 @@ export async function createMediaScenario(input: {
   // Its newest version is deliberately a different file — and a different shape
   // — from the "before": a pair of identical bytes compares to nothing, and the
   // page's whole compare surface would have no changes to mark.
-  const [, afterV2] = await MediaVersion.query().insertAndFetch([
+  const [afterV1, afterV2] = await MediaVersion.query().insertAndFetch([
     {
       mediaId: after.id,
       number: 1,
@@ -1830,7 +1831,7 @@ export async function createMediaScenario(input: {
       updatedAt: afterV2Ts,
     },
   ]);
-  invariant(afterV2, "the after media should have two versions");
+  invariant(afterV1 && afterV2, "the after media should have two versions");
 
   const [beforeV1, videoV1, soloV1] = await MediaVersion.query().insertAndFetch(
     [
@@ -1890,17 +1891,37 @@ export async function createMediaScenario(input: {
   // no bucket to write to, so the finished row is seeded with a mask that really
   // is the diff of these two dummies — 375×1024, the union of a 720-tall
   // "before" and a 1024-tall "after".
-  await MediaDiff.query().insert({
-    beforeMediaVersionId: beforeV1.id,
-    afterMediaVersionId: afterV2.id,
-    jobStatus: "complete",
-    score: 0.3,
-    key: "diff-1024-to-720.png",
-    width: 375,
-    height: 1024,
-    createdAt: afterV2Ts,
-    updatedAt: afterV2Ts,
-  });
+  await MediaDiff.query().insert([
+    {
+      beforeMediaVersionId: beforeV1.id,
+      afterMediaVersionId: afterV2.id,
+      jobStatus: "complete",
+      score: 0.3,
+      key: "diff-1024-to-720.png",
+      width: 375,
+      height: 1024,
+      createdAt: afterV2Ts,
+      updatedAt: afterV2Ts,
+    },
+    // The first upload's own comparison, kept as history: v1 was compared
+    // against the same "before" when it landed, and picking v1 in the version
+    // list has to show *that* result rather than the newest one.
+    //
+    // No mask, because there is nothing to mark: this seed gives v1 the same
+    // file as the "before", and two identical uploads compare to a score of 0
+    // and no mask — what `computeMediaDiff` short-circuits to when the two keys
+    // match. So the reviewer switching to v1 sees the pair without an overlay,
+    // and switching back to v2 sees the changed pixels again.
+    {
+      beforeMediaVersionId: beforeV1.id,
+      afterMediaVersionId: afterV1.id,
+      jobStatus: "complete",
+      score: 0,
+      key: null,
+      createdAt: afterV1Ts,
+      updatedAt: afterV1Ts,
+    },
+  ]);
 
   if (commentAuthorId) {
     const commentTs = "2026-04-20T11:00:00.000Z";

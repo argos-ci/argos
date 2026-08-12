@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import type { Account, User } from "@/database/models";
-import { Comment, Project } from "@/database/models";
+import { Comment, MediaDiff, Project } from "@/database/models";
 import { createMediaScenario } from "@/database/seeds";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -27,10 +27,22 @@ const MEDIA_SHARE_QUERY = `
       state
       description
       url
+      shareToken
       markdown
       markdownPair
       permissions
       unresolvedCommentCount
+      pullRequestMedias {
+        id
+        name
+        state
+        shareToken
+        latestVersion {
+          id
+          fileUrl
+          isVideo
+        }
+      }
       latestVersion {
         id
         number
@@ -46,6 +58,20 @@ const MEDIA_SHARE_QUERY = `
       versions {
         id
         number
+        diff {
+          id
+          status
+          url
+          width
+          height
+          score
+          beforeVersion {
+            id
+          }
+          afterVersion {
+            id
+          }
+        }
       }
       pullRequest {
         id
@@ -60,14 +86,6 @@ const MEDIA_SHARE_QUERY = `
           id
           fileUrl
         }
-      }
-      diff {
-        id
-        status
-        url
-        width
-        height
-        score
       }
       project {
         id
@@ -191,13 +209,24 @@ describe("mediaByShareToken", () => {
     expect(result.markdownPair).toContain(result.url);
     expect(result.markdownPair).toContain(result.counterpart.url);
 
-    // The pair's comparison, which is what the viewer's changes overlay draws.
-    expect(result.diff).toMatchObject({
+    // The comparison the viewer's changes overlay draws, carried by the version
+    // it was computed from. `versions` is newest first.
+    const [newest, first] = result.versions;
+    expect(newest.diff).toMatchObject({
       status: "complete",
       width: 375,
       height: 1024,
     });
-    expect(result.diff.url).toContain("diff-1024-to-720.png");
+    expect(newest.diff.url).toContain("diff-1024-to-720.png");
+    expect(newest.diff.afterVersion.id).toBe(newest.id);
+
+    // The first upload kept its own comparison: the same "before", its own
+    // result. Identical bytes, so it is complete with nothing to mark — which is
+    // a different answer from the newest version's, not a missing one.
+    expect(first.diff).toMatchObject({ status: "complete", score: 0 });
+    expect(first.diff.url).toBeNull();
+    expect(first.diff.afterVersion.id).toBe(first.id);
+    expect(first.diff.beforeVersion.id).toBe(newest.diff.beforeVersion.id);
 
     const pinned = result.comments.find(
       (comment: { anchor: unknown }) => comment.anchor !== null,
@@ -357,7 +386,11 @@ describe("mediaByShareToken", () => {
     // and so does the diff, whose mask marks the counterpart's pixels and whose
     // dimensions are the two halves' union.
     expect(result.markdownPair).toBeNull();
-    expect(result.diff).toBeNull();
+    expect(
+      result.versions.every(
+        (version: { diff: unknown }) => version.diff === null,
+      ),
+    ).toBe(true);
   });
 
   it("still shows a counterpart the viewer may see", async () => {
@@ -479,5 +512,297 @@ describe("mediaByShareToken", () => {
 
     expectNoGraphQLError(res);
     expect(res.body.data.mediaByShareToken.unresolvedCommentCount).toBe(1);
+  });
+});
+
+describe("MediaVersion.diff", () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  it("gives a version the comparison it took part in, not the newest", async () => {
+    const { auth, project } = await createTeamOwner();
+    const media = await createMediaScenario({ projectId: project.id });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const versions = res.body.data.mediaByShareToken.versions;
+    // Two uploads, two comparisons — each naming its own version on the "after"
+    // side, and both against the same "before".
+    expect(
+      versions.map((version: { diff: { id: string } }) => version.diff.id),
+    ).toHaveLength(2);
+    expect(versions[0].diff.id).not.toBe(versions[1].diff.id);
+    expect(versions[0].diff.afterVersion.id).toBe(versions[0].id);
+    expect(versions[1].diff.afterVersion.id).toBe(versions[1].id);
+  });
+
+  it("prefers the newest counterpart a version was compared against", async () => {
+    // A version stays the newest of its half while the other half is uploaded
+    // again, so it can sit in several comparisons. The one to show is the one
+    // against the counterpart the page puts beside it — its newest.
+    const { auth, project } = await createTeamOwner();
+    const before = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "before",
+        branch: "feat/a",
+        shareToken: "many-before",
+      },
+      version: { key: "dummy-375x720.png", mimeType: "image/png" },
+    });
+    const after = await factory.createMediaWithVersion({
+      media: {
+        projectId: project.id,
+        name: "checkout.png",
+        state: "after",
+        branch: "feat/a",
+        shareToken: "many-after",
+      },
+      version: { key: "dummy-375x1024.png", mimeType: "image/png" },
+    });
+    // A second "before", landed after the pair was first compared.
+    const beforeV2 = await factory.MediaVersion.create({
+      mediaId: before.media.id,
+      number: 2,
+      key: "dummy-375x1024.png",
+      mimeType: "image/png",
+      uploadedAt: new Date().toISOString(),
+    });
+    // …and a second "after", so the version under test is not the newest of its
+    // own half. Without this the resolver answers from its newest-version
+    // branch, which pairs with the counterpart's newest directly and never
+    // reaches the preference this test is about.
+    const afterV2 = await factory.MediaVersion.create({
+      mediaId: after.media.id,
+      number: 2,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      uploadedAt: new Date().toISOString(),
+    });
+
+    const [stale, current, newest] = await MediaDiff.query().insertAndFetch([
+      {
+        beforeMediaVersionId: before.version.id,
+        afterMediaVersionId: after.version.id,
+        jobStatus: "complete",
+        score: 0.4,
+      },
+      {
+        beforeMediaVersionId: beforeV2.id,
+        afterMediaVersionId: after.version.id,
+        jobStatus: "complete",
+        score: 0.2,
+      },
+      // The newest pair, so reading it settles rather than queueing work.
+      {
+        beforeMediaVersionId: beforeV2.id,
+        afterMediaVersionId: afterV2.id,
+        jobStatus: "complete",
+        score: 0.1,
+      },
+    ]);
+    invariant(stale && current && newest, "the comparisons should be created");
+
+    const res = await query({ auth, shareToken: "many-after" });
+
+    expectNoGraphQLError(res);
+    // Newest first: v2 answers with the newest pair, and v1 — which sits in two
+    // comparisons — answers with the one against the newest "before", the half
+    // shown beside it.
+    const [second, first] = res.body.data.mediaByShareToken.versions;
+    expect(second.diff.id).toBe(String(newest.id));
+    expect(first.id).toBe(String(after.version.id));
+    expect(first.diff.id).toBe(String(current.id));
+    expect(first.diff.beforeVersion.id).toBe(String(beforeV2.id));
+  });
+});
+
+describe("Media.pullRequestMedias", () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  /**
+   * A pull request with media on it, in the shape the sidebar has to render: a
+   * before/after pair, a lone screenshot, and a video — with each half's
+   * visibility given separately, because that is what decides who sees what.
+   */
+  async function createPullRequestMedia(input: {
+    projectId: string;
+    pairVisibility: "public" | "team";
+    soloVisibility: "public" | "team";
+  }) {
+    const { projectId, pairVisibility, soloVisibility } = input;
+    const repository = await factory.GithubRepository.create();
+    await Project.query()
+      .findById(projectId)
+      .patch({ githubRepositoryId: repository.id });
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: repository.id,
+    });
+
+    // Inserted out of order on purpose: the field promises upload order, and
+    // `createdAt` is what has to decide it rather than the insert sequence.
+    const solo = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "dashboard.png",
+        visibility: soloVisibility,
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-solo-${projectId}`,
+        createdAt: "2026-04-20T09:00:00.000Z",
+      },
+    });
+    const before = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "checkout.png",
+        state: "before",
+        visibility: pairVisibility,
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-before-${projectId}`,
+        createdAt: "2026-04-20T08:00:00.000Z",
+      },
+    });
+    const after = await factory.createMediaWithVersion({
+      media: {
+        projectId,
+        name: "checkout.png",
+        state: "after",
+        visibility: "public",
+        githubPullRequestId: pullRequest.id,
+        shareToken: `prm-after-${projectId}`,
+        createdAt: "2026-04-20T08:30:00.000Z",
+      },
+    });
+
+    return {
+      before: before.media,
+      after: after.media,
+      solo: solo.media,
+    };
+  }
+
+  it("lists the pull request's media to a member, oldest first", async () => {
+    const { auth, project } = await createTeamOwner();
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    // Upload order, both halves of the pair, and the media being looked at is
+    // one of them — the sidebar highlights a row rather than a nothing.
+    expect(
+      result.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([
+      media.before.shareToken,
+      media.after.shareToken,
+      media.solo.shareToken,
+    ]);
+    // The token is what the sidebar navigates with.
+    expect(result.shareToken).toBe(media.after.shareToken);
+  });
+
+  it("lists only the public media to an anonymous visitor", async () => {
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({ accountId: account.id });
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "public",
+    });
+
+    const res = await query({ auth: null, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    const result = res.body.data.mediaByShareToken;
+    // The team-only half of the pair is not in the list, and neither is
+    // anything else the visitor could not open by its own link.
+    expect(
+      result.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([media.after.shareToken, media.solo.shareToken]);
+    // The list is not the pull request: a public link still says nothing about
+    // the work it belongs to.
+    expect(result.pullRequest).toBeNull();
+  });
+
+  it("lists only the public media to a signed-in outsider", async () => {
+    const outsider = await factory.User.create();
+    const outsiderAccount = await factory.UserAccount.create({
+      userId: outsider.id,
+    });
+    const account = await factory.TeamAccount.create();
+    // Public project, so `$getPermissions` would grant "view" to anyone — an
+    // account is not membership, and must not open the team-only uploads.
+    const project = await factory.Project.create({
+      accountId: account.id,
+      private: false,
+    });
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+
+    const res = await query({
+      auth: { user: outsider, account: outsiderAccount },
+      shareToken: media.after.shareToken,
+    });
+
+    expectNoGraphQLError(res);
+    expect(
+      res.body.data.mediaByShareToken.pullRequestMedias.map(
+        (item: { shareToken: string }) => item.shareToken,
+      ),
+    ).toEqual([media.after.shareToken]);
+  });
+
+  it("is empty for a media that is not published to a pull request", async () => {
+    const { auth, project } = await createTeamOwner();
+    const scenario = await createMediaScenario({ projectId: project.id });
+
+    const res = await query({ auth, shareToken: scenario.after.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken.pullRequestMedias).toEqual([]);
+  });
+
+  it("leaves out a media whose upload never landed", async () => {
+    // A media created to sign an upload that never completed is a step of the
+    // two-step flow, not something the sidebar should offer a link to.
+    const { auth, project } = await createTeamOwner();
+    const media = await createPullRequestMedia({
+      projectId: project.id,
+      pairVisibility: "team",
+      soloVisibility: "team",
+    });
+    await factory.Media.create({
+      projectId: project.id,
+      name: "never-uploaded.png",
+      visibility: "team",
+      githubPullRequestId: media.after.githubPullRequestId,
+      shareToken: `prm-pending-${project.id}`,
+    });
+
+    const res = await query({ auth, shareToken: media.after.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(
+      res.body.data.mediaByShareToken.pullRequestMedias.map(
+        (item: { name: string }) => item.name,
+      ),
+    ).toEqual(["checkout.png", "checkout.png", "dashboard.png"]);
   });
 });

@@ -36,6 +36,7 @@ import {
   GithubRepository,
   GitlabProject,
   Media,
+  MediaDiff,
   MediaVersion,
   IgnoredChange,
   Model,
@@ -53,6 +54,7 @@ import {
   Test,
   User,
 } from "@/database/models";
+import type { ProjectPermission } from "@/database/models/Project";
 import {
   getAccountPeriodUsages,
   type AccountPeriodUsage,
@@ -69,6 +71,7 @@ import {
   GhApiInstallation,
 } from "@/github";
 import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
+import { MAX_PULL_REQUEST_MEDIAS, queryProjectMedia } from "@/media/query";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
@@ -1082,6 +1085,100 @@ function createMediaVersionsLoader() {
 }
 
 /**
+ * What a viewer's membership grants them on a project, once per request.
+ *
+ * The check is two queries and every media field that gates on "is this viewer
+ * a member" runs it — including one now reached per *version*, where the answer
+ * cannot differ between them. Caching is the whole point here; the calls are
+ * still made one by one, because the check reads a `Project` instance rather
+ * than an id.
+ */
+function createProjectMembershipPermissionsLoader() {
+  return new DataLoader<
+    { project: Project; user: User | null },
+    ProjectPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) =>
+          Project.getMembershipPermissions(input.project, input.user),
+        ),
+      ),
+    {
+      cacheKeyFn: (input) => `${input.project.id}:${input.user?.id ?? ""}`,
+    },
+  );
+}
+
+/**
+ * Everything published to one pull request, as one media's sidebar sees it.
+ *
+ * Keyed on what decides the answer rather than on the media asking: every media
+ * in the list shares this project and this pull request, so each of them would
+ * otherwise re-run the same query and get the same rows back.
+ */
+function createPullRequestMediaLoader() {
+  return new DataLoader<
+    {
+      projectId: string;
+      githubPullRequestId: string;
+      /** False for a viewer without membership, who sees only public media. */
+      includeTeamOnly: boolean;
+    },
+    Media[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => {
+          const query = queryProjectMedia({
+            projectIds: [input.projectId],
+            filters: { githubPullRequestId: input.githubPullRequestId },
+            order: "asc",
+          }).limit(MAX_PULL_REQUEST_MEDIAS);
+          if (!input.includeTeamOnly) {
+            query.where("media.visibility", "public");
+          }
+          // Expiry is not filtered here, matching the REST list: a version can
+          // expire between this query and the click, and the share page already
+          // has one state for a media that is no longer there.
+          return query;
+        }),
+      ),
+    {
+      cacheKeyFn: (input) =>
+        `${input.projectId}:${input.githubPullRequestId}:${input.includeTeamOnly}`,
+    },
+  );
+}
+
+/**
+ * Every comparison a version took part in, on either side of it.
+ *
+ * Keyed on the version rather than the media because that is how the rows are
+ * keyed: a version is compared against whatever the other half's newest was
+ * when it landed, and re-uploading either half writes another row rather than
+ * replacing this one. Batched because the share page asks for the comparison of
+ * every version it lists at once.
+ */
+function createMediaVersionDiffsLoader() {
+  return new DataLoader<string, MediaDiff[]>(async (versionIds) => {
+    const ids = [...versionIds];
+    const diffs = await MediaDiff.query()
+      .whereIn("beforeMediaVersionId", ids)
+      .orWhereIn("afterMediaVersionId", ids);
+    return ids.map((versionId) =>
+      diffs.filter(
+        (diff) =>
+          diff.beforeMediaVersionId === versionId ||
+          diff.afterMediaVersionId === versionId,
+      ),
+    );
+  });
+}
+
+/**
  * The other half of a media's before/after pair.
  *
  * The batched form of `findMediaCounterpart`: same pairing tuple, built once
@@ -1794,7 +1891,12 @@ export const createLoaders = () => ({
   MediaComments: createMediaCommentsLoader(),
   LatestMediaVersion: createLatestMediaVersionLoader(),
   MediaVersions: createMediaVersionsLoader(),
+  MediaVersion: createModelLoader(MediaVersion),
+  MediaVersionDiffs: createMediaVersionDiffsLoader(),
+  PullRequestMedia: createPullRequestMediaLoader(),
+  ProjectMembershipPermissions: createProjectMembershipPermissionsLoader(),
   MediaCounterpart: createMediaCounterpartLoader(),
+  Media: createModelLoader(Media),
   TestComments: createTestCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),

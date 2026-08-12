@@ -95,6 +95,10 @@ export const typeDefs = gql`
     0 when the two halves are identical, and 1 when their layouts differ.
     """
     score: Float
+    "The version this was computed from on the \`before\` side"
+    beforeVersion: MediaVersion!
+    "The version this was computed from on the \`after\` side"
+    afterVersion: MediaVersion!
   }
 
   """
@@ -120,6 +124,21 @@ export const typeDefs = gql`
     expiresAt: DateTime
     "Screenshot units this upload charged"
     billedUnits: Int!
+    """
+    The comparison this version took part in — the changed pixels between it and
+    the other half of its pair.
+
+    On the version rather than on the media because that is what a comparison is
+    of: re-uploading either half makes a new pair and a new comparison, and the
+    old one still describes the two versions it was computed from. Looking back
+    at an older version therefore gets that version's own comparison, and
+    \`afterVersion\` / \`beforeVersion\` say which two images it describes — the
+    pair to put on screen beside it.
+
+    Null when the media is not half of a visible pair, when the two halves were
+    never compared, and when the pair is not two images.
+    """
+    diff: MediaDiff
   }
 
   type Media implements Node {
@@ -136,6 +155,8 @@ export const typeDefs = gql`
     description: String
     "Share page URL, the one to paste into a pull request"
     url: String!
+    "The token the share URL carries — the handle that opens this media's page"
+    shareToken: String!
     """
     Ready-to-paste Markdown embed, always pointing at the newest version: the
     picture served from the CDN, linked to the share page. Never built from
@@ -162,14 +183,6 @@ export const typeDefs = gql`
     """
     counterpart: Media
     """
-    The comparison between this media's newest version and its counterpart's,
-    which is what the viewer draws its changes overlay from.
-
-    Null when this media is not half of a visible pair, and when the pair is not
-    two images — Argos does not compare videos frame by frame.
-    """
-    diff: MediaDiff
-    """
     The pull request this media is published to.
 
     Null for a viewer without access to the project, whatever the media's own
@@ -177,6 +190,17 @@ export const typeDefs = gql`
     and the pull request's title, author and number are not part of that.
     """
     pullRequest: PullRequest
+    """
+    Every media published to the same pull request, this one included, oldest
+    first — the order the managed pull request comment lists them in, so the
+    share page's sidebar reads like the comment the reviewer arrived from.
+
+    Empty when this media is not published to a pull request. Filtered by what
+    the viewer may see: without membership on the project, only the public ones
+    — which is what lets a public share link offer the rest of the public set
+    without opening the team-only uploads beside it.
+    """
+    pullRequestMedias: [Media!]!
     visibility: MediaVisibility!
     project: Project
     permissions: [MediaPermission!]!
@@ -228,6 +252,22 @@ export const resolvers: IResolvers = {
       }
     },
     url: (diff) => (diff.key ? getMediaDiffUrl(diff.key) : null),
+    beforeVersion: async (diff, _args, ctx) => {
+      const version = await ctx.loaders.MediaVersion.load(
+        diff.beforeMediaVersionId,
+      );
+      // The columns are `notNullable` foreign keys that cascade on delete, so a
+      // diff whose versions are gone is a diff that is gone.
+      invariant(version, "diff has no before version");
+      return version;
+    },
+    afterVersion: async (diff, _args, ctx) => {
+      const version = await ctx.loaders.MediaVersion.load(
+        diff.afterMediaVersionId,
+      );
+      invariant(version, "diff has no after version");
+      return version;
+    },
   },
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
@@ -235,9 +275,76 @@ export const resolvers: IResolvers = {
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,
     isVideo: (version) => version.isVideo(),
+    diff: async (version, _args, ctx) => {
+      const media = await ctx.loaders.Media.load(version.mediaId);
+      invariant(media, "version has no media");
+      if (!media.state) {
+        return null;
+      }
+      // Gated on the *visible* counterpart, like `markdownPair`: the mask marks
+      // pixels of the other half, and a viewer who may not see that half may not
+      // see where it changed either.
+      const counterpart = await resolveVisibleCounterpart(media, ctx);
+      if (!counterpart) {
+        return null;
+      }
+      // Newest first, which is the order this version's comparisons are
+      // preferred in below.
+      const counterpartVersions = await ctx.loaders.MediaVersions.load(
+        counterpart.id,
+      );
+      const newestCounterpartVersion = counterpartVersions[0];
+      if (!newestCounterpartVersion) {
+        return null;
+      }
+
+      const ownNewest = await ctx.loaders.LatestMediaVersion.load(media.id);
+      if (ownNewest?.id === version.id) {
+        const [beforeVersion, afterVersion] =
+          media.state === "before"
+            ? [version, newestCounterpartVersion]
+            : [newestCounterpartVersion, version];
+        // Scheduling here as well as on upload is what makes the overlay show up
+        // for a pair that came together some other way — one half adopted onto a
+        // pull request, or a pair that predates the feature. The insert is
+        // idempotent, so a pair already computed costs one lookup.
+        //
+        // Only for the newest version: an older one is history, and asking for
+        // a comparison that was never made would queue a job per version the
+        // reviewer clicks through.
+        return ensureMediaDiff({ beforeVersion, afterVersion });
+      }
+
+      const ownSide =
+        media.state === "before"
+          ? "beforeMediaVersionId"
+          : "afterMediaVersionId";
+      const counterpartSide =
+        media.state === "before"
+          ? "afterMediaVersionId"
+          : "beforeMediaVersionId";
+      const diffs = await ctx.loaders.MediaVersionDiffs.load(version.id);
+      const byCounterpartVersion = new Map(
+        diffs
+          .filter((diff) => diff[ownSide] === version.id)
+          .map((diff) => [diff[counterpartSide], diff]),
+      );
+      // While this version was the newest of its half, every re-upload of the
+      // other half made another comparison against it — so it can sit in
+      // several. The newest of them is the one to show, because it is the half
+      // the page puts beside it.
+      for (const counterpartVersion of counterpartVersions) {
+        const diff = byCounterpartVersion.get(counterpartVersion.id);
+        if (diff) {
+          return diff;
+        }
+      }
+      return null;
+    },
   },
   Media: {
     url: (media) => media.url,
+    shareToken: (media) => media.shareToken,
     latestVersion: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
       // `mediaByShareToken` refuses a media with no uploaded version, and nothing
@@ -254,34 +361,6 @@ export const resolvers: IResolvers = {
       }
       return resolveVisibleCounterpart(media, ctx);
     },
-    diff: async (media, _args, ctx) => {
-      if (!media.state) {
-        return null;
-      }
-      // Gated on the *visible* counterpart, like `markdownPair`: the mask marks
-      // pixels of the other half, and a viewer who may not see that half may not
-      // see where it changed either.
-      const counterpart = await resolveVisibleCounterpart(media, ctx);
-      if (!counterpart) {
-        return null;
-      }
-      const [ownVersion, counterpartVersion] = await Promise.all([
-        ctx.loaders.LatestMediaVersion.load(media.id),
-        ctx.loaders.LatestMediaVersion.load(counterpart.id),
-      ]);
-      if (!ownVersion || !counterpartVersion) {
-        return null;
-      }
-      const [beforeVersion, afterVersion] =
-        media.state === "before"
-          ? [ownVersion, counterpartVersion]
-          : [counterpartVersion, ownVersion];
-      // Scheduling here as well as on upload is what makes the overlay show up
-      // for a pair that came together some other way — one half adopted onto a
-      // pull request, or a pair that predates the feature. The insert is
-      // idempotent, so a pair already computed costs one lookup.
-      return ensureMediaDiff({ beforeVersion, afterVersion });
-    },
     pullRequest: async (media, _args, ctx) => {
       if (!media.githubPullRequestId) {
         return null;
@@ -292,13 +371,43 @@ export const resolvers: IResolvers = {
       // it may be.
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
       if (!membershipPermissions.includes("view")) {
         return null;
       }
       return ctx.loaders.GithubPullRequest.load(media.githubPullRequestId);
+    },
+    pullRequestMedias: async (media, _args, ctx) => {
+      if (!media.githubPullRequestId) {
+        return [];
+      }
+      const project = await ctx.loaders.Project.load(media.projectId);
+      invariant(project, "project not found");
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
+      // Scoped to this media's own project: a pull request can carry media from
+      // several projects, and access is decided per project.
+      //
+      // Through a loader because every media this returns has the same project
+      // and the same pull request, so each of them answers this field with the
+      // identical list — asking again once per element is the same query over
+      // and over.
+      return ctx.loaders.PullRequestMedia.load({
+        projectId: media.projectId,
+        githubPullRequestId: media.githubPullRequestId,
+        // The per-item form of `checkCanViewMedia`, for the same reason
+        // `resolveVisibleCounterpart` re-checks: the halves of a pair are
+        // separate uploads with their own visibility, so a public link must not
+        // list the team-only media published beside it.
+        includeTeamOnly: membershipPermissions.includes("view"),
+      });
     },
     markdown: async (media, _args, ctx) => {
       const version = await ctx.loaders.LatestMediaVersion.load(media.id);
@@ -371,9 +480,11 @@ export const resolvers: IResolvers = {
       }
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth.user,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth.user,
+        });
       const permissions = getMediaPermissions({
         visibility: media.visibility,
         membershipPermissions,
@@ -403,9 +514,11 @@ export const resolvers: IResolvers = {
     permissions: async (media, _args, ctx) => {
       const project = await ctx.loaders.Project.load(media.projectId);
       invariant(project, "project not found");
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
       return getMediaPermissions({
         visibility: media.visibility,
         membershipPermissions,
@@ -441,9 +554,11 @@ export const resolvers: IResolvers = {
       invariant(project, "project not found");
       // Membership permissions, not `$getPermissions`: a public project grants
       // anyone "view", which must not open its team-only media to the world.
-      const membershipPermissions = await project.$getMembershipPermissions(
-        ctx.auth?.user ?? null,
-      );
+      const membershipPermissions =
+        await ctx.loaders.ProjectMembershipPermissions.load({
+          project,
+          user: ctx.auth?.user ?? null,
+        });
 
       return checkCanViewMedia({
         visibility: media.visibility,
@@ -479,9 +594,13 @@ async function resolveVisibleCounterpart(
   }
   const project = await ctx.loaders.Project.load(counterpart.projectId);
   invariant(project, "project not found");
-  const membershipPermissions = await project.$getMembershipPermissions(
-    ctx.auth?.user ?? null,
-  );
+  // Through the loader because this is now reached once per version, and the
+  // answer cannot differ between the versions of one media.
+  const membershipPermissions =
+    await ctx.loaders.ProjectMembershipPermissions.load({
+      project,
+      user: ctx.auth?.user ?? null,
+    });
   return checkCanViewMedia({
     visibility: counterpart.visibility,
     membershipPermissions,

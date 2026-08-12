@@ -1,15 +1,23 @@
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
-import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import {
+  type HotkeyName,
+  useBuildHotkey,
+} from "@/containers/Build/BuildHotkeys";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 export function NextButton(props: {
   onPress: () => void;
   isDisabled: boolean;
+  /**
+   * The shortcut this button owns. Same arrow key either way — what differs is
+   * how the `?` dialog words it, which depends on what is being navigated.
+   */
+  hotkeyName?: HotkeyName;
 }) {
-  const { onPress, isDisabled } = props;
-  const hotkey = useBuildHotkey("goToNextDiff", onPress, {
+  const { onPress, isDisabled, hotkeyName = "goToNextDiff" } = props;
+  const hotkey = useBuildHotkey(hotkeyName, onPress, {
     preventDefault: true,
     enabled: !isDisabled,
     allowInInput: true,
@@ -37,9 +45,16 @@ export function PreviousButton(props: {
    * a second one here read as a different destination.
    */
   toOverview?: boolean;
+  /** See {@link NextButton}. */
+  hotkeyName?: HotkeyName;
 }) {
-  const { onPress, isDisabled = false, toOverview = false } = props;
-  const hotkey = useBuildHotkey("goToPreviousDiff", onPress, {
+  const {
+    onPress,
+    isDisabled = false,
+    toOverview = false,
+    hotkeyName = "goToPreviousDiff",
+  } = props;
+  const hotkey = useBuildHotkey(hotkeyName, onPress, {
     preventDefault: true,
     enabled: !isDisabled,
     allowInInput: true,

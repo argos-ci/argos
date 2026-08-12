@@ -1,4 +1,10 @@
-import { startTransition, useEffect, useMemo, useState } from "react";
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -14,7 +20,7 @@ import {
 } from "lucide-react";
 import { Heading, MenuTrigger, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useLocation, useParams } from "react-router";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { useClipboard } from "use-clipboard-copy";
 
 import {
@@ -31,6 +37,11 @@ import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersC
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { MediaSharingIllustration } from "@/containers/EmptyStateIllustrations";
 import { MediaComments } from "@/containers/Media/MediaComments";
+import {
+  groupMediaByPair,
+  type MediaListEntry,
+  MediaPullRequestList,
+} from "@/containers/Media/MediaPullRequestList";
 import { MediaVersions } from "@/containers/Media/MediaVersions";
 import {
   getMediaDownloadName,
@@ -41,7 +52,7 @@ import { NavUserControl } from "@/containers/NavUserControl";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
-import { MediaDiffStatus, MediaVisibility } from "@/gql/graphql";
+import { MediaDiffStatus, MediaState, MediaVisibility } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -56,14 +67,26 @@ import {
   EmptyStateStep,
   EmptyStateSteps,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
+import { HeadlessLink } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
-import { Truncable } from "@/ui/Truncable";
 import { getMentionUser } from "@/ui/UserCard";
-import { formatBytes, formatDimensions, formatExpiry } from "@/util/media";
+
+/** What the viewer needs to draw one version of a media. */
+const _ViewerVersionFragment = graphql(`
+  fragment MediaShare_ViewerVersion on MediaVersion {
+    id
+    createdAt
+    fileUrl
+    posterUrl
+    sizeBytes
+    width
+    height
+    isVideo
+  }
+`);
 
 const MediaShareQuery = graphql(`
   query MediaShare_media(
@@ -85,6 +108,10 @@ const MediaShareQuery = graphql(`
         id
         ...PullRequestButton_PullRequest
       }
+      pullRequestMedias {
+        id
+        ...MediaPullRequestList_Media
+      }
       latestVersion {
         id
         number
@@ -95,7 +122,6 @@ const MediaShareQuery = graphql(`
         width
         height
         isVideo
-        expiresAt
       }
       versions {
         id
@@ -107,31 +133,34 @@ const MediaShareQuery = graphql(`
         width
         height
         isVideo
-        expiresAt
+        # Per version, not per media: an older version has its own comparison,
+        # and it names the two images to put on screen.
+        diff {
+          id
+          status
+          url
+          width
+          height
+          beforeVersion {
+            id
+            ...MediaShare_ViewerVersion
+          }
+          afterVersion {
+            id
+            ...MediaShare_ViewerVersion
+          }
+        }
       }
       counterpart {
         id
         name
         state
         url
+        shareToken
         latestVersion {
           id
-          createdAt
-          fileUrl
-          posterUrl
-          sizeBytes
-          width
-          height
-          isVideo
-          expiresAt
+          ...MediaShare_ViewerVersion
         }
-      }
-      diff {
-        id
-        status
-        url
-        width
-        height
       }
       project {
         id
@@ -170,12 +199,33 @@ export function Component() {
   const media = data.mediaByShareToken;
 
   useAwaitPendingDiff({
-    pending: media?.diff?.status === MediaDiffStatus.Pending,
+    // The newest version's, which is the only comparison that can still be
+    // queued: an older one was settled back when it was the newest.
+    pending:
+      media?.versions.find(
+        (candidate) => candidate.id === media.latestVersion.id,
+      )?.diff?.status === MediaDiffStatus.Pending,
     refetch,
   });
 
   if (!media) {
     return <UnavailableState />;
+  }
+
+  // A pair has one page, and it is the "after".
+  //
+  // Both halves show the same two images side by side, so two pages meant one
+  // subject with two comment threads on it, split by which link the reviewer
+  // happened to click — a remark about the change landing where whoever came
+  // the other way would never see it. The "after" is the state being reviewed,
+  // so it is the one that keeps the conversation, and the "before" sends its
+  // visitors there.
+  //
+  // Only when the counterpart is actually visible: the field is filtered by
+  // what the viewer may see, so a public "before" whose "after" is team-only
+  // stays where it is rather than bouncing someone into a dead end.
+  if (media.state === MediaState.Before && media.counterpart) {
+    return <Navigate replace to={`/m/${media.counterpart.shareToken}`} />;
   }
 
   return (
@@ -200,22 +250,44 @@ export function Component() {
  * them is an error, and the page says the same thing about all of them — it
  * shows the pair without an overlay.
  *
- * Also null while the reviewer is looking back at an older version. The mask was
- * computed from the newest bytes of each half; drawing it over a version it did
- * not come from would mark pixels nothing said had changed.
+ * The comparison comes from the version on screen, so looking back at an older
+ * upload draws the mask that was computed from *it* — together with
+ * {@link getCounterpartVersion}, which puts the half it was computed against
+ * beside it. A mask only describes the two images it came from.
  */
-function getViewerDiff(
-  media: Media,
-  version: Media["versions"][number],
-): ViewerDiff | null {
-  const { diff } = media;
+function getViewerDiff(version: Media["versions"][number]): ViewerDiff | null {
+  const { diff } = version;
   if (!diff?.url || !diff.width || !diff.height) {
     return null;
   }
-  if (version.id !== media.latestVersion.id) {
+  return { url: diff.url, width: diff.width, height: diff.height };
+}
+
+/**
+ * The other half to show beside this version: the one its comparison was
+ * computed against.
+ *
+ * Falls back to the counterpart's newest when the two were never compared —
+ * that is the pair the reviewer would otherwise expect, and there is no mask to
+ * contradict it.
+ */
+function getCounterpartVersion(
+  media: Media,
+  version: Media["versions"][number],
+): DocumentType<typeof _ViewerVersionFragment> | null {
+  const { counterpart } = media;
+  if (!counterpart) {
     return null;
   }
-  return { url: diff.url, width: diff.width, height: diff.height };
+  const { diff } = version;
+  if (!diff) {
+    return counterpart.latestVersion;
+  }
+  // The sides are named after the pair, not after this media: whichever one is
+  // not this version is the other half.
+  return diff.beforeVersion.id === version.id
+    ? diff.afterVersion
+    : diff.beforeVersion;
 }
 
 /** How often the page asks whether the pair's comparison has landed. */
@@ -277,14 +349,72 @@ function SharePage(props: { media: Media }) {
 
   // Falls back to the latest if the selected version went away under us — a
   // retention purge can take an old one while the page is open.
+  // The newest is the fallback, and `versions` is newest first. Read from that
+  // list rather than from `latestVersion` because only these carry the
+  // comparison the viewer draws.
+  const newestVersion = media.versions[0];
+  invariant(newestVersion, "a listed media has an uploaded version");
   const version =
     media.versions.find((candidate) => candidate.id === versionId) ??
-    media.latestVersion;
+    newestVersion;
+  const counterpartVersion = getCounterpartVersion(media, version);
 
   const mentionUsers = useMemo(
     () => media.mentionableUsers.map(getMentionUser),
     [media.mentionableUsers],
   );
+
+  const entries = useMemo(
+    () => groupMediaByPair(media.pullRequestMedias),
+    [media.pullRequestMedias],
+  );
+  // The row this page is showing — matched against both halves, because a pair
+  // is one row and either half can be the one that was opened.
+  const activeIndex = entries.findIndex((entry) =>
+    entry.medias.some((candidate) => candidate.id === media.id),
+  );
+  // One entry is this media itself, and a list of one is a list of where you
+  // already are.
+  //
+  // And nothing at all if this media is not among them: the list is capped, so
+  // a pull request with more media than the cap can leave the one being viewed
+  // out of it — a hundred rows, none of them this page, with both arrows dead.
+  const showList = entries.length > 1 && activeIndex !== -1;
+  const navigate = useNavigate();
+  // The next media has to be fetched, and until it is, the page still shows the
+  // current one. Marking that wait as a transition keeps the media on screen
+  // instead of flashing a fallback, and `isNavigating` closes the door behind
+  // it: a second press while the first is in flight would step from the media
+  // being replaced, landing somewhere nobody asked for.
+  const [isNavigating, startNavigating] = useTransition();
+  const goToEntry = (entry: MediaListEntry) => {
+    // Same route, so the page stays mounted and the query refetches under it
+    // rather than the whole share page unmounting and suspending.
+    startNavigating(() => {
+      navigate(`/m/${entry.target.shareToken}`);
+    });
+  };
+  const nav = showList
+    ? {
+        hasPrevious: activeIndex > 0 && !isNavigating,
+        hasNext:
+          activeIndex !== -1 &&
+          activeIndex < entries.length - 1 &&
+          !isNavigating,
+        onPrevious: () => {
+          const previous = entries[activeIndex - 1];
+          if (previous) {
+            goToEntry(previous);
+          }
+        },
+        onNext: () => {
+          const next = entries[activeIndex + 1];
+          if (next) {
+            goToEntry(next);
+          }
+        },
+      }
+    : null;
 
   // The comment components ask the project what the viewer may do — reacting is a
   // `review`, same as commenting. An anonymous visitor on a public link is not
@@ -296,23 +426,37 @@ function SharePage(props: { media: Media }) {
         <BuildHotkeysDialogStateProvider>
           <BuildHotkeysDialog env="media" />
           <div className="flex min-h-dvh flex-col lg:h-dvh">
-            <PageHeader media={media} version={version} />
+            <PageHeader media={media} />
             <div className="bg-subtle flex flex-1 flex-col gap-4 p-4 lg:min-h-0 lg:flex-row">
+              {showList ? (
+                // Below `lg` the page stacks, and the list goes last: every
+                // pixel above the media is a pixel of it the visitor cannot
+                // see. Beside it, the list is where a build puts its own.
+                <aside className="flex w-full flex-col max-lg:order-last lg:min-h-0 lg:w-56 lg:shrink-0">
+                  <MediaPullRequestList
+                    entries={entries}
+                    activeEntryKey={entries[activeIndex]?.key ?? null}
+                    onSelect={goToEntry}
+                  />
+                </aside>
+              ) : null}
               <main className="flex min-w-0 flex-col justify-center lg:min-h-0 lg:flex-1">
                 <MediaViewer
+                  nav={nav}
                   media={{ ...media, version }}
                   counterpart={
-                    media.counterpart
+                    media.counterpart && counterpartVersion
                       ? {
                           ...media.counterpart,
-                          // Its own newest, not the selected version number: the two
-                          // media have independent histories, and "v2 of the after" has
-                          // no counterpart "v2 of the before" to line up with.
-                          version: media.counterpart.latestVersion,
+                          // The half the selected version was compared against,
+                          // not simply the counterpart's newest: the two media
+                          // have independent histories, and the pair on screen
+                          // has to be the pair the mask describes.
+                          version: counterpartVersion,
                         }
                       : null
                   }
-                  diff={getViewerDiff(media, version)}
+                  diff={getViewerDiff(version)}
                   comments={{
                     media,
                     viewedVersionId: version.id,
@@ -331,6 +475,7 @@ function SharePage(props: { media: Media }) {
                     is the build sidebar's: without it the scroll container
                     crops the last panel's shadow. */}
                 <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pb-6">
+                  <MediaDescription media={media} />
                   <MediaVersions
                     versions={media.versions}
                     selectedId={version.id}
@@ -353,7 +498,6 @@ function SharePage(props: { media: Media }) {
                 </div>
               </aside>
             </div>
-            <PageFooter />
           </div>
         </BuildHotkeysDialogStateProvider>
       </MentionableUsersProvider>
@@ -569,77 +713,62 @@ function VisibilityChip(props: { visibility: MediaVisibility }) {
 }
 
 /**
- * The bar over the media, two lines and done: what the file is (name and the
- * prose that shipped with it), then the version's numbers — dimensions, size,
- * time left — with who may open it and the same login-or-avatar control as
- * the app's on the right. Every value reads without a label, the way a file
- * listing does. Versions have their own panel in the sidebar.
+ * Whose infrastructure served this page, for a visitor who has never seen Argos
+ * — the only branding either state of a share URL carries, now that the name is
+ * over the media and the footer is gone.
  */
-function PageHeader(props: {
-  media: Media;
-  version: Media["versions"][number];
-}) {
-  const { media, version } = props;
-  const facts: React.ReactNode[] = [];
-  if (media.state && !media.counterpart) {
-    // Which half of a pair this is. With both halves on the page the panes
-    // label themselves; alone, the fact lives here.
-    facts.push(media.state);
-  }
-  const dimensions = formatDimensions(version.width, version.height);
-  if (dimensions) {
-    facts.push(dimensions);
-  }
-  facts.push(formatBytes(version.sizeBytes));
-  const expiry = formatExpiry(version.expiresAt);
-  if (expiry) {
-    facts.push(
-      <Tooltip content="Time left before this version is deleted">
-        {/* A live countdown: neutralized in visual tests so the baseline
-            doesn't change every day, the same way `<Time>` is. */}
-        <span data-visual-test="transparent">{expiry}</span>
-      </Tooltip>,
-    );
-  }
+function BrandLink() {
+  return (
+    <Tooltip content="Visual testing for your pull requests">
+      <HeadlessLink
+        href="https://argos-ci.com"
+        target="_blank"
+        // The mark is the link; the usual arrow beside it would hang off a logo
+        // rather than off a phrase.
+        external={false}
+        aria-label="Argos"
+        className="shrink-0 transition hover:brightness-125"
+      >
+        <BrandShield height={32} />
+      </HeadlessLink>
+    </Tooltip>
+  );
+}
 
+/**
+ * The bar over the page: whose infrastructure served it on the left, and on the
+ * right where the media came from, who can open it, and the same
+ * login-or-avatar control as the app's.
+ *
+ * The name is not here — it sits over the media itself, where a build puts its
+ * snapshot's, so the two pages read the same way. That leaves the corner for the
+ * logo, which is what a visitor who has never seen Argos needs from this page.
+ */
+function PageHeader(props: { media: Media }) {
+  const { media } = props;
   return (
     <header className="border-b-thin flex shrink-0 items-center justify-between gap-4 px-4 py-2">
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex min-w-0 items-baseline gap-1.5">
-          {/* The file name is the page's title, in monospace because it is a
-              value, not a sentence. */}
-          <h1 className="shrink-0 font-mono text-sm leading-tight font-medium">
-            {media.name}
-          </h1>
-          {media.description ? (
-            // Truncated with its full text on hover: the prose that shipped
-            // with the upload is often a sentence, and the header is one line.
-            <Truncable className="text-low min-w-0 text-xs leading-tight">
-              <span aria-hidden="true" className="mr-1.5 opacity-60">
-                ·
-              </span>
-              {media.description}
-            </Truncable>
-          ) : null}
-        </div>
-        <div className="text-default flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 font-mono text-xs leading-tight">
-          {facts.map((fact, index) => (
-            // Order is fixed and the parts are static per render.
-            // oxlint-disable-next-line react/no-array-index-key
-            <span key={index} className="flex items-baseline gap-x-2">
-              {index > 0 ? (
-                <span aria-hidden="true" className="text-low opacity-60">
-                  ·
-                </span>
-              ) : null}
-              {fact}
-            </span>
-          ))}
-        </div>
+      <div className="flex min-w-0 items-center gap-3">
+        <BrandLink />
+        {/* Null unless the viewer can reach the project — the resolver decides,
+            so nothing here has to remember not to leak it. Reads as the build
+            header's breadcrumb does: whose infrastructure, then whose work. */}
+        {media.project ? (
+          <Tooltip content="See all builds">
+            <HeadlessLink
+              href={`/${media.project.slug}/builds`}
+              className="text-low data-hovered:text-default rac-focus min-w-0 truncate text-xs leading-none transition"
+            >
+              {media.project.slug}
+            </HeadlessLink>
+          </Tooltip>
+        ) : null}
+        {/* With the project, not with the actions: both answer "whose is this
+            and who can open it", and the answer matters most at the moment of
+            forwarding the link. */}
+        <VisibilityChip visibility={media.visibility} />
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        {/* Null unless the viewer has access to the project — the resolver
-            decides, so nothing here has to remember not to leak it. */}
         {media.pullRequest ? (
           <PullRequestButton
             pullRequest={media.pullRequest}
@@ -647,7 +776,6 @@ function PageHeader(props: {
             target="_blank"
           />
         ) : null}
-        <VisibilityChip visibility={media.visibility} />
         <NavUserControl />
       </div>
     </header>
@@ -655,30 +783,20 @@ function PageHeader(props: {
 }
 
 /**
- * The tiny footer: one line saying whose infrastructure served the page — the
- * name spelled out for a visitor who has never seen it.
+ * The prose that shipped with the upload, in full — the sidebar has the room
+ * for a sentence the old one-line header did not.
+ *
+ * Deliberately not a panel, and deliberately alone: the version's numbers read
+ * beside the file name over the media itself, where the name they describe is,
+ * and a titled card around one paragraph is a title saying what the paragraph
+ * says. Nothing at all when the upload shipped without a description.
  */
-function PageFooter() {
-  return (
-    <footer className="border-t-thin text-low flex shrink-0 items-center gap-2 px-4 py-2.5 text-xs">
-      <BrandShield className="size-4 shrink-0" />
-      <span className="min-w-0 truncate">
-        Hosted by{" "}
-        <Link
-          href="https://argos-ci.com"
-          target="_blank"
-          external={false}
-          className="font-medium"
-        >
-          Argos
-        </Link>
-        <span aria-hidden="true" className="mx-1.5 opacity-60">
-          ·
-        </span>
-        Visual testing for your pull requests
-      </span>
-    </footer>
-  );
+function MediaDescription(props: { media: Media }) {
+  const { media } = props;
+  if (!media.description) {
+    return null;
+  }
+  return <p className="text-low px-1 text-sm">{media.description}</p>;
 }
 
 /**
@@ -700,6 +818,12 @@ function UnavailableState() {
         <title>Media unavailable</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+      {/* The same corner as a working share page's, so a dead link still says
+          whose page it was — the empty state sells Argos in words, and this is
+          the one thing that shows it. */}
+      <header className="border-b-thin flex shrink-0 items-center px-4 py-2">
+        <BrandLink />
+      </header>
       <div className="bg-subtle flex flex-1 flex-col justify-center py-8">
         <EmptyState>
           <EmptyStateIllustration>
@@ -753,7 +877,6 @@ function UnavailableState() {
           </EmptyStateSteps>
         </EmptyState>
       </div>
-      <PageFooter />
     </div>
   );
 }

@@ -244,6 +244,10 @@ export function ListItemButton(
       elementType: "div",
       onPress,
       isDisabled,
+      // Handed to `useButton` rather than left to the spread below: it returns
+      // an `aria-current` of its own, and being spread last it would overwrite
+      // the caller's with the undefined it read from props it was never given.
+      "aria-current": rest["aria-current"],
     },
     ref,
   );
