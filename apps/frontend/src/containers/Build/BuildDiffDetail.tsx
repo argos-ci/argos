@@ -40,7 +40,6 @@ import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/Screens
 import { Code } from "@/ui/Code";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { MenuItem, MenuItemIcon, MenuSeparator } from "@/ui/Menu";
-import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
@@ -347,30 +346,56 @@ async function createMaskedCompareBlob(props: {
 }
 
 function BuildScreenshotHeaderPlaceholder() {
-  return <div className="h-10.5" />;
+  return <div className="h-6" />;
 }
 
+/**
+ * Which side of the comparison a pane is, as the one thing that tells them
+ * apart: the git ref it came from. Side by side, "Baseline from" / "Changes
+ * from" and a relative date were labelling what the layout already says.
+ */
 const BuildScreenshotHeader = memo(
-  (props: {
-    label: string;
-    gitRef: string | null | undefined;
-    date: string | null;
-  }) => {
-    const { label, gitRef, date } = props;
+  (props: { gitRef: string | null | undefined }) => {
+    const { gitRef } = props;
+    if (!gitRef) {
+      return <BuildScreenshotHeaderPlaceholder />;
+    }
     return (
-      <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
-        <div className="flex max-w-full items-center gap-1">
-          <div className="shrink-0 text-xs leading-6 font-medium select-none">
-            {label}
-            {gitRef ? " from" : null}
-          </div>
-          {gitRef && (
-            <Code className="truncate" title={gitRef}>
-              {gitRef}
-            </Code>
-          )}
-        </div>
-        {date && <Time date={date} className="text-xxs" />}
+      <div className="flex h-6 shrink-0 justify-center">
+        <Code className="max-w-full truncate" title={gitRef}>
+          {gitRef}
+        </Code>
+      </div>
+    );
+  },
+);
+
+/**
+ * The same label over an image pane rather than above it: a row of its own cost
+ * a strip of height on every snapshot to carry one word.
+ *
+ * Opaque rather than tinted, because what is behind it is a screenshot of
+ * anything at all. Two refs when the pane blends both sides into one.
+ */
+const FloatingGitRefs = memo(
+  (props: { gitRefs: (string | null | undefined)[] }) => {
+    const gitRefs = props.gitRefs.filter((gitRef): gitRef is string =>
+      Boolean(gitRef),
+    );
+    if (gitRefs.length === 0) {
+      return null;
+    }
+    return (
+      <div className="pointer-events-none absolute top-3 left-3 z-10 flex max-w-[calc(100%-(--spacing(6)))] gap-1.5">
+        {gitRefs.map((gitRef) => (
+          <Code
+            key={gitRef}
+            title={gitRef}
+            className="bg-app border-thin truncate text-xs shadow-xs"
+          >
+            {gitRef}
+          </Code>
+        ))}
       </div>
     );
   },
@@ -1254,11 +1279,9 @@ const BuildScreenshots = memo(
                 contentType: diff.baseScreenshot.contentType,
                 header: build.baseScreenshotBucket ? (
                   <BuildScreenshotHeader
-                    label="Baseline"
                     gitRef={
                       build.baseBranch ?? build.baseScreenshotBucket.commit
                     }
-                    date={build.baseScreenshotBucket.createdAt}
                   />
                 ) : (
                   <BuildScreenshotHeaderPlaceholder />
@@ -1267,13 +1290,7 @@ const BuildScreenshots = memo(
               head={{
                 url: diff.compareScreenshot.url,
                 contentType: diff.compareScreenshot.contentType,
-                header: (
-                  <BuildScreenshotHeader
-                    label="Changes"
-                    gitRef={build.branch}
-                    date={build.createdAt}
-                  />
-                ),
+                header: <BuildScreenshotHeader gitRef={build.branch} />,
               }}
               build={build}
               screenshotDiffId={diff.id}
@@ -1283,55 +1300,27 @@ const BuildScreenshots = memo(
       }
     }
 
+    const baseGitRef = build.baseScreenshotBucket
+      ? (build.baseBranch ?? build.baseScreenshotBucket.commit)
+      : null;
+
     return (
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 p-4">
         <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col [[hidden]]:hidden"
           hidden={!showBaseline}
         >
-          {build.baseScreenshotBucket ? (
-            <BuildScreenshotHeader
-              label="Baseline"
-              gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
-              date={build.baseScreenshotBucket.createdAt}
-            />
-          ) : (
-            <BuildScreenshotHeaderPlaceholder />
-          )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <BaseScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
+          <FloatingGitRefs gitRefs={[baseGitRef]} />
         </div>
         <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col [[hidden]]:hidden"
           hidden={!showChanges}
         >
-          {blendMode ? (
-            <div className="flex shrink-0 justify-center gap-6">
-              {build.baseScreenshotBucket ? (
-                <BuildScreenshotHeader
-                  label="Baseline"
-                  gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
-                  date={build.baseScreenshotBucket.createdAt}
-                />
-              ) : (
-                <BuildScreenshotHeaderPlaceholder />
-              )}
-              <BuildScreenshotHeader
-                label="Changes"
-                gitRef={build.branch}
-                date={build.createdAt}
-              />
-            </div>
-          ) : (
-            <BuildScreenshotHeader
-              label="Changes"
-              gitRef={build.branch}
-              date={build.createdAt}
-            />
-          )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <CompareScreenshot
@@ -1341,6 +1330,10 @@ const BuildScreenshots = memo(
               />
             </ScaleProvider>
           </div>
+          {/* Blended, one pane holds both sides, so it is labelled with both. */}
+          <FloatingGitRefs
+            gitRefs={blendMode ? [baseGitRef, build.branch] : [build.branch]}
+          />
         </div>
       </div>
     );

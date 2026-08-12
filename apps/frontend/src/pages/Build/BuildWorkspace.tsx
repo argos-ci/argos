@@ -20,6 +20,7 @@ import { BuildOverview } from "./BuildOverview";
 import { BuildParams } from "./BuildParams";
 import { BuildLeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
+import { ScreenshotActionsToolbar } from "./ScreenshotActionsToolbar";
 
 const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
@@ -114,7 +115,7 @@ export function BuildWorkspace(props: {
       <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <BuildDetailProviders>
-          <Toolbar build={build} />
+          <Toolbar />
           <div className="bg-subtle flex min-h-0 flex-1">
             {(() => {
               switch (build.status) {
@@ -185,19 +186,14 @@ function BuildDetailProviders(props: { children: React.ReactNode }) {
   );
 }
 
-function Toolbar(props: { build: DocumentType<typeof _BuildFragment> }) {
-  const { build } = props;
+function Toolbar() {
   const { activeDiff } = useBuildDiffState();
   if (!activeDiff) {
     return null;
   }
   return (
     <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
-      <BuildDetailHeader
-        diff={activeDiff}
-        buildType={build.type ?? null}
-        isSubsetBuild={build.subset}
-      />
+      <BuildDetailHeader diff={activeDiff} />
     </div>
   );
 }
@@ -211,8 +207,18 @@ function BuildDetail(props: {
   const snapshotType = useAtomValue(snapshotTypeAtom);
   const shownDiff = snapshotType === "aria" && ariaDiff ? ariaDiff : activeDiff;
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
+    // `relative` so the action bar can float over the bottom of the pane rather
+    // than scroll away with a full-page snapshot, and `pb-14` to leave it a
+    // gutter of its own instead of covering the foot of the snapshot.
+    <div className="relative flex min-h-0 min-w-0 flex-1 pb-14">
       <BuildDiffDetail build={build} diff={shownDiff} repoUrl={repoUrl} />
+      {activeDiff ? (
+        <ScreenshotActionsToolbar
+          diff={activeDiff}
+          buildType={build.type ?? null}
+          isSubsetBuild={build.subset}
+        />
+      ) : null}
     </div>
   );
 }

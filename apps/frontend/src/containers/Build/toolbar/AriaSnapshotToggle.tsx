@@ -4,7 +4,9 @@ import { ImageIcon, ScanTextIcon } from "lucide-react";
 
 import { useBuildDiffState } from "@/pages/Build/BuildDiffState";
 import { Button } from "@/ui/Button";
+import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildHotkey } from "../BuildHotkeys";
 import { snapshotTypeAtom } from "../SnapshotType";
@@ -14,34 +16,54 @@ export const AriaSnapshotToggle = memo(() => {
   return ariaDiff ? <Toggle /> : null;
 });
 
+/**
+ * Which of the two recordings of the page is on screen: the pixels, or the
+ * accessibility tree the same capture wrote next to them.
+ *
+ * A pair of buttons rather than one that swaps its icon: both are always
+ * available, so showing both — with the current one pressed — says what is on
+ * screen as well as what else there is.
+ */
 function Toggle() {
   const [snapshotType, setSnapshotType] = useAtom(snapshotTypeAtom);
-  const toggle = () => {
+  const select = (type: "screenshot" | "aria") => {
     startTransition(() => {
-      setSnapshotType(
-        (prev) =>
-          ({ aria: "screenshot" as const, screenshot: "aria" as const })[prev],
-      );
+      setSnapshotType(type);
     });
   };
-  const hotkey = useBuildHotkey("toggleSnapshotType", toggle, {
-    preventDefault: true,
-  });
+  const hotkey = useBuildHotkey(
+    "toggleSnapshotType",
+    () => select(snapshotType === "aria" ? "screenshot" : "aria"),
+    { preventDefault: true },
+  );
   return (
-    <HotkeyTooltip
-      description={
-        {
-          screenshot: "Switch to aria view",
-          aria: "Switch to screenshot view",
-        }[snapshotType]
-      }
-      keys={hotkey.displayKeys}
-    >
-      {/* The icon is the destination, not the state: the aria tree while looking
-          at the screenshot, the screenshot while reading the tree. */}
-      <Button variant="secondary" iconOnly onPress={toggle}>
-        {snapshotType === "aria" ? <ImageIcon /> : <ScanTextIcon />}
-      </Button>
-    </HotkeyTooltip>
+    <ButtonGroup role="group" aria-label="Snapshot type">
+      <Tooltip content="Screenshot">
+        <Button
+          variant="secondary"
+          iconOnly
+          aria-pressed={snapshotType === "screenshot"}
+          aria-label="Screenshot"
+          onPress={() => select("screenshot")}
+        >
+          <ImageIcon />
+        </Button>
+      </Tooltip>
+      <HotkeyTooltip
+        description="Accessibility tree"
+        keys={hotkey.displayKeys}
+        keysEnabled={snapshotType !== "aria"}
+      >
+        <Button
+          variant="secondary"
+          iconOnly
+          aria-pressed={snapshotType === "aria"}
+          aria-label="Accessibility tree"
+          onPress={() => select("aria")}
+        >
+          <ScanTextIcon />
+        </Button>
+      </HotkeyTooltip>
+    </ButtonGroup>
   );
 }

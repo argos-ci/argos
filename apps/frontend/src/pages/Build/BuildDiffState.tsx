@@ -765,6 +765,31 @@ export function BuildDiffProvider(props: {
     }
   });
 
+  // Narrowing the review never leaves a snapshot on screen that the filters
+  // exclude. Preferably it swaps the dropped variant for the sibling the filters
+  // keep — same snapshot, other browser or viewport — rather than dropping the
+  // reviewer back into the list. Failing that (a color scheme is part of the
+  // snapshot name, so it has no sibling to swap to) it moves to the head of what
+  // the list now holds.
+  useEffect(() => {
+    if (!activeDiff || diffMatchesFilters(activeDiff, filterState.active)) {
+      return;
+    }
+    const next =
+      siblingDiffs.find((diff) =>
+        diffMatchesFilters(diff, filterState.active),
+      ) ?? sortedDiffs[0];
+    if (next) {
+      setActiveDiff(next);
+    }
+  }, [
+    activeDiff,
+    siblingDiffs,
+    sortedDiffs,
+    filterState.active,
+    setActiveDiff,
+  ]);
+
   const initialDiffGroup = getDiffGroup(initialDiff);
 
   const [ready, setReady] = useState(false);

@@ -181,6 +181,35 @@ function getMetadataForDiff(diff: Diff) {
 }
 
 /**
+ * Keys of the filters a diff matches, in the categories that describe which
+ * variant of a snapshot it is: its browser and its viewport.
+ */
+export function getVariantFilterKeys(diff: Diff): string[] {
+  const metadata = getMetadataForDiff(diff);
+  if (!metadata) {
+    return [];
+  }
+  const keys: string[] = [];
+  if (metadata.browser) {
+    keys.push(
+      getFilterKey({
+        category: MetadataCategory.browser,
+        value: metadata.browser.name,
+      }),
+    );
+  }
+  if (metadata.viewport) {
+    keys.push(
+      getFilterKey({
+        category: MetadataCategory.viewport,
+        value: formatViewport(metadata.viewport),
+      }),
+    );
+  }
+  return keys;
+}
+
+/**
  * Create a filter state from diffs.
  */
 export function useCreateFilterState(diffs: Diff[]): FilterState {
