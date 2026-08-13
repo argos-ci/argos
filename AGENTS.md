@@ -149,6 +149,31 @@ users) — re-parse the stored JSON server-side and check permissions (see
 `src/comment/mentions.ts`). A `mention` node persists **only the account id**,
 never the label; labels are resolved at render time on both sides.
 
+## What to test
+
+Coverage is not the goal. Every test is code someone has to keep working, so it
+has to earn its place by protecting something the project actually depends on.
+
+- **Test what matters to the whole project, not edge cases.** Billing,
+  permissions and auth, the build lifecycle, review and comment flows,
+  notifications — the paths where a regression reaches users or corrupts data.
+  A test that pins one component's internal state buys little and costs
+  maintenance forever.
+- **The more end-to-end, the better.** A Playwright spec exercises the real
+  server, the real database and the real client together, which is where bugs
+  actually live; the same assertion one layer down proves much less. When a
+  behavior can be reached from the UI, test it there and skip the unit test.
+- **Avoid mocking.** A mock asserts what you assumed the collaborator does, so
+  the test passes while production breaks. If a behavior can only be reached by
+  mocking, move the test further out — or accept that it does not need one.
+- **Low-level utilities are the exception worth being exhaustive about.** Pure
+  helpers with many input shapes — parsers, validators, comparators, formatters
+  — are cheap to cover case by case, and that is exactly where a table-driven
+  `*.test.ts` pays off.
+- **Not every fix needs a test.** A flake, a one-off rendering detail or an
+  ordering tweak is usually fixed and left at that. Add a guard only when the
+  behavior is worth defending on its own.
+
 ## Testing (Vitest)
 
 - Tests live next to the code. `*.e2e.test.ts` requires Redis/Postgres,
@@ -157,8 +182,7 @@ never the label; labels are resolved at render time on both sides.
 - Use `apps/backend/src/database/testing/factory.ts` for fixtures, and
   `test.extend` (prefer one per file, creating models inside fixtures).
 - Keep fixtures small, reusable, independent, and split by concern so tests run
-  in parallel. Avoid large shared setups and avoid mocking unless the behavior
-  can't be tested realistically.
+  in parallel. Avoid large shared setups.
 - Test API endpoints with `createTestHandlerApp` + `supertest`.
 - `test:integration` runs in parallel, and every test truncates the whole
   database, so each worker owns a `test_<workerId>` database, a Redis database
@@ -195,8 +219,9 @@ Specs live in `tests/*.spec.ts` and run against the **built** app.
   depend on. Use a unique `keyPrefix` (e.g. the project id) for `File` keys, and
   reuse existing image keys (`dummy-*`, `diff-*`) so images load from
   `files.argos-ci.com/test/<s3Id>`.
-- A guard test should fail without the fix — verify by temporarily reverting the
-  fix, rebuilding, and re-running before trusting it.
+- A guard test — when the behavior warrants one, see [What to test](#what-to-test)
+  — should fail without the fix. Verify by temporarily reverting the fix,
+  rebuilding, and re-running before trusting it.
 
 ### Seeding gotchas
 
