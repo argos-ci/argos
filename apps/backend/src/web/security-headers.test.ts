@@ -171,11 +171,13 @@ describe("app security headers", () => {
       const csp = await getCsp();
       // Scripts and styles are the build output; fonts ship inside it via
       // `@fontsource-variable/inter`; images cover anything Vite emits to
-      // `assets/`. Miss one and that resource type breaks on deploy.
+      // `assets/`; `connect-src` is how DevTools fetches the source maps the
+      // chunks point at. Miss one and that resource type breaks on deploy.
       expect(csp["script-src"]).toContain("https://assets.argos-ci.com");
       expect(csp["style-src"]).toContain("https://assets.argos-ci.com");
       expect(csp["font-src"]).toContain("https://assets.argos-ci.com");
       expect(csp["img-src"]).toContain("https://assets.argos-ci.com");
+      expect(csp["connect-src"]).toContain("https://assets.argos-ci.com");
     });
 
     it("does not authorise the CDN for workers", async () => {
