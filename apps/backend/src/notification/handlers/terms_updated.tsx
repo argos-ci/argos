@@ -39,27 +39,29 @@ export const handler = defineNotificationHandler({
   email: (props) => {
     const effectiveDate = formatEffectiveDate(props.effectiveDate);
     return {
-      subject: "Updated terms of service and privacy policy",
+      subject: "Updates to our Terms of Service and Privacy Policy",
       body: (
         <EmailLayout preview="Our terms of service and privacy policy have been updated">
-          <H1>Updated terms of service and privacy policy</H1>
+          <H1>Updates to our Terms of Service and Privacy Policy</H1>
           <Hi name={props.ctx.user.name} />
           <Paragraph>
-            We have updated our terms of service and privacy policy.
+            We’ve updated our Terms of Service and Privacy Policy. They take
+            effect on {effectiveDate} for your subscription.
           </Paragraph>
           <Paragraph>
-            The new terms take effect on {effectiveDate} for existing paid
-            subscriptions, and immediately for everyone else. Nothing changes in
-            how you use Argos and there is nothing you need to do. If you would
-            rather not accept them, you can cancel before that date and we will
-            refund the unused part of your billing period.
+            How Argos works and what you pay are unchanged, and there’s nothing
+            you need to do. If you’d rather not accept the updated terms, you
+            can cancel before that date and we’ll refund the unused portion of
+            your current billing period.
           </Paragraph>
           <Paragraph>
-            <Link href="https://argos-ci.com/terms">Terms of service</Link>
+            <Link href="https://argos-ci.com/terms">Terms of Service</Link>
             {" · "}
-            <Link href="https://argos-ci.com/privacy">Privacy policy</Link>
+            <Link href="https://argos-ci.com/privacy">Privacy Policy</Link>
           </Paragraph>
-          <Paragraph>Any question, just reply to this message.</Paragraph>
+          <Paragraph>
+            If you have any questions, just reply to this email.
+          </Paragraph>
           <Signature />
         </EmailLayout>
       ),
