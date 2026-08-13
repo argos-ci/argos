@@ -119,6 +119,15 @@ if (process.argv.includes("--send")) {
     "RESEND_API_KEY is required to send, otherwise emails are silently dropped",
   );
 
+  // The layout builds the logo URL from `server.url`. Left on a development
+  // host it still renders and still sends, but every recipient gets a broken
+  // image and a privacy warning from their mail client.
+  const serverUrl = config.get("server.url");
+  invariant(
+    !/argos-ci\.dev|localhost|127\.0\.0\.1/.test(serverUrl),
+    `SERVER_URL is ${serverUrl}, so the logo would point at a host recipients cannot reach. Set SERVER_URL=https://app.argos-ci.com`,
+  );
+
   const failures: string[] = [];
   for (const [index, recipient] of recipients.entries()) {
     const position = `[${index + 1}/${recipients.length}]`;
