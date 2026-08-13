@@ -38,6 +38,17 @@ is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
 Suppress with `// oxlint-disable-next-line <rule>`. Oxlint still honours
 `eslint-disable` comments, but do not write new ones.
 
+## Commits
+
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), with one
+rule that decides the type: **`feat` and `fix` are for what a user would
+notice** — a capability they gain, a bug they hit. Judge it from their side of
+the screen, not from how much code moved or how hard it was to find. Everything
+else is `chore`, however substantial: refactors, tests, tooling, docs,
+dependency bumps, and internal fixes no user could ever observe. Do not use
+`style` — the formatter owns formatting, so the type has nothing left to
+describe.
+
 ## TypeScript
 
 - Never use `!` (non-null assertion). Use `invariant` for required values.
