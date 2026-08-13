@@ -247,6 +247,16 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
+  // A hashed asset `serveStatic` did not find belongs to a build this task does
+  // not have, and no later handler can produce it. Without this it falls through
+  // to the SPA catch-all and comes back as index.html with a 200, which the
+  // browser reports as an opaque MIME type error rather than a missing file —
+  // the single most confusing symptom of the deploy race this whole change
+  // exists to remove.
+  router.use("/assets", (_req, res) => {
+    res.status(404).type("txt").send("Not Found");
+  });
+
   router.use(
     createAppSecurityHeaders({
       configScriptCspHash: shell?.configScriptCspHash ?? null,

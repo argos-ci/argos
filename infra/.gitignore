@@ -1,1 +1,3 @@
 /cdk.out
+# Secrets written at synth time for esbuild to --inject into the edge bundle.
+/.generated

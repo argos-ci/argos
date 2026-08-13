@@ -1,5 +1,7 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import config from "@/config";
 
 import { createAppSecurityHeaders, getConnectSrc } from "./security-headers";
 import { createTestApp } from "./test-util";
@@ -150,8 +152,55 @@ describe("app security headers", () => {
     });
 
     it("serves fonts from this origin only", async () => {
-      // Inter is self-hosted, so no third-party font origin is needed.
+      // Inter is self-hosted, and with no asset CDN configured it is served
+      // from this origin like everything else.
       const csp = await getCsp();
+      expect(csp["font-src"]).toEqual(["'self'", "data:"]);
+    });
+  });
+
+  describe("asset origin", () => {
+    const originalBaseUrl = config.get("assets.baseUrl");
+
+    afterEach(() => {
+      config.set("assets.baseUrl", originalBaseUrl);
+    });
+
+    it("authorises the CDN for every directive that can name an asset", async () => {
+      config.set("assets.baseUrl", "https://assets.argos-ci.com");
+      const csp = await getCsp();
+      // Scripts and styles are the build output; fonts ship inside it via
+      // `@fontsource-variable/inter`; images cover anything Vite emits to
+      // `assets/`. Miss one and that resource type breaks on deploy.
+      expect(csp["script-src"]).toContain("https://assets.argos-ci.com");
+      expect(csp["style-src"]).toContain("https://assets.argos-ci.com");
+      expect(csp["font-src"]).toContain("https://assets.argos-ci.com");
+      expect(csp["img-src"]).toContain("https://assets.argos-ci.com");
+    });
+
+    it("does not authorise the CDN for workers", async () => {
+      // A worker's top-level script has to be same-origin no matter what CORS
+      // says, so the colour-detection worker is inlined as a blob instead of
+      // loaded from the CDN. Widening this directive would not make a
+      // cross-origin worker load — it would just hide why.
+      config.set("assets.baseUrl", "https://assets.argos-ci.com");
+      const csp = await getCsp();
+      expect(csp["worker-src"]).toEqual(["'self'", "blob:"]);
+    });
+
+    it("authorises the origin, not the path", async () => {
+      // CSP source expressions match on origin; a path here would either be
+      // ignored or narrow the directive in ways nobody intended.
+      config.set("assets.baseUrl", "https://assets.argos-ci.com/build/");
+      const csp = await getCsp();
+      expect(csp["script-src"]).toContain("https://assets.argos-ci.com");
+      expect(csp["script-src"]?.join(" ")).not.toContain("/build");
+    });
+
+    it("adds nothing when no CDN is configured", async () => {
+      config.set("assets.baseUrl", "");
+      const csp = await getCsp();
+      expect(csp["style-src"]).toEqual(["'self'", "'unsafe-inline'"]);
       expect(csp["font-src"]).toEqual(["'self'", "data:"]);
     });
   });
