@@ -1,19 +1,30 @@
+/**
+ * The brand marks of the agents in `./registry`, and the two components that
+ * pick one.
+ *
+ * Kept on its own entry point (`@argos/agents/react`) so the backend — which
+ * needs the registry on every comment it stores — never pulls React or a
+ * kilobyte of SVG in with it.
+ *
+ * Every mark is inlined as a component rather than fetched: remote images are
+ * subject to the app CSP, and a monochrome mark has to take the color of
+ * whatever holds it. That is also why there are two sets of them.
+ */
+import type { ReactNode } from "react";
 import { clsx } from "clsx";
-import { TerminalIcon } from "lucide-react";
+import { BotIcon, TerminalIcon } from "lucide-react";
+
+type MarkProps = { className?: string };
 
 /**
- * Official logos for verified well-known OAuth apps, keyed by `knownAppId` in
- * `OAuthAppLogo`. Inlined as components (not remote images) so they are not
- * subject to the app CSP and so monochrome marks can adapt to the theme via
- * `currentColor`. Colored brand marks keep their fixed brand colors.
- *
- * `ArgosCliLogo` is composed from a Lucide terminal icon rather than a brand
- * SVG (the first-party CLI has no separate mark).
+ * Brand marks in the product's own colors, for surfaces that identify the app
+ * itself: the OAuth consent screen, the connected-apps list, the badge on a
+ * comment an agent posted.
  */
 
-type LogoProps = { className?: string };
-
-export function ArgosCliLogo({ className }: LogoProps) {
+function ArgosCliLogo({ className }: MarkProps) {
+  // Composed from a Lucide icon rather than a brand SVG — the first-party CLI
+  // has no mark of its own.
   return (
     <div
       aria-hidden
@@ -27,7 +38,7 @@ export function ArgosCliLogo({ className }: LogoProps) {
   );
 }
 
-export function ClaudeLogo({ className }: LogoProps) {
+function ClaudeLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -44,7 +55,7 @@ export function ClaudeLogo({ className }: LogoProps) {
   );
 }
 
-export function ClaudeCodeLogo({ className }: LogoProps) {
+function ClaudeCodeLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -62,7 +73,7 @@ export function ClaudeCodeLogo({ className }: LogoProps) {
   );
 }
 
-export function CodexLogo({ className }: LogoProps) {
+function CodexLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -76,12 +87,12 @@ export function CodexLogo({ className }: LogoProps) {
       />
       <path
         d="M9.064 3.344a4.578 4.578 0 012.285-.312c1 .115 1.891.54 2.673 1.275.01.01.024.017.037.021a.09.09 0 00.043 0 4.55 4.55 0 013.046.275l.047.022.116.057a4.581 4.581 0 012.188 2.399c.209.51.313 1.041.315 1.595a4.24 4.24 0 01-.134 1.223.123.123 0 00.03.115c.594.607.988 1.33 1.183 2.17.289 1.425-.007 2.71-.887 3.854l-.136.166a4.548 4.548 0 01-2.201 1.388.123.123 0 00-.081.076c-.191.551-.383 1.023-.74 1.494-.9 1.187-2.222 1.846-3.711 1.838-1.187-.006-2.239-.44-3.157-1.302a.107.107 0 00-.105-.024c-.388.125-.78.143-1.204.138a4.441 4.441 0 01-1.945-.466 4.544 4.544 0 01-1.61-1.335c-.152-.202-.303-.392-.414-.617a5.81 5.81 0 01-.37-.961 4.582 4.582 0 01-.014-2.298.124.124 0 00.006-.056.085.085 0 00-.027-.048 4.467 4.467 0 01-1.034-1.651 3.896 3.896 0 01-.251-1.192 5.189 5.189 0 01.141-1.6c.337-1.112.982-1.985 1.933-2.618.212-.141.413-.251.601-.33.215-.089.43-.164.646-.227a.098.098 0 00.065-.066 4.51 4.51 0 01.829-1.615 4.535 4.535 0 011.837-1.388zm3.482 10.565a.637.637 0 000 1.272h3.636a.637.637 0 100-1.272h-3.636zM8.462 9.23a.637.637 0 00-1.106.631l1.272 2.224-1.266 2.136a.636.636 0 101.095.649l1.454-2.455a.636.636 0 00.005-.64L8.462 9.23z"
-        fill="url(#lobe-icons-codex-fill)"
+        fill="url(#argos-agents-codex-fill)"
       />
       <defs>
         <linearGradient
           gradientUnits="userSpaceOnUse"
-          id="lobe-icons-codex-fill"
+          id="argos-agents-codex-fill"
           x1="12"
           x2="12"
           y1="3"
@@ -96,7 +107,7 @@ export function CodexLogo({ className }: LogoProps) {
   );
 }
 
-export function CursorLogo({ className }: LogoProps) {
+function CursorLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -111,7 +122,7 @@ export function CursorLogo({ className }: LogoProps) {
   );
 }
 
-export function VSCodeLogo({ className }: LogoProps) {
+function VSCodeLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -121,7 +132,7 @@ export function VSCodeLogo({ className }: LogoProps) {
     >
       <title>Visual Studio Code</title>
       <mask
-        id="vscode-mask"
+        id="argos-agents-vscode-mask"
         maskUnits="userSpaceOnUse"
         x="0"
         y="0"
@@ -135,18 +146,18 @@ export function VSCodeLogo({ className }: LogoProps) {
           fill="white"
         />
       </mask>
-      <g mask="url(#vscode-mask)">
+      <g mask="url(#argos-agents-vscode-mask)">
         <path
           d="M96.4614 10.7962L75.8569 0.875542C73.4719 -0.272773 70.6217 0.211611 68.75 2.08333L1.29858 63.5832C-0.515693 65.2373 -0.513607 68.0937 1.30308 69.7452L6.81272 74.754C8.29793 76.1042 10.5347 76.2036 12.1338 74.9905L93.3609 13.3699C96.086 11.3026 100 13.2462 100 16.6667V16.4275C100 14.0265 98.6246 11.8378 96.4614 10.7962Z"
           fill="#0065A9"
         />
-        <g filter="url(#vscode-filter0)">
+        <g filter="url(#argos-agents-vscode-filter0)">
           <path
             d="M96.4614 89.2038L75.8569 99.1245C73.4719 100.273 70.6217 99.7884 68.75 97.9167L1.29858 36.4169C-0.515693 34.7627 -0.513607 31.9063 1.30308 30.2548L6.81272 25.246C8.29793 23.8958 10.5347 23.7964 12.1338 25.0095L93.3609 86.6301C96.086 88.6974 100 86.7538 100 83.3334V83.5726C100 85.9735 98.6246 88.1622 96.4614 89.2038Z"
             fill="#007ACC"
           />
         </g>
-        <g filter="url(#vscode-filter1)">
+        <g filter="url(#argos-agents-vscode-filter1)">
           <path
             d="M75.8578 99.1263C73.4721 100.274 70.6219 99.7885 68.75 97.9166C71.0564 100.223 75 98.5895 75 95.3278V4.67213C75 1.41039 71.0564 -0.223106 68.75 2.08329C70.6219 0.211402 73.4721 -0.273666 75.8578 0.873633L96.4587 10.7807C98.6234 11.8217 100 14.0112 100 16.4132V83.5871C100 85.9891 98.6234 88.1786 96.4586 89.2196L75.8578 99.1263Z"
             fill="#1F9CF0"
@@ -157,13 +168,13 @@ export function VSCodeLogo({ className }: LogoProps) {
             fillRule="evenodd"
             clipRule="evenodd"
             d="M70.8511 99.3171C72.4261 99.9306 74.2221 99.8913 75.8117 99.1264L96.4 89.2197C98.5634 88.1787 99.9392 85.9892 99.9392 83.5871V16.4133C99.9392 14.0112 98.5635 11.8217 96.4001 10.7807L75.8117 0.873695C73.7255 -0.13019 71.2838 0.115699 69.4527 1.44688C69.1912 1.63705 68.942 1.84937 68.7082 2.08335L29.2943 38.0414L12.1264 25.0096C10.5283 23.7964 8.29285 23.8959 6.80855 25.246L1.30225 30.2548C-0.513334 31.9064 -0.515415 34.7627 1.29775 36.4169L16.1863 50L1.29775 63.5832C-0.515415 65.2374 -0.513334 68.0937 1.30225 69.7452L6.80855 74.754C8.29285 76.1042 10.5283 76.2036 12.1264 74.9905L29.2943 61.9586L68.7082 97.9167C69.3317 98.5405 70.0638 99.0104 70.8511 99.3171ZM74.9544 27.2989L45.0483 50L74.9544 72.7012V27.2989Z"
-            fill="url(#vscode-paint0)"
+            fill="url(#argos-agents-vscode-paint0)"
           />
         </g>
       </g>
       <defs>
         <filter
-          id="vscode-filter0"
+          id="argos-agents-vscode-filter0"
           x="-8.39411"
           y="15.8291"
           width="116.727"
@@ -196,7 +207,7 @@ export function VSCodeLogo({ className }: LogoProps) {
           />
         </filter>
         <filter
-          id="vscode-filter1"
+          id="argos-agents-vscode-filter1"
           x="60.4167"
           y="-8.07558"
           width="47.9167"
@@ -229,7 +240,7 @@ export function VSCodeLogo({ className }: LogoProps) {
           />
         </filter>
         <linearGradient
-          id="vscode-paint0"
+          id="argos-agents-vscode-paint0"
           x1="49.9392"
           y1="0.257812"
           x2="49.9392"
@@ -244,7 +255,7 @@ export function VSCodeLogo({ className }: LogoProps) {
   );
 }
 
-export function WindsurfLogo({ className }: LogoProps) {
+function WindsurfLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -262,7 +273,7 @@ export function WindsurfLogo({ className }: LogoProps) {
   );
 }
 
-export function ZedLogo({ className }: LogoProps) {
+function ZedLogo({ className }: MarkProps) {
   return (
     <svg
       className={className}
@@ -279,4 +290,143 @@ export function ZedLogo({ className }: LogoProps) {
       />
     </svg>
   );
+}
+
+const LOGOS: Record<string, (props: MarkProps) => ReactNode> = {
+  "argos-cli": ArgosCliLogo,
+  claude: ClaudeLogo,
+  "claude-code": ClaudeCodeLogo,
+  "openai-codex": CodexLogo,
+  cursor: CursorLogo,
+  vscode: VSCodeLogo,
+  windsurf: WindsurfLogo,
+  zed: ZedLogo,
+};
+
+/**
+ * Monochrome marks, from https://thesvg.org (MIT, `mono` variant), for surfaces
+ * where the mark reads as an icon rather than as a brand: a menu row, a button
+ * label, a low-contrast panel header. They paint themselves with `currentColor`,
+ * so the same icon takes the color of whatever holds it.
+ *
+ * They carry no `<title>`: a title inside an SVG shows up as the browser's own
+ * tooltip, which lands on top of the tooltip the control already has. The name
+ * belongs to whatever holds the icon — a label, an `aria-label`, a menu item.
+ */
+
+function ClaudeIcon({ className }: MarkProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z" />
+    </svg>
+  );
+}
+
+function CodexIcon({ className }: MarkProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="currentColor"
+      fillRule="evenodd"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        clipRule="evenodd"
+        d="M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117.117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.703 2.33 1.77 2.918 3.198.278.679.418 1.388.421 2.126a5.655 5.655 0 01-.18 1.631.167.167 0 00.04.155 5.982 5.982 0 011.578 2.891c.385 1.901-.01 3.615-1.183 5.14l-.182.22a6.063 6.063 0 01-2.934 1.851.162.162 0 00-.108.102c-.255.736-.511 1.364-.987 1.992-1.199 1.582-2.962 2.462-4.948 2.451-1.583-.008-2.986-.587-4.21-1.736a.145.145 0 00-.14-.032c-.518.167-1.04.191-1.604.185a5.924 5.924 0 01-2.595-.622 6.058 6.058 0 01-2.146-1.781c-.203-.269-.404-.522-.551-.821a7.74 7.74 0 01-.495-1.283 6.11 6.11 0 01-.017-3.064.166.166 0 00.008-.074.115.115 0 00-.037-.064 5.958 5.958 0 01-1.38-2.202 5.196 5.196 0 01-.333-1.589 6.915 6.915 0 01.188-2.132c.45-1.484 1.309-2.648 2.577-3.493.282-.188.55-.334.802-.438.286-.12.573-.22.861-.304a.129.129 0 00.087-.087A6.016 6.016 0 015.635 2.31C6.315 1.464 7.132.846 8.086.457zm-.804 7.85a.848.848 0 00-1.473.842l1.694 2.965-1.688 2.848a.849.849 0 001.46.864l1.94-3.272a.849.849 0 00.007-.854l-1.94-3.393zm5.446 6.24a.849.849 0 000 1.695h4.848a.849.849 0 000-1.696h-4.848z"
+      />
+    </svg>
+  );
+}
+
+function CursorIcon({ className }: MarkProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23" />
+    </svg>
+  );
+}
+
+const ICONS: Record<string, (props: MarkProps) => ReactNode> = {
+  claude: ClaudeIcon,
+  "openai-codex": CodexIcon,
+  cursor: CursorIcon,
+};
+
+/**
+ * The agent's brand mark in its own colors — for surfaces that stand for the
+ * product itself.
+ *
+ * Not every id has a mark (an agent that only ever reaches us through the CLI),
+ * and an id may be missing entirely (a self-registered OAuth client, or an agent
+ * we could not name), so the fallback is the caller's to choose: a monogram of
+ * the name reads as "this app", a bot reads as "some agent", and the two
+ * surfaces want opposite things.
+ *
+ * `name` is passed in rather than read from the registry: the caller has it
+ * either way — an unverified client's is self-asserted and not in the registry
+ * at all — and it keeps this file free of the registry import, so importing a
+ * logo never drags the data in.
+ */
+export function AgentLogo(props: {
+  id?: string | null;
+  /** Name the default monogram is built from. */
+  name?: string | null;
+  /** Shown instead of the monogram when there is no mark for `id`. */
+  fallback?: ReactNode;
+  className?: string;
+}): ReactNode {
+  const { id, name, fallback, className } = props;
+  const Logo = id ? LOGOS[id] : undefined;
+  if (Logo) {
+    return <Logo className={className} />;
+  }
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  const initial = name?.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <div
+      aria-hidden
+      className={clsx(
+        className,
+        "border-default text-primary-low bg-primary-app flex items-center justify-center rounded-md border font-semibold",
+      )}
+    >
+      {initial}
+    </div>
+  );
+}
+
+/**
+ * The agent's mark drawn in `currentColor`, falling back to a generic bot. Use
+ * where the mark sits among other icons and has to take their color — a menu
+ * row, a button label; use {@link AgentLogo} where it stands for the product.
+ *
+ * Only the agents Argos hands prompts to have one of these, which is exactly
+ * where a monochrome mark is needed.
+ */
+export function AgentIcon(props: {
+  id?: string | null;
+  className?: string;
+}): ReactNode {
+  const { id, className } = props;
+  const Icon = id ? ICONS[id] : undefined;
+  if (Icon) {
+    return <Icon className={className} />;
+  }
+  return <BotIcon className={className} aria-hidden="true" />;
 }

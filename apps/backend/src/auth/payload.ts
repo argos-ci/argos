@@ -40,7 +40,7 @@ export type AuthOAuthPayload = {
   clientId: string;
   /**
    * Id of the well-known app the client was matched to at registration
-   * (`oauth/known-apps.ts`), `null` for an unrecognized client.
+   * (the registry in `@argos/agents`), `null` for an unrecognized client.
    */
   knownAppId: string | null;
   /** Id of the `oauth_grants` row backing this token. */

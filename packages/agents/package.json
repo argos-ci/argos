@@ -1,0 +1,44 @@
+{
+  "name": "@argos/agents",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsdown",
+    "watch-build": "tsdown --watch --silent",
+    "check-types": "tsc --noEmit",
+    "check-format": "oxfmt --check ."
+  },
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./src/react.tsx",
+      "import": "./dist/react.js",
+      "default": "./dist/react.js"
+    }
+  },
+  "peerDependencies": {
+    "clsx": "*",
+    "lucide-react": "*",
+    "react": "*"
+  },
+  "peerDependenciesMeta": {
+    "clsx": { "optional": true },
+    "lucide-react": { "optional": true },
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@argos/tsconfig": "workspace:*",
+    "@types/react": "catalog:",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.29.0",
+    "react": "catalog:",
+    "tsdown": "^0.22.14"
+  }
+}

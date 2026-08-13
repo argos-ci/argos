@@ -17,6 +17,7 @@
     "@apollo/client": "^4.2.10",
     "@argos-ci/cli": "^6.6.1",
     "@argos-ci/storybook": "^6.2.2",
+    "@argos/agents": "workspace:*",
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
     "@argos/schemas": "workspace:*",

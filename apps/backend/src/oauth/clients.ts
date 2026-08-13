@@ -1,9 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
+import { resolveOAuthAgent } from "@argos/agents";
 
 import { OAuthClient } from "@/database/models";
 import { generateRandomString, hashToken } from "@/database/services/crypto";
-
-import { resolveKnownApp } from "./known-apps";
 
 /**
  * Look up a client by its public `client_id`.
@@ -120,8 +119,8 @@ export function generateClientId(): string {
 
 /**
  * Resolve verification state (verified badge + official logo) for a client from
- * its metadata, using the curated known-apps registry. Self-asserted metadata
- * (like `client_name`) never confers verification on its own.
+ * its metadata, using the curated registry in `@argos/agents`. Self-asserted
+ * metadata (like `client_name`) never confers verification on its own.
  */
 export function resolveClientVerification(metadata: {
   clientId?: string | null;
@@ -129,7 +128,7 @@ export function resolveClientVerification(metadata: {
   clientUri?: string | null;
   redirectUris?: string[] | null;
 }): { knownAppId: string | null; verified: boolean } {
-  const app = resolveKnownApp(metadata);
+  const app = resolveOAuthAgent(metadata);
   return { knownAppId: app?.id ?? null, verified: app !== null };
 }
 

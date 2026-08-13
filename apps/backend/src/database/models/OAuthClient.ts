@@ -65,6 +65,7 @@ export class OAuthClient extends Model {
   tokenEndpointAuthMethod!: z.infer<typeof TokenEndpointAuthMethodSchema>;
   softwareId!: string | null;
   isFirstParty!: boolean;
+  /** Id of the `@argos/agents` entry this client was matched to, if any. */
   knownAppId!: string | null;
   verified!: boolean;
   createdByUserId!: string | null;

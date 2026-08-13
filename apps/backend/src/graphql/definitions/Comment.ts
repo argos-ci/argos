@@ -1,8 +1,8 @@
+import { getAgentName } from "@argos/agents";
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
-import { getAgentDisplayName } from "@/agent/registry";
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
@@ -466,7 +466,7 @@ export const resolvers: IResolvers = {
       }
       return {
         id: comment.agent,
-        name: getAgentDisplayName(comment.agent),
+        name: getAgentName(comment.agent),
       };
     },
     mentionedUsers: async (comment, _args, ctx) => {

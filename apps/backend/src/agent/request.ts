@@ -8,12 +8,21 @@
  *   detection the CLI runs at startup.
  * - **MCP**: the OAuth client holding the access token. OAuth exists here to
  *   serve the CLI and MCP clients, and MCP is an agent protocol — so an OAuth
- *   client that isn't the CLI is taken to be an agent even when the curated
- *   known-apps registry doesn't recognize it.
+ *   client that isn't the CLI is taken to be an agent even when the registry
+ *   doesn't recognize it.
  *
  * A request with neither is a person acting directly (the web app, a script, a
  * personal access token) and resolves to `null`.
+ *
+ * Only that mapping lives here. *Who* the agents are — ids, names, marks, the
+ * signals each door recognizes them by — lives in `@argos/agents`, which the
+ * frontend reads too.
  */
+import {
+  getAgent,
+  resolveReportedAgentId,
+  UNKNOWN_AGENT_ID,
+} from "@argos/agents";
 import type { Request } from "express";
 
 import type {
@@ -21,13 +30,6 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
-import { getKnownApp } from "@/oauth/known-apps";
-
-import {
-  isAgentId,
-  resolveReportedAgentId,
-  UNKNOWN_AGENT_ID,
-} from "./registry";
 
 /**
  * The `agent/<name>` product token of a `User-Agent`. The CLI already
@@ -70,12 +72,12 @@ export function resolveRequestAgentId(
     return null;
   }
 
-  // A first-party client id we control (`argos-cli`) names the tool, not an
-  // agent — an agent driving it identifies itself in the `User-Agent` above.
-  const knownApp = getKnownApp(auth.knownAppId);
-  if (knownApp && !isAgentId(knownApp.id)) {
+  // The first-party CLI names the tool, not an agent — an agent driving it
+  // identifies itself in the `User-Agent` above.
+  const agent = getAgent(auth.knownAppId);
+  if (agent && !agent.isAgent) {
     return null;
   }
 
-  return knownApp?.id ?? UNKNOWN_AGENT_ID;
+  return agent?.id ?? UNKNOWN_AGENT_ID;
 }

@@ -1,9 +1,8 @@
+import { AgentLogo } from "@argos/agents/react";
 import { clsx } from "clsx";
 import { BadgeCheckIcon } from "lucide-react";
 
 import { Chip, type ChipProps } from "@/ui/Chip";
-
-import { KNOWN_APP_LOGOS } from "./brand-logos";
 
 const SIZE_CLASSES = {
   sm: "size-8",
@@ -25,22 +24,16 @@ export function OAuthAppLogo(props: {
   size?: keyof typeof SIZE_CLASSES;
 }) {
   const { name, knownAppId, size = "sm" } = props;
-  const Logo = knownAppId ? KNOWN_APP_LOGOS[knownAppId] : undefined;
-  if (Logo) {
-    return <Logo className={clsx(SIZE_CLASSES[size], "shrink-0")} />;
-  }
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
   return (
-    <div
-      aria-hidden
+    <AgentLogo
+      id={knownAppId}
+      name={name}
       className={clsx(
         SIZE_CLASSES[size],
         MONOGRAM_TEXT_CLASSES[size],
-        "border-default text-primary-low bg-primary-app flex shrink-0 items-center justify-center rounded-md border font-semibold",
+        "shrink-0",
       )}
-    >
-      {initial}
-    </div>
+    />
   );
 }
 

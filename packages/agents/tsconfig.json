@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@argos/tsconfig/react/tsconfig.json",
+  "compilerOptions": {
+    // The app leaves JSX for Vite to transform (`preserve`); this package ships
+    // built output, so tsdown has to do it here or `dist/react.js` reaches the
+    // consumer with raw JSX in a `.js` file.
+    "jsx": "react-jsx"
+  },
+  "exclude": ["node_modules", "dist"]
+}

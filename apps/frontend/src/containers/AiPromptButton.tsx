@@ -1,3 +1,9 @@
+import {
+  isPromptAgentId,
+  PROMPT_AGENTS,
+  type PromptAgentId,
+} from "@argos/agents";
+import { AgentIcon } from "@argos/agents/react";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { CheckIcon, ChevronDownIcon, CopyIcon } from "lucide-react";
@@ -21,7 +27,6 @@ import {
 } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
-import { AI_AGENTS, type AiAgentId } from "@/util/ai-agents";
 
 /**
  * Copying is a target like the agents are, so it can be the one remembered: it
@@ -29,7 +34,7 @@ import { AI_AGENTS, type AiAgentId } from "@/util/ai-agents";
  */
 const COPY_TARGET = "copy";
 
-export type AiPromptTarget = AiAgentId | typeof COPY_TARGET;
+export type AiPromptTarget = PromptAgentId | typeof COPY_TARGET;
 
 /**
  * Where prompts went last, so the button offers that again instead of asking on
@@ -38,8 +43,26 @@ export type AiPromptTarget = AiAgentId | typeof COPY_TARGET;
  */
 const targetAtom = atomWithStorage<AiPromptTarget>(
   "aiPromptTarget",
-  AI_AGENTS[0].id,
+  PROMPT_AGENTS[0]!.id,
 );
+
+/**
+ * Targets stored before the agents moved to the shared registry, mapped to the
+ * ids that replaced them. Without this a user who had picked one silently falls
+ * back to copying — their choice is in localStorage, and nothing else will ever
+ * correct it.
+ */
+const LEGACY_TARGETS: Record<string, AiPromptTarget> = {
+  "claude-desktop": "claude",
+  codex: "openai-codex",
+};
+
+function normalizeTarget(target: AiPromptTarget): AiPromptTarget {
+  if (isPromptAgentId(target) || target === COPY_TARGET) {
+    return target;
+  }
+  return LEGACY_TARGETS[target] ?? COPY_TARGET;
+}
 
 /**
  * The agent prompts go to, and how to change it. Exported so the surfaces that
@@ -47,7 +70,8 @@ const targetAtom = atomWithStorage<AiPromptTarget>(
  * still feed the one choice.
  */
 export function useAiPromptTarget() {
-  return useAtom(targetAtom);
+  const [target, setTarget] = useAtom(targetAtom);
+  return [normalizeTarget(target), setTarget] as const;
 }
 
 /** One thing Argos can ask a coding agent to do. */
@@ -102,15 +126,15 @@ export function AiPromptTargetItems(props: {
   const { entry, onPick, onCopy } = props;
   return (
     <>
-      {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
+      {PROMPT_AGENTS.map(({ id, name, getPromptUrl }) => (
         <MenuItem
           key={id}
-          href={getURL(entry.prompt)}
+          href={getPromptUrl(entry.prompt)}
           textValue={name}
           onAction={() => onPick(id)}
         >
           <MenuItemIcon>
-            <Icon />
+            <AgentIcon id={id} />
           </MenuItemIcon>
           Open in {name}
         </MenuItem>
@@ -165,7 +189,7 @@ export function AiPromptButton(props: {
   const copyLabel = `Copy ${primary.name}`;
   // A target this build no longer offers falls back to copying, which always
   // works.
-  const agent = AI_AGENTS.find(({ id }) => id === target) ?? null;
+  const agent = PROMPT_AGENTS.find(({ id }) => id === target) ?? null;
   const targetItems = (entry: AiPrompt) => (
     <AiPromptTargetItems entry={entry} onPick={setTarget} onCopy={copy} />
   );
@@ -181,9 +205,12 @@ export function AiPromptButton(props: {
             aria-label={
               iconOnly ? `Open the ${primary.name} in ${agent.name}` : undefined
             }
-            href={agent.getURL(primary.prompt)}
+            href={agent.getPromptUrl(primary.prompt)}
           >
-            <PrimaryContent iconOnly={iconOnly} icon={<agent.Icon />}>
+            <PrimaryContent
+              iconOnly={iconOnly}
+              icon={<AgentIcon id={agent.id} />}
+            >
               Open in {agent.name}
             </PrimaryContent>
           </LinkButton>

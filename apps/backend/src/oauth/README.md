@@ -71,5 +71,5 @@ MCP clients discover everything from the metadata documents and register via
 DCR. On a `401`, the RS returns
 `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource"`.
 Well-known agents (Claude, Codex, Cursor, VS Code, …) are matched against the
-curated `known-apps.ts` registry to earn the verified badge + official logo;
+curated registry in `@argos/agents` to earn the verified badge + official logo;
 self-asserted metadata never confers verification on its own.

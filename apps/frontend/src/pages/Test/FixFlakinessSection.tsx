@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { PROMPT_AGENTS } from "@argos/agents";
+import { AgentIcon } from "@argos/agents/react";
 import { invariant } from "@argos/util/invariant";
 import { SparklesIcon } from "lucide-react";
 
@@ -9,7 +11,6 @@ import { graphql, type DocumentType } from "@/gql";
 import { MetricsPeriod } from "@/gql/graphql";
 import { Details, Summary } from "@/ui/Details";
 import { Panel, PanelTitle } from "@/ui/Panel";
-import { AI_AGENTS } from "@/util/ai-agents";
 
 import { getTestURL, useTestParams } from "./TestParams";
 
@@ -122,8 +123,8 @@ export function FixFlakinessSection(props: {
               text, so the marks stay out of the accessibility tree rather than
               repeating themselves. */}
           <span aria-hidden className="text-low/80 flex items-center gap-1.5">
-            {AI_AGENTS.map(({ id, Icon }) => (
-              <Icon key={id} className="size-4" />
+            {PROMPT_AGENTS.map(({ id }) => (
+              <AgentIcon key={id} id={id} className="size-4" />
             ))}
           </span>
         </Summary>

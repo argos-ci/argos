@@ -1,6 +1,6 @@
+import { getAgentName } from "@argos/agents";
 import { z } from "zod";
 
-import { getAgentDisplayName } from "@/agent/registry";
 import { formatCommentId } from "@/comment/id";
 import { schema as proseMirrorSchema } from "@/comment/schema";
 import { BuildReview, Comment, CommentReaction } from "@/database/models";
@@ -268,7 +268,7 @@ export async function serializeComments(
       text: commentText(comment.content),
       author: account ? serializeUser(account) : null,
       agent: comment.agent
-        ? { id: comment.agent, name: getAgentDisplayName(comment.agent) }
+        ? { id: comment.agent, name: getAgentName(comment.agent) }
         : null,
       screenshotDiffId: comment.screenshotDiffId,
       anchor: comment.anchor,

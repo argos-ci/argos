@@ -5,7 +5,6 @@ import {
   redirectUriMatches,
   resolveClientVerification,
 } from "./clients";
-import { resolveKnownApp } from "./known-apps";
 import {
   getApiResourceUrl,
   getAuthorizationServerMetadata,
@@ -105,29 +104,10 @@ describe("redirectUriMatches", () => {
   });
 });
 
-describe("known-apps verification", () => {
-  it("matches a first-party client id", () => {
-    expect(resolveKnownApp({ clientId: "argos-cli" })?.id).toBe("argos-cli");
-  });
-
-  it("matches on client_uri host", () => {
-    expect(resolveKnownApp({ clientUri: "https://claude.ai/app" })?.id).toBe(
-      "claude",
-    );
-  });
-
-  it("matches on a redirect host", () => {
-    expect(
-      resolveKnownApp({ redirectUris: ["https://cursor.com/callback"] })?.id,
-    ).toBe("cursor");
-  });
-
-  it("does not verify from an unknown host or name alone", () => {
-    expect(resolveKnownApp({ clientUri: "https://evil.example" })).toBeNull();
-    expect(resolveKnownApp({})).toBeNull();
-  });
-
-  it("resolveClientVerification derives verified + knownAppId", () => {
+describe("clients", () => {
+  // Which metadata identifies which app is `@argos/agents`' business and is
+  // tested there; this is only the shape the OAuth client rows store.
+  it("derives verified + knownAppId from the registry", () => {
     expect(resolveClientVerification({ clientId: "argos-cli" })).toEqual({
       knownAppId: "argos-cli",
       verified: true,
@@ -136,9 +116,7 @@ describe("known-apps verification", () => {
       resolveClientVerification({ clientUri: "https://evil.example" }),
     ).toEqual({ knownAppId: null, verified: false });
   });
-});
 
-describe("clients", () => {
   it("generates a namespaced public client id", () => {
     const id = generateClientId();
     expect(id).toMatch(/^oc_[a-z1-9]{32}$/);

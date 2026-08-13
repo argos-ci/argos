@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Tailwind's automatic detection stops at node_modules, and workspace packages
+   are resolved through it — so without this the classes in the agent marks
+   (`@argos/agents/react`) generate no CSS and the logos render unstyled. Points
+   at the source, not the build output: that is where the class names are
+   written. */
+@source "../../../packages/agents/src";
+
 /* Self-hosted Inter, so the first paint does not wait on fonts.googleapis.com
    and then fonts.gstatic.com. The weight-axis variable font covers the 400-700
    range the UI uses in one file, and Vite emits it as a hashed, same-origin

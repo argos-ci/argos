@@ -1,6 +1,6 @@
+import { AgentLogo } from "@argos/agents/react";
 import { BotIcon } from "lucide-react";
 
-import { KNOWN_APP_LOGOS } from "@/containers/brand-logos";
 import { Tooltip } from "@/ui/Tooltip";
 
 export type CommentAgent = {
@@ -19,7 +19,6 @@ export type CommentAgent = {
  */
 export function CommentAgentBadge(props: { agent: CommentAgent }) {
   const { agent } = props;
-  const Logo = KNOWN_APP_LOGOS[agent.id];
   const label = agent.name
     ? `Posted through ${agent.name} on behalf of this user`
     : "Posted through an AI agent on behalf of this user";
@@ -30,7 +29,13 @@ export function CommentAgentBadge(props: { agent: CommentAgent }) {
         aria-label={label}
         className="bg-app border-thin text-low absolute -right-1 -bottom-1 flex size-3 items-center justify-center rounded-full"
       >
-        {Logo ? <Logo className="size-2" /> : <BotIcon className="size-2" />}
+        {/* A bot rather than a monogram of the name: an unrecognized agent's
+            name is self-asserted, and at this size a letter reads as noise. */}
+        <AgentLogo
+          id={agent.id}
+          fallback={<BotIcon className="size-2" />}
+          className="size-2"
+        />
       </span>
     </Tooltip>
   );

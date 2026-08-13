@@ -99,6 +99,9 @@ importers:
       '@argos-ci/mask-fingerprint':
         specifier: ^0.1.3
         version: 0.1.3
+      '@argos/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@argos/knex-scripts':
         specifier: workspace:*
         version: link:../../packages/knex-scripts
@@ -434,6 +437,9 @@ importers:
       '@argos-ci/storybook':
         specifier: ^6.2.2
         version: 6.2.2(@types/node@26.1.2)(@vitest/browser-playwright@4.1.10)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(vitest@4.1.10))(playwright@1.62.1)(supports-color@10.2.2)(vitest@4.1.10)
+      '@argos/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@argos/config-types':
         specifier: workspace:*
         version: link:../../packages/config-types
@@ -717,6 +723,27 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.4.3
+
+  packages/agents:
+    devDependencies:
+      '@argos/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.29.0
+        version: 1.29.0(react@19.2.8)
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(oxc-resolver@11.24.2)(typescript@7.0.2)
 
   packages/config-types: {}
 

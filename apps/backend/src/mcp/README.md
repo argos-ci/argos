@@ -66,8 +66,9 @@ indistinguishable from what that person typed. `src/agent/request.ts` resolves
 the acting agent from the OAuth client behind the token — its `knownAppId` when
 the curated registry recognizes it, `unknown` otherwise, since a client that
 isn't the first-party CLI is an agent by construction here. Comments store the
-result and the UI marks them (see `src/agent/registry.ts`). The CLI carries the
-same information in a `User-Agent` `agent/<name>` token instead.
+result and the UI marks them. Who the agents are — ids, names, marks — lives in
+`@argos/agents`, shared with the frontend. The CLI carries the same information
+in a `User-Agent` `agent/<name>` token instead.
 
 ## Discovery
 

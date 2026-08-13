@@ -1,10 +1,10 @@
+import { getAgent } from "@argos/agents";
 import gqlTag from "graphql-tag";
 
 import { OAuthGrant, OAuthGrantAccount } from "@/database/models";
 import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
-import { getKnownApp } from "@/oauth/known-apps";
 import { isKnownResource, normalizeResource } from "@/oauth/metadata";
 import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
 
@@ -84,12 +84,12 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   OAuthClient: {
     name: (client) => {
-      const app = getKnownApp(client.knownAppId);
-      return app?.displayName ?? client.clientName;
+      const app = getAgent(client.knownAppId);
+      return app?.name ?? client.clientName;
     },
     logoUrl: (client) => client.logoUri,
     homepage: (client) => {
-      const app = getKnownApp(client.knownAppId);
+      const app = getAgent(client.knownAppId);
       return app?.homepage ?? client.clientUri;
     },
   },
