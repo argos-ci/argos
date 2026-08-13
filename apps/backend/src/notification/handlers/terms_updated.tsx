@@ -55,6 +55,10 @@ export const handler = defineNotificationHandler({
             your current billing period.
           </Paragraph>
           <Paragraph>
+            If you have a separate agreement with us, it continues to govern and
+            is unaffected.
+          </Paragraph>
+          <Paragraph>
             <Link href="https://argos-ci.com/terms">Terms of Service</Link>
             {" · "}
             <Link href="https://argos-ci.com/privacy">Privacy Policy</Link>
