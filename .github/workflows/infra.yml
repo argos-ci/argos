@@ -1,0 +1,104 @@
+name: Infra
+
+permissions: {}
+
+# Path-filtered at the workflow level, which is the only place GitHub supports
+# it, and kept out of `release.yml` deliberately: these are the slow-moving
+# stacks. An app release must not be able to drag an unreviewed infrastructure
+# change along with it, and an infrastructure change must not have to wait for
+# an app release.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  AWS_REGION: us-east-1
+  CDK_STAGE: production
+
+jobs:
+  # Renders the change against the live stacks so it can be read in review,
+  # rather than discovered at deploy time.
+  diff:
+    # Same-repo pull requests only: a fork PR is issued no OIDC token, so this
+    # would fail on credentials rather than on anything about the change. Argos
+    # is public, so that is a normal case, not an edge one.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-deps
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.CDK_AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: cdk diff
+        run: |
+          pnpm --filter @argos/infra exec cdk diff \
+            -c stage="$CDK_STAGE" \
+            -c source=ssm
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-deps
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.CDK_AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # `--require-approval never`: these stacks contain IAM and would otherwise
+      # block on an interactive prompt. The `diff` job above is the review gate.
+      - name: cdk deploy
+        run: |
+          pnpm --filter @argos/infra exec cdk deploy --all \
+            --require-approval never \
+            -c stage="$CDK_STAGE" \
+            -c source=ssm
+
+      - name: Notify infra deployment failure
+        if: failure()
+        uses: ./.github/actions/notify-discord
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          title: "Infra deployment failed"
+          description: "cdk deploy failed - [GitHub Actions logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          color: "15548997"

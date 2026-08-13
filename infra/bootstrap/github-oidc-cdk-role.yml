@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >-
+  Role assumed by GitHub Actions to run `cdk diff` and `cdk deploy`
+  (.github/workflows/infra.yml). Deployed once, by hand, with local admin
+  credentials; it is the thing CI needs before CI can deploy anything.
+
+# Deploy:
+#
+#   aws cloudformation deploy \
+#     --stack-name argos-github-oidc-cdk-role \
+#     --template-file infra/bootstrap/github-oidc-cdk-role.yml \
+#     --capabilities CAPABILITY_NAMED_IAM \
+#     --region us-east-1
+#
+# Then read the role ARN back out and store it as the CDK_AWS_ROLE_ARN repo
+# secret:
+#
+#   aws cloudformation describe-stacks \
+#     --stack-name argos-github-oidc-cdk-role \
+#     --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' \
+#     --output text
+#
+# This grants no AWS permissions directly. It only lets GitHub assume the CDK
+# bootstrap roles, which are what actually hold deploy rights, so the blast
+# radius is whatever `cdk bootstrap` already provisioned, and revoking CI access
+# is a matter of deleting this one stack.
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: argos-ci/argos
+    Description: owner/repo allowed to assume this role.
+
+  CreateOidcProvider:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >-
+      Leave "false" if the account already has the GitHub OIDC provider; it
+      does if any workflow already uses aws-actions/configure-aws-credentials
+      with id-token: write, which release.yml does. Check with:
+      aws iam list-open-id-connect-providers
+      Creating a second one for the same URL fails the stack.
+
+  BootstrapQualifier:
+    Type: String
+    Default: hnb659fds
+    Description: >-
+      CDK bootstrap qualifier. The default is CDK's own default; change it only
+      if `cdk bootstrap` was run with --qualifier.
+
+Conditions:
+  ShouldCreateOidcProvider: !Equals [!Ref CreateOidcProvider, "true"]
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOidcProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+  CdkDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: argos-github-actions-cdk
+      # Keep this ASCII. IAM rejects any character above U+00FF here, and an
+      # em dash costs you a CREATE_FAILED whose only clue is a validation
+      # error naming the description field, with no hint as to which byte.
+      Description: GitHub Actions - cdk diff and cdk deploy for the Argos infra stacks.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              # Scoped to main and to same-repo pull requests. Note that a fork
+              # PR gets no token at all, so the diff job is gated on the head
+              # repo in the workflow as well.
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubRepo}:ref:refs/heads/main
+                  - !Sub repo:${GitHubRepo}:pull_request
+      Policies:
+        - PolicyName: assume-cdk-bootstrap-roles
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Where the real permissions live. The CDK CLI assumes these per
+              # region (deploy, file-publishing, image-publishing, lookup), so
+              # this role needs no S3, ECS, CloudFront or IAM rights of its own.
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-${BootstrapQualifier}-*-${AWS::AccountId}-*
+
+        - PolicyName: read-cdk-config
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # infra/scripts/app.ts reads its stack props from here when
+              # invoked with `-c source=ssm`, which is how CI runs it.
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/cdk/config.json
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/cdk-bootstrap/*
+
+        - PolicyName: read-stack-state
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # `cdk diff` compares against the deployed template before it
+              # assumes anything.
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:GetTemplate
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ListStacks
+                Resource: "*"
+
+Outputs:
+  RoleArn:
+    Description: Store as the CDK_AWS_ROLE_ARN repository secret.
+    Value: !GetAtt CdkDeployRole.Arn
