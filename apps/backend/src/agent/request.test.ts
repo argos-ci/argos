@@ -50,13 +50,20 @@ describe("parseUserAgentAgentName", () => {
 });
 
 describe("resolveRequestAgentId", () => {
-  it("resolves the name the CLI reports to a registry id", () => {
+  it.each([
+    // The slugs `@vercel/detect-agent` returns for its own detections.
+    ["claude", "claude-code"],
+    ["codex", "openai-codex"],
+    ["cursor-cli", "cursor"],
+    ["gemini", "gemini-cli"],
+    // Versioned names: `_` is what Claude Code actually puts in `AI_AGENT`,
+    // `@` is what the convention documents.
+    ["claude-code_2-1-227_agent", "claude-code"],
+    ["devin@1", "devin"],
+  ])("resolves the reported name %j to %j", (reported, expected) => {
     expect(
-      resolveRequestAgentId(req("argos-cli/6.7.0 agent/claude"), PAT),
-    ).toBe("claude-code");
-    expect(resolveRequestAgentId(req("argos-cli/6.7.0 agent/codex"), PAT)).toBe(
-      "openai-codex",
-    );
+      resolveRequestAgentId(req(`argos-cli/6.7.0 agent/${reported}`), PAT),
+    ).toBe(expected);
   });
 
   it("keeps an unrecognized agent as an agent", () => {

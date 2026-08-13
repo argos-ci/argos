@@ -252,7 +252,11 @@ describe("createComment", () => {
     const res = await request(app)
       .post(`/projects/acme/web/builds/${build.number}/comments`)
       .set(auth(scopedPatToken))
-      .set("user-agent", "argos-cli/6.7.0 node/22.11.0 agent/claude")
+      // The header the CLI really sends under Claude Code, version tag and all.
+      .set(
+        "user-agent",
+        "argos-cli/6.7.0 node/22.11.0 agent/claude-code_2-1-227_agent",
+      )
       .send({ body: "Fixed the padding" })
       .expect(201);
 

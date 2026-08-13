@@ -70,11 +70,23 @@ const REPORTED_AGENT_ALIASES: Record<string, string> = {
 const AGENT_BY_ID = new Map(AGENTS.map((agent) => [agent.id, agent]));
 
 /**
+ * Strip the version an agent may append to its name, leaving the product.
+ *
+ * Two shapes occur in the wild: the `@` separator the `AI_AGENT` convention
+ * documents (`devin@1`, `custom-agent@2.0`), and the `_` one Claude Code
+ * actually emits (`claude-code_2-1-227_agent`). A hyphen is *not* a separator —
+ * it is what the convention uses inside a name, as in `cursor-cli`.
+ */
+function stripAgentVersion(name: string): string {
+  return name.split("@")[0]!.split("_")[0]!;
+}
+
+/**
  * Resolve the name an agent reported for itself (the CLI's `agent/` token) to a
  * registry id, falling back to {@link UNKNOWN_AGENT_ID}.
  */
 export function resolveReportedAgentId(name: string): string {
-  const normalized = name.trim().toLowerCase();
+  const normalized = stripAgentVersion(name.trim().toLowerCase());
   const id = REPORTED_AGENT_ALIASES[normalized] ?? normalized;
   return AGENT_BY_ID.has(id) ? id : UNKNOWN_AGENT_ID;
 }
