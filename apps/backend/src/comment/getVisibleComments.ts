@@ -37,6 +37,22 @@ export function filterVisibleComments<QB extends QueryBuilder<Comment, any>>(
 }
 
 /**
+ * Order comments oldest first, breaking ties on `id`.
+ *
+ * `createdAt` alone is not a total order: comments written in the same
+ * transaction share it to the millisecond, and Postgres is then free to return
+ * them in any order it likes. Without the tiebreaker a thread list reshuffles
+ * between two loads of the same data — which is also what made the media
+ * activity panel's visual test flaky. `id` is a sequence, so ordering on it is
+ * insertion order.
+ */
+function orderOldestFirst<QB extends QueryBuilder<Comment, any>>(
+  query: QB,
+): QB {
+  return query.orderBy("createdAt", "asc").orderBy("id", "asc");
+}
+
+/**
  * Load the comments visible to a given viewer on a single build, oldest first.
  */
 async function getVisibleBuildComments(input: {
@@ -44,10 +60,12 @@ async function getVisibleBuildComments(input: {
   viewerUserId: string | null;
 }): Promise<Comment[]> {
   const { buildId, viewerUserId } = input;
-  return filterVisibleComments(
-    Comment.query().where("buildId", buildId),
-    viewerUserId,
-  ).orderBy("createdAt", "asc");
+  return orderOldestFirst(
+    filterVisibleComments(
+      Comment.query().where("buildId", buildId),
+      viewerUserId,
+    ),
+  );
 }
 
 /**
@@ -78,7 +96,7 @@ export function getVisibleTestCommentsQuery(input: {
   viewerUserId: string | null;
 }): QueryBuilder<Comment, Comment[]> {
   const { testIds, viewerUserId } = input;
-  return Comment.query()
+  const query = Comment.query()
     .with(
       "ranked",
       filterVisibleComments(
@@ -94,8 +112,8 @@ export function getVisibleTestCommentsQuery(input: {
     .whereIn(
       "id",
       knex.select("id").from("ranked").where("rank", "<=", TEST_COMMENTS_LIMIT),
-    )
-    .orderBy("createdAt", "asc");
+    );
+  return orderOldestFirst(query);
 }
 
 /**
@@ -119,7 +137,7 @@ export function getVisibleMediaCommentsQuery(input: {
   viewerUserId: string | null;
 }): QueryBuilder<Comment, Comment[]> {
   const { mediaIds, viewerUserId } = input;
-  return Comment.query()
+  const query = Comment.query()
     .with(
       "ranked",
       filterVisibleComments(
@@ -138,8 +156,8 @@ export function getVisibleMediaCommentsQuery(input: {
         .select("id")
         .from("ranked")
         .where("rank", "<=", MEDIA_COMMENTS_LIMIT),
-    )
-    .orderBy("createdAt", "asc");
+    );
+  return orderOldestFirst(query);
 }
 
 /**
