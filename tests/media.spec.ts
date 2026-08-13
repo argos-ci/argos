@@ -245,6 +245,14 @@ loggedTest(
     // Expanding the thread in the panel puts the pin back on the image.
     await page.getByRole("button", { name: "Expand thread" }).click();
     await expect(resolvedPin).toBeVisible();
+
+    // Resolving popped a toast over the panel, and it slides in and out on its
+    // own timeline — left alone it lands in the screenshot mid-animation, at a
+    // different offset every run. Dismissing it is the only way to be sure which
+    // frame is captured.
+    await page.getByRole("button", { name: "Close toast" }).click();
+    await expect(page.getByText("Thread resolved.")).toBeHidden();
+
     await screenshot(page, "media-resolved-pin-expanded");
 
     // And collapsing it takes the pin away again.
