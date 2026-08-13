@@ -87,6 +87,7 @@ export class Comment extends Model {
           editedAt: { type: ["string", "null"] },
           deletedAt: { type: ["string", "null"] },
           resolvedAt: { type: ["string", "null"] },
+          agent: { type: ["string", "null"] },
           content: {
             anyOf: [
               { type: "array" },
@@ -139,6 +140,13 @@ export class Comment extends Model {
    */
   resolvedAt!: string | null;
   content!: unknown;
+  /**
+   * The coding agent that posted this comment on the author's behalf — an id
+   * from `src/agent/registry.ts`, or `unknown` for one we can't name. Null when
+   * the author acted directly. An agent uses its user's own credentials, so
+   * without this a comment it wrote is indistinguishable from one they typed.
+   */
+  agent!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
+import { getAgentDisplayName } from "@/agent/registry";
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
@@ -224,6 +225,19 @@ export const typeDefs = gql`
   union CommentAnchor = CommentPointAnchor | CommentLinesAnchor
 
   """
+  The coding agent that posted a comment on its author's behalf.
+
+  An agent acts with the user's own credentials, so without this the comment
+  would read as something they typed themselves.
+  """
+  type CommentAgent {
+    "Stable id of the agent, e.g. claude-code. Falls back to the literal id unknown when it could not be identified."
+    id: String!
+    "Name to display, e.g. Claude Code. Null for an agent we cannot name."
+    name: String
+  }
+
+  """
   A comment posted on a build or on a test.
   """
   type Comment implements Node {
@@ -238,6 +252,8 @@ export const typeDefs = gql`
     content: JSONObject!
     "Author of the comment"
     user: User
+    "The coding agent that posted it on the author's behalf, null when they posted it directly"
+    agent: CommentAgent
     "Users mentioned in the comment"
     mentionedUsers: [User!]!
     "Root comment ID when this comment is a reply"
@@ -443,6 +459,15 @@ export const resolvers: IResolvers = {
       });
       invariant(account, "Account not found");
       return account;
+    },
+    agent: (comment) => {
+      if (!comment.agent) {
+        return null;
+      }
+      return {
+        id: comment.agent,
+        name: getAgentDisplayName(comment.agent),
+      };
     },
     mentionedUsers: async (comment, _args, ctx) => {
       const userIds = await ctx.loaders.CommentMentionedUserIds.load(

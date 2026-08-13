@@ -162,6 +162,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
     scope: scopeAccounts,
     oauthScopes: accessToken.scopes,
     clientId: client.clientId,
+    knownAppId: client.knownAppId,
     grantId: grant.id,
   };
 }

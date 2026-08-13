@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 
+import { Comment } from "../apps/backend/src/database/models";
 import {
   createFlakyTestScenario,
   createIgnoredChangeScenario,
@@ -8,6 +9,14 @@ import {
 import { formatTestId } from "../apps/backend/src/util/test-id";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
+
+/** A one-line rich-text comment body. */
+function doc(text: string) {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
+}
 
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
@@ -145,6 +154,48 @@ loggedTest(
     // And the toggle opts back out.
     await unsubscribe.click();
     await expect(page.getByRole("button", { name: "Subscribe" })).toBeVisible();
+  },
+);
+
+loggedTest(
+  "test view marks a comment an agent posted for its author",
+  async ({ page, auth, team, project }) => {
+    const { test } = await createTestChangeScenario({ projectId: project.id });
+    const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+    // Two comments from the same person: one they typed, one Claude Code posted
+    // with their credentials. Only the second is marked, which is the whole
+    // point — the author is identical on both.
+    await Comment.query().insert([
+      {
+        testId: test.id,
+        userId: auth.user.id,
+        content: doc("This one keeps flapping on CI."),
+      },
+      {
+        testId: test.id,
+        userId: auth.user.id,
+        content: doc("Retried it 20 times — the header animation races."),
+        agent: "claude-code",
+      },
+    ]);
+
+    await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+    await expect(
+      page.getByText("Retried it 20 times — the header animation races."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", {
+        name: "Posted through Claude Code on behalf of this user",
+      }),
+    ).toBeVisible();
+    // The comment the same person typed carries no marker.
+    await expect(page.getByRole("img", { name: /^Posted through/ })).toHaveCount(
+      1,
+    );
+
+    await screenshot(page, "test-view-agent-comment");
   },
 );
 

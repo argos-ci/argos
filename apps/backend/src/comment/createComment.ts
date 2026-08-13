@@ -62,6 +62,11 @@ export async function createComment(input: {
   anchor?: CommentAnchor | null;
   buildReviewId?: string | null;
   pending?: boolean;
+  /**
+   * The coding agent that wrote this on the author's behalf, if any. See
+   * `agent/request.ts` for how a request is attributed to one.
+   */
+  agent?: string | null;
 }): Promise<Comment> {
   const {
     target,
@@ -71,6 +76,7 @@ export async function createComment(input: {
     anchor = null,
     buildReviewId = null,
     pending = false,
+    agent = null,
   } = input;
 
   if (!validateCommentJson(input.body)) {
@@ -89,8 +95,14 @@ export async function createComment(input: {
 
   // Inserting the comment and loading the project are independent — run them
   // together rather than back-to-back.
+  //
+  // `insertAndFetch` rather than `insert`: the latter returns a model carrying
+  // only the columns we wrote, so everything defaulted by the database
+  // (`resolvedAt`, `editedAt`, …) comes back `undefined` rather than `null`.
+  // Serializing that produces a payload missing those keys, which the MCP
+  // server rejects against the tool's declared output schema.
   const [comment, project] = await Promise.all([
-    Comment.query().insert({
+    Comment.query().insertAndFetch({
       userId,
       ...getCommentTargetColumns(target),
       buildReviewId,
@@ -98,6 +110,7 @@ export async function createComment(input: {
       screenshotDiffId,
       anchor,
       content: body,
+      agent,
     }),
     getCommentTargetProject(target),
   ]);

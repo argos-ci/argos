@@ -38,6 +38,11 @@ export type AuthOAuthPayload = {
   oauthScopes: string[];
   /** Public identifier of the OAuth client that holds the token. */
   clientId: string;
+  /**
+   * Id of the well-known app the client was matched to at registration
+   * (`oauth/known-apps.ts`), `null` for an unrecognized client.
+   */
+  knownAppId: string | null;
   /** Id of the `oauth_grants` row backing this token. */
   grantId: string;
 };

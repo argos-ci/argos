@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict SJMOjW7fwlbG5V9h9dOw91WWYjjnPhrNmOhMNNy0ftDq9k87kzZthcc2phDVXnb
+\restrict 8WS8KvWTX1NC5mccR9MIC9lXebzpzWv8u6YEgWIomHaGpKkaShrQhTYIWaa3QEM
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -701,6 +701,7 @@ CREATE TABLE public.comments (
     "testId" bigint,
     "mediaId" bigint,
     "mediaVersionId" bigint,
+    agent character varying(255),
     CONSTRAINT comments_anchor_requires_target CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL) OR ("mediaId" IS NOT NULL))),
     CONSTRAINT comments_media_target_scope CHECK ((("mediaId" IS NULL) OR (("buildReviewId" IS NULL) AND ("screenshotDiffId" IS NULL)))),
     CONSTRAINT comments_media_version_requires_media CHECK ((("mediaVersionId" IS NULL) OR ("mediaId" IS NOT NULL))),
@@ -6234,7 +6235,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SJMOjW7fwlbG5V9h9dOw91WWYjjnPhrNmOhMNNy0ftDq9k87kzZthcc2phDVXnb
+\unrestrict 8WS8KvWTX1NC5mccR9MIC9lXebzpzWv8u6YEgWIomHaGpKkaShrQhTYIWaa3QEM
 
 -- Knex migrations
 
@@ -6478,3 +6479,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260808140000_comment-media.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260809203017_media-branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260811133709_media-diffs.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260813191611_comment-agent.js', 1, NOW());
