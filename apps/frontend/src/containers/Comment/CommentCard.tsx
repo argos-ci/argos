@@ -33,6 +33,7 @@ import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
+import { CommentAgentBadge } from "./CommentAgentBadge";
 import {
   CommentAddReactionButton,
   CommentReactionList,
@@ -81,6 +82,10 @@ const _CommentFragment = graphql(`
     threadSubscribed
     pending
     permissions
+    agent {
+      id
+      name
+    }
     user {
       ...UserCard_user
     }
@@ -586,14 +591,19 @@ function CommentMessage(props: {
         />
         <div className="relative flex items-center gap-1.5 px-2 py-1.5 pr-1.5 select-none">
           {comment.user ? (
-            <UserHoverCard user={getUserCardData(comment.user)}>
-              <span tabIndex={0} className="shrink-0">
-                <AccountAvatar
-                  avatar={comment.user.avatar}
-                  className="size-5 border"
-                />
-              </span>
-            </UserHoverCard>
+            <span className="relative shrink-0">
+              <UserHoverCard user={getUserCardData(comment.user)}>
+                <span tabIndex={0} className="block">
+                  <AccountAvatar
+                    avatar={comment.user.avatar}
+                    className="size-5 border"
+                  />
+                </span>
+              </UserHoverCard>
+              {comment.agent ? (
+                <CommentAgentBadge agent={comment.agent} />
+              ) : null}
+            </span>
           ) : null}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">

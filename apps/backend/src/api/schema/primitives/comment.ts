@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getAgentDisplayName } from "@/agent/registry";
 import { formatCommentId } from "@/comment/id";
 import { schema as proseMirrorSchema } from "@/comment/schema";
 import { BuildReview, Comment, CommentReaction } from "@/database/models";
@@ -60,6 +61,23 @@ export const CommentAnchorSchema = z
       "Where on the referenced screenshot diff the comment points. A point uses normalized (0–1) coordinates; lines is a 1-based inclusive range.",
   });
 
+/**
+ * The coding agent a comment was posted through. An agent acts with its user's
+ * own credentials, so `author` alone cannot tell it apart from the person.
+ */
+const CommentAgentSchema = z
+  .object({
+    id: z.string().meta({
+      description:
+        "Stable id of the agent, e.g. `claude-code`. `unknown` when it could not be identified.",
+    }),
+    name: z.string().nullable().meta({
+      description:
+        "Name to display, e.g. `Claude Code`. Null for an agent we cannot name.",
+    }),
+  })
+  .meta({ description: "A coding agent acting on behalf of a user." });
+
 export const CommentSchema = z
   .object({
     id: z.string().meta({
@@ -93,6 +111,10 @@ export const CommentSchema = z
       .string()
       .meta({ description: "Plain-text rendering of the comment content." }),
     author: UserSchema.nullable(),
+    agent: CommentAgentSchema.nullable().meta({
+      description:
+        "The coding agent that posted the comment on the author's behalf. Null when the author posted it directly.",
+    }),
     screenshotDiffId: z.string().nullable().meta({
       description: "Screenshot diff this comment is anchored to, if any.",
     }),
@@ -245,6 +267,9 @@ export async function serializeComments(
       body: comment.content,
       text: commentText(comment.content),
       author: account ? serializeUser(account) : null,
+      agent: comment.agent
+        ? { id: comment.agent, name: getAgentDisplayName(comment.agent) }
+        : null,
       screenshotDiffId: comment.screenshotDiffId,
       anchor: comment.anchor,
       pending,

@@ -13,6 +13,10 @@
  * pragmatic option. The match rules below are seeded from publicly-known values
  * and should be tightened as we observe real registrations. Adding/adjusting an
  * entry is a code change — appropriate, since verification is a trust decision.
+ *
+ * Ids are shared with the agent registry (`src/agent/registry.ts`) where the
+ * same product appears in both, so an MCP client recognized here resolves to
+ * the agent of the same name — and the frontend keys one logo map by them.
  */
 
 export type KnownApp = {

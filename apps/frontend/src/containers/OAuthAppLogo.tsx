@@ -3,36 +3,7 @@ import { BadgeCheckIcon } from "lucide-react";
 
 import { Chip, type ChipProps } from "@/ui/Chip";
 
-import {
-  ArgosCliLogo,
-  ClaudeCodeLogo,
-  ClaudeLogo,
-  CodexLogo,
-  CursorLogo,
-  VSCodeLogo,
-  WindsurfLogo,
-  ZedLogo,
-} from "./oauth-logos";
-
-/**
- * Official brand logos for verified well-known apps, keyed by `knownAppId`
- * (see the backend `oauth/known-apps.ts` registry). Bundled (not remote-loaded)
- * so they are not subject to the app CSP and monochrome marks adapt to the
- * theme via `currentColor`.
- */
-const KNOWN_APP_LOGOS: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
-  "argos-cli": ArgosCliLogo,
-  claude: ClaudeLogo,
-  "claude-code": ClaudeCodeLogo,
-  "openai-codex": CodexLogo,
-  cursor: CursorLogo,
-  vscode: VSCodeLogo,
-  windsurf: WindsurfLogo,
-  zed: ZedLogo,
-};
+import { KNOWN_APP_LOGOS } from "./brand-logos";
 
 const SIZE_CLASSES = {
   sm: "size-8",

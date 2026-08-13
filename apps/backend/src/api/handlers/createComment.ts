@@ -1,6 +1,8 @@
+import type { Request } from "express";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { resolveRequestAgentId } from "@/agent/request";
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { resolveCommentBody } from "@/comment/body";
@@ -272,6 +274,7 @@ function resolveMediaCommentOptions(input: {
  * don't accept them, so their comments are created without.
  */
 async function createTargetComment(input: {
+  request: Request;
   authPromise: Promise<CommentAuth>;
   params: CommentRouteParams;
   body: z.infer<typeof CreateCommentBodySchema>;
@@ -317,6 +320,7 @@ async function createTargetComment(input: {
     userId: auth.user.id,
     body: await resolveCommentBody(requestBody.body),
     threadId: thread?.id ?? null,
+    agent: resolveRequestAgentId(input.request, auth),
     ...targetOptions,
   });
 
@@ -329,6 +333,7 @@ export const createComment: CreateAPIHandler = ({ post }) => {
     async (req, res) => {
       res.status(201).send(
         await createTargetComment({
+          request: req,
           authPromise: req.ctx.auth(),
           params: req.ctx.params,
           body: req.ctx.body,
@@ -342,6 +347,7 @@ export const createComment: CreateAPIHandler = ({ post }) => {
     async (req, res) => {
       res.status(201).send(
         await createTargetComment({
+          request: req,
           authPromise: req.ctx.auth(),
           params: req.ctx.params,
           body: req.ctx.body,
@@ -353,6 +359,7 @@ export const createComment: CreateAPIHandler = ({ post }) => {
   post("/media/{mediaId}/comments", async (req, res) => {
     res.status(201).send(
       await createTargetComment({
+        request: req,
         authPromise: req.ctx.auth(),
         params: req.ctx.params,
         body: req.ctx.body,

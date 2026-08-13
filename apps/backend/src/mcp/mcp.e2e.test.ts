@@ -4,6 +4,8 @@ import { test as base, describe, expect, vi } from "vitest";
 
 import {
   Account,
+  Build,
+  Comment,
   OAuthClient,
   OAuthGrant,
   OAuthGrantAccount,
@@ -62,6 +64,8 @@ async function createOAuthAccessToken(input: {
   userAccount: Account;
   scopes: OAuthScope[];
   resource: string | null;
+  /** Well-known app the client was matched to at registration, if any. */
+  knownAppId?: string;
 }) {
   const client = await OAuthClient.query().insertAndFetch({
     clientId: "test-mcp-client",
@@ -71,7 +75,8 @@ async function createOAuthAccessToken(input: {
     responseTypes: ["code"],
     tokenEndpointAuthMethod: "none",
     isFirstParty: false,
-    verified: false,
+    verified: input.knownAppId !== undefined,
+    knownAppId: input.knownAppId ?? null,
   });
   const grant = await OAuthGrant.query().insertAndFetch({
     userId: input.userAccount.userId!,
@@ -97,6 +102,7 @@ const test = base.extend<{
   userAccount: Account;
   patToken: string;
   project: Project;
+  build: Build;
 }>({
   user: async ({}, use) => {
     await setupDatabase();
@@ -130,6 +136,16 @@ const test = base.extend<{
       token: "the-awesome-token",
     });
     await use(project);
+  },
+  build: async ({ project }, use) => {
+    const bucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: bucket.id,
+    });
+    await use(build);
   },
 });
 
@@ -287,6 +303,62 @@ describe("MCP server", () => {
     // creation notification. The module mock above is what guarantees a real
     // Discord webhook can never fire from tests.
     expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
+  });
+
+  test("attributes a comment to the agent behind the MCP client", async ({
+    userAccount,
+    build,
+  }) => {
+    const token = await createOAuthAccessToken({
+      userAccount,
+      scopes: ["comments:write"],
+      resource: getMcpResourceUrl(),
+      knownAppId: "claude-code",
+    });
+
+    const res = await rpc(token, "tools/call", {
+      name: "createBuildComment",
+      arguments: {
+        owner: "jane-doe",
+        project: "awesome-project",
+        buildNumber: String(build.number),
+        body: "The header overflows on mobile",
+      },
+    });
+    expect(res.status).toBe(200);
+    const body = res.body as RpcResponse;
+    expect(body.result!.isError).toBeUndefined();
+    expect(body.result!.structuredContent).toMatchObject({
+      agent: { id: "claude-code", name: "Claude Code" },
+    });
+
+    const comment = await Comment.query().findOne({ buildId: build.id });
+    expect(comment?.agent).toBe("claude-code");
+  });
+
+  test("still marks a comment as agent-made for an unrecognized MCP client", async ({
+    userAccount,
+    build,
+  }) => {
+    const token = await createOAuthAccessToken({
+      userAccount,
+      scopes: ["comments:write"],
+      resource: getMcpResourceUrl(),
+    });
+
+    const res = await rpc(token, "tools/call", {
+      name: "createBuildComment",
+      arguments: {
+        owner: "jane-doe",
+        project: "awesome-project",
+        buildNumber: String(build.number),
+        body: "Same, from an unknown client",
+      },
+    });
+    expect(res.status).toBe(200);
+    expect((res.body as RpcResponse).result!.structuredContent).toMatchObject({
+      agent: { id: "unknown", name: null },
+    });
   });
 
   test("rejects invalid tool arguments", async ({ patToken }) => {

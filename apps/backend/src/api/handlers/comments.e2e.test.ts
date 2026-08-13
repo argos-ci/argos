@@ -244,6 +244,54 @@ describe("createComment", () => {
       .expect(401);
     expect(res.body.error).toEqual(expect.any(String));
   });
+
+  test("records the agent the CLI reports", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .set("user-agent", "argos-cli/6.7.0 node/22.11.0 agent/claude")
+      .send({ body: "Fixed the padding" })
+      .expect(201);
+
+    expect(res.body.agent).toEqual({ id: "claude-code", name: "Claude Code" });
+
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
+    expect(comment?.agent).toBe("claude-code");
+  });
+
+  test("records an unrecognized agent as one all the same", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .set("user-agent", "argos-cli/6.7.0 agent/homemade")
+      .send({ body: "Fixed the padding" })
+      .expect(201);
+
+    expect(res.body.agent).toEqual({ id: "unknown", name: null });
+  });
+
+  test("records no agent when a person posts directly", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .set("user-agent", "argos-cli/6.7.0 node/22.11.0")
+      .send({ body: "Looks good" })
+      .expect(201);
+
+    expect(res.body.agent).toBeNull();
+
+    const comment = await Comment.query().findById(parseCommentId(res.body.id));
+    expect(comment?.agent).toBeNull();
+  });
 });
 
 describe("listComments / getComment", () => {
