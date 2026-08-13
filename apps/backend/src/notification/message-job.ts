@@ -72,7 +72,7 @@ async function processMessage(message: NotificationMessage) {
 /**
  * Extract the first name from a full name.
  */
-function extractFirstName(fullName: string): string | null {
+export function extractFirstName(fullName: string): string | null {
   const parts = fullName.split(" ");
   return parts[0] || null;
 }
