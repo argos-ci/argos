@@ -15,7 +15,7 @@ import { extractFirstName } from "../message-job";
  * the date published in the terms themselves, which promise thirty days'
  * notice counted from their publication.
  */
-const EFFECTIVE_DATE = "2026-09-11";
+const EFFECTIVE_DATE = "2026-09-15";
 
 /**
  * Resend rate limits us per second, so the run is sequential with a margin.

@@ -35,7 +35,7 @@ export const handler = defineNotificationHandler({
     /** Date the new terms take effect for existing paid subscriptions, as YYYY-MM-DD. */
     effectiveDate: z.string(),
   }),
-  previewData: { effectiveDate: "2026-09-11" },
+  previewData: { effectiveDate: "2026-09-15" },
   email: (props) => {
     const effectiveDate = formatEffectiveDate(props.effectiveDate);
     return {
