@@ -150,6 +150,14 @@ export function createConfig() {
         env: "ENCRYPTION_KEY",
       },
     },
+    assets: {
+      baseUrl: {
+        doc: "Origin the content-hashed frontend assets are served from, e.g. `https://assets.argos-ci.com`. Empty serves them from the app origin itself, which is what development and the E2E build do. Set it here *and* as the `ASSETS_BASE_URL` build arg — the value is baked into the built HTML by Vite, and repeated here so the CSP can authorise it.",
+        format: String,
+        default: "",
+        env: "ASSETS_BASE_URL",
+      },
+    },
     csp: {
       scriptSrc: {
         doc: "Content Security Policy script-src",

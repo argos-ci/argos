@@ -20,6 +20,7 @@ export function createAppSecurityHeaders(options: {
   cspReportUri: string | null;
 }): RequestHandler[] {
   const { configScriptCspHash, cspReportUri } = options;
+  const assetsOrigin = getAssetsOrigin();
   return [
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
@@ -44,22 +45,30 @@ export function createAppSecurityHeaders(options: {
             "https://avatars.githubusercontent.com",
             "https://gitlab.com",
             "https://secure.gravatar.com",
+            ...assetsOrigin,
           ],
+          // The one directive the asset origin is deliberately absent from: a
+          // worker's top-level script has to be same-origin whatever CORS says,
+          // so the colour-detection worker is inlined as a blob instead of
+          // being loaded from the CDN. See `util/color-detection/hook.ts`.
           "worker-src": ["'self'", "blob:"],
           "script-src": [
             "'self'",
             // Script to update color classes
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
             ...(configScriptCspHash ? [configScriptCspHash] : []),
+            ...assetsOrigin,
             ...config.get("csp.scriptSrc"),
           ],
           "connect-src": getConnectSrc(),
           // Narrower than helmet's defaults, which allow all of `https:`.
           // `unsafe-inline` stays: React and react-aria both set style
           // attributes, and there is no way to hash those.
-          "style-src": ["'self'", "'unsafe-inline'"],
-          // Fonts are self-hosted, so no third-party origin is needed.
-          "font-src": ["'self'", "data:"],
+          "style-src": ["'self'", "'unsafe-inline'", ...assetsOrigin],
+          // Fonts are self-hosted, but `@fontsource-variable/inter` emits its
+          // woff2 into the build output, so they move with everything else when
+          // assets are served from the CDN.
+          "font-src": ["'self'", "data:", ...assetsOrigin],
           ...(cspReportUri
             ? { "report-to": ["csp-endpoint"], "report-uri": [cspReportUri] }
             : {}),
@@ -110,6 +119,25 @@ function addOrigin(origins: Set<string>, value: string): void {
   } catch {
     // Not a URL (or a bare path): nothing to authorise.
   }
+}
+
+/**
+ * Origin the content-hashed frontend assets are served from, as a list to splice
+ * into a directive — empty when they are served from the app origin, where
+ * `'self'` already covers them.
+ *
+ * Assets live on their own origin in production so that a rolling deploy cannot
+ * 404 a chunk the shell references: the CDN keeps every recent build, while an
+ * ECS task only ever holds its own. That puts scripts, styles and fonts
+ * off-origin, so every directive that can name one has to name the CDN too.
+ *
+ * Derived from config for the same reason as `getConnectSrc()` below: the value
+ * is set once and cannot drift from where the app actually loads its code.
+ */
+function getAssetsOrigin(): string[] {
+  const origins = new Set<string>();
+  addOrigin(origins, config.get("assets.baseUrl"));
+  return Array.from(origins);
 }
 
 /**

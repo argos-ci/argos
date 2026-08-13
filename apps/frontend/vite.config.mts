@@ -170,11 +170,49 @@ function getPackageName(id: string): string | null {
   return first.startsWith("@") && second ? `${first}/${second}` : first;
 }
 
+/**
+ * Public base path for built assets.
+ *
+ * In production this is the asset CDN, which retains every recent build. An ECS
+ * task only ever holds the build baked into its own image, so while a rolling
+ * deploy is in flight the shell from a new task names chunks the old tasks
+ * cannot serve — and once the old tasks are gone, any tab still holding the old
+ * shell can never load another lazy route. Pointing the build at an origin whose
+ * contents outlive the containers is what removes both.
+ *
+ * Unset everywhere else — dev, Storybook, and the Playwright build all serve
+ * assets from the app origin — so `/` stays the default.
+ *
+ * Vite expects a trailing slash and silently mis-joins URLs without one, so
+ * normalise rather than trusting whoever set the variable.
+ */
+function getBase(): string {
+  const baseUrl = process.env.ASSETS_BASE_URL;
+  if (!baseUrl) {
+    return "/";
+  }
+  return `${baseUrl.replace(/\/+$/, "")}/`;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig((args) => {
   const mode = process.env.BUILD_MODE || args.mode;
   return {
     mode,
+    base: getBase(),
+    experimental: {
+      // `base` would send *everything* to the CDN, including the public
+      // directory. Keep those on the app origin: their names are not
+      // content-hashed, so they gain nothing from an origin that retains old
+      // builds — they are identical in every build and never part of the deploy
+      // race. Moving them would cost a second cache-control class in the upload
+      // (`immutable` is wrong for a stable name) and a `manifest-src` CSP
+      // directive, since `manifest.json` falls back to `default-src 'self'` and
+      // would otherwise be blocked.
+      renderBuiltUrl(filename, { type }) {
+        return type === "public" ? `/${filename}` : undefined;
+      },
+    },
     plugins: [
       graphqlDocuments({
         generatedDir: fileURLToPath(new URL("./src/gql", import.meta.url)),

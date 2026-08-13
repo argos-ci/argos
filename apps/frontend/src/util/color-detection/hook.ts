@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
 import type { MessageData, Rect } from "./types";
+// Inlined rather than emitted as its own chunk: a worker's top-level script has
+// to be same-origin, whatever CORS allows, and in production the rest of the
+// build is served from the asset CDN. `?worker&inline` bundles the worker with
+// its imports and constructs it from a blob URL, which is same-origin by
+// construction — so this keeps working wherever the assets live.
+import ColorDetectionWorker from "./worker?worker&inline";
 
 /**
  * State of the colored rects detection.
@@ -28,9 +34,7 @@ export function useColoredRects(input: {
   useEffect(() => {
     setState(LOADING_STATE);
 
-    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
+    const worker = new ColorDetectionWorker();
     worker.addEventListener("message", (event: MessageEvent<MessageData>) => {
       setState({ loading: false, rects: event.data });
     });

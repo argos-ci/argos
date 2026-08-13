@@ -23,6 +23,13 @@ env:
   ECR_CACHE_TAG: buildcache
   ECS_TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
   ECS_TASK_EXECUTION_ROLE_ARN: ${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}
+  # Assets are served from their own origin, which retains every recent build.
+  # A task only ever holds the build baked into its image, so serving hashed
+  # assets from the app itself 404s them mid-rollout and for every tab still
+  # holding an older shell. Baked into the image at build time and read again by
+  # the running container, which has to authorise the origin in its CSP.
+  ASSETS_BASE_URL: https://assets.argos-ci.com
+  ASSETS_BUCKET: argos-assets-production
 
 jobs:
   build:
@@ -74,6 +81,10 @@ jobs:
         with:
           context: .
           push: true
+          # The Dockerfile's last stage is `dist`, a scratch image holding only
+          # the frontend build output. Without this the default target applies
+          # and the pushed "app" image is that empty scratch image.
+          target: build
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
@@ -82,10 +93,90 @@ jobs:
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
           build-args: |
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
+            ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
+
+      # Lifts the frontend build out of the image that was just built. Every
+      # layer is already in this job's buildx cache, so this resolves without
+      # rebuilding anything.
+      - name: Export frontend assets
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          target: dist
+          outputs: type=local,dest=frontend-dist
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
+          secrets: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+          build-args: |
+            TURBO_TEAM=${{ vars.TURBO_TEAM }}
+            ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
+
+      # Only `assets/` — the content-hashed output. Public-directory files keep
+      # their stable names and stay on the app origin (see `renderBuiltUrl` in
+      # apps/frontend/vite.config.mts), so they are deliberately not here.
+      - name: Upload built assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: frontend-assets
+          path: frontend-dist/assets
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Export image reference
         id: image
         run: echo "value=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+  # Publishes the build's hashed assets to the CDN *before* anything serves HTML
+  # that names them. `deploy` waits on this job for exactly that reason.
+  #
+  # Nothing here ever deletes: the bucket is append-only, so the assets of every
+  # recent build stay reachable and a rollback to an older image keeps working.
+  # Retention is handled out of band by the purge Lambda in infra/.
+  assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download built assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-assets
+          path: assets
+
+      # `--no-delete` is the default and is relied on: an object already present
+      # is the *same* object, since the name is a hash of the content. Repeat
+      # deploys of an unchanged chunk are a no-op.
+      - name: Sync assets to S3
+        run: |
+          set -euo pipefail
+          aws s3 sync assets "s3://$ASSETS_BUCKET/assets/" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --no-progress
+
+      # The retention job reads these. It keeps every key named by a manifest
+      # younger than its window and deletes the rest, which is what makes it
+      # safe: an unchanged chunk keeps its hash across builds and is skipped by
+      # `s3 sync`, so its S3 creation date goes stale while it is still
+      # referenced. Age of the *manifest*, never age of the object.
+      - name: Write build manifest
+        run: |
+          set -euo pipefail
+          find assets -type f -printf 'assets/%P\n' | jq -R . | jq -s \
+            --arg sha "$GITHUB_SHA" \
+            '{sha: $sha, keys: .}' > manifest.json
+          aws s3 cp manifest.json "s3://$ASSETS_BUCKET/manifests/$GITHUB_SHA.json" \
+            --cache-control "no-cache" \
+            --no-progress
 
   migrate:
     runs-on: ubuntu-latest
@@ -183,7 +274,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [build, migrate]
+    # `assets` gates this: the CDN must already hold the chunks the shell this
+    # image serves will name.
+    needs: [build, migrate, assets]
     permissions:
       id-token: write
       contents: read
@@ -232,6 +325,7 @@ jobs:
             MCP_BASE_URL=https://mcp.argos-ci.com
             SERVER_URL=https://app.argos-ci.com
             SENTRY_RELEASE_VERSION=${{ github.sha }}
+            ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
           secrets: |
             AMQP_URL=/production/amqp_url
             AWS_ACCESS_KEY_ID=/production/aws_access_key_id
