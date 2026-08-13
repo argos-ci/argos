@@ -82,7 +82,7 @@ const ProjectLink = memo(
       <Tooltip content="See all builds">
         <HeadlessLink
           href={`${getProjectURL({ accountSlug, projectName })}/builds`}
-          className="text-low data-hovered:text-default rac-focus text-xs leading-none transition"
+          className="text-low data-hovered:text-default rac-focus truncate text-xs leading-tight transition"
         >
           {accountSlug}/{projectName}
         </HeadlessLink>
@@ -207,16 +207,16 @@ export const BuildHeader = memo(
     const { build, project } = props;
     return (
       <div className="border-b-thin flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 p-4">
-        <div className="flex h-8 items-center gap-4">
-          <div className="relative flex">
+        <div className="flex h-8 min-w-0 items-center gap-4">
+          <div className="relative flex shrink-0">
             <BrandLink
               accountSlug={props.accountSlug}
               projectName={props.projectName}
             />
             <SyncingIcon />
           </div>
-          <div className="flex flex-col justify-center">
-            <div className="mb-1 flex items-start gap-1">
+          <div className="flex min-w-0 flex-col justify-center">
+            <div className="mb-1 flex min-w-0 items-start gap-1">
               <BuildModeIndicator
                 mode={build ? build.mode : BuildMode.Ci}
                 scale="sm"
@@ -228,14 +228,14 @@ export const BuildHeader = memo(
                     projectName: props.projectName,
                     buildNumber: props.buildNumber,
                   })}
-                  className="data-hovered:text-default rac-focus text-sm leading-none font-medium transition"
+                  className="data-hovered:text-default rac-focus truncate text-sm leading-tight font-medium transition"
                 >
                   Build {props.buildNumber}
                   {build && build.name !== "default" ? ` • ${build.name}` : ""}
                 </HeadlessLink>
               </Tooltip>
             </div>
-            <div className="flex">
+            <div className="flex min-w-0">
               <ProjectLink
                 accountSlug={props.accountSlug}
                 projectName={props.projectName}
@@ -246,13 +246,20 @@ export const BuildHeader = memo(
           {build ? <BuildTestStatusChip build={build} /> : null}
           {build ? <BuildBaselineEligibilityChip build={build} /> : null}
         </div>
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="flex items-center gap-2 empty:hidden">
-            {build?.mergeQueue ? <BuildMergeQueueIndicator /> : null}
-            {build?.pullRequest ? (
-              <PullRequestButton pullRequest={build.pullRequest} size="small" />
-            ) : null}
-          </div>
+        {/*
+         * The pull request takes whatever width the rest leaves — `flex-1` on a
+         * zero basis — so it is the first thing to give up space when the window
+         * narrows, and the last one to overflow. Its title truncates and its
+         * tooltip still spells it out; the build identity and the review
+         * controls have nothing to fall back on, so they shrink after it.
+         */}
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 empty:hidden">
+          {build?.mergeQueue ? <BuildMergeQueueIndicator /> : null}
+          {build?.pullRequest ? (
+            <PullRequestButton pullRequest={build.pullRequest} size="small" />
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-4">
           {build && project && (
             <ConditionalBuildReviewButton build={build} project={project} />
           )}
