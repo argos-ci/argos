@@ -31,5 +31,5 @@
     "vitest/vitest.unit.config.mts"
   ],
   "ignoreBinaries": ["stripe", "ngrok", "op"],
-  "ignoreDependencies": ["@graphql-codegen/add"]
+  "ignoreDependencies": ["@graphql-codegen/add", "esbuild"]
 }

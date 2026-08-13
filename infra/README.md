@@ -308,6 +308,14 @@ Two guards make it safe to run unattended, both covered by tests in
 
 ## Troubleshooting
 
+**`Command "esbuild" not found` during synth or diff.** `NodejsFunction`
+bundles by shelling out to `pnpm exec -- esbuild`, and it does so from the
+**repository root**, because that is where the lockfile is. So `esbuild` is a
+root `devDependency` even though only `infra/` uses it — declaring it in
+`infra/package.json` would not put it on the path where CDK actually invokes it,
+since `pnpm exec` searches upward, not downward. It is in knip's
+`ignoreDependencies` for the same reason: nothing imports it, CDK spawns it.
+
 **`cdk diff` fails on credentials in a PR.** Expected for fork PRs — they get no
 OIDC token. The job is gated to same-repo PRs; a fork's infra change has to be
 diffed by a maintainer.

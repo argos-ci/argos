@@ -66,6 +66,9 @@ importers:
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       knip:
         specifier: ^6.32.0
         version: 6.32.0

@@ -45,6 +45,7 @@
     "@parcel/watcher": "^2.6.0",
     "@playwright/test": "1.62.1",
     "@types/node": "^26.1.2",
+    "esbuild": "^0.28.1",
     "knip": "^6.32.0",
     "oxfmt": "^0.62.0",
     "oxlint": "^1.77.0",
