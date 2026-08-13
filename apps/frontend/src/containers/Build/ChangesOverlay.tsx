@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useAtomValue } from "jotai/react";
 
@@ -42,10 +42,20 @@ type Dimensions = { width: number; height: number };
  * and spacing.
  */
 export const ChangesOverlayControls = memo(function ChangesOverlayControls() {
+  const { loading } = useBuildDiffHighlighterContext();
   return (
     <>
       <OverlayToggle />
-      <ButtonGroup>
+      {/*
+       * All three enable together, once the changed areas have been detected —
+       * so the group is what is busy until then, not any one button. It also has
+       * to be the group because React Aria drops unknown ARIA props off the DOM
+       * node, `aria-busy` among them, and `ButtonGroup` is a plain div.
+       *
+       * Beyond announcing the wait, this is what makes Argos hold the screenshot
+       * until the answer is in, instead of catching the buttons disabled.
+       */}
+      <ButtonGroup aria-busy={loading}>
         <GoToPreviousChangesButton />
         <HighlightButton />
         <GoToNextChangesButton />
@@ -117,7 +127,7 @@ export function ChangesHighlights(props: {
   const containerRef = useRef<HTMLDivElement>(null);
   const transform = useZoomTransform();
   const jpgUrl = useMemo(() => getChangesDetectionUrl(url), [url]);
-  const { rects } = useColoredRects({ url: jpgUrl, blockSize: 24 });
+  const { rects, loading } = useColoredRects({ url: jpgUrl, blockSize: 24 });
   const [imgScale] = useScaleContext();
   const realScale = imgScale ? imgScale * transform.scale : null;
   // Convert image coordinates to pane coordinates.
@@ -131,7 +141,14 @@ export function ChangesHighlights(props: {
         : 0;
     return [x * imgScale + x1, y * imgScale + y1];
   };
-  const { registerHighlighter } = useBuildDiffHighlighterContext();
+  const { registerHighlighter, setLoading } = useBuildDiffHighlighterContext();
+  // Nothing registers until the detector answers, so on its own the toolbar
+  // cannot tell "still counting" from "nothing to step through". Reporting it is
+  // what lets the toolbar mark those controls busy while they wait.
+  useEffect(() => {
+    setLoading(loading);
+    return () => setLoading(false);
+  }, [loading, setLoading]);
   const highlight: Highlighter["highlight"] = useEventCallback(() => {
     const container = containerRef.current;
     if (!container) {
