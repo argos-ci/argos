@@ -9,7 +9,25 @@ import type {
 const API_BASEURL = process.env.API_BASEURL ?? "";
 const APP_URL = process.env.APP_URL ?? "";
 const BASE_DOMAIN = process.env.BASE_DOMAIN ?? "";
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET ?? "";
+
+/**
+ * Substituted at bundle time by an esbuild `--inject` file that
+ * `ArgosDeploymentStack` writes, rather than by a `--define` like the constants
+ * above.
+ *
+ * The difference is only where the value travels. A `define` becomes
+ * `--define:process.env.ACCESS_TOKEN_SECRET="..."` on esbuild's command line,
+ * and CDK prints that whole command line whenever bundling fails -- which, in a
+ * public repository with `cdk diff` running in CI, publishes the secret to
+ * anyone reading a failed build log. An inject puts only a file path there.
+ *
+ * Lambda@Edge cannot read environment variables at runtime, so baking the value
+ * into the bundle is the only option; this keeps it out of argv while doing so.
+ *
+ * Declared, never defined: a real `const` here would shadow the global and
+ * esbuild would have nothing to substitute.
+ */
+declare const ACCESS_TOKEN_SECRET: string;
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
 const AUTH_CALLBACK_PATH = "/__argos/auth";
 
