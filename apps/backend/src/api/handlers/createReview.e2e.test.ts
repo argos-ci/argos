@@ -186,7 +186,7 @@ describe("createReview", () => {
     expect(comments[0]?.agent).toBeNull();
   });
 
-  test("records the agent on a review's comment", async ({
+  test("records the agent on a review and on its comment", async ({
     build,
     scopedPatToken,
   }) => {
@@ -197,6 +197,11 @@ describe("createReview", () => {
       .send({ event: "COMMENT", body: "Reviewed the diffs, all intentional." })
       .expect(200);
 
+    expect(res.body.agent).toEqual({ id: "claude-code", name: "Claude Code" });
+
+    const review = await BuildReview.query().findById(res.body.id);
+    expect(review?.agent).toBe("claude-code");
+
     // A review's body is stored as a comment like any other, so it carries the
     // same attribution — otherwise the one comment an agent is most likely to
     // leave is the one that looks hand-written.
@@ -204,6 +209,40 @@ describe("createReview", () => {
       buildReviewId: res.body.id,
     });
     expect(comments[0]?.agent).toBe("claude-code");
+  });
+
+  test("records the agent on a review with no body at all", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    // Approving without a word is the common case, so the review is the only
+    // place the attribution can live — there is no comment to carry it.
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .set("user-agent", "argos-cli/6.9.0 node/22.11.0 agent/cursor")
+      .send({ event: "APPROVE" })
+      .expect(200);
+
+    expect(res.body.agent).toEqual({ id: "cursor", name: "Cursor" });
+    const review = await BuildReview.query().findById(res.body.id);
+    expect(review?.agent).toBe("cursor");
+  });
+
+  test("records no agent when a person reviews directly", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .set("user-agent", "argos-cli/6.9.0 node/22.11.0")
+      .send({ event: "APPROVE" })
+      .expect(200);
+
+    expect(res.body.agent).toBeNull();
+    const review = await BuildReview.query().findById(res.body.id);
+    expect(review?.agent).toBeNull();
   });
 
   test("supports the deprecated conclusion field", async ({

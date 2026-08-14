@@ -59,6 +59,10 @@ const _BuildFragment = graphql(`
       state
       dismissedAt
       automatic
+      agent {
+        id
+        name
+      }
       user {
         ...UserCard_user
       }

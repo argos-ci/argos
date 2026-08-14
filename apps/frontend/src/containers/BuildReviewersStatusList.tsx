@@ -12,6 +12,7 @@ import {
 } from "@/util/build-review";
 
 import { AccountAvatar } from "./AccountAvatar";
+import { AgentBadge, type Agent } from "./AgentBadge";
 
 type ReviewerUser = {
   id: string;
@@ -26,6 +27,7 @@ type ReviewerStatusReview = {
   state: ReviewState;
   dismissedAt?: string | null;
   automatic?: boolean;
+  agent?: Agent | null;
   user: ReviewerUser | null;
 };
 
@@ -71,7 +73,9 @@ export function BuildReviewersStatusList<
 
   const renderUserContent = (
     user: NonNullable<T["user"]>,
-    options?: { automatic?: boolean },
+    // A review is one or the other: Argos submits an automatic review itself,
+    // so no agent ever signs one.
+    options?: { automatic?: boolean; agent?: Agent | null },
   ) => {
     const content = (
       <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -91,6 +95,8 @@ export function BuildReviewersStatusList<
                 className="bg-app absolute -right-1 -bottom-1 size-3 rounded-full"
               />
             </Tooltip>
+          ) : options?.agent ? (
+            <AgentBadge agent={options.agent} action="Reviewed" />
           ) : null}
         </span>
         <strong className="truncate font-medium">
@@ -123,7 +129,10 @@ export function BuildReviewersStatusList<
             )}
           >
             {user ? (
-              renderUserContent(user, { automatic: review.automatic })
+              renderUserContent(user, {
+                automatic: review.automatic,
+                agent: review.agent,
+              })
             ) : (
               <span className="flex-1 truncate font-medium">Unknown user</span>
             )}

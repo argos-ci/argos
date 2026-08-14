@@ -13,6 +13,7 @@ import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { AgentBadge } from "@/containers/AgentBadge";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useProjectRepositoryUrl } from "@/containers/Project/RepositoryContext";
 import { DocumentType, graphql } from "@/gql";
@@ -33,7 +34,6 @@ import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
-import { CommentAgentBadge } from "./CommentAgentBadge";
 import {
   CommentAddReactionButton,
   CommentReactionList,
@@ -601,7 +601,7 @@ function CommentMessage(props: {
                 </span>
               </UserHoverCard>
               {comment.agent ? (
-                <CommentAgentBadge agent={comment.agent} />
+                <AgentBadge agent={comment.agent} action="Posted" />
               ) : null}
             </span>
           ) : null}

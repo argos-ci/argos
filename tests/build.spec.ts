@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 
+import { BuildReview } from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createFallbackBaselineScenario,
@@ -170,5 +171,26 @@ loggedTest(
         [team.account.slug]: "acme",
       },
     });
+  },
+);
+loggedTest(
+  "build sidebar marks a review an agent submitted for its reviewer",
+  async ({ page, auth, team, project, builds }) => {
+    // The seeded approval has no author, so it renders as "Unknown user" with
+    // no avatar to badge. Give it one, and an agent.
+    await BuildReview.query()
+      .patch({ userId: auth.user.id, agent: "claude-code" })
+      .where({ buildId: builds.acceptedBuild.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.acceptedBuild.number}`,
+    );
+
+    const badge = page.getByRole("img", {
+      name: "Reviewed through Claude Code on behalf of this user",
+    });
+    await expect(badge.first()).toBeVisible();
+
+    await screenshot(page, "build-agent-review");
   },
 );

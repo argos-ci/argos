@@ -221,6 +221,10 @@ const _ReviewDescriptionBuildFragment = graphql(`
       state
       dismissedAt
       automatic
+      agent {
+        id
+        name
+      }
       user {
         id
         name
