@@ -109,6 +109,41 @@ describe("app security headers", () => {
     });
   });
 
+  describe("media-src", () => {
+    const originalBaseUrl = config.get("s3.publicImageBaseUrl");
+
+    afterEach(() => {
+      config.set("s3.publicImageBaseUrl", originalBaseUrl);
+    });
+
+    it("allows the origins a recording plays from", async () => {
+      // Media has no fallback to `img-src`, only to `default-src`. Without the
+      // directive, `'self'` there refused every video in the media library:
+      // the element failed to load without a request ever being made.
+      config.set(
+        "s3.publicImageBaseUrl",
+        "https://files.argos-ci.com/production/",
+      );
+      const csp = await getCsp();
+      expect(csp["media-src"]).toContain("'self'");
+      expect(csp["media-src"]).toContain("https://files.argos-ci.com");
+    });
+
+    it("reaches everywhere a poster frame is served from", async () => {
+      // A recording and its poster are one upload served two ways, so an origin
+      // one directive can reach and the other cannot leaves a video that shows
+      // its first frame and then refuses to play.
+      config.set(
+        "s3.publicImageBaseUrl",
+        "https://files.argos-ci.com/production/",
+      );
+      const csp = await getCsp();
+      for (const origin of csp["media-src"] ?? []) {
+        expect(csp["img-src"]).toContain(origin);
+      }
+    });
+  });
+
   describe("cross-origin isolation", () => {
     it("severs window.opener for cross-origin openers", async () => {
       const headers = await getHeaders();
