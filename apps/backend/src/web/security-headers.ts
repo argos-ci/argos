@@ -21,6 +21,7 @@ export function createAppSecurityHeaders(options: {
 }): RequestHandler[] {
   const { configScriptCspHash, cspReportUri } = options;
   const assetsOrigin = getAssetsOrigin();
+  const fileOrigins = getFileOrigins();
   return [
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
@@ -36,10 +37,8 @@ export function createAppSecurityHeaders(options: {
             "data:",
             "blob:",
             "https://argos-ci.com",
-            // ImageKit images
-            "https://files.argos-ci.com",
-            // S3 images
-            getScreenshotsBucketOrigin(),
+            // Screenshots, media, and the poster frame of a recording
+            ...fileOrigins,
             // GitHub and GitLab avatars
             "https://github.com",
             "https://avatars.githubusercontent.com",
@@ -47,6 +46,12 @@ export function createAppSecurityHeaders(options: {
             "https://secure.gravatar.com",
             ...assetsOrigin,
           ],
+          // A recording plays from the same places its poster frame is served
+          // from, so it needs its own directive: media has no fallback to
+          // `img-src`, only to `default-src`, and `'self'` there refused every
+          // video in the media library outright — the element failed to load
+          // with no request ever leaving the browser.
+          "media-src": ["'self'", ...fileOrigins],
           // The one directive the asset origin is deliberately absent from: a
           // worker's top-level script has to be same-origin whatever CORS says,
           // so the colour-detection worker is inlined as a blob instead of
@@ -104,6 +109,28 @@ export function createAppSecurityHeaders(options: {
 /** Virtual-hosted-style origin of the screenshots bucket. */
 function getScreenshotsBucketOrigin(): string {
   return `https://${config.get("s3.screenshotsBucket")}.s3.${config.get("s3.region")}.amazonaws.com`;
+}
+
+/**
+ * Origins the stored files are served from: the image CDN when a file goes
+ * through it, and the bucket itself for everything else — larger images, videos
+ * the CDN is not configured for, and signed downloads. See
+ * `storage/public-url.ts`.
+ *
+ * One list rather than one literal per directive, because a file reaches the
+ * page through more than one of them: a recording is a `media-src`, its poster
+ * frame an `img-src`, and downloading either is a `connect-src`. Writing the
+ * origins out per directive is how `media-src` came to be missing altogether.
+ *
+ * Derived from config for the same reason as `getConnectSrc()` below: the CDN
+ * origin was a literal sitting next to the config entry that decides whether the
+ * CDN is used at all, so the two could disagree.
+ */
+function getFileOrigins(): string[] {
+  const origins = new Set<string>();
+  addOrigin(origins, config.get("s3.publicImageBaseUrl"));
+  origins.add(getScreenshotsBucketOrigin());
+  return Array.from(origins);
 }
 
 /**
@@ -171,11 +198,11 @@ export function getConnectSrc(): string[] {
 
   // Screenshots and text snapshots are *fetched*, not just displayed — for pixel
   // diffing, colour detection and text diffs — so they need connect-src as well
-  // as img-src. Images come from the image CDN when small enough
-  // (`publicImageBaseUrl`); everything larger, and every non-image file, comes
-  // from a signed S3 URL. See `storage/public-url.ts`.
-  addOrigin(origins, config.get("s3.publicImageBaseUrl"));
-  origins.add(getScreenshotsBucketOrigin());
+  // as img-src. The same goes for a media's Download action, whichever of the
+  // two origins that media is served from.
+  for (const origin of getFileOrigins()) {
+    origins.add(origin);
+  }
 
   // Sentry posts envelopes to its DSN's ingest host.
   addOrigin(origins, config.get("sentry.clientDsn"));
