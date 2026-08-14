@@ -3,7 +3,6 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { TriangleAlertIcon } from "lucide-react";
-import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
 import { useRefetchWhenActive } from "@/containers/Apollo";
@@ -14,7 +13,12 @@ import { graphql } from "@/gql";
 import { ButtonIcon, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
+import {
+  ListBox,
+  ListBoxItem,
+  ListBoxItemIcon,
+  ListBoxItemLabel,
+} from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 import { getSlackAuthURL } from "@/util/slack";
@@ -221,7 +225,7 @@ function SendWebhookMessageAction(props: {
                 <ListBoxItemIcon>
                   <Logo />
                 </ListBoxItemIcon>
-                <Text slot="label">{webhook.name}</Text>
+                <ListBoxItemLabel>{webhook.name}</ListBoxItemLabel>
               </ListBoxItem>
             ))}
           </ListBox>
@@ -392,7 +396,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
                   <ListBoxItemIcon>
                     <action.icon />
                   </ListBoxItemIcon>
-                  <Text slot="label">{action.label}</Text>
+                  <ListBoxItemLabel>{action.label}</ListBoxItemLabel>
                 </ListBoxItem>
               ))}
             </ListBox>

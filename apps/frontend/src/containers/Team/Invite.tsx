@@ -1,32 +1,23 @@
 import type { ComponentProps } from "react";
-import {
-  Heading,
-  HeadingContext,
-  Provider,
-  Text,
-  TextContext,
-} from "react-aria-components";
 
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
+import { Heading, HeadingContext } from "@/ui/Heading";
+import { Text, TextContext } from "@/ui/Text";
 
 import { AccountAvatar } from "../AccountAvatar";
 
 export function InviteContainer(props: { children: React.ReactNode }) {
   return (
     <Container className="mt-32 flex max-w-3xl flex-col items-center text-center">
-      <Provider
-        values={[
-          [
-            HeadingContext,
-            { level: 1, className: "mb-2 text-2xl font-medium" },
-          ],
-          [TextContext, { className: "text-low" }],
-        ]}
+      <HeadingContext
+        value={{ level: 1, className: "mb-2 text-2xl font-medium" }}
       >
-        {props.children}
-      </Provider>
+        <TextContext value={{ className: "text-low" }}>
+          {props.children}
+        </TextContext>
+      </HeadingContext>
     </Container>
   );
 }

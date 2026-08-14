@@ -10,13 +10,13 @@ import {
   GlobeIcon,
   UploadCloudIcon,
 } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 
 import { DeploymentsIllustration } from "@/containers/EmptyStateIllustrations";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import type { DeploymentEnvironment, DeploymentStatus } from "@/gql/graphql";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateIllustration,
@@ -30,6 +30,7 @@ import {
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { List, ListRow, ListRowLoader } from "@/ui/List";
+import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";

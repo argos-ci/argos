@@ -1,14 +1,15 @@
 import { CircleXIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
 import { LinkButton } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
   EmptyStateIcon,
   Page,
 } from "@/ui/Layout";
+import { Text } from "@/ui/Text";
 
 export function NotFound() {
   return (

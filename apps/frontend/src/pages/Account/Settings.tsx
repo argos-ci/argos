@@ -7,7 +7,6 @@ import {
 } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Route, Routes } from "react-router";
 
@@ -38,6 +37,7 @@ import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -46,6 +46,7 @@ import {
 } from "@/ui/Layout";
 import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
+import { Text } from "@/ui/Text";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useAccountContext } from ".";

@@ -10,7 +10,7 @@ import {
   SparklesIcon,
   UsersIcon,
 } from "lucide-react";
-import { Heading, Radio, RadioGroup } from "react-aria-components";
+import { Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
   useController,
@@ -31,6 +31,7 @@ import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Heading } from "@/ui/Heading";
 import { Label } from "@/ui/Label";
 import { LinkButton } from "@/ui/Link";
 import { resolveWelcomeRedirect } from "@/util/welcome";

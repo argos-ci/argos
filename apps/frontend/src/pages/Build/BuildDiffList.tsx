@@ -16,10 +16,8 @@ import {
 } from "lucide-react";
 import memoize from "memoize";
 import {
-  Heading,
   Button as RACButton,
   ButtonProps as RACButtonProps,
-  Text,
 } from "react-aria-components";
 
 import {
@@ -41,8 +39,10 @@ import { NoScreenshotsBuildEmptyState } from "@/containers/Build/BuildEmptyState
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";

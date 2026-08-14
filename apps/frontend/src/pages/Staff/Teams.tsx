@@ -2,7 +2,6 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { CreditCardIcon, SearchIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -12,6 +11,7 @@ import { graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -22,6 +22,7 @@ import {
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
+import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";

@@ -16,7 +16,6 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { BoxesIcon, MessageSquareIcon, SearchIcon } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
-import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router";
 
 import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
@@ -28,6 +27,7 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
@@ -39,6 +39,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
+import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";

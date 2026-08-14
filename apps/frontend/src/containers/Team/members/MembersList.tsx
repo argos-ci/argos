@@ -2,7 +2,6 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { Heading, Text } from "react-aria-components";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import {
@@ -14,8 +13,10 @@ import { graphql } from "@/gql";
 import { TeamMembersOrderBy } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
 import { List, ListLoadMore } from "@/ui/List";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";

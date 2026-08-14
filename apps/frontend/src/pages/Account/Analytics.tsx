@@ -25,11 +25,9 @@ import {
 import { useFilter } from "react-aria";
 import {
   Autocomplete,
-  Heading,
   Input,
   MenuTrigger,
   SearchField,
-  Text,
 } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router";
@@ -63,6 +61,7 @@ import {
   getTimeTicks,
 } from "@/ui/Charts";
 import { DateRangePicker } from "@/ui/DateRangePicker";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -76,6 +75,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { StatTile } from "@/ui/StatTile";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useAccountParams } from "./AccountParams";

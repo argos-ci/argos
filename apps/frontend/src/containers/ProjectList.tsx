@@ -1,11 +1,11 @@
 import { GitBranchIcon } from "@primer/octicons-react";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
@@ -16,6 +16,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { HeadlessLink, Link } from "@/ui/Link";
+import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";

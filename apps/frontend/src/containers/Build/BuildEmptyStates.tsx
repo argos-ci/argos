@@ -1,8 +1,9 @@
 import { ImagesIcon, SquareSlashIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 
 import { LinkButton } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
+import { Text } from "@/ui/Text";
 
 export function SkippedBuildEmptyState() {
   return (

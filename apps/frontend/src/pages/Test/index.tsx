@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useNumberFormatter } from "react-aria";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
@@ -43,6 +42,7 @@ import { TestStatusIndicator } from "@/containers/TestStatusIndicator";
 import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
@@ -54,6 +54,7 @@ import {
 } from "@/ui/Layout";
 import { Panel } from "@/ui/Panel";
 import { Separator } from "@/ui/Separator";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
 

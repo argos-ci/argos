@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
-import { DialogTrigger, Heading, Text } from "react-aria-components";
+import { DialogTrigger } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
@@ -21,6 +21,7 @@ import {
 } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -28,6 +29,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { Modal } from "@/ui/Modal";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { Time } from "../../ui/Time";

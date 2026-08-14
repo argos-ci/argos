@@ -1,33 +1,26 @@
 import { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
-import { HeadingContext, Provider, TextContext } from "react-aria-components";
 
 import { Container, type ContainerProps } from "./Container";
+import { HeadingContext } from "./Heading";
 import { Link } from "./Link";
+import { TextContext } from "./Text";
 
 export function PageHeader(props: ComponentPropsWithRef<"div">) {
   return (
-    <Provider
-      values={[
-        [HeadingContext, { level: 1, className: "text-2xl font-medium" }],
-        [
-          TextContext,
-          {
-            slots: {
-              headline: { className: "text-low text-sm" },
-            },
-          },
-        ],
-      ]}
-    >
-      <div
-        {...props}
-        className={clsx(
-          "mb-6 flex items-end justify-between gap-x-4",
-          props.className,
-        )}
-      />
-    </Provider>
+    <HeadingContext value={{ level: 1, className: "text-2xl font-medium" }}>
+      <TextContext
+        value={{ slots: { headline: { className: "text-low text-sm" } } }}
+      >
+        <div
+          {...props}
+          className={clsx(
+            "mb-6 flex items-end justify-between gap-x-4",
+            props.className,
+          )}
+        />
+      </TextContext>
+    </HeadingContext>
   );
 }
 
@@ -50,31 +43,27 @@ export function PageContainer(props: ComponentPropsWithRef<"div">) {
 
 export function EmptyState(props: ComponentPropsWithRef<"div">) {
   return (
-    <Provider
-      values={[
-        [HeadingContext, { level: 2, className: "font-medium text-base" }],
-        [
-          TextContext,
-          {
-            slots: {
-              description: {
-                // A fixed measure keeps the description readable and gives every
-                // empty state the same silhouette, whatever its copy length.
-                className: "text-low max-w-lg text-center text-sm text-balance",
-              },
+    <HeadingContext value={{ level: 2, className: "font-medium text-base" }}>
+      <TextContext
+        value={{
+          slots: {
+            description: {
+              // A fixed measure keeps the description readable and gives every
+              // empty state the same silhouette, whatever its copy length.
+              className: "text-low max-w-lg text-center text-sm text-balance",
             },
           },
-        ],
-      ]}
-    >
-      <Container
-        {...props}
-        className={clsx(
-          "flex flex-col items-center justify-center gap-1 py-10",
-          props.className,
-        )}
-      />
-    </Provider>
+        }}
+      >
+        <Container
+          {...props}
+          className={clsx(
+            "flex flex-col items-center justify-center gap-1 py-10",
+            props.className,
+          )}
+        />
+      </TextContext>
+    </HeadingContext>
   );
 }
 
@@ -194,17 +183,12 @@ export function Page(props: ComponentPropsWithRef<"div">) {
  */
 export function StandalonePage(props: ContainerProps) {
   return (
-    <Provider
-      values={[
-        [
-          HeadingContext,
-          {
-            level: 1,
-            className:
-              "mx-auto text-balance text-center text-2xl font-semibold leading-tight",
-          },
-        ],
-      ]}
+    <HeadingContext
+      value={{
+        level: 1,
+        className:
+          "mx-auto text-balance text-center text-2xl font-semibold leading-tight",
+      }}
     >
       <Container
         {...props}
@@ -213,6 +197,6 @@ export function StandalonePage(props: ContainerProps) {
           props.className,
         )}
       />
-    </Provider>
+    </HeadingContext>
   );
 }

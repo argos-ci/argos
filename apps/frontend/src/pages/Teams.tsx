@@ -1,6 +1,5 @@
 import { useMutation, useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
-import { Heading } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -8,6 +7,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard, RedirectToWebsite } from "@/containers/AuthGuard";
 import { graphql } from "@/gql";
 import { Button, type ButtonProps } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { List, ListHeaderRow, ListRow, ListRowLink } from "@/ui/List";

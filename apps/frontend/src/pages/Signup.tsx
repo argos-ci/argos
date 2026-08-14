@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
 import { CheckIcon } from "lucide-react";
 import { useObjectRef } from "react-aria";
-import { Heading, Radio, RadioGroup } from "react-aria-components";
+import { Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
   useController,
@@ -25,6 +25,7 @@ import { Details, Summary } from "@/ui/Details";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Heading } from "@/ui/Heading";
 import { Label } from "@/ui/Label";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
