@@ -26,6 +26,11 @@ export const Default: Story = {
  * The toggle itself, which no snapshot can see. `Summary` used to suppress the
  * click and re-open its parent `<details>` by hand; it now lets the native
  * element do it, and that is worth pinning.
+ *
+ * Ends open on purpose. Clicking twice would leave the story in its initial
+ * state, and the snapshot would then be a duplicate of `Default` — a baseline
+ * that costs a review and shows nothing new. This way the same assertions also
+ * buy the only picture of the expanded state in the kit.
  */
 export const Toggles: Story = {
   play: async ({ canvasElement }) => {
@@ -36,9 +41,6 @@ export const Toggles: Story = {
 
     await userEvent.click(canvas.getByText("Advanced Settings"));
     await expect(details).toHaveAttribute("open");
-
-    await userEvent.click(canvas.getByText("Advanced Settings"));
-    await expect(details).not.toHaveAttribute("open");
   },
   render: () => (
     <Details>
