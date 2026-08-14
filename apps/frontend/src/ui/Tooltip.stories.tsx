@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Button } from "./Button";
+import {
+  openOverlayParameters,
+  OverlaySlot,
+  OverlayStage,
+} from "./storyOverlay";
 import { StoryTitle } from "./StoryTitle";
 import { Tooltip } from "./Tooltip";
 
@@ -45,5 +50,45 @@ export const Default: Story = {
         </Tooltip>
       </div>
     </div>
+  ),
+};
+
+/**
+ * Opened through `isOpen` rather than by hovering: Argos moves the pointer to
+ * (0, 0) before every capture, so a hover-opened tooltip is dismissed before
+ * the shutter.
+ */
+export const Open: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage className="items-center">
+      <OverlaySlot className="flex justify-center">
+        <Tooltip content="Default tooltip" placement="bottom" isOpen>
+          <Button variant="secondary">Default</Button>
+        </Tooltip>
+      </OverlaySlot>
+      <OverlaySlot className="flex justify-center">
+        <Tooltip
+          content={
+            <>
+              An <strong>info</strong> tooltip, long enough to reach the maximum
+              measure and wrap onto a second line.
+            </>
+          }
+          variant="info"
+          placement="bottom"
+          isOpen
+        >
+          <Button variant="secondary">Info</Button>
+        </Tooltip>
+      </OverlaySlot>
+      {(["top", "bottom", "left", "right"] as const).map((placement) => (
+        <OverlaySlot key={placement} className="flex justify-center">
+          <Tooltip content={placement} placement={placement} isOpen>
+            <Button variant="secondary">{placement}</Button>
+          </Tooltip>
+        </OverlaySlot>
+      ))}
+    </OverlayStage>
   ),
 };

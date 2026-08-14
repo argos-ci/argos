@@ -51,8 +51,16 @@ export default mergeConfig(
             name: "storybook",
             browser: {
               enabled: true,
-              provider:
-                playwright() as unknown as BrowserProviderOption<object>,
+              provider: playwright({
+                // Pin the browser's locale and time zone rather than inheriting
+                // the host's. Two reasons: any story that formats a date or a
+                // number would otherwise render differently on a contributor's
+                // machine and in CI, and `Intl.DateTimeFormat().resolvedOptions()
+                // .timeZone` returns `Etc/Unknown` on a host ICU cannot resolve
+                // — which `@internationalized/date` rejects outright, taking the
+                // calendar stories down with it.
+                contextOptions: { locale: "en-US", timezoneId: "UTC" },
+              }) as unknown as BrowserProviderOption<object>,
               headless: true,
               instances: [{ browser: "chromium" }],
             },

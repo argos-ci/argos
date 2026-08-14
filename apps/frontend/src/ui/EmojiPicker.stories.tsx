@@ -10,6 +10,7 @@ import {
   EmojiPickerPopover,
   EmojiPickerTrigger,
 } from "./EmojiPicker";
+import { openOverlayParameters, OverlayStage } from "./storyOverlay";
 import { StoryTitle } from "./StoryTitle";
 
 const meta = {
@@ -69,4 +70,22 @@ function FieldStory() {
 
 export const Field: Story = {
   render: () => <FieldStory />,
+};
+
+/**
+ * The picker in its popover. `Default` renders the grid inline, so this adds the
+ * popover surface and the sizing the trigger imposes on it.
+ */
+export const Open: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage>
+      <EmojiPickerTrigger defaultOpen>
+        <Button variant="secondary" iconOnly aria-label="Add reaction">
+          <SmilePlusIcon />
+        </Button>
+        <EmojiPickerPopover onEmojiSelect={() => {}} />
+      </EmojiPickerTrigger>
+    </OverlayStage>
+  ),
 };
