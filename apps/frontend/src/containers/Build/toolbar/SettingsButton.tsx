@@ -5,15 +5,17 @@ import { PaintbrushIcon } from "lucide-react";
 import { Heading } from "react-aria-components";
 
 import { Button } from "@/ui/Button";
-import {
-  ColorSwatch,
-  ColorSwatchPicker,
-  ColorSwatchPickerItem,
-} from "@/ui/ColorPicker";
+import { ColorSwatchPicker, ColorSwatchPickerItem } from "@/ui/ColorPicker";
 import { Dialog, DialogBody, DialogTrigger } from "@/ui/Dialog";
 import { Label } from "@/ui/Label";
 import { Popover } from "@/ui/Popover";
-import { Slider, SliderOutput, SliderThumb, SliderTrack } from "@/ui/Slider";
+import {
+  Slider,
+  SliderLabel,
+  SliderOutput,
+  SliderThumb,
+  SliderTrack,
+} from "@/ui/Slider";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { overlayColorAtom, overlayOpacityAtom } from "../OverlayStyle";
@@ -53,15 +55,15 @@ function OpacityPicker() {
   const [opacity, setOpacity] = useAtom(overlayOpacityAtom);
   return (
     <Slider
-      minValue={50}
-      maxValue={100}
+      min={50}
+      max={100}
       value={opacity * 100}
-      onChange={(value) => {
+      onValueChange={(value) => {
         invariant(typeof value === "number", "Opacity must be a number");
         setOpacity(value / 100);
       }}
     >
-      <Label>Opacity</Label>
+      <SliderLabel>Opacity</SliderLabel>
       <SliderOutput />
       <SliderTrack>
         <SliderThumb />
@@ -75,37 +77,16 @@ function ColorPicker() {
   return (
     <div>
       <Label>Color</Label>
-      <ColorSwatchPicker
-        value={color}
-        onChange={(color) => setColor(color.toString("css"))}
-      >
-        <ColorSwatchPickerItem color="#FF5470">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#FF007C">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#FD3A4A">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#FFAA1D">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#299617">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#2243B6">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#5DADEC">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#5946B2">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
-        <ColorSwatchPickerItem color="#000">
-          <ColorSwatch />
-        </ColorSwatchPickerItem>
+      <ColorSwatchPicker value={color} onChange={setColor}>
+        <ColorSwatchPickerItem color="#FF5470" />
+        <ColorSwatchPickerItem color="#FF007C" />
+        <ColorSwatchPickerItem color="#FD3A4A" />
+        <ColorSwatchPickerItem color="#FFAA1D" />
+        <ColorSwatchPickerItem color="#299617" />
+        <ColorSwatchPickerItem color="#2243B6" />
+        <ColorSwatchPickerItem color="#5DADEC" />
+        <ColorSwatchPickerItem color="#5946B2" />
+        <ColorSwatchPickerItem color="#000" />
       </ColorSwatchPicker>
     </div>
   );
