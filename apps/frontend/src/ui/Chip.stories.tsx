@@ -7,6 +7,7 @@ import {
   XIcon,
   ZapIcon,
 } from "lucide-react";
+import { userEvent } from "storybook/test";
 
 import { ButtonGroup } from "./ButtonGroup";
 import { Chip, ChipButton, ChipLink } from "./Chip";
@@ -106,6 +107,27 @@ export const Default: Story = {
           </ButtonGroup>
         ))}
       </div>
+    </div>
+  ),
+};
+
+/**
+ * Keyboard focus on a chip button — the one baseline of the `rac-focus`
+ * utility, which encodes react-aria's "outline on keyboard focus only" contract
+ * and has to be rebuilt on `:focus-visible`.
+ */
+export const KeyboardFocus: Story = {
+  play: async () => {
+    await userEvent.tab();
+  },
+  render: () => (
+    <div className="flex flex-wrap items-center gap-4 p-4">
+      <ChipButton color="primary" icon={ZapIcon} onPress={() => {}}>
+        Focused
+      </ChipButton>
+      <ChipButton color="danger" icon={FlameIcon} onPress={() => {}}>
+        Danger
+      </ChipButton>
     </div>
   ),
 };

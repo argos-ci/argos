@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { ListBox, ListBoxItem, ListBoxSeparator } from "./ListBox";
+import {
+  ListBox,
+  ListBoxItem,
+  ListBoxItemDescription,
+  ListBoxItemLabel,
+  ListBoxSeparator,
+} from "./ListBox";
 import { StoryTitle } from "./StoryTitle";
 
 const meta = {
@@ -31,6 +37,28 @@ export const Default: Story = {
           <ListBoxItem id="firefox">Firefox</ListBoxItem>
           <ListBoxItem id="safari">Safari</ListBoxItem>
           <ListBoxItem id="edge">Edge</ListBoxItem>
+        </ListBox>
+      </div>
+
+      {/* Label and description rows are styled through the `slot` DOM attribute
+          (`has-[[slot=description]]:flex-wrap`, `**:[[slot=label]]:truncate`),
+          which react-aria's `Text` sets for us. Nothing snapshots them today,
+          and a replacement that drops the attribute breaks silently. */}
+      <StoryTitle>Label and description</StoryTitle>
+      <div className="border-thin max-w-xs rounded-lg">
+        <ListBox aria-label="Reviewers" selectionMode="single">
+          <ListBoxItem id="jane" textValue="Jane Doe">
+            <ListBoxItemLabel>Jane Doe</ListBoxItemLabel>
+            <ListBoxItemDescription>jane@argos-ci.com</ListBoxItemDescription>
+          </ListBoxItem>
+          <ListBoxItem id="long" textValue="A very long name">
+            <ListBoxItemLabel>
+              A reviewer whose name is long enough to be truncated
+            </ListBoxItemLabel>
+            <ListBoxItemDescription>
+              someone.with.a.long.address@example.com
+            </ListBoxItemDescription>
+          </ListBoxItem>
         </ListBox>
       </div>
     </div>
