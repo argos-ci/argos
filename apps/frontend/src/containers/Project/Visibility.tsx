@@ -89,7 +89,10 @@ export const ProjectVisibility = (props: {
           <CardTitle>Project visibility</CardTitle>
           <CardParagraph>
             Make a public project private in order to restrict access to builds
-            and screenshots to only authorized users.
+            and screenshots to only authorized users. It also sets what media
+            uploaded from now on defaults to: a public project's share pages are
+            open to anyone with the link, a private project's require an Argos
+            session. Media already uploaded keeps the visibility it has.
           </CardParagraph>
           <FormRadioGroup>
             <FormRadio
