@@ -4,8 +4,11 @@ permissions: {}
 on:
   push:
     branches: [main]
+  # Any base branch, not just `main`, so a pull request stacked on another one
+  # is checked while it is still stacked rather than only once its base merges
+  # and GitHub retargets it.
   pull_request:
-    branches: [main]
+    branches: ["**"]
 
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
