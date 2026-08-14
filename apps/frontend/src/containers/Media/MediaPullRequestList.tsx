@@ -164,7 +164,11 @@ function MediaListItem(props: {
       aria-current={isActive ? "true" : undefined}
       className="shrink-0"
     >
-      <DiffCard isActive={isActive} variant="primary" className="p-2">
+      {/* `min-h-25` is the floor the build list puts under its own rows: a
+          wide, short upload — a header strip, a toolbar — fits the sidebar's
+          width at a handful of pixels tall, and a card that height is a pill
+          with a file name in it, indistinguishable from a button. */}
+      <DiffCard isActive={isActive} variant="primary" className="min-h-25 p-2">
         <MediaThumbnail version={latestVersion} dimensions={dimensions} />
         <DiffCardFooter alwaysVisible>
           {latestVersion.isVideo ? (
