@@ -1,4 +1,11 @@
-import { Suspense, useCallback, useEffect, useId, useMemo } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import {
   addDays,
@@ -233,33 +240,9 @@ export function Component() {
               </Suspense>
               <PeriodSelect value={period} onChange={setPeriod} />
               {period === "custom" && customPeriod ? (
-                <DateRangePicker
-                  aria-label="Custom analytics period"
-                  granularity="day"
+                <CustomPeriodPicker
                   value={customPeriod}
-                  minValue={today(getLocalTimeZone()).subtract({
-                    days: MAX_DURATION_DAYS - 1,
-                  })}
-                  maxValue={today(getLocalTimeZone())}
-                  onChange={(value) => {
-                    if (!checkIsDurationValid(value)) {
-                      return;
-                    }
-                    setCustomPeriod(value);
-                  }}
-                  validate={(value) => {
-                    if (!value) {
-                      return null;
-                    }
-                    const range = {
-                      from: new Date(`${value.start}T00:00:00`),
-                      to: new Date(`${value.end}T00:00:00`),
-                    };
-                    if (checkIsDurationValid(range)) {
-                      return null;
-                    }
-                    return `Date range cannot exceed ${MAX_DURATION_DAYS} days.`;
-                  }}
+                  onChange={setCustomPeriod}
                 />
               ) : null}
             </div>
@@ -1419,6 +1402,65 @@ function PeriodSelect(props: {
         </ListBox>
       </Popover>
     </Select>
+  );
+}
+
+/**
+ * The custom period field.
+ *
+ * It keeps the range being edited in local state instead of driving the query
+ * params directly. A date typed into the segments arrives one edit at a time,
+ * so committing only valid ranges would revert the segment under the cursor
+ * and leave `validate` nothing invalid to report on — the field would refuse
+ * the range without ever saying why. Only a range within the limit is
+ * committed; the rest stays in the field, flagged.
+ */
+function CustomPeriodPicker(props: {
+  value: { from: Date; to: Date };
+  onChange: (value: { from: Date; to: Date }) => void;
+}) {
+  const { value, onChange } = props;
+  const [draft, setDraft] = useState(value);
+
+  // `value` is rebuilt from the query params on every render, so re-sync on its
+  // content rather than on its identity.
+  const committedKey = `${getDateQueryValue(value.from)}/${getDateQueryValue(value.to)}`;
+  const [lastCommittedKey, setLastCommittedKey] = useState(committedKey);
+  if (committedKey !== lastCommittedKey) {
+    setLastCommittedKey(committedKey);
+    setDraft(value);
+  }
+
+  const maxDay = startOfDay(new Date());
+
+  return (
+    <DateRangePicker
+      aria-label="Custom analytics period"
+      granularity="day"
+      value={draft}
+      maxValue={today(getLocalTimeZone())}
+      onChange={(next) => {
+        setDraft(next);
+        if (checkIsDurationValid(next) && next.to <= maxDay) {
+          onChange(next);
+        }
+      }}
+      validate={(entered) => {
+        if (!entered) {
+          return null;
+        }
+        const range = {
+          from: new Date(`${entered.start}T00:00:00`),
+          to: new Date(`${entered.end}T00:00:00`),
+        };
+        // Only the duration limit — react-aria reports a reversed range and a
+        // day past `maxValue` itself, with a message specific to each.
+        if (getDurationInDays(range) <= MAX_DURATION_DAYS) {
+          return null;
+        }
+        return `Date range cannot exceed ${MAX_DURATION_DAYS} days.`;
+      }}
+    />
   );
 }
 

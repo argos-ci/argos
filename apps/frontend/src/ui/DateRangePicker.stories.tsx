@@ -66,11 +66,14 @@ export const Open: Story = {
  * `validate` prop and `DateRangeFieldError` bridges the result into the kit's
  * own field-error context. Nothing else covers that bridge, and if it breaks the
  * message simply stops rendering.
+ *
+ * It rides on the component's `validationBehavior="aria"` default rather than
+ * setting the prop here, so this also guards that default: under react-aria's
+ * own `"native"`, the message would wait for a form submit that never comes.
  */
 export const Invalid: Story = {
   args: {
     validate: () => "The period must be shorter than 30 days.",
-    validationBehavior: "aria",
   },
   render: (args) => (
     <div className="flex max-w-xs flex-col">
