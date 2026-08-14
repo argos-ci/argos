@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate, useParams } from "react-router";
 
@@ -14,8 +13,10 @@ import {
 import { graphql } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
+import { Text } from "@/ui/Text";
 
 import { getAccountURL } from "./Account/AccountParams";
 

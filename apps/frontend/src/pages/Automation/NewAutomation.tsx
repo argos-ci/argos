@@ -1,7 +1,6 @@
 import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
@@ -13,12 +12,14 @@ import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Text } from "@/ui/Text";
 
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";

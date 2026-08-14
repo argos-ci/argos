@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useNumberFormatter } from "react-aria";
-import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router";
 
 import {
@@ -38,6 +37,7 @@ import { useTestPeriodState } from "@/containers/Test/Period";
 import { SeenChange } from "@/containers/Test/SeenChange";
 import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
@@ -53,6 +53,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { List, ListHeaderRow, ListRowLink, ListRowLoader } from "@/ui/List";
+import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";

@@ -126,19 +126,21 @@ export function DialogDismiss(props: {
  * up automatically.
  */
 export function DialogActionButton(
-  props: ButtonProps & { onAction: NonNullable<ButtonProps["onAction"]> },
+  props: ButtonProps & {
+    onAsyncAction: NonNullable<ButtonProps["onAsyncAction"]>;
+  },
 ) {
-  const { onAction, ...rest } = props;
+  const { onAsyncAction, ...rest } = props;
   const actionContext = use(ModalActionContext);
   invariant(actionContext, "DialogActionButton must be used within a Modal");
   return (
     <Button
       {...rest}
       isPending={actionContext.isPending ?? undefined}
-      onAction={async () => {
+      onAsyncAction={async () => {
         actionContext.setIsPending(true);
         try {
-          await onAction();
+          await onAsyncAction();
         } finally {
           actionContext.setIsPending(false);
         }

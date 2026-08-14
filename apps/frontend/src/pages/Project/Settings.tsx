@@ -7,7 +7,6 @@ import {
 } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 import { Navigate, Route, Routes } from "react-router";
 
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
@@ -28,6 +27,7 @@ import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -36,6 +36,7 @@ import {
 } from "@/ui/Layout";
 import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
+import { Text } from "@/ui/Text";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useProjectOutletContext } from "./ProjectOutletContext";

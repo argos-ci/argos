@@ -18,7 +18,7 @@ import {
   MessagesSquareIcon,
   TerminalIcon,
 } from "lucide-react";
-import { Heading, MenuTrigger, Text } from "react-aria-components";
+import { MenuTrigger } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { useClipboard } from "use-clipboard-copy";
@@ -59,6 +59,7 @@ import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip } from "@/ui/Chip";
 import { Code } from "@/ui/Code";
+import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import {
   EmptyState,
@@ -71,6 +72,7 @@ import {
 import { HeadlessLink } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
+import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";

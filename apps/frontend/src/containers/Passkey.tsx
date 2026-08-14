@@ -133,7 +133,7 @@ export function useRegisterPasskey(): () => Promise<void> {
  * the user picks one.
  */
 export function PasskeyLoginButton(
-  props: Omit<ButtonProps, "children" | "variant" | "onAction"> & {
+  props: Omit<ButtonProps, "children" | "variant" | "onAsyncAction"> & {
     children?: React.ReactNode;
     redirect?: string | null;
     onSuccess?: () => void;
@@ -146,7 +146,7 @@ export function PasskeyLoginButton(
     <Button
       variant="secondary"
       {...rest}
-      onAction={async () => {
+      onAsyncAction={async () => {
         const { data } = await client.mutate({
           mutation: CreateAuthenticationOptionsMutation,
         });

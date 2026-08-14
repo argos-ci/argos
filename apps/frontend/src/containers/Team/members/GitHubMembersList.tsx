@@ -1,7 +1,6 @@
 import { useDeferredValue, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAssertAuthAccount } from "@/containers/Auth";
@@ -9,8 +8,10 @@ import { TeamMemberLabel } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
+import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";

@@ -264,16 +264,23 @@ export interface ButtonProps
    * Run an asynchronous action when the button is pressed.
    * Automatically set the button in pending mode and
    * handles errors.
+   *
+   * Deliberately *not* named `onAction`: react-aria spells a menu item's
+   * activation handler that way, and once `onPress` becomes `onClick` the two
+   * would be indistinguishable at a call site — `onClick={async () => …}` on a
+   * Button still type-checks and still runs, but silently loses the pending
+   * state, the error handling and the toast.
+   *
    * @example
    * <Button
-   *   onAction={async () => {
+   *   onAsyncAction={async () => {
    *     await resetLink();
    *   }}
    * >
    *  Reset link
    * </Button>
    */
-  onAction?: () => Promise<void>;
+  onAsyncAction?: () => Promise<void>;
 }
 
 export function Button({
@@ -283,7 +290,7 @@ export function Button({
   iconOnly,
   showFocusRing,
   children,
-  onAction,
+  onAsyncAction,
   onPress,
   ...props
 }: ButtonProps) {
@@ -301,7 +308,7 @@ export function Button({
       isPending={props.isPending ?? isPending}
       onPress={(event) => {
         onPress?.(event);
-        const promise = onAction?.();
+        const promise = onAsyncAction?.();
         if (promise) {
           setIsPending(true);
           promise

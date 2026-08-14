@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router";
 
@@ -13,7 +12,9 @@ import {
 } from "@/containers/Team/Invite";
 import { graphql } from "@/gql";
 import { Button, type ButtonProps } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import { PageLoader } from "@/ui/PageLoader";
+import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 

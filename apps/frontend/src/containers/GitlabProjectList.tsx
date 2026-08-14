@@ -1,12 +1,13 @@
 import { useQuery } from "@apollo/client/react";
 import { FolderCodeIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
+import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 

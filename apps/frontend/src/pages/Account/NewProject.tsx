@@ -1,7 +1,6 @@
 import type { ApolloCache } from "@apollo/client";
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
@@ -13,6 +12,7 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -20,6 +20,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { Separator } from "@/ui/Separator";
+import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 

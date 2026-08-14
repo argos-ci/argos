@@ -116,7 +116,7 @@ function EnableSAMLSSODialog(props: {
             {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
             <DialogDismiss>Cancel</DialogDismiss>
             <DialogActionButton
-              onAction={async () => {
+              onAsyncAction={async () => {
                 try {
                   await enable();
                   close();
@@ -159,7 +159,7 @@ export function DisableSAMLSSOAddOnButton(props: { teamAccountId: string }) {
                 {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
                 <DialogDismiss>Cancel</DialogDismiss>
                 <DialogActionButton
-                  onAction={async () => {
+                  onAsyncAction={async () => {
                     await disable()
                       .then(() => close())
                       .catch(() => {});

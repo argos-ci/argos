@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent } from "react";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router";
 
@@ -8,6 +7,7 @@ import {
   TeamNewForm,
   useCreateTeamAndRedirect,
 } from "@/containers/Team/NewForm";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -16,6 +16,7 @@ import {
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
+import { Text } from "@/ui/Text";
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();

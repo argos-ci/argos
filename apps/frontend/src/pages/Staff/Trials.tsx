@@ -19,7 +19,6 @@ import {
   XIcon,
   type LucideIcon,
 } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -30,6 +29,7 @@ import { graphql } from "@/gql";
 import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
+import { Heading } from "@/ui/Heading";
 import {
   Page,
   PageContainer,
@@ -42,6 +42,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
 import { Switch } from "@/ui/Switch";
+import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";

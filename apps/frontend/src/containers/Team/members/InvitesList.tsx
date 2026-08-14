@@ -8,7 +8,7 @@ import {
   MailIcon,
   MoreVerticalIcon,
 } from "lucide-react";
-import { Heading, MenuTrigger, Text } from "react-aria-components";
+import { MenuTrigger } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { TeamMemberLabel } from "@/containers/UserList";
@@ -16,11 +16,13 @@ import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { DialogTrigger } from "@/ui/Dialog";
+import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
+import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 
 import { InviteDialog } from "./InviteDialog";

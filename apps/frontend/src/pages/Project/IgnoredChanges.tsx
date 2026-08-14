@@ -16,7 +16,6 @@ import {
   ZapIcon,
 } from "lucide-react";
 import { useNumberFormatter } from "react-aria";
-import { Heading, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import {
@@ -41,6 +40,7 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
+import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
@@ -57,6 +57,7 @@ import {
 import { HeadlessLink, Link } from "@/ui/Link";
 import { List, ListHeaderRow, ListRow, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
+import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
@@ -796,7 +797,7 @@ function UnignoreChangeDialog(props: {
         <DialogDismiss>Cancel</DialogDismiss>
         <DialogActionButton
           variant="destructive"
-          onAction={async () => {
+          onAsyncAction={async () => {
             try {
               await unignore();
               state.close();

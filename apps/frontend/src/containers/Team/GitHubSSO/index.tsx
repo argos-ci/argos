@@ -92,7 +92,7 @@ export const DisableGitHubSSOButton = memo(
               {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
               <DialogDismiss>Cancel</DialogDismiss>
               <DialogActionButton
-                onAction={async () => {
+                onAsyncAction={async () => {
                   await disable().catch(() => {});
                 }}
               >

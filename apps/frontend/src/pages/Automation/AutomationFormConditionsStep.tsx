@@ -3,13 +3,12 @@ import type { AutomationInputCondition } from "@argos/schemas/automation-conditi
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { GitPullRequestIcon, TowerControlIcon } from "lucide-react";
-import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
 import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { ListBox, ListBoxItem } from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
@@ -239,7 +238,7 @@ function BuildModeCondition(props: {
                 <MenuItemIcon>
                   <Icon />
                 </MenuItemIcon>
-                <Text slot="label">{label}</Text>
+                <ListBoxItemLabel>{label}</ListBoxItemLabel>
               </ListBoxItem>
             ))}
           </ListBox>
@@ -289,7 +288,7 @@ function BuildTypeCondition(props: {
                       className={lowTextColorClassNames[descriptor.color]}
                     />
                   </MenuItemIcon>
-                  <Text slot="label">{descriptor.label}</Text>
+                  <ListBoxItemLabel>{descriptor.label}</ListBoxItemLabel>
                 </ListBoxItem>
               );
             })}
