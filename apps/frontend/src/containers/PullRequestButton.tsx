@@ -91,26 +91,26 @@ function PullRequestInfo(props: {
   }
   return (
     <div className="flex gap-2">
-      <div className="mt-1 flex">
+      <div className="mt-1 flex shrink-0">
         <PullRequestStatusIcon pullRequest={pullRequest} />
       </div>
-      <div>
+      {/* `min-w-0` lets this column shrink to the tooltip's width. Without it
+          the column keeps its max-content width, and the title runs past the
+          rounded corner and is sliced off by the popup's `overflow-hidden`. */}
+      <div className="min-w-0">
         <div>
+          {/* The title wraps rather than truncating: this tooltip exists to
+              show the title the button had to cut short, so cutting it a
+              second time would leave it unreadable either way. */}
           <a
             href={pullRequest.url}
             onClick={(event) => {
               event.stopPropagation();
             }}
-            className="hover:bg-hover inline-flex items-center gap-2 rounded-sm px-1"
+            className="hover:bg-hover rounded-sm px-1 wrap-break-word"
           >
-            <span className="flex max-w-prose min-w-0 items-center gap-2">
-              <span className="min-w-0 flex-1 truncate">
-                {pullRequest.title}
-              </span>
-              <span className="text-low font-normal">
-                #{pullRequest.number}
-              </span>
-            </span>
+            {pullRequest.title}{" "}
+            <span className="text-low font-normal">#{pullRequest.number}</span>
           </a>
         </div>
         <div className="text-low flex items-center gap-1 px-1">
