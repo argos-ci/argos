@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { useDateFormatter } from "react-aria";
 import { Bar, ComposedChart, XAxis, YAxis } from "recharts";
 
 import type { TestMetricDataPoint } from "@/gql/graphql";
@@ -11,6 +10,7 @@ import {
   getTimeTicks,
   type ChartConfig,
 } from "@/ui/Charts";
+import { chartTickDateFormatter } from "@/util/intl";
 
 const chartConfig = {
   changes: {
@@ -54,13 +54,6 @@ export function ChangesChart(props: {
   className?: string;
 }) {
   const { series, from, className } = props;
-  const tickFormatter = useDateFormatter({
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
   const ticks = useMemo(() => getTicksFromBoundaries(from), [from]);
   const transformedSeries = useMemo(() => {
     return series.map((item) => ({
@@ -145,7 +138,9 @@ export function ChangesChart(props: {
           domain={["auto", "auto"]}
           padding={{ left: 8 }}
           ticks={ticks}
-          tickFormatter={(value) => tickFormatter.format(new Date(value))}
+          tickFormatter={(value) =>
+            chartTickDateFormatter.format(new Date(value))
+          }
           height={14}
         />
         <YAxis

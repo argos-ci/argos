@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { useNumberFormatter } from "react-aria";
 
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
@@ -8,6 +7,7 @@ import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
 import { TooltipIndicator } from "@/ui/TooltipIndicator";
+import { compactNumberFormatter } from "@/util/intl";
 
 import { useProjectParams } from "../../Project/ProjectParams";
 import { getTestURL } from "../../Test/TestParams";
@@ -39,7 +39,6 @@ export function TestInsightsSection(props: {
   test: DocumentType<typeof _TestFragment>;
 }) {
   const { test } = props;
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
   return (
@@ -77,7 +76,7 @@ export function TestInsightsSection(props: {
               tooltip={<BuildsTooltip periodLabel="over last 7 days" />}
             />
             <InsightValue>
-              {compactFormatter.format(test.last7daysMetrics.all.total)}
+              {compactNumberFormatter.format(test.last7daysMetrics.all.total)}
             </InsightValue>
           </InsightRow>
           <InsightRow>
@@ -86,13 +85,13 @@ export function TestInsightsSection(props: {
               tooltip={<ChangesTooltip periodLabel="over last 7 days" />}
             />
             <InsightValue>
-              {compactFormatter.format(test.last7daysMetrics.all.changes)}
+              {compactNumberFormatter.format(test.last7daysMetrics.all.changes)}
             </InsightValue>
           </InsightRow>
           <InsightRow>
             <InsightTitle title="Stability" tooltip={<StabilityTooltip />} />
             <InsightValue>
-              {compactFormatter.format(
+              {compactNumberFormatter.format(
                 test.last7daysMetrics.all.stability * 100,
               )}
               <InsightUnit>%</InsightUnit>
@@ -104,7 +103,7 @@ export function TestInsightsSection(props: {
               tooltip={<ConsistencyTooltip />}
             />
             <InsightValue>
-              {compactFormatter.format(
+              {compactNumberFormatter.format(
                 test.last7daysMetrics.all.consistency * 100,
               )}
               <InsightUnit>%</InsightUnit>

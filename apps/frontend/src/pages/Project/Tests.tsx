@@ -22,7 +22,6 @@ import {
   SearchIcon,
 } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
-import { useNumberFormatter } from "react-aria";
 import { useResolvedPath } from "react-router";
 
 import {
@@ -58,6 +57,7 @@ import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { compactNumberFormatter } from "@/util/intl";
 import { checkAreDefaultValues } from "@/util/search-params";
 
 import { NotFound } from "../NotFound";
@@ -462,7 +462,6 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
   const params = useProjectParams();
   invariant(params);
   const resolvedTest = useResolvedPath(test.id);
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <ListRowLink
       href={resolvedTest.pathname}
@@ -516,11 +515,11 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
         {test.metrics.all.changes}
       </div>
       <div className="w-20 text-right tabular-nums">
-        {compactFormatter.format(test.metrics.all.stability * 100)}
+        {compactNumberFormatter.format(test.metrics.all.stability * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
       <div className="w-20 text-right tabular-nums">
-        {compactFormatter.format(test.metrics.all.consistency * 100)}
+        {compactNumberFormatter.format(test.metrics.all.consistency * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
     </ListRowLink>

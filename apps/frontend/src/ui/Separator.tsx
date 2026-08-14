@@ -1,19 +1,20 @@
+import { Separator as BaseSeparator } from "@base-ui/react/separator";
 import { clsx } from "clsx";
-import { SeparatorProps, useSeparator } from "react-aria";
 
 export function Separator(
-  props: SeparatorProps & {
+  props: BaseSeparator.Props & {
     className?: string;
   },
 ) {
-  const { separatorProps } = useSeparator(props);
+  const { className, orientation = "horizontal", ...rest } = props;
   return (
-    <div
-      {...separatorProps}
+    <BaseSeparator
+      {...rest}
+      orientation={orientation}
       className={clsx(
         "shrink-0 bg-(--border-color-default)",
-        props.orientation === "vertical" ? "w-px" : "h-px w-full",
-        props.className,
+        orientation === "vertical" ? "w-px" : "h-px w-full",
+        className,
       )}
     />
   );

@@ -1,9 +1,9 @@
 import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
-import { useNumberFormatter } from "react-aria";
 
 import { CircleProgress } from "@/ui/Progress";
 import { bgSolidColors, lowTextColors } from "@/util/colors";
+import { compactNumberFormatter } from "@/util/intl";
 
 import { getFlakinessUIColor } from "./Flakiness";
 
@@ -17,7 +17,6 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
   const uiColor = getFlakinessUIColor(value);
   const bgColor = bgSolidColors[uiColor];
   const textColor = lowTextColors[uiColor];
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <div
       ref={ref}
@@ -47,7 +46,7 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
           fill={textColor}
           fontFamily="inherit"
         >
-          {label ?? compactFormatter.format(value * 100)}
+          {label ?? compactNumberFormatter.format(value * 100)}
         </text>
       </svg>
     </div>

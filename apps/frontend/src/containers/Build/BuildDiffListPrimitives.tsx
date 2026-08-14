@@ -2,18 +2,14 @@ import { ComponentPropsWithRef, memo, Suspense } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import {
-  AriaButtonProps,
-  HoverProps,
-  useButton,
-  useObjectRef,
-} from "react-aria";
+import { AriaButtonProps, HoverProps, useButton } from "react-aria";
 
 import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
+import { useObjectRef } from "@/ui/useObjectRef";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import { RemoteMinimap } from "./RemoteMinimap";

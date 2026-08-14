@@ -24,6 +24,28 @@ export function formatCurrency(
   return getCurrencyFormatter(currency, digits).format(value);
 }
 
+/**
+ * Compact notation — 1.2K, 3.4M — for counts that would otherwise blow out a
+ * narrow column.
+ *
+ * A module-level formatter rather than a hook: react-aria's
+ * `useNumberFormatter` existed to read the locale from its `I18nProvider`, and
+ * this app never rendered one, so it always resolved to the browser locale —
+ * which is what `undefined` selects here.
+ */
+export const compactNumberFormatter = new Intl.NumberFormat(undefined, {
+  notation: "compact",
+});
+
+/** Axis ticks on the changes chart: "12 Mar, 14:30". */
+export const chartTickDateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
 export function formatList(items: string[]) {
   if (items.length === 0) {
     return "";

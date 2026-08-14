@@ -1,13 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { CircleCheckIcon, FlagOffIcon, WavesIcon } from "lucide-react";
-import { useNumberFormatter } from "react-aria";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
+import { compactNumberFormatter } from "@/util/intl";
 
 import { useProjectParams } from "../../Project/ProjectParams";
 import { getTestURL } from "../../Test/TestParams";
@@ -40,7 +40,6 @@ export function TestChangeSection(props: {
   occurrences: number;
 }) {
   const { test, change, occurrences } = props;
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
   const lastTrail = change.trails.at(-1) ?? null;
@@ -77,8 +76,8 @@ export function TestChangeSection(props: {
             occurrences > 1 ? "text-danger-low" : "text-success-low",
           )}
         >
-          {compactFormatter.format(occurrences)} /{" "}
-          {compactFormatter.format(test.last7daysMetrics.all.total)}
+          {compactNumberFormatter.format(occurrences)} /{" "}
+          {compactNumberFormatter.format(test.last7daysMetrics.all.total)}
         </div>
       </div>
       <div className="mt-4 flex items-center gap-1.5 px-4 text-xs">

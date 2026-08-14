@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { useObjectRef } from "react-aria";
 
 import { Tooltip, type TooltipProps } from "./Tooltip";
+import { useObjectRef } from "./useObjectRef";
 
 export interface TruncableProps extends Omit<
   React.ComponentPropsWithRef<"div">,

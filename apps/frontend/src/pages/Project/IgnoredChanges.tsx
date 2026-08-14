@@ -15,7 +15,6 @@ import {
   WavesIcon,
   ZapIcon,
 } from "lucide-react";
-import { useNumberFormatter } from "react-aria";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import {
@@ -64,6 +63,7 @@ import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
+import { compactNumberFormatter } from "@/util/intl";
 
 import { NotFound } from "../NotFound";
 import { getTestURL } from "../Test/TestParams";
@@ -597,7 +597,6 @@ function IgnoredChangeRow(props: {
 }) {
   const { ignoredChange, params, style, onUnignore } = props;
   const { permissions } = useProjectOutletContext();
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   const { test, lastSeenDiff, ignoredBy } = ignoredChange;
   const testURL = getTestURL(
     { ...params, testId: test.id },
@@ -689,7 +688,7 @@ function IgnoredChangeRow(props: {
           ignoredChange.occurrencesSinceIgnored === 0 && "text-low",
         )}
       >
-        {compactFormatter.format(ignoredChange.occurrencesSinceIgnored)}
+        {compactNumberFormatter.format(ignoredChange.occurrencesSinceIgnored)}
       </div>
       {/* Positioned like the cell above: `Time` carries a tooltip with the full
           timestamp, which the stretched link would otherwise cover. */}
