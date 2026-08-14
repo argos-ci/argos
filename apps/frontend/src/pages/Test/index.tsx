@@ -9,7 +9,6 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useNumberFormatter } from "react-aria";
 import { Helmet } from "react-helmet";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
@@ -57,6 +56,7 @@ import { Separator } from "@/ui/Separator";
 import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
+import { compactNumberFormatter } from "@/util/intl";
 
 import { NotFound } from "../NotFound";
 import { ActivitySection } from "./ActivitySection";
@@ -452,8 +452,6 @@ function BuildHeader(props: {
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
 
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
-
   const changeIndex = test.changes.edges.findIndex((c) => c.id === change.id);
   const previousChange = test.changes.edges[changeIndex - 1];
   const nextChange = test.changes.edges[changeIndex + 1];
@@ -504,8 +502,10 @@ function BuildHeader(props: {
                 : "text-success-low",
             )}
           >
-            {compactFormatter.format(change.stats.totalOccurrences)}{" "}
-            <small>/ {compactFormatter.format(test.metrics.all.total)}</small>
+            {compactNumberFormatter.format(change.stats.totalOccurrences)}{" "}
+            <small>
+              / {compactNumberFormatter.format(test.metrics.all.total)}
+            </small>
           </CounterValue>
         </Counter>
         <Separator
@@ -541,9 +541,6 @@ function ChangesList(props: {
   onSelect: (diffId: string) => void;
 }) {
   const { test, onSelect, activeChange } = props;
-  const compactFormatter = useNumberFormatter({
-    notation: "compact",
-  });
   return (
     <div
       role="region"
@@ -579,7 +576,9 @@ function ChangesList(props: {
                     <>
                       <TriangleAlertIcon className="text-danger-low mr-1 inline size-3" />
                       Recurring -{" "}
-                      {compactFormatter.format(change.stats.totalOccurrences)}
+                      {compactNumberFormatter.format(
+                        change.stats.totalOccurrences,
+                      )}
                       <small>x</small>
                     </>
                   ) : (

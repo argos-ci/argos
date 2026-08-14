@@ -1,7 +1,6 @@
-import { useNumberFormatter } from "react-aria";
-
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { Tooltip } from "@/ui/Tooltip";
+import { compactNumberFormatter } from "@/util/intl";
 
 import {
   Counter,
@@ -40,13 +39,12 @@ export function BuildsTooltip(props: { periodLabel: string }) {
 }
 
 export function BuildsCounter(props: { value: number; periodLabel: string }) {
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <Counter>
       <Tooltip content={<BuildsTooltip periodLabel={props.periodLabel} />}>
         <CounterLabel>Builds</CounterLabel>
       </Tooltip>
-      <CounterValue>{compactFormatter.format(props.value)}</CounterValue>
+      <CounterValue>{compactNumberFormatter.format(props.value)}</CounterValue>
     </Counter>
   );
 }
@@ -61,13 +59,12 @@ export function ChangesTooltip(props: { periodLabel: string }) {
 }
 
 export function ChangesCounter(props: { value: number; periodLabel: string }) {
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <Counter>
       <Tooltip content={<ChangesTooltip periodLabel={props.periodLabel} />}>
         <CounterLabel>Changes</CounterLabel>
       </Tooltip>
-      <CounterValue>{compactFormatter.format(props.value)}</CounterValue>
+      <CounterValue>{compactNumberFormatter.format(props.value)}</CounterValue>
     </Counter>
   );
 }
@@ -84,14 +81,13 @@ export function StabilityTooltip() {
 }
 
 export function StabilityCounter(props: { value: number }) {
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <Counter>
       <Tooltip content={<StabilityTooltip />}>
         <CounterLabel>Stability</CounterLabel>
       </Tooltip>
       <CounterValue>
-        {compactFormatter.format(props.value * 100)}
+        {compactNumberFormatter.format(props.value * 100)}
         <CounterValueUnit>%</CounterValueUnit>
       </CounterValue>
     </Counter>
@@ -110,14 +106,13 @@ export function ConsistencyTooltip() {
 }
 
 export function ConsistencyCounter(props: { value: number }) {
-  const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <Counter>
       <Tooltip content={<ConsistencyTooltip />}>
         <CounterLabel>Consistency</CounterLabel>
       </Tooltip>
       <CounterValue>
-        {compactFormatter.format(props.value * 100)}
+        {compactNumberFormatter.format(props.value * 100)}
         <CounterValueUnit>%</CounterValueUnit>
       </CounterValue>
     </Counter>
