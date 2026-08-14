@@ -191,9 +191,9 @@ loggedTest(
       }),
     ).toBeVisible();
     // The comment the same person typed carries no marker.
-    await expect(page.getByRole("img", { name: /^Posted through/ })).toHaveCount(
-      1,
-    );
+    await expect(
+      page.getByRole("img", { name: /^Posted through/ }),
+    ).toHaveCount(1);
 
     await screenshot(page, "test-view-agent-comment");
   },

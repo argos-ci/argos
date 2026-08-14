@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "check-types": "tsc --noEmit",
-    "check-format": "oxfmt --check ."
+    "check-types": "tsc --noEmit"
   },
   "sideEffects": false,
   "exports": {
