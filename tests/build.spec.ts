@@ -193,9 +193,9 @@ loggedTest(
     //
     // The prompt waits on the review mutation's response, and the server only
     // answers it once the build notifications and the automations have been
-    // dispatched — which on CI outruns the default expect timeout.
+    // enqueued — a broker round-trip on top of the request.
     const dialog = page.getByRole("dialog", { name: "Review the next build" });
-    await expect(dialog).toBeVisible({ timeout: 20_000 });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
     await expect(
       dialog.getByText("One more build ran on this commit"),
     ).toBeVisible();

@@ -215,6 +215,17 @@ jobs:
         #   --health-timeout 5s
         #   --health-retries 5
 
+      # Named after the host in `AMQP_URL` below: the web server runs inside
+      # the Playwright container and reaches services by their label. Without
+      # it, anything that enqueues a job — submitting a build review, say —
+      # blocks forever on a broker that does not resolve, and the request that
+      # triggered it never answers.
+      rabbitmq:
+        # Keep in sync with docker-compose.yml and production (Amazon MQ 4.2).
+        image: rabbitmq:4.2-alpine
+        ports:
+          - 5672:5672
+
     steps:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
