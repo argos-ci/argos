@@ -181,7 +181,10 @@ export const MediaInputSchema = z.object({
     description:
       "SHA-256 of the file contents, hex encoded. Uploading the same file twice is free: Argos recognizes the hash and skips the transfer, and byte-identical bytes do not create a new version.",
   }),
-  visibility: MediaVisibilitySchema.nullish(),
+  visibility: MediaVisibilitySchema.nullish().meta({
+    description:
+      "Who can open the media share page. `team` requires an Argos session with access to the owning account; `public` only requires the share URL. Omit it — the usual case — and the media follows its project's visibility: `public` for a public project, `team` for a private one. `team` requires a paid plan.",
+  }),
 });
 
 /** Serialize one stored upload. */

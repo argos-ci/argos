@@ -66,6 +66,10 @@ export type CreateMediaParams = {
   sizeBytes: number;
   /** SHA-256 of the file contents, hex encoded. Makes the key content-addressed. */
   hash: string;
+  /**
+   * Who can open the share page, when the caller has an opinion. `null` means it
+   * follows the project's visibility — see {@link resolveDefaultVisibility}.
+   */
   visibility: MediaVisibility | null;
 };
 
@@ -98,8 +102,9 @@ export async function createMedia(
   const limits = await getMediaLimits(account);
 
   assertWithinFileSizeLimit({ sizeBytes: params.sizeBytes, limits });
-  const visibility = resolveVisibility({
-    requested: params.visibility,
+  assertVisibilityAllowedByPlan({ requested: params.visibility, limits });
+  const defaultVisibility = await resolveDefaultVisibility({
+    project: params.project,
     limits,
   });
 
@@ -113,7 +118,7 @@ export async function createMedia(
   const { media, version } = await upsertMediaVersion({
     ...params,
     key,
-    visibility,
+    defaultVisibility,
     expiresAt,
   });
 
@@ -157,7 +162,7 @@ export async function createMedia(
 async function upsertMediaVersion(
   params: CreateMediaParams & {
     key: string;
-    visibility: MediaVisibility;
+    defaultVisibility: MediaVisibility;
     expiresAt: Date;
   },
 ): Promise<{ media: Media; version: MediaVersion }> {
@@ -170,6 +175,7 @@ async function upsertMediaVersion(
     description,
     key,
     visibility,
+    defaultVisibility,
     expiresAt,
   } = params;
 
@@ -247,7 +253,12 @@ async function upsertMediaVersion(
         ? // The description travels with the newest upload that supplied one, so
           // re-uploading with better wording updates what the comment says.
           await existing.$query().patchAndFetch({
-            visibility,
+            // Only when the caller named one. Visibility is a decision somebody
+            // made about *this* media, so re-uploading without repeating it must
+            // not hand the media back to the project's default — that would turn
+            // a deliberately team-only screenshot on a public project world-
+            // readable on the next upload, silently.
+            ...(visibility === null ? {} : { visibility }),
             ...(description === null ? {} : { description }),
             // A published media learns the branch it came from when a later
             // upload names one. It never loses it: identity ignores the branch
@@ -264,7 +275,7 @@ async function upsertMediaVersion(
               name,
               state,
               description,
-              visibility,
+              visibility: visibility ?? defaultVisibility,
               shareToken: generateShareToken(),
             })
             .catch(async (error: unknown) => {
@@ -408,19 +419,45 @@ function assertWithinFileSizeLimit(args: {
   }
 }
 
-function resolveVisibility(args: {
+function assertVisibilityAllowedByPlan(args: {
   requested: MediaVisibility | null;
   limits: MediaLimits;
-}): MediaVisibility {
+}): void {
   const { requested, limits } = args;
-  if (!requested) {
-    return limits.defaultVisibility;
-  }
-  if (!limits.allowedVisibilities.includes(requested)) {
+  if (requested && !limits.allowedVisibilities.includes(requested)) {
     throw boom(
       402,
       `The \`${requested}\` visibility requires a paid plan. Media uploaded on the Hobby plan is reachable by anyone holding its share URL.`,
     );
   }
-  return requested;
+}
+
+/**
+ * The visibility a new media gets when the upload does not name one: its
+ * project's.
+ *
+ * A public project's screenshots are already visible to anyone who can see the
+ * project, so a public share page gives away nothing the project does not — and
+ * it is what makes the link work for the pull request reviewer with no Argos
+ * account the feature exists for. A private project's must not become
+ * world-readable by being uploaded, so they stay team-only.
+ *
+ * Inferred rather than stored, so a project switched from public to private stops
+ * producing public share pages from the next upload on, with nothing to migrate.
+ * Media already created keeps the visibility it was created with: its share URL
+ * is pasted in pull requests, and retroactively closing those pages is a decision
+ * for whoever flipped the project, not a side effect of the next upload.
+ *
+ * The plan is still the outer bound: a private project on a public-only plan gets
+ * a public share page, which is what the Hobby tier is.
+ */
+async function resolveDefaultVisibility(args: {
+  project: Project;
+  limits: MediaLimits;
+}): Promise<MediaVisibility> {
+  const { project, limits } = args;
+  const inferred = (await project.$checkIsPublic()) ? "public" : "team";
+  return limits.allowedVisibilities.includes(inferred)
+    ? inferred
+    : limits.fallbackVisibility;
 }

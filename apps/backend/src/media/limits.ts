@@ -25,8 +25,15 @@ export type MediaLimits = {
   retentionDays: number;
   /** Visibilities the caller may choose from. */
   allowedVisibilities: MediaVisibility[];
-  /** Visibility applied when the caller doesn't choose one. */
-  defaultVisibility: MediaVisibility;
+  /**
+   * Visibility applied when the project's own maps to one this plan does not
+   * allow — the most private option left.
+   *
+   * Not the default an upload gets: that comes from the **project**, so a
+   * screenshot of a private product is not made world-readable by being
+   * uploaded. This is only what is left when the plan cannot honour it.
+   */
+  fallbackVisibility: MediaVisibility;
 };
 
 const HOBBY_LIMITS: MediaLimits = {
@@ -36,16 +43,16 @@ const HOBBY_LIMITS: MediaLimits = {
   // the free tier usable for its actual job — reviewers of a pull request who
   // have never heard of Argos can still open the link.
   allowedVisibilities: ["public"],
-  defaultVisibility: "public",
+  fallbackVisibility: "public",
 };
 
 const PRO_LIMITS: MediaLimits = {
   maxFileBytes: 500 * 1024 * 1024,
   retentionDays: 365,
   allowedVisibilities: ["team", "public"],
-  // Private by default. Uploading a screenshot of a private product must not
-  // make it world-readable, which is exactly what every free alternative does.
-  defaultVisibility: "team",
+  // Never reached — a Pro plan can honour either project visibility. Kept as the
+  // most private option so it stays a safe answer if the allowed set narrows.
+  fallbackVisibility: "team",
 };
 
 /**
