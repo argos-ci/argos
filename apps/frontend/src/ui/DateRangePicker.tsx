@@ -55,6 +55,11 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   return (
     <AriaDateRangePicker
+      // react-aria defaults to "native", which only surfaces errors through
+      // native form validation on submit. Nothing renders this picker inside a
+      // <form>, so that default would leave the <FieldError /> below
+      // permanently empty.
+      validationBehavior="aria"
       {...props}
       value={{
         start: parseDate(formatDateValue(value.from)),
@@ -164,7 +169,7 @@ export function DateRangePicker({
                           "flex size-8 items-center justify-center rounded-full",
                           renderProps.isSelectionEnd ||
                             renderProps.isSelectionStart
-                            ? "bg-primary-solid group-invalid:bg-danger-solid text-white"
+                            ? "bg-primary-solid group-data-invalid:bg-danger-solid text-white"
                             : "group-data-hovered:bg-(--violet-5)",
                         )}
                       >
