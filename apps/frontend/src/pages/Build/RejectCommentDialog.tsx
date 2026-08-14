@@ -268,7 +268,7 @@ function RejectCommentDialog(props: {
       <DialogFooter>
         <div className="flex flex-1">
           <Checkbox
-            onChange={(value) => {
+            onCheckedChange={(value) => {
               if (value) {
                 sessionStorage.setItem(dontAskAgainKey, "true");
               } else {
