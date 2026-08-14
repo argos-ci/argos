@@ -3,7 +3,6 @@ import {
   CheckboxGroup as AriaCheckboxGroup,
   CheckboxGroupProps as AriaCheckboxGroupProps,
   composeRenderProps,
-  FieldErrorContext,
 } from "react-aria-components";
 import {
   useController,
@@ -13,6 +12,8 @@ import {
 } from "react-hook-form";
 
 import { mergeRefs } from "@/util/merge-refs";
+
+import { FieldErrorContext } from "./FieldError";
 
 interface CheckboxGroupProps
   extends AriaCheckboxGroupProps, React.RefAttributes<HTMLDivElement> {
@@ -59,22 +60,15 @@ export function CheckboxGroupField<TFieldValues extends FieldValues>(
       isInvalid={Boolean(fieldState.error?.message)}
       {...rest}
     >
-      <FieldErrorContext.Provider
+      <FieldErrorContext
         value={
           fieldState.error?.message
-            ? {
-                validationDetails: fieldState.error
-                  .type as unknown as ValidityState,
-                isInvalid: true,
-                validationErrors: fieldState.error?.message
-                  ? [fieldState.error.message]
-                  : [],
-              }
+            ? { message: fieldState.error.message }
             : null
         }
       >
         {rest.children}
-      </FieldErrorContext.Provider>
+      </FieldErrorContext>
     </CheckboxGroup>
   );
 }

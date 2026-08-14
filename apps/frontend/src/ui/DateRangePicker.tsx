@@ -1,3 +1,4 @@
+import { use } from "react";
 import { parseDate } from "@internationalized/date";
 import { clsx } from "clsx";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
@@ -14,12 +15,13 @@ import {
   Dialog,
   Group,
   Heading,
+  FieldErrorContext as RACFieldErrorContext,
   RangeCalendar,
   type DateRangePickerProps as AriaDateRangePickerProps,
   type DateValue,
 } from "react-aria-components";
 
-import { FieldError } from "./FieldError";
+import { FieldError, FieldErrorContext } from "./FieldError";
 import { Popover } from "./Popover";
 
 type DateRange = {
@@ -117,7 +119,7 @@ export function DateRangePicker({
           <CalendarIcon className="size-4" />
         </Button>
       </Group>
-      <FieldError />
+      <DateRangeFieldError />
       <Popover>
         <Dialog className="p-3">
           <RangeCalendar className="flex flex-col gap-3">
@@ -177,5 +179,26 @@ export function DateRangePicker({
         </Dialog>
       </Popover>
     </AriaDateRangePicker>
+  );
+}
+
+/**
+ * Bridges react-aria's validation into the kit's own field-error context.
+ *
+ * `AriaDateRangePicker` runs the `validate` prop and publishes the result on
+ * react-aria's `FieldErrorContext`; `ui/FieldError` now reads the kit's own.
+ * Without this the message would simply stop rendering, with nothing failing.
+ * Both sides go when this component moves to `react-day-picker`.
+ */
+function DateRangeFieldError() {
+  const validation = use(RACFieldErrorContext);
+  const message =
+    validation?.isInvalid && validation.validationErrors.length > 0
+      ? validation.validationErrors.join(" ")
+      : null;
+  return (
+    <FieldErrorContext value={message ? { message } : null}>
+      <FieldError />
+    </FieldErrorContext>
   );
 }
