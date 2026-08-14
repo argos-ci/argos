@@ -190,8 +190,12 @@ loggedTest(
 
     // The other build ran on the same commit and nobody has reviewed it, so
     // finishing this one hands the reviewer straight to it.
+    //
+    // The prompt waits on the review mutation's response, and the server only
+    // answers it once the build notifications and the automations have been
+    // dispatched — which on CI outruns the default expect timeout.
     const dialog = page.getByRole("dialog", { name: "Review the next build" });
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeVisible({ timeout: 20_000 });
     await expect(
       dialog.getByText("One more build ran on this commit"),
     ).toBeVisible();
@@ -199,7 +203,7 @@ loggedTest(
     // and where its review stands.
     await expect(
       dialog.getByRole("link", {
-        name: `Build ${storybookBuild.number} storybook Changes detected`,
+        name: `storybook Build ${storybookBuild.number} Changes detected`,
       }),
     ).toBeVisible();
 
@@ -210,7 +214,7 @@ loggedTest(
     });
 
     await dialog
-      .getByRole("link", { name: `Review build ${storybookBuild.number}` })
+      .getByRole("link", { name: `Review ${storybookBuild.name}` })
       .click();
     await expect(page).toHaveURL(
       new RegExp(`/builds/${storybookBuild.number}/overview$`),
@@ -239,13 +243,11 @@ loggedTest(
     const menu = page.getByRole("menu");
     await expect(
       menu.getByRole("menuitem", {
-        name: `Build ${defaultBuild.number} Changes detected`,
+        name: `${defaultBuild.name} #${defaultBuild.number} Changes detected`,
       }),
     ).toBeVisible();
     const storybookItem = menu.getByRole("menuitem", {
-      name: new RegExp(
-        `Build ${storybookBuild.number}.*storybook Changes detected`,
-      ),
+      name: `${storybookBuild.name} #${storybookBuild.number} Changes detected`,
     });
     await expect(storybookItem).toBeVisible();
 

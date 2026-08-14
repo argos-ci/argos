@@ -53,10 +53,7 @@ export function BuildSwitcher(props: {
   return (
     <MenuTrigger>
       <Tooltip content="Switch build">
-        <UpDownMenuButton
-          aria-label="Switch build"
-          className="mt-px shrink-0"
-        />
+        <UpDownMenuButton aria-label="Switch build" className="shrink-0" />
       </Tooltip>
       <Popover placement="bottom start">
         <Menu>
@@ -75,10 +72,16 @@ export function BuildSwitcher(props: {
                   className={item.id === build.id ? undefined : "opacity-0"}
                 />
               </MenuItemIcon>
+              {/*
+               * Named by its build name, not its number: on one commit the
+               * name is what tells the builds apart, and it is the same word
+               * the reviewer configured in CI. The number follows it, muted,
+               * to tie the row back to the header.
+               */}
               <span className="flex min-w-0 items-center gap-3">
                 <span className="truncate">
-                  Build {item.number}
-                  {item.name === "default" ? "" : ` • ${item.name}`}
+                  {item.name}{" "}
+                  <span className="text-low tabular-nums">#{item.number}</span>
                 </span>
                 <BuildStatusChip build={item} scale="sm" />
               </span>

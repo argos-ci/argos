@@ -144,11 +144,16 @@ function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
               })}
               className="flex items-center gap-4 p-3 text-sm"
             >
+              {/*
+               * Named by its build name, not its number: on one commit the
+               * name is what tells the builds apart, and it is the same word
+               * the reviewer configured in CI.
+               */}
               <div className="w-28 shrink-0">
-                <div className="tabular-nums">Build {build.number}</div>
-                <Truncable className="text-low mt-0.5 text-xs">
-                  {build.name}
-                </Truncable>
+                <Truncable className="font-medium">{build.name}</Truncable>
+                <div className="text-low mt-0.5 text-xs tabular-nums">
+                  Build {build.number}
+                </div>
               </div>
               <div className="w-44 shrink-0">
                 <BuildStatusChip build={build} scale="sm" />
@@ -175,7 +180,7 @@ function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
           })}
           autoFocus
         >
-          Review build {nextBuild.number}
+          Review {nextBuild.name}
         </LinkButton>
       </DialogFooter>
     </Dialog>
