@@ -528,9 +528,9 @@ function ContactCell(props: { team: PipelineTeam }) {
         <Switch
           size="sm"
           aria-label="Outreach email sent"
-          isSelected={Boolean(contactedAt)}
-          isDisabled={loading}
-          onChange={markContacted}
+          checked={Boolean(contactedAt)}
+          disabled={loading}
+          onCheckedChange={markContacted}
         />
       </span>
     </div>
