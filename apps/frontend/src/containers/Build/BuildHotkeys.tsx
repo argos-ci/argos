@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 
 import { Button } from "@/ui/Button";
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
+import { Kbd } from "@/ui/Kbd";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { isMacOS } from "@/util/os";
@@ -501,14 +502,6 @@ export function useBuildHotkey(
     return registerHotkey({ hotkey, ref, timeout: 0 });
   }, [hotkey, ref]);
   return hotkey;
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-xs">
-      {children}
-    </kbd>
-  );
 }
 
 export function BuildHotkeysDialog(props: { env: HotkeyEnv }) {
