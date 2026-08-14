@@ -5,7 +5,6 @@ import {
   Select as AriaSelect,
   Button,
   ButtonProps,
-  FieldErrorContext,
   type SelectProps as AriaSelectSelectProps,
 } from "react-aria-components";
 import {
@@ -16,6 +15,8 @@ import {
 } from "react-hook-form";
 
 import { mergeRefs } from "@/util/merge-refs";
+
+import { FieldErrorContext } from "./FieldError";
 
 export { SelectValue } from "react-aria-components";
 
@@ -77,22 +78,15 @@ export function SelectField<TFieldValues extends FieldValues>(
       isInvalid={fieldState.invalid}
       {...rest}
     >
-      <FieldErrorContext.Provider
+      <FieldErrorContext
         value={
           fieldState.error?.message
-            ? {
-                validationDetails: fieldState.error
-                  .type as unknown as ValidityState,
-                isInvalid: true,
-                validationErrors: fieldState.error?.message
-                  ? [fieldState.error.message]
-                  : [],
-              }
+            ? { message: fieldState.error.message }
             : null
         }
       >
         {rest.children}
-      </FieldErrorContext.Provider>
+      </FieldErrorContext>
     </Select>
   );
 }

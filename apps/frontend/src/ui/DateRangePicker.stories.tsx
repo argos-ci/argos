@@ -60,3 +60,22 @@ export const Open: Story = {
     </OverlayStage>
   ),
 };
+
+/**
+ * The validation message, which only exists because react-aria runs the
+ * `validate` prop and `DateRangeFieldError` bridges the result into the kit's
+ * own field-error context. Nothing else covers that bridge, and if it breaks the
+ * message simply stops rendering.
+ */
+export const Invalid: Story = {
+  args: {
+    validate: () => "The period must be shorter than 30 days.",
+    validationBehavior: "aria",
+  },
+  render: (args) => (
+    <div className="flex max-w-xs flex-col">
+      <StoryTitle>Invalid</StoryTitle>
+      <DateRangePicker {...args} />
+    </div>
+  ),
+};
