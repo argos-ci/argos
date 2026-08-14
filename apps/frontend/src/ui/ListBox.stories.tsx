@@ -39,11 +39,19 @@ export const Default: Story = {
           <ListBoxItem id="edge">Edge</ListBoxItem>
         </ListBox>
       </div>
+    </div>
+  ),
+};
 
-      {/* Label and description rows are styled through the `slot` DOM attribute
-          (`has-[[slot=description]]:flex-wrap`, `**:[[slot=label]]:truncate`),
-          which react-aria's `Text` sets for us. Nothing snapshots them today,
-          and a replacement that drops the attribute breaks silently. */}
+/**
+ * Label and description rows are styled through the `slot` DOM attribute
+ * (`has-[[slot=description]]:flex-wrap`, `**:[[slot=label]]:truncate`), which
+ * react-aria's `Text` sets for us. A replacement that drops the attribute
+ * breaks these silently.
+ */
+export const LabelAndDescription: Story = {
+  render: () => (
+    <div className="flex flex-col">
       <StoryTitle>Label and description</StoryTitle>
       <div className="border-thin max-w-xs rounded-lg">
         <ListBox aria-label="Reviewers" selectionMode="single">
