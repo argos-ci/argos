@@ -183,6 +183,27 @@ describe("createReview", () => {
     });
     expect(comments).toHaveLength(1);
     expect(comments[0]?.content).toEqual(body);
+    expect(comments[0]?.agent).toBeNull();
+  });
+
+  test("records the agent on a review's comment", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .set("user-agent", "argos-cli/6.9.0 node/22.11.0 agent/claude")
+      .send({ event: "COMMENT", body: "Reviewed the diffs, all intentional." })
+      .expect(200);
+
+    // A review's body is stored as a comment like any other, so it carries the
+    // same attribution — otherwise the one comment an agent is most likely to
+    // leave is the one that looks hand-written.
+    const comments = await Comment.query().where({
+      buildReviewId: res.body.id,
+    });
+    expect(comments[0]?.agent).toBe("claude-code");
   });
 
   test("supports the deprecated conclusion field", async ({

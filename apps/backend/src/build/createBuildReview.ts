@@ -77,6 +77,12 @@ export async function createBuildReview(input: {
   userId: string;
   event: BuildReviewEvent;
   body?: JSONContent | undefined;
+  /**
+   * The coding agent that submitted this review on the author's behalf, if any
+   * — recorded on the comment `body` becomes, exactly as a standalone comment
+   * records it. See `agent/request.ts`.
+   */
+  agent?: string | null;
   snapshotReviews: {
     screenshotDiffId: string;
     state: ScreenshotDiffReviewState;
@@ -96,6 +102,7 @@ export async function createBuildReview(input: {
     userId,
     event,
     body,
+    agent = null,
     snapshotReviews,
     automatic = false,
   } = input;
@@ -145,6 +152,7 @@ export async function createBuildReview(input: {
               buildId: build.id,
               buildReviewId: buildReview.id,
               content: body,
+              agent,
             })
           : null;
 

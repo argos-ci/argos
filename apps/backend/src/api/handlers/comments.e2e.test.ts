@@ -133,12 +133,15 @@ describe("createComment", () => {
     const res = await request(app)
       .post(`/projects/acme/web/builds/${build.number}/comments`)
       .set(auth(scopedPatToken))
+      .set("user-agent", "argos-cli/6.9.0 node/22.11.0 agent/claude")
       .send({ body: "Draft note", addToReview: true })
       .expect(201);
 
     expect(res.body.pending).toBe(true);
     const comment = await Comment.query().findById(parseCommentId(res.body.id));
     expect(comment?.buildReviewId).not.toBeNull();
+    // Joining a review changes nothing about who wrote it.
+    expect(comment?.agent).toBe("claude-code");
   });
 
   test("anchors a comment to a screenshot diff", async ({
