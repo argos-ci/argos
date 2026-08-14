@@ -89,7 +89,7 @@ export function ReviewCommentSubmitButton(props: {
         )
       }
       keys={[MOD, "Enter"]}
-      placement="top"
+      side="top"
     >
       <Button
         variant="secondary"

@@ -874,7 +874,7 @@ function SplitBar(props: {
   return (
     <Tooltip
       delay={0}
-      placement="top"
+      side="top"
       disableAnimation
       content={
         <div className="flex min-w-40 flex-col gap-1 py-0.5">

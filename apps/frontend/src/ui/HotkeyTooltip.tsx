@@ -1,5 +1,4 @@
 import { cloneElement } from "react";
-import { FocusableOptions } from "react-aria";
 
 import { Kbd } from "./Kbd";
 import { Tooltip, TooltipProps } from "./Tooltip";
@@ -10,18 +9,19 @@ export function HotkeyTooltip({
   children,
   keysEnabled = true,
   disabled,
-  placement,
+  side,
 }: {
   description: React.ReactNode;
   keys: string[];
-  children: React.ReactElement<
-    FocusableOptions & {
-      "aria-keyshortcuts"?: React.AriaAttributes["aria-keyshortcuts"];
-    }
-  >;
+  // The child only has to accept `aria-keyshortcuts`; it used to be typed
+  // against react-aria's `FocusableOptions` because the tooltip made it
+  // focusable through that interface, which Base UI's `render` prop replaces.
+  children: React.ReactElement<{
+    "aria-keyshortcuts"?: React.AriaAttributes["aria-keyshortcuts"];
+  }>;
   keysEnabled?: boolean;
   disabled?: boolean;
-  placement?: TooltipProps["placement"];
+  side?: TooltipProps["side"];
 }) {
   return (
     <Tooltip
@@ -40,7 +40,7 @@ export function HotkeyTooltip({
           </div>
         ) : null
       }
-      placement={placement}
+      side={side}
     >
       {cloneElement(children, {
         "aria-keyshortcuts": keys.length > 0 ? keys.join("+") : undefined,

@@ -20,7 +20,7 @@ export function CopyButton({
   return (
     <Tooltip
       content={clipboard.copied ? "Copied!" : "Copy"}
-      isOpen={clipboard.copied || isTooltipOpen}
+      open={clipboard.copied || isTooltipOpen}
       onOpenChange={setIsTooltipOpen}
     >
       <Button

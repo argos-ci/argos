@@ -1,15 +1,7 @@
-import { cloneElement, useRef, type ComponentPropsWithRef } from "react";
-import { FocusableProvider } from "@react-aria/interactions";
+import { type ComponentPropsWithRef, type ReactElement } from "react";
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
-import { FocusableOptions, mergeProps, useFocusable } from "react-aria";
-import {
-  Tooltip as RACTooltip,
-  TooltipProps as RACTooltipProps,
-  TooltipRenderProps,
-  TooltipTrigger,
-  TooltipTriggerComponentProps,
-} from "react-aria-components";
 
 type TooltipVariant = "default" | "info";
 
@@ -20,142 +12,111 @@ const variantClassNames: Record<TooltipVariant, string> = {
   info: "text-sm p-2 max-w-sm [&_strong]:font-medium",
 };
 
+/**
+ * How long the pointer must rest before a tooltip opens, and how long one stays
+ * up after it leaves. Base UI reads these from a provider rather than per
+ * tooltip, which is also what gives a group of tooltips its warm-up: once one
+ * has opened, the next opens immediately.
+ */
+const TOOLTIP_DELAY = 900;
+const TOOLTIP_CLOSE_DELAY = 100;
+
+export function TooltipProvider(props: { children: React.ReactNode }) {
+  return (
+    <BaseTooltip.Provider
+      delay={TOOLTIP_DELAY}
+      closeDelay={TOOLTIP_CLOSE_DELAY}
+    >
+      {props.children}
+    </BaseTooltip.Provider>
+  );
+}
+
 export type TooltipProps = {
   content: React.ReactNode;
-  children: React.ReactElement<FocusableOptions>;
+  children: ReactElement;
   variant?: TooltipVariant;
-  placement?: RACTooltipProps["placement"];
+  /** Which side of the trigger to sit on. Base UI's own prop, passed straight through. */
+  side?: BaseTooltip.Positioner.Props["side"];
+  align?: BaseTooltip.Positioner.Props["align"];
   disableHoverableContent?: boolean;
   disableAnimation?: boolean;
-  isOpen?: TooltipTriggerComponentProps["isOpen"];
-  onOpenChange?: TooltipTriggerComponentProps["onOpenChange"];
-  delay?: TooltipTriggerComponentProps["delay"];
-  closeDelay?: TooltipTriggerComponentProps["closeDelay"];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /**
+   * Override how long the pointer must rest before this tooltip opens.
+   *
+   * Base UI reads delays from a provider rather than from the tooltip, so
+   * setting this gives the tooltip a provider of its own — which also takes it
+   * out of the shared warm-up group. Leave it alone unless the tooltip really
+   * should behave differently from every other one.
+   */
+  delay?: number;
+  closeDelay?: number;
 };
-
-function getTooltipAnimationClassName(props: TooltipRenderProps): string {
-  return clsx(
-    "fill-mode-forwards",
-    props.placement &&
-      clsx(
-        {
-          bottom: "origin-top",
-          top: "origin-bottom",
-          left: "origin-right",
-          right: "origin-left",
-          center: "origin-center",
-        }[props.placement],
-        props.isEntering &&
-          clsx(
-            "animate-in fade-in",
-            {
-              bottom: "slide-in-from-top-1",
-              top: "slide-in-from-bottom-1",
-              left: "slide-in-from-right-1",
-              right: "slide-in-from-left-1",
-              center: "",
-            }[props.placement],
-          ),
-        props.isExiting &&
-          clsx(
-            "animate-out fade-out zoom-out-95",
-            {
-              bottom: "slide-out-to-top-1",
-              top: "slide-out-to-bottom-1",
-              left: "slide-out-to-right-1",
-              right: "slide-out-to-left-1",
-              center: "",
-            }[props.placement],
-          ),
-      ),
-  );
-}
-
-type TooltipOverlayProps = RACTooltipProps & {
-  ref?: React.Ref<HTMLDivElement>;
-  variant?: TooltipVariant;
-  disableHoverableContent?: boolean;
-  disableAnimation?: boolean;
-  children: React.ReactNode;
-};
-
-function TooltipOverlay({
-  className,
-  variant = "default",
-  disableHoverableContent = true,
-  disableAnimation = false,
-  children,
-  ...props
-}: TooltipOverlayProps) {
-  const variantClassName = variantClassNames[variant];
-  const frozenChildrenRef = useRef(children);
-  return (
-    <RACTooltip
-      offset={4}
-      {...props}
-      className={(props) =>
-        clsx(
-          "bg-subtle text-default overflow-hidden rounded-md border shadow-md",
-          disableHoverableContent && "pointer-events-none",
-          !disableAnimation && getTooltipAnimationClassName(props),
-          variantClassName,
-          className,
-        )
-      }
-    >
-      {(values) => {
-        const result = (() => {
-          // Freeze the children while the tooltip is animating.
-          if (!values.isEntering && !values.isExiting) {
-            frozenChildrenRef.current = children;
-            return children;
-          }
-
-          return frozenChildrenRef.current;
-        })();
-
-        return <FocusableProvider ref={null}>{result}</FocusableProvider>;
-      }}
-    </RACTooltip>
-  );
-}
-
-function TooltipTarget(props: {
-  children: React.ReactElement<FocusableOptions>;
-}) {
-  const triggerRef = useRef(null);
-  const { focusableProps } = useFocusable(props.children.props, triggerRef);
-
-  return cloneElement(
-    props.children,
-    // oxlint-disable-next-line react/react-compiler
-    mergeProps(focusableProps, { tabIndex: 0 }, props.children.props, {
-      ref: triggerRef,
-    }),
-  );
-}
 
 export function Tooltip(props: TooltipProps) {
-  if (!props.content) {
-    return props.children;
+  const {
+    content,
+    children,
+    variant = "default",
+    side,
+    align,
+    disableHoverableContent = true,
+    disableAnimation = false,
+    open,
+    onOpenChange,
+    delay,
+    closeDelay,
+  } = props;
+  if (!content) {
+    return children;
+  }
+  const tooltip = (
+    <BaseTooltip.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      disableHoverablePopup={disableHoverableContent}
+    >
+      {/* `render` replaces react-aria's `useFocusable` + `FocusableProvider` +
+          `mergeProps` + `cloneElement`: Base UI merges its own props and ref
+          into whatever element it is given. */}
+      <BaseTooltip.Trigger render={children} />
+      <BaseTooltip.Portal>
+        <BaseTooltip.Positioner side={side} align={align} sideOffset={4}>
+          <BaseTooltip.Popup
+            className={clsx(
+              "bg-subtle text-default overflow-hidden rounded-md border shadow-md",
+              // Keeps the tooltip from eating a click aimed at what is under
+              // it; `disableHoverablePopup` only handles the safe polygon.
+              disableHoverableContent && "pointer-events-none",
+              variantClassNames[variant],
+              !disableAnimation && [
+                "origin-(--transform-origin) transition duration-150 ease-out",
+                "data-starting-style:opacity-0 data-ending-style:opacity-0",
+                "data-[side=bottom]:data-starting-style:-translate-y-1",
+                "data-[side=top]:data-starting-style:translate-y-1",
+                "data-[side=left]:data-starting-style:translate-x-1",
+                "data-[side=right]:data-starting-style:-translate-x-1",
+              ],
+            )}
+          >
+            {content}
+          </BaseTooltip.Popup>
+        </BaseTooltip.Positioner>
+      </BaseTooltip.Portal>
+    </BaseTooltip.Root>
+  );
+  if (delay === undefined && closeDelay === undefined) {
+    return tooltip;
   }
   return (
-    <TooltipTrigger
-      delay={props.delay ?? 900}
-      closeDelay={props.closeDelay ?? 100}
-      isOpen={props.isOpen}
-      onOpenChange={props.onOpenChange}
+    <BaseTooltip.Provider
+      delay={delay ?? TOOLTIP_DELAY}
+      closeDelay={closeDelay ?? TOOLTIP_CLOSE_DELAY}
     >
-      <TooltipTarget>{props.children}</TooltipTarget>
-      <TooltipOverlay
-        variant={props.variant}
-        placement={props.placement}
-        disableHoverableContent={props.disableHoverableContent}
-        disableAnimation={props.disableAnimation}
-      >
-        {props.content}
-      </TooltipOverlay>
-    </TooltipTrigger>
+      {tooltip}
+    </BaseTooltip.Provider>
   );
 }
 

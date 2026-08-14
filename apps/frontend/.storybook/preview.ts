@@ -1,5 +1,7 @@
+import { createElement } from "react";
 import type { Preview } from "@storybook/react-vite";
 
+import { TooltipProvider } from "../src/ui/Tooltip";
 import "../src/index.css";
 
 // Provide a mock clientData so that `src/config.ts` does not throw when
@@ -25,6 +27,13 @@ import "../src/index.css";
 };
 
 const preview: Preview = {
+  // The app mounts this at the router root. Stories render outside it, so
+  // without this a tooltip in Storybook would use Base UI's default delays
+  // rather than the app's.
+  decorators: [
+    (Story) => createElement(TooltipProvider, null, createElement(Story)),
+  ],
+
   parameters: {
     controls: {
       matchers: {
