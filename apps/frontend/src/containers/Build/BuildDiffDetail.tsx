@@ -23,7 +23,6 @@ import {
   Layers2Icon,
   type LucideIcon,
 } from "lucide-react";
-import { useObjectRef } from "react-aria";
 
 import {
   CopyImageSubmenu,
@@ -42,6 +41,7 @@ import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { MenuItem, MenuItemIcon, MenuSeparator } from "@/ui/Menu";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { checkIsImageContentType } from "@/util/content-type";

@@ -17,11 +17,11 @@ import { pointer, select, Selection } from "d3-selection";
 import { transition } from "d3-transition";
 import { zoom, ZoomBehavior, zoomIdentity, ZoomTransform } from "d3-zoom";
 import { MaximizeIcon, MinusIcon, PlusIcon } from "lucide-react";
-import { useObjectRef } from "react-aria";
 
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
+import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 
 import { useBuildHotkey } from "./BuildHotkeys";

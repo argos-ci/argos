@@ -1,7 +1,5 @@
-import { useRef } from "react";
 import clsx from "clsx";
 import { ChevronRightIcon } from "lucide-react";
-import { usePress } from "react-aria";
 
 export function Details(props: React.ComponentPropsWithRef<"details">) {
   return (
@@ -26,37 +24,16 @@ export function Summary(props: {
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   const { icon: Icon } = props;
-  const ref = useRef<HTMLElement>(null);
-  const { pressProps, isPressed } = usePress({
-    onPress: () => {
-      if (ref.current) {
-        const parentDetails = ref.current.parentElement;
-        if (!parentDetails) {
-          return;
-        }
-
-        const open = parentDetails.getAttribute("open") !== null;
-        if (open) {
-          parentDetails.removeAttribute("open");
-        } else {
-          parentDetails.setAttribute("open", "");
-        }
-      }
-    },
-  });
   return (
+    // The native toggle does the work. This used to `preventDefault` the click
+    // and then re-open the parent `<details>` by hand through react-aria's
+    // `usePress`, which is the same outcome by a longer route — `<summary>`
+    // already toggles on click, Enter and Space.
     <summary
-      ref={ref}
       className={clsx(
-        "group/summary hover:bg-hover data-pressed:bg-active -mx-1 flex cursor-default list-none items-center gap-1.5 rounded-sm px-1 py-0.5 font-medium transition group-open/details:mb-2",
+        "group/summary hover:bg-hover active:bg-active -mx-1 flex cursor-default list-none items-center gap-1.5 rounded-sm px-1 py-0.5 font-medium transition group-open/details:mb-2",
         props.className,
       )}
-      data-pressed={isPressed ? "" : undefined}
-      {...pressProps}
-      onClick={(event) => {
-        event.preventDefault();
-        pressProps.onClick?.(event);
-      }}
     >
       {Icon ? (
         // The two icons share one slot so swapping them on hover does not move

@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
 import { CheckIcon } from "lucide-react";
-import { useObjectRef } from "react-aria";
 import { Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
@@ -29,6 +28,7 @@ import { Heading } from "@/ui/Heading";
 import { Label } from "@/ui/Label";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
+import { useObjectRef } from "@/ui/useObjectRef";
 import { formatCurrency } from "@/util/intl";
 
 import mermaidImg from "./signup/mermaid.svg";
