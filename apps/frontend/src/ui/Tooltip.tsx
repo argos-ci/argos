@@ -21,6 +21,90 @@ const variantClassNames: Record<TooltipVariant, string> = {
 const TOOLTIP_DELAY = 900;
 const TOOLTIP_CLOSE_DELAY = 100;
 
+type TooltipPayload = {
+  content: React.ReactNode;
+  variant: TooltipVariant;
+  side: BaseTooltip.Positioner.Props["side"];
+  align: BaseTooltip.Positioner.Props["align"];
+};
+
+/**
+ * One tooltip, shared by every trigger that does not need its own.
+ *
+ * Triggers attach by handle and hand their content over as a payload, so moving
+ * the pointer from one to the next animates the same element across instead of
+ * tearing one down and building another. A tooltip per trigger — which is what
+ * react-aria did — restarts the animation every time, and along a row of icon
+ * buttons that reads as flicker.
+ */
+const tooltipHandle = BaseTooltip.createHandle<TooltipPayload>();
+
+function TooltipSurface(props: {
+  payload: TooltipPayload;
+  disableAnimation?: boolean;
+}) {
+  const { payload, disableAnimation = false } = props;
+  return (
+    <BaseTooltip.Portal>
+      <BaseTooltip.Positioner
+        side={payload.side}
+        align={payload.align}
+        sideOffset={4}
+        className={clsx(
+          !disableAnimation && [
+            // Sizing the positioner to the popup is what lets the box travel
+            // and resize together rather than jumping.
+            "h-(--positioner-height) w-(--positioner-width) max-w-(--available-width)",
+          ],
+        )}
+      >
+        <BaseTooltip.Popup
+          className={clsx(
+            "bg-app text-default overflow-hidden rounded-md border-thin shadow-sm/8",
+            variantClassNames[payload.variant],
+            !disableAnimation && [
+              "h-(--popup-height,auto) w-(--popup-width,auto)",
+              // Base UI publishes the origin for the resolved side, so the
+              // per-placement `origin-*` map the react-aria version carried is
+              // no longer needed.
+              "origin-(--transform-origin) fill-mode-forwards",
+              // The same `tailwindcss-animate` keyframes as before the
+              // migration, keyed off `data-open`/`data-closed` rather than
+              // react-aria's `isEntering`/`isExiting`.
+              "data-open:animate-in data-open:fade-in",
+              "data-closed:animate-out data-closed:fade-out data-closed:zoom-out-95",
+              "data-[side=bottom]:data-open:slide-in-from-top-1",
+              "data-[side=top]:data-open:slide-in-from-bottom-1",
+              "data-[side=left]:data-open:slide-in-from-right-1",
+              "data-[side=right]:data-open:slide-in-from-left-1",
+              "data-[side=bottom]:data-closed:slide-out-to-top-1",
+              "data-[side=top]:data-closed:slide-out-to-bottom-1",
+              "data-[side=left]:data-closed:slide-out-to-right-1",
+              "data-[side=right]:data-closed:slide-out-to-left-1",
+              // Deliberately no `data-instant:animate-none`: Base UI sets
+              // `data-instant` for every open after the first in a group, and
+              // honouring it meant the tooltip simply appeared with no
+              // animation at all for most of the row.
+            ],
+          )}
+        >
+          {/* Cross-fades the text when the tooltip moves between triggers,
+              rather than swapping it in one frame. */}
+          <BaseTooltip.Viewport
+            className={clsx(
+              "relative h-full w-full",
+              !disableAnimation &&
+                "**:data-previous:absolute **:data-previous:inset-0 **:data-previous:opacity-0 **:data-previous:transition-opacity **:data-current:transition-opacity",
+            )}
+          >
+            {payload.content}
+          </BaseTooltip.Viewport>
+        </BaseTooltip.Popup>
+      </BaseTooltip.Positioner>
+    </BaseTooltip.Portal>
+  );
+}
+
 export function TooltipProvider(props: { children: React.ReactNode }) {
   return (
     <BaseTooltip.Provider
@@ -28,6 +112,11 @@ export function TooltipProvider(props: { children: React.ReactNode }) {
       closeDelay={TOOLTIP_CLOSE_DELAY}
     >
       {props.children}
+      <BaseTooltip.Root handle={tooltipHandle}>
+        {({ payload }) =>
+          payload ? <TooltipSurface payload={payload} /> : null
+        }
+      </BaseTooltip.Root>
     </BaseTooltip.Provider>
   );
 }
@@ -36,9 +125,12 @@ export type TooltipProps = {
   content: React.ReactNode;
   children: ReactElement;
   variant?: TooltipVariant;
-  /** Which side of the trigger to sit on. Base UI's own prop, passed straight through. */
   side?: BaseTooltip.Positioner.Props["side"];
   align?: BaseTooltip.Positioner.Props["align"];
+  /**
+   * Let the pointer move onto the tooltip itself, for content holding a link.
+   * Such a tooltip cannot ride the shared one, so it gets a root of its own.
+   */
   disableHoverableContent?: boolean;
   disableAnimation?: boolean;
   open?: boolean;
@@ -48,8 +140,8 @@ export type TooltipProps = {
    *
    * Base UI reads delays from a provider rather than from the tooltip, so
    * setting this gives the tooltip a provider of its own — which also takes it
-   * out of the shared warm-up group. Leave it alone unless the tooltip really
-   * should behave differently from every other one.
+   * out of the shared group. Leave it alone unless the tooltip really should
+   * behave differently from every other one.
    */
   delay?: number;
   closeDelay?: number;
@@ -69,53 +161,53 @@ export function Tooltip(props: TooltipProps) {
     delay,
     closeDelay,
   } = props;
+
   if (!content) {
     return children;
   }
-  const tooltip = (
+
+  const payload: TooltipPayload = { content, variant, side, align };
+
+  // Anything that must behave differently from the rest — a controlled open
+  // state, its own delay, or hoverable content — cannot ride the shared
+  // tooltip, whose root is mounted once for the whole app.
+  const needsOwnRoot =
+    open !== undefined ||
+    onOpenChange !== undefined ||
+    delay !== undefined ||
+    closeDelay !== undefined ||
+    !disableHoverableContent;
+
+  if (!needsOwnRoot) {
+    return (
+      <BaseTooltip.Trigger
+        handle={tooltipHandle}
+        payload={payload}
+        render={children}
+      />
+    );
+  }
+
+  const ownRoot = (
     <BaseTooltip.Root
       open={open}
       onOpenChange={onOpenChange}
       disableHoverablePopup={disableHoverableContent}
     >
-      {/* `render` replaces react-aria's `useFocusable` + `FocusableProvider` +
-          `mergeProps` + `cloneElement`: Base UI merges its own props and ref
-          into whatever element it is given. */}
       <BaseTooltip.Trigger render={children} />
-      <BaseTooltip.Portal>
-        <BaseTooltip.Positioner side={side} align={align} sideOffset={4}>
-          <BaseTooltip.Popup
-            className={clsx(
-              "bg-subtle text-default overflow-hidden rounded-md border shadow-md",
-              // Keeps the tooltip from eating a click aimed at what is under
-              // it; `disableHoverablePopup` only handles the safe polygon.
-              disableHoverableContent && "pointer-events-none",
-              variantClassNames[variant],
-              !disableAnimation && [
-                "origin-(--transform-origin) transition duration-150 ease-out",
-                "data-starting-style:opacity-0 data-ending-style:opacity-0",
-                "data-[side=bottom]:data-starting-style:-translate-y-1",
-                "data-[side=top]:data-starting-style:translate-y-1",
-                "data-[side=left]:data-starting-style:translate-x-1",
-                "data-[side=right]:data-starting-style:-translate-x-1",
-              ],
-            )}
-          >
-            {content}
-          </BaseTooltip.Popup>
-        </BaseTooltip.Positioner>
-      </BaseTooltip.Portal>
+      <TooltipSurface payload={payload} disableAnimation={disableAnimation} />
     </BaseTooltip.Root>
   );
+
   if (delay === undefined && closeDelay === undefined) {
-    return tooltip;
+    return ownRoot;
   }
   return (
     <BaseTooltip.Provider
       delay={delay ?? TOOLTIP_DELAY}
       closeDelay={closeDelay ?? TOOLTIP_CLOSE_DELAY}
     >
-      {tooltip}
+      {ownRoot}
     </BaseTooltip.Provider>
   );
 }
