@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <div className="max-w-xs">
-      <Slider defaultValue={50} minValue={0} maxValue={100}>
+      <Slider defaultValue={50} min={0} max={100}>
         <Label>Threshold</Label>
         <SliderOutput />
         <SliderTrack>

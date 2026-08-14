@@ -178,10 +178,10 @@ export function OnionOpacityControl(props: {
       <Slider
         aria-label="Onion skin opacity"
         className="flex-1"
-        minValue={0}
-        maxValue={100}
+        min={0}
+        max={100}
         value={value * 100}
-        onChange={(next) => {
+        onValueChange={(next) => {
           invariant(typeof next === "number", "Opacity must be a number");
           onChange(next / 100);
         }}
