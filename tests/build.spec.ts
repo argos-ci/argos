@@ -4,6 +4,7 @@ import { BuildReview } from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createFallbackBaselineScenario,
+  createSiblingBuildsScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
@@ -173,6 +174,94 @@ loggedTest(
     });
   },
 );
+loggedTest(
+  "offers the next build of the commit once a review is submitted",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Submit review" }).click();
+    await page.getByRole("button", { name: "Approve" }).click();
+
+    // The other build ran on the same commit and nobody has reviewed it, so
+    // finishing this one hands the reviewer straight to it.
+    const dialog = page.getByRole("dialog", { name: "Review the next build" });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByText("One more build ran on this commit"),
+    ).toBeVisible();
+    // The row carries what the reviewer needs to choose: which build it is,
+    // and where its review stands.
+    await expect(
+      dialog.getByRole("link", {
+        name: `Build ${storybookBuild.number} storybook Changes detected`,
+      }),
+    ).toBeVisible();
+
+    await screenshot(page, "build-next-review-dialog", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await dialog
+      .getByRole("link", { name: `Review build ${storybookBuild.number}` })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${storybookBuild.number}/overview$`),
+    );
+    // The prompt belongs to the build it was raised on: it must not survive
+    // the jump and keep pointing at the build the reviewer just left.
+    await expect(dialog).toBeHidden();
+  },
+);
+
+loggedTest(
+  "header switches between the builds of a commit",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Switch build" }).click();
+
+    // Every build of the commit is listed with where its review stands, the
+    // one being looked at included.
+    const menu = page.getByRole("menu");
+    await expect(
+      menu.getByRole("menuitem", {
+        name: `Build ${defaultBuild.number} Changes detected`,
+      }),
+    ).toBeVisible();
+    const storybookItem = menu.getByRole("menuitem", {
+      name: new RegExp(
+        `Build ${storybookBuild.number}.*storybook Changes detected`,
+      ),
+    });
+    await expect(storybookItem).toBeVisible();
+
+    await screenshot(page, "build-switcher", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await storybookItem.click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${storybookBuild.number}/overview$`),
+    );
+  },
+);
+
 loggedTest(
   "build sidebar marks a review an agent submitted for its reviewer",
   async ({ page, auth, team, project, builds }) => {

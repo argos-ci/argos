@@ -29,6 +29,7 @@ import {
 } from "../BuildReviewButton";
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { createBuildReviewPrompt } from "./BuildReviewPrompt";
+import { BuildSwitcher } from "./BuildSwitcher";
 
 const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
@@ -46,6 +47,7 @@ const _BuildFragment = graphql(`
     ...BuildTestStatusChip_Build
     ...BuildBaselineEligibilityChip_Build
     ...BuildReviewability_Build
+    ...BuildSwitcher_Build
   }
 `);
 
@@ -234,6 +236,13 @@ export const BuildHeader = memo(
                   {build && build.name !== "default" ? ` • ${build.name}` : ""}
                 </HeadlessLink>
               </Tooltip>
+              {build ? (
+                <BuildSwitcher
+                  accountSlug={props.accountSlug}
+                  projectName={props.projectName}
+                  build={build}
+                />
+              ) : null}
             </div>
             <div className="flex min-w-0">
               <ProjectLink

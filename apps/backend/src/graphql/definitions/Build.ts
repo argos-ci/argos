@@ -9,6 +9,7 @@ import {
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
 import { Build, BuildNotificationSubscription } from "@/database/models";
+import { queryBuilds } from "@/database/services/build";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -139,6 +140,8 @@ export const typeDefs = gql`
     commentsCount: Int!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
+    "Other builds covering the same head commit and branch, one per build name"
+    siblingBuilds: [Build!]!
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
     "Indicates whether this build contains only a subset of screenshots"
@@ -464,6 +467,32 @@ export const resolvers: IResolvers = {
         compareBucket,
         userId: ctx.auth.user.id,
       });
+    },
+    siblingBuilds: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      // Without a branch we cannot tell a sibling from any other build that
+      // happens to share the commit.
+      if (!compareBucket.branch) {
+        return [];
+      }
+      // One build per name: a suite that was re-run leaves older builds behind
+      // on the same commit, and only its latest run is worth reviewing.
+      const latestPerName = queryBuilds({
+        projectId: build.projectId,
+        filters: {
+          branch: compareBucket.branch,
+          commit: build.prHeadCommit ?? compareBucket.commit,
+        },
+      })
+        .select("builds.id")
+        .distinctOn("builds.name")
+        .orderBy("builds.name")
+        .orderBy("builds.id", "desc");
+
+      return Build.query()
+        .whereIn("builds.id", latestPerName)
+        .whereNot("builds.id", build.id)
+        .orderBy("builds.name");
     },
     subscribed: async (build, _args, ctx) => {
       if (!ctx.auth) {
