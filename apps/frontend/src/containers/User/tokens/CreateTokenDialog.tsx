@@ -270,13 +270,16 @@ export function CreateTokenDialog(props: {
             <div>
               <Label>Scope — accounts this token can access</Label>
 
-              <CheckboxGroupField
-                control={form.control}
-                name="accountIds"
-                isInvalid={Boolean(form.formState.errors.accountIds)}
-              >
+              {/* react-aria's group pushed `isInvalid` down to its checkboxes
+                  through context; Base UI's does not, so the flag is passed to
+                  each one to keep them turning red together. */}
+              <CheckboxGroupField control={form.control} name="accountIds">
                 {availableAccounts.map((acc) => (
-                  <Checkbox key={acc.id} value={acc.id}>
+                  <Checkbox
+                    key={acc.id}
+                    name={acc.id}
+                    invalid={Boolean(form.formState.errors.accountIds)}
+                  >
                     {acc.name ? (
                       <>
                         <AccountAvatar avatar={acc.avatar} className="size-4" />
