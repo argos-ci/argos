@@ -3,7 +3,7 @@ import React from "react";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
-import { Kbd } from "@/ui/Kbd";
+import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { ShortcutHint } from "@/ui/ShortcutHint";
 
 import {
@@ -49,20 +49,27 @@ function BrowseSnapshotSection(props: { build: Build }) {
     canReview && !build.viewerHasSubmittedReview && !hasFailures;
   const goToFirstDiff = useGoToNextDiff();
   const browse = () => goToFirstDiff();
+  const label = (() => {
+    if (canStartReview) {
+      return "Start review";
+    }
+    return hasFailures ? "Browse test failures" : "Browse snapshots";
+  })();
 
   return (
     <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-      {canStartReview ? (
-        <Button autoFocus onPress={browse}>
-          Start review
-          <Kbd className="ml-2 bg-white/25 text-white">↵</Kbd>
+      {/* The shortcut sits in the tooltip rather than inside the button: a key
+          drawn on the button's own fill reads as a control nested in a
+          control, and it is the same hint the row beside it already gives. */}
+      <HotkeyTooltip description={label} keys={["↵"]}>
+        <Button
+          autoFocus
+          variant={canStartReview ? "primary" : "secondary"}
+          onPress={browse}
+        >
+          {label}
         </Button>
-      ) : (
-        <Button autoFocus variant="secondary" onPress={browse}>
-          {hasFailures ? "Browse test failures" : "Browse snapshots"}
-          <Kbd className="ml-2">↵</Kbd>
-        </Button>
-      )}
+      </HotkeyTooltip>
       {canStartReview && (
         <div className="text-low flex items-center gap-4 text-xs">
           <ShortcutHint keys={["↓", "↑"]}>Navigate</ShortcutHint>

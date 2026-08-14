@@ -315,13 +315,13 @@ function UserCard(props: { user: UserCardData }) {
 export function UserHoverCard(props: {
   user: UserCardData;
   children: React.ComponentProps<typeof Tooltip>["children"];
-  placement?: React.ComponentProps<typeof Tooltip>["placement"];
+  side?: React.ComponentProps<typeof Tooltip>["side"];
 }) {
   return (
     <Tooltip
       variant="info"
       delay={1200}
-      placement={props.placement ?? "top"}
+      side={props.side ?? "top"}
       content={
         <div>
           <UserCard user={props.user} />

@@ -782,7 +782,7 @@ function ReplyComposer(props: {
         <HotkeyTooltip
           description="Submit the reply"
           keys={[MOD, "Enter"]}
-          placement="top"
+          side="top"
         >
           <Button
             variant="secondary"

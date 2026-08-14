@@ -178,7 +178,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             <HotkeyTooltip
               description={submitLabel}
               keys={[MOD, "Enter"]}
-              placement="top"
+              side="top"
             >
               <Button
                 variant="secondary"
@@ -215,7 +215,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
               <HotkeyTooltip
                 description={submitLabel}
                 keys={[MOD, "Enter"]}
-                placement="top"
+                side="top"
               >
                 <Button
                   iconOnly

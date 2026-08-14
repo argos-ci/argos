@@ -6,7 +6,7 @@ export function Kbd(props: ComponentPropsWithRef<"kbd">) {
     <kbd
       {...props}
       className={clsx(
-        "text-xxs text-default inline-flex h-4 min-w-4 items-center justify-center rounded-sm bg-(--gray-a5) px-1",
+        "text-default/80 inline-flex min-w-[1lh] items-center justify-center rounded-sm bg-(--gray-a2) border-thin px-1",
         props.className,
       )}
     />

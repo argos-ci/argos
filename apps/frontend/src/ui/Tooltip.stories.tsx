@@ -36,16 +36,16 @@ export const Default: Story = {
 
       <StoryTitle>Placements</StoryTitle>
       <div className="flex gap-8">
-        <Tooltip content="Top" placement="top">
+        <Tooltip content="Top" side="top">
           <Button variant="secondary">Top</Button>
         </Tooltip>
-        <Tooltip content="Bottom" placement="bottom">
+        <Tooltip content="Bottom" side="bottom">
           <Button variant="secondary">Bottom</Button>
         </Tooltip>
-        <Tooltip content="Left" placement="left">
+        <Tooltip content="Left" side="left">
           <Button variant="secondary">Left</Button>
         </Tooltip>
-        <Tooltip content="Right" placement="right">
+        <Tooltip content="Right" side="right">
           <Button variant="secondary">Right</Button>
         </Tooltip>
       </div>
@@ -63,7 +63,7 @@ export const Open: Story = {
   render: () => (
     <OverlayStage className="items-center">
       <OverlaySlot className="flex justify-center">
-        <Tooltip content="Default tooltip" placement="bottom" isOpen>
+        <Tooltip content="Default tooltip" side="bottom" open>
           <Button variant="secondary">Default</Button>
         </Tooltip>
       </OverlaySlot>
@@ -76,15 +76,15 @@ export const Open: Story = {
             </>
           }
           variant="info"
-          placement="bottom"
-          isOpen
+          side="bottom"
+          open
         >
           <Button variant="secondary">Info</Button>
         </Tooltip>
       </OverlaySlot>
       {(["top", "bottom", "left", "right"] as const).map((placement) => (
         <OverlaySlot key={placement} className="flex justify-center">
-          <Tooltip content={placement} placement={placement} isOpen>
+          <Tooltip content={placement} side={placement} open>
             <Button variant="secondary">{placement}</Button>
           </Tooltip>
         </OverlaySlot>

@@ -34,7 +34,7 @@ export function ImageActionsMenu(props: {
 }) {
   return (
     <MenuTrigger>
-      <Tooltip placement="left" content={props.tooltip}>
+      <Tooltip side="left" content={props.tooltip}>
         <Button variant="secondary" iconOnly>
           <EllipsisVerticalIcon />
         </Button>

@@ -21,6 +21,7 @@ import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
 import { Loader } from "./ui/Loader";
+import { TooltipProvider } from "./ui/Tooltip";
 import { checkIsErrorCode } from "./util/error";
 
 declare module "react-aria-components" {
@@ -70,7 +71,12 @@ function Root() {
       // oxlint-disable-next-line react/react-compiler -- RouterProvider's API takes the hook itself and calls it internally.
       useHref={useAbsoluteHref}
     >
-      <Outlet />
+      {/* Base UI reads tooltip delays from a provider rather than from each
+          tooltip, and one shared provider is also what gives them their
+          warm-up: once any tooltip has opened, the next opens immediately. */}
+      <TooltipProvider>
+        <Outlet />
+      </TooltipProvider>
     </RouterProvider>
   );
 }
