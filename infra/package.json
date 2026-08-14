@@ -8,8 +8,7 @@
     "synth": "cdk synth",
     "deploy": "cdk deploy",
     "diff": "cdk diff",
-    "check-types": "tsc --noEmit",
-    "check-format": "oxfmt --check ."
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1105.0",

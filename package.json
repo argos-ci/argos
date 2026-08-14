@@ -18,7 +18,7 @@
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix",
     "check-types": "turbo run check-types",
-    "check-format": "turbo run check-format",
+    "check-format": "oxfmt --check .",
     "static-checks": "turbo run static-checks",
     "format": "oxfmt --write .",
     "clean-deps": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",

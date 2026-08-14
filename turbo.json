@@ -18,6 +18,9 @@
       "dependsOn": ["//#codegen"],
       "outputs": []
     },
+    "//#check-format": {
+      "outputs": []
+    },
     "//#knip": {
       "dependsOn": ["//#codegen"],
       "outputs": []
@@ -31,12 +34,8 @@
       "dependsOn": ["//#codegen", "^check-types"],
       "outputs": []
     },
-    "check-format": {
-      "dependsOn": [],
-      "outputs": []
-    },
     "static-checks": {
-      "dependsOn": ["check-types", "check-format", "//#lint", "//#knip"]
+      "dependsOn": ["check-types", "//#check-format", "//#lint", "//#knip"]
     },
     "watch-build": {
       "dependsOn": ["build"],

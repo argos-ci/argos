@@ -15,10 +15,12 @@ While iterating, use the fast local checks on what you touched:
 `oxfmt <target>`, `tsc --noEmit`, `oxlint <target>`.
 
 Formatting is [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured
-once in `.oxfmtrc.json` at the repository root. It resolves that config — and the
-root `.gitignore` — from any working directory, so `oxfmt --check .` behaves the
-same from the root or from a workspace. It also owns import sorting and Tailwind
-class sorting, which used to be Prettier plugins.
+once in `.oxfmtrc.json` at the repository root — there is no per-workspace config
+and no per-workspace `check-format` script. It formats the whole monorepo in a
+couple of seconds, so `pnpm run check-format` at the root is the only command you
+need. Keep it that way: per-workspace scripts leave root-level sources like
+`tests/` and `vitest/` unchecked, because no workspace owns them. It also owns
+import sorting and Tailwind class sorting, which used to be Prettier plugins.
 
 Linting is [oxlint](https://oxc.rs/docs/guide/usage/linter.html), configured once
 in `.oxlintrc.json` at the repository root — there is no per-workspace config and

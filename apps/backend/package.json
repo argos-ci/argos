@@ -8,7 +8,6 @@
     "watch-build": "tsdown --watch --silent",
     "setup": "pnpm run db:create && pnpm run db:load",
     "check-types": "tsc --noEmit",
-    "check-format": "oxfmt --check .",
     "db:check-structure": "knex-scripts check-structure",
     "db:create": "knex-scripts create",
     "db:drop": "knex-scripts drop",
