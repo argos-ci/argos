@@ -252,8 +252,8 @@ export function TeamSAMLSSO(props: {
               <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
                 Require Team Members to login with SAML to access this Team.
                 <Switch
-                  isSelected={team.samlSso.enforced}
-                  onChange={(isSelected) => {
+                  checked={team.samlSso.enforced}
+                  onCheckedChange={(isSelected) => {
                     invariant(team.samlSso);
                     apolloClient.mutate({
                       mutation: ConfigureTeamSamlMutation,

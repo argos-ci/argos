@@ -334,6 +334,26 @@
   }
 }
 
+/**
+ * The same focus contract as `rac-focus`, on an element that is itself
+ * focusable rather than a child of one. Base UI parts are the control — a
+ * `Switch.Root` *is* the button — so they need no `group` indirection, and no
+ * `data-focus-visible` either: the browser's own `:focus-visible` is what
+ * react-aria's modality tracking was standing in for.
+ *
+ * Text inputs are the exception and must not use this — see the comment in
+ * `ui/TextInput.tsx`.
+ */
+@utility focus-ring {
+  &:focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+
+  &:focus-visible {
+    @apply outline-1 outline-offset-1 outline-(--violet-10);
+  }
+}
+
 @utility underline-emphasis {
   @apply underline decoration-dotted decoration-1 underline-offset-1;
 }

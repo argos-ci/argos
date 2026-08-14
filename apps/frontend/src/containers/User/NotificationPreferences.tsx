@@ -67,9 +67,9 @@ export function UserNotificationPreferences(props: {
               </div>
               <Switch
                 aria-label={preference.label}
-                isSelected={preference.enabled}
-                isDisabled={pendingIds.has(preference.id)}
-                onChange={(enabled) => {
+                checked={preference.enabled}
+                disabled={pendingIds.has(preference.id)}
+                onCheckedChange={(enabled) => {
                   setPendingIds((ids) => new Set(ids).add(preference.id));
                   client
                     .mutate({

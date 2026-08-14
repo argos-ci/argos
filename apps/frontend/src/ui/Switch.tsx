@@ -1,34 +1,38 @@
-import { ComponentPropsWithRef } from "react";
+import { Switch as BaseSwitch } from "@base-ui/react/switch";
 import { clsx } from "clsx";
-import { Switch as RACSwitch } from "react-aria-components";
 import { Control, FieldValues, Path, useController } from "react-hook-form";
 
 import { mergeRefs } from "@/util/merge-refs";
 
-type SwitchProps = ComponentPropsWithRef<typeof RACSwitch> & {
+type SwitchProps = BaseSwitch.Root.Props & {
   size?: "sm" | "md";
 };
 
 export function Switch(props: SwitchProps) {
-  const { size = "md", ...rest } = props;
+  const { size = "md", className, ...rest } = props;
   return (
-    <RACSwitch {...rest} className={clsx("group", rest.className)}>
-      <div
+    // `Switch.Root` is the track *and* the button, so the state lives on it
+    // directly — react-aria needed a wrapping label plus a `group` to get the
+    // same classes onto a child.
+    <BaseSwitch.Root
+      {...rest}
+      className={clsx(
+        "focus-ring bg-ui border-thin box-border flex shrink-0 cursor-default rounded-full bg-clip-padding shadow-inner transition duration-200 ease-in-out",
+        "active:bg-primary-active data-checked:bg-primary-solid data-checked:active:bg-primary-solid-active",
+        "data-disabled:opacity-disabled",
+        size === "sm" && "h-4.5 w-7.75 p-0.5",
+        size === "md" && "h-6.5 w-11 p-0.75",
+        className,
+      )}
+    >
+      <BaseSwitch.Thumb
         className={clsx(
-          "rac-focus-group group-data-pressed:bg-primary-active group-data-selected:bg-primary-solid group-data-selected:group-data-pressed:bg-primary-solid-active bg-ui group-data-disabled:opacity-disabled border-thin box-border flex shrink-0 cursor-default rounded-full bg-clip-padding shadow-inner transition duration-200 ease-in-out",
-          size === "sm" && "h-4.5 w-7.75 p-0.5",
-          size === "md" && "h-6.5 w-11 p-0.75",
+          "translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out data-checked:translate-x-full",
+          size === "sm" && "size-3",
+          size === "md" && "size-4.5",
         )}
-      >
-        <span
-          className={clsx(
-            "translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-selected:translate-x-full",
-            size === "sm" && "size-3",
-            size === "md" && "size-4.5",
-          )}
-        />
-      </div>
-    </RACSwitch>
+      />
+    </BaseSwitch.Root>
   );
 }
 
@@ -47,17 +51,17 @@ export function SwitchField<TFieldValues extends FieldValues>(
     <Switch
       {...rest}
       ref={mergedRef}
-      isDisabled={field.disabled || props.isDisabled}
+      disabled={field.disabled || props.disabled}
       onBlur={(event) => {
         field.onBlur();
         props.onBlur?.(event);
       }}
       name={field.name}
-      onChange={(isSelected) => {
-        field.onChange(isSelected);
-        props.onChange?.(isSelected);
+      onCheckedChange={(checked, eventDetails) => {
+        field.onChange(checked);
+        props.onCheckedChange?.(checked, eventDetails);
       }}
-      isSelected={field.value}
+      checked={field.value}
     />
   );
 }

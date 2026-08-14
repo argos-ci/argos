@@ -195,7 +195,7 @@ function EnabledIgnoreButton(props: {
             <DialogFooter>
               <div className="flex flex-1">
                 <Checkbox
-                  onChange={(value) => {
+                  onCheckedChange={(value) => {
                     if (value) {
                       sessionStorage.setItem(dontShowAgainKey, "true");
                     } else {
