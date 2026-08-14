@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8WS8KvWTX1NC5mccR9MIC9lXebzpzWv8u6YEgWIomHaGpKkaShrQhTYIWaa3QEM
+\restrict BP0mq72amFd2hqhwLdkTacMXSNGJyX9xkoDpE3W9d4mo17sxB6E4dvy4pxodiih
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -458,6 +458,7 @@ CREATE TABLE public.build_reviews (
     "dismissedAt" timestamp with time zone,
     "dismissedById" bigint,
     automatic boolean DEFAULT false NOT NULL,
+    agent character varying(255),
     CONSTRAINT build_reviews_dismissed_together CHECK ((("dismissedAt" IS NULL) = ("dismissedById" IS NULL))),
     CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'pending'::text])))
 );
@@ -6235,7 +6236,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8WS8KvWTX1NC5mccR9MIC9lXebzpzWv8u6YEgWIomHaGpKkaShrQhTYIWaa3QEM
+\unrestrict BP0mq72amFd2hqhwLdkTacMXSNGJyX9xkoDpE3W9d4mo17sxB6E4dvy4pxodiih
 
 -- Knex migrations
 
@@ -6480,3 +6481,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260809203017_media-branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260811133709_media-diffs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260813191611_comment-agent.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260814161900_build-review-agent.js', 1, NOW());

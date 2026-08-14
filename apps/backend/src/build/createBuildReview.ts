@@ -77,6 +77,14 @@ export async function createBuildReview(input: {
   userId: string;
   event: BuildReviewEvent;
   body?: JSONContent | undefined;
+  /**
+   * The coding agent that submitted this review on the reviewer's behalf, if
+   * any. Recorded on the review *and* on the comment `body` becomes: a review
+   * needs no body — approving with no words is the common case — so the comment
+   * alone would leave the most common agent review unattributed.
+   * See `agent/request.ts`.
+   */
+  agent?: string | null;
   snapshotReviews: {
     screenshotDiffId: string;
     state: ScreenshotDiffReviewState;
@@ -96,6 +104,7 @@ export async function createBuildReview(input: {
     userId,
     event,
     body,
+    agent = null,
     snapshotReviews,
     automatic = false,
   } = input;
@@ -119,13 +128,19 @@ export async function createBuildReview(input: {
         userId,
         trx,
       });
+      // The agent is recorded at submission, not when the draft was opened: a
+      // review the user started by hand and an agent submitted is the agent's
+      // to answer for, and the draft carries no agent of its own.
       const buildReview = pendingReview
-        ? await pendingReview.$query(trx).patchAndFetch({ state, automatic })
+        ? await pendingReview
+            .$query(trx)
+            .patchAndFetch({ state, automatic, agent })
         : await BuildReview.query(trx).insert({
             buildId: build.id,
             userId,
             state,
             automatic,
+            agent,
           });
 
       if (snapshotReviews.length > 0) {
@@ -145,6 +160,7 @@ export async function createBuildReview(input: {
               buildId: build.id,
               buildReviewId: buildReview.id,
               content: body,
+              agent,
             })
           : null;
 

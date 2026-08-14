@@ -22,6 +22,7 @@ export class BuildReview extends Model {
           dismissedAt: { type: ["string", "null"] },
           dismissedById: { type: ["string", "null"] },
           automatic: { type: "boolean" },
+          agent: { type: ["string", "null"] },
           state: {
             type: "string",
             enum: ["approved", "rejected", "commented", "pending"],
@@ -36,6 +37,13 @@ export class BuildReview extends Model {
   dismissedAt!: string | null;
   dismissedById!: string | null;
   automatic!: boolean;
+  /**
+   * The coding agent that submitted this review on the reviewer's behalf — an
+   * id from `src/agent/registry.ts`, or `unknown` for one we can't name. Null
+   * when the reviewer acted directly, and for an `automatic` review, which
+   * Argos submits itself rather than any agent.
+   */
+  agent!: string | null;
   state!: "approved" | "rejected" | "commented" | "pending";
 
   static override get relationMappings(): RelationMappings {

@@ -7,6 +7,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { resolveRequestAgentId } from "@/agent/request";
 import {
   createBuildReview,
   ScreenshotDiffReviewState,
@@ -212,6 +213,7 @@ export const createReview: CreateAPIHandler = ({ post }) => {
           body.body !== undefined
             ? await resolveCommentBody(body.body)
             : undefined,
+        agent: resolveRequestAgentId(req, auth),
         snapshotReviews: body.snapshots.map((snapshotReview) => ({
           screenshotDiffId: snapshotReview.id,
           state: getScreenshotReviewState(snapshotReview.conclusion),

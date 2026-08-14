@@ -2,6 +2,7 @@ import type { DocumentNode } from "graphql";
 
 import * as Account from "./Account";
 import * as AccountSubscription from "./AccountSubscription";
+import * as Agent from "./Agent";
 import * as AutomationRule from "./AutomationRule";
 import * as Build from "./Build";
 import * as BuildNotificationSubscription from "./BuildNotificationSubscription";
@@ -56,6 +57,7 @@ import * as ValidationStatus from "./ValidationStatus";
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Account,
   AccountSubscription,
+  Agent,
   AutomationRule,
   Build,
   BuildNotificationSubscription,

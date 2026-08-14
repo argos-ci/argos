@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { BuildReview } from "@/database/models";
 
+import { AgentSchema, serializeAgent } from "./agent";
 import { getUserAccountsByUserId, serializeUser, UserSchema } from "./user";
 
 const ReviewStateSchema = z
@@ -25,6 +26,10 @@ export const BuildReviewSchema = z
     }),
     dismissedBy: UserSchema.nullable().meta({
       description: "The user who dismissed the review, if any.",
+    }),
+    agent: AgentSchema.nullable().meta({
+      description:
+        "The coding agent that submitted the review on the reviewer's behalf. Null when they submitted it themselves.",
     }),
     date: z.string().meta({ description: "Date the review was created." }),
   })
@@ -51,6 +56,7 @@ export async function serializeBuildReviews(
       user: user ? serializeUser(user) : null,
       dismissedAt: review.dismissedAt,
       dismissedBy: dismissedBy ? serializeUser(dismissedBy) : null,
+      agent: serializeAgent(review.agent),
       date: review.createdAt,
     };
   });

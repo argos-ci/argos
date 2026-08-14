@@ -26,6 +26,7 @@ import {
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import { resolveAgent } from "./Agent";
 
 const { gql } = gqlTag;
 
@@ -73,6 +74,8 @@ export const typeDefs = gql`
     dismissedBy: User
     "Whether the review was submitted automatically on behalf of the user, because their previous approvals already matched all the changes."
     automatic: Boolean!
+    "The coding agent that submitted the review on the reviewer's behalf, null when they submitted it themselves."
+    agent: Agent
   }
 
   input CreateBuildReviewInput {
@@ -133,6 +136,7 @@ export const resolvers: IResolvers = {
     date: (review) => {
       return new Date(review.createdAt);
     },
+    agent: (review) => resolveAgent(review.agent),
     dismissedAt: (review) => {
       return review.dismissedAt ? new Date(review.dismissedAt) : null;
     },
