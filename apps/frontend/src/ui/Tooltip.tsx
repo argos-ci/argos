@@ -112,7 +112,11 @@ export function TooltipProvider(props: { children: React.ReactNode }) {
       closeDelay={TOOLTIP_CLOSE_DELAY}
     >
       {props.children}
-      <BaseTooltip.Root handle={tooltipHandle}>
+      {/* Only tooltips keeping the default `disableHoverableContent` ride this
+          one, so it opts out too — which is also what marks the positioner
+          `inert`, and so what stops the tooltip eating a click aimed at the
+          button under it. */}
+      <BaseTooltip.Root handle={tooltipHandle} disableHoverablePopup>
         {({ payload }) =>
           payload ? <TooltipSurface payload={payload} /> : null
         }
