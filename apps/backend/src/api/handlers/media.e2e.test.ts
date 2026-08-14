@@ -36,6 +36,8 @@ const app = createTestHandlerApp(
 );
 
 const HASH = "a".repeat(64);
+/** Different bytes, for the upload that has to land as a second version. */
+const OTHER_HASH = "b".repeat(64);
 /** The routed project: the account slug plus the project factory's name. */
 const PROJECT_PATH = "acme/awesome-project";
 
@@ -58,6 +60,35 @@ vi.mock("@aws-sdk/s3-presigned-post", () => ({
   })),
 }));
 
+/**
+ * A team account owned by `user`, on a plan of the given name.
+ *
+ * Team features need a plan at all — the same gate build creation applies — and
+ * which plan it is decides the media limits: `free` is Hobby, anything else is
+ * Pro. That is the difference between a public-only account and one that can hold
+ * a team-scoped share page, so the tests that care create their own.
+ */
+async function createTeamAccountOnPlan(args: {
+  user: User;
+  planName: string;
+}): Promise<Account> {
+  const account = await factory.TeamAccount.create({ slug: "acme" });
+  await factory.TeamUser.create({
+    teamId: account.teamId,
+    userId: args.user.id,
+    userLevel: "owner",
+  });
+  const plan = await factory.Plan.create({
+    name: args.planName,
+    includedScreenshots: 5000,
+  });
+  await factory.Subscription.create({
+    accountId: account.id,
+    planId: plan.id,
+  });
+  return account;
+}
+
 const test = base.extend<{
   user: User;
   account: Account;
@@ -72,24 +103,9 @@ const test = base.extend<{
     await use(user);
   },
   account: async ({ user }, use) => {
-    const account = await factory.TeamAccount.create({ slug: "acme" });
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: user.id,
-      userLevel: "owner",
-    });
-    // Team features need a plan — the same gate build creation applies. The free
-    // plan puts the account on the Hobby media limits, which is what most of
-    // these tests are about.
-    const plan = await factory.Plan.create({
-      name: "free",
-      includedScreenshots: 5000,
-    });
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: plan.id,
-    });
-    await use(account);
+    // The free plan puts the account on the Hobby media limits, which is what
+    // most of these tests are about.
+    await use(await createTeamAccountOnPlan({ user, planName: "free" }));
   },
   project: async ({ account }, use) => {
     await use(
@@ -327,6 +343,94 @@ describe("createMedia", () => {
     expect(second.body.media.id).toBe(first.body.media.id);
     expect(second.body.media.url).toBe(first.body.media.url);
   });
+});
+
+/**
+ * Who can open the share page of a media that did not ask for a visibility.
+ *
+ * The everyday upload takes no flag, so this default is what most share pages
+ * actually get — and getting it wrong either leaks a private product's
+ * screenshots or breaks the link for the reviewer the feature exists for. Worth
+ * pinning end to end.
+ */
+describe("createMedia default visibility", () => {
+  // Hobby is public-only, so it cannot show what the project's visibility does.
+  const proTest = test.extend<{ account: Account }>({
+    account: async ({ user }, use) => {
+      await use(await createTeamAccountOnPlan({ user, planName: "pro" }));
+    },
+  });
+
+  async function upload(args: {
+    projectToken: string;
+    hash: string;
+    visibility?: "team" | "public";
+  }) {
+    return request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${args.projectToken}`)
+      .send({
+        name: "before.png",
+        contentType: "image/png",
+        size: 1024,
+        hash: args.hash,
+        ...(args.visibility ? { visibility: args.visibility } : {}),
+      })
+      .expect(201);
+  }
+
+  proTest(
+    "is public on a public project",
+    async ({ project, projectToken }) => {
+      await project.$query().patch({ private: false });
+
+      const res = await upload({ projectToken, hash: HASH });
+
+      // Nothing the project does not already show, and the link works for a
+      // reviewer with no Argos account.
+      expect(res.body.media.visibility).toBe("public");
+    },
+  );
+
+  proTest(
+    "is team-only on a private project",
+    async ({ project, projectToken }) => {
+      await project.$query().patch({ private: true });
+
+      const res = await upload({ projectToken, hash: HASH });
+
+      // Uploading a screenshot of a private product must not publish it.
+      expect(res.body.media.visibility).toBe("team");
+    },
+  );
+
+  test("falls back to public on a private project whose plan has no team-scoped page", async ({
+    project,
+    projectToken,
+  }) => {
+    await project.$query().patch({ private: true });
+
+    const res = await upload({ projectToken, hash: HASH });
+
+    // Hobby sells no team-scoped share page, so this is the whole of what the
+    // plan can offer — and what its documentation promises.
+    expect(res.body.media.visibility).toBe("public");
+  });
+
+  proTest(
+    "leaves a visibility chosen once alone on the next upload",
+    async ({ project, projectToken }) => {
+      await project.$query().patch({ private: false });
+      await upload({ projectToken, hash: HASH, visibility: "team" });
+
+      // Same name, so this is a new version of that media — and it names no
+      // visibility. Handing it back to the project's default here would publish a
+      // deliberately team-only screenshot, silently.
+      const res = await upload({ projectToken, hash: OTHER_HASH });
+
+      expect(res.body.media).toMatchObject({ version: 2, visibility: "team" });
+    },
+  );
 });
 
 describe("getMedia", () => {

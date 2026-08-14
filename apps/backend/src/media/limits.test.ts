@@ -6,7 +6,7 @@ const limits: MediaLimits = {
   maxFileBytes: 50 * 1024 * 1024,
   retentionDays: 30,
   allowedVisibilities: ["public"],
-  defaultVisibility: "public",
+  fallbackVisibility: "public",
 };
 
 const now = new Date("2026-08-08T12:00:00.000Z");

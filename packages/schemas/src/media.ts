@@ -71,11 +71,14 @@ export const MediaContentTypeSchema = z
 /**
  * Who can open a media share page.
  *
- * - `team` — requires an Argos session with access to the owning account. This
- *   is the default, and the reason a private repository's screenshots don't
- *   become world-readable by being uploaded.
+ * - `team` — requires an Argos session with access to the owning account.
  * - `public` — anyone holding the (unguessable) share URL. Needed when the
  *   reviewers of a pull request have no Argos account.
+ *
+ * An upload that names neither follows its **project's** visibility: public
+ * project, public media; private project, team-only media. That is what keeps a
+ * private repository's screenshots from becoming world-readable by being
+ * uploaded, without making the everyday public-project case take a flag.
  */
 export const MEDIA_VISIBILITIES = ["team", "public"] as const;
 
