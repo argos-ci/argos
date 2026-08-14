@@ -224,7 +224,7 @@ function ResetInviteLinkButton(props: {
   const client = useApolloClient();
   return (
     <DialogActionButton
-      onAction={async () => {
+      onAsyncAction={async () => {
         await client.mutate({
           mutation: ResetInviteLinkMutation,
           variables: { teamAccountId: props.teamAccountId },

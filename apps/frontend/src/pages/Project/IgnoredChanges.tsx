@@ -796,7 +796,7 @@ function UnignoreChangeDialog(props: {
         <DialogDismiss>Cancel</DialogDismiss>
         <DialogActionButton
           variant="destructive"
-          onAction={async () => {
+          onAsyncAction={async () => {
             try {
               await unignore();
               state.close();

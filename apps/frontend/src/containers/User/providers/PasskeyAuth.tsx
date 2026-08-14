@@ -81,8 +81,8 @@ const DeletePasskeyMutation = graphql(`
  * Explains what is about to happen before the OS prompt takes over the screen,
  * and gives the user somewhere to retry from if the authenticator refuses.
  *
- * The registration is driven from `onAction` so the modal stays undismissable
- * while the browser prompt is up.
+ * The registration is driven from `onAsyncAction` so the modal stays
+ * undismissable while the browser prompt is up.
  */
 function CreatePasskeyDialog() {
   const state = useOverlayTriggerState();
@@ -107,7 +107,7 @@ function CreatePasskeyDialog() {
         {error ? <ErrorMessage className="flex-1">{error}</ErrorMessage> : null}
         <DialogDismiss>Cancel</DialogDismiss>
         <DialogActionButton
-          onAction={async () => {
+          onAsyncAction={async () => {
             setError(null);
             try {
               await registerPasskey();
@@ -202,7 +202,7 @@ function DeletePasskeyDialog(props: { passkey: Passkey }) {
         <DialogDismiss>Cancel</DialogDismiss>
         <DialogActionButton
           variant="destructive"
-          onAction={async () => {
+          onAsyncAction={async () => {
             await deletePasskey();
             state.close();
             toast.success("Passkey deleted", { id: "passkey-deleted" });

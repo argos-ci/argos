@@ -459,7 +459,10 @@ function DismissReviewDialog(props: {
           <ErrorMessage>{getErrorMessage(props.error)}</ErrorMessage>
         ) : null}
         <DialogDismiss>Cancel</DialogDismiss>
-        <DialogActionButton variant="destructive" onAction={props.onDismiss}>
+        <DialogActionButton
+          variant="destructive"
+          onAsyncAction={props.onDismiss}
+        >
           Dismiss review
         </DialogActionButton>
       </DialogFooter>

@@ -222,7 +222,7 @@ export function BuildReviewForm(props: {
                   // Keep the ring on the focused button (not only keyboard focus)
                   // so the default action Enter triggers stays visible.
                   showFocusRing
-                  onAction={() => submitReview(event)}
+                  onAsyncAction={() => submitReview(event)}
                 >
                   <ButtonIcon
                     colorClassName={

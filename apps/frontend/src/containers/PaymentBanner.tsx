@@ -84,7 +84,7 @@ function ExtendTrialButton(props: { accountId: string }) {
   const client = useApolloClient();
   return (
     <Button
-      onAction={async () => {
+      onAsyncAction={async () => {
         const result = await client.mutate({
           mutation: ExtendTrialMutation,
           variables: {
