@@ -3,6 +3,7 @@ import { CombinedGraphQLErrors } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { checkIsTrialingSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { addDays, startOfDay } from "@argos/util/date";
+import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   CheckIcon,
@@ -27,7 +28,11 @@ import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
-import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
+import {
+  AccountSubscriptionStatus,
+  Currency,
+  SignupSource,
+} from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import {
@@ -68,9 +73,19 @@ const TrialPipelineQuery = graphql(`
         screenshotsCount
         firstComparisonAt
         periodUsage {
-          additionalScreenshotsCost
           storybookRatio
           storybookScreenshotsCount
+          plan {
+            id
+            name
+            displayName
+          }
+          billingPeriods {
+            from
+            to
+            closed
+            additionalScreenshotsCost
+          }
         }
         owners {
           id
@@ -92,6 +107,7 @@ const TrialPipelineQuery = graphql(`
         provider
         trialDaysRemaining
         paymentMethodFilled
+        currency
       }
     }
   }
@@ -175,37 +191,87 @@ type SortKey =
   | "estimatedPrice"
   | "contacted";
 
+const PRO_PLAN_NAME = "pro";
+
+/** Flat monthly price of the Pro plan, in dollars. Exact: it is public. */
+const PRO_FLAT_PRICE = 100;
+
 /**
- * Flat monthly price of the Pro plan, in dollars.
+ * Flat monthly price to quote per plan, in dollars.
  *
  * Hardcoded because the flat price is the one part of the pricing that is not
  * persisted: the Stripe sync keeps `includedScreenshots` and the per-screenshot
- * prices on the subscription, but not the plan's own amount. Pro is the only
- * usage-based plan a self-serve trial can land on, so the constant holds for
- * this page — it does not for a negotiated enterprise subscription, nor for a
- * customer billed in euros. Hence "estimated".
+ * prices on the subscription, but not the plan's own amount.
+ *
+ * Pro is the plan every self-serve trial lands on and its price is public, so
+ * that half of the estimate is exact. Enterprise is a stand-in — those
+ * contracts are negotiated one by one, so $1,000 is the order of magnitude
+ * rather than the invoice, which is why the plan is named under any row that is
+ * not on Pro.
  */
-const PRO_FLAT_PRICE = 100;
-
-const PRICE_FORMAT = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+const FLAT_PRICES: Record<string, number | undefined> = {
+  [PRO_PLAN_NAME]: PRO_FLAT_PRICE,
+  enterprise: 1000,
+};
 
 /**
- * What the team would be invoiced if its period closed right now, or null when
- * it would be invoiced nothing at all.
+ * A plan we have never priced falls back to Pro's: a new plan is far more
+ * likely to be another self-serve tier than a negotiated contract, and the row
+ * names it either way.
+ */
+function getFlatPrice(planName: string): number {
+  return FLAT_PRICES[planName] ?? PRO_FLAT_PRICE;
+}
+
+const PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Prices are stored per subscription in the currency it is billed in, so the
+ * formatter follows the row rather than the page.
+ */
+function formatPrice(amount: number, currency: Currency) {
+  const format =
+    PRICE_FORMATS.get(currency) ??
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
+  PRICE_FORMATS.set(currency, format);
+  return format.format(amount);
+}
+
+type BillingPeriod = NonNullable<
+  PipelineTeam["staff"]["periodUsage"]
+>["billingPeriods"][number];
+
+/**
+ * The period a team's price is read from: the most recent one that closed.
+ *
+ * A settled period is the same figure whatever day it is read on, which is what
+ * makes the column comparable between rows and between window lengths — an
+ * account 3 days into its month would otherwise read as tiny next to one that
+ * is 3 days from its invoice. A team that converted less than a period ago has
+ * no closed period, so it falls back to the one still running: a floor, but the
+ * only thing that tells a big new account apart from a small one before its
+ * first invoice.
+ */
+function getBilledPeriod(periods: BillingPeriod[]): BillingPeriod | null {
+  return periods.find((period) => period.closed) ?? periods[0] ?? null;
+}
+
+/**
+ * What the team is billed per month, or null when it is billed nothing at all.
  *
  * What is owed depends on where the team sits in its lifecycle, not only on
  * what it consumed:
  *
- * - Active: billing has started, so the flat price plus the overage accrued
- *   since the period opened. The period opened when the subscription did, which
- *   for a converted trial is the conversion itself, so that overage is real.
+ * - Active: billing has started, so the flat price plus the overage of the
+ *   period above.
  * - Trialing with a card: Stripe never bills usage consumed during a trial, and
  *   a trial that goes over quota with a card on file is converted to active on
- *   the next build. Whatever it consumed, it owes the flat price and no more.
+ *   the next build. Whatever it consumed, it owes the flat price and no more —
+ *   which is also what an empty `billingPeriods` says.
  * - Trialing with no card: committed to nothing, and a build would be rejected
  *   before it could owe anything.
  * - Anything else: canceled, expired, or never subscribed.
@@ -220,12 +286,16 @@ function getEstimatedPrice(team: PipelineTeam): number | null {
     return null;
   }
 
+  const flatPrice = getFlatPrice(periodUsage.plan.name);
+
   switch (team.subscriptionStatus) {
-    case AccountSubscriptionStatus.Active:
-      return PRO_FLAT_PRICE + periodUsage.additionalScreenshotsCost;
+    case AccountSubscriptionStatus.Active: {
+      const period = getBilledPeriod(periodUsage.billingPeriods);
+      return flatPrice + (period?.additionalScreenshotsCost ?? 0);
+    }
 
     case AccountSubscriptionStatus.TrialingWithPaymentMethod:
-      return PRO_FLAT_PRICE;
+      return flatPrice;
 
     default:
       return null;
@@ -452,17 +522,52 @@ function ScreenshotsCell(props: { team: PipelineTeam }) {
   );
 }
 
+/**
+ * What the team is billed per month, with the plan named underneath when it is
+ * not Pro.
+ *
+ * Silent on Pro, which is nearly every row and the one plan whose flat price is
+ * public: the marker exists to say that the flat half of this number is a
+ * stand-in for a negotiated contract, so it belongs on the exceptions only. The
+ * overage half stays right whatever the plan — the per screenshot prices are
+ * stored on the subscription itself.
+ */
 function EstimatedPriceCell(props: { team: PipelineTeam }) {
-  const price = getEstimatedPrice(props.team);
+  const { team } = props;
+  const price = getEstimatedPrice(team);
 
   if (price === null) {
     return <span className="text-low">—</span>;
   }
 
+  const { periodUsage } = team.staff;
+  invariant(periodUsage, "a priced team is on a usage-based plan");
+  invariant(team.subscription, "a priced team has a subscription");
+
+  const period = getBilledPeriod(periodUsage.billingPeriods);
+  const { plan } = periodUsage;
+
   return (
-    <Tooltip content="Flat Pro plan, plus the overage accrued this period once billing has started. A running trial owes the flat price only: trial usage is never billed.">
-      <span className="font-medium">{PRICE_FORMAT.format(price)}</span>
-    </Tooltip>
+    <div className="inline-block text-right">
+      <Tooltip
+        content={
+          period?.closed
+            ? "The plan's flat price, plus the overage of the last month that closed — a settled figure, so it does not move with the day it is read on."
+            : "The plan's flat price, plus the overage accrued so far. No month has closed yet, so this is a floor. A running trial owes the flat price only: trial usage is never billed."
+        }
+      >
+        <span className="font-medium">
+          {formatPrice(price, team.subscription.currency)}
+        </span>
+      </Tooltip>
+      {plan.name === PRO_PLAN_NAME ? null : (
+        <Tooltip
+          content={`Billed on ${plan.displayName}, whose flat price is negotiated rather than published: the ${formatPrice(getFlatPrice(plan.name), team.subscription.currency)} half of this estimate is a stand-in. The overage half is read from the subscription and holds whatever the plan.`}
+        >
+          <div className="text-low text-xs">{plan.displayName}</div>
+        </Tooltip>
+      )}
+    </div>
   );
 }
 
@@ -827,8 +932,8 @@ function DecidedTrialsHint() {
  * and the column cannot drift into disagreeing, and the tile stays a figure a
  * reader can check by adding up what is on screen.
  *
- * The overage half is usage to date rather than a settled month, so the total
- * is a floor: it can only be revised upwards as the periods close.
+ * Teams still on their first, running period count what they have accrued so
+ * far, so the total is a floor: it can only be revised upwards as they close.
  */
 function getEstimatedMrr(teams: PipelineTeam[]): {
   total: number;
@@ -918,7 +1023,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         value={estimatedMrr.total}
         format="currency"
         hint={
-          <Tooltip content="The Est. price column added up. Active teams count their overage, running trials count the flat price only, and everything else counts nothing. Periods are still open, so this is a floor.">
+          <Tooltip content="The Est. price column added up. Active teams count their overage, running trials count the flat price only, and everything else counts nothing. Teams yet to close a month count what they have accrued, so this is a floor.">
             <span className="underline decoration-dotted underline-offset-2">
               from {estimatedMrr.billedTeams} billed
             </span>

@@ -1,17 +1,30 @@
+import { invariant } from "@argos/util/invariant";
+
 import { knex } from "@/database";
 
-import { Account, Subscription } from "../models";
+import { Account, Plan, Subscription } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
+
+/** One billing period of an account, priced from the usage it accumulated. */
+type BillingPeriodUsage = {
+  from: Date;
+  /** End of the period, or the moment it was read while still running. */
+  to: Date;
+  /** False while the period is still accumulating usage. */
+  closed: boolean;
+  /**
+   * Cost of the screenshots consumed beyond the included quota over the
+   * period, in the subscription's currency.
+   */
+  additionalScreenshotCost: number;
+};
 
 /**
  * Billing usage for one account, as needed to explain what it is about to pay.
  */
 export type AccountPeriodUsage = {
-  /**
-   * Cost of the screenshots consumed beyond the included quota since the
-   * current period started, in the subscription's currency.
-   */
-  additionalScreenshotCost: number;
+  /** The plan the account is billed on. */
+  plan: Plan;
   /**
    * Share of Storybook screenshots in everything the account ever uploaded,
    * between 0 and 1. Null when it never uploaded a screenshot at all — an
@@ -20,62 +33,105 @@ export type AccountPeriodUsage = {
   storybookRatio: number | null;
   /** Storybook screenshots uploaded since the account was created. */
   storybookCount: number;
-};
-
-/** Usage of an account on a usage-based plan that has yet to upload anything. */
-const EMPTY_PERIOD_USAGE: AccountPeriodUsage = {
-  additionalScreenshotCost: 0,
-  storybookRatio: null,
-  storybookCount: 0,
+  /**
+   * Periods Stripe actually invoices, most recent first: the one still
+   * running, then the closed ones. Empty while the account is on its trial,
+   * whose usage is never billed.
+   */
+  billingPeriods: BillingPeriodUsage[];
 };
 
 /**
- * Screenshot totals for one account: over the current billing period, which is
- * what gets invoiced, and over its whole life, which is what describes its mix.
+ * Billing periods read per account: the one still running, and the one before
+ * it.
+ *
+ * One closed period is what pricing an account needs — it is the settled figure
+ * the trial pipeline reads — and every extra period multiplies the rows the
+ * aggregate below scans.
  */
-type ScreenshotTotals = {
-  periodAll: number;
-  periodStorybook: number;
-  allTimeAll: number;
-  allTimeStorybook: number;
+const READ_PERIOD_COUNT = 2;
+
+/**
+ * Slack allowed when placing a period against the moment billing began.
+ *
+ * Converting a trial opens a new Stripe period at the instant the trial ends,
+ * so the boundary between the two is one moment recorded twice: once as
+ * `trialEndDate`, once as `current_period_start`. Stripe rounds both to the
+ * second and Argos re-derives the period start from the anniversary offset, so
+ * the two can land a few seconds apart. Compared strictly, that is enough to
+ * read the first billed period as part of the trial. Periods are a month long,
+ * so an hour of slack cannot swallow a real one.
+ */
+const PERIOD_BOUNDARY_TOLERANCE = 60 * 60 * 1000;
+
+/** A window of one account's usage, as fed to the aggregate below. */
+type AccountPeriod = {
+  accountId: string;
+  index: number;
+  from: Date;
+  to: Date;
 };
+
+/** Screenshots uploaded over one window, split by the way they are billed. */
+type ScreenshotTotals = {
+  all: number;
+  storybook: number;
+};
+
+/** What one account uploaded, per period and over its whole life. */
+type AccountTotals = {
+  periods: Map<number, ScreenshotTotals>;
+  allTime: ScreenshotTotals;
+};
+
+const EMPTY_TOTALS: ScreenshotTotals = { all: 0, storybook: 0 };
 
 /** A bucket's Storybook count, never above the bucket's own total. */
 const CLAMPED_STORYBOOK_COUNT = `least(coalesce(sb."storybookScreenshotCount", 0), coalesce(sb."screenshotCount", 0))`;
 
+/** Rows of `(accountId, index, from, to)` to join the usage tables against. */
+function buildPeriodValues(periods: AccountPeriod[]) {
+  return {
+    sql: periods
+      .map(() => `(?::bigint, ?::int, ?::timestamptz, ?::timestamptz)`)
+      .join(", "),
+    bindings: periods.flatMap((period) => [
+      period.accountId,
+      period.index,
+      period.from.toISOString(),
+      period.to.toISOString(),
+    ]),
+  };
+}
+
 /**
- * Sum screenshots per account in a single pass.
+ * Sum screenshots per account and per period in a single pass.
  *
- * Every account has its own period start — it follows the subscription's
- * anniversary, not the calendar — so the boundaries travel with the rows as a
- * `VALUES` list and the period totals come out of a filtered aggregate. The
- * alternative is one query per account, which is what this exists to avoid.
+ * Every account has its own period boundaries — they follow the subscription's
+ * anniversary, not the calendar — so the windows travel with the rows as a
+ * `VALUES` list and each period's totals come out of a filtered aggregate. The
+ * alternative is one query per account and per period, which is what this
+ * exists to avoid.
  *
  * The joins are left joins throughout: an account whose projects never produced
  * a bucket still has to come back with zeros rather than vanish from the batch.
  */
 async function getScreenshotTotals(
-  periodStartByAccountId: Map<string, Date>,
-): Promise<Map<string, ScreenshotTotals>> {
-  const entries = [...periodStartByAccountId];
-
+  periods: AccountPeriod[],
+): Promise<Map<string, AccountTotals>> {
   // `accounts.id` is a bigint and the bindings arrive as strings, so the values
   // are cast explicitly — Postgres cannot infer the type of a bare parameter in
   // a `VALUES` list, and would refuse to join it against `projects."accountId"`.
-  const values = entries.map(() => `(?::bigint, ?::timestamptz)`).join(", ");
-  const bindings = entries.flatMap(([accountId, periodStart]) => [
-    accountId,
-    periodStart.toISOString(),
-  ]);
+  const values = buildPeriodValues(periods);
 
   const rows = (await knex
-    .select("v.accountId")
+    .select("v.accountId", "v.index")
     .select(
       // `screenshotCount` is null until a bucket completes, and the billing
       // aggregate it mirrors sums it as-is rather than filtering incomplete
       // buckets out. Coalescing here keeps both sides on the same number.
       knex.raw(
-        `coalesce(sum(sb."screenshotCount") filter (where sb."createdAt" >= v."periodStart"), 0) as "periodAll"`,
+        `coalesce(sum(sb."screenshotCount") filter (where sb."createdAt" >= v."from" and sb."createdAt" < v."to"), 0) as "periodAll"`,
       ),
       // A bucket's Storybook count is clamped to its total before being summed.
       // The two used to be counted by two separate queries, so buckets written
@@ -83,20 +139,26 @@ async function getScreenshotTotals(
       // would make the neutral count negative. Mirrors
       // `Account.$getScreenshotCountBetween`.
       knex.raw(
-        `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}) filter (where sb."createdAt" >= v."periodStart"), 0) as "periodStorybook"`,
+        `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}) filter (where sb."createdAt" >= v."from" and sb."createdAt" < v."to"), 0) as "periodStorybook"`,
       ),
+      // Unfiltered, so every period of an account repeats the same lifetime
+      // total. Read once per account below.
       knex.raw(`coalesce(sum(sb."screenshotCount"), 0) as "allTimeAll"`),
       knex.raw(
         `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}), 0) as "allTimeStorybook"`,
       ),
     )
     .from(
-      knex.raw(`(values ${values}) as v("accountId", "periodStart")`, bindings),
+      knex.raw(
+        `(values ${values.sql}) as v("accountId", "index", "from", "to")`,
+        values.bindings,
+      ),
     )
     .leftJoin("projects as p", "p.accountId", "v.accountId")
     .leftJoin("screenshot_buckets as sb", "sb.projectId", "p.id")
-    .groupBy("v.accountId")) as unknown as {
+    .groupBy("v.accountId", "v.index")) as unknown as {
     accountId: string | number;
+    index: string | number;
     periodAll: string | number;
     periodStorybook: string | number;
     allTimeAll: string | number;
@@ -107,55 +169,54 @@ async function getScreenshotTotals(
   // join above: joining two independent one-to-many tables in a single pass
   // multiplies their rows against each other. It is aggregated separately and
   // added in.
-  const mediaUnitsByAccountId = await getMediaUnits(periodStartByAccountId);
+  const mediaUnits = await getMediaUnits(periods);
 
-  return new Map(
-    rows.map((row) => {
-      const accountId = String(row.accountId);
-      const media = mediaUnitsByAccountId.get(accountId);
-      return [
-        accountId,
-        {
-          // Media is never Storybook, so it lifts the totals without touching
-          // either Storybook count — the neutral half absorbs it.
-          periodAll: (Number(row.periodAll) || 0) + (media?.period ?? 0),
-          periodStorybook: Number(row.periodStorybook) || 0,
-          allTimeAll: (Number(row.allTimeAll) || 0) + (media?.allTime ?? 0),
-          allTimeStorybook: Number(row.allTimeStorybook) || 0,
-        },
-      ];
-    }),
-  );
+  const totalsByAccountId = new Map<string, AccountTotals>();
+  for (const row of rows) {
+    const accountId = String(row.accountId);
+    const index = Number(row.index);
+    const media = mediaUnits.get(accountId);
+    const totals = totalsByAccountId.get(accountId) ?? {
+      periods: new Map<number, ScreenshotTotals>(),
+      // Media is never Storybook, so it lifts the totals without touching
+      // either Storybook count — the neutral half absorbs it.
+      allTime: {
+        all: (Number(row.allTimeAll) || 0) + (media?.allTime ?? 0),
+        storybook: Number(row.allTimeStorybook) || 0,
+      },
+    };
+    totals.periods.set(index, {
+      all: (Number(row.periodAll) || 0) + (media?.periods.get(index) ?? 0),
+      storybook: Number(row.periodStorybook) || 0,
+    });
+    totalsByAccountId.set(accountId, totals);
+  }
+
+  return totalsByAccountId;
 }
 
 /**
- * Screenshot units charged by standalone media uploads, per account, over the
- * period and over all time.
- *
- * One query for the whole batch, same as the bucket totals: the period boundary
- * travels with the rows in a `VALUES` list because every account's period follows
- * its own subscription anniversary.
+ * Screenshot units charged by standalone media uploads, per account and per
+ * period, over the same windows as the bucket totals.
  */
 async function getMediaUnits(
-  periodStartByAccountId: Map<string, Date>,
-): Promise<Map<string, { period: number; allTime: number }>> {
-  const entries = [...periodStartByAccountId];
-  const values = entries.map(() => `(?::bigint, ?::timestamptz)`).join(", ");
-  const bindings = entries.flatMap(([accountId, periodStart]) => [
-    accountId,
-    periodStart.toISOString(),
-  ]);
+  periods: AccountPeriod[],
+): Promise<Map<string, { periods: Map<number, number>; allTime: number }>> {
+  const values = buildPeriodValues(periods);
 
   const rows = (await knex
-    .select("v.accountId")
+    .select("v.accountId", "v.index")
     .select(
       knex.raw(
-        `coalesce(sum(mv."billedUnits") filter (where mv."uploadedAt" >= v."periodStart"), 0) as "period"`,
+        `coalesce(sum(mv."billedUnits") filter (where mv."uploadedAt" >= v."from" and mv."uploadedAt" < v."to"), 0) as "period"`,
       ),
       knex.raw(`coalesce(sum(mv."billedUnits"), 0) as "allTime"`),
     )
     .from(
-      knex.raw(`(values ${values}) as v("accountId", "periodStart")`, bindings),
+      knex.raw(
+        `(values ${values.sql}) as v("accountId", "index", "from", "to")`,
+        values.bindings,
+      ),
     )
     // Media reaches the account through its project, exactly as a bucket does —
     // which is what makes a project transfer carry its billing with it.
@@ -167,21 +228,58 @@ async function getMediaUnits(
     .leftJoin("media_versions as mv", (join) => {
       join.on("mv.mediaId", "m.id").onNotNull("mv.uploadedAt");
     })
-    .groupBy("v.accountId")) as unknown as {
+    .groupBy("v.accountId", "v.index")) as unknown as {
     accountId: string | number;
+    index: string | number;
     period: string | number;
     allTime: string | number;
   }[];
 
-  return new Map(
-    rows.map((row) => [
-      String(row.accountId),
-      {
-        period: Number(row.period) || 0,
-        allTime: Number(row.allTime) || 0,
-      },
-    ]),
-  );
+  const unitsByAccountId = new Map<
+    string,
+    { periods: Map<number, number>; allTime: number }
+  >();
+  for (const row of rows) {
+    const accountId = String(row.accountId);
+    const units = unitsByAccountId.get(accountId) ?? {
+      periods: new Map<number, number>(),
+      allTime: Number(row.allTime) || 0,
+    };
+    units.periods.set(Number(row.index), Number(row.period) || 0);
+    unitsByAccountId.set(accountId, units);
+  }
+
+  return unitsByAccountId;
+}
+
+/** Whether a period is one Stripe invoices. */
+function checkIsBilledPeriod(
+  period: AccountPeriod,
+  subscription: Subscription,
+): boolean {
+  const from = period.from.getTime();
+
+  // Stripe never bills usage consumed during a trial, and converting one opens
+  // a fresh period at the instant it ends — so no period straddles that
+  // boundary, and every period before it is trial usage.
+  if (subscription.trialEndDate) {
+    const trialEnd = new Date(subscription.trialEndDate).getTime();
+    if (from < trialEnd - PERIOD_BOUNDARY_TOLERANCE) {
+      return false;
+    }
+  }
+
+  // The period still running is real whatever the rest says: it is the one
+  // usage is accruing into right now.
+  if (period.index === 0) {
+    return true;
+  }
+
+  // Boundaries are walked back from an anniversary, so they keep going past the
+  // point where the subscription itself begins. A closed period from before it
+  // existed is an invoice that was never sent.
+  const createdAt = new Date(subscription.createdAt).getTime();
+  return from >= createdAt - PERIOD_BOUNDARY_TOLERANCE;
 }
 
 /**
@@ -250,7 +348,7 @@ export async function getAccountPeriodUsages(
   );
 
   const now = new Date();
-  const periodStartByAccountId = new Map<string, Date>();
+  const periodsByAccountId = new Map<string, AccountPeriod[]>();
 
   for (const account of subscribedAccounts) {
     const subscription = subscriptionByAccountId.get(account.id);
@@ -258,35 +356,40 @@ export async function getAccountPeriodUsages(
       result.set(account.id, null);
       continue;
     }
-    periodStartByAccountId.set(
+    // Contiguous windows, newest first: each period runs until the next one
+    // opens, and the one still running until now.
+    const starts = subscription.getPeriodStarts(
+      now,
+      subscription.plan.interval,
+      READ_PERIOD_COUNT,
+    );
+    periodsByAccountId.set(
       account.id,
-      subscription.getLastResetDate(now, subscription.plan.interval),
+      starts.map((from, index) => ({
+        accountId: account.id,
+        index,
+        from,
+        to: starts[index - 1] ?? now,
+      })),
     );
   }
 
-  if (periodStartByAccountId.size === 0) {
+  const periods = [...periodsByAccountId.values()].flat();
+
+  if (periods.length === 0) {
     return result;
   }
 
-  const totalsByAccountId = await getScreenshotTotals(periodStartByAccountId);
+  const totalsByAccountId = await getScreenshotTotals(periods);
 
-  for (const accountId of periodStartByAccountId.keys()) {
+  for (const [accountId, accountPeriods] of periodsByAccountId) {
     const subscription = subscriptionByAccountId.get(accountId);
+    const plan = subscription?.plan;
     const totals = totalsByAccountId.get(accountId);
-
-    if (!subscription || !totals) {
-      result.set(accountId, EMPTY_PERIOD_USAGE);
-      continue;
-    }
-
-    const additional =
-      subscription.includedScreenshots === null
-        ? null
-        : computeAdditionalScreenshots({
-            neutral: totals.periodAll - totals.periodStorybook,
-            storybook: totals.periodStorybook,
-            included: subscription.includedScreenshots,
-          });
+    invariant(
+      subscription && plan && totals,
+      "every account with periods has a usage-based subscription and totals",
+    );
 
     // Storybook screenshots fall back to the neutral price when they have none
     // of their own, exactly as the per-account cost does.
@@ -299,15 +402,37 @@ export async function getAccountPeriodUsages(
     };
 
     result.set(accountId, {
-      additionalScreenshotCost: additional
-        ? additional.neutral * price.neutral +
-          additional.storybook * price.storybook
-        : 0,
+      plan,
       storybookRatio:
-        totals.allTimeAll > 0
-          ? totals.allTimeStorybook / totals.allTimeAll
+        totals.allTime.all > 0
+          ? totals.allTime.storybook / totals.allTime.all
           : null,
-      storybookCount: totals.allTimeStorybook,
+      storybookCount: totals.allTime.storybook,
+      billingPeriods: accountPeriods
+        .filter((period) => checkIsBilledPeriod(period, subscription))
+        .map((period) => {
+          const periodTotals = totals.periods.get(period.index) ?? EMPTY_TOTALS;
+          // The included quota resets at every period, so the overage is
+          // computed period by period rather than off a running total.
+          const additional =
+            subscription.includedScreenshots === null
+              ? null
+              : computeAdditionalScreenshots({
+                  neutral: periodTotals.all - periodTotals.storybook,
+                  storybook: periodTotals.storybook,
+                  included: subscription.includedScreenshots,
+                });
+
+          return {
+            from: period.from,
+            to: period.to,
+            closed: period.index > 0,
+            additionalScreenshotCost: additional
+              ? additional.neutral * price.neutral +
+                additional.storybook * price.storybook
+              : 0,
+          };
+        }),
     });
   }
 

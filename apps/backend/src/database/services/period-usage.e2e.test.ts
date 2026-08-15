@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Plan, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
+import type { AccountPeriodUsage } from "./period-usage";
 import { getAccountPeriodUsages } from "./period-usage";
+
+/** Overage of the period still running, which is the first one returned. */
+function getRunningCost(usage: AccountPeriodUsage | null | undefined) {
+  return usage?.billingPeriods[0]?.additionalScreenshotCost;
+}
 
 describe("getAccountPeriodUsages", () => {
   beforeEach(async () => {
@@ -42,6 +48,9 @@ describe("getAccountPeriodUsages", () => {
       provider: "stripe",
       stripeSubscriptionId: "sub_period_usage",
       subscriberId: user.id,
+      // A subscription running since 2021: its periods reset on the 1st, and
+      // every one of them is old enough to have been invoiced.
+      createdAt: new Date("2021-01-01").toISOString(),
       startDate: new Date("2021-01-01").toISOString(),
       status: "active",
     });
@@ -117,11 +126,8 @@ describe("getAccountPeriodUsages", () => {
       usages.get(account.id),
     );
 
-    expect(usage).toEqual({
-      additionalScreenshotCost: 0,
-      storybookRatio: 0,
-      storybookCount: 0,
-    });
+    expect(usage).toMatchObject({ storybookRatio: 0, storybookCount: 0 });
+    expect(getRunningCost(usage)).toBe(0);
   });
 
   it("bills the overage at the neutral price", async () => {
@@ -138,7 +144,7 @@ describe("getAccountPeriodUsages", () => {
     );
 
     // 200 over the 1000 included, at $0.50.
-    expect(usage?.additionalScreenshotCost).toBe(100);
+    expect(getRunningCost(usage)).toBe(100);
   });
 
   it("bills Storybook screenshots at their own price and reports the mix", async () => {
@@ -156,7 +162,7 @@ describe("getAccountPeriodUsages", () => {
 
     // 500 neutral fit under the 1000 included, so 500 of the Storybook
     // screenshots absorb the rest of the quota and 500 are billed at $0.10.
-    expect(usage?.additionalScreenshotCost).toBeCloseTo(50);
+    expect(getRunningCost(usage)).toBeCloseTo(50);
     expect(usage?.storybookRatio).toBeCloseTo(1000 / 1500);
     expect(usage?.storybookCount).toBe(1000);
   });
@@ -179,7 +185,7 @@ describe("getAccountPeriodUsages", () => {
 
     // Read as 1500 Storybook and 0 neutral: 1000 absorb the quota and 500 are
     // billed at $0.10.
-    expect(usage?.additionalScreenshotCost).toBeCloseTo(50);
+    expect(getRunningCost(usage)).toBeCloseTo(50);
     expect(usage?.storybookRatio).toBe(1);
     expect(usage?.storybookCount).toBe(1500);
   });
@@ -198,8 +204,91 @@ describe("getAccountPeriodUsages", () => {
     );
 
     // Out of period for the cost, still part of the lifetime mix.
-    expect(usage?.additionalScreenshotCost).toBe(0);
+    expect(getRunningCost(usage)).toBe(0);
     expect(usage?.storybookRatio).toBe(0);
+  });
+
+  it("prices each period against its own quota", async () => {
+    // The included screenshots reset at every period, so an account that goes
+    // slightly over twice owes twice — summing the two months and pricing the
+    // total against a single quota would report roughly half of that.
+    await createUsageBasedSubscription();
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() + 1000).toISOString(),
+      screenshotCount: 1200,
+      storybookScreenshotCount: 0,
+    });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() - 86_400_000).toISOString(),
+      screenshotCount: 1400,
+      storybookScreenshotCount: 0,
+    });
+
+    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    const [running, closed] = usage?.billingPeriods ?? [];
+    // 200 over in the running period, 400 over in the one before it.
+    expect(running).toMatchObject({
+      closed: false,
+      additionalScreenshotCost: 100,
+    });
+    expect(closed).toMatchObject({
+      closed: true,
+      additionalScreenshotCost: 200,
+    });
+    // Contiguous: each period ends where the next one opens.
+    expect(closed?.to).toEqual(running?.from);
+  });
+
+  it("leaves out the periods the trial covers", async () => {
+    // Stripe never bills usage consumed during a trial, and converting one
+    // opens a fresh period at the moment it ends. Pricing the periods before
+    // that would invoice the trial.
+    const subscription = await createUsageBasedSubscription();
+    await subscription
+      .$query()
+      .patch({ trialEndDate: new Date(inPeriod.getTime()).toISOString() });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() - 86_400_000).toISOString(),
+      screenshotCount: 50_000,
+      storybookScreenshotCount: 0,
+    });
+
+    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    expect(usage?.billingPeriods).toHaveLength(1);
+    expect(getRunningCost(usage)).toBe(0);
+  });
+
+  it("leaves out the periods that predate the subscription", async () => {
+    // Boundaries are walked back from an anniversary, so they keep going past
+    // the day the subscription started. Pricing those as closed periods would
+    // report invoices that were never sent — and hide the running period, which
+    // is the only thing a team billed for the first time has.
+    const subscription = await createUsageBasedSubscription();
+    await subscription
+      .$query()
+      .patch({ createdAt: new Date(inPeriod.getTime() + 1000).toISOString() });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date(inPeriod.getTime() + 2000).toISOString(),
+      screenshotCount: 1200,
+      storybookScreenshotCount: 0,
+    });
+
+    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    expect(usage?.billingPeriods).toHaveLength(1);
+    expect(getRunningCost(usage)).toBe(100);
   });
 
   it("keeps accounts apart within one batch", async () => {
@@ -244,8 +333,8 @@ describe("getAccountPeriodUsages", () => {
       noSubscriptionAccount,
     ]);
 
-    expect(usages.get(account.id)?.additionalScreenshotCost).toBe(100);
-    expect(usages.get(otherAccount.id)?.additionalScreenshotCost).toBe(50);
+    expect(getRunningCost(usages.get(account.id))).toBe(100);
+    expect(getRunningCost(usages.get(otherAccount.id))).toBe(50);
     expect(usages.get(noSubscriptionAccount.id)).toBeNull();
   });
 });

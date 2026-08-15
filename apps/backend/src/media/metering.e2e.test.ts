@@ -254,10 +254,9 @@ describe("media metering", () => {
 
       const usages = await getAccountPeriodUsages([account]);
 
-      expect(usages.get(account.id)?.additionalScreenshotCost).toBeCloseTo(
-        25 * 0.004,
-        5,
-      );
+      expect(
+        usages.get(account.id)?.billingPeriods[0]?.additionalScreenshotCost,
+      ).toBeCloseTo(25 * 0.004, 5);
     });
 
     it("does not multiply media by the number of projects", async () => {
@@ -278,7 +277,9 @@ describe("media metering", () => {
       const usages = await getAccountPeriodUsages([account]);
 
       // 25 units, under the 100 included: no overage, and crucially not 75.
-      expect(usages.get(account.id)?.additionalScreenshotCost).toBe(0);
+      expect(
+        usages.get(account.id)?.billingPeriods[0]?.additionalScreenshotCost,
+      ).toBe(0);
 
       const count = await account.$getScreenshotCountBetween(
         periodStart,

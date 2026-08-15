@@ -65,10 +65,27 @@ export const typeDefs = gql`
     user: User!
   }
 
-  "What a team is consuming, as needed to explain what it is about to pay."
-  type TeamStaffPeriodUsage {
+  "One billing period of a team, priced from the usage it accumulated."
+  type TeamStaffBillingPeriod {
+    from: DateTime!
+    "End of the period, or now while it is still running."
+    to: DateTime!
+    "False while the period is still accumulating usage."
+    closed: Boolean!
     "Cost of the screenshots consumed beyond the included quota, this period."
     additionalScreenshotsCost: Float!
+  }
+
+  "What a team is consuming, as needed to explain what it is about to pay."
+  type TeamStaffPeriodUsage {
+    """
+    Periods Stripe actually invoices, most recent first: the one still running,
+    then the closed ones. Empty while the team is on its trial, whose usage is
+    never billed.
+    """
+    billingPeriods: [TeamStaffBillingPeriod!]!
+    "The plan the team is billed on."
+    plan: Plan!
     """
     Share of Storybook screenshots in everything the team ever uploaded, between
     0 and 1. Null when it never uploaded a screenshot at all.
@@ -155,9 +172,15 @@ export const resolvers: IResolvers = {
         return null;
       }
       return {
-        additionalScreenshotsCost: usage.additionalScreenshotCost,
+        plan: usage.plan,
         storybookRatio: usage.storybookRatio,
         storybookScreenshotsCount: usage.storybookCount,
+        billingPeriods: usage.billingPeriods.map((period) => ({
+          from: period.from,
+          to: period.to,
+          closed: period.closed,
+          additionalScreenshotsCost: period.additionalScreenshotCost,
+        })),
       };
     },
   },
