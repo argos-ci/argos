@@ -241,10 +241,11 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
   pipelineTeams: async ({ plan, user }, use, testInfo) => {
     const prefix = `pipeline-${getUniqueTestIdentifier(testInfo)}`;
     const common = { planId: plan.id, subscriberId: user.user.id };
-    // The shared plan is flat, so it has no usage to price. The billed teams
-    // below need usage-based ones: `pro`, which the price estimate is built
-    // for, and one that is not, to check that the row says so.
-    const [proPlan, enterprisePlan] = await Promise.all([
+    // The shared plan is flat, so it has no usage to price. The teams below
+    // need three more: `pro`, which the price estimate is built for, one that
+    // is not, and a granted one that bills nothing at all — each row naming
+    // its plan when it is not Pro.
+    const [proPlan, enterprisePlan, grantedPlan] = await Promise.all([
       PlanModel.query().insertAndFetch({
         name: "pro",
         includedScreenshots: 35_000,
@@ -263,8 +264,26 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         samlIncluded: true,
         interval: "month",
       }),
+      PlanModel.query().insertAndFetch({
+        name: "open source",
+        includedScreenshots: 1_000_000,
+        usageBased: false,
+        githubSsoIncluded: true,
+        fineGrainedAccessControlIncluded: true,
+        samlIncluded: true,
+        interval: "month",
+      }),
     ]);
     await Promise.all([
+      // A granted plan reads as active everywhere while billing nothing, so
+      // its row carries no price — only the plan, which is what says why.
+      createTeamAccount({
+        slug: `${prefix}-hexagon`,
+        name: "Hexagon",
+        forcedPlanId: grantedPlan.id,
+      }).then(({ account }) =>
+        account.$query().patch({ createdAt: daysFromNow(-40) }),
+      ),
       // Converted almost three months ago, so two periods have closed since:
       // 40k screenshots, then 50k. The row prices the most recent of the two.
       createBilledTeam({
@@ -324,7 +343,7 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await page.goto("/staff/teams");
   await expect(page.getByRole("heading", { name: "All Teams" })).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-  await expect(page.getByText("Showing 1-5 of 5 teams")).toBeVisible();
+  await expect(page.getByText("Showing 1-6 of 6 teams")).toBeVisible();
 
   await screenshot(page, "staff-all-teams");
 });
@@ -357,7 +376,7 @@ staffTest(
       page.getByRole("heading", { name: "Trial pipeline" }),
     ).toBeVisible();
     await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-    await expect(page.getByText(/^Showing 5 of \d+ teams$/)).toBeVisible();
+    await expect(page.getByText(/^Showing 6 of \d+ teams$/)).toBeVisible();
 
     // Soylent uploaded 50k screenshots over its last closed month: 15k past the
     // 35k included, at $0.005, on top of the $100 flat plan. The month still
@@ -367,6 +386,9 @@ staffTest(
     // of its own, and the row names the plan under the amount.
     await expect(page.getByText("$1,125")).toBeVisible();
     await expect(page.getByText("Enterprise")).toBeVisible();
+    // Hexagon is billed nothing at all, and the plan is the only thing that
+    // says why — the price cell is an em dash.
+    await expect(page.getByText("Open source")).toBeVisible();
 
     await screenshot(page, "staff-trial-pipeline-90-days");
   },

@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Plan, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import type { AccountPeriodUsage } from "./period-usage";
-import { getAccountPeriodUsages } from "./period-usage";
+import type { AccountBilling } from "./period-usage";
+import { getAccountBillings } from "./period-usage";
 
 /** Overage of the period still running, which is the first one returned. */
-function getRunningCost(usage: AccountPeriodUsage | null | undefined) {
-  return usage?.billingPeriods[0]?.additionalScreenshotCost;
+function getRunningCost(billing: AccountBilling | undefined) {
+  return billing?.periodUsage?.billingPeriods[0]?.additionalScreenshotCost;
 }
 
 describe("getAccountPeriodUsages", () => {
@@ -56,12 +56,12 @@ describe("getAccountPeriodUsages", () => {
     });
   }
 
-  it("returns null for an account without a usage-based subscription", async () => {
-    const usages = await getAccountPeriodUsages([account]);
-    expect(usages.get(account.id)).toBeNull();
+  it("reports no plan and no usage for an account without a subscription", async () => {
+    const usages = await getAccountBillings([account]);
+    expect(usages.get(account.id)).toEqual({ plan: null, periodUsage: null });
   });
 
-  it("returns null for a granted plan, even with a subscription still on file", async () => {
+  it("reports a granted plan, and no usage under it", async () => {
     // Open source and comped accounts read as `active` everywhere because a
     // forced plan short-circuits the status, and they bill nothing.
     await createUsageBasedSubscription();
@@ -74,9 +74,13 @@ describe("getAccountPeriodUsages", () => {
     await account.$query().patch({ forcedPlanId: usageBasedPlan.id });
     const grantedAccount = await account.$query();
 
-    const usages = await getAccountPeriodUsages([grantedAccount]);
+    const usages = await getAccountBillings([grantedAccount]);
 
-    expect(usages.get(grantedAccount.id)).toBeNull();
+    // The plan still comes back: it is what explains why nothing is billed.
+    expect(usages.get(grantedAccount.id)).toEqual({
+      plan: expect.objectContaining({ id: usageBasedPlan.id }),
+      periodUsage: null,
+    });
   });
 
   it("resolves the same subscription as the account manager does", async () => {
@@ -108,9 +112,12 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usages = await getAccountPeriodUsages([account]);
+    const usages = await getAccountBillings([account]);
 
-    expect(usages.get(account.id)).toBeNull();
+    expect(usages.get(account.id)).toEqual({
+      plan: expect.objectContaining({ id: flatPlan.id }),
+      periodUsage: null,
+    });
   });
 
   it("returns zero cost when the account stays inside its quota", async () => {
@@ -122,11 +129,14 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
-    expect(usage).toMatchObject({ storybookRatio: 0, storybookCount: 0 });
+    expect(usage?.periodUsage).toMatchObject({
+      storybookRatio: 0,
+      storybookCount: 0,
+    });
     expect(getRunningCost(usage)).toBe(0);
   });
 
@@ -139,7 +149,7 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
@@ -156,15 +166,15 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 1000,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
     // 500 neutral fit under the 1000 included, so 500 of the Storybook
     // screenshots absorb the rest of the quota and 500 are billed at $0.10.
     expect(getRunningCost(usage)).toBeCloseTo(50);
-    expect(usage?.storybookRatio).toBeCloseTo(1000 / 1500);
-    expect(usage?.storybookCount).toBe(1000);
+    expect(usage?.periodUsage?.storybookRatio).toBeCloseTo(1000 / 1500);
+    expect(usage?.periodUsage?.storybookCount).toBe(1000);
   });
 
   it("clamps a bucket's Storybook count to its total", async () => {
@@ -179,15 +189,15 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 1600,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
     // Read as 1500 Storybook and 0 neutral: 1000 absorb the quota and 500 are
     // billed at $0.10.
     expect(getRunningCost(usage)).toBeCloseTo(50);
-    expect(usage?.storybookRatio).toBe(1);
-    expect(usage?.storybookCount).toBe(1500);
+    expect(usage?.periodUsage?.storybookRatio).toBe(1);
+    expect(usage?.periodUsage?.storybookCount).toBe(1500);
   });
 
   it("ignores screenshots uploaded before the period started", async () => {
@@ -199,13 +209,13 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
     // Out of period for the cost, still part of the lifetime mix.
     expect(getRunningCost(usage)).toBe(0);
-    expect(usage?.storybookRatio).toBe(0);
+    expect(usage?.periodUsage?.storybookRatio).toBe(0);
   });
 
   it("prices each period against its own quota", async () => {
@@ -226,11 +236,11 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
-    const [running, closed] = usage?.billingPeriods ?? [];
+    const [running, closed] = usage?.periodUsage?.billingPeriods ?? [];
     // 200 over in the running period, 400 over in the one before it.
     expect(running).toMatchObject({
       closed: false,
@@ -259,11 +269,11 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
-    expect(usage?.billingPeriods).toHaveLength(1);
+    expect(usage?.periodUsage?.billingPeriods).toHaveLength(1);
     expect(getRunningCost(usage)).toBe(0);
   });
 
@@ -283,11 +293,11 @@ describe("getAccountPeriodUsages", () => {
       storybookScreenshotCount: 0,
     });
 
-    const usage = await getAccountPeriodUsages([account]).then((usages) =>
+    const usage = await getAccountBillings([account]).then((usages) =>
       usages.get(account.id),
     );
 
-    expect(usage?.billingPeriods).toHaveLength(1);
+    expect(usage?.periodUsage?.billingPeriods).toHaveLength(1);
     expect(getRunningCost(usage)).toBe(100);
   });
 
@@ -327,7 +337,7 @@ describe("getAccountPeriodUsages", () => {
 
     const noSubscriptionAccount = await factory.TeamAccount.create();
 
-    const usages = await getAccountPeriodUsages([
+    const usages = await getAccountBillings([
       account,
       otherAccount,
       noSubscriptionAccount,
@@ -335,6 +345,9 @@ describe("getAccountPeriodUsages", () => {
 
     expect(getRunningCost(usages.get(account.id))).toBe(100);
     expect(getRunningCost(usages.get(otherAccount.id))).toBe(50);
-    expect(usages.get(noSubscriptionAccount.id)).toBeNull();
+    expect(usages.get(noSubscriptionAccount.id)).toEqual({
+      plan: null,
+      periodUsage: null,
+    });
   });
 });

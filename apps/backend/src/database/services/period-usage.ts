@@ -22,9 +22,7 @@ type BillingPeriodUsage = {
 /**
  * Billing usage for one account, as needed to explain what it is about to pay.
  */
-export type AccountPeriodUsage = {
-  /** The plan the account is billed on. */
-  plan: Plan;
+type AccountPeriodUsage = {
   /**
    * Share of Storybook screenshots in everything the account ever uploaded,
    * between 0 and 1. Null when it never uploaded a screenshot at all — an
@@ -39,6 +37,30 @@ export type AccountPeriodUsage = {
    * whose usage is never billed.
    */
   billingPeriods: BillingPeriodUsage[];
+};
+
+/**
+ * What an account is billed on, as needed to explain what it pays.
+ *
+ * The plan comes back even when there is nothing to price, because it is what
+ * explains the absence: an account on a flat plan or on a granted one has no
+ * overage of ours to quote, and saying which plan it is on is the difference
+ * between an empty cell and an answer.
+ */
+export type AccountBilling = {
+  /**
+   * The forced plan when the account has been granted one, the active
+   * subscription's plan otherwise, and null when it has neither. A personal
+   * account's implicit free plan is not resolved here — this serves team
+   * accounts.
+   */
+  plan: Plan | null;
+  /**
+   * Usage-based billing. Null when the plan is not usage-based: there is no
+   * overage to compute and no period to compute it over, which is a different
+   * answer from one that consumed nothing.
+   */
+  periodUsage: AccountPeriodUsage | null;
 };
 
 /**
@@ -283,17 +305,16 @@ function checkIsBilledPeriod(
 }
 
 /**
- * Billing usage for a batch of accounts, in two queries whatever the batch size.
+ * What a batch of accounts is billed on, in a handful of queries whatever the
+ * batch size.
  *
- * An account maps to `null` when it is not on a usage-based plan: it has no
- * overage to compute and no period to compute it over, which is a different
- * answer from one that consumed nothing. Callers that render money need to tell
- * the two apart, so the distinction is kept here rather than flattened to zero.
+ * Every requested account gets an entry, so a caller never has to tell a missing
+ * answer from an empty one.
  */
-export async function getAccountPeriodUsages(
+export async function getAccountBillings(
   accounts: Account[],
-): Promise<Map<string, AccountPeriodUsage | null>> {
-  const result = new Map<string, AccountPeriodUsage | null>();
+): Promise<Map<string, AccountBilling>> {
+  const result = new Map<string, AccountBilling>();
 
   if (accounts.length === 0) {
     return result;
@@ -303,13 +324,28 @@ export async function getAccountPeriodUsages(
   // carry — the subscription manager reports no active subscription at all for
   // it. These are the granted plans, open source above all: they read as
   // `active` everywhere while billing nothing, so a leftover subscription must
-  // not earn them a price here.
+  // not earn them a price here. The plan itself is still reported: it is what
+  // explains why the account is billed nothing.
   const subscribedAccounts: Account[] = [];
+  const forcedPlanIds = new Set<string>();
   for (const account of accounts) {
     if (account.forcedPlanId === null) {
       subscribedAccounts.push(account);
     } else {
-      result.set(account.id, null);
+      forcedPlanIds.add(account.forcedPlanId);
+    }
+  }
+
+  if (forcedPlanIds.size > 0) {
+    const forcedPlans = await Plan.query().findByIds([...forcedPlanIds]);
+    const forcedPlanById = new Map(forcedPlans.map((plan) => [plan.id, plan]));
+    for (const account of accounts) {
+      if (account.forcedPlanId !== null) {
+        result.set(account.id, {
+          plan: forcedPlanById.get(account.forcedPlanId) ?? null,
+          periodUsage: null,
+        });
+      }
     }
   }
 
@@ -353,7 +389,10 @@ export async function getAccountPeriodUsages(
   for (const account of subscribedAccounts) {
     const subscription = subscriptionByAccountId.get(account.id);
     if (!subscription?.plan?.usageBased) {
-      result.set(account.id, null);
+      result.set(account.id, {
+        plan: subscription?.plan ?? null,
+        periodUsage: null,
+      });
       continue;
     }
     // Contiguous windows, newest first: each period runs until the next one
@@ -403,36 +442,39 @@ export async function getAccountPeriodUsages(
 
     result.set(accountId, {
       plan,
-      storybookRatio:
-        totals.allTime.all > 0
-          ? totals.allTime.storybook / totals.allTime.all
-          : null,
-      storybookCount: totals.allTime.storybook,
-      billingPeriods: accountPeriods
-        .filter((period) => checkIsBilledPeriod(period, subscription))
-        .map((period) => {
-          const periodTotals = totals.periods.get(period.index) ?? EMPTY_TOTALS;
-          // The included quota resets at every period, so the overage is
-          // computed period by period rather than off a running total.
-          const additional =
-            subscription.includedScreenshots === null
-              ? null
-              : computeAdditionalScreenshots({
-                  neutral: periodTotals.all - periodTotals.storybook,
-                  storybook: periodTotals.storybook,
-                  included: subscription.includedScreenshots,
-                });
+      periodUsage: {
+        storybookRatio:
+          totals.allTime.all > 0
+            ? totals.allTime.storybook / totals.allTime.all
+            : null,
+        storybookCount: totals.allTime.storybook,
+        billingPeriods: accountPeriods
+          .filter((period) => checkIsBilledPeriod(period, subscription))
+          .map((period) => {
+            const periodTotals =
+              totals.periods.get(period.index) ?? EMPTY_TOTALS;
+            // The included quota resets at every period, so the overage is
+            // computed period by period rather than off a running total.
+            const additional =
+              subscription.includedScreenshots === null
+                ? null
+                : computeAdditionalScreenshots({
+                    neutral: periodTotals.all - periodTotals.storybook,
+                    storybook: periodTotals.storybook,
+                    included: subscription.includedScreenshots,
+                  });
 
-          return {
-            from: period.from,
-            to: period.to,
-            closed: period.index > 0,
-            additionalScreenshotCost: additional
-              ? additional.neutral * price.neutral +
-                additional.storybook * price.storybook
-              : 0,
-          };
-        }),
+            return {
+              from: period.from,
+              to: period.to,
+              closed: period.index > 0,
+              additionalScreenshotCost: additional
+                ? additional.neutral * price.neutral +
+                  additional.storybook * price.storybook
+                : 0,
+            };
+          }),
+      },
     });
   }
 

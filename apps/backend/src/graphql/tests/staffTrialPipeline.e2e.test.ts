@@ -19,11 +19,11 @@ const TrialPipelineQuery = `
         buildsCount
         screenshotsCount
         firstComparisonAt
+        plan {
+          id
+          name
+        }
         periodUsage {
-          plan {
-            id
-            name
-          }
           billingPeriods {
             from
             to
@@ -165,8 +165,9 @@ describe("GraphQL staffTrialPipeline", () => {
     const res = await queryPipeline(viewer, 90);
 
     expectNoGraphQLError(res);
-    const { periodUsage } = findEntry(res, team.id).staff;
-    expect(periodUsage.plan.name).toBe("pro");
+    const { staff } = findEntry(res, team.id);
+    expect(staff.plan.name).toBe("pro");
+    const { periodUsage } = staff;
     // The period still running comes first, then the one that closed with 15k
     // screenshots past the 35k included, at $0.005.
     expect(periodUsage.billingPeriods).toMatchObject([

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Account, Plan, Project } from "@/database/models";
-import { getAccountPeriodUsages } from "@/database/services/period-usage";
+import { getAccountBillings } from "@/database/services/period-usage";
 import { factory, setupDatabase } from "@/database/testing";
 
 /**
@@ -236,7 +236,7 @@ describe("media metering", () => {
     });
   });
 
-  describe("getAccountPeriodUsages", () => {
+  describe("getAccountBillings", () => {
     it("prices media overage on the same line as screenshots", async () => {
       await createSubscription();
       await factory.ScreenshotBucket.create({
@@ -252,10 +252,11 @@ describe("media metering", () => {
         uploadedAt: periodStart.toISOString(),
       });
 
-      const usages = await getAccountPeriodUsages([account]);
+      const usages = await getAccountBillings([account]);
 
       expect(
-        usages.get(account.id)?.billingPeriods[0]?.additionalScreenshotCost,
+        usages.get(account.id)?.periodUsage?.billingPeriods[0]
+          ?.additionalScreenshotCost,
       ).toBeCloseTo(25 * 0.004, 5);
     });
 
@@ -274,11 +275,12 @@ describe("media metering", () => {
         uploadedAt: periodStart.toISOString(),
       });
 
-      const usages = await getAccountPeriodUsages([account]);
+      const usages = await getAccountBillings([account]);
 
       // 25 units, under the 100 included: no overage, and crucially not 75.
       expect(
-        usages.get(account.id)?.billingPeriods[0]?.additionalScreenshotCost,
+        usages.get(account.id)?.periodUsage?.billingPeriods[0]
+          ?.additionalScreenshotCost,
       ).toBe(0);
 
       const count = await account.$getScreenshotCountBetween(

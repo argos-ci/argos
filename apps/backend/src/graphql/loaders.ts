@@ -56,8 +56,8 @@ import {
 } from "@/database/models";
 import type { ProjectPermission } from "@/database/models/Project";
 import {
-  getAccountPeriodUsages,
-  type AccountPeriodUsage,
+  getAccountBillings,
+  type AccountBilling,
 } from "@/database/services/period-usage";
 import {
   getLatestReferenceBuildIds,
@@ -757,24 +757,25 @@ function createAccountActivationByAccountIdLoader() {
   });
 }
 
+/** An account that no longer exists, or was never billed anything. */
+const EMPTY_ACCOUNT_BILLING: AccountBilling = { plan: null, periodUsage: null };
+
 /**
- * Batches the billing usage that the staff trial pipeline reads per team.
+ * Batches the billing state that the staff trial pipeline reads per team.
  *
  * Without it, every row would resolve its own subscription and run its own
  * aggregate over `screenshot_buckets` — the exact N+1 the loaders around it
  * exist to prevent, on a list that has no upper bound on its row count.
  */
-function createAccountPeriodUsageByAccountIdLoader() {
-  return new DataLoader<string, AccountPeriodUsage | null>(
-    async (accountIds) => {
-      const uniqueAccountIds = [...new Set(accountIds as string[])];
-      const accounts = await Account.query().findByIds(uniqueAccountIds);
-      const usageByAccountId = await getAccountPeriodUsages(accounts);
-      return accountIds.map(
-        (accountId) => usageByAccountId.get(accountId) ?? null,
-      );
-    },
-  );
+function createAccountBillingByAccountIdLoader() {
+  return new DataLoader<string, AccountBilling>(async (accountIds) => {
+    const uniqueAccountIds = [...new Set(accountIds as string[])];
+    const accounts = await Account.query().findByIds(uniqueAccountIds);
+    const billingByAccountId = await getAccountBillings(accounts);
+    return accountIds.map(
+      (accountId) => billingByAccountId.get(accountId) ?? EMPTY_ACCOUNT_BILLING,
+    );
+  });
 }
 
 /** An owner of a team, as needed to write to them. */
@@ -1881,7 +1882,7 @@ export const createLoaders = () => ({
   AccountLastBuildDateByAccountId:
     createAccountLastBuildDateByAccountIdLoader(),
   AccountActivationByAccountId: createAccountActivationByAccountIdLoader(),
-  AccountPeriodUsageByAccountId: createAccountPeriodUsageByAccountIdLoader(),
+  AccountBillingByAccountId: createAccountBillingByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
   AccountSubscriptionStatusByAccountId:

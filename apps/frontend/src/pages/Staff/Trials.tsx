@@ -72,14 +72,14 @@ const TrialPipelineQuery = graphql(`
         buildsCount
         screenshotsCount
         firstComparisonAt
+        plan {
+          id
+          name
+          displayName
+        }
         periodUsage {
           storybookRatio
           storybookScreenshotsCount
-          plan {
-            id
-            name
-            displayName
-          }
           billingPeriods {
             from
             to
@@ -286,7 +286,11 @@ function getEstimatedPrice(team: PipelineTeam): number | null {
     return null;
   }
 
-  const flatPrice = getFlatPrice(periodUsage.plan.name);
+  // Usage to price means a usage-based plan was resolved to price it against.
+  const { plan } = team.staff;
+  invariant(plan, "a team billed by usage is on a plan");
+
+  const flatPrice = getFlatPrice(plan.name);
 
   switch (team.subscriptionStatus) {
     case AccountSubscriptionStatus.Active: {
@@ -523,32 +527,68 @@ function ScreenshotsCell(props: { team: PipelineTeam }) {
 }
 
 /**
- * What the team is billed per month, with the plan named underneath when it is
- * not Pro.
+ * The plan named under the amount, whenever it is not Pro.
  *
  * Silent on Pro, which is nearly every row and the one plan whose flat price is
- * public: the marker exists to say that the flat half of this number is a
- * stand-in for a negotiated contract, so it belongs on the exceptions only. The
- * overage half stays right whatever the plan — the per screenshot prices are
- * stored on the subscription itself.
+ * public. On the rows that carry a price it says the flat half of that number is
+ * a stand-in for a negotiated contract; on the rows that carry none it says why
+ * there is none — a flat or a granted plan has no overage of ours to quote, and
+ * a bare em dash next to an active team reads as missing data instead.
  */
+function PlanMarker(props: {
+  plan: NonNullable<PipelineTeam["staff"]["plan"]>;
+  priced: boolean;
+}) {
+  const { plan, priced } = props;
+
+  if (plan.name === PRO_PLAN_NAME) {
+    return null;
+  }
+
+  return (
+    <Tooltip
+      content={
+        priced
+          ? `Billed on ${plan.displayName}, whose flat price is negotiated rather than published: the ${formatPrice(getFlatPrice(plan.name), Currency.Usd)} half of this estimate is a stand-in. The overage half is read from the subscription and holds whatever the plan.`
+          : `On ${plan.displayName}, which Argos does not bill by usage — there is no overage of ours to put a figure on.`
+      }
+    >
+      {/* Plan names are free text and some are long enough to overrun the
+          column, which is narrow and fixed. Truncated rather than wrapped: the
+          tooltip already carries the whole name, and a second line would push
+          the amount off the row's centerline. */}
+      <div className="text-low truncate text-xs">{plan.displayName}</div>
+    </Tooltip>
+  );
+}
+
+/** What the team is billed per month, with the plan named under it. */
 function EstimatedPriceCell(props: { team: PipelineTeam }) {
   const { team } = props;
+  const { plan } = team.staff;
   const price = getEstimatedPrice(team);
 
   if (price === null) {
-    return <span className="text-low">—</span>;
+    return (
+      <div>
+        <span className="text-low">—</span>
+        {plan ? <PlanMarker plan={plan} priced={false} /> : null}
+      </div>
+    );
   }
 
   const { periodUsage } = team.staff;
   invariant(periodUsage, "a priced team is on a usage-based plan");
+  invariant(plan, "a priced team is on a plan");
   invariant(team.subscription, "a priced team has a subscription");
 
   const period = getBilledPeriod(periodUsage.billingPeriods);
-  const { plan } = periodUsage;
 
+  // A block rather than an inline box: the plan line below needs the width of
+  // the whole cell to know where to truncate. The column is already right
+  // aligned, so the amount does not move.
   return (
-    <div className="inline-block text-right">
+    <div>
       <Tooltip
         content={
           period?.closed
@@ -560,13 +600,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
           {formatPrice(price, team.subscription.currency)}
         </span>
       </Tooltip>
-      {plan.name === PRO_PLAN_NAME ? null : (
-        <Tooltip
-          content={`Billed on ${plan.displayName}, whose flat price is negotiated rather than published: the ${formatPrice(getFlatPrice(plan.name), team.subscription.currency)} half of this estimate is a stand-in. The overage half is read from the subscription and holds whatever the plan.`}
-        >
-          <div className="text-low text-xs">{plan.displayName}</div>
-        </Tooltip>
-      )}
+      <PlanMarker plan={plan} priced />
     </div>
   );
 }
