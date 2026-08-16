@@ -1,11 +1,9 @@
 import clsx from "clsx";
 import { parseAsStringEnum } from "nuqs";
-import { MenuTrigger } from "react-aria-components";
 
 import { BuildStatus } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { SelectButton } from "@/ui/Select";
 import { StackedItems } from "@/ui/StackedItems";
 import { buildStatusDescriptors } from "@/util/build";
@@ -43,56 +41,60 @@ export function BuildStatusFilter(props: {
 }) {
   const { value, onChange } = props;
   return (
-    <MenuTrigger>
-      <SelectButton className="text-sm">
-        <StackedItems>
-          {BuildStatuses.map((status) => {
-            return (
-              <div
-                key={status}
-                className={clsx(
-                  "size-2.5 rounded-full border",
-                  value.has(status)
-                    ? bgSolidColorClassNames[
-                        buildStatusDescriptors[status].color
-                      ]
-                    : "bg-app",
-                )}
-              />
-            );
-          })}
-        </StackedItems>
-        Status
-        <Badge>
-          {value.size}/{BuildStatuses.length}
-        </Badge>
-      </SelectButton>
-      <Popover>
-        <Menu
-          aria-label="Build status"
-          selectionMode="multiple"
-          selectedKeys={value}
-          onSelectionChange={(keys) => {
-            if (keys === "all") {
-              return;
-            }
-            onChange(keys as Set<BuildStatus>);
-          }}
-        >
-          {BuildStatuses.map((status) => {
-            const descriptor = buildStatusDescriptors[status];
-            const Icon = descriptor.icon;
-            return (
-              <MenuItem key={status} id={status} textValue={descriptor.label}>
-                <MenuItemIcon>
-                  <Icon className={lowTextColorClassNames[descriptor.color]} />
-                </MenuItemIcon>
-                {descriptor.label}
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <SelectButton className="text-sm">
+          <StackedItems>
+            {BuildStatuses.map((status) => {
+              return (
+                <div
+                  key={status}
+                  className={clsx(
+                    "size-2.5 rounded-full border",
+                    value.has(status)
+                      ? bgSolidColorClassNames[
+                          buildStatusDescriptors[status].color
+                        ]
+                      : "bg-app",
+                  )}
+                />
+              );
+            })}
+          </StackedItems>
+          Status
+          <Badge>
+            {value.size}/{BuildStatuses.length}
+          </Badge>
+        </SelectButton>
+      </MenuTrigger>
+      <Menu aria-label="Build status">
+        {BuildStatuses.map((status) => {
+          const descriptor = buildStatusDescriptors[status];
+          const Icon = descriptor.icon;
+          return (
+            <MenuItem
+              icon={
+                <Icon className={lowTextColorClassNames[descriptor.color]} />
+              }
+              checkbox
+              key={status}
+              textValue={descriptor.label}
+              checked={value.has(status)}
+              onCheckedChange={(checked: boolean) => {
+                const next = new Set(value);
+                if (checked) {
+                  next.add(status);
+                } else {
+                  next.delete(status);
+                }
+                onChange(next);
+              }}
+            >
+              {descriptor.label}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </MenuRoot>
   );
 }

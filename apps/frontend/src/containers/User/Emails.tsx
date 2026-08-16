@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon, PlusIcon } from "lucide-react";
-import { DialogTrigger, MenuTrigger } from "react-aria-components";
+import { DialogTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -15,9 +15,14 @@ import {
 import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemTooltip } from "@/ui/Menu";
+import {
+  Menu,
+  MenuItem,
+  MenuItemTooltip,
+  MenuRoot,
+  MenuTrigger,
+} from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -110,54 +115,54 @@ export function UserEmails(props: {
                   {!email.verified ? (
                     <SendUserEmailVerificationButton email={email.email} />
                   ) : null}
-                  <MenuTrigger>
-                    <Button variant="ghost" iconOnly>
-                      <MoreVerticalIcon />
-                    </Button>
-                    <Popover>
-                      <Menu aria-label="Actions">
-                        {!isPrimary && (
-                          <MenuItem
-                            isDisabled={!email.verified}
-                            onAction={() => {
-                              client
-                                .mutate({
-                                  mutation: SetPrimaryEmailMutation,
-                                  variables: { email: email.email },
-                                  optimisticResponse: {
-                                    setPrimaryEmail: {
-                                      __typename: "User",
-                                      id: account.id,
-                                      email: email.email,
-                                    },
-                                  },
-                                })
-                                .catch((error) => {
-                                  toast.error(getErrorMessage(error));
-                                });
-                            }}
-                          >
-                            {!email.verified && (
-                              <MenuItemTooltip content="Verify email before setting as primary" />
-                            )}
-                            Set as primary
-                          </MenuItem>
-                        )}
+                  <MenuRoot>
+                    <MenuTrigger>
+                      <Button variant="ghost" iconOnly>
+                        <MoreVerticalIcon />
+                      </Button>
+                    </MenuTrigger>
+                    <Menu aria-label="Actions">
+                      {!isPrimary && (
                         <MenuItem
-                          variant="danger"
-                          isDisabled={isPrimary}
+                          disabled={!email.verified}
                           onAction={() => {
-                            deleting.open(email.email);
+                            client
+                              .mutate({
+                                mutation: SetPrimaryEmailMutation,
+                                variables: { email: email.email },
+                                optimisticResponse: {
+                                  setPrimaryEmail: {
+                                    __typename: "User",
+                                    id: account.id,
+                                    email: email.email,
+                                  },
+                                },
+                              })
+                              .catch((error) => {
+                                toast.error(getErrorMessage(error));
+                              });
                           }}
                         >
-                          {isPrimary && (
-                            <MenuItemTooltip content="Primary email cannot be deleted" />
+                          {!email.verified && (
+                            <MenuItemTooltip content="Verify email before setting as primary" />
                           )}
-                          Delete
+                          Set as primary
                         </MenuItem>
-                      </Menu>
-                    </Popover>
-                  </MenuTrigger>
+                      )}
+                      <MenuItem
+                        variant="danger"
+                        disabled={isPrimary}
+                        onAction={() => {
+                          deleting.open(email.email);
+                        }}
+                      >
+                        {isPrimary && (
+                          <MenuItemTooltip content="Primary email cannot be deleted" />
+                        )}
+                        Delete
+                      </MenuItem>
+                    </Menu>
+                  </MenuRoot>
                 </div>
               </ListRow>
             );

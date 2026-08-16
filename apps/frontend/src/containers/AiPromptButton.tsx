@@ -14,12 +14,12 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import {
   Menu,
   MenuItem,
-  MenuItemIcon,
+  MenuRoot,
   MenuSeparator,
   MenuTrigger,
-  SubmenuTrigger,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+  SubMenu,
+  SubMenuContent,
+} from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
 import { AI_AGENTS, type AiAgentId } from "@/util/ai-agents";
 
@@ -94,7 +94,11 @@ function PrimaryContent(props: {
  * the rows can confirm it in its own way — the button relabels itself, a menu
  * that closes on the click has to say it another way.
  */
-export function AiPromptTargetItems(props: {
+/**
+ * The rows for one prompt, as a function rather than a component: a menu reads
+ * its children and cannot see inside one.
+ */
+export function getAiPromptTargetItems(props: {
   entry: AiPrompt;
   onPick: (target: AiPromptTarget) => void;
   onCopy: (entry: AiPrompt) => void;
@@ -104,28 +108,24 @@ export function AiPromptTargetItems(props: {
     <>
       {AI_AGENTS.map(({ id, name, Icon, getURL }) => (
         <MenuItem
+          icon={<Icon />}
           key={id}
           href={getURL(entry.prompt)}
           textValue={name}
           onAction={() => onPick(id)}
         >
-          <MenuItemIcon>
-            <Icon />
-          </MenuItemIcon>
           Open in {name}
         </MenuItem>
       ))}
       <MenuSeparator />
       <MenuItem
+        icon={<CopyIcon />}
         textValue={`Copy ${entry.name}`}
         onAction={() => {
           onPick(COPY_TARGET);
           onCopy(entry);
         }}
       >
-        <MenuItemIcon>
-          <CopyIcon />
-        </MenuItemIcon>
         Copy {entry.name}
       </MenuItem>
     </>
@@ -166,9 +166,8 @@ export function AiPromptButton(props: {
   // A target this build no longer offers falls back to copying, which always
   // works.
   const agent = AI_AGENTS.find(({ id }) => id === target) ?? null;
-  const targetItems = (entry: AiPrompt) => (
-    <AiPromptTargetItems entry={entry} onPick={setTarget} onCopy={copy} />
-  );
+  const targetItems = (entry: AiPrompt) =>
+    getAiPromptTargetItems({ entry, onPick: setTarget, onCopy: copy });
 
   return (
     <ButtonGroup>
@@ -208,39 +207,37 @@ export function AiPromptButton(props: {
           </Button>
         </Tooltip>
       )}
-      <MenuTrigger>
-        <Button
-          variant="secondary"
-          size={size}
-          iconOnly
-          aria-label={
-            prompts.length > 1
-              ? "Choose what to hand to an agent"
-              : `Choose what to do with the ${primary.name}`
-          }
-        >
-          <ChevronDownIcon />
-        </Button>
+      <MenuRoot>
+        <MenuTrigger>
+          <Button
+            variant="secondary"
+            size={size}
+            iconOnly
+            aria-label={
+              prompts.length > 1
+                ? "Choose what to hand to an agent"
+                : `Choose what to do with the ${primary.name}`
+            }
+          >
+            <ChevronDownIcon />
+          </Button>
+        </MenuTrigger>
         {/* Anchored on its right edge: the menu is much wider than the button,
             and the button sits at the right of a header, so aligning it the
             other way only to be pushed back in reads as a stutter. */}
-        <Popover placement="bottom end">
-          {prompts.length > 1 ? (
-            <Menu aria-label="Agent prompts">
-              {prompts.map((entry) => (
-                <SubmenuTrigger key={entry.label}>
-                  <MenuItem textValue={entry.label}>{entry.label}</MenuItem>
-                  <Popover>
-                    <Menu aria-label={entry.label}>{targetItems(entry)}</Menu>
-                  </Popover>
-                </SubmenuTrigger>
-              ))}
-            </Menu>
-          ) : (
-            <Menu aria-label={primary.name}>{targetItems(primary)}</Menu>
-          )}
-        </Popover>
-      </MenuTrigger>
+        {prompts.length > 1 ? (
+          <Menu side="bottom" align="end" aria-label="Agent prompts">
+            {prompts.map((entry) => (
+              <SubMenu key={entry.label}>
+                <MenuItem textValue={entry.label}>{entry.label}</MenuItem>
+                <SubMenuContent>{targetItems(entry)}</SubMenuContent>
+              </SubMenu>
+            ))}
+          </Menu>
+        ) : (
+          <Menu aria-label={primary.name}>{targetItems(primary)}</Menu>
+        )}
+      </MenuRoot>
     </ButtonGroup>
   );
 }

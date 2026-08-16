@@ -1,7 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
 import { ShieldUserIcon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -15,7 +14,7 @@ import {
   BreadcrumbLink,
   BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
-import { Popover } from "@/ui/Popover";
+import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
@@ -90,6 +89,10 @@ export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
   const auth = useAuth();
   const isStaffArea = Boolean(useMatch("/staff/*"));
+  // Not just authenticated: the menu needs the resolved account, because its
+  // rows must all exist the moment it can be opened. The button appears with
+  // the answer, a beat after the trail does.
+  const account = auth.status === "authenticated" ? auth.account : null;
 
   return (
     <BreadcrumbItem>
@@ -100,14 +103,14 @@ export function AccountBreadcrumbItem() {
       ) : (
         <HomeBreadcrumbLink />
       )}
-      {auth.status === "authenticated" && (
-        <MenuTrigger>
-          <BreadcrumbMenuButton />
-          <Popover placement="bottom start">
-            <AccountBreadcrumbMenu />
-          </Popover>
-        </MenuTrigger>
-      )}
+      {account ? (
+        <MenuRoot>
+          <MenuTrigger>
+            <BreadcrumbMenuButton />
+          </MenuTrigger>
+          <AccountBreadcrumbMenu account={account} />
+        </MenuRoot>
+      ) : null}
     </BreadcrumbItem>
   );
 }

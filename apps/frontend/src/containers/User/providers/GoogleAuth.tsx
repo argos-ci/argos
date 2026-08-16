@@ -1,11 +1,9 @@
 import { useApolloClient } from "@apollo/client/react";
 import { ExternalLinkIcon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { GoogleLoginButton, GoogleLogo } from "@/containers/Google";
 import { DocumentType, graphql } from "@/gql";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { getOAuthURL } from "@/util/oauth";
 
 import {
@@ -79,31 +77,29 @@ export function GoogleAuth(props: {
           {account.googleUser.lastLoggedAt && (
             <ProviderLastLoggedAt date={account.googleUser.lastLoggedAt} />
           )}
-          <MenuTrigger>
-            <ProviderMenuButton />
-            <Popover>
-              <Menu aria-label="Google options">
-                <MenuItem
-                  href="https://myaccount.google.com/connections"
-                  target="_blank"
-                >
-                  Manage on google.com
-                  <MenuItemIcon position="right">
-                    <ExternalLinkIcon />
-                  </MenuItemIcon>
-                </MenuItem>
-                <ReconnectGoogleMenuItem />
-                <MenuItem
-                  variant="danger"
-                  onAction={() => {
-                    disconnect();
-                  }}
-                >
-                  Disconnect
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+          <MenuRoot>
+            <MenuTrigger>
+              <ProviderMenuButton />
+            </MenuTrigger>
+            <Menu aria-label="Google options">
+              <MenuItem
+                icon={<ExternalLinkIcon />}
+                href="https://myaccount.google.com/connections"
+                target="_blank"
+              >
+                Manage on google.com
+              </MenuItem>
+              {getReconnectGoogleMenuItem()}
+              <MenuItem
+                variant="danger"
+                onAction={() => {
+                  disconnect();
+                }}
+              >
+                Disconnect
+              </MenuItem>
+            </Menu>
+          </MenuRoot>
         </>
       ) : (
         <GoogleLoginButton>Connect Google</GoogleLoginButton>
@@ -112,7 +108,8 @@ export function GoogleAuth(props: {
   );
 }
 
-function ReconnectGoogleMenuItem() {
+/** A function, not a component: a menu cannot see inside one. */
+function getReconnectGoogleMenuItem() {
   const url = getOAuthURL({
     provider: "google",
     redirect: null,

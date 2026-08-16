@@ -1,37 +1,13 @@
-import { useQuery } from "@apollo/client/react";
 import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
-import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router";
 
-import { DocumentType, graphql } from "@/gql";
+import type { AuthAccount } from "@/containers/Auth";
 import { getAccountURL } from "@/pages/Account/AccountParams";
-import { Menu, MenuItem, MenuItemIcon, MenuLoader, MenuTitle } from "@/ui/Menu";
+import { Menu, MenuHeading, MenuItem, MenuSection } from "@/ui/menu-kit";
 
-import { AccountItem } from "../AccountItem";
+import { AccountItem, type AccountItemProps } from "../AccountItem";
 
-const _AccountFragment = graphql(`
-  fragment AccountBreadcrumbMenu_Account on Account {
-    id
-    slug
-    ...AccountItem_Account
-  }
-`);
-
-const MeQuery = graphql(`
-  query AccountBreadcrumbMenu_me {
-    me {
-      id
-      staff
-      ...AccountBreadcrumbMenu_Account
-      teams {
-        id
-        ...AccountBreadcrumbMenu_Account
-      }
-    }
-  }
-`);
-
-type Account = DocumentType<typeof _AccountFragment>;
+type Account = AccountItemProps["account"];
 
 function resolveAccountPath(slug: string, pathname: string) {
   if (matchPath("/:slug/settings/*", pathname)) {
@@ -41,14 +17,17 @@ function resolveAccountPath(slug: string, pathname: string) {
   return getAccountURL({ accountSlug: slug });
 }
 
-function AccountMenuItems(props: { accounts: Account[] }) {
-  const { accounts } = props;
-  const location = useLocation();
+/** The rows for a list of accounts, handed straight to the menu. */
+function getAccountMenuItems(accounts: Account[], pathname: string) {
   return accounts.map((account) => {
     return (
       <MenuItem
         key={account.id}
-        href={resolveAccountPath(account.slug, location.pathname)}
+        // The row renders a component, which contributes nothing to the
+        // query — without these, typing an account's name finds nothing.
+        textValue={account.name || account.slug}
+        keywords={account.name ? [account.slug] : []}
+        href={resolveAccountPath(account.slug, pathname)}
       >
         <AccountItem account={account} />
       </MenuItem>
@@ -56,50 +35,37 @@ function AccountMenuItems(props: { accounts: Account[] }) {
   });
 }
 
-export function AccountBreadcrumbMenu() {
-  const { data, error } = useQuery(MeQuery);
-
-  if (error) {
-    throw error;
-  }
-
-  if (data && !data.me) {
-    return null;
-  }
+/**
+ * Renders from the viewer resolved by `Auth` rather than a query of its own: a
+ * menu's rows are read when it opens and filtered as you type, so they have to
+ * all be there from the start — a row that swaps in when a query lands would
+ * never be seen by the filter. The accounts travel with the session for
+ * exactly this reason.
+ */
+export function AccountBreadcrumbMenu(props: { account: AuthAccount }) {
+  const { account } = props;
+  const location = useLocation();
 
   return (
-    <Menu>
+    <Menu side="bottom" align="start">
       <MenuSection>
-        <MenuTitle>Personal</MenuTitle>
-        {data?.me ? <AccountMenuItems accounts={[data.me]} /> : <MenuLoader />}
+        <MenuHeading>Personal</MenuHeading>
+        {getAccountMenuItems([account], location.pathname)}
       </MenuSection>
       <MenuSection>
-        <MenuTitle>Teams</MenuTitle>
-        {data?.me ? (
-          <AccountMenuItems accounts={data.me.teams} />
-        ) : (
-          <MenuLoader />
-        )}
-        <MenuItem href="/teams/new">
-          <MenuItemIcon>
-            <PlusCircleIcon />
-          </MenuItemIcon>
+        <MenuHeading>Teams</MenuHeading>
+        {getAccountMenuItems(account.teams, location.pathname)}
+        <MenuItem icon={<PlusCircleIcon />} href="/teams/new">
           Create a Team
         </MenuItem>
       </MenuSection>
-      {data?.me?.staff ? (
+      {account.staff ? (
         <MenuSection>
-          <MenuTitle>Staff</MenuTitle>
-          <MenuItem href="/staff/teams">
-            <MenuItemIcon>
-              <ShieldUserIcon />
-            </MenuItemIcon>
+          <MenuHeading>Staff</MenuHeading>
+          <MenuItem icon={<ShieldUserIcon />} href="/staff/teams">
             All teams
           </MenuItem>
-          <MenuItem href="/staff/trials">
-            <MenuItemIcon>
-              <ShieldUserIcon />
-            </MenuItemIcon>
+          <MenuItem icon={<ShieldUserIcon />} href="/staff/trials">
             Trials
           </MenuItem>
         </MenuSection>

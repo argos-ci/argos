@@ -229,6 +229,15 @@
 
   --z-index-hover-card: 800;
   --z-index-dialog: 900;
+  /* Above the dialog, because a menu opened from inside one has to float over
+     it. React Aria put an inline `z-index: 100000` on its popover portal, so a
+     popup cleared every overlay in the app for free; Base UI portals without a
+     z-index, which left menus tying with `z-50` overlays like the comment
+     popover and losing on DOM order. */
+  --z-index-popup: 1000;
+  /* Above the popup: a tooltip explains the thing under the pointer, and that
+     thing is often a row in an open menu. */
+  --z-index-tooltip: 1100;
 
   --border-width-thin: 0.5px;
   --spacing-thin: 0.5px;

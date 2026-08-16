@@ -64,6 +64,11 @@ const MeQuery = graphql(`
       avatar {
         ...AccountAvatarFragment
       }
+      ...AccountItem_Account
+      teams {
+        id
+        ...AccountItem_Account
+      }
     }
   }
 `);

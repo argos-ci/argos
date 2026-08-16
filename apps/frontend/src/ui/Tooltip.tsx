@@ -51,6 +51,9 @@ function TooltipSurface(props: {
         align={payload.align}
         sideOffset={4}
         className={clsx(
+          // On the positioner, not the popup: Base UI's popup is
+          // `position: static`, and z-index does nothing on a static element.
+          "z-tooltip",
           !disableAnimation && [
             // Sizing the positioner to the popup is what lets the box travel
             // and resize together rather than jumping.

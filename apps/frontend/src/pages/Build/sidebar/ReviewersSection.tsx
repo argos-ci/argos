@@ -2,19 +2,7 @@ import { useMemo, useState } from "react";
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import {
-  BanIcon,
-  MoreHorizontalIcon,
-  PlusIcon,
-  SearchIcon,
-} from "lucide-react";
-import {
-  Autocomplete,
-  Input,
-  SearchField,
-  useFilter,
-  type Selection,
-} from "react-aria-components";
+import { BanIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAuth } from "@/containers/Auth";
@@ -36,10 +24,9 @@ import {
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
-import { Popover } from "@/ui/Popover";
 import { getUserCardData } from "@/ui/UserCard";
 import {
   getLatestActiveReviewByUser,
@@ -256,7 +243,6 @@ function RequestReviewersMenu(props: { build: Build }) {
   const { build } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
-  const { contains } = useFilter({ sensitivity: "base" });
   const [isOpen, setIsOpen] = useState(false);
   const hotkey = useBuildHotkey("requestReviewers", () => setIsOpen(true));
   const client = useApolloClient();
@@ -311,18 +297,19 @@ function RequestReviewersMenu(props: { build: Build }) {
     () => new Set([...requested, ...reviewedKeys]),
     [requested, reviewedKeys],
   );
-  const disabledKeys = useMemo(() => new Set(reviewedKeys), [reviewedKeys]);
 
-  const handleSelectionChange = (keys: Selection) => {
-    if (keys === "all") {
+  const toggleReviewer = (id: string, checked: boolean) => {
+    // Already-reviewed members stay selected — only diff the toggleable ones.
+    const reviewed = new Set(reviewedKeys);
+    if (reviewed.has(id)) {
       return;
     }
-    // Disabled (already reviewed) keys stay selected — only diff the toggleable
-    // ones.
-    const reviewed = new Set(reviewedKeys);
-    const next = new Set(
-      Array.from(keys, String).filter((id) => !reviewed.has(id)),
-    );
+    const next = new Set(requested);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
     const added = [...next].filter((id) => !requested.has(id));
     const removed = [...requested].filter((id) => !next.has(id));
     setRequested(next);
@@ -354,60 +341,48 @@ function RequestReviewersMenu(props: { build: Build }) {
   };
 
   return (
-    <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+    <MenuRoot open={isOpen} onOpenChange={setIsOpen}>
       <HotkeyTooltip description="Add reviewer" keys={hotkey.displayKeys}>
-        <Button variant="ghost" iconOnly size="small" aria-label="Add reviewer">
-          <PlusIcon />
-        </Button>
+        <MenuTrigger>
+          <Button
+            variant="ghost"
+            iconOnly
+            size="small"
+            aria-label="Add reviewer"
+          >
+            <PlusIcon />
+          </Button>
+        </MenuTrigger>
       </HotkeyTooltip>
-      <Popover placement="bottom end" className="bg-app min-w-56">
-        <Autocomplete filter={contains}>
-          <div className="flex w-full flex-col gap-1" data-hotkeys-disabled>
-            <SearchField
-              aria-label="Search members"
-              autoFocus
-              className="border-b"
-            >
-              <div className="relative flex items-center px-3 py-1.5">
-                <SearchIcon className="text-placeholder mr-2 size-4 shrink-0" />
-                <Input
-                  className="placeholder:text-placeholder w-full bg-transparent text-sm outline-none"
-                  placeholder="Search members…"
-                />
-              </div>
-            </SearchField>
-            <Menu
-              aria-label="Project members"
-              className="max-h-64 w-full overflow-y-auto"
-              selectionMode="multiple"
-              selectedKeys={selectedKeys}
-              disabledKeys={disabledKeys}
-              onSelectionChange={handleSelectionChange}
-              items={members}
-              renderEmptyState={() => (
-                <p className="text-low px-2 py-1.5 text-xs">No members found</p>
-              )}
-            >
-              {(member) => (
-                <MenuItem
-                  id={member.id}
-                  textValue={[member.name, member.slug]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <AccountAvatar
-                    avatar={member.avatar}
-                    className="mr-2 size-5 shrink-0"
-                    alt={member.name ?? undefined}
-                  />
-                  <span className="truncate">{member.name || member.slug}</span>
-                </MenuItem>
-              )}
-            </Menu>
-          </div>
-        </Autocomplete>
-      </Popover>
-    </MenuTrigger>
+      <Menu
+        side="bottom"
+        align="end"
+        aria-label="Project members"
+        search="Search members…"
+        noResultsPlaceholder="No members found"
+      >
+        {members.map((member) => (
+          <MenuItem
+            key={member.id}
+            checkbox
+            checked={selectedKeys.has(member.id)}
+            disabled={reviewedKeys.includes(member.id)}
+            textValue={[member.name, member.slug].filter(Boolean).join(" ")}
+            subtitle={member.slug}
+            icon={
+              <AccountAvatar
+                avatar={member.avatar}
+                className="size-5 shrink-0"
+                alt={member.name ?? undefined}
+              />
+            }
+            onCheckedChange={(checked) => toggleReviewer(member.id, checked)}
+          >
+            {member.name || member.slug}
+          </MenuItem>
+        ))}
+      </Menu>
+    </MenuRoot>
   );
 }
 
@@ -417,27 +392,28 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
   }
 
   return (
-    <MenuTrigger>
-      <Button
-        variant="ghost"
-        iconOnly
-        data-actions-menu=""
-        size="small"
-        aria-label="Review actions"
-      >
-        <MoreHorizontalIcon />
-      </Button>
-      <Popover placement="bottom end">
-        <Menu aria-label="Review actions">
-          <MenuItem variant="danger" onAction={props.onDismiss}>
-            <MenuItemIcon>
-              <BanIcon />
-            </MenuItemIcon>
-            Dismiss review
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <Button
+          variant="ghost"
+          iconOnly
+          data-actions-menu=""
+          size="small"
+          aria-label="Review actions"
+        >
+          <MoreHorizontalIcon />
+        </Button>
+      </MenuTrigger>
+      <Menu side="bottom" align="end" aria-label="Review actions">
+        <MenuItem
+          icon={<BanIcon />}
+          variant="danger"
+          onAction={props.onDismiss}
+        >
+          Dismiss review
+        </MenuItem>
+      </Menu>
+    </MenuRoot>
   );
 }
 

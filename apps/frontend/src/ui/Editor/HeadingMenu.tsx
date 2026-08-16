@@ -3,8 +3,7 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Kbd } from "@/ui/Kbd";
-import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { Button } from "../Button";
 import { ALT, MOD } from "./EditorToolbar.shortcuts";
@@ -35,46 +34,46 @@ export function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
   const tooltipKeys = [...selectedOption.keys];
 
   return (
-    <MenuTrigger>
+    <MenuRoot>
+      {/* The tooltip wraps the menu button rather than the other way round:
+          Base UI triggers compose through `render`, so the outer one hands its
+          props down to the inner one and both reach the button. */}
       <HotkeyTooltip description={selectedOption.label} keys={tooltipKeys}>
-        <Button size="small" variant="ghost" aria-label="Text style">
-          <span className="font-medium">Aa</span>
-          <ChevronDownIcon className="size-3" />
-        </Button>
+        <MenuTrigger>
+          <Button size="small" variant="ghost" aria-label="Text style">
+            <span className="font-medium">Aa</span>
+            <ChevronDownIcon className="size-3" />
+          </Button>
+        </MenuTrigger>
       </HotkeyTooltip>
-      <Popover>
-        <Menu
-          aria-label="Text style"
-          selectionMode="single"
-          selectedKeys={[selectedKey]}
-          onAction={(key) => {
-            const chain = editor.chain().focus();
-            if (key === "paragraph") {
-              chain.setParagraph().run();
-            } else {
-              const level = Number(key) as 1 | 2 | 3 | 4 | 5 | 6;
-              chain.toggleHeading({ level }).run();
-            }
-          }}
-          className="min-w-52"
-        >
-          {HEADING_OPTIONS.map((option) => (
-            <MenuItem key={option.key} id={option.key} textValue={option.label}>
-              <span className={getHeadingItemClassName(option.key)}>
-                {option.label}
-              </span>
-              <MenuItemShortcut>
-                {option.keys.map((key) => (
-                  <Kbd key={key} className="ml-0.5">
-                    {key}
-                  </Kbd>
-                ))}
-              </MenuItemShortcut>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+      <Menu aria-label="Text style" className="min-w-52">
+        {HEADING_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.key}
+            textValue={option.label}
+            checked={selectedKey === option.key}
+            keyboardShortcut={option.keys.map((key) => (
+              <Kbd key={key} className="ml-0.5">
+                {key}
+              </Kbd>
+            ))}
+            onAction={() => {
+              const chain = editor.chain().focus();
+              if (option.key === "paragraph") {
+                chain.setParagraph().run();
+              } else {
+                const level = Number(option.key) as 1 | 2 | 3 | 4 | 5 | 6;
+                chain.toggleHeading({ level }).run();
+              }
+            }}
+          >
+            <span className={getHeadingItemClassName(option.key)}>
+              {option.label}
+            </span>
+          </MenuItem>
+        ))}
+      </Menu>
+    </MenuRoot>
   );
 }
 

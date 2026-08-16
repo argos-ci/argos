@@ -1,84 +1,58 @@
-import { useQuery } from "@apollo/client/react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
-import { MenuSection } from "react-aria-components";
-import { useParams } from "react-router";
 
-import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
   Menu,
+  MenuHeading,
   MenuItem,
-  MenuItemIcon,
-  MenuLoader,
+  MenuSection,
   MenuText,
-  MenuTitle,
-} from "@/ui/Menu";
+} from "@/ui/menu-kit";
 
-const AccountQuery = graphql(`
-  query ProjectBreadcrumbMenu_account($slug: String!) {
-    account(slug: $slug) {
-      id
-      projects(first: 100, after: 0) {
-        edges {
-          id
-          name
-        }
-      }
-    }
-  }
-`);
-
-function Projects(props: { accountSlug: string }) {
-  const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.accountSlug },
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return <MenuLoader />;
-  }
-
-  const projectNames =
-    data.account?.projects.edges
-      .map(({ name }) => name)
-      .sort((sa, sb) => sa.localeCompare(sb)) ?? [];
-
+/**
+ * The project rows, as a function rather than a component: a menu reads its
+ * children and cannot see inside one.
+ */
+function getProjectItems(accountSlug: string, projectNames: string[]) {
   if (projectNames.length === 0) {
     return <MenuText>No active project found</MenuText>;
   }
 
   return projectNames.map((projectName) => {
     return (
-      <MenuItem key={projectName} href={`${props.accountSlug}/${projectName}`}>
-        <MenuItemIcon>
-          <FolderCodeIcon size={18} />
-        </MenuItemIcon>
+      <MenuItem
+        icon={<FolderCodeIcon size={18} />}
+        key={projectName}
+        href={`${accountSlug}/${projectName}`}
+      >
         {projectName}
       </MenuItem>
     );
   });
 }
 
-export function ProjectBreadcrumbMenu() {
-  const { accountSlug } = useParams();
-
-  if (!accountSlug) {
-    return null;
-  }
+/**
+ * Renders from a list the breadcrumb has already resolved, never from a query
+ * of its own: a menu's rows are read when it opens and filtered as you type,
+ * so they have to all be there from the start.
+ */
+export function ProjectBreadcrumbMenu(props: {
+  accountSlug: string;
+  projectNames: string[];
+}) {
+  const { accountSlug, projectNames } = props;
+  const sortedNames = [...projectNames].sort((sa, sb) => sa.localeCompare(sb));
 
   return (
-    <Menu>
+    <Menu side="bottom" align="start">
       <MenuSection>
-        <MenuTitle>Switch project</MenuTitle>
-        <Projects accountSlug={accountSlug} />
+        <MenuHeading>Switch project</MenuHeading>
+        {getProjectItems(accountSlug, sortedNames)}
       </MenuSection>
-      <MenuItem href={`${getAccountURL({ accountSlug })}/new`}>
-        <MenuItemIcon>
-          <PlusCircleIcon />
-        </MenuItemIcon>
+      <MenuItem
+        icon={<PlusCircleIcon />}
+        href={`${getAccountURL({ accountSlug })}/new`}
+      >
         Create a Project
       </MenuItem>
     </Menu>

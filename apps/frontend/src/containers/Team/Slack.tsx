@@ -4,7 +4,6 @@ import {
   MoreVerticalIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamSlack_AccountFragment } from "@/gql/graphql";
@@ -18,8 +17,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Time } from "@/ui/Time";
 import { getSlackAuthURL } from "@/util/slack";
 
@@ -81,35 +79,33 @@ export function TeamSlack(props: {
               <div className="text-low text-sm">
                 Connected <Time date={account.slackInstallation.connectedAt} />
               </div>
-              <MenuTrigger>
-                <Button variant="ghost" iconOnly className="shrink-0">
-                  <MoreVerticalIcon />
-                </Button>
-                <Popover>
-                  <Menu aria-label="Slack options">
-                    <MenuItem
-                      href={`https://${account.slackInstallation.teamDomain}.slack.com/apps/manage`}
-                      target="_blank"
-                    >
-                      Manage on Slack
-                      <MenuItemIcon position="right">
-                        <ExternalLinkIcon />
-                      </MenuItemIcon>
-                    </MenuItem>
-                    <MenuItem href={authURL} target="_blank">
-                      Re-connect Slack
-                    </MenuItem>
-                    <MenuItem
-                      variant="danger"
-                      onAction={() => {
-                        uninstallSlack().catch(() => {});
-                      }}
-                    >
-                      Disconnect
-                    </MenuItem>
-                  </Menu>
-                </Popover>
-              </MenuTrigger>
+              <MenuRoot>
+                <MenuTrigger>
+                  <Button variant="ghost" iconOnly className="shrink-0">
+                    <MoreVerticalIcon />
+                  </Button>
+                </MenuTrigger>
+                <Menu aria-label="Slack options">
+                  <MenuItem
+                    icon={<ExternalLinkIcon />}
+                    href={`https://${account.slackInstallation.teamDomain}.slack.com/apps/manage`}
+                    target="_blank"
+                  >
+                    Manage on Slack
+                  </MenuItem>
+                  <MenuItem href={authURL} target="_blank">
+                    Re-connect Slack
+                  </MenuItem>
+                  <MenuItem
+                    variant="danger"
+                    onAction={() => {
+                      uninstallSlack().catch(() => {});
+                    }}
+                  >
+                    Disconnect
+                  </MenuItem>
+                </Menu>
+              </MenuRoot>
             </div>
           </Card>
         )}

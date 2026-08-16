@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import clsx from "clsx";
 import {
   ActivitySquareIcon,
@@ -13,7 +12,7 @@ import {
   ShieldUserIcon,
   SunIcon,
 } from "lucide-react";
-import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
+import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
@@ -23,12 +22,12 @@ import { ColorMode, useColorMode } from "@/ui/ColorMode";
 import {
   Menu,
   MenuItem,
-  MenuItemIcon,
-  MenuItemShortcut,
+  MenuRoot,
   MenuSeparator,
   MenuTrigger,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+  SubMenu,
+  SubMenuContent,
+} from "@/ui/menu-kit";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { useBuildHotkeysDialogState } from "./Build/BuildHotkeysDialogState";
@@ -56,141 +55,118 @@ function getColorModeLabel(colorMode: ColorMode | "system") {
   }
 }
 
-function ColorModeSubmenu() {
-  const { colorMode, setColorMode } = useColorMode();
-  const value = colorMode ?? "system";
-  const selected = useMemo(
-    () => new Set<ColorMode | "system">([value]),
-    [value],
-  );
+const COLOR_MODES = ["system", ColorMode.Dark, ColorMode.Light] as const;
 
+/**
+ * The theme submenu, as a function rather than a component: a menu reads its
+ * children and cannot see inside one.
+ */
+function getColorModeSubmenu(
+  value: ColorMode | "system",
+  setColorMode: (mode: ColorMode | null) => void,
+) {
   return (
-    <SubmenuTrigger>
-      <MenuItem>
-        <MenuItemIcon>{getColorModeIcon(value)}</MenuItemIcon>
+    <SubMenu>
+      <MenuItem icon={getColorModeIcon(value)}>
         Theme ({getColorModeLabel(value)})
       </MenuItem>
-      <Popover>
-        <Menu
-          aria-label="Color modes"
-          selectionMode="single"
-          selectedKeys={selected}
-          onSelectionChange={(selection) => {
-            const value = Array.from(selection as Set<ColorMode | "system">)[0];
-            setColorMode(!value || value === "system" ? null : value);
-          }}
-        >
-          <MenuItem id="system">
-            <MenuItemIcon>{getColorModeIcon("system")}</MenuItemIcon>
-            {getColorModeLabel("system")}
+      <SubMenuContent>
+        {COLOR_MODES.map((mode) => (
+          <MenuItem
+            key={mode}
+            icon={getColorModeIcon(mode)}
+            checked={value === mode}
+            onAction={() => setColorMode(mode === "system" ? null : mode)}
+          >
+            {getColorModeLabel(mode)}
           </MenuItem>
-          <MenuItem id={ColorMode.Dark}>
-            <MenuItemIcon>{getColorModeIcon(ColorMode.Dark)}</MenuItemIcon>
-            {getColorModeLabel(ColorMode.Dark)}
-          </MenuItem>
-          <MenuItem id={ColorMode.Light}>
-            <MenuItemIcon>{getColorModeIcon(ColorMode.Light)}</MenuItemIcon>
-            {getColorModeLabel(ColorMode.Light)}
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </SubmenuTrigger>
+        ))}
+      </SubMenuContent>
+    </SubMenu>
   );
 }
 
 function UserMenu(props: { account: AuthAccount }) {
   const { account } = props;
   const hotkeysDialog = useBuildHotkeysDialogState();
+  const { colorMode, setColorMode } = useColorMode();
 
   return (
-    <MenuTrigger>
-      <RACButton
-        className={clsx(
-          "rac-focus bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
-          "data-hovered:border-primary-hover data-pressed:border-primary-active aria-expanded:border-primary-active",
-        )}
-        aria-label="User settings"
-      >
-        <AccountAvatar avatar={account.avatar} className="size-7" />
-      </RACButton>
-      <Popover placement="bottom end">
-        <Menu className="w-60">
-          <MenuItem
-            href={`${getAccountURL({ accountSlug: account.slug })}/new`}
-          >
-            <MenuItemIcon>
-              <PlusCircleIcon />
-            </MenuItemIcon>
-            New Project
-          </MenuItem>
-          <MenuItem href="/teams/new">
-            <MenuItemIcon>
-              <PlusCircleIcon />
-            </MenuItemIcon>
-            New Team
-          </MenuItem>
-          <MenuItem
-            href={`${getAccountURL({ accountSlug: account.slug })}/settings`}
-          >
-            <MenuItemIcon>
-              <SettingsIcon />
-            </MenuItemIcon>
-            Settings
-          </MenuItem>
-          {account.staff ? (
-            <>
-              <MenuSeparator />
-              <MenuItem href="/staff">
-                <MenuItemIcon>
-                  <ShieldUserIcon />
-                </MenuItemIcon>
-                Staff
-              </MenuItem>
-            </>
-          ) : null}
-          <MenuSeparator />
-          <ColorModeSubmenu />
-          <MenuSeparator />
-          {hotkeysDialog && (
-            <MenuItem onAction={() => hotkeysDialog.setIsOpen(true)}>
-              <MenuItemIcon>
-                <CommandIcon />
-              </MenuItemIcon>
-              Keyboard shortcuts
-              <MenuItemShortcut>?</MenuItemShortcut>
-            </MenuItem>
+    <MenuRoot>
+      <MenuTrigger>
+        <RACButton
+          className={clsx(
+            "rac-focus bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
+            "data-hovered:border-primary-hover data-pressed:border-primary-active aria-expanded:border-primary-active",
           )}
+          aria-label="User settings"
+        >
+          <AccountAvatar avatar={account.avatar} className="size-7" />
+        </RACButton>
+      </MenuTrigger>
+      <Menu side="bottom" align="end" className="w-60">
+        <MenuItem
+          icon={<PlusCircleIcon />}
+          href={`${getAccountURL({ accountSlug: account.slug })}/new`}
+        >
+          New Project
+        </MenuItem>
+        <MenuItem icon={<PlusCircleIcon />} href="/teams/new">
+          New Team
+        </MenuItem>
+        <MenuItem
+          icon={<SettingsIcon />}
+          href={`${getAccountURL({ accountSlug: account.slug })}/settings`}
+        >
+          Settings
+        </MenuItem>
+        {account.staff ? (
+          <>
+            <MenuSeparator />
+            <MenuItem icon={<ShieldUserIcon />} href="/staff">
+              Staff
+            </MenuItem>
+          </>
+        ) : null}
+        <MenuSeparator />
+        {getColorModeSubmenu(colorMode ?? "system", setColorMode)}
+        <MenuSeparator />
+        {hotkeysDialog && (
           <MenuItem
-            href="https://argos-ci.com/docs/open-source"
-            target="_blank"
+            icon={<CommandIcon />}
+            keyboardShortcut="?"
+            onAction={() => hotkeysDialog.setIsOpen(true)}
           >
-            <MenuItemIcon>
-              <FileTextIcon />
-            </MenuItemIcon>
-            Documentation
+            Keyboard shortcuts
           </MenuItem>
-          <MenuItem href="https://argos-ci.com/discord" target="_blank">
-            <MenuItemIcon>
-              <MessagesSquareIcon />
-            </MenuItemIcon>
-            Discord community
-          </MenuItem>
-          <MenuItem href="https://argos.openstatus.dev" target="_blank">
-            <MenuItemIcon>
-              <ActivitySquareIcon />
-            </MenuItemIcon>
-            Status
-          </MenuItem>
-          <MenuSeparator />
-          <MenuItem onAction={() => logout()}>
-            <MenuItemIcon>
-              <LogOutIcon />
-            </MenuItemIcon>
-            Logout
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+        )}
+        <MenuItem
+          icon={<FileTextIcon />}
+          href="https://argos-ci.com/docs/open-source"
+          target="_blank"
+        >
+          Documentation
+        </MenuItem>
+        <MenuItem
+          icon={<MessagesSquareIcon />}
+          href="https://argos-ci.com/discord"
+          target="_blank"
+        >
+          Discord community
+        </MenuItem>
+        <MenuItem
+          icon={<ActivitySquareIcon />}
+          href="https://argos.openstatus.dev"
+          target="_blank"
+        >
+          Status
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem icon={<LogOutIcon />} onAction={() => logout()}>
+          Logout
+        </MenuItem>
+      </Menu>
+    </MenuRoot>
   );
 }
 

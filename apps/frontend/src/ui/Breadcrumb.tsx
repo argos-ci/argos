@@ -2,7 +2,7 @@ import { HTMLProps } from "react";
 import { clsx } from "clsx";
 
 import { HeadlessLink, HeadlessLinkProps } from "./Link";
-import { UpDownMenuButton, UpDownMenuButtonProps } from "./Menu";
+import { UpDownMenuButton, type UpDownMenuButtonProps } from "./Menu";
 
 export function BreadcrumbItem(props: HTMLProps<HTMLLIElement>) {
   return <li className="flex shrink-0 items-center gap-2" {...props} />;

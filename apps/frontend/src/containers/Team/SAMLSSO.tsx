@@ -8,7 +8,6 @@ import {
   LockIcon,
   MoreVerticalIcon,
 } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 import {
   useController,
   useForm,
@@ -49,9 +48,8 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Separator } from "@/ui/Separator";
 import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputAddon, TextInputGroup } from "@/ui/TextInput";
@@ -209,43 +207,43 @@ export function TeamSAMLSSO(props: {
                     <CircleSlashIcon className="text-low size-6 shrink-0" />
                   </Tooltip>
                 )}
-                <MenuTrigger>
-                  <Button variant="ghost" iconOnly className="shrink-0">
-                    <MoreVerticalIcon />
-                  </Button>
-                  <Popover>
-                    <Menu aria-label="SAML options">
-                      <MenuItem href={getReAuthenticateURL(team.samlSsoUrl)}>
-                        Re-authenticate
-                      </MenuItem>
-                      {team.samlSso.enabled ? (
-                        <MenuItem
-                          onAction={() => {
-                            toggleEnable(false);
-                          }}
-                        >
-                          Disable
-                        </MenuItem>
-                      ) : (
-                        <MenuItem
-                          onAction={() => {
-                            toggleEnable(true);
-                          }}
-                        >
-                          Enable
-                        </MenuItem>
-                      )}
+                <MenuRoot>
+                  <MenuTrigger>
+                    <Button variant="ghost" iconOnly className="shrink-0">
+                      <MoreVerticalIcon />
+                    </Button>
+                  </MenuTrigger>
+                  <Menu aria-label="SAML options">
+                    <MenuItem href={getReAuthenticateURL(team.samlSsoUrl)}>
+                      Re-authenticate
+                    </MenuItem>
+                    {team.samlSso.enabled ? (
                       <MenuItem
-                        variant="danger"
                         onAction={() => {
-                          remove();
+                          toggleEnable(false);
                         }}
                       >
-                        Remove configuration
+                        Disable
                       </MenuItem>
-                    </Menu>
-                  </Popover>
-                </MenuTrigger>
+                    ) : (
+                      <MenuItem
+                        onAction={() => {
+                          toggleEnable(true);
+                        }}
+                      >
+                        Enable
+                      </MenuItem>
+                    )}
+                    <MenuItem
+                      variant="danger"
+                      onAction={() => {
+                        remove();
+                      }}
+                    >
+                      Remove configuration
+                    </MenuItem>
+                  </Menu>
+                </MenuRoot>
               </div>
             </div>
             {team.me?.lastAuthMethod === "saml" ? (
