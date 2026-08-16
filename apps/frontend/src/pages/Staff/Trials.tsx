@@ -30,6 +30,7 @@ import { graphql } from "@/gql";
 import {
   AccountSubscriptionStatus,
   Currency,
+  PlanInterval,
   SignupSource,
 } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
@@ -77,7 +78,9 @@ const TrialPipelineQuery = graphql(`
           id
           name
           displayName
+          interval
         }
+        flatPrice
         periodUsage {
           storybookRatio
           storybookScreenshotsCount
@@ -194,34 +197,41 @@ type SortKey =
 
 const PRO_PLAN_NAME = "pro";
 
-/** Flat monthly price of the Pro plan, in dollars. Exact: it is public. */
+/**
+ * Published monthly price of the Pro plan, in dollars.
+ *
+ * The fallback for a subscription whose own amount is not on file — one that
+ * has not been synced since Argos started reading it from Stripe, or that has
+ * no Stripe price at all. Pro is what a self-serve trial lands on, so it is the
+ * right guess for the rows that need one; a contract on another plan is priced
+ * far too low by it, which is what the plan named under the amount warns about.
+ */
 const PRO_FLAT_PRICE = 100;
 
 /**
- * Flat monthly price to quote per plan, in dollars.
+ * What the plan costs for one billing period, in the subscription's currency.
  *
- * Hardcoded because the flat price is the one part of the pricing that is not
- * persisted: the Stripe sync keeps `includedScreenshots` and the per-screenshot
- * prices on the subscription, but not the plan's own amount.
- *
- * Pro is the plan every self-serve trial lands on and its price is public, so
- * that half of the estimate is exact. Enterprise is a stand-in — those
- * contracts are negotiated one by one, so $1,000 is the order of magnitude
- * rather than the invoice, which is why the plan is named under any row that is
- * not on Pro.
+ * Read from Stripe and stored on the subscription, so a negotiated contract
+ * quotes its own amount rather than a constant of ours.
  */
-const FLAT_PRICES: Record<string, number | undefined> = {
-  [PRO_PLAN_NAME]: PRO_FLAT_PRICE,
-  enterprise: 1000,
-};
+function getPeriodFlatPrice(staff: PipelineTeam["staff"]): number {
+  // Pro is billed monthly, so its published price is already one period's
+  // worth — which is why the fallback needs no conversion.
+  return staff.flatPrice ?? PRO_FLAT_PRICE;
+}
 
 /**
- * A plan we have never priced falls back to Pro's: a new plan is far more
- * likely to be another self-serve tier than a negotiated contract, and the row
- * names it either way.
+ * A period's amount read as a monthly one.
+ *
+ * Everything in this column is per billing period — the plan's price and the
+ * overage alike — and a yearly subscription's period is a year. The column
+ * compares teams against each other, so it holds one unit: the month.
  */
-function getFlatPrice(planName: string): number {
-  return FLAT_PRICES[planName] ?? PRO_FLAT_PRICE;
+function toMonthlyAmount(
+  amount: number,
+  plan: PipelineTeam["staff"]["plan"],
+): number {
+  return plan?.interval === PlanInterval.Year ? amount / 12 : amount;
 }
 
 const PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
@@ -291,16 +301,19 @@ function getEstimatedPrice(team: PipelineTeam): number | null {
   const { plan } = team.staff;
   invariant(plan, "a team billed by usage is on a plan");
 
-  const flatPrice = getFlatPrice(plan.name);
+  const flatPrice = getPeriodFlatPrice(team.staff);
 
   switch (team.subscriptionStatus) {
     case AccountSubscriptionStatus.Active: {
       const period = getBilledPeriod(periodUsage.billingPeriods);
-      return flatPrice + (period?.additionalScreenshotsCost ?? 0);
+      return toMonthlyAmount(
+        flatPrice + (period?.additionalScreenshotsCost ?? 0),
+        plan,
+      );
     }
 
     case AccountSubscriptionStatus.TrialingWithPaymentMethod:
-      return flatPrice;
+      return toMonthlyAmount(flatPrice, plan);
 
     default:
       return null;
@@ -528,32 +541,53 @@ function ScreenshotsCell(props: { team: PipelineTeam }) {
 }
 
 /**
+ * What to say about a plan that is not Pro, under the amount.
+ *
+ * Three different things, because the row means three different things: an
+ * amount read from the contract, an amount guessed because the contract's is
+ * not on file, and no amount at all.
+ */
+function getPlanHint(input: {
+  staff: PipelineTeam["staff"];
+  plan: NonNullable<PipelineTeam["staff"]["plan"]>;
+  priced: boolean;
+}): string {
+  const { staff, plan, priced } = input;
+
+  if (!priced) {
+    return `On ${plan.displayName}, which Argos does not bill by usage — there is no overage of ours to put a figure on.`;
+  }
+
+  if (staff.flatPrice === null) {
+    return `Billed on ${plan.displayName}, whose own amount is not on file — the subscription has not been synced since Argos started reading it from Stripe, so the flat half of this estimate falls back to Pro's ${formatPrice(PRO_FLAT_PRICE, Currency.Usd)} and is almost certainly too low.`;
+  }
+
+  return `Billed on ${plan.displayName}. The flat half is the amount Stripe holds for this subscription, not a price of ours.`;
+}
+
+/**
  * The plan named under the amount, whenever it is not Pro.
  *
- * Silent on Pro, which is nearly every row and the one plan whose flat price is
- * public. On the rows that carry a price it says the flat half of that number is
- * a stand-in for a negotiated contract; on the rows that carry none it says why
- * there is none — a flat or a granted plan has no overage of ours to quote, and
- * a bare em dash next to an active team reads as missing data instead.
+ * Silent on Pro, which is nearly every row: naming it would put a word under
+ * every amount to say the ordinary thing. On the rows that carry a price it
+ * says the amount was negotiated rather than published; on the rows that carry
+ * none it says why there is none — a flat or a granted plan has no overage of
+ * ours to quote, and a bare em dash next to an active team reads as missing
+ * data instead.
  */
 function PlanMarker(props: {
+  staff: PipelineTeam["staff"];
   plan: NonNullable<PipelineTeam["staff"]["plan"]>;
   priced: boolean;
 }) {
-  const { plan, priced } = props;
+  const { plan } = props;
 
   if (plan.name === PRO_PLAN_NAME) {
     return null;
   }
 
   return (
-    <Tooltip
-      content={
-        priced
-          ? `Billed on ${plan.displayName}, whose flat price is negotiated rather than published: the ${formatPrice(getFlatPrice(plan.name), Currency.Usd)} half of this estimate is a stand-in. The overage half is read from the subscription and holds whatever the plan.`
-          : `On ${plan.displayName}, which Argos does not bill by usage — there is no overage of ours to put a figure on.`
-      }
-    >
+    <Tooltip content={getPlanHint(props)}>
       {/* Plan names are free text and some are long enough to overrun the
           column, which is narrow and fixed. Truncated rather than wrapped: the
           tooltip already carries the whole name, and a second line would push
@@ -573,7 +607,9 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
     return (
       <div>
         <span className="text-low">—</span>
-        {plan ? <PlanMarker plan={plan} priced={false} /> : null}
+        {plan ? (
+          <PlanMarker staff={team.staff} plan={plan} priced={false} />
+        ) : null}
       </div>
     );
   }
@@ -601,7 +637,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
           {formatPrice(price, team.subscription.currency)}
         </span>
       </Tooltip>
-      <PlanMarker plan={plan} priced />
+      <PlanMarker staff={team.staff} plan={plan} priced />
     </div>
   );
 }

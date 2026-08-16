@@ -758,7 +758,11 @@ function createAccountActivationByAccountIdLoader() {
 }
 
 /** An account that no longer exists, or was never billed anything. */
-const EMPTY_ACCOUNT_BILLING: AccountBilling = { plan: null, periodUsage: null };
+const EMPTY_ACCOUNT_BILLING: AccountBilling = {
+  plan: null,
+  flatPrice: null,
+  periodUsage: null,
+};
 
 /**
  * Batches the billing state that the staff trial pipeline reads per team.

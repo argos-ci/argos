@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict BP0mq72amFd2hqhwLdkTacMXSNGJyX9xkoDpE3W9d4mo17sxB6E4dvy4pxodiih
+\restrict I3c71ozcUc6qIxshE9FEt2xxcp0iTprj3I7DbqFDTBMY5k3xcGbjx5vlNVrhV8O
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1463,7 +1463,7 @@ CREATE TABLE public.media (
     visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
     "shareToken" character varying(255) NOT NULL,
     branch character varying(255),
-    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY (ARRAY[('before'::character varying)::text, ('after'::character varying)::text]))))
+    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY ((ARRAY['before'::character varying, 'after'::character varying])::text[]))))
 );
 
 
@@ -2423,6 +2423,7 @@ CREATE TABLE public.subscriptions (
     currency character varying(255),
     "usageUpdatedAt" timestamp with time zone,
     "additionalStorybookScreenshotPrice" real,
+    "flatPrice" real,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -6236,7 +6237,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BP0mq72amFd2hqhwLdkTacMXSNGJyX9xkoDpE3W9d4mo17sxB6E4dvy4pxodiih
+\unrestrict I3c71ozcUc6qIxshE9FEt2xxcp0iTprj3I7DbqFDTBMY5k3xcGbjx5vlNVrhV8O
 
 -- Knex migrations
 
@@ -6482,3 +6483,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260811133709_media-diffs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260813191611_comment-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260814161900_build-review-agent.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260816090349_subscription-flat-price.js', 1, NOW());

@@ -10,6 +10,7 @@ import { redisLock } from "@/util/redis";
 import {
   ENDED_TRIAL_STRIPE_SUBSCRIPTION,
   TRIAL_CONVERSION_TIMESTAMP,
+  TRIAL_FLAT_PRICE,
   TRIAL_INCLUDED_SCREENSHOTS,
   TRIAL_STRIPE_PRODUCT_ID,
   TRIAL_STRIPE_SUBSCRIPTION_ID,
@@ -99,6 +100,9 @@ describe("endTrialToUnlockUsage", () => {
     expect(new Date(updated.startDate).getTime()).toBe(
       TRIAL_CONVERSION_TIMESTAMP * 1000,
     );
+    // The plan's own amount is synced along with the rest of the pricing, so
+    // nothing downstream has to guess what the subscription costs.
+    expect(updated.flatPrice).toBe(TRIAL_FLAT_PRICE);
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "trial_ended",

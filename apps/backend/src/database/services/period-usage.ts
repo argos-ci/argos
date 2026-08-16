@@ -56,6 +56,13 @@ export type AccountBilling = {
    */
   plan: Plan | null;
   /**
+   * What the plan costs per billing period on this account's subscription, in
+   * that subscription's currency — the negotiated amount for a contract, the
+   * published one otherwise. Null when Stripe has never been asked for it, or
+   * has nothing to answer: see `Subscription.flatPrice`.
+   */
+  flatPrice: number | null;
+  /**
    * Usage-based billing. Null when the plan is not usage-based: there is no
    * overage to compute and no period to compute it over, which is a different
    * answer from one that consumed nothing.
@@ -343,6 +350,9 @@ export async function getAccountBillings(
       if (account.forcedPlanId !== null) {
         result.set(account.id, {
           plan: forcedPlanById.get(account.forcedPlanId) ?? null,
+          // A granted plan is not paid for, so there is no amount to report
+          // even when a leftover subscription still carries one.
+          flatPrice: null,
           periodUsage: null,
         });
       }
@@ -391,6 +401,7 @@ export async function getAccountBillings(
     if (!subscription?.plan?.usageBased) {
       result.set(account.id, {
         plan: subscription?.plan ?? null,
+        flatPrice: subscription?.flatPrice ?? null,
         periodUsage: null,
       });
       continue;
@@ -442,6 +453,7 @@ export async function getAccountBillings(
 
     result.set(accountId, {
       plan,
+      flatPrice: subscription.flatPrice,
       periodUsage: {
         storybookRatio:
           totals.allTime.all > 0

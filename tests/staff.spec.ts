@@ -130,6 +130,8 @@ async function createBilledTeam(input: {
   trialEndedDaysAgo: number;
   /** Where the running period opened, which sets the billing anniversary. */
   periodStartDaysAgo: number;
+  /** What the plan costs per month, as Stripe holds it. */
+  flatPrice: number;
   /** Screenshots uploaded during each closed period, most recent first. */
   screenshotsByClosedPeriod: number[];
 }): Promise<Account> {
@@ -154,6 +156,7 @@ async function createBilledTeam(input: {
     trialEndDate: daysFromNow(-input.trialEndedDaysAgo),
     paymentMethodFilled: true,
     status: "active",
+    flatPrice: input.flatPrice,
     includedScreenshots: 35_000,
     additionalScreenshotPrice: 0.005,
     additionalStorybookScreenshotPrice: 0.002,
@@ -294,9 +297,11 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         createdDaysAgo: 88,
         trialEndedDaysAgo: 85,
         periodStartDaysAgo: 14,
+        flatPrice: 100,
         screenshotsByClosedPeriod: [50_000, 40_000],
       }),
-      // Same shape, on a plan the flat price is not taken from.
+      // Same shape, on a contract with a negotiated amount of its own — the
+      // row has to quote that rather than a constant.
       createBilledTeam({
         ...common,
         planId: enterprisePlan.id,
@@ -304,6 +309,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Umbrella",
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
+        flatPrice: 750,
         periodStartDaysAgo: 9,
         screenshotsByClosedPeriod: [60_000],
       }),
@@ -382,9 +388,10 @@ staffTest(
     // 35k included, at $0.005, on top of the $100 flat plan. The month still
     // running holds nothing, so reading that one instead would print $100.
     await expect(page.getByText("$175")).toBeVisible();
-    // Umbrella is on Enterprise: same 60k over the same quota, but a flat price
-    // of its own, and the row names the plan under the amount.
-    await expect(page.getByText("$1,125")).toBeVisible();
+    // Umbrella is on Enterprise: same 60k over the same quota, but its
+    // contract is $750, read from the subscription rather than assumed. The row
+    // names the plan under the amount to say so.
+    await expect(page.getByText("$875")).toBeVisible();
     await expect(page.getByText("Enterprise")).toBeVisible();
     // Hexagon is billed nothing at all, and the plan is the only thing that
     // says why — the price cell is an em dash.

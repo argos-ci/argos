@@ -244,6 +244,7 @@ async function getPriceInfosFromStripeSubscription(
     Subscription,
     | "includedScreenshots"
     | "currency"
+    | "flatPrice"
     | "additionalScreenshotPrice"
     | "additionalStorybookScreenshotPrice"
     | "startDate"
@@ -253,6 +254,10 @@ async function getPriceInfosFromStripeSubscription(
   const { price } = planItem;
   const startDate = timestampToISOString(planItem.current_period_start);
   const currency = CurrencySchema.parse(price.currency);
+  // Read outside the branches below: unlike the included screenshots, the
+  // amount does not depend on any metadata we declare, so a plan we could not
+  // interpret still has a price we can report.
+  const flatPrice = getFlatPriceFromPlanItem(planItem);
 
   switch (price.billing_scheme) {
     case "tiered": {
@@ -283,6 +288,7 @@ async function getPriceInfosFromStripeSubscription(
             return {
               startDate,
               currency,
+              flatPrice,
               includedScreenshots: includedScreenshots,
               additionalScreenshotPrice: screenshotItem
                 ? getUnitAmountFromPrice(screenshotItem.price)
@@ -297,6 +303,7 @@ async function getPriceInfosFromStripeSubscription(
       return {
         startDate,
         currency,
+        flatPrice,
         includedScreenshots: null,
         additionalScreenshotPrice: null,
         additionalStorybookScreenshotPrice: null,
@@ -305,6 +312,33 @@ async function getPriceInfosFromStripeSubscription(
     default:
       assertNever(price.billing_scheme);
   }
+}
+
+/**
+ * What the plan itself costs on this subscription, per billing period.
+ *
+ * Unlike the included screenshots, this needs no metadata of ours: the
+ * recurring amount is a first-class Stripe field, so it cannot be left out when
+ * a contract is set up the way a metadata key can. Stored as Stripe states it —
+ * in the subscription's currency, for its own interval — which is the same
+ * convention `includedScreenshots` follows.
+ *
+ * Null when the plan is priced by tiers rather than by a unit amount: there is
+ * no single figure to store, and failing the whole sync over it would take a
+ * subscription offline for the sake of a display detail.
+ */
+function getFlatPriceFromPlanItem(
+  planItem: Stripe.SubscriptionItem,
+): number | null {
+  const unitAmount = planItem.price.unit_amount_decimal;
+  // Absent as well as null: a price by tiers carries no unit amount, and Stripe
+  // leaves the field out entirely on some price shapes rather than nulling it.
+  if (!unitAmount) {
+    return null;
+  }
+  // Every Argos plan line sits at a quantity of 1, but it is read rather than
+  // assumed: a contract billed per seat would otherwise report one seat.
+  return (unitAmount.toNumber() / 100) * (planItem.quantity ?? 1);
 }
 
 /**

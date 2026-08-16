@@ -3,6 +3,8 @@ import Stripe from "stripe";
 export const TRIAL_STRIPE_PRODUCT_ID = "prod_trial_test";
 export const TRIAL_STRIPE_SUBSCRIPTION_ID = "sub_trial_test";
 export const TRIAL_INCLUDED_SCREENSHOTS = 15000;
+/** Monthly price of the plan, in dollars. */
+export const TRIAL_FLAT_PRICE = 250;
 /** Moment the trial started. */
 const TRIAL_START_TIMESTAMP = 1751760000;
 /**
@@ -22,6 +24,9 @@ function createPlanItem(currentPeriodStart: number) {
       billing_scheme: "per_unit",
       currency: "usd",
       metadata: { includedScreenshots: String(TRIAL_INCLUDED_SCREENSHOTS) },
+      // Stripe states amounts in the smallest currency unit, behind a decimal
+      // wrapper — mirrored here so the sync reads it the way it does in prod.
+      unit_amount_decimal: { toNumber: () => TRIAL_FLAT_PRICE * 100 },
       product: TRIAL_STRIPE_PRODUCT_ID,
       tiers_mode: null,
     },
