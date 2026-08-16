@@ -1,49 +1,19 @@
-import { useQuery } from "@apollo/client/react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
-import { useParams } from "react-router";
 
-import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
   Menu,
   MenuHeading,
   MenuItem,
-  MenuLoader,
   MenuSection,
   MenuText,
 } from "@/ui/menu-kit";
-
-const AccountQuery = graphql(`
-  query ProjectBreadcrumbMenu_account($slug: String!) {
-    account(slug: $slug) {
-      id
-      projects(first: 100, after: 0) {
-        edges {
-          id
-          name
-        }
-      }
-    }
-  }
-`);
 
 /**
  * The project rows, as a function rather than a component: a menu reads its
  * children and cannot see inside one.
  */
-function getProjectItems(
-  accountSlug: string,
-  data: ReturnType<typeof useProjectsQuery>["data"],
-) {
-  if (!data) {
-    return <MenuLoader />;
-  }
-
-  const projectNames =
-    data.account?.projects.edges
-      .map(({ name }) => name)
-      .sort((sa, sb) => sa.localeCompare(sb)) ?? [];
-
+function getProjectItems(accountSlug: string, projectNames: string[]) {
   if (projectNames.length === 0) {
     return <MenuText>No active project found</MenuText>;
   }
@@ -61,27 +31,23 @@ function getProjectItems(
   });
 }
 
-function useProjectsQuery(accountSlug: string) {
-  return useQuery(AccountQuery, { variables: { slug: accountSlug } });
-}
-
-export function ProjectBreadcrumbMenu() {
-  const { accountSlug } = useParams();
-  const { data, error } = useProjectsQuery(accountSlug ?? "");
-
-  if (error) {
-    throw error;
-  }
-
-  if (!accountSlug) {
-    return null;
-  }
+/**
+ * Renders from a list the breadcrumb has already resolved, never from a query
+ * of its own: a menu's rows are read when it opens and filtered as you type,
+ * so they have to all be there from the start.
+ */
+export function ProjectBreadcrumbMenu(props: {
+  accountSlug: string;
+  projectNames: string[];
+}) {
+  const { accountSlug, projectNames } = props;
+  const sortedNames = [...projectNames].sort((sa, sb) => sa.localeCompare(sb));
 
   return (
     <Menu side="bottom" align="start">
       <MenuSection>
         <MenuHeading>Switch project</MenuHeading>
-        {getProjectItems(accountSlug, data)}
+        {getProjectItems(accountSlug, sortedNames)}
       </MenuSection>
       <MenuItem
         icon={<PlusCircleIcon />}

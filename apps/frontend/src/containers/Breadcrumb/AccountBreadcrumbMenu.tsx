@@ -1,42 +1,13 @@
-import { useQuery } from "@apollo/client/react";
 import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
 import { matchPath, useLocation } from "react-router";
 
-import { DocumentType, graphql } from "@/gql";
+import type { AuthAccount } from "@/containers/Auth";
 import { getAccountURL } from "@/pages/Account/AccountParams";
-import {
-  Menu,
-  MenuHeading,
-  MenuItem,
-  MenuLoader,
-  MenuSection,
-} from "@/ui/menu-kit";
+import { Menu, MenuHeading, MenuItem, MenuSection } from "@/ui/menu-kit";
 
-import { AccountItem } from "../AccountItem";
+import { AccountItem, type AccountItemProps } from "../AccountItem";
 
-const _AccountFragment = graphql(`
-  fragment AccountBreadcrumbMenu_Account on Account {
-    id
-    slug
-    ...AccountItem_Account
-  }
-`);
-
-const MeQuery = graphql(`
-  query AccountBreadcrumbMenu_me {
-    me {
-      id
-      staff
-      ...AccountBreadcrumbMenu_Account
-      teams {
-        id
-        ...AccountBreadcrumbMenu_Account
-      }
-    }
-  }
-`);
-
-type Account = DocumentType<typeof _AccountFragment>;
+type Account = AccountItemProps["account"];
 
 function resolveAccountPath(slug: string, pathname: string) {
   if (matchPath("/:slug/settings/*", pathname)) {
@@ -52,6 +23,10 @@ function getAccountMenuItems(accounts: Account[], pathname: string) {
     return (
       <MenuItem
         key={account.id}
+        // The row renders a component, which contributes nothing to the
+        // query — without these, typing an account's name finds nothing.
+        textValue={account.name || account.slug}
+        keywords={account.name ? [account.slug] : []}
         href={resolveAccountPath(account.slug, pathname)}
       >
         <AccountItem account={account} />
@@ -60,40 +35,31 @@ function getAccountMenuItems(accounts: Account[], pathname: string) {
   });
 }
 
-export function AccountBreadcrumbMenu() {
-  const { data, error } = useQuery(MeQuery);
+/**
+ * Renders from the viewer resolved by `Auth` rather than a query of its own: a
+ * menu's rows are read when it opens and filtered as you type, so they have to
+ * all be there from the start — a row that swaps in when a query lands would
+ * never be seen by the filter. The accounts travel with the session for
+ * exactly this reason.
+ */
+export function AccountBreadcrumbMenu(props: { account: AuthAccount }) {
+  const { account } = props;
   const location = useLocation();
-
-  if (error) {
-    throw error;
-  }
-
-  if (data && !data.me) {
-    return null;
-  }
 
   return (
     <Menu side="bottom" align="start">
       <MenuSection>
         <MenuHeading>Personal</MenuHeading>
-        {data?.me ? (
-          getAccountMenuItems([data.me], location.pathname)
-        ) : (
-          <MenuLoader />
-        )}
+        {getAccountMenuItems([account], location.pathname)}
       </MenuSection>
       <MenuSection>
         <MenuHeading>Teams</MenuHeading>
-        {data?.me ? (
-          getAccountMenuItems(data.me.teams, location.pathname)
-        ) : (
-          <MenuLoader />
-        )}
+        {getAccountMenuItems(account.teams, location.pathname)}
         <MenuItem icon={<PlusCircleIcon />} href="/teams/new">
           Create a Team
         </MenuItem>
       </MenuSection>
-      {data?.me?.staff ? (
+      {account.staff ? (
         <MenuSection>
           <MenuHeading>Staff</MenuHeading>
           <MenuItem icon={<ShieldUserIcon />} href="/staff/teams">

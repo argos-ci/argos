@@ -89,6 +89,10 @@ export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
   const auth = useAuth();
   const isStaffArea = Boolean(useMatch("/staff/*"));
+  // Not just authenticated: the menu needs the resolved account, because its
+  // rows must all exist the moment it can be opened. The button appears with
+  // the answer, a beat after the trail does.
+  const account = auth.status === "authenticated" ? auth.account : null;
 
   return (
     <BreadcrumbItem>
@@ -99,14 +103,14 @@ export function AccountBreadcrumbItem() {
       ) : (
         <HomeBreadcrumbLink />
       )}
-      {auth.status === "authenticated" && (
+      {account ? (
         <MenuRoot>
           <MenuTrigger>
             <BreadcrumbMenuButton />
           </MenuTrigger>
-          <AccountBreadcrumbMenu />
+          <AccountBreadcrumbMenu account={account} />
         </MenuRoot>
-      )}
+      ) : null}
     </BreadcrumbItem>
   );
 }
