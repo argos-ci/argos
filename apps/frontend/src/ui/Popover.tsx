@@ -5,6 +5,8 @@ import {
   Popover as RACPopover,
 } from "react-aria-components";
 
+import { popupSurfaceClassName, popupZIndexClassName } from "./popupSurface";
+
 /**
  * Where the pop-in animation grows from: the corner touching the trigger.
  *
@@ -68,7 +70,8 @@ export function Popover(
       {...props}
       className={(values) =>
         clsx(
-          "bg-app shadow-menu border-thin z-50 flex rounded-xl bg-clip-padding",
+          popupSurfaceClassName,
+          popupZIndexClassName,
           getPopoverAnimationClassName(values, props.placement),
           props.className,
         )

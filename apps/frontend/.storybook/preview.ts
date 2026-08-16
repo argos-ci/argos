@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import type { Preview } from "@storybook/react-vite";
+import { MemoryRouter } from "react-router";
 
 import { TooltipProvider } from "../src/ui/Tooltip";
 import "../src/index.css";
@@ -30,8 +31,15 @@ const preview: Preview = {
   // The app mounts this at the router root. Stories render outside it, so
   // without this a tooltip in Storybook would use Base UI's default delays
   // rather than the app's.
+  // A router, because anything rendering a link renders react-router's, and a
+  // tooltip provider, because the app mounts one at the router root.
   decorators: [
-    (Story) => createElement(TooltipProvider, null, createElement(Story)),
+    (Story) =>
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(TooltipProvider, null, createElement(Story)),
+      ),
   ],
 
   parameters: {
