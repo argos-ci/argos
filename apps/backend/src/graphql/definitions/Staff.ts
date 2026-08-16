@@ -115,6 +115,13 @@ export const typeDefs = gql`
     subscription at all — which is most of a trial pipeline.
     """
     plan: Plan
+    """
+    What the plan costs per billing period, in the subscription's currency, as
+    Stripe states it. Null when Stripe has nothing to state: a granted plan, a
+    GitHub subscription, or a subscription not synced since Argos started
+    reading the amount.
+    """
+    flatPrice: Float
     "Billing usage. Null when the team is not on a usage-based plan."
     periodUsage: TeamStaffPeriodUsage
   }
@@ -172,6 +179,12 @@ export const resolvers: IResolvers = {
         account.id,
       );
       return billing.plan;
+    },
+    flatPrice: async (account, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        account.id,
+      );
+      return billing.flatPrice;
     },
     periodUsage: async (account, _args, ctx) => {
       const { periodUsage: usage } =

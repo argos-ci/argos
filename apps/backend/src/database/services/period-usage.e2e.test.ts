@@ -58,7 +58,11 @@ describe("getAccountPeriodUsages", () => {
 
   it("reports no plan and no usage for an account without a subscription", async () => {
     const usages = await getAccountBillings([account]);
-    expect(usages.get(account.id)).toEqual({ plan: null, periodUsage: null });
+    expect(usages.get(account.id)).toEqual({
+      plan: null,
+      flatPrice: null,
+      periodUsage: null,
+    });
   });
 
   it("reports a granted plan, and no usage under it", async () => {
@@ -79,6 +83,7 @@ describe("getAccountPeriodUsages", () => {
     // The plan still comes back: it is what explains why nothing is billed.
     expect(usages.get(grantedAccount.id)).toEqual({
       plan: expect.objectContaining({ id: usageBasedPlan.id }),
+      flatPrice: null,
       periodUsage: null,
     });
   });
@@ -116,6 +121,7 @@ describe("getAccountPeriodUsages", () => {
 
     expect(usages.get(account.id)).toEqual({
       plan: expect.objectContaining({ id: flatPlan.id }),
+      flatPrice: null,
       periodUsage: null,
     });
   });
@@ -347,6 +353,7 @@ describe("getAccountPeriodUsages", () => {
     expect(getRunningCost(usages.get(otherAccount.id))).toBe(50);
     expect(usages.get(noSubscriptionAccount.id)).toEqual({
       plan: null,
+      flatPrice: null,
       periodUsage: null,
     });
   });

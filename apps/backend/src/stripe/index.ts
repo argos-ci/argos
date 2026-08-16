@@ -244,6 +244,7 @@ async function getPriceInfosFromStripeSubscription(
     Subscription,
     | "includedScreenshots"
     | "currency"
+    | "flatPrice"
     | "additionalScreenshotPrice"
     | "additionalStorybookScreenshotPrice"
     | "startDate"
@@ -253,6 +254,10 @@ async function getPriceInfosFromStripeSubscription(
   const { price } = planItem;
   const startDate = timestampToISOString(planItem.current_period_start);
   const currency = CurrencySchema.parse(price.currency);
+  // Read once, above the branches: both ways out of `per_unit` report it, and
+  // unlike the included screenshots it depends on no metadata of ours, so a
+  // plan whose metadata we cannot interpret still has a price we can state.
+  const flatPrice = getFlatPriceFromPlanItem(planItem);
 
   switch (price.billing_scheme) {
     case "tiered": {
@@ -283,6 +288,7 @@ async function getPriceInfosFromStripeSubscription(
             return {
               startDate,
               currency,
+              flatPrice,
               includedScreenshots: includedScreenshots,
               additionalScreenshotPrice: screenshotItem
                 ? getUnitAmountFromPrice(screenshotItem.price)
@@ -297,6 +303,7 @@ async function getPriceInfosFromStripeSubscription(
       return {
         startDate,
         currency,
+        flatPrice,
         includedScreenshots: null,
         additionalScreenshotPrice: null,
         additionalStorybookScreenshotPrice: null,
@@ -305,6 +312,43 @@ async function getPriceInfosFromStripeSubscription(
     default:
       assertNever(price.billing_scheme);
   }
+}
+
+/**
+ * What the plan itself costs on this subscription, per billing period.
+ *
+ * Unlike the included screenshots, this needs no metadata of ours: the
+ * recurring amount is a first-class Stripe field, so it cannot be left out when
+ * a contract is set up the way a metadata key can. Stored as Stripe states it —
+ * in the subscription's currency, for its own interval — which is the same
+ * convention `includedScreenshots` follows.
+ *
+ * Null when the plan is priced by tiers rather than by a unit amount: there is
+ * no single figure to store, and failing the whole sync over it would take a
+ * subscription offline for the sake of a display detail.
+ */
+function getFlatPriceFromPlanItem(
+  planItem: Stripe.SubscriptionItem,
+): number | null {
+  const { price } = planItem;
+
+  // A metered price states what one unit costs, not what the plan costs, and
+  // Stripe carries no quantity on it. Reading it here would record a fraction
+  // of a cent as the price of the plan.
+  if (price.recurring?.usage_type === "metered") {
+    return null;
+  }
+
+  const unitAmount = price.unit_amount_decimal;
+  // Absent as well as null: a price by tiers carries no unit amount, and Stripe
+  // leaves the field out entirely on some price shapes rather than nulling it.
+  if (!unitAmount) {
+    return null;
+  }
+
+  // Every Argos plan line sits at a quantity of 1, but it is read rather than
+  // assumed: a contract billed per seat would otherwise report one seat.
+  return (unitAmount.toNumber() / 100) * (planItem.quantity ?? 1);
 }
 
 /**
@@ -639,6 +683,13 @@ export async function getDefaultTeamPlanItems(
 /**
  * Check if a usage-based subscription is incomplete.
  * Meaning some information are missing to be able to use it.
+ *
+ * This is what backfills a column added after the fact: usage is reported on
+ * every build, so a row missing anything re-syncs itself the next time the
+ * account uploads, without a script to run. A subscription whose price Stripe
+ * cannot state — one billed by tiers — stays incomplete and re-syncs on every
+ * build, which is already true of one whose metadata we cannot read, and costs
+ * a patch on a subscription Stripe was going to be asked about anyway.
  */
 function checkIsUsageBasedSubscriptionIncomplete(
   subscription: Subscription,
@@ -646,7 +697,8 @@ function checkIsUsageBasedSubscriptionIncomplete(
   return (
     subscription.includedScreenshots === null ||
     subscription.additionalScreenshotPrice === null ||
-    subscription.currency === null
+    subscription.currency === null ||
+    subscription.flatPrice === null
   );
 }
 

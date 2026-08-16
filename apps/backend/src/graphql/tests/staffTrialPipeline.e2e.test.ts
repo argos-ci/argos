@@ -23,6 +23,7 @@ const TrialPipelineQuery = `
           id
           name
         }
+        flatPrice
         periodUsage {
           billingPeriods {
             from
@@ -147,6 +148,7 @@ describe("GraphQL staffTrialPipeline", () => {
       paymentMethodFilled: true,
       includedScreenshots: 35_000,
       additionalScreenshotPrice: 0.005,
+      flatPrice: 100,
       currency: "usd",
     });
     const [, closedStart] = subscription.getPeriodStarts(
@@ -167,6 +169,7 @@ describe("GraphQL staffTrialPipeline", () => {
     expectNoGraphQLError(res);
     const { staff } = findEntry(res, team.id);
     expect(staff.plan.name).toBe("pro");
+    expect(staff.flatPrice).toBe(100);
     const { periodUsage } = staff;
     // The period still running comes first, then the one that closed with 15k
     // screenshots past the 35k included, at $0.005.

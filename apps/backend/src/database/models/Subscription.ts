@@ -47,6 +47,9 @@ export class Subscription extends Model {
           includedScreenshots: {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
+          flatPrice: {
+            anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
+          },
           additionalScreenshotPrice: {
             anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
           },
@@ -81,6 +84,14 @@ export class Subscription extends Model {
     | "incomplete_expired"
     | "paused";
   includedScreenshots!: number | null;
+  /**
+   * Recurring amount of the plan itself, per billing period and in `currency`.
+   *
+   * Null when the subscription has not been synced since the column existed, or
+   * when there is no Stripe price to read it from — a GitHub subscription, or a
+   * plan priced by tiers, which has no single unit amount.
+   */
+  flatPrice!: number | null;
   additionalScreenshotPrice!: number | null;
   additionalStorybookScreenshotPrice!: number | null;
   usageUpdatedAt!: string | null;
