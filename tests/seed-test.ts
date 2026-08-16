@@ -42,7 +42,9 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
   plan: [
     async ({}, use) => {
       const plan = await PlanModel.query().insertAndFetch({
-        name: "Pro",
+        // The name production uses, which the staff pipeline compares against
+        // to decide whether a row's plan is worth naming.
+        name: "pro",
         includedScreenshots: 15000,
         githubPlanId: null,
         stripeProductId: null,

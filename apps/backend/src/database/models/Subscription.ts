@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model";
@@ -110,23 +111,53 @@ export class Subscription extends Model {
   plan?: Plan;
 
   getLastResetDate(now: Date, interval: SubscriptionInterval) {
-    const startOfPeriod = getStartOf(now, interval);
-    const startDate = new Date(this.startDate);
-    const periodDuration = now.getTime() - startOfPeriod.getTime();
-    const subscriptionPeriodDuration =
-      startDate.getTime() - getStartOf(startDate, interval).getTime();
-    const billingHasResetThisPeriod =
-      periodDuration > subscriptionPeriodDuration;
+    const [lastResetDate] = this.getPeriodStarts(now, interval, 1);
+    invariant(lastResetDate, "a period always has a start");
+    return lastResetDate;
+  }
 
-    return billingHasResetThisPeriod
-      ? new Date(startOfPeriod.getTime() + subscriptionPeriodDuration)
-      : new Date(
-          Math.min(
-            getStartOfPrevious(now, interval).getTime() +
-              subscriptionPeriodDuration,
-            startOfPeriod.getTime(), // end of previous period
-          ),
-        );
+  /**
+   * Start of the billing period holding `now`, then the start of each period
+   * before it, most recent first.
+   *
+   * The anniversary is read as the offset `startDate` sits at inside its own
+   * interval, and that offset is applied to each interval walked back — rather
+   * than counting periods down from `startDate`, which is the *current* period
+   * start and moves forward at every renewal.
+   */
+  getPeriodStarts(
+    now: Date,
+    interval: SubscriptionInterval,
+    count: number,
+  ): Date[] {
+    const startDate = new Date(this.startDate);
+    const anniversaryOffset =
+      startDate.getTime() - getStartOf(startDate, interval).getTime();
+
+    const getResetDateAt = (index: number) => {
+      const intervalStart = shiftIntervals(
+        getStartOf(now, interval),
+        interval,
+        -index,
+      );
+      const nextIntervalStart = shiftIntervals(intervalStart, interval, 1);
+      // A subscription that started on the 31st has no anniversary in a
+      // 30-day month: it resets when the next interval opens.
+      return new Date(
+        Math.min(
+          intervalStart.getTime() + anniversaryOffset,
+          nextIntervalStart.getTime(),
+        ),
+      );
+    };
+
+    // The period holding `now` opens on this interval's own anniversary once
+    // that anniversary has passed, and on the previous one until then.
+    const currentIndex = getResetDateAt(0).getTime() < now.getTime() ? 0 : 1;
+
+    return Array.from({ length: count }, (_, index) =>
+      getResetDateAt(currentIndex + index),
+    );
   }
 }
 
@@ -141,12 +172,17 @@ function getStartOf(date: Date, interval: SubscriptionInterval) {
   }
 }
 
-function getStartOfPrevious(date: Date, interval: SubscriptionInterval) {
+/** Moves a date sitting on an interval boundary by `count` whole intervals. */
+function shiftIntervals(
+  date: Date,
+  interval: SubscriptionInterval,
+  count: number,
+) {
   switch (interval) {
     case "month":
-      return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+      return new Date(date.getFullYear(), date.getMonth() + count, 1);
     case "year":
-      return new Date(date.getFullYear() - 1, 0, 1);
+      return new Date(date.getFullYear() + count, 0, 1);
     default:
       assertNever(interval);
   }

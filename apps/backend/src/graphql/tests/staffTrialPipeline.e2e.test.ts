@@ -19,6 +19,18 @@ const TrialPipelineQuery = `
         buildsCount
         screenshotsCount
         firstComparisonAt
+        plan {
+          id
+          name
+        }
+        periodUsage {
+          billingPeriods {
+            from
+            to
+            closed
+            additionalScreenshotsCost
+          }
+        }
       }
     }
   }
@@ -108,6 +120,60 @@ describe("GraphQL staffTrialPipeline", () => {
     expect(
       res.body.data.staffTrialPipeline.map((team: any) => team.id),
     ).not.toContain(old.id);
+  });
+
+  it("prices the billing periods of a converted trial", async () => {
+    const viewer = await createViewer({ staff: true });
+    const team = await factory.TeamAccount.create({
+      createdAt: addDays(new Date(), -88).toISOString(),
+    });
+    const project = await factory.Project.create({ accountId: team.id });
+    const plan = await factory.Plan.create({
+      name: "pro",
+      usageBased: true,
+      interval: "month",
+    });
+    const subscriber = await factory.User.create();
+    const subscription = await factory.Subscription.create({
+      accountId: team.id,
+      planId: plan.id,
+      provider: "stripe",
+      stripeSubscriptionId: "sub_converted_trial",
+      subscriberId: subscriber.id,
+      createdAt: addDays(new Date(), -88).toISOString(),
+      startDate: addDays(new Date(), -14).toISOString(),
+      trialEndDate: addDays(new Date(), -85).toISOString(),
+      status: "active",
+      paymentMethodFilled: true,
+      includedScreenshots: 35_000,
+      additionalScreenshotPrice: 0.005,
+      currency: "usd",
+    });
+    const [, closedStart] = subscription.getPeriodStarts(
+      new Date(),
+      "month",
+      2,
+    );
+    invariant(closedStart, "the period before the running one");
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      screenshotCount: 50_000,
+      storybookScreenshotCount: 0,
+      createdAt: new Date(closedStart.getTime() + 3_600_000).toISOString(),
+    });
+
+    const res = await queryPipeline(viewer, 90);
+
+    expectNoGraphQLError(res);
+    const { staff } = findEntry(res, team.id);
+    expect(staff.plan.name).toBe("pro");
+    const { periodUsage } = staff;
+    // The period still running comes first, then the one that closed with 15k
+    // screenshots past the 35k included, at $0.005.
+    expect(periodUsage.billingPeriods).toMatchObject([
+      { closed: false, additionalScreenshotsCost: 0 },
+      { closed: true, additionalScreenshotsCost: 75 },
+    ]);
   });
 
   it("reports a team that created a project but never built", async () => {

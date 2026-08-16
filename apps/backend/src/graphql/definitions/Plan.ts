@@ -10,6 +10,8 @@ export const typeDefs = gql`
 
   type Plan implements Node {
     id: ID!
+    "Internal name, stable across renames of the marketing label."
+    name: String!
     displayName: String!
     interval: PlanInterval!
     usageBased: Boolean!
