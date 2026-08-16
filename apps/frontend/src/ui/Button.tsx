@@ -65,26 +65,26 @@ const EDGE = clsx(
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "text-white bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
+    "text-white bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active active:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
   // A wash rather than a fill: `bg-ui` at half opacity lifts the button off
   // whatever it sits on — the app background, a panel, an image — without
   // reading as a filled button next to `primary`. Icons sit one step back from
   // the label and come forward on hover, so a row of icon buttons stays quiet
   // until it is pointed at.
   secondary: clsx(
-    "text-default bg-raised data-hovered:bg-raised-hover data-pressed:bg-raised-active",
+    "text-default bg-raised data-hovered:bg-raised-hover data-pressed:bg-raised-active active:bg-raised-active",
     EDGE,
     ICON_STEPS_BACK,
     // Pressed, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
     // about to change.
     "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
-    "aria-expanded:bg-raised-active",
+    "aria-expanded:bg-raised-active data-popup-open:bg-raised-active",
   ),
   // No fill at rest, and the same "on" fill as `secondary` once it has one, so
   // a toolbar mixing the two never shows the state two shades apart.
   ghost: clsx(
-    "text-default bg-transparent data-hovered:bg-hover data-pressed:bg-raised-active",
+    "text-default bg-transparent data-hovered:bg-hover data-pressed:bg-raised-active active:bg-raised-active",
     ICON_STEPS_BACK,
     // Pressed, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
@@ -96,27 +96,27 @@ const variantClassNames: Record<ButtonVariant, string> = {
   // `destructive`, which is a solid call to action. The color is in the icon and
   // the label, and only fills in on hover.
   danger: clsx(
-    "text-danger-low bg-raised data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active",
+    "text-danger-low bg-raised data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active active:bg-danger-active",
     "edge-default data-hovered:edge-danger-hover group-[*]/button-group:data-hovered:edge-default",
     "aria-pressed:bg-danger-active aria-pressed:edge-danger aria-pressed:data-hovered:bg-danger-active aria-pressed:data-hovered:text-danger",
   ),
   success: clsx(
-    "text-success-low bg-raised data-hovered:bg-success-hover/50 data-pressed:bg-success-active",
+    "text-success-low bg-raised data-hovered:bg-success-hover/50 data-pressed:bg-success-active active:bg-success-active",
     "edge-default data-hovered:edge-success-hover group-[*]/button-group:data-hovered:edge-default",
     "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active aria-pressed:data-hovered:text-success",
   ),
   destructive:
-    "text-white bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
+    "text-white bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
   github:
-    "text-white bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active",
+    "text-white bg-github data-hovered:bg-github-hover data-pressed:bg-github-active active:bg-github-active aria-expanded:bg-github-active",
   gitlab:
-    "text-white bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    "text-white bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active active:bg-gitlab-active aria-expanded:bg-gitlab-active",
   // The only fill that is the page color itself, so the hairline is the whole
   // of the button's shape — it takes the same gray as a quiet button rather
   // than the near-black the solid fills sit behind. It used to be a `ring-1`,
   // which the focus ring then had to fight with.
   google:
-    "text-default edge-default bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active",
+    "text-default edge-default bg-google data-hovered:bg-google-hover data-pressed:bg-google-active active:bg-google-active aria-expanded:bg-google-active",
 };
 
 // With the edge out of the layout, the line box and the padding are the whole
@@ -226,8 +226,13 @@ export function getButtonClassName(options: {
     "rounded-full",
     // ButtonGroup integration: drop the inner rounded ends so the segments butt
     // together, and where they meet each one's hairline draws the seam.
-    "group-[*]/button-group:not-first:rounded-l-none",
-    "group-[*]/button-group:not-last:rounded-r-none",
+    //
+    // Matched against the neighbouring controls rather than by position: a
+    // segment that opens a popover has focus guards rendered beside it while
+    // it is open, and those spans stop it being the group's last child — so a
+    // `:last-child` rule squared the corner the moment the menu opened.
+    "group-[*]/button-group:[:is(button,a)~&]:rounded-l-none",
+    "group-[*]/button-group:[&:has(~:is(button,a))]:rounded-r-none",
     iconOnly && "justify-center",
     "focus:outline-hidden data-focus-visible:ring-4",
     "items-center inline-flex select-none whitespace-nowrap font-sans font-medium",

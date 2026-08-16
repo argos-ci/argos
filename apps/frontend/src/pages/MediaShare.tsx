@@ -18,7 +18,6 @@ import {
   MessagesSquareIcon,
   TerminalIcon,
 } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { useClipboard } from "use-clipboard-copy";
@@ -70,8 +69,7 @@ import {
   EmptyStateSteps,
 } from "@/ui/Layout";
 import { HeadlessLink } from "@/ui/Link";
-import { Menu, MenuItem } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
@@ -663,36 +661,36 @@ function MediaActions(props: {
           </Button>
         </HotkeyTooltip>
         {formats.length > 1 ? (
-          <MenuTrigger>
-            <Button
-              variant="secondary"
-              iconOnly
-              aria-label="Choose a copy format"
-            >
-              <ChevronDownIcon />
-            </Button>
-            <Popover placement="bottom end">
-              <Menu aria-label="Copy formats">
-                {formats.map((candidate) => (
-                  <MenuItem
-                    key={candidate.id}
-                    onAction={() => {
-                      // Copy right away *and* make it the button's format: the
-                      // menu is how the default is changed.
-                      setStoredFormatId(candidate.id);
-                      localStorage.setItem(
-                        SHARE_FORMAT_STORAGE_KEY,
-                        candidate.id,
-                      );
-                      copyFormat(candidate);
-                    }}
-                  >
-                    {candidate.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+          <MenuRoot>
+            <MenuTrigger>
+              <Button
+                variant="secondary"
+                iconOnly
+                aria-label="Choose a copy format"
+              >
+                <ChevronDownIcon />
+              </Button>
+            </MenuTrigger>
+            <Menu side="bottom" align="end" aria-label="Copy formats">
+              {formats.map((candidate) => (
+                <MenuItem
+                  key={candidate.id}
+                  onAction={() => {
+                    // Copy right away *and* make it the button's format: the
+                    // menu is how the default is changed.
+                    setStoredFormatId(candidate.id);
+                    localStorage.setItem(
+                      SHARE_FORMAT_STORAGE_KEY,
+                      candidate.id,
+                    );
+                    copyFormat(candidate);
+                  }}
+                >
+                  {candidate.label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </MenuRoot>
         ) : null}
       </ButtonGroup>
     </div>

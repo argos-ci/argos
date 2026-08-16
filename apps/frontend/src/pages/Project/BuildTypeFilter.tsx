@@ -1,11 +1,9 @@
 import clsx from "clsx";
 import { parseAsStringEnum } from "nuqs";
-import { MenuTrigger } from "react-aria-components";
 
 import { BuildType } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { SelectButton } from "@/ui/Select";
 import { StackedItems } from "@/ui/StackedItems";
 import { buildTypeDescriptors } from "@/util/build";
@@ -29,54 +27,58 @@ export function BuildTypeFilter(props: {
 }) {
   const { value, onChange } = props;
   return (
-    <MenuTrigger>
-      <SelectButton className="text-sm">
-        <StackedItems>
-          {BuildTypes.map((type) => {
-            return (
-              <div
-                key={type}
-                className={clsx(
-                  "size-2.5 rounded-full border",
-                  value.has(type)
-                    ? bgSolidColorClassNames[buildTypeDescriptors[type].color]
-                    : "bg-app",
-                )}
-              />
-            );
-          })}
-        </StackedItems>
-        Type
-        <Badge>
-          {value.size}/{BuildTypes.length}
-        </Badge>
-      </SelectButton>
-      <Popover>
-        <Menu
-          aria-label="Build type"
-          selectionMode="multiple"
-          selectedKeys={value}
-          onSelectionChange={(keys) => {
-            if (keys === "all") {
-              return;
-            }
-            onChange(keys as Set<BuildType>);
-          }}
-        >
-          {BuildTypes.map((status) => {
-            const descriptor = buildTypeDescriptors[status];
-            const Icon = descriptor.icon;
-            return (
-              <MenuItem key={status} id={status} textValue={descriptor.label}>
-                <MenuItemIcon>
-                  <Icon className={lowTextColorClassNames[descriptor.color]} />
-                </MenuItemIcon>
-                {descriptor.label}
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <SelectButton className="text-sm">
+          <StackedItems>
+            {BuildTypes.map((type) => {
+              return (
+                <div
+                  key={type}
+                  className={clsx(
+                    "size-2.5 rounded-full border",
+                    value.has(type)
+                      ? bgSolidColorClassNames[buildTypeDescriptors[type].color]
+                      : "bg-app",
+                  )}
+                />
+              );
+            })}
+          </StackedItems>
+          Type
+          <Badge>
+            {value.size}/{BuildTypes.length}
+          </Badge>
+        </SelectButton>
+      </MenuTrigger>
+      <Menu aria-label="Build type">
+        {BuildTypes.map((status) => {
+          const descriptor = buildTypeDescriptors[status];
+          const Icon = descriptor.icon;
+          return (
+            <MenuItem
+              icon={
+                <Icon className={lowTextColorClassNames[descriptor.color]} />
+              }
+              checkbox
+              key={status}
+              textValue={descriptor.label}
+              checked={value.has(status)}
+              onCheckedChange={(checked: boolean) => {
+                const next = new Set(value);
+                if (checked) {
+                  next.add(status);
+                } else {
+                  next.delete(status);
+                }
+                onChange(next);
+              }}
+            >
+              {descriptor.label}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </MenuRoot>
   );
 }

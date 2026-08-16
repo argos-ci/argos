@@ -1,18 +1,17 @@
 import { useQuery } from "@apollo/client/react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
-import { MenuSection } from "react-aria-components";
 import { useParams } from "react-router";
 
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
   Menu,
+  MenuHeading,
   MenuItem,
-  MenuItemIcon,
   MenuLoader,
+  MenuSection,
   MenuText,
-  MenuTitle,
-} from "@/ui/Menu";
+} from "@/ui/menu-kit";
 
 const AccountQuery = graphql(`
   query ProjectBreadcrumbMenu_account($slug: String!) {
@@ -28,15 +27,14 @@ const AccountQuery = graphql(`
   }
 `);
 
-function Projects(props: { accountSlug: string }) {
-  const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.accountSlug },
-  });
-
-  if (error) {
-    throw error;
-  }
-
+/**
+ * The project rows, as a function rather than a component: a menu reads its
+ * children and cannot see inside one.
+ */
+function getProjectItems(
+  accountSlug: string,
+  data: ReturnType<typeof useProjectsQuery>["data"],
+) {
   if (!data) {
     return <MenuLoader />;
   }
@@ -52,33 +50,43 @@ function Projects(props: { accountSlug: string }) {
 
   return projectNames.map((projectName) => {
     return (
-      <MenuItem key={projectName} href={`${props.accountSlug}/${projectName}`}>
-        <MenuItemIcon>
-          <FolderCodeIcon size={18} />
-        </MenuItemIcon>
+      <MenuItem
+        icon={<FolderCodeIcon size={18} />}
+        key={projectName}
+        href={`${accountSlug}/${projectName}`}
+      >
         {projectName}
       </MenuItem>
     );
   });
 }
 
+function useProjectsQuery(accountSlug: string) {
+  return useQuery(AccountQuery, { variables: { slug: accountSlug } });
+}
+
 export function ProjectBreadcrumbMenu() {
   const { accountSlug } = useParams();
+  const { data, error } = useProjectsQuery(accountSlug ?? "");
+
+  if (error) {
+    throw error;
+  }
 
   if (!accountSlug) {
     return null;
   }
 
   return (
-    <Menu>
+    <Menu side="bottom" align="start">
       <MenuSection>
-        <MenuTitle>Switch project</MenuTitle>
-        <Projects accountSlug={accountSlug} />
+        <MenuHeading>Switch project</MenuHeading>
+        {getProjectItems(accountSlug, data)}
       </MenuSection>
-      <MenuItem href={`${getAccountURL({ accountSlug })}/new`}>
-        <MenuItemIcon>
-          <PlusCircleIcon />
-        </MenuItemIcon>
+      <MenuItem
+        icon={<PlusCircleIcon />}
+        href={`${getAccountURL({ accountSlug })}/new`}
+      >
         Create a Project
       </MenuItem>
     </Menu>

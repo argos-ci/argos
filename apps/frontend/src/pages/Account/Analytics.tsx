@@ -26,16 +26,8 @@ import {
   GitCompareArrowsIcon,
   ImagesIcon,
   LayersIcon,
-  SearchIcon,
   ThumbsUpIcon,
 } from "lucide-react";
-import { useFilter } from "react-aria";
-import {
-  Autocomplete,
-  Input,
-  MenuTrigger,
-  SearchField,
-} from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router";
 import {
@@ -77,7 +69,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { Menu, MenuItem } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
@@ -1300,7 +1292,6 @@ export function ProjectFilterMenu(props: {
   value: string[];
   onChange: (value: string[]) => void;
 }) {
-  const { contains } = useFilter({ sensitivity: "base" });
   const projects = [...props.projects].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -1314,66 +1305,59 @@ export function ProjectFilterMenu(props: {
         ? selected[0]
         : `${selected.length} projects`;
   const searchable = projects.length > PROJECT_SEARCH_THRESHOLD;
-  const menu = (
-    <Menu
-      aria-label="Projects"
-      selectionMode="multiple"
-      selectedKeys={selected}
-      className={searchable ? "max-h-72" : undefined}
-      renderEmptyState={() => (
-        <div className="text-low px-3 py-1.5 text-sm">No projects found</div>
-      )}
-      onSelectionChange={(keys) => {
-        if (keys === "all") {
-          return;
-        }
-        props.onChange(
-          projects
-            .filter((project) => keys.has(project.name))
-            .map((project) => project.name),
-        );
-      }}
-    >
-      {projects.map((project) => (
-        <MenuItem key={project.id} id={project.name} textValue={project.name}>
+  const items =
+    projects.length === 0 ? (
+      // React Aria's collection had `renderEmptyState`; Base UI's popup is
+      // just a list, so the empty case is rendered like any other child.
+      <div className="text-low px-3 py-1.5 text-sm">No projects found</div>
+    ) : (
+      projects.map((project) => (
+        <MenuItem
+          checkbox
+          key={project.id}
+          textValue={project.name}
+          checked={selected.includes(project.name)}
+          onCheckedChange={(checked: boolean) => {
+            const next = new Set(selected);
+            if (checked) {
+              next.add(project.name);
+            } else {
+              next.delete(project.name);
+            }
+            props.onChange(
+              projects
+                .filter((project) => next.has(project.name))
+                .map((project) => project.name),
+            );
+          }}
+        >
           {project.name}
         </MenuItem>
-      ))}
-    </Menu>
-  );
+      ))
+    );
   return (
-    <MenuTrigger>
-      <SelectButton className="shrink-0 text-sm whitespace-nowrap">
-        {label}
-        {selected.length > 1 ? (
-          <Badge>
-            {selected.length}/{projects.length}
-          </Badge>
-        ) : null}
-      </SelectButton>
-      <Popover>
-        {searchable ? (
-          <Autocomplete filter={contains}>
-            <div className="flex w-56 flex-col">
-              <SearchField
-                aria-label="Search projects"
-                autoFocus
-                className="flex items-center gap-2 border-b px-3 py-2"
-              >
-                <SearchIcon className="text-low size-4 shrink-0" />
-                <Input
-                  placeholder="Search projects…"
-                  className="placeholder:text-placeholder search-cancel:hidden w-full bg-transparent text-sm outline-hidden"
-                />
-              </SearchField>
-              {menu}
-            </div>
-          </Autocomplete>
-        ) : (
-          menu
-        )}
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <SelectButton className="shrink-0 text-sm whitespace-nowrap">
+          {label}
+          {selected.length > 1 ? (
+            <Badge>
+              {selected.length}/{projects.length}
+            </Badge>
+          ) : null}
+        </SelectButton>
+      </MenuTrigger>
+      {/* Past a handful of projects the field is worth showing up front;
+          below that the menu's own hidden one is enough. */}
+      <Menu
+        aria-label="Projects"
+        search={searchable ? "Search projects…" : false}
+        emptyPlaceholder="No projects found"
+        noResultsPlaceholder="No projects found"
+      >
+        {items}
+      </Menu>
+    </MenuRoot>
   );
 }
 

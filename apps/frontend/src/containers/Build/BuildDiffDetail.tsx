@@ -25,9 +25,9 @@ import {
 } from "lucide-react";
 
 import {
-  CopyImageSubmenu,
+  getCopyImageSubmenu,
   downloadBlob,
-  DownloadImageSubmenu,
+  getDownloadImageSubmenu,
   downloadWithToast,
   fetchBlob,
   ImageActionsMenu,
@@ -38,7 +38,7 @@ import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { Code } from "@/ui/Code";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
-import { MenuItem, MenuItemIcon, MenuSeparator } from "@/ui/Menu";
+import { MenuItem, MenuSeparator } from "@/ui/menu-kit";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useObjectRef } from "@/ui/useObjectRef";
@@ -530,9 +530,10 @@ function BaseScreenshotActionsMenu({
       tooltip="Baseline screenshot actions"
       ariaLabel="Baseline screenshot actions"
     >
-      <CopyImageSubmenu publicUrl={baseScreenshot.url} alt={diff.name} />
+      {getCopyImageSubmenu({ publicUrl: baseScreenshot.url, alt: diff.name })}
       <MenuSeparator />
       <MenuItem
+        icon={<DownloadIcon />}
         onAction={() => {
           downloadWithToast(
             fetchBlob(baseScreenshot.originalUrl).then((blob) => {
@@ -544,9 +545,6 @@ function BaseScreenshotActionsMenu({
           );
         }}
       >
-        <MenuItemIcon>
-          <DownloadIcon />
-        </MenuItemIcon>
         Download
       </MenuItem>
     </ImageActionsMenu>
@@ -712,61 +710,60 @@ function CompareScreenshotActionsMenu({
       tooltip="Changes screenshot actions"
       ariaLabel="Changes screenshot actions"
     >
-      <CopyImageSubmenu publicUrl={compareScreenshot.url} alt={diff.name} />
+      {getCopyImageSubmenu({
+        publicUrl: compareScreenshot.url,
+        alt: diff.name,
+      })}
       <MenuSeparator />
-      <DownloadImageSubmenu>
-        <MenuItem
-          onAction={() => {
-            downloadWithToast(
-              fetchBlob(compareScreenshot.originalUrl).then((blob) => {
-                downloadBlob(blob, getName("head"));
-              }),
-            );
-          }}
-        >
-          <MenuItemIcon>
-            <FileDownIcon />
-          </MenuItemIcon>
-          Download screenshot
-        </MenuItem>
-        {diffUrl ? (
-          <>
-            <MenuItem
-              onAction={() => {
-                downloadWithToast(
-                  fetchBlob(diffUrl).then((blob) => {
-                    downloadBlob(blob, getName("mask"));
-                  }),
-                );
-              }}
-            >
-              <MenuItemIcon>
-                <BlendIcon />
-              </MenuItemIcon>
-              Download diff mask
-            </MenuItem>
-            <MenuItem
-              onAction={() => {
-                downloadWithToast(
-                  createMaskedCompareBlob({
-                    compareUrl: compareScreenshot.originalUrl,
-                    maskUrl: diffUrl,
-                    color: overlayColor,
-                    opacity: overlayOpacity,
-                  }).then((blob) => {
-                    downloadBlob(blob, getName("composite"));
-                  }),
-                );
-              }}
-            >
-              <MenuItemIcon>
-                <Layers2Icon />
-              </MenuItemIcon>
-              Download composed changes
-            </MenuItem>
-          </>
-        ) : null}
-      </DownloadImageSubmenu>
+      {getDownloadImageSubmenu(
+        <>
+          <MenuItem
+            icon={<FileDownIcon />}
+            onAction={() => {
+              downloadWithToast(
+                fetchBlob(compareScreenshot.originalUrl).then((blob) => {
+                  downloadBlob(blob, getName("head"));
+                }),
+              );
+            }}
+          >
+            Download screenshot
+          </MenuItem>
+          {diffUrl ? (
+            <>
+              <MenuItem
+                icon={<BlendIcon />}
+                onAction={() => {
+                  downloadWithToast(
+                    fetchBlob(diffUrl).then((blob) => {
+                      downloadBlob(blob, getName("mask"));
+                    }),
+                  );
+                }}
+              >
+                Download diff mask
+              </MenuItem>
+              <MenuItem
+                icon={<Layers2Icon />}
+                onAction={() => {
+                  downloadWithToast(
+                    createMaskedCompareBlob({
+                      compareUrl: compareScreenshot.originalUrl,
+                      maskUrl: diffUrl,
+                      color: overlayColor,
+                      opacity: overlayOpacity,
+                    }).then((blob) => {
+                      downloadBlob(blob, getName("composite"));
+                    }),
+                  );
+                }}
+              >
+                Download composed changes
+              </MenuItem>
+            </>
+          ) : null}
+        </>,
+      )}
     </ImageActionsMenu>
   );
 }

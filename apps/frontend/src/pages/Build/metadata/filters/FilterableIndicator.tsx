@@ -1,7 +1,7 @@
 import { use, useRef, useState, type ReactNode } from "react";
 import { FunnelPlusIcon, FunnelXIcon } from "lucide-react";
 
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
+import { Menu, MenuItem } from "@/ui/menu-kit";
 import { Popover } from "@/ui/Popover";
 
 import { FilterState, FilterStateContext } from "./FilterState";
@@ -18,11 +18,8 @@ function FilterIndicatorMenu({ isActive, onToggle }: FilterIndicatorMenuProps) {
     : { icon: FunnelPlusIcon, label: "View filtered snapshots" };
 
   return (
-    <Menu autoFocus className="text-sm" aria-label="Actions">
-      <MenuItem onPress={onToggle}>
-        <MenuItemIcon>
-          <action.icon />
-        </MenuItemIcon>
+    <Menu className="text-sm" aria-label="Actions">
+      <MenuItem icon={<action.icon />} onAction={onToggle}>
         {action.label}
       </MenuItem>
     </Menu>

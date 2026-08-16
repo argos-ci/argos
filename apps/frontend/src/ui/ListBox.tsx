@@ -5,6 +5,7 @@ import {
   ListBoxProps,
   ListBox as RACListBox,
   ListBoxItem as RACListBoxItem,
+  Separator as RACSeparator,
   Text,
 } from "react-aria-components";
 
@@ -20,11 +21,21 @@ export function ListBox<T extends object>({
 }
 
 // A list box is a menu that happens to hold options: same surface, same rows,
-// same separator, all of them defined in `Menu`.
-export {
-  MenuItemIcon as ListBoxItemIcon,
-  MenuSeparator as ListBoxSeparator,
-} from "./Menu";
+// both of them defined in `Menu`.
+export { MenuItemIcon as ListBoxItemIcon } from "./Menu";
+
+/**
+ * The same hairline `MenuSeparator` draws, but built on React Aria's
+ * `Separator` rather than Base UI's.
+ *
+ * React Aria builds a collection out of its children and only understands its
+ * own components: a Base UI `Separator` in here is not just ignored, it takes
+ * every option after it out of the list. This can go back to sharing `Menu`'s
+ * once the list box is Base UI too.
+ */
+export function ListBoxSeparator() {
+  return <RACSeparator className="border-t-thin -mx-1.5 my-1.5" />;
+}
 
 export function ListBoxItem(
   props: ListBoxItemProps & {

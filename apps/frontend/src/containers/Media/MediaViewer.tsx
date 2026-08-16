@@ -34,7 +34,7 @@ import {
   useScaleContext,
 } from "@/containers/Build/ScaleContext";
 import {
-  CopyImageSubmenu,
+  getCopyImageSubmenu,
   downloadBlob,
   downloadWithToast,
   fetchBlob,
@@ -52,7 +52,7 @@ import {
 import { ViewToggle } from "@/containers/Build/toolbar/ViewToggle";
 import { ZoomerSyncProvider, ZoomPane } from "@/containers/Build/Zoomer";
 import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
-import { MenuItem, MenuItemIcon } from "@/ui/Menu";
+import { MenuItem } from "@/ui/menu-kit";
 import { Separator } from "@/ui/Separator";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { formatBytes, formatDimensions } from "@/util/media";
@@ -688,8 +688,9 @@ function MediaActionsMenu(props: { media: ViewerMedia }) {
   const alt = media.state ? `${media.name} (${media.state})` : media.name;
   return (
     <ImageActionsMenu tooltip="Media actions" ariaLabel="Media actions">
-      <CopyImageSubmenu publicUrl={media.version.fileUrl} alt={alt} />
+      {getCopyImageSubmenu({ publicUrl: media.version.fileUrl, alt })}
       <MenuItem
+        icon={<DownloadIcon />}
         onAction={() => {
           downloadWithToast(
             fetchBlob(media.version.fileUrl).then((blob) => {
@@ -698,9 +699,6 @@ function MediaActionsMenu(props: { media: ViewerMedia }) {
           );
         }}
       >
-        <MenuItemIcon>
-          <DownloadIcon />
-        </MenuItemIcon>
         Download
       </MenuItem>
     </ImageActionsMenu>

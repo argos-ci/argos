@@ -1,5 +1,4 @@
 import { FolderCode } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 import { useMatch } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
@@ -9,7 +8,7 @@ import {
   BreadcrumbLink,
   BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
-import { Popover } from "@/ui/Popover";
+import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { ProjectBreadcrumbMenu } from "./ProjectBreadcrumbMenu";
 
@@ -34,12 +33,12 @@ export function ProjectBreadcrumbItem(props: {
         {projectName}
       </BreadcrumbLink>
       {auth.status === "authenticated" && (
-        <MenuTrigger>
-          <BreadcrumbMenuButton />
-          <Popover placement="bottom start">
-            <ProjectBreadcrumbMenu />
-          </Popover>
-        </MenuTrigger>
+        <MenuRoot>
+          <MenuTrigger>
+            <BreadcrumbMenuButton />
+          </MenuTrigger>
+          <ProjectBreadcrumbMenu />
+        </MenuRoot>
       )}
     </BreadcrumbItem>
   );

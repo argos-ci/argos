@@ -11,19 +11,19 @@ import {
 import { useClipboard } from "use-clipboard-copy";
 
 import {
-  AiPromptTargetItems,
+  getAiPromptTargetItems,
   useAiPromptTarget,
 } from "@/containers/AiPromptButton";
 import { Button } from "@/ui/Button";
 import {
   Menu,
   MenuItem,
-  MenuItemIcon,
+  MenuRoot,
   MenuSeparator,
   MenuTrigger,
-  SubmenuTrigger,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+  SubMenu,
+  SubMenuContent,
+} from "@/ui/menu-kit";
 import { toast } from "@/ui/Toaster";
 
 // Shared id so copying from several threads reuses one toast instead of stacking.
@@ -64,103 +64,84 @@ export function CommentActionsMenu(props: {
   const [, setTarget] = useAiPromptTarget();
   const clipboard = useClipboard();
   return (
-    <MenuTrigger>
-      <Button
-        variant="ghost"
-        iconOnly
-        size="small"
-        aria-label="Comment actions"
-      >
-        <MoreHorizontalIcon />
-      </Button>
-      <Popover placement="bottom end">
-        <Menu aria-label="Comment actions">
-          {onEdit ? (
-            <MenuItem onAction={onEdit}>
-              <MenuItemIcon>
-                <PencilIcon />
-              </MenuItemIcon>
-              Edit
+    <MenuRoot>
+      <MenuTrigger>
+        <Button
+          variant="ghost"
+          iconOnly
+          size="small"
+          aria-label="Comment actions"
+        >
+          <MoreHorizontalIcon />
+        </Button>
+      </MenuTrigger>
+      <Menu side="bottom" align="end" aria-label="Comment actions">
+        {onEdit ? (
+          <MenuItem icon={<PencilIcon />} onAction={onEdit}>
+            Edit
+          </MenuItem>
+        ) : null}
+        <MenuItem
+          icon={<>{threadSubscribed ? <BellOffIcon /> : <BellIcon />}</>}
+          onAction={threadSubscribed ? onUnsubscribeThread : onSubscribeThread}
+        >
+          {threadSubscribed ? "Unsubscribe from thread" : "Subscribe to thread"}
+        </MenuItem>
+        {threadPrompt ? (
+          <>
+            <MenuSeparator />
+            <SubMenu>
+              <MenuItem icon={<SparklesIcon />} textValue="Handle with AI">
+                Handle with AI
+              </MenuItem>
+              <SubMenuContent>
+                {getAiPromptTargetItems({
+                  entry: {
+                    label: "Handle this thread",
+                    name: "thread prompt",
+                    prompt: threadPrompt,
+                  },
+                  onPick: setTarget,
+                  onCopy: (entry: { prompt: string }) => {
+                    clipboard.copy(entry.prompt);
+                    // The menu closes on the click, so the toast is the
+                    // only place left to confirm the copy.
+                    toast.success("Prompt copied", {
+                      id: COPY_PROMPT_TOAST_ID,
+                      description:
+                        "Paste it into a coding agent working in your repository.",
+                    });
+                  },
+                })}
+              </SubMenuContent>
+            </SubMenu>
+          </>
+        ) : null}
+        {onToggleResolved ? (
+          <>
+            <MenuSeparator />
+            <MenuItem icon={<CheckIcon />} onAction={onToggleResolved}>
+              {resolved ? "Reopen thread" : "Resolve thread"}
             </MenuItem>
-          ) : null}
-          <MenuItem
-            onAction={
-              threadSubscribed ? onUnsubscribeThread : onSubscribeThread
-            }
-          >
-            <MenuItemIcon>
-              {threadSubscribed ? <BellOffIcon /> : <BellIcon />}
-            </MenuItemIcon>
-            {threadSubscribed
-              ? "Unsubscribe from thread"
-              : "Subscribe to thread"}
-          </MenuItem>
-          {threadPrompt ? (
-            <>
-              <MenuSeparator />
-              <SubmenuTrigger>
-                <MenuItem textValue="Handle with AI">
-                  <MenuItemIcon>
-                    <SparklesIcon />
-                  </MenuItemIcon>
-                  Handle with AI
-                </MenuItem>
-                <Popover>
-                  <Menu aria-label="Handle with AI">
-                    <AiPromptTargetItems
-                      entry={{
-                        label: "Handle this thread",
-                        name: "thread prompt",
-                        prompt: threadPrompt,
-                      }}
-                      onPick={setTarget}
-                      onCopy={(entry) => {
-                        clipboard.copy(entry.prompt);
-                        // The menu closes on the click, so the toast is the
-                        // only place left to confirm the copy.
-                        toast.success("Prompt copied", {
-                          id: COPY_PROMPT_TOAST_ID,
-                          description:
-                            "Paste it into a coding agent working in your repository.",
-                        });
-                      }}
-                    />
-                  </Menu>
-                </Popover>
-              </SubmenuTrigger>
-            </>
-          ) : null}
-          {onToggleResolved ? (
-            <>
-              <MenuSeparator />
-              <MenuItem onAction={onToggleResolved}>
-                <MenuItemIcon>
-                  <CheckIcon />
-                </MenuItemIcon>
-                {resolved ? "Reopen thread" : "Resolve thread"}
-              </MenuItem>
-            </>
-          ) : null}
-          <MenuSeparator />
-          <MenuItem onAction={onCopyLink}>
-            <MenuItemIcon>
-              <LinkIcon />
-            </MenuItemIcon>
-            Copy link to comment
-          </MenuItem>
-          {onDelete ? (
-            <>
-              <MenuSeparator />
-              <MenuItem variant="danger" onAction={onDelete}>
-                <MenuItemIcon>
-                  <Trash2Icon />
-                </MenuItemIcon>
-                Delete
-              </MenuItem>
-            </>
-          ) : null}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+          </>
+        ) : null}
+        <MenuSeparator />
+        <MenuItem icon={<LinkIcon />} onAction={onCopyLink}>
+          Copy link to comment
+        </MenuItem>
+        {onDelete ? (
+          <>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Trash2Icon />}
+              variant="danger"
+              onAction={onDelete}
+            >
+              Delete
+            </MenuItem>
+          </>
+        ) : null}
+      </Menu>
+    </MenuRoot>
   );
 }

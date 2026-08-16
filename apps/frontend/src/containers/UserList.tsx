@@ -4,8 +4,13 @@ import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemTooltip, MenuTrigger } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import {
+  Menu,
+  MenuItem,
+  MenuItemTooltip,
+  MenuRoot,
+  MenuTrigger,
+} from "@/ui/menu-kit";
 
 import { AccountAvatar } from "./AccountAvatar";
 
@@ -17,25 +22,25 @@ export function RemoveMenu(props: {
   tooltip?: string | null;
 }) {
   return (
-    <MenuTrigger>
-      <Button variant="ghost" size="small" iconOnly>
-        <MoreVerticalIcon />
-      </Button>
-      <Popover>
-        <Menu aria-label={props.label}>
-          <MenuItem
-            variant="danger"
-            onAction={() => {
-              props.onRemove();
-            }}
-            isDisabled={props.isDisabled}
-          >
-            {props.tooltip && <MenuItemTooltip content={props.tooltip} />}
-            {props.actionLabel}
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <Button variant="ghost" size="small" iconOnly>
+          <MoreVerticalIcon />
+        </Button>
+      </MenuTrigger>
+      <Menu aria-label={props.label}>
+        <MenuItem
+          variant="danger"
+          onAction={() => {
+            props.onRemove();
+          }}
+          disabled={props.isDisabled}
+        >
+          {props.tooltip && <MenuItemTooltip content={props.tooltip} />}
+          {props.actionLabel}
+        </MenuItem>
+      </Menu>
+    </MenuRoot>
   );
 }
 

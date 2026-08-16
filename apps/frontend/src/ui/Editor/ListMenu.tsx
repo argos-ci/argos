@@ -3,8 +3,7 @@ import { ChevronDownIcon, ListIcon, ListOrderedIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Kbd } from "@/ui/Kbd";
-import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { Button } from "../Button";
 import { MOD, SHIFT } from "./EditorToolbar.shortcuts";
@@ -38,60 +37,56 @@ export function ListMenu(props: { editor: Editor; state: ToolbarState }) {
   const tooltipKeys = selectedOption ? [...selectedOption.keys] : [];
 
   return (
-    <MenuTrigger>
+    <MenuRoot>
+      {/* The tooltip wraps the menu button rather than the other way round:
+          Base UI triggers compose through `render`, so the outer one hands its
+          props down to the inner one and both reach the button. */}
       <HotkeyTooltip
         description={selectedOption?.label ?? "List"}
         keys={tooltipKeys}
       >
-        <Button
-          size="small"
-          variant="ghost"
-          aria-label="Lists"
-          aria-pressed={selectedKey !== null}
-        >
-          <ListIcon className="size-4" />
-          <ChevronDownIcon className="size-3" />
-        </Button>
+        <MenuTrigger>
+          <Button
+            size="small"
+            variant="ghost"
+            aria-label="Lists"
+            aria-pressed={selectedKey !== null}
+          >
+            <ListIcon className="size-4" />
+            <ChevronDownIcon className="size-3" />
+          </Button>
+        </MenuTrigger>
       </HotkeyTooltip>
-      <Popover>
-        <Menu
-          aria-label="Lists"
-          selectionMode="single"
-          selectedKeys={selectedKey ? [selectedKey] : []}
-          onAction={(key) => {
-            const chain = editor.chain().focus();
-            if (key === "bulletList") {
-              chain.toggleBulletList().run();
-            } else if (key === "orderedList") {
-              chain.toggleOrderedList().run();
+      <Menu aria-label="Lists" className="min-w-60">
+        {LIST_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.key}
+            textValue={option.label}
+            icon={<option.icon />}
+            checked={selectedKey === option.key}
+            disabled={
+              option.key === "bulletList"
+                ? !state.canBulletList
+                : !state.canOrderedList
             }
-          }}
-          className="min-w-60"
-        >
-          {LIST_OPTIONS.map((option) => (
-            <MenuItem
-              key={option.key}
-              id={option.key}
-              textValue={option.label}
-              isDisabled={
-                option.key === "bulletList"
-                  ? !state.canBulletList
-                  : !state.canOrderedList
+            keyboardShortcut={option.keys.map((key) => (
+              <Kbd key={key} className="ml-0.5">
+                {key}
+              </Kbd>
+            ))}
+            onAction={() => {
+              const chain = editor.chain().focus();
+              if (option.key === "bulletList") {
+                chain.toggleBulletList().run();
+              } else if (option.key === "orderedList") {
+                chain.toggleOrderedList().run();
               }
-            >
-              <option.icon className="mr-2 size-4" />
-              {option.label}
-              <MenuItemShortcut>
-                {option.keys.map((key) => (
-                  <Kbd key={key} className="ml-0.5">
-                    {key}
-                  </Kbd>
-                ))}
-              </MenuItemShortcut>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+            }}
+          >
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
+    </MenuRoot>
   );
 }

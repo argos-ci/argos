@@ -40,12 +40,11 @@ import { List, ListRow } from "@/ui/List";
 import {
   Menu,
   MenuItem,
-  MenuItemIcon,
+  MenuRoot,
   MenuSeparator,
   MenuTrigger,
-} from "@/ui/Menu";
+} from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Truncable } from "@/ui/Truncable";
@@ -245,53 +244,47 @@ function WebhookActionsMenu(props: { webhook: DiscordWebhook }) {
   const label = `Actions for ${webhook.name}`;
   return (
     <>
-      <MenuTrigger>
-        <Button variant="ghost" iconOnly aria-label={label}>
-          <MoreVerticalIcon />
-        </Button>
-        <Popover placement="bottom end">
-          <Menu aria-label={label}>
-            <MenuItem
-              isDisabled={loading}
-              onAction={() => {
-                testWebhook().catch(() => {
-                  // The error is surfaced by `onError`.
-                });
-              }}
-            >
-              <MenuItemIcon>
-                <SendIcon />
-              </MenuItemIcon>
-              Send a test message
-            </MenuItem>
-            <MenuItem
-              onAction={() => {
-                clipboard.copy(webhook.url);
-                toast.success("Webhook URL copied to clipboard", {
-                  id: "discord-webhook-copied",
-                });
-              }}
-            >
-              <MenuItemIcon>
-                <CopyIcon />
-              </MenuItemIcon>
-              Copy webhook URL
-            </MenuItem>
-            <MenuSeparator />
-            <MenuItem
-              variant="danger"
-              onAction={() => {
-                setIsDeleteDialogOpen(true);
-              }}
-            >
-              <MenuItemIcon>
-                <Trash2Icon />
-              </MenuItemIcon>
-              Remove channel
-            </MenuItem>
-          </Menu>
-        </Popover>
-      </MenuTrigger>
+      <MenuRoot>
+        <MenuTrigger>
+          <Button variant="ghost" iconOnly aria-label={label}>
+            <MoreVerticalIcon />
+          </Button>
+        </MenuTrigger>
+        <Menu side="bottom" align="end" aria-label={label}>
+          <MenuItem
+            icon={<SendIcon />}
+            disabled={loading}
+            onAction={() => {
+              testWebhook().catch(() => {
+                // The error is surfaced by `onError`.
+              });
+            }}
+          >
+            Send a test message
+          </MenuItem>
+          <MenuItem
+            icon={<CopyIcon />}
+            onAction={() => {
+              clipboard.copy(webhook.url);
+              toast.success("Webhook URL copied to clipboard", {
+                id: "discord-webhook-copied",
+              });
+            }}
+          >
+            Copy webhook URL
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem
+            icon={<Trash2Icon />}
+            variant="danger"
+            onAction={() => {
+              setIsDeleteDialogOpen(true);
+            }}
+          >
+            Remove channel
+          </MenuItem>
+        </Menu>
+      </MenuRoot>
       <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DeleteWebhookDialog webhook={webhook} />
       </Modal>

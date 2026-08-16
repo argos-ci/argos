@@ -1,29 +1,27 @@
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 
-import {
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  MenuItemSuffix,
-  MenuSeparator,
-} from "@/ui/Menu";
+import { Menu, MenuItem, MenuSeparator } from "@/ui/menu-kit";
 
 import { FilterIcon } from "./FilterIcon";
 import type { FilterState } from "./FilterState";
 import { getFilterCategoryDefinition, type FilterGroup } from "./util";
 
-export const FilterCategoryMenu = (props: {
+/**
+ * The rows for one category, as a plain function rather than a component.
+ *
+ * A menu reads its children, so it cannot see inside a component — these have
+ * to reach it directly, whether it is this category's own menu or the search
+ * menu listing every category as a submenu.
+ */
+export function getFilterCategoryItems(props: {
   filterGroup: FilterGroup;
   state: FilterState;
-  className?: string;
   splitSelected?: boolean;
-}) => {
-  const { filterGroup, state, splitSelected, className } = props;
+}) {
+  const { filterGroup, state, splitSelected } = props;
   const { getFilterByKey } = state;
-  const categoryDef = getFilterCategoryDefinition(filterGroup.category);
   const selectedKeys = state.active.intersection(filterGroup.filterKeys);
-  // Keep the initial display for splitted groups to avoid CLS while clicking on items
-  const [{ showMenuSeparator, checked, visibleFilters }] = useState(() => {
+  const { showMenuSeparator, checked, visibleFilters } = (() => {
     const filters = Array.from(filterGroup.filterKeys).map((key) =>
       getFilterByKey(key),
     );
@@ -33,39 +31,52 @@ export const FilterCategoryMenu = (props: {
     const showMenuSeparator =
       splitSelected && checked.length > 0 && unchecked.length > 0;
     return { checked, visibleFilters, showMenuSeparator };
-  });
+  })();
 
+  return visibleFilters.map((filter, index) => {
+    return (
+      <Fragment key={filter.key}>
+        {showMenuSeparator && index === checked.length && <MenuSeparator />}
+        <MenuItem
+          icon={<FilterIcon filter={filter} />}
+          suffix={
+            <>
+              {filter.count} {filter.count === 1 ? "item" : "items"}
+            </>
+          }
+          checkbox
+          textValue={filter.label}
+          checked={selectedKeys.has(filter.key)}
+          onCheckedChange={(checked: boolean) => {
+            const next = new Set(selectedKeys);
+            if (checked) {
+              next.add(filter.key);
+            } else {
+              next.delete(filter.key);
+            }
+            const otherKeys = state.active.difference(filterGroup.filterKeys);
+            state.setActive(otherKeys.union(next));
+          }}
+        >
+          {filter.label}
+        </MenuItem>
+      </Fragment>
+    );
+  });
+}
+
+/** That category on its own, for the chip that opens just this one. */
+export function FilterCategoryMenu(props: {
+  filterGroup: FilterGroup;
+  state: FilterState;
+  className?: string;
+  splitSelected?: boolean;
+}) {
+  const { className, ...rest } = props;
+  const categoryDef = getFilterCategoryDefinition(props.filterGroup.category);
   return (
-    <Menu
-      aria-label={`${categoryDef.label} filters`}
-      selectionMode="multiple"
-      selectedKeys={selectedKeys}
-      onSelectionChange={(selection) => {
-        const otherKeys = state.active.difference(filterGroup.filterKeys);
-        const selectedKeys =
-          selection === "all"
-            ? filterGroup.filterKeys
-            : (selection as Set<string>);
-        state.setActive(otherKeys.union(selectedKeys));
-      }}
-      className={className}
-    >
-      {visibleFilters.map((filter, index) => {
-        return (
-          <Fragment key={filter.key}>
-            {showMenuSeparator && index === checked.length && <MenuSeparator />}
-            <MenuItem id={filter.key} textValue={filter.label}>
-              <MenuItemIcon>
-                <FilterIcon filter={filter} />
-              </MenuItemIcon>
-              {filter.label}
-              <MenuItemSuffix>
-                {filter.count} {filter.count === 1 ? "item" : "items"}
-              </MenuItemSuffix>
-            </MenuItem>
-          </Fragment>
-        );
-      })}
+    <Menu aria-label={`${categoryDef.label} filters`} className={className}>
+      {getFilterCategoryItems(rest)}
     </Menu>
   );
-};
+}

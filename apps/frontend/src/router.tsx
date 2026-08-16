@@ -21,6 +21,7 @@ import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
 import { Loader } from "./ui/Loader";
+import { checkIsExternalHref } from "./ui/RouterLink";
 import { TooltipProvider } from "./ui/Tooltip";
 import { checkIsErrorCode } from "./util/error";
 
@@ -28,16 +29,6 @@ declare module "react-aria-components" {
   interface RouterConfig {
     routerOptions: NavigateOptions;
   }
-}
-
-/**
- * Anything carrying its own URL scheme leaves the app: `http://`, `https://`
- * and `mailto:`, but also the deep links that hand a prompt to a coding agent
- * installed on the machine (`claude-cli://`, `codex://`, `cursor://`). React
- * Router must not try to resolve those as in-app paths.
- */
-function checkIsExternalHref(path: string) {
-  return /^[a-z][a-z\d+.-]*:\/\//i.test(path) || path.startsWith("mailto:");
 }
 
 function useAbsoluteHref(path: string) {

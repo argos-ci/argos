@@ -4,7 +4,7 @@ import { XIcon } from "lucide-react";
 
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip, ChipButton } from "@/ui/Chip";
-import { MenuTrigger } from "@/ui/Menu";
+import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 import { Truncable } from "@/ui/Truncable";
@@ -95,26 +95,28 @@ const ChipValueButton = (props: {
   })();
 
   return (
-    <MenuTrigger>
-      <ChipButton className="min-w-0" scale="xs">
-        <div className="flex items-center gap-(--chip-gap)">
-          <StackedItems>
-            {Array.from(selectedKeys)
-              .map((key) => state.getFilterByKey(key))
-              .sort((a, b) => a.value.localeCompare(b.value))
-              .map((filter) => {
-                return (
-                  <FilterIcon
-                    key={filter.key}
-                    filter={filter}
-                    className="bg-primary-app size-[1em] shrink-0 rounded-full ring-[0.5px] ring-(--background-color-primary-app)"
-                  />
-                );
-              })}
-          </StackedItems>
-          <Truncable className="text-xxs">{label}</Truncable>
-        </div>
-      </ChipButton>
+    <MenuRoot>
+      <MenuTrigger>
+        <ChipButton className="min-w-0" scale="xs">
+          <div className="flex items-center gap-(--chip-gap)">
+            <StackedItems>
+              {Array.from(selectedKeys)
+                .map((key) => state.getFilterByKey(key))
+                .sort((a, b) => a.value.localeCompare(b.value))
+                .map((filter) => {
+                  return (
+                    <FilterIcon
+                      key={filter.key}
+                      filter={filter}
+                      className="bg-primary-app size-[1em] shrink-0 rounded-full ring-[0.5px] ring-(--background-color-primary-app)"
+                    />
+                  );
+                })}
+            </StackedItems>
+            <Truncable className="text-xxs">{label}</Truncable>
+          </div>
+        </ChipButton>
+      </MenuTrigger>
       <Popover placement="bottom start">
         <FilterCategoryMenu
           filterGroup={filterGroup}
@@ -123,6 +125,6 @@ const ChipValueButton = (props: {
           splitSelected
         />
       </Popover>
-    </MenuTrigger>
+    </MenuRoot>
   );
 };

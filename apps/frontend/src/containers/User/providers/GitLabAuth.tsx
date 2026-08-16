@@ -1,13 +1,11 @@
 import { useApolloClient } from "@apollo/client/react";
 import { ExternalLinkIcon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { GitLabColoredLogo, GitLabLoginButton } from "@/containers/GitLab";
 import { DocumentType, graphql } from "@/gql";
 import { GitLabAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { getOAuthURL } from "@/util/oauth";
 
 import {
@@ -82,31 +80,29 @@ export function GitLabAuth(props: {
           {account.gitlabUser.lastLoggedAt && (
             <ProviderLastLoggedAt date={account.gitlabUser.lastLoggedAt} />
           )}
-          <MenuTrigger>
-            <ProviderMenuButton />
-            <Popover>
-              <Menu aria-label="GitLab options">
-                <MenuItem
-                  href="https://gitlab.com/-/profile/applications"
-                  target="_blank"
-                >
-                  Manage on gitlab.com
-                  <MenuItemIcon position="right">
-                    <ExternalLinkIcon />
-                  </MenuItemIcon>
-                </MenuItem>
-                <ReconnectGitLabMenuItem />
-                <MenuItem
-                  variant="danger"
-                  onAction={() => {
-                    disconnect();
-                  }}
-                >
-                  Disconnect
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+          <MenuRoot>
+            <MenuTrigger>
+              <ProviderMenuButton />
+            </MenuTrigger>
+            <Menu aria-label="GitLab options">
+              <MenuItem
+                icon={<ExternalLinkIcon />}
+                href="https://gitlab.com/-/profile/applications"
+                target="_blank"
+              >
+                Manage on gitlab.com
+              </MenuItem>
+              {getReconnectGitLabMenuItem()}
+              <MenuItem
+                variant="danger"
+                onAction={() => {
+                  disconnect();
+                }}
+              >
+                Disconnect
+              </MenuItem>
+            </Menu>
+          </MenuRoot>
         </>
       ) : (
         <GitLabLoginButton>Connect GitLab</GitLabLoginButton>
@@ -115,7 +111,8 @@ export function GitLabAuth(props: {
   );
 }
 
-function ReconnectGitLabMenuItem() {
+/** A function, not a component: a menu cannot see inside one. */
+function getReconnectGitLabMenuItem() {
   const url = getOAuthURL({
     provider: "gitlab",
     redirect: null,

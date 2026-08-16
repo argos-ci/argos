@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { DialogTrigger, MenuTrigger } from "react-aria-components";
+import { DialogTrigger } from "react-aria-components";
 
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
@@ -15,9 +15,8 @@ import {
 } from "@/ui/Card";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 
 import { formatList } from "../../util/intl";
@@ -60,34 +59,30 @@ const ActionsMenu = ({
   onDelete: (value: TokenDialogValue) => void;
 }) => {
   return (
-    <MenuTrigger>
-      <ProviderMenuButton />
-      <Popover>
-        <Menu aria-label={`${token.name} options`}>
-          <MenuItem
-            onAction={() => {
-              onRename({ id: token.id, name: token.name });
-            }}
-          >
-            <MenuItemIcon>
-              <PencilIcon />
-            </MenuItemIcon>
-            Rename
-          </MenuItem>
-          <MenuItem
-            variant="danger"
-            onAction={() => {
-              onDelete({ id: token.id, name: token.name });
-            }}
-          >
-            <MenuItemIcon>
-              <Trash2Icon />
-            </MenuItemIcon>
-            Delete
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <ProviderMenuButton />
+      </MenuTrigger>
+      <Menu aria-label={`${token.name} options`}>
+        <MenuItem
+          icon={<PencilIcon />}
+          onAction={() => {
+            onRename({ id: token.id, name: token.name });
+          }}
+        >
+          Rename
+        </MenuItem>
+        <MenuItem
+          icon={<Trash2Icon />}
+          variant="danger"
+          onAction={() => {
+            onDelete({ id: token.id, name: token.name });
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
+    </MenuRoot>
   );
 };
 

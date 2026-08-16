@@ -1,15 +1,13 @@
 import { useApolloClient } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ExternalLinkIcon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { config } from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { DocumentType, graphql } from "@/gql";
 import { GitHubAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { getOAuthURL } from "@/util/oauth";
 
 import {
@@ -84,31 +82,29 @@ export function GitHubAuth(props: {
           {account.githubAccount.lastLoggedAt && (
             <ProviderLastLoggedAt date={account.githubAccount.lastLoggedAt} />
           )}
-          <MenuTrigger>
-            <ProviderMenuButton />
-            <Popover>
-              <Menu aria-label="GitHub options">
-                <MenuItem
-                  href={`https://github.com/settings/connections/applications/${config.github.clientId}`}
-                  target="_blank"
-                >
-                  Manage on github.com
-                  <MenuItemIcon position="right">
-                    <ExternalLinkIcon />
-                  </MenuItemIcon>
-                </MenuItem>
-                <ReconnectGitHubMenuItem />
-                <MenuItem
-                  variant="danger"
-                  onAction={() => {
-                    disconnect();
-                  }}
-                >
-                  Disconnect
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+          <MenuRoot>
+            <MenuTrigger>
+              <ProviderMenuButton />
+            </MenuTrigger>
+            <Menu aria-label="GitHub options">
+              <MenuItem
+                icon={<ExternalLinkIcon />}
+                href={`https://github.com/settings/connections/applications/${config.github.clientId}`}
+                target="_blank"
+              >
+                Manage on github.com
+              </MenuItem>
+              {getReconnectGitHubMenuItem()}
+              <MenuItem
+                variant="danger"
+                onAction={() => {
+                  disconnect();
+                }}
+              >
+                Disconnect
+              </MenuItem>
+            </Menu>
+          </MenuRoot>
         </>
       ) : (
         <GitHubLoginButton>Connect GitHub</GitHubLoginButton>
@@ -117,7 +113,8 @@ export function GitHubAuth(props: {
   );
 }
 
-function ReconnectGitHubMenuItem() {
+/** A function, not a component: a menu cannot see inside one. */
+function getReconnectGitHubMenuItem() {
   const url = getOAuthURL({
     provider: "github",
     redirect: null,

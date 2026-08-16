@@ -1,13 +1,11 @@
 import { memo, use, useState } from "react";
 import { invariant } from "@argos/util/invariant";
-import { createHideableComponent } from "@react-aria/collections";
 import { FilterIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { MenuTrigger } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { FilterSearchMenu } from "./FilterSearchMenu";
 import { FilterStateContext, type FilterState } from "./FilterState";
@@ -23,28 +21,27 @@ export const FilterButton = memo(function FilterButton() {
   return <InnerFilterButton state={state} />;
 });
 
-// This is needed because of https://github.com/adobe/react-spectrum/issues/9011
-const InnerFilterButton = createHideableComponent(
-  function InnerFilterButton(props: { state: FilterState }) {
-    const { state } = props;
-    const [isOpen, setIsOpen] = useState(false);
-    const filterHotKey = useBuildHotkey("toggleFilters", () => setIsOpen(true));
+// `createHideableComponent` is gone with react-aria: it worked around React
+// Aria rendering its collection twice (adobe/react-spectrum#9011), and Base UI
+// has no hidden pass to work around.
+function InnerFilterButton(props: { state: FilterState }) {
+  const { state } = props;
+  const [isOpen, setIsOpen] = useState(false);
+  const filterHotKey = useBuildHotkey("toggleFilters", () => setIsOpen(true));
 
-    return (
-      <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-        <HotkeyTooltip
-          keys={filterHotKey.displayKeys}
-          description={filterHotKey.description}
-        >
+  return (
+    <MenuRoot open={isOpen} onOpenChange={setIsOpen}>
+      <HotkeyTooltip
+        keys={filterHotKey.displayKeys}
+        description={filterHotKey.description}
+      >
+        <MenuTrigger>
           <Button variant="ghost" iconOnly size="small">
             <FilterIcon />
           </Button>
-        </HotkeyTooltip>
-
-        <Popover placement="bottom start" className="bg-app min-w-40">
-          <FilterSearchMenu state={state} />
-        </Popover>
-      </MenuTrigger>
-    );
-  },
-);
+        </MenuTrigger>
+      </HotkeyTooltip>
+      <FilterSearchMenu state={state} />
+    </MenuRoot>
+  );
+}

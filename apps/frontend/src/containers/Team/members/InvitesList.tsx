@@ -8,7 +8,6 @@ import {
   MailIcon,
   MoreVerticalIcon,
 } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { TeamMemberLabel } from "@/containers/UserList";
@@ -19,9 +18,8 @@ import { DialogTrigger } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 
@@ -148,97 +146,93 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                 </div>
 
                 {props.amOwner ? (
-                  <MenuTrigger>
-                    <Button variant="ghost" iconOnly>
-                      <MoreVerticalIcon />
-                    </Button>
-                    <Popover>
-                      <Menu aria-label="Actions">
-                        <MenuItem
-                          variant="danger"
-                          onAction={() => {
-                            toast.promise(
-                              client.mutate({
-                                mutation: TeamInviteCancelMutation,
-                                variables: { teamInviteId: invite.id },
-                                update(cache, { data }) {
-                                  if (data?.cancelInvite) {
-                                    cache.modify({
-                                      id: cache.identify({
-                                        __typename: "Team",
-                                        id: props.team.id,
-                                      }),
-                                      fields: {
-                                        invites: (
-                                          existingInvites,
-                                          { readField },
-                                        ) => {
-                                          return {
-                                            ...existingInvites,
-                                            edges: existingInvites.edges.filter(
-                                              (ref: Reference) =>
-                                                readField("id", ref) !==
-                                                invite.id,
-                                            ),
-                                            pageInfo: {
-                                              ...existingInvites.pageInfo,
-                                              totalCount:
-                                                existingInvites.pageInfo
-                                                  .totalCount - 1,
-                                            },
-                                          };
-                                        },
+                  <MenuRoot>
+                    <MenuTrigger>
+                      <Button variant="ghost" iconOnly>
+                        <MoreVerticalIcon />
+                      </Button>
+                    </MenuTrigger>
+                    <Menu aria-label="Actions">
+                      <MenuItem
+                        icon={<CircleXIcon />}
+                        variant="danger"
+                        onAction={() => {
+                          toast.promise(
+                            client.mutate({
+                              mutation: TeamInviteCancelMutation,
+                              variables: { teamInviteId: invite.id },
+                              update(cache, { data }) {
+                                if (data?.cancelInvite) {
+                                  cache.modify({
+                                    id: cache.identify({
+                                      __typename: "Team",
+                                      id: props.team.id,
+                                    }),
+                                    fields: {
+                                      invites: (
+                                        existingInvites,
+                                        { readField },
+                                      ) => {
+                                        return {
+                                          ...existingInvites,
+                                          edges: existingInvites.edges.filter(
+                                            (ref: Reference) =>
+                                              readField("id", ref) !==
+                                              invite.id,
+                                          ),
+                                          pageInfo: {
+                                            ...existingInvites.pageInfo,
+                                            totalCount:
+                                              existingInvites.pageInfo
+                                                .totalCount - 1,
+                                          },
+                                        };
                                       },
-                                    });
-                                  }
-                                },
-                              }),
-                              {
-                                loading: "Canceling invitation…",
-                                success: "Invitation canceled",
-                                error: "Failed to cancel invitation",
+                                    },
+                                  });
+                                }
                               },
-                            );
-                          }}
-                        >
-                          <MenuItemIcon>
-                            <CircleXIcon />
-                          </MenuItemIcon>
-                          Cancel Invitation
-                        </MenuItem>
-                        <MenuItem
-                          onAction={() => {
-                            toast.promise(
-                              client.mutate({
-                                mutation: ResendInviteMutation,
-                                variables: {
-                                  input: {
-                                    teamAccountId: props.team.id,
-                                    members: [
-                                      {
-                                        email: invite.email,
-                                        level: invite.userLevel,
-                                      },
-                                    ],
-                                  },
+                            }),
+                            {
+                              loading: "Canceling invitation…",
+                              success: "Invitation canceled",
+                              error: "Failed to cancel invitation",
+                            },
+                          );
+                        }}
+                      >
+                        Cancel Invitation
+                      </MenuItem>
+                      <MenuItem
+                        icon={<MailIcon />}
+                        onAction={() => {
+                          toast.promise(
+                            client.mutate({
+                              mutation: ResendInviteMutation,
+                              variables: {
+                                input: {
+                                  teamAccountId: props.team.id,
+                                  members: [
+                                    {
+                                      email: invite.email,
+                                      level: invite.userLevel,
+                                    },
+                                  ],
                                 },
-                              }),
-                              {
-                                loading: "Resending invitation…",
-                                success: "Invitation resent",
-                                error: "Failed to resend invitation",
                               },
-                            );
-                          }}
-                        >
-                          <MenuItemIcon>
-                            <MailIcon />
-                          </MenuItemIcon>
-                          Resend Invitation
-                        </MenuItem>
-                      </Menu>
-                    </Popover>
-                  </MenuTrigger>
+                            }),
+                            {
+                              loading: "Resending invitation…",
+                              success: "Invitation resent",
+                              error: "Failed to resend invitation",
+                            },
+                          );
+                        }}
+                      >
+                        Resend Invitation
+                      </MenuItem>
+                    </Menu>
+                  </MenuRoot>
                 ) : (
                   <div className="w-4" />
                 )}

@@ -1,11 +1,16 @@
 import { useQuery } from "@apollo/client/react";
 import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
-import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router";
 
 import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
-import { Menu, MenuItem, MenuItemIcon, MenuLoader, MenuTitle } from "@/ui/Menu";
+import {
+  Menu,
+  MenuHeading,
+  MenuItem,
+  MenuLoader,
+  MenuSection,
+} from "@/ui/menu-kit";
 
 import { AccountItem } from "../AccountItem";
 
@@ -41,14 +46,13 @@ function resolveAccountPath(slug: string, pathname: string) {
   return getAccountURL({ accountSlug: slug });
 }
 
-function AccountMenuItems(props: { accounts: Account[] }) {
-  const { accounts } = props;
-  const location = useLocation();
+/** The rows for a list of accounts, handed straight to the menu. */
+function getAccountMenuItems(accounts: Account[], pathname: string) {
   return accounts.map((account) => {
     return (
       <MenuItem
         key={account.id}
-        href={resolveAccountPath(account.slug, location.pathname)}
+        href={resolveAccountPath(account.slug, pathname)}
       >
         <AccountItem account={account} />
       </MenuItem>
@@ -58,6 +62,7 @@ function AccountMenuItems(props: { accounts: Account[] }) {
 
 export function AccountBreadcrumbMenu() {
   const { data, error } = useQuery(MeQuery);
+  const location = useLocation();
 
   if (error) {
     throw error;
@@ -68,38 +73,33 @@ export function AccountBreadcrumbMenu() {
   }
 
   return (
-    <Menu>
+    <Menu side="bottom" align="start">
       <MenuSection>
-        <MenuTitle>Personal</MenuTitle>
-        {data?.me ? <AccountMenuItems accounts={[data.me]} /> : <MenuLoader />}
-      </MenuSection>
-      <MenuSection>
-        <MenuTitle>Teams</MenuTitle>
+        <MenuHeading>Personal</MenuHeading>
         {data?.me ? (
-          <AccountMenuItems accounts={data.me.teams} />
+          getAccountMenuItems([data.me], location.pathname)
         ) : (
           <MenuLoader />
         )}
-        <MenuItem href="/teams/new">
-          <MenuItemIcon>
-            <PlusCircleIcon />
-          </MenuItemIcon>
+      </MenuSection>
+      <MenuSection>
+        <MenuHeading>Teams</MenuHeading>
+        {data?.me ? (
+          getAccountMenuItems(data.me.teams, location.pathname)
+        ) : (
+          <MenuLoader />
+        )}
+        <MenuItem icon={<PlusCircleIcon />} href="/teams/new">
           Create a Team
         </MenuItem>
       </MenuSection>
       {data?.me?.staff ? (
         <MenuSection>
-          <MenuTitle>Staff</MenuTitle>
-          <MenuItem href="/staff/teams">
-            <MenuItemIcon>
-              <ShieldUserIcon />
-            </MenuItemIcon>
+          <MenuHeading>Staff</MenuHeading>
+          <MenuItem icon={<ShieldUserIcon />} href="/staff/teams">
             All teams
           </MenuItem>
-          <MenuItem href="/staff/trials">
-            <MenuItemIcon>
-              <ShieldUserIcon />
-            </MenuItemIcon>
+          <MenuItem icon={<ShieldUserIcon />} href="/staff/trials">
             Trials
           </MenuItem>
         </MenuSection>

@@ -249,9 +249,9 @@ loggedTest(
         .click();
     await openMenu();
     await expect(
-      page.getByRole("menuitem", { name: "Open in Codex" }),
+      page.getByRole("option", { name: "Open in Codex" }),
     ).toHaveAttribute("href", /^codex:\/\/new\?prompt=/);
-    const cursorItem = page.getByRole("menuitem", { name: "Open in Cursor" });
+    const cursorItem = page.getByRole("option", { name: "Open in Cursor" });
     await expect(cursorItem).toHaveAttribute(
       "href",
       /^cursor:\/\/anysphere\.cursor-deeplink\/prompt\?text=/,
@@ -259,7 +259,7 @@ loggedTest(
 
     // Copying is an action like opening an agent, so it puts the prompt on the
     // clipboard and becomes the one the button offers.
-    await page.getByRole("menuitem", { name: "Copy prompt" }).click();
+    await page.getByRole("option", { name: "Copy prompt" }).click();
     const copyButton = page.getByRole("button", { name: /Cop(y prompt|ied)/ });
     await expect(copyButton).toBeVisible();
     if (canReadClipboard) {
@@ -281,7 +281,7 @@ loggedTest(
     // unknown scheme the click navigates to; the others would stop on a dialog.
     if (browserName === "chromium") {
       await openMenu();
-      await page.getByRole("menuitem", { name: "Open in Cursor" }).click();
+      await page.getByRole("option", { name: "Open in Cursor" }).click();
       await page.reload();
       await expect(
         page.getByRole("link", { name: "Open in Cursor" }),

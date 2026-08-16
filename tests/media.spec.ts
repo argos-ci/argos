@@ -238,7 +238,7 @@ loggedTest(
       .getByRole("button", { name: "Comment actions" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Resolve thread" }).click();
+    await page.getByRole("option", { name: "Resolve thread" }).click();
     await expect(openPin).toBeHidden();
     await expect(resolvedPin).toBeHidden();
 

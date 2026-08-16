@@ -2,7 +2,6 @@ import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { Trash2Icon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { OAuthAppLogo, VerifiedBadge } from "@/containers/OAuthAppLogo";
@@ -22,9 +21,8 @@ import {
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListEmpty, ListHeaderRow, ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 
@@ -141,22 +139,20 @@ function AppActionsMenu(props: {
 }) {
   const { app, onRevoke } = props;
   return (
-    <MenuTrigger>
-      <ProviderMenuButton />
-      <Popover>
-        <Menu aria-label={`${app.client.name} options`}>
-          <MenuItem
-            variant="danger"
-            onAction={() => onRevoke({ id: app.id, name: app.client.name })}
-          >
-            <MenuItemIcon>
-              <Trash2Icon />
-            </MenuItemIcon>
-            Revoke access
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <MenuRoot>
+      <MenuTrigger>
+        <ProviderMenuButton />
+      </MenuTrigger>
+      <Menu aria-label={`${app.client.name} options`}>
+        <MenuItem
+          icon={<Trash2Icon />}
+          variant="danger"
+          onAction={() => onRevoke({ id: app.id, name: app.client.name })}
+        >
+          Revoke access
+        </MenuItem>
+      </Menu>
+    </MenuRoot>
   );
 }
 

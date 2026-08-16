@@ -15,7 +15,7 @@ import {
 import { Button } from "@/ui/Button";
 import { DialogTrigger } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -151,30 +151,25 @@ function AutomationRow(props: AutomationRowProps) {
         <Time date={automationRule.createdAt} className="text-low" />
       </div>
       <div className="w-8 shrink-0 py-2">
-        <MenuTrigger>
-          <Button variant="secondary" iconOnly>
-            <MoreVerticalIcon />
-          </Button>
-          <Popover>
-            <Menu>
-              <MenuItem href={url}>
-                <MenuItemIcon>
-                  <PencilIcon />
-                </MenuItemIcon>
-                {hasEditPermission ? "Edit" : "View"}
-              </MenuItem>
-              <MenuItem
-                variant="danger"
-                onAction={() => onDelete(automationRule.id)}
-              >
-                <MenuItemIcon>
-                  <Trash2Icon />
-                </MenuItemIcon>
-                Delete
-              </MenuItem>
-            </Menu>
-          </Popover>
-        </MenuTrigger>
+        <MenuRoot>
+          <MenuTrigger>
+            <Button variant="secondary" iconOnly>
+              <MoreVerticalIcon />
+            </Button>
+          </MenuTrigger>
+          <Menu>
+            <MenuItem icon={<PencilIcon />} href={url}>
+              {hasEditPermission ? "Edit" : "View"}
+            </MenuItem>
+            <MenuItem
+              icon={<Trash2Icon />}
+              variant="danger"
+              onAction={() => onDelete(automationRule.id)}
+            >
+              Delete
+            </MenuItem>
+          </Menu>
+        </MenuRoot>
       </div>
     </ListRowLink>
   );
