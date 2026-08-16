@@ -130,8 +130,9 @@ async function createBilledTeam(input: {
   trialEndedDaysAgo: number;
   /** Where the running period opened, which sets the billing anniversary. */
   periodStartDaysAgo: number;
-  /** What the plan costs per month, as Stripe holds it. */
-  flatPrice: number;
+  /** What the plan costs per month, as Stripe holds it — null when Argos has
+   * not read it yet, which every subscription is until its next sync. */
+  flatPrice: number | null;
   /** Screenshots uploaded during each closed period, most recent first. */
   screenshotsByClosedPeriod: number[];
 }): Promise<Account> {
@@ -300,6 +301,19 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         flatPrice: 100,
         screenshotsByClosedPeriod: [50_000, 40_000],
       }),
+      // A contract whose amount Argos has not read yet: the row falls back to
+      // the guess for its plan rather than to the cheapest plan we sell.
+      createBilledTeam({
+        ...common,
+        planId: enterprisePlan.id,
+        slug: `${prefix}-vandelay`,
+        name: "Vandelay",
+        createdDaysAgo: 70,
+        trialEndedDaysAgo: 67,
+        periodStartDaysAgo: 6,
+        flatPrice: null,
+        screenshotsByClosedPeriod: [20_000],
+      }),
       // Same shape, on a contract with a negotiated amount of its own — the
       // row has to quote that rather than a constant.
       createBilledTeam({
@@ -349,7 +363,7 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await page.goto("/staff/teams");
   await expect(page.getByRole("heading", { name: "All Teams" })).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-  await expect(page.getByText("Showing 1-6 of 6 teams")).toBeVisible();
+  await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
 
   await screenshot(page, "staff-all-teams");
 });
@@ -382,7 +396,7 @@ staffTest(
       page.getByRole("heading", { name: "Trial pipeline" }),
     ).toBeVisible();
     await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-    await expect(page.getByText(/^Showing 6 of \d+ teams$/)).toBeVisible();
+    await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
 
     // Soylent uploaded 50k screenshots over its last closed month: 15k past the
     // 35k included, at $0.005, on top of the $100 flat plan. The month still
@@ -392,10 +406,15 @@ staffTest(
     // contract is $750, read from the subscription rather than assumed. The row
     // names the plan under the amount to say so.
     await expect(page.getByText("$875")).toBeVisible();
-    await expect(page.getByText("Enterprise")).toBeVisible();
+    // Both Enterprise rows name their plan: the one quoting its contract and
+    // the one falling back to a guess.
+    await expect(page.getByText("Enterprise")).toHaveCount(2);
     // Hexagon is billed nothing at all, and the plan is the only thing that
     // says why — the price cell is an em dash.
     await expect(page.getByText("Open source")).toBeVisible();
+    // Vandelay stayed inside its quota, and its own amount is unknown, so the
+    // row shows the guess for an Enterprise contract rather than Pro's $100.
+    await expect(page.getByText("$1,000")).toBeVisible();
 
     await screenshot(page, "staff-trial-pipeline-90-days");
   },

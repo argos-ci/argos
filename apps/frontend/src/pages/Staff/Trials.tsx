@@ -29,7 +29,6 @@ import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
 import {
   AccountSubscriptionStatus,
-  Currency,
   PlanInterval,
   SignupSource,
 } from "@/gql/graphql";
@@ -111,7 +110,6 @@ const TrialPipelineQuery = graphql(`
         provider
         trialDaysRemaining
         paymentMethodFilled
-        currency
       }
     }
   }
@@ -197,59 +195,72 @@ type SortKey =
 
 const PRO_PLAN_NAME = "pro";
 
-/**
- * Published monthly price of the Pro plan, in dollars.
- *
- * The fallback for a subscription whose own amount is not on file — one that
- * has not been synced since Argos started reading it from Stripe, or that has
- * no Stripe price at all. Pro is what a self-serve trial lands on, so it is the
- * right guess for the rows that need one; a contract on another plan is priced
- * far too low by it, which is what the plan named under the amount warns about.
- */
-const PRO_FLAT_PRICE = 100;
+type StaffPlan = NonNullable<PipelineTeam["staff"]["plan"]>;
 
 /**
- * What the plan costs for one billing period, in the subscription's currency.
+ * Monthly price to assume for a plan when the subscription carries no amount of
+ * its own — one Stripe has not been asked about since Argos started reading the
+ * amount, or that has none to give.
+ *
+ * These are guesses, and they are the reason the plan is named under any amount
+ * that is not Pro's. Enterprise is here because the alternative is worse: with
+ * no entry at all a negotiated contract would fall back to the cheapest plan we
+ * sell, and understate itself tenfold in a total that carries no warning.
+ */
+const FALLBACK_MONTHLY_PRICES: Record<string, number | undefined> = {
+  [PRO_PLAN_NAME]: 100,
+  enterprise: 1000,
+};
+
+/** What a plan a trial can land on costs, for the rows that need a guess. */
+const DEFAULT_FALLBACK_MONTHLY_PRICE = 100;
+
+function getFallbackMonthlyPrice(plan: StaffPlan): number {
+  return FALLBACK_MONTHLY_PRICES[plan.name] ?? DEFAULT_FALLBACK_MONTHLY_PRICE;
+}
+
+/**
+ * An amount stated for one billing period, read as a monthly one.
+ *
+ * Stripe states every amount per period — the plan's price and the overage
+ * alike — and a yearly subscription's period is a year. The column compares
+ * teams against each other, so it holds one unit: the month.
+ */
+function toMonthlyAmount(amount: number, plan: StaffPlan): number {
+  return plan.interval === PlanInterval.Year ? amount / 12 : amount;
+}
+
+/**
+ * What the plan costs per month.
  *
  * Read from Stripe and stored on the subscription, so a negotiated contract
- * quotes its own amount rather than a constant of ours.
+ * quotes its own amount rather than a constant of ours. The fallbacks are
+ * already monthly figures, which is why only the stored amount is converted.
  */
-function getPeriodFlatPrice(staff: PipelineTeam["staff"]): number {
-  // Pro is billed monthly, so its published price is already one period's
-  // worth — which is why the fallback needs no conversion.
-  return staff.flatPrice ?? PRO_FLAT_PRICE;
-}
-
-/**
- * A period's amount read as a monthly one.
- *
- * Everything in this column is per billing period — the plan's price and the
- * overage alike — and a yearly subscription's period is a year. The column
- * compares teams against each other, so it holds one unit: the month.
- */
-function toMonthlyAmount(
-  amount: number,
-  plan: PipelineTeam["staff"]["plan"],
+function getMonthlyFlatPrice(
+  staff: PipelineTeam["staff"],
+  plan: StaffPlan,
 ): number {
-  return plan?.interval === PlanInterval.Year ? amount / 12 : amount;
+  return staff.flatPrice === null
+    ? getFallbackMonthlyPrice(plan)
+    : toMonthlyAmount(staff.flatPrice, plan);
 }
 
-const PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
-
 /**
- * Prices are stored per subscription in the currency it is billed in, so the
- * formatter follows the row rather than the page.
+ * Every amount on this page is printed in dollars, whatever the subscription is
+ * billed in — the currency Argos reports revenue in, and the one the summary
+ * tiles already add up. A euro contract is therefore read at parity rather than
+ * converted, which is close enough for a pipeline view and far clearer than a
+ * column mixing two currencies it cannot total.
  */
-function formatPrice(amount: number, currency: Currency) {
-  const format =
-    PRICE_FORMATS.get(currency) ??
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    });
-  PRICE_FORMATS.set(currency, format);
-  return format.format(amount);
+const PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+function formatPrice(amount: number) {
+  return PRICE_FORMAT.format(amount);
 }
 
 type BillingPeriod = NonNullable<
@@ -301,19 +312,19 @@ function getEstimatedPrice(team: PipelineTeam): number | null {
   const { plan } = team.staff;
   invariant(plan, "a team billed by usage is on a plan");
 
-  const flatPrice = getPeriodFlatPrice(team.staff);
+  const monthlyFlatPrice = getMonthlyFlatPrice(team.staff, plan);
 
   switch (team.subscriptionStatus) {
     case AccountSubscriptionStatus.Active: {
       const period = getBilledPeriod(periodUsage.billingPeriods);
-      return toMonthlyAmount(
-        flatPrice + (period?.additionalScreenshotsCost ?? 0),
-        plan,
+      return (
+        monthlyFlatPrice +
+        toMonthlyAmount(period?.additionalScreenshotsCost ?? 0, plan)
       );
     }
 
     case AccountSubscriptionStatus.TrialingWithPaymentMethod:
-      return toMonthlyAmount(flatPrice, plan);
+      return monthlyFlatPrice;
 
     default:
       return null;
@@ -549,7 +560,7 @@ function ScreenshotsCell(props: { team: PipelineTeam }) {
  */
 function getPlanHint(input: {
   staff: PipelineTeam["staff"];
-  plan: NonNullable<PipelineTeam["staff"]["plan"]>;
+  plan: StaffPlan;
   priced: boolean;
 }): string {
   const { staff, plan, priced } = input;
@@ -559,10 +570,10 @@ function getPlanHint(input: {
   }
 
   if (staff.flatPrice === null) {
-    return `Billed on ${plan.displayName}, whose own amount is not on file — the subscription has not been synced since Argos started reading it from Stripe, so the flat half of this estimate falls back to Pro's ${formatPrice(PRO_FLAT_PRICE, Currency.Usd)} and is almost certainly too low.`;
+    return `Billed on ${plan.displayName}, whose own amount is not on file, so the flat half of this estimate is a ${formatPrice(getFallbackMonthlyPrice(plan))} guess rather than the contract.`;
   }
 
-  return `Billed on ${plan.displayName}. The flat half is the amount Stripe holds for this subscription, not a price of ours.`;
+  return `Billed on ${plan.displayName}. The flat half is the amount held on the subscription in Stripe, not a price of ours.`;
 }
 
 /**
@@ -577,7 +588,7 @@ function getPlanHint(input: {
  */
 function PlanMarker(props: {
   staff: PipelineTeam["staff"];
-  plan: NonNullable<PipelineTeam["staff"]["plan"]>;
+  plan: StaffPlan;
   priced: boolean;
 }) {
   const { plan } = props;
@@ -617,7 +628,6 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
   const { periodUsage } = team.staff;
   invariant(periodUsage, "a priced team is on a usage-based plan");
   invariant(plan, "a priced team is on a plan");
-  invariant(team.subscription, "a priced team has a subscription");
 
   const period = getBilledPeriod(periodUsage.billingPeriods);
 
@@ -629,13 +639,11 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
       <Tooltip
         content={
           period?.closed
-            ? "The plan's flat price, plus the overage of the last month that closed — a settled figure, so it does not move with the day it is read on."
-            : "The plan's flat price, plus the overage accrued so far. No month has closed yet, so this is a floor. A running trial owes the flat price only: trial usage is never billed."
+            ? "The plan's price, plus the overage of the last billing period that closed — a settled figure, so it does not move with the day it is read on. Read per month, whatever the subscription is billed in."
+            : "The plan's price, plus the overage accrued so far. No period has closed yet, so this is a floor. A running trial owes the plan's price only: trial usage is never billed."
         }
       >
-        <span className="font-medium">
-          {formatPrice(price, team.subscription.currency)}
-        </span>
+        <span className="font-medium">{formatPrice(price)}</span>
       </Tooltip>
       <PlanMarker staff={team.staff} plan={plan} priced />
     </div>
