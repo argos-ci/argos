@@ -83,6 +83,7 @@ const config: CodegenConfig = {
             "@argos/schemas/screenshot-metadata#ScreenshotMetadataSDK",
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           TeamStaffInfo: "../../database/models/index.js#Account",
+          TeamStaffPeriodUsage: "../../database/models/index.js#Account",
           TeamStaffContact: "../../database/models/index.js#StaffTeamContact",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",

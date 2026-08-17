@@ -24,19 +24,31 @@ type BillingPeriodUsage = {
  */
 type AccountPeriodUsage = {
   /**
-   * Share of Storybook screenshots in everything the account ever uploaded,
-   * between 0 and 1. Null when it never uploaded a screenshot at all — an
-   * undefined mix, which is not the same as an all-neutral one.
-   */
-  storybookRatio: number | null;
-  /** Storybook screenshots uploaded since the account was created. */
-  storybookCount: number;
-  /**
    * Periods Stripe actually invoices, most recent first: the one still
    * running, then the closed ones. Empty while the account is on its trial,
    * whose usage is never billed.
    */
   billingPeriods: BillingPeriodUsage[];
+};
+
+/**
+ * The Storybook mix of everything an account ever uploaded.
+ *
+ * Deliberately not part of `AccountBilling`: it is measured over the whole
+ * history rather than over a window, so it cannot be bounded the way the
+ * periods are, and it costs a scan of every bucket the account ever produced.
+ * Read on its own so a caller that does not show it does not pay for it — the
+ * team directory prices 150 accounts without ever asking for the mix.
+ */
+export type AccountStorybookTotals = {
+  /**
+   * Share of Storybook screenshots in everything the account ever uploaded,
+   * between 0 and 1. Null when it never uploaded a screenshot at all — an
+   * undefined mix, which is not the same as an all-neutral one.
+   */
+  ratio: number | null;
+  /** Storybook screenshots uploaded since the account was created. */
+  count: number;
 };
 
 /**
@@ -107,11 +119,8 @@ type ScreenshotTotals = {
   storybook: number;
 };
 
-/** What one account uploaded, per period and over its whole life. */
-type AccountTotals = {
-  periods: Map<number, ScreenshotTotals>;
-  allTime: ScreenshotTotals;
-};
+/** What one account uploaded, per period. */
+type AccountTotals = Map<number, ScreenshotTotals>;
 
 const EMPTY_TOTALS: ScreenshotTotals = { all: 0, storybook: 0 };
 
@@ -170,12 +179,6 @@ async function getScreenshotTotals(
       knex.raw(
         `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}) filter (where sb."createdAt" >= v."from" and sb."createdAt" < v."to"), 0) as "periodStorybook"`,
       ),
-      // Unfiltered, so every period of an account repeats the same lifetime
-      // total. Read once per account below.
-      knex.raw(`coalesce(sum(sb."screenshotCount"), 0) as "allTimeAll"`),
-      knex.raw(
-        `coalesce(sum(${CLAMPED_STORYBOOK_COUNT}), 0) as "allTimeStorybook"`,
-      ),
     )
     .from(
       knex.raw(
@@ -184,14 +187,22 @@ async function getScreenshotTotals(
       ),
     )
     .leftJoin("projects as p", "p.accountId", "v.accountId")
-    .leftJoin("screenshot_buckets as sb", "sb.projectId", "p.id")
+    // Bounded in the join rather than only in the aggregate above: the filters
+    // there are applied after the rows are read, so on their own the scan still
+    // walks every bucket the project ever produced. Each row carries its own
+    // boundary, so this reads `v."from"` rather than one minimum for the whole
+    // batch — a single yearly subscription in the batch would otherwise push
+    // that minimum two years back and unbound everyone else.
+    .leftJoin("screenshot_buckets as sb", (join) => {
+      join
+        .on("sb.projectId", "p.id")
+        .andOn(knex.raw(`sb."createdAt" >= v."from"`));
+    })
     .groupBy("v.accountId", "v.index")) as unknown as {
     accountId: string | number;
     index: string | number;
     periodAll: string | number;
     periodStorybook: string | number;
-    allTimeAll: string | number;
-    allTimeStorybook: string | number;
   }[];
 
   // Media hangs off a project, like a bucket does, but it still cannot ride the
@@ -205,17 +216,12 @@ async function getScreenshotTotals(
     const accountId = String(row.accountId);
     const index = Number(row.index);
     const media = mediaUnits.get(accountId);
-    const totals = totalsByAccountId.get(accountId) ?? {
-      periods: new Map<number, ScreenshotTotals>(),
-      // Media is never Storybook, so it lifts the totals without touching
-      // either Storybook count — the neutral half absorbs it.
-      allTime: {
-        all: (Number(row.allTimeAll) || 0) + (media?.allTime ?? 0),
-        storybook: Number(row.allTimeStorybook) || 0,
-      },
-    };
-    totals.periods.set(index, {
-      all: (Number(row.periodAll) || 0) + (media?.periods.get(index) ?? 0),
+    const totals =
+      totalsByAccountId.get(accountId) ?? new Map<number, ScreenshotTotals>();
+    totals.set(index, {
+      // Media is never Storybook, so it lifts the total without touching the
+      // Storybook count — the neutral half absorbs it.
+      all: (Number(row.periodAll) || 0) + (media?.get(index) ?? 0),
       storybook: Number(row.periodStorybook) || 0,
     });
     totalsByAccountId.set(accountId, totals);
@@ -230,7 +236,7 @@ async function getScreenshotTotals(
  */
 async function getMediaUnits(
   periods: AccountPeriod[],
-): Promise<Map<string, { periods: Map<number, number>; allTime: number }>> {
+): Promise<Map<string, Map<number, number>>> {
   const values = buildPeriodValues(periods);
 
   const rows = (await knex
@@ -239,7 +245,6 @@ async function getMediaUnits(
       knex.raw(
         `coalesce(sum(mv."billedUnits") filter (where mv."uploadedAt" >= v."from" and mv."uploadedAt" < v."to"), 0) as "period"`,
       ),
-      knex.raw(`coalesce(sum(mv."billedUnits"), 0) as "allTime"`),
     )
     .from(
       knex.raw(
@@ -253,32 +258,100 @@ async function getMediaUnits(
     .leftJoin("media as m", "m.projectId", "p.id")
     // Units live on the version, because every version is an upload and each one
     // stores its own bytes. Only uploads that completed are billed, which is what
-    // `uploadedAt` records.
+    // `uploadedAt` records. Bounded like the buckets above, for the same reason.
     .leftJoin("media_versions as mv", (join) => {
-      join.on("mv.mediaId", "m.id").onNotNull("mv.uploadedAt");
+      join
+        .on("mv.mediaId", "m.id")
+        .onNotNull("mv.uploadedAt")
+        .andOn(knex.raw(`mv."uploadedAt" >= v."from"`));
     })
     .groupBy("v.accountId", "v.index")) as unknown as {
     accountId: string | number;
     index: string | number;
     period: string | number;
-    allTime: string | number;
   }[];
 
-  const unitsByAccountId = new Map<
-    string,
-    { periods: Map<number, number>; allTime: number }
-  >();
+  const unitsByAccountId = new Map<string, Map<number, number>>();
   for (const row of rows) {
     const accountId = String(row.accountId);
-    const units = unitsByAccountId.get(accountId) ?? {
-      periods: new Map<number, number>(),
-      allTime: Number(row.allTime) || 0,
-    };
-    units.periods.set(Number(row.index), Number(row.period) || 0);
+    const units = unitsByAccountId.get(accountId) ?? new Map<number, number>();
+    units.set(Number(row.index), Number(row.period) || 0);
     unitsByAccountId.set(accountId, units);
   }
 
   return unitsByAccountId;
+}
+
+/**
+ * The Storybook mix of a batch of accounts, over everything they ever uploaded.
+ *
+ * Unbounded by nature — the mix is a property of the whole history — so this
+ * reads every bucket and every media version the accounts ever produced. That is
+ * expensive on exactly the accounts that matter, which is why it is its own
+ * function behind its own loader rather than a column of the period aggregate:
+ * a caller that does not show the mix never runs it.
+ */
+export async function getAccountStorybookTotals(
+  accountIds: string[],
+): Promise<Map<string, AccountStorybookTotals>> {
+  const result = new Map<string, AccountStorybookTotals>();
+
+  if (accountIds.length === 0) {
+    return result;
+  }
+
+  const [bucketRows, mediaRows] = await Promise.all([
+    knex
+      .select("p.accountId")
+      .select(
+        knex.raw(`coalesce(sum(sb."screenshotCount"), 0) as "all"`),
+        knex.raw(`coalesce(sum(${CLAMPED_STORYBOOK_COUNT}), 0) as "storybook"`),
+      )
+      .from("projects as p")
+      .leftJoin("screenshot_buckets as sb", "sb.projectId", "p.id")
+      .whereIn("p.accountId", accountIds)
+      .groupBy("p.accountId") as unknown as Promise<
+      {
+        accountId: string | number;
+        all: string | number;
+        storybook: string | number;
+      }[]
+    >,
+    knex
+      .select("p.accountId")
+      .select(knex.raw(`coalesce(sum(mv."billedUnits"), 0) as "all"`))
+      .from("projects as p")
+      .leftJoin("media as m", "m.projectId", "p.id")
+      .leftJoin("media_versions as mv", (join) => {
+        join.on("mv.mediaId", "m.id").onNotNull("mv.uploadedAt");
+      })
+      .whereIn("p.accountId", accountIds)
+      .groupBy("p.accountId") as unknown as Promise<
+      { accountId: string | number; all: string | number }[]
+    >,
+  ]);
+
+  // Media is never Storybook, so it lifts the denominator without touching the
+  // numerator — the neutral half absorbs it.
+  const mediaByAccountId = new Map(
+    mediaRows.map((row) => [String(row.accountId), Number(row.all) || 0]),
+  );
+
+  for (const accountId of accountIds) {
+    result.set(accountId, { ratio: null, count: 0 });
+  }
+
+  for (const row of bucketRows) {
+    const accountId = String(row.accountId);
+    const storybook = Number(row.storybook) || 0;
+    const all = (Number(row.all) || 0) + (mediaByAccountId.get(accountId) ?? 0);
+    result.set(accountId, {
+      ratio: all > 0 ? storybook / all : null,
+      count: storybook,
+    });
+  }
+
+  return result;
 }
 
 /** Whether a period is one Stripe invoices. */
@@ -455,16 +528,10 @@ export async function getAccountBillings(
       plan,
       flatPrice: subscription.flatPrice,
       periodUsage: {
-        storybookRatio:
-          totals.allTime.all > 0
-            ? totals.allTime.storybook / totals.allTime.all
-            : null,
-        storybookCount: totals.allTime.storybook,
         billingPeriods: accountPeriods
           .filter((period) => checkIsBilledPeriod(period, subscription))
           .map((period) => {
-            const periodTotals =
-              totals.periods.get(period.index) ?? EMPTY_TOTALS;
+            const periodTotals = totals.get(period.index) ?? EMPTY_TOTALS;
             // The included quota resets at every period, so the overage is
             // computed period by period rather than off a running total.
             const additional =

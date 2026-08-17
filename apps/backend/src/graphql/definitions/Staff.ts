@@ -186,22 +186,38 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
+    // Resolves to the account rather than to the usage itself: the Storybook
+    // mix below costs a scan of the account's whole history, so it is left to
+    // its own resolver and only runs when a document actually selects it.
     periodUsage: async (account, _args, ctx) => {
       const { periodUsage: usage } =
         await ctx.loaders.AccountBillingByAccountId.load(account.id);
-      if (!usage) {
-        return null;
-      }
-      return {
-        storybookRatio: usage.storybookRatio,
-        storybookScreenshotsCount: usage.storybookCount,
-        billingPeriods: usage.billingPeriods.map((period) => ({
-          from: period.from,
-          to: period.to,
-          closed: period.closed,
-          additionalScreenshotsCost: period.additionalScreenshotCost,
-        })),
-      };
+      return usage ? account : null;
+    },
+  },
+  TeamStaffPeriodUsage: {
+    billingPeriods: async (account, _args, ctx) => {
+      const { periodUsage: usage } =
+        await ctx.loaders.AccountBillingByAccountId.load(account.id);
+      invariant(usage, "period usage resolved for a team that has none");
+      return usage.billingPeriods.map((period) => ({
+        from: period.from,
+        to: period.to,
+        closed: period.closed,
+        additionalScreenshotsCost: period.additionalScreenshotCost,
+      }));
+    },
+    storybookRatio: async (account, _args, ctx) => {
+      const totals = await ctx.loaders.AccountStorybookTotalsByAccountId.load(
+        account.id,
+      );
+      return totals.ratio;
+    },
+    storybookScreenshotsCount: async (account, _args, ctx) => {
+      const totals = await ctx.loaders.AccountStorybookTotalsByAccountId.load(
+        account.id,
+      );
+      return totals.count;
     },
   },
   TeamStaffContact: {

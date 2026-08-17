@@ -57,7 +57,9 @@ import {
 import type { ProjectPermission } from "@/database/models/Project";
 import {
   getAccountBillings,
+  getAccountStorybookTotals,
   type AccountBilling,
+  type AccountStorybookTotals,
 } from "@/database/services/period-usage";
 import {
   getLatestReferenceBuildIds,
@@ -778,6 +780,32 @@ function createAccountBillingByAccountIdLoader() {
     const billingByAccountId = await getAccountBillings(accounts);
     return accountIds.map(
       (accountId) => billingByAccountId.get(accountId) ?? EMPTY_ACCOUNT_BILLING,
+    );
+  });
+}
+
+/** Empty rather than null: an account with no upload has an undefined mix. */
+const EMPTY_STORYBOOK_TOTALS: AccountStorybookTotals = {
+  ratio: null,
+  count: 0,
+};
+
+/**
+ * The Storybook mix, on its own loader rather than folded into the billing one.
+ *
+ * It is measured over an account's whole history, so it costs a scan of every
+ * bucket it ever produced — several orders of magnitude more than the billing
+ * periods, which are bounded to two months. Split out, GraphQL field selection
+ * decides whether that scan happens at all: the pages that show the mix pay for
+ * it, the team directory does not.
+ */
+function createAccountStorybookTotalsByAccountIdLoader() {
+  return new DataLoader<string, AccountStorybookTotals>(async (accountIds) => {
+    const totalsByAccountId = await getAccountStorybookTotals([
+      ...new Set(accountIds as string[]),
+    ]);
+    return accountIds.map(
+      (accountId) => totalsByAccountId.get(accountId) ?? EMPTY_STORYBOOK_TOTALS,
     );
   });
 }
@@ -1887,6 +1915,8 @@ export const createLoaders = () => ({
     createAccountLastBuildDateByAccountIdLoader(),
   AccountActivationByAccountId: createAccountActivationByAccountIdLoader(),
   AccountBillingByAccountId: createAccountBillingByAccountIdLoader(),
+  AccountStorybookTotalsByAccountId:
+    createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
   AccountSubscriptionStatusByAccountId:

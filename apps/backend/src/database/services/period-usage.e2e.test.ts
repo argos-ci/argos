@@ -4,7 +4,7 @@ import type { Account, Plan, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import type { AccountBilling } from "./period-usage";
-import { getAccountBillings } from "./period-usage";
+import { getAccountBillings, getAccountStorybookTotals } from "./period-usage";
 
 /** Overage of the period still running, which is the first one returned. */
 function getRunningCost(billing: AccountBilling | undefined) {
@@ -20,6 +20,13 @@ describe("getAccountPeriodUsages", () => {
   let usageBasedPlan: Plan;
   let account: Account;
   let project: Project;
+
+  /** The lifetime Storybook mix, which is read on its own query. */
+  function getStorybookTotals() {
+    return getAccountStorybookTotals([account.id]).then((totals) =>
+      totals.get(account.id),
+    );
+  }
 
   /**
    * Well inside the current period: the subscription started on the 1st of a
@@ -139,11 +146,11 @@ describe("getAccountPeriodUsages", () => {
       usages.get(account.id),
     );
 
-    expect(usage?.periodUsage).toMatchObject({
-      storybookRatio: 0,
-      storybookCount: 0,
-    });
     expect(getRunningCost(usage)).toBe(0);
+    await expect(getStorybookTotals()).resolves.toMatchObject({
+      ratio: 0,
+      count: 0,
+    });
   });
 
   it("bills the overage at the neutral price", async () => {
@@ -179,8 +186,9 @@ describe("getAccountPeriodUsages", () => {
     // 500 neutral fit under the 1000 included, so 500 of the Storybook
     // screenshots absorb the rest of the quota and 500 are billed at $0.10.
     expect(getRunningCost(usage)).toBeCloseTo(50);
-    expect(usage?.periodUsage?.storybookRatio).toBeCloseTo(1000 / 1500);
-    expect(usage?.periodUsage?.storybookCount).toBe(1000);
+    const totals = await getStorybookTotals();
+    expect(totals?.ratio).toBeCloseTo(1000 / 1500);
+    expect(totals?.count).toBe(1000);
   });
 
   it("clamps a bucket's Storybook count to its total", async () => {
@@ -202,8 +210,9 @@ describe("getAccountPeriodUsages", () => {
     // Read as 1500 Storybook and 0 neutral: 1000 absorb the quota and 500 are
     // billed at $0.10.
     expect(getRunningCost(usage)).toBeCloseTo(50);
-    expect(usage?.periodUsage?.storybookRatio).toBe(1);
-    expect(usage?.periodUsage?.storybookCount).toBe(1500);
+    const totals = await getStorybookTotals();
+    expect(totals?.ratio).toBe(1);
+    expect(totals?.count).toBe(1500);
   });
 
   it("ignores screenshots uploaded before the period started", async () => {
@@ -221,7 +230,7 @@ describe("getAccountPeriodUsages", () => {
 
     // Out of period for the cost, still part of the lifetime mix.
     expect(getRunningCost(usage)).toBe(0);
-    expect(usage?.periodUsage?.storybookRatio).toBe(0);
+    await expect(getStorybookTotals()).resolves.toMatchObject({ ratio: 0 });
   });
 
   it("prices each period against its own quota", async () => {
