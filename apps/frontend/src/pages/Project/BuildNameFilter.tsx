@@ -8,7 +8,7 @@ import {
 } from "react-aria-components";
 
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 
@@ -37,7 +37,7 @@ export function BuildNameFilter(props: {
       <SelectButton className="min-w-[8em] text-sm">
         {getBuildNameLabel(value)}
       </SelectButton>
-      <Popover className="flex flex-col gap-2">
+      <SelectPopover className="flex flex-col gap-2">
         <Autocomplete filter={contains}>
           <SearchField className="relative">
             <SearchIcon
@@ -74,7 +74,7 @@ export function BuildNameFilter(props: {
             ))}
           </ListBox>
         </Autocomplete>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

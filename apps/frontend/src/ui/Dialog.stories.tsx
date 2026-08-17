@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, screen, waitFor } from "storybook/test";
 
 import { Button } from "./Button";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -28,7 +30,7 @@ export const Default: Story = {
       <StoryTitle>Default</StoryTitle>
       <DialogTrigger>
         <Button variant="secondary">Open Dialog</Button>
-        <Modal isDismissable>
+        <Modal dismissible>
           <Dialog>
             <DialogBody>
               <DialogTitle>Confirm Action</DialogTitle>
@@ -45,7 +47,7 @@ export const Default: Story = {
       <StoryTitle>Destructive</StoryTitle>
       <DialogTrigger>
         <Button variant="destructive">Delete Project</Button>
-        <Modal isDismissable>
+        <Modal dismissible>
           <Dialog role="alertdialog">
             <DialogBody>
               <DialogTitle>Delete Project</DialogTitle>
@@ -75,7 +77,7 @@ export const Open: Story = {
   render: () => (
     <DialogTrigger defaultOpen>
       <Button variant="secondary">Open Dialog</Button>
-      <Modal isDismissable>
+      <Modal dismissible>
         <Dialog>
           <DialogBody>
             <DialogTitle>Confirm Action</DialogTitle>
@@ -100,7 +102,7 @@ export const OpenAlert: Story = {
   render: () => (
     <DialogTrigger defaultOpen>
       <Button variant="destructive">Delete Project</Button>
-      <Modal isDismissable>
+      <Modal dismissible>
         <Dialog role="alertdialog">
           <DialogBody>
             <DialogTitle>Delete Project</DialogTitle>
@@ -129,7 +131,7 @@ export const OpenPending: Story = {
   render: () => (
     <DialogTrigger defaultOpen>
       <Button variant="secondary">Open Dialog</Button>
-      <Modal isDismissable>
+      <Modal dismissible>
         <Dialog>
           <DialogBody>
             <DialogTitle>Transfer ownership</DialogTitle>
@@ -138,7 +140,7 @@ export const OpenPending: Story = {
             </DialogText>
           </DialogBody>
           <DialogFooter>
-            <DialogDismiss isDisabled>Cancel</DialogDismiss>
+            <DialogDismiss disabled>Cancel</DialogDismiss>
             <Button variant="primary" isPending>
               Transfer
             </Button>
@@ -147,4 +149,71 @@ export const OpenPending: Story = {
       </Modal>
     </DialogTrigger>
   ),
+};
+
+/** The play drives this to settle the pending action on demand. */
+let settlePendingAction: (() => void) | null = null;
+
+/**
+ * The dialog's one hard behaviour: while an action runs, every user dismissal
+ * — Escape, the backdrop, the dismiss button — is refused, and the dialog
+ * un-blocks once the action settles. No screenshot can see this; the play is
+ * the guard.
+ */
+export const PendingBlocksDismissal: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <div className="flex h-screen w-full items-start justify-center p-16">
+      <DialogTrigger>
+        <Button variant="secondary">Delete project</Button>
+        <Modal dismissible>
+          <Dialog role="alertdialog">
+            <DialogBody>
+              <DialogTitle>Delete this project?</DialogTitle>
+              <DialogText>This cannot be undone.</DialogText>
+            </DialogBody>
+            <DialogFooter>
+              <DialogDismiss>Cancel</DialogDismiss>
+              <DialogActionButton
+                variant="destructive"
+                onAsyncAction={() =>
+                  new Promise<void>((resolve) => {
+                    settlePendingAction = resolve;
+                  })
+                }
+              >
+                Delete
+              </DialogActionButton>
+            </DialogFooter>
+          </Dialog>
+        </Modal>
+      </DialogTrigger>
+    </div>
+  ),
+  play: async ({ userEvent }) => {
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Delete project" }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    // Start the action: the dialog is now pending.
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    // Escape and a backdrop press are refused while it runs.
+    await userEvent.keyboard("{Escape}");
+    await expect(dialog).toBeVisible();
+    await userEvent.click(document.body);
+    await expect(dialog).toBeVisible();
+    // The dismiss button is disabled while it runs.
+    await expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    // Once the action settles, the dialog un-blocks and Escape closes it.
+    settlePendingAction?.();
+    await waitFor(async () => {
+      await expect(
+        screen.getByRole("button", { name: "Cancel" }),
+      ).toBeEnabled();
+    });
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+  },
 };

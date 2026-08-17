@@ -57,7 +57,7 @@ export function DeleteCommentDialog(props: { commentId: string }) {
             {getErrorMessage(error)}
           </ErrorMessage>
         )}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
           isPending={loading}

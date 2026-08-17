@@ -10,7 +10,7 @@ import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { MenuItemIcon } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
 import {
   checkIsGlobCondition,
@@ -61,7 +61,7 @@ function BuildConclusionCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <Popover>
+        <SelectPopover>
           <ListBox>
             {conclusions.map(({ status, value }) => {
               const descriptor = buildStatusDescriptors[status];
@@ -83,7 +83,7 @@ function BuildConclusionCondition(props: {
               );
             })}
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </SelectField>
     </div>
   );
@@ -152,7 +152,7 @@ function BuildNameCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <Popover>
+        <SelectPopover>
           <ListBox>
             {buildNames.map((name) => (
               <ListBoxItem
@@ -165,7 +165,7 @@ function BuildNameCondition(props: {
               </ListBoxItem>
             ))}
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </SelectField>
     </div>
   );
@@ -226,7 +226,7 @@ function BuildModeCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <Popover>
+        <SelectPopover>
           <ListBox>
             {buildModeOptions.map(({ mode, label, icon: Icon }) => (
               <ListBoxItem
@@ -242,7 +242,7 @@ function BuildModeCondition(props: {
               </ListBoxItem>
             ))}
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </SelectField>
     </div>
   );
@@ -271,7 +271,7 @@ function BuildTypeCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <Popover>
+        <SelectPopover>
           <ListBox>
             {Object.values(BuildType).map((type) => {
               const descriptor = buildTypeDescriptors[type];
@@ -293,7 +293,7 @@ function BuildTypeCondition(props: {
               );
             })}
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </SelectField>
     </div>
   );
@@ -394,7 +394,7 @@ function OperatorSelector(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           <ListBoxItem id="eq" textValue={labels.eq}>
             {labels.eq}
@@ -403,7 +403,7 @@ function OperatorSelector(props: {
             {labels.neq}
           </ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }
@@ -466,7 +466,7 @@ function BranchOperatorSelector(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           <ListBoxItem id="eq" textValue="is">
             is
@@ -481,7 +481,7 @@ function BranchOperatorSelector(props: {
             does not match
           </ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }
@@ -562,7 +562,7 @@ export function AutomationConditionsStep(props: {
             <SelectValue />
           </SelectButton>
           <FieldError />
-          <Popover>
+          <SelectPopover>
             <ListBox>
               {conditions.map((condition) => (
                 <ListBoxItem
@@ -574,7 +574,7 @@ export function AutomationConditionsStep(props: {
                 </ListBoxItem>
               ))}
             </ListBox>
-          </Popover>
+          </SelectPopover>
         </SelectField>
       </div>
     </div>

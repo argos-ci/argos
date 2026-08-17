@@ -129,7 +129,8 @@ export function CommentAddReactionButton(props: { comment: Comment }) {
         </Button>
       </Tooltip>
       <EmojiPickerPopover
-        placement="bottom end"
+        side="bottom"
+        align="end"
         onEmojiSelect={({ emoji }) => react(emoji)}
       />
     </EmojiPickerTrigger>

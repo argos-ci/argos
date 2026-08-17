@@ -3,7 +3,7 @@ import z from "zod";
 
 import { TeamUserLevel } from "@/gql/graphql";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 const FilterUserLevelSchema = z.enum([
@@ -31,7 +31,7 @@ export function MemberLevelFilter(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           <ListBoxItem id="all">All roles</ListBoxItem>
           {hasFineGrainedAccessControl && (
@@ -40,7 +40,7 @@ export function MemberLevelFilter(props: {
           <ListBoxItem id="member">Member</ListBoxItem>
           <ListBoxItem id="owner">Owner</ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

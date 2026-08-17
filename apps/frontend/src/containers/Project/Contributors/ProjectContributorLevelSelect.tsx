@@ -8,7 +8,7 @@ import {
 } from "@/containers/ProjectContributor";
 import { graphql } from "@/gql";
 import { ProjectUserLevel } from "@/gql/graphql";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { addContributor, OPTIMISTIC_CONTRIBUTOR_ID } from "./operations";
@@ -77,9 +77,9 @@ export function ProjectContributorLevelSelect(props: {
         {props.level ? ProjectContributorLevelLabel[props.level] : "Add as"}
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ProjectContributorLevelListBox />
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

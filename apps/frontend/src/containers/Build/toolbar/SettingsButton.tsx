@@ -28,7 +28,7 @@ export const SettingsButton = memo(() => {
           <PaintbrushIcon />
         </Button>
       </Tooltip>
-      <Popover placement="bottom end">
+      <Popover side="bottom" align="end">
         <OverlaySettingsDialog />
       </Popover>
     </DialogTrigger>

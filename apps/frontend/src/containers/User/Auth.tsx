@@ -178,7 +178,7 @@ function RevokeSessionDialog(props: { session: Session }) {
         {error ? (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         ) : null}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
           isPending={loading}
@@ -221,7 +221,7 @@ function RevokeAllSessionsDialog(props: { count: number }) {
         {error ? (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         ) : null}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
           isPending={loading}
@@ -322,7 +322,7 @@ function UserSessions(props: { sessions: readonly Session[] }) {
       </CardBody>
 
       {revoking.value ? (
-        <Modal isOpen={revoking.isOpen} onOpenChange={revoking.onOpenChange}>
+        <Modal open={revoking.isOpen} onOpenChange={revoking.onOpenChange}>
           <RevokeSessionDialog session={revoking.value} />
         </Modal>
       ) : null}

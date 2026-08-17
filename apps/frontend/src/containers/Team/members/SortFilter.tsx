@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { TeamMembersOrderBy } from "@/gql/graphql";
 import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 const OrderBySchema = z.enum(TeamMembersOrderBy);
@@ -28,7 +28,7 @@ export function SortFilter(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           <ListBoxItem id={TeamMembersOrderBy.Date}>
             <ListBoxItemIcon>
@@ -49,7 +49,7 @@ export function SortFilter(props: {
             Name (Z-A)
           </ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

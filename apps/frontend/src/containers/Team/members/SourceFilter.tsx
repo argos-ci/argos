@@ -2,7 +2,7 @@ import { SelectValue } from "react-aria-components";
 import { z } from "zod";
 
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 const SourceSchema = z.enum(["everyone", "sso", "invite"]);
@@ -23,13 +23,13 @@ export function SourceFilter(props: {
         <SelectValue />
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ListBox>
           <ListBoxItem id="everyone">Everyone</ListBoxItem>
           <ListBoxItem id="sso">Synced from GitHub</ListBoxItem>
           <ListBoxItem id="invite">Manually invited</ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

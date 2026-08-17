@@ -25,7 +25,7 @@ export function CheckoutStatusDialog() {
       : null;
   const [isOpen, setIsOpen] = useState<boolean>(checkoutStatus !== null);
   return (
-    <Modal isOpen={isOpen} onOpenChange={setIsOpen}>
+    <Modal open={isOpen} onOpenChange={setIsOpen}>
       <Dialog>
         <DialogBody>
           <DialogTitle>

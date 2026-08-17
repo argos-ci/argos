@@ -22,7 +22,7 @@ import {
 } from "react-aria-components";
 
 import { FieldError, FieldErrorContext } from "./FieldError";
-import { Popover } from "./Popover";
+import { SelectPopover } from "./Popover";
 
 type DateRange = {
   from: Date;
@@ -125,7 +125,7 @@ export function DateRangePicker({
         </Button>
       </Group>
       <DateRangeFieldError />
-      <Popover>
+      <SelectPopover>
         <Dialog className="p-3">
           <RangeCalendar className="flex flex-col gap-3">
             <header className="flex items-center justify-between">
@@ -182,7 +182,7 @@ export function DateRangePicker({
             </CalendarGrid>
           </RangeCalendar>
         </Dialog>
-      </Popover>
+      </SelectPopover>
     </AriaDateRangePicker>
   );
 }

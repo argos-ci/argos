@@ -7,7 +7,7 @@ import {
   ListBoxItemDescription,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton, type SelectButtonProps } from "@/ui/Select";
 
 export function MemberLevelSelect(
@@ -29,7 +29,7 @@ export function MemberLevelSelect(
           }}
         </SelectValue>
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           {hasFineGrainedAccessControl && (
             <ListBoxItem id="contributor" textValue="Contributor">
@@ -52,7 +52,7 @@ export function MemberLevelSelect(
             </ListBoxItemDescription>
           </ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

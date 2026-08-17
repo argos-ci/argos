@@ -259,7 +259,7 @@ function SpendManagementForm(props: {
         </FormCardFooter>
       </Form>
       <Modal
-        isOpen={confirmation.isOpen}
+        open={confirmation.isOpen}
         onOpenChange={(isOpen) =>
           setConfirmation((prev) => ({ ...prev, isOpen }))
         }

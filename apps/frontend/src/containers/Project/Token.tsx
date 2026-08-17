@@ -1,6 +1,5 @@
 import { ComponentProps, useEffect, useRef } from "react";
 import { useApolloClient } from "@apollo/client/react";
-import { DialogTrigger } from "react-aria-components";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
@@ -15,6 +14,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Code } from "@/ui/Code";
+import { DialogTrigger } from "@/ui/Dialog";
 import {
   Dialog,
   DialogBody,

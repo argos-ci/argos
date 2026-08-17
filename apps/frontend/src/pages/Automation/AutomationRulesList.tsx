@@ -199,7 +199,7 @@ export function DeleteAutomation(props: {
 
   return (
     <DialogTrigger
-      isOpen={Boolean(deletedId)}
+      open={Boolean(deletedId)}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
           setDeletedId(null);

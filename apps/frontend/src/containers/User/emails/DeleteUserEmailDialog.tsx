@@ -55,7 +55,7 @@ export function DeleteUserEmailDialog(props: DeleteUserEmailDialogProps) {
         {error && (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         )}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
           isPending={loading}

@@ -1,7 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { DialogTrigger } from "react-aria-components";
 
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
@@ -13,6 +12,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
+import { DialogTrigger } from "@/ui/Dialog";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
@@ -218,13 +218,13 @@ export function UserAccessTokens(props: {
       </CardFooter>
 
       {editing.value ? (
-        <Modal isOpen={editing.isOpen} onOpenChange={editing.onOpenChange}>
+        <Modal open={editing.isOpen} onOpenChange={editing.onOpenChange}>
           <EditTokenDialog id={editing.value.id} name={editing.value.name} />
         </Modal>
       ) : null}
 
       {deleting.value ? (
-        <Modal isOpen={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
+        <Modal open={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
           <DeleteTokenDialog
             id={deleting.value.id}
             name={deleting.value.name}

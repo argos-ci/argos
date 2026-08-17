@@ -19,7 +19,7 @@ import {
   ListBoxItemIcon,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 import { getSlackAuthURL } from "@/util/slack";
 
@@ -214,7 +214,7 @@ function SendWebhookMessageAction(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <Popover>
+        <SelectPopover>
           <ListBox>
             {webhooks.map((webhook) => (
               <ListBoxItem
@@ -229,7 +229,7 @@ function SendWebhookMessageAction(props: {
               </ListBoxItem>
             ))}
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </SelectField>
     </div>
   );
@@ -385,7 +385,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
             <SelectValue />
           </SelectButton>
           <FieldError />
-          <Popover>
+          <SelectPopover>
             <ListBox>
               {ACTIONS.map((action) => (
                 <ListBoxItem
@@ -400,7 +400,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
                 </ListBoxItem>
               ))}
             </ListBox>
-          </Popover>
+          </SelectPopover>
         </SelectField>
       </div>
     </div>

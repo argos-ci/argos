@@ -59,10 +59,11 @@ function InnerFilterableIndicator({
     <div ref={ref} onContextMenu={handleContextMenu} className="min-w-0">
       {children}
       <Popover
-        triggerRef={ref}
-        isOpen={isOpen}
+        anchor={ref}
+        open={isOpen}
         onOpenChange={setIsOpen}
-        placement="bottom start"
+        side="bottom"
+        align="start"
       >
         <FilterIndicatorMenu
           isActive={isActive}

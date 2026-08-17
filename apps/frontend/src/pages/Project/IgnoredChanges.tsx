@@ -366,10 +366,7 @@ function PageContent(props: { params: ProjectParams }) {
         </>
       )}
       {unignoring.value ? (
-        <Modal
-          isOpen={unignoring.isOpen}
-          onOpenChange={unignoring.onOpenChange}
-        >
+        <Modal open={unignoring.isOpen} onOpenChange={unignoring.onOpenChange}>
           <UnignoreChangeDialog
             projectId={project.id}
             params={params}

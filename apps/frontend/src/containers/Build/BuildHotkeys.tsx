@@ -518,7 +518,7 @@ const BuildHotkeysDialogWithState = memo(
       state.setIsOpen((value) => !value),
     );
     return (
-      <Modal isOpen={state.isOpen} onOpenChange={state.setIsOpen} isDismissable>
+      <Modal open={state.isOpen} onOpenChange={state.setIsOpen} dismissible>
         <Dialog>
           <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
