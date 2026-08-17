@@ -467,7 +467,7 @@ function ResolvedThreadHeader(props: {
   const { collapsed, commentCount, authorName, onToggle } = props;
   return (
     <RACButton
-      onPress={onToggle}
+      onClick={onToggle}
       aria-label={collapsed ? "Expand thread" : "Collapse thread"}
       className="text-low hover:text-default flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs transition select-none"
     >
@@ -641,7 +641,7 @@ function CommentMessage(props: {
                 }
               >
                 <RACButton
-                  onPress={copyLink}
+                  onClick={copyLink}
                   aria-label="Copy link to comment"
                   className="text-low hover:text-default shrink-0 text-left text-xs transition"
                 >
@@ -790,8 +790,8 @@ function ReplyComposer(props: {
             size="small"
             aria-label="Submit the reply"
             aria-disabled={isEmpty}
-            isDisabled={isPending}
-            onPress={submit}
+            disabled={isPending}
+            onClick={submit}
             className="mt-0.5 shrink-0"
           >
             <ArrowUpIcon />

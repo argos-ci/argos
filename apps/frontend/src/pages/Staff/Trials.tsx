@@ -692,7 +692,7 @@ function ContactCell(props: { team: PipelineTeam }) {
         size="small"
         iconOnly
         aria-label="Draft outreach email"
-        onPress={() => {
+        onClick={() => {
           if (!contactedAt) {
             markContacted(true);
           }

@@ -121,7 +121,7 @@ function UnlinkGithubRepositoryButton(props: {
   return (
     <Button
       variant="secondary"
-      onPress={() => {
+      onClick={() => {
         unlink().catch(() => {});
       }}
     >
@@ -150,7 +150,7 @@ const UnlinkGitlabProjectButton = (props: {
   return (
     <Button
       variant="secondary"
-      onPress={() => {
+      onClick={() => {
         unlink().catch(() => {});
       }}
     >

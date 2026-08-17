@@ -173,7 +173,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
           <EmptyStateActions>
             <Button
               variant="secondary"
-              onPress={() => {
+              onClick={() => {
                 setSearch("");
               }}
             >
@@ -191,7 +191,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
       )}
       {data.team.githubMembers.pageInfo.hasNextPage && (
         <ListLoadMore
-          onPress={() => {
+          onClick={() => {
             fetchMore({
               variables: {
                 after: members.length,

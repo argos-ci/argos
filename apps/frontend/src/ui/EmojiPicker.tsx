@@ -128,7 +128,7 @@ export function EmojiPickerField<TFieldValues extends FieldValues>(
         aria-label={ariaLabel}
         {...buttonProps}
         ref={mergedRef}
-        isDisabled={field.disabled || buttonProps?.isDisabled}
+        disabled={field.disabled || buttonProps?.disabled}
         onBlur={(event) => {
           field.onBlur();
           buttonProps?.onBlur?.(event);

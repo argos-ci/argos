@@ -215,7 +215,7 @@ export function PullRequestButton(props: {
           variant="secondary"
           size={props.size}
           className={clsx("min-w-0 cursor-pointer", props.className)}
-          onPress={
+          onClick={
             props.emulateLink
               ? (event) => {
                   window.open(

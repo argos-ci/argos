@@ -141,7 +141,7 @@ export const OpenPending: Story = {
           </DialogBody>
           <DialogFooter>
             <DialogDismiss disabled>Cancel</DialogDismiss>
-            <Button variant="primary" isPending>
+            <Button variant="primary" pending>
               Transfer
             </Button>
           </DialogFooter>

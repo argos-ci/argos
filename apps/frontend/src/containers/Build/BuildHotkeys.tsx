@@ -525,7 +525,7 @@ const BuildHotkeysDialogWithState = memo(
             <Button
               variant="secondary"
               iconOnly
-              onPress={() => state.setIsOpen(false)}
+              onClick={() => state.setIsOpen(false)}
               aria-label="Close"
               className="absolute top-3 right-3 z-10"
             >

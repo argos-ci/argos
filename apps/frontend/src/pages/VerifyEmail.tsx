@@ -96,8 +96,8 @@ function VerifyProcess(props: { email: string; token: string }) {
           variant="primary"
           size="large"
           className="!px-14"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             verifyEmail().catch(() => {
               // Ignore errors
             });

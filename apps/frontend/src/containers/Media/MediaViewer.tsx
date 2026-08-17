@@ -464,13 +464,13 @@ function MediaViewToolbar(props: {
           <DetailToolbarNav>
             <PreviousButton
               hotkeyName="goToPreviousMedia"
-              onPress={nav.onPrevious}
-              isDisabled={!nav.hasPrevious}
+              onClick={nav.onPrevious}
+              disabled={!nav.hasPrevious}
             />
             <NextButton
               hotkeyName="goToNextMedia"
-              onPress={nav.onNext}
-              isDisabled={!nav.hasNext}
+              onClick={nav.onNext}
+              disabled={!nav.hasNext}
             />
           </DetailToolbarNav>
         ) : null}

@@ -52,9 +52,9 @@ export const LeaveTeamDialog = memo(
           {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
-            isDisabled={loading}
+            disabled={loading}
             variant="destructive"
-            onPress={() => {
+            onClick={() => {
               leaveTeam().catch(() => {});
             }}
           >

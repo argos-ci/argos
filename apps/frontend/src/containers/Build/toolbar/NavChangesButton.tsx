@@ -24,7 +24,7 @@ function GoToChangesButton(props: { direction: -1 | 1 }) {
   const Icon = direction === -1 ? ChevronLeft : ChevronRight;
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <Button variant="secondary" iconOnly onPress={go} isDisabled={!enabled}>
+      <Button variant="secondary" iconOnly onClick={go} disabled={!enabled}>
         <Icon />
       </Button>
     </HotkeyTooltip>

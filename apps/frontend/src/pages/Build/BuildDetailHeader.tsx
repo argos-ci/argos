@@ -122,11 +122,11 @@ const BuildNavButtons = memo(function BuildNavButtons() {
     <>
       <PreviousButton
         toOverview={!hasPreviousDiff}
-        onPress={() =>
+        onClick={() =>
           hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
         }
       />
-      <NextButton onPress={goToNextDiff} isDisabled={!hasNextDiff} />
+      <NextButton onClick={goToNextDiff} disabled={!hasNextDiff} />
     </>
   );
 });

@@ -40,7 +40,7 @@ function BaseReviewButton(props: {
     <DialogTrigger open={isOpen} onOpenChange={setIsOpen}>
       <Button
         className="shrink-0"
-        isDisabled={props.disabled}
+        disabled={props.disabled}
         autoFocus={props.autoFocus}
       >
         {props.children ?? "Submit review"}
@@ -64,7 +64,7 @@ export function DisabledBuildReviewButton(props: { tooltip: React.ReactNode }) {
   return (
     <Tooltip content={props.tooltip}>
       <div>
-        <Button isDisabled>Submit review</Button>
+        <Button disabled>Submit review</Button>
       </div>
     </Tooltip>
   );

@@ -28,7 +28,7 @@ export const FitToggle = memo(() => {
     >
       {/* The icon says which way the button goes, so it needs no pressed
           state on top: shrink to fit, expand back to full size. */}
-      <Button variant="secondary" iconOnly onPress={toggle}>
+      <Button variant="secondary" iconOnly onClick={toggle}>
         {contained ? <ExpandIcon /> : <ShrinkIcon />}
       </Button>
     </HotkeyTooltip>

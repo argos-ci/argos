@@ -181,8 +181,8 @@ function RevokeSessionDialog(props: { session: Session }) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             revokeSession().catch(() => {});
           }}
         >
@@ -224,8 +224,8 @@ function RevokeAllSessionsDialog(props: { count: number }) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             revokeAllSessions().catch(() => {});
           }}
         >
@@ -268,7 +268,7 @@ function UserSessions(props: { sessions: readonly Session[] }) {
                     <Button
                       variant="secondary"
                       size="small"
-                      onPress={() => logout()}
+                      onClick={() => logout()}
                     >
                       Log out
                     </Button>
@@ -297,7 +297,7 @@ function UserSessions(props: { sessions: readonly Session[] }) {
             {others.map((session) => (
               <RACButton
                 key={session.id}
-                onPress={() => revoking.open(session)}
+                onClick={() => revoking.open(session)}
                 className="group bg-app data-focus-visible:bg-hover data-hovered:bg-hover flex w-full items-center gap-3 border-b p-4 last:border-b-0 focus:outline-hidden"
               >
                 <SessionRowLayout

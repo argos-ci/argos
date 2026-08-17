@@ -629,7 +629,7 @@ function MediaActions(props: {
           variant="secondary"
           iconOnly
           aria-label="Copy link"
-          onPress={copyLink}
+          onClick={copyLink}
         >
           <LinkIcon />
         </Button>
@@ -639,7 +639,7 @@ function MediaActions(props: {
           variant="secondary"
           iconOnly
           aria-label="Download"
-          onPress={download}
+          onClick={download}
         >
           <DownloadIcon />
         </Button>
@@ -655,7 +655,7 @@ function MediaActions(props: {
             variant="secondary"
             iconOnly
             aria-label={format.label}
-            onPress={() => copyFormat(format)}
+            onClick={() => copyFormat(format)}
           >
             <FileTextIcon />
           </Button>

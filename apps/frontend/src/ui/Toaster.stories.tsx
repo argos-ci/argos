@@ -25,37 +25,37 @@ export const Default: Story = {
     <div className="flex flex-wrap gap-2">
       <Button
         variant="secondary"
-        onPress={() => toast("Issue URL copied to clipboard")}
+        onClick={() => toast("Issue URL copied to clipboard")}
       >
         Default
       </Button>
       <Button
         variant="secondary"
-        onPress={() => toast.info("A new version of Argos is available")}
+        onClick={() => toast.info("A new version of Argos is available")}
       >
         Info
       </Button>
       <Button
         variant="secondary"
-        onPress={() => toast.success("Invitations sent successfully")}
+        onClick={() => toast.success("Invitations sent successfully")}
       >
         Success
       </Button>
       <Button
         variant="secondary"
-        onPress={() => toast.error("Something went wrong, please try again")}
+        onClick={() => toast.error("Something went wrong, please try again")}
       >
         Danger
       </Button>
       <Button
         variant="secondary"
-        onPress={() => toast.warning("Your trial expires in 3 days")}
+        onClick={() => toast.warning("Your trial expires in 3 days")}
       >
         Warning
       </Button>
       <Button
         variant="secondary"
-        onPress={() =>
+        onClick={() =>
           toast("greg/arg-462-expose-all-flakiness-stats-in-the-apicli", {
             description:
               "Branch name copied to clipboard. Paste it into your favorite git client.",
@@ -66,7 +66,7 @@ export const Default: Story = {
       </Button>
       <Button
         variant="secondary"
-        onPress={() =>
+        onClick={() =>
           toast.success("Build #4821 approved", {
             description: "12 screenshots changed",
             action: {
@@ -80,7 +80,7 @@ export const Default: Story = {
       </Button>
       <Button
         variant="secondary"
-        onPress={() =>
+        onClick={() =>
           toast.promise(
             new Promise((resolve) => {
               setTimeout(resolve, 2000);
@@ -97,7 +97,7 @@ export const Default: Story = {
       </Button>
       <Button
         variant="secondary"
-        onPress={() =>
+        onClick={() =>
           toast('"ARG-462" copied to clipboard', { id: "copy-issue-id" })
         }
       >

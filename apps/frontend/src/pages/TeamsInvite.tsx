@@ -63,8 +63,8 @@ function JoinTeamButton(props: { secret: string; children: React.ReactNode }) {
   return (
     <Button
       size="large"
-      isDisabled={loading || !!data}
-      onPress={() => {
+      disabled={loading || !!data}
+      onClick={() => {
         accept().catch(() => {});
       }}
     >

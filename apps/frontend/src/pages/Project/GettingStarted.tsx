@@ -338,7 +338,7 @@ function InstallStep(props: {
         status === "complete" && (
           <span className="text-low text-sm">
             Set up with {framework.name} ·{" "}
-            <TextLinkButton onPress={() => setForceOpen((open) => !open)}>
+            <TextLinkButton onClick={() => setForceOpen((open) => !open)}>
               {forceOpen ? "close" : "change"}
             </TextLinkButton>
           </span>

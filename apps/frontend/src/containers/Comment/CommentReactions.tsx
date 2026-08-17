@@ -156,7 +156,7 @@ export function CommentReactionList(props: { comment: Comment }) {
         <Tooltip key={group.emoji} content={getReactionTooltip(group)}>
           <RACButton
             isDisabled={!canReact}
-            onPress={() => toggle(group)}
+            onClick={() => toggle(group)}
             className={clsx(
               "flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium transition",
               "cursor-default focus:outline-hidden data-focus-visible:ring-4",

@@ -83,8 +83,8 @@ function AcceptButton(props: {
         variant={isActive ? "success" : "secondary"}
         iconOnly
         aria-pressed={isActive}
-        onPress={toggle}
-        isDisabled={props.disabled}
+        onClick={toggle}
+        disabled={props.disabled}
       >
         <ThumbsUpIcon />
       </Button>
@@ -116,8 +116,8 @@ function RejectButton(props: {
         variant={isActive ? "danger" : "secondary"}
         iconOnly
         aria-pressed={isActive}
-        onPress={toggle}
-        isDisabled={props.disabled}
+        onClick={toggle}
+        disabled={props.disabled}
       >
         <ThumbsDownIcon />
       </Button>

@@ -61,7 +61,7 @@ const AcceptInviteMutation = graphql(`
 `);
 
 function AcceptInviteButton(
-  props: { secret: string } & Omit<ButtonProps, "onPress">,
+  props: { secret: string } & Omit<ButtonProps, "onClick">,
 ) {
   const navigate = useNavigate();
   const auth = useAuth();
@@ -87,8 +87,8 @@ function AcceptInviteButton(
   return (
     <Button
       {...props}
-      isDisabled={loading || !!data || props.isDisabled}
-      onPress={() => {
+      disabled={loading || !!data || props.disabled}
+      onClick={() => {
         accept().catch(() => {});
       }}
     />

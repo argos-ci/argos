@@ -202,7 +202,7 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
               <TestAutomationButton
                 form={form}
                 projectId={project.id}
-                isDisabled={form.formState.isSubmitting}
+                disabled={form.formState.isSubmitting}
               />
             </div>
             <FormRootError control={form.control} />
@@ -220,7 +220,7 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
             </LinkButton>
             <Button
               type="submit"
-              isDisabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting}
               className="order-3"
             >
               Create Rule

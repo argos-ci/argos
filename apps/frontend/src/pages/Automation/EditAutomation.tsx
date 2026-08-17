@@ -179,7 +179,7 @@ function EditAutomationForm(props: {
               <TestAutomationButton
                 form={form}
                 projectId={project.id}
-                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                disabled={!hasEditPermission || form.formState.isSubmitting}
               />
             </div>
             <FormRootError control={form.control} />
@@ -220,7 +220,7 @@ function EditAutomationForm(props: {
             >
               <Button
                 type="submit"
-                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                disabled={!hasEditPermission || form.formState.isSubmitting}
                 className="order-3"
               >
                 Save Changes

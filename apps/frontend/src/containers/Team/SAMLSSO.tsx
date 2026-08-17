@@ -191,7 +191,7 @@ export function TeamSAMLSSO(props: {
               </div>
               <div className="flex items-center gap-3">
                 <DialogTrigger>
-                  <Button variant="secondary" isDisabled={!hasSamlAccess}>
+                  <Button variant="secondary" disabled={!hasSamlAccess}>
                     Manage
                   </Button>
                   <Modal>
@@ -292,7 +292,7 @@ export function TeamSAMLSSO(props: {
               </p>
             </div>
             <DialogTrigger>
-              <Button variant="secondary" isDisabled={!hasSamlAccess}>
+              <Button variant="secondary" disabled={!hasSamlAccess}>
                 Configure
               </Button>
               <Modal>

@@ -145,7 +145,7 @@ export function RightSidebarToggle() {
       description={open ? "Hide sidebar" : "Show sidebar"}
       keys={hotkey.displayKeys}
     >
-      <Button variant="secondary" iconOnly aria-pressed={open} onPress={toggle}>
+      <Button variant="secondary" iconOnly aria-pressed={open} onClick={toggle}>
         <PanelRightIcon />
       </Button>
     </HotkeyTooltip>

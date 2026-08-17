@@ -21,8 +21,8 @@ export const HighlightButton = memo(() => {
       <Button
         variant="secondary"
         iconOnly
-        onPress={highlight}
-        isDisabled={!enabled}
+        onClick={highlight}
+        disabled={!enabled}
       >
         <LocateFixedIcon />
       </Button>

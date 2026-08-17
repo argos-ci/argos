@@ -175,7 +175,7 @@ function TeamContributorsList(props: {
               })()}
               {data.team.members.pageInfo.hasNextPage && (
                 <ListLoadMore
-                  onPress={() => {
+                  onClick={() => {
                     result.fetchMore({
                       variables: {
                         after: members.length,

@@ -142,7 +142,7 @@ export function TeamSlack(props: {
           account.slackInstallation ? (
             <Button
               variant="secondary"
-              onPress={() => {
+              onClick={() => {
                 uninstallSlack().catch(() => {});
               }}
             >

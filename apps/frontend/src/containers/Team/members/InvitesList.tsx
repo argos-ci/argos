@@ -249,7 +249,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
           <EmptyStateActions>
             <Button
               variant="secondary"
-              onPress={() => {
+              onClick={() => {
                 setSearch("");
               }}
             >
@@ -275,7 +275,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
       )}
       {data.team.invites.pageInfo.hasNextPage && (
         <ListLoadMore
-          onPress={() => {
+          onClick={() => {
             fetchMore({
               variables: {
                 after: invites.length,

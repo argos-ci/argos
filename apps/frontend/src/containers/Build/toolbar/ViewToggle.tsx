@@ -175,7 +175,7 @@ function ViewButton(props: {
         iconOnly
         aria-pressed={isCurrent}
         aria-label={label}
-        onPress={() => {
+        onClick={() => {
           onSelect(viewMode);
         }}
       >

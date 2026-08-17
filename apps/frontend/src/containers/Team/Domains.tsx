@@ -194,8 +194,8 @@ function RemoveTeamDomainDialog(props: { teamDomain: TeamDomain }) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             removeTeamDomain().catch(() => {
               // The error is shown in the dialog.
             });

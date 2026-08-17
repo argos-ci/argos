@@ -107,7 +107,7 @@ export function CommentScreenshotReference(props: {
 
   return (
     <Button
-      onPress={goToDiff}
+      onClick={goToDiff}
       aria-label={`Go to snapshot ${screenshotDiff.name}`}
       // No hover style or default cursor of its own: the surrounding card
       // shares this button's navigation and carries the hover affordance.

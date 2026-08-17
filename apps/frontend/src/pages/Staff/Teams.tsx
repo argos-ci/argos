@@ -296,7 +296,7 @@ function StaffTeamRow(props: {
           </div>
         </td>
         <td className="p-4 text-right text-sm">
-          <Button variant="secondary" size="small" onPress={toggleMembers}>
+          <Button variant="secondary" size="small" onClick={toggleMembers}>
             {isOpened ? "Hide details" : "View details"}
           </Button>
         </td>
@@ -577,8 +577,8 @@ function StaffTeamsList() {
           <Button
             variant="secondary"
             size="small"
-            onPress={() => setPage((value) => Math.max(1, value - 1))}
-            isDisabled={currentPage <= 1}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            disabled={currentPage <= 1}
           >
             Previous
           </Button>
@@ -588,8 +588,8 @@ function StaffTeamsList() {
           <Button
             variant="secondary"
             size="small"
-            onPress={() => setPage((value) => Math.min(totalPages, value + 1))}
-            isDisabled={currentPage >= totalPages}
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            disabled={currentPage >= totalPages}
           >
             Next
           </Button>

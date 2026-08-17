@@ -69,7 +69,7 @@ function AttachedSnapshotToggle(props: {
       }
     >
       <Button
-        onPress={onToggle}
+        onClick={onToggle}
         aria-pressed={attached}
         aria-label={`${attached ? "Detach" : "Attach"} snapshot ${name}`}
         className={clsx(
@@ -145,15 +145,15 @@ export function AddCommentForm(props: {
         description: "Please add a comment before submitting.",
       }}
       aria-label="Add a comment"
-      renderSubmit={({ submit, isEmpty, isPending, disabled }) => (
+      renderSubmit={({ submit, isEmpty, pending, disabled }) => (
         <ReviewCommentSubmitButton
           canAddToReview={canAddToReview}
           altHeld={altHeld}
           fallbackLabel="Submit the comment"
           isEmpty={isEmpty}
-          isPending={isPending}
+          pending={pending}
           disabled={disabled}
-          onPress={submit}
+          onClick={submit}
         />
       )}
       footerStart={

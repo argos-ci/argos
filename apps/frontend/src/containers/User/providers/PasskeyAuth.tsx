@@ -246,7 +246,7 @@ function PasskeyRow(props: {
           variant="secondary"
           iconOnly
           aria-label={`Rename ${passkey.name}`}
-          onPress={() => onEdit(passkey)}
+          onClick={() => onEdit(passkey)}
         >
           <PencilIcon />
         </Button>
@@ -254,7 +254,7 @@ function PasskeyRow(props: {
           variant="danger"
           iconOnly
           aria-label={`Delete ${passkey.name}`}
-          onPress={() => onDelete(passkey)}
+          onClick={() => onDelete(passkey)}
         >
           <Trash2Icon />
         </Button>
@@ -310,7 +310,7 @@ export function PasskeyAuth(props: {
           {passkeys.length > 0 ? (
             <RACButton
               className="text-low data-focus-visible:text-default data-hovered:text-default flex items-center gap-1 focus:outline-hidden"
-              onPress={() => setIsExpanded((expanded) => !expanded)}
+              onClick={() => setIsExpanded((expanded) => !expanded)}
             >
               {passkeys.length} passkey{passkeys.length > 1 ? "s" : ""}{" "}
               registered

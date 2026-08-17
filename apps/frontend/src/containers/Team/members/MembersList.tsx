@@ -153,7 +153,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
                 )}
                 {isMe || props.amOwner ? (
                   <RemoveMenu
-                    isDisabled={lastOne || member.fromSSO}
+                    disabled={lastOne || member.fromSSO}
                     tooltip={
                       isMe && lastOne
                         ? "You are the last user of this team, you can't leave it"
@@ -181,7 +181,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
           <EmptyStateActions>
             <Button
               variant="secondary"
-              onPress={() => {
+              onClick={() => {
                 setSearch("");
                 setSource("everyone");
                 setOrderBy(TeamMembersOrderBy.Date);
@@ -194,7 +194,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
       )}
       {data.team.members.pageInfo.hasNextPage && (
         <ListLoadMore
-          onPress={() => {
+          onClick={() => {
             fetchMore({
               variables: {
                 after: members.length,

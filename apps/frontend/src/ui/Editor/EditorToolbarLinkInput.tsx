@@ -119,8 +119,8 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
           iconOnly
           size="small"
           aria-label="Open link"
-          isDisabled={!normalized}
-          onPress={open}
+          disabled={!normalized}
+          onClick={open}
         >
           <ExternalLinkIcon />
         </Button>
@@ -131,8 +131,8 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
           iconOnly
           size="small"
           aria-label="Remove link"
-          isDisabled={!hasLink}
-          onPress={remove}
+          disabled={!hasLink}
+          onClick={remove}
         >
           <Trash2Icon />
         </Button>

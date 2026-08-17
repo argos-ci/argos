@@ -134,7 +134,7 @@ function EmailScreen(props: {
         </ButtonIcon>
         Continue with email
       </FormSubmit>
-      <LinkButton className="mt-6 w-full text-center" onPress={onBack}>
+      <LinkButton className="mt-6 w-full text-center" onClick={onBack}>
         ← Other Sign Up options
       </LinkButton>
     </Form>
@@ -153,7 +153,7 @@ function ProvidersScreen(props: {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
-        onPress={() => setLastLoginMethod("google")}
+        onClick={() => setLastLoginMethod("google")}
       >
         Continue with Google
       </GoogleLoginButton>
@@ -161,7 +161,7 @@ function ProvidersScreen(props: {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
-        onPress={() => setLastLoginMethod("github")}
+        onClick={() => setLastLoginMethod("github")}
       >
         Continue with GitHub
       </GitHubLoginButton>
@@ -169,13 +169,13 @@ function ProvidersScreen(props: {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
-        onPress={() => setLastLoginMethod("gitlab")}
+        onClick={() => setLastLoginMethod("gitlab")}
       >
         Continue with GitLab
       </GitLabLoginButton>
       <LinkButton
         className="mt-2 w-full text-center"
-        onPress={onContinueWithEmail}
+        onClick={onContinueWithEmail}
       >
         Continue with Email →
       </LinkButton>

@@ -46,7 +46,7 @@ export function ChangesFilterToggle(props: { state: ChangesFilterState }) {
         variant="secondary"
         size="small"
         aria-pressed={state.value === "all"}
-        onPress={() => state.setValue("all")}
+        onClick={() => state.setValue("all")}
       >
         All
       </Button>
@@ -55,7 +55,7 @@ export function ChangesFilterToggle(props: { state: ChangesFilterState }) {
           variant="secondary"
           size="small"
           aria-pressed={state.value === "ignored"}
-          onPress={() => state.setValue("ignored")}
+          onClick={() => state.setValue("ignored")}
         >
           Ignored
         </Button>

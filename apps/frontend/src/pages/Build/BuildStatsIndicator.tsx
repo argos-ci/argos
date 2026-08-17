@@ -88,7 +88,7 @@ function InteractiveStatCount({
           colorClassName,
           "data-disabled:opacity-disabled rac-focus flex cursor-default items-center gap-1 py-2 transition",
         )}
-        onPress={onActive}
+        onClick={onActive}
         isDisabled={count === 0}
       >
         <Icon className="size-3" />

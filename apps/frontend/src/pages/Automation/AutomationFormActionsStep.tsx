@@ -333,7 +333,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
               <Suspense fallback={<div>Loading…</div>}>
                 <ActionDetail form={form} name={`${name}.${index}`} />
               </Suspense>
-              <RemoveButton onPress={() => remove(index)} />
+              <RemoveButton onClick={() => remove(index)} />
             </Task>
           );
         })}

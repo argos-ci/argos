@@ -104,7 +104,7 @@ export function TeamSubscribeDialog({
             <DialogDismiss>Cancel</DialogDismiss>
 
             <StripeCheckoutButton
-              isDisabled={
+              disabled={
                 team
                   ? checkHasSubscriptionStatus(team.subscriptionStatus)
                   : false

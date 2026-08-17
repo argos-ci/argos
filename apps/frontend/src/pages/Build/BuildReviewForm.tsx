@@ -162,8 +162,8 @@ export function BuildReviewForm(props: {
             size="small"
             iconOnly
             aria-label="Close"
-            onPress={() => state.close()}
-            isDisabled={isSubmitting}
+            onClick={() => state.close()}
+            disabled={isSubmitting}
           >
             <XIcon />
           </Button>
@@ -214,8 +214,8 @@ export function BuildReviewForm(props: {
                   variant={definition.variant}
                   size="small"
                   className="shrink-0"
-                  isPending={pendingEvent === event}
-                  isDisabled={
+                  pending={pendingEvent === event}
+                  disabled={
                     isLoading || (isSubmitting && pendingEvent !== event)
                   }
                   autoFocus={isDefault}

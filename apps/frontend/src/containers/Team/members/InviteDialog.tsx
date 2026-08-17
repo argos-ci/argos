@@ -134,7 +134,7 @@ export function InviteDialog(props: {
           </div>
           <ResetInviteLinkButton
             teamAccountId={team.id}
-            isDisabled={isSubmitting}
+            disabled={isSubmitting}
           />
           <Separator className="my-8" />
           <div className="flex flex-col gap-4">
@@ -180,10 +180,10 @@ export function InviteDialog(props: {
               <Button
                 variant="secondary"
                 className="self-start"
-                onPress={() =>
+                onClick={() =>
                   append({ email: "", level: TeamUserLevel.Member })
                 }
-                isDisabled={fields.length >= 10 || isSubmitting}
+                disabled={fields.length >= 10 || isSubmitting}
               >
                 <ButtonIcon>
                   <PlusCircleIcon />
@@ -218,7 +218,7 @@ const ResetInviteLinkMutation = graphql(`
 
 function ResetInviteLinkButton(props: {
   teamAccountId: string;
-  isDisabled?: boolean;
+  disabled?: boolean;
 }) {
   const client = useApolloClient();
   return (
@@ -234,7 +234,7 @@ function ResetInviteLinkButton(props: {
       }}
       variant="secondary"
       className="w-full justify-center"
-      isDisabled={props.isDisabled}
+      disabled={props.disabled}
     >
       Reset Invite Link
     </DialogActionButton>

@@ -3,7 +3,6 @@ import {
   cloneElement,
   useState,
   type ComponentPropsWithRef,
-  type MouseEvent,
 } from "react";
 import { Button as BaseButton } from "@base-ui/react/button";
 import { clsx } from "clsx";
@@ -264,30 +263,23 @@ function getButtonProps(options: ButtonOptions) {
 }
 
 export interface ButtonProps
-  extends Omit<ComponentPropsWithRef<"button">, "disabled">, ButtonOptions {
-  /**
-   * Kept from react-aria for now, and mapped to a click: renaming it at ~150
-   * call sites is its own change, so that a visual diff here can only be the
-   * new internals.
-   */
-  onPress?: (event: MouseEvent<HTMLElement>) => void;
-  isDisabled?: boolean;
+  extends ComponentPropsWithRef<"button">, ButtonOptions {
   /**
    * Holds the button in flight: it keeps its focus and its tooltip — hence
-   * `aria-disabled` rather than `disabled` — swallows presses, and shows a
+   * `aria-disabled` rather than `disabled` — swallows clicks, and shows a
    * spinner. react-aria's button had this built in; Base UI's does not.
    */
-  isPending?: boolean;
+  pending?: boolean;
   /**
    * Run an asynchronous action when the button is pressed.
    * Automatically set the button in pending mode and
    * handles errors.
    *
    * Deliberately *not* named `onAction`: react-aria spells a menu item's
-   * activation handler that way, and once `onPress` becomes `onClick` the two
-   * would be indistinguishable at a call site — `onClick={async () => …}` on a
-   * Button still type-checks and still runs, but silently loses the pending
-   * state, the error handling and the toast.
+   * activation handler that way, and `onClick` is indistinguishable from it at
+   * a call site — `onClick={async () => …}` on a Button still type-checks and
+   * still runs, but silently loses the pending state, the error handling and
+   * the toast.
    *
    * @example
    * <Button
@@ -309,10 +301,9 @@ export function Button({
   showFocusRing,
   children,
   onAsyncAction,
-  onPress,
   onClick,
-  isDisabled,
-  isPending,
+  disabled,
+  pending: pendingProp,
   type = "button",
   ...props
 }: ButtonProps) {
@@ -323,12 +314,12 @@ export function Button({
     showFocusRing,
   });
   const [isRunning, setIsRunning] = useState(false);
-  const pending = isPending ?? isRunning;
+  const pending = pendingProp ?? isRunning;
   return (
     <BaseButton
       {...buttonProps}
       className={clsx(buttonProps.className, "cursor-default", className)}
-      disabled={isDisabled}
+      disabled={disabled}
       // Pending is not disabled: the button stays focusable, so it keeps its
       // place in the tab order and its tooltip stays reachable.
       aria-disabled={pending || undefined}
@@ -338,7 +329,6 @@ export function Button({
           event.preventDefault();
           return;
         }
-        onPress?.(event);
         onClick?.(event);
         const promise = onAsyncAction?.();
         if (promise) {
@@ -374,13 +364,11 @@ export function Button({
 
 export interface LinkButtonProps
   extends ComponentPropsWithRef<"a">, ButtonOptions {
-  /** Mapped to a click, like `Button`'s — renamed in its own change. */
-  onPress?: (event: MouseEvent<HTMLElement>) => void;
   /**
-   * A link cannot be `disabled`, so it says so and refuses the navigation —
-   * which is what react-aria's `Link` did with the same prop.
+   * A link cannot really be disabled, so it says so and refuses the
+   * navigation — which is what react-aria's `Link` did with the same prop.
    */
-  isDisabled?: boolean;
+  disabled?: boolean;
 }
 
 /**
@@ -394,9 +382,8 @@ export function LinkButton({
   size,
   iconOnly,
   showFocusRing,
-  onPress,
   onClick,
-  isDisabled,
+  disabled,
   ...props
 }: LinkButtonProps) {
   const buttonProps = getButtonProps({
@@ -409,13 +396,12 @@ export function LinkButton({
     <RouterLink
       {...buttonProps}
       className={clsx(buttonProps.className, className)}
-      aria-disabled={isDisabled || undefined}
+      aria-disabled={disabled || undefined}
       onClick={(event) => {
-        if (isDisabled) {
+        if (disabled) {
           event.preventDefault();
           return;
         }
-        onPress?.(event);
         onClick?.(event);
       }}
       {...props}

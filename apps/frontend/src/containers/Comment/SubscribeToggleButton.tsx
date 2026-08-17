@@ -49,7 +49,7 @@ export function SubscribeToggleButton(props: {
         iconOnly
         size="small"
         aria-label={label}
-        onPress={handlePress}
+        onClick={handlePress}
       >
         {subscribed ? <BellOffIcon /> : <BellIcon />}
       </Button>

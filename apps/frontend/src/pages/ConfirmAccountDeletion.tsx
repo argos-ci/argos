@@ -70,7 +70,7 @@ function ConfirmProcess(props: { token: string }) {
           <Button
             variant="primary"
             size="large"
-            onPress={() => {
+            onClick={() => {
               logout({ redirectTo: "" });
             }}
           >
@@ -94,7 +94,7 @@ function ConfirmProcess(props: { token: string }) {
           <Button
             variant="primary"
             size="large"
-            onPress={() => {
+            onClick={() => {
               navigate("/");
             }}
           >
@@ -121,8 +121,8 @@ function ConfirmProcess(props: { token: string }) {
           variant="destructive"
           size="large"
           className="px-14!"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             confirmDeletion().catch(() => {
               // Errors are surfaced via the `error` state above.
             });

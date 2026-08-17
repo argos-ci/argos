@@ -494,7 +494,7 @@ function PageContent(props: {
               There are no builds matching the filters.
             </Text>
             <EmptyStateActions>
-              <Button onPress={() => setFilters(null)}>Reset filters</Button>
+              <Button onClick={() => setFilters(null)}>Reset filters</Button>
             </EmptyStateActions>
           </EmptyState>
         ) : (

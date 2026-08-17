@@ -175,8 +175,8 @@ function FormatToolbar(props: {
         keys={[MOD, "B"]}
         icon={<BoldIcon />}
         isActive={state.isBold}
-        isDisabled={!state.canBold}
-        onPress={(chain) => chain.toggleBold()}
+        disabled={!state.canBold}
+        apply={(chain) => chain.toggleBold()}
       />
       <MarkButton
         editor={editor}
@@ -184,8 +184,8 @@ function FormatToolbar(props: {
         keys={[MOD, "I"]}
         icon={<ItalicIcon />}
         isActive={state.isItalic}
-        isDisabled={!state.canItalic}
-        onPress={(chain) => chain.toggleItalic()}
+        disabled={!state.canItalic}
+        apply={(chain) => chain.toggleItalic()}
       />
       <MarkButton
         editor={editor}
@@ -193,8 +193,8 @@ function FormatToolbar(props: {
         keys={[MOD, SHIFT, "S"]}
         icon={<StrikethroughIcon />}
         isActive={state.isStrike}
-        isDisabled={!state.canStrike}
-        onPress={(chain) => chain.toggleStrike()}
+        disabled={!state.canStrike}
+        apply={(chain) => chain.toggleStrike()}
       />
       <MarkButton
         editor={editor}
@@ -202,8 +202,8 @@ function FormatToolbar(props: {
         keys={[MOD, "U"]}
         icon={<UnderlineIcon />}
         isActive={state.isUnderline}
-        isDisabled={!state.canUnderline}
-        onPress={(chain) => chain.toggleUnderline()}
+        disabled={!state.canUnderline}
+        apply={(chain) => chain.toggleUnderline()}
       />
       <LinkButton state={state} onEnterLinkMode={onEnterLinkMode} />
       <MarkButton
@@ -212,8 +212,8 @@ function FormatToolbar(props: {
         keys={[MOD, SHIFT, "B"]}
         icon={<QuoteIcon />}
         isActive={state.isBlockquote}
-        isDisabled={!state.canBlockquote}
-        onPress={(chain) => chain.toggleBlockquote()}
+        disabled={!state.canBlockquote}
+        apply={(chain) => chain.toggleBlockquote()}
       />
       <MarkButton
         editor={editor}
@@ -221,8 +221,8 @@ function FormatToolbar(props: {
         keys={[MOD, "E"]}
         icon={<CodeIcon />}
         isActive={state.isCode}
-        isDisabled={!state.canCode}
-        onPress={(chain) => chain.toggleCode()}
+        disabled={!state.canCode}
+        apply={(chain) => chain.toggleCode()}
       />
       <MarkButton
         editor={editor}
@@ -230,8 +230,8 @@ function FormatToolbar(props: {
         keys={[MOD, ALT, "C"]}
         icon={<SquareCodeIcon />}
         isActive={state.isCodeBlock}
-        isDisabled={!state.canCodeBlock}
-        onPress={(chain) => chain.toggleCodeBlock()}
+        disabled={!state.canCodeBlock}
+        apply={(chain) => chain.toggleCodeBlock()}
       />
       <ListMenu editor={editor} state={state} />
     </>
@@ -251,8 +251,8 @@ function LinkButton(props: {
         size="small"
         aria-label="Link"
         aria-pressed={state.isLink}
-        isDisabled={!state.isLink && !state.canSetLink}
-        onPress={onEnterLinkMode}
+        disabled={!state.isLink && !state.canSetLink}
+        onClick={onEnterLinkMode}
       >
         <LinkIcon />
       </Button>

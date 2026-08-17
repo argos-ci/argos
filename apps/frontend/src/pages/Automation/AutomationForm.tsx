@@ -49,13 +49,13 @@ export function Task(props: { children: React.ReactNode }) {
   );
 }
 
-export function RemoveButton(props: { onPress: ButtonProps["onPress"] }) {
+export function RemoveButton(props: { onClick: ButtonProps["onClick"] }) {
   return (
     <Tooltip content="Remove">
       <Button
         variant="secondary"
         iconOnly
-        onPress={props.onPress}
+        onClick={props.onClick}
         aria-label="Remove"
       >
         <Trash2Icon />

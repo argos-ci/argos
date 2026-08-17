@@ -58,8 +58,8 @@ export function DeleteUserEmailDialog(props: DeleteUserEmailDialogProps) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             deleteUserEmail().catch(() => {
               // Ignore errors
             });

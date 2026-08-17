@@ -39,7 +39,7 @@ function Toggle() {
     >
       {/* The icon is the destination, not the state: the aria tree while looking
           at the screenshot, the screenshot while reading the tree. */}
-      <Button variant="secondary" iconOnly onPress={toggle}>
+      <Button variant="secondary" iconOnly onClick={toggle}>
         {snapshotType === "aria" ? <ImageIcon /> : <ScanTextIcon />}
       </Button>
     </HotkeyTooltip>

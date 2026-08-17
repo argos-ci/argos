@@ -408,7 +408,7 @@ function WelcomeForm() {
           <LinkButton
             className="text-sm"
             isDisabled={isSkipping || form.formState.isSubmitting}
-            onPress={() => {
+            onClick={() => {
               setIsSkipping(true);
               complete(null).catch(() => {
                 // The answers are optional, so a failure here is no reason to
