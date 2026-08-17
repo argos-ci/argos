@@ -21,7 +21,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { Kbd } from "@/ui/Kbd";
+import { getMenuItemClassName, menuListClassName } from "@/ui/menuStyle";
+import { popupSurfaceClassName } from "@/ui/popupSurface";
+import { Shortcut } from "@/ui/Shortcut";
 
 import { ALT, MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import { positionSuggestionPopup } from "./suggestionPopup";
@@ -51,7 +53,7 @@ interface SlashCommandItem {
   run: (params: { editor: TiptapEditor; range: SlashRange }) => void;
 }
 
-const SLASH_COMMAND_ITEMS: SlashCommandItem[] = [
+export const SLASH_COMMAND_ITEMS: SlashCommandItem[] = [
   {
     id: "heading1",
     title: "Heading 1",
@@ -151,7 +153,7 @@ interface SlashCommandListHandle {
   onKeyDown: (event: KeyboardEvent) => boolean;
 }
 
-const SlashCommandList = forwardRef<
+export const SlashCommandList = forwardRef<
   SlashCommandListHandle,
   {
     items: SlashCommandItem[];
@@ -213,15 +215,21 @@ const SlashCommandList = forwardRef<
   }
 
   return (
-    <div className="bg-app border-thin max-h-72 w-64 overflow-auto rounded-md p-1 text-sm shadow-lg">
+    <div
+      className={clsx(
+        popupSurfaceClassName,
+        menuListClassName,
+        "max-h-72 w-64 flex-col",
+      )}
+    >
       {items.map((item, index) => (
         <button
           type="button"
           key={item.id}
-          className={clsx(
-            "flex w-full items-center gap-2 rounded px-2 py-1 text-left",
-            index === selectedIndex ? "bg-active" : "hover:bg-hover",
-          )}
+          className={getMenuItemClassName()}
+          // The row the keyboard is on. Hovering moves it here too, which is
+          // why one attribute covers both.
+          data-active={index === selectedIndex || undefined}
           // Keep keyboard and pointer selection in sync.
           onMouseEnter={() => setSelectedIndex(index)}
           // `mousedown` (not click) so the editor doesn't lose focus first.
@@ -232,13 +240,7 @@ const SlashCommandList = forwardRef<
         >
           <item.icon className="text-low size-4 shrink-0" />
           <span className="text-default flex-1 truncate">{item.title}</span>
-          <span className="flex shrink-0 items-center">
-            {item.keys.map((key) => (
-              <Kbd key={key} className="ml-0.5">
-                {key}
-              </Kbd>
-            ))}
-          </span>
+          <Shortcut keys={item.keys} />
         </button>
       ))}
     </div>

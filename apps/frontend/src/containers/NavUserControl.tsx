@@ -134,7 +134,7 @@ function UserMenu(props: { account: AuthAccount }) {
         {hotkeysDialog && (
           <MenuItem
             icon={<CommandIcon />}
-            keyboardShortcut="?"
+            keyboardShortcut={["?"]}
             onAction={() => hotkeysDialog.setIsOpen(true)}
           >
             Keyboard shortcuts

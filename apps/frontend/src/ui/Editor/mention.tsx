@@ -9,6 +9,8 @@ import {
 } from "@tiptap/react";
 import { clsx } from "clsx";
 
+import { getMenuItemClassName, menuListClassName } from "../menuStyle";
+import { popupSurfaceClassName } from "../popupSurface";
 import { UserHoverCard } from "../UserCard";
 import { positionSuggestionPopup } from "./suggestionPopup";
 
@@ -62,11 +64,11 @@ interface SuggestionRenderProps {
   event?: KeyboardEvent;
 }
 
-interface MentionListHandle {
+export interface MentionListHandle {
   onKeyDown: (event: KeyboardEvent) => boolean;
 }
 
-const MentionList = forwardRef<
+export const MentionList = forwardRef<
   MentionListHandle,
   {
     items: MentionUser[];
@@ -126,15 +128,21 @@ const MentionList = forwardRef<
   }
 
   return (
-    <div className="bg-app border-thin max-h-60 w-64 overflow-auto rounded-md p-1 text-sm shadow-lg">
+    <div
+      className={clsx(
+        popupSurfaceClassName,
+        menuListClassName,
+        "max-h-60 w-64 flex-col",
+      )}
+    >
       {items.map((item, index) => (
         <button
           type="button"
           key={item.id}
-          className={clsx(
-            "flex w-full items-center gap-2 rounded px-2 py-1 text-left",
-            index === selectedIndex ? "bg-active" : "hover:bg-hover",
-          )}
+          className={getMenuItemClassName()}
+          // The row the keyboard is on. Hovering moves it here too, which is
+          // why one attribute covers both.
+          data-active={index === selectedIndex || undefined}
           // Use the index on hover so keyboard and pointer stay in sync.
           onMouseEnter={() => setSelectedIndex(index)}
           // `mousedown` (not click) so the editor doesn't lose focus first.
