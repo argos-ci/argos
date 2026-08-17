@@ -155,8 +155,17 @@ type TeamNode = DocumentType<
  */
 type TeamItem = TeamNode & { staff: NonNullable<TeamNode["staff"]> };
 
-function checkHasStaffData(team: TeamNode): team is TeamItem {
-  return team.staff !== null;
+/**
+ * Asserted rather than filtered out: a missing staff block on this page means
+ * the guard that fills it stopped working, and dropping the row would hide that
+ * behind a directory quietly missing teams — with a total that agrees with it.
+ */
+function toStaffTeam(team: TeamNode): TeamItem {
+  invariant(
+    team.staff,
+    "team directory returned a team without its staff data",
+  );
+  return { ...team, staff: team.staff };
 }
 
 type BillingPeriod = NonNullable<
@@ -322,8 +331,10 @@ type BilledPeriod = { period: BillingPeriod; amount: number };
 type TeamBilling = {
   plan: PricedPlan;
   /**
-   * The last period that closed. A settled figure — the same whatever day it is
-   * read on. Null until the team closes its first one.
+   * The last period that closed. Its usage is settled, but the prices are the
+   * ones the subscription carries today — Argos keeps no history of them — so a
+   * contract renegotiated since is priced on its new terms rather than the ones
+   * it was invoiced on. Null until the team closes its first period.
    */
   previous: BilledPeriod | null;
   /** The period still accruing. Null when nothing is being billed right now. */
@@ -435,11 +446,16 @@ function PeriodProgress(props: { period: BillingPeriod }) {
 function BilledAmount(props: {
   team: TeamItem;
   billing: TeamBilling | null;
-  billed: BilledPeriod | null;
+  /** Which of the two periods to read off the billing above. */
+  period: "previous" | "current";
   /** Rendered under the amount — what makes the two period columns readable. */
   footnote: React.ReactNode;
 }) {
-  const { team, billing, billed, footnote } = props;
+  const { team, billing, period, footnote } = props;
+  // Read here rather than passed in: an amount only ever comes from the billing
+  // beside it, and taking the two separately let a caller hand over one without
+  // the other — a state the cell then had to guard against for nothing.
+  const billed = billing?.[period] ?? null;
 
   return (
     <div>
@@ -480,7 +496,7 @@ function BilledPeriodCells(props: {
         <BilledAmount
           team={team}
           billing={billing}
-          billed={billing?.previous ?? null}
+          period="previous"
           footnote={footnote ? <div className="text-xs">&nbsp;</div> : null}
         />
       </td>
@@ -488,7 +504,7 @@ function BilledPeriodCells(props: {
         <BilledAmount
           team={team}
           billing={billing}
-          billed={current}
+          period="current"
           footnote={footnote}
         />
       </td>
@@ -922,7 +938,7 @@ function StaffTeamsList() {
   // and page change, since each one is a different query.
   const connection = (data ?? previousData)?.staffTeams;
   const teams = useMemo(
-    () => (connection?.edges ?? []).filter(checkHasStaffData),
+    () => (connection?.edges ?? []).map(toStaffTeam),
     [connection?.edges],
   );
   const totalCount = connection?.pageInfo.totalCount ?? 0;

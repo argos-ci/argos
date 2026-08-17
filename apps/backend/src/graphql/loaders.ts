@@ -784,12 +784,6 @@ function createAccountBillingByAccountIdLoader() {
   });
 }
 
-/** Empty rather than null: an account with no upload has an undefined mix. */
-const EMPTY_STORYBOOK_TOTALS: AccountStorybookTotals = {
-  ratio: null,
-  count: 0,
-};
-
 /**
  * The Storybook mix, on its own loader rather than folded into the billing one.
  *
@@ -804,9 +798,14 @@ function createAccountStorybookTotalsByAccountIdLoader() {
     const totalsByAccountId = await getAccountStorybookTotals([
       ...new Set(accountIds as string[]),
     ]);
-    return accountIds.map(
-      (accountId) => totalsByAccountId.get(accountId) ?? EMPTY_STORYBOOK_TOTALS,
-    );
+    return accountIds.map((accountId) => {
+      const totals = totalsByAccountId.get(accountId);
+      // Asserted rather than defaulted: the service fills an entry for every id
+      // it is handed, including the accounts that never uploaded anything, so a
+      // missing one is a broken contract and not an account with no screenshots.
+      invariant(totals, "storybook totals missing for a requested account");
+      return totals;
+    });
   });
 }
 

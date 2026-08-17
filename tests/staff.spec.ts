@@ -9,7 +9,6 @@ import {
   ScreenshotBucket,
   Subscription,
 } from "../apps/backend/src/database/models";
-import type { SubscriptionInterval } from "../apps/backend/src/database/models/Subscription";
 import {
   createProject,
   createTeamAccount,
@@ -131,8 +130,6 @@ async function createBilledTeam(input: {
   trialEndedDaysAgo: number;
   /** Where the running period opened, which sets the billing anniversary. */
   periodStartDaysAgo: number;
-  /** The plan's own interval, which is the unit its amounts are stated in. */
-  interval: SubscriptionInterval;
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
@@ -167,9 +164,14 @@ async function createBilledTeam(input: {
     currency: "usd",
   });
 
+  // Read off the plan rather than taken as an argument: the backend prices
+  // against `plan.interval`, so a caller free to state its own could seed every
+  // bucket on monthly boundaries a yearly aggregate never looks at — the
+  // overage would silently read zero and the assertions would still pass.
+  const plan = await PlanModel.query().findById(input.planId).throwIfNotFound();
   const periodStarts = subscription.getPeriodStarts(
     new Date(),
-    input.interval,
+    plan.interval,
     input.screenshotsByClosedPeriod.length + 1,
   );
   const project = await createProject({
@@ -308,7 +310,6 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: proPlan.id,
         slug: `${prefix}-soylent`,
-        interval: "month",
         name: "Soylent",
         createdDaysAgo: 88,
         trialEndedDaysAgo: 85,
@@ -322,7 +323,6 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: enterprisePlan.id,
         slug: `${prefix}-vandelay`,
-        interval: "month",
         name: "Vandelay",
         createdDaysAgo: 70,
         trialEndedDaysAgo: 67,
@@ -336,7 +336,6 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: enterprisePlan.id,
         slug: `${prefix}-umbrella`,
-        interval: "month",
         name: "Umbrella",
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
@@ -352,7 +351,6 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: annualPlan.id,
         slug: `${prefix}-initrode`,
-        interval: "year",
         name: "Initrode",
         createdDaysAgo: 400,
         trialEndedDaysAgo: 397,

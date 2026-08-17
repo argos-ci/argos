@@ -19,8 +19,17 @@
  * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
+  // A concurrent build that fails leaves the index in place, marked invalid —
+  // a cancelled deploy or a statement timeout is enough. Knex records nothing
+  // for a migration that threw, so `up` runs again on the next deploy; without
+  // this drop, `IF NOT EXISTS` would find that invalid index, build nothing and
+  // report success. The table would carry an index every insert maintains and
+  // no query can use, and the scan this exists to bound would stay as it was.
   await knex.raw(`
-    CREATE INDEX CONCURRENTLY IF NOT EXISTS screenshot_buckets_projectid_createdat_index
+    DROP INDEX CONCURRENTLY IF EXISTS screenshot_buckets_projectid_createdat_index
+  `);
+  await knex.raw(`
+    CREATE INDEX CONCURRENTLY screenshot_buckets_projectid_createdat_index
     ON screenshot_buckets ("projectId", "createdAt")
     INCLUDE ("screenshotCount", "storybookScreenshotCount")
   `);

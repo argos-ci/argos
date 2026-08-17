@@ -255,10 +255,16 @@ async function getMediaUnits(
     // Media reaches the account through its project, exactly as a bucket does —
     // which is what makes a project transfer carry its billing with it.
     .leftJoin("projects as p", "p.accountId", "v.accountId")
+    // Deliberately not bounded by a date, unlike the buckets above: a version
+    // can be uploaded long after the media row it hangs off was created — that
+    // is what replacing a recording is — so narrowing the media by its own date
+    // would drop uploads that fall squarely inside the window. Only the version
+    // below carries a date the window can be applied to, which leaves this join
+    // reading every media row of the account.
     .leftJoin("media as m", "m.projectId", "p.id")
     // Units live on the version, because every version is an upload and each one
     // stores its own bytes. Only uploads that completed are billed, which is what
-    // `uploadedAt` records. Bounded like the buckets above, for the same reason.
+    // `uploadedAt` records.
     .leftJoin("media_versions as mv", (join) => {
       join
         .on("mv.mediaId", "m.id")
