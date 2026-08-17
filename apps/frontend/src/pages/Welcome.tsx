@@ -1,5 +1,7 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import clsx from "clsx";
 import {
@@ -10,7 +12,6 @@ import {
   SparklesIcon,
   UsersIcon,
 } from "lucide-react";
-import { Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
   useController,
@@ -122,32 +123,36 @@ function SourceField(props: { control: Control<Inputs> }) {
   // use-case field.
   const { ref, value, onChange, onBlur, disabled } = field;
   const error = fieldState.error?.message;
+  const labelId = useId();
   return (
     <RadioGroup
       className="w-full"
       ref={ref}
       value={value}
-      onChange={onChange}
+      onValueChange={onChange}
       onBlur={onBlur}
-      isDisabled={disabled}
-      // React Hook Form owns the validation: `aria` keeps the group's invalid
-      // state and its message wired up for assistive tech without the browser
-      // running a second, native round of its own on submit.
-      validationBehavior="aria"
-      isInvalid={Boolean(error)}
+      disabled={disabled}
+      // React Hook Form owns the validation, so the group only has to say what
+      // it found for assistive tech — no native round of its own on submit.
+      aria-invalid={Boolean(error) || undefined}
+      // react-aria's `RadioGroup` named itself from the `Label` it found in
+      // context. Base UI's is a plain group, so the two are wired by hand.
+      aria-labelledby={labelId}
     >
-      <Label invalid={Boolean(error)}>How did you hear about us?</Label>
+      <Label id={labelId} invalid={Boolean(error)}>
+        How did you hear about us?
+      </Label>
       <div className="mt-1 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {SOURCES.map(({ value, label, Icon }) => (
-          <Radio
+          <Radio.Root
             key={value}
             value={value}
             className={clsx(
               "group bg-app relative flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm",
               "transition-[background-color,border-color,box-shadow]",
-              "data-hovered:border-hover data-hovered:bg-subtle",
-              "data-focus-visible:ring-primary data-focus-visible:ring-2 data-focus-visible:outline-hidden",
-              "data-selected:border-primary-active data-selected:bg-primary-app data-selected:shadow-xs",
+              "hover:border-hover hover:bg-subtle",
+              "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-hidden",
+              "data-checked:border-primary-active data-checked:bg-primary-app data-checked:shadow-xs",
             )}
           >
             {/* The icon gets its own plate, so the tile reads as an object with
@@ -155,7 +160,7 @@ function SourceField(props: { control: Control<Inputs> }) {
             <span
               className={clsx(
                 "bg-ui text-low flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                "group-data-selected:bg-primary-ui group-data-selected:text-primary-low",
+                "group-data-checked:bg-primary-ui group-data-checked:text-primary-low",
               )}
             >
               <Icon className="size-4.5" size={18} />
@@ -163,8 +168,8 @@ function SourceField(props: { control: Control<Inputs> }) {
             <span className="flex-1 leading-tight font-medium">{label}</span>
             {/* Only shown on the pick, so the grid stays quiet until the user
                 acts. */}
-            <CheckIcon className="text-primary-low size-4 shrink-0 opacity-0 transition-opacity group-data-selected:opacity-100" />
-          </Radio>
+            <CheckIcon className="text-primary-low size-4 shrink-0 opacity-0 transition-opacity group-data-checked:opacity-100" />
+          </Radio.Root>
         ))}
       </div>
       {/* Under the grid rather than under the label: it answers the Continue
