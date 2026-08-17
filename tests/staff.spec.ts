@@ -9,6 +9,7 @@ import {
   ScreenshotBucket,
   Subscription,
 } from "../apps/backend/src/database/models";
+import type { SubscriptionInterval } from "../apps/backend/src/database/models/Subscription";
 import {
   createProject,
   createTeamAccount,
@@ -130,6 +131,8 @@ async function createBilledTeam(input: {
   trialEndedDaysAgo: number;
   /** Where the running period opened, which sets the billing anniversary. */
   periodStartDaysAgo: number;
+  /** The plan's own interval, which is the unit its amounts are stated in. */
+  interval: SubscriptionInterval;
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
@@ -166,7 +169,7 @@ async function createBilledTeam(input: {
 
   const periodStarts = subscription.getPeriodStarts(
     new Date(),
-    "month",
+    input.interval,
     input.screenshotsByClosedPeriod.length + 1,
   );
   const project = await createProject({
@@ -246,38 +249,49 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
     const prefix = `pipeline-${getUniqueTestIdentifier(testInfo)}`;
     const common = { planId: plan.id, subscriberId: user.user.id };
     // The shared plan is flat, so it has no usage to price. The teams below
-    // need three more: `pro`, which the price estimate is built for, one that
-    // is not, and a granted one that bills nothing at all — each row naming
-    // its plan when it is not Pro.
-    const [proPlan, enterprisePlan, grantedPlan] = await Promise.all([
-      PlanModel.query().insertAndFetch({
-        name: "pro",
-        includedScreenshots: 35_000,
-        usageBased: true,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-      PlanModel.query().insertAndFetch({
-        name: "enterprise",
-        includedScreenshots: 35_000,
-        usageBased: true,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-      PlanModel.query().insertAndFetch({
-        name: "open source",
-        includedScreenshots: 1_000_000,
-        usageBased: false,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-    ]);
+    // need four more: `pro`, which the price estimate is built for, one that
+    // is not, a granted one that bills nothing at all — each row naming its
+    // plan when it is not Pro — and one billed by the year, whose amounts are
+    // stated for a year rather than a month.
+    const [proPlan, enterprisePlan, grantedPlan, annualPlan] =
+      await Promise.all([
+        PlanModel.query().insertAndFetch({
+          name: "pro",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "enterprise",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "open source",
+          includedScreenshots: 1_000_000,
+          usageBased: false,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "enterprise annual",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "year",
+        }),
+      ]);
     await Promise.all([
       // A granted plan reads as active everywhere while billing nothing, so
       // its row carries no price — only the plan, which is what says why.
@@ -294,6 +308,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: proPlan.id,
         slug: `${prefix}-soylent`,
+        interval: "month",
         name: "Soylent",
         createdDaysAgo: 88,
         trialEndedDaysAgo: 85,
@@ -307,6 +322,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: enterprisePlan.id,
         slug: `${prefix}-vandelay`,
+        interval: "month",
         name: "Vandelay",
         createdDaysAgo: 70,
         trialEndedDaysAgo: 67,
@@ -320,12 +336,29 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         ...common,
         planId: enterprisePlan.id,
         slug: `${prefix}-umbrella`,
+        interval: "month",
         name: "Umbrella",
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
         flatPrice: 750,
         periodStartDaysAgo: 9,
         screenshotsByClosedPeriod: [60_000],
+      }),
+      // Billed by the year. Stripe states both halves of the amount for a year,
+      // so the row has to quote the year — dividing it into a month would
+      // report a figure that was never charged. Its previous period predates
+      // the subscription row, which is why it has none.
+      createBilledTeam({
+        ...common,
+        planId: annualPlan.id,
+        slug: `${prefix}-initrode`,
+        interval: "year",
+        name: "Initrode",
+        createdDaysAgo: 400,
+        trialEndedDaysAgo: 397,
+        periodStartDaysAgo: 216,
+        flatPrice: 12_000,
+        screenshotsByClosedPeriod: [],
       }),
       createPipelineTeam({
         ...common,
@@ -363,10 +396,39 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await page.goto("/staff/teams");
   await expect(page.getByRole("heading", { name: "All Teams" })).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-  await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
+  await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+  // A yearly subscription states its amounts for a year, so the column has to
+  // quote the year. Read as a monthly rate this row is a twelfth of itself.
+  await expect(page.getByRole("row", { name: /Initrode/ })).toContainText(
+    "$12,000",
+  );
 
   await screenshot(page, "staff-all-teams");
 });
+
+staffTest(
+  "staff teams filtered by billing interval",
+  async ({ page, pipelineTeams }) => {
+    await page.goto("/staff/teams");
+    await page.getByRole("searchbox").fill(pipelineTeams.prefix);
+    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+    // Narrowing to one interval is what makes the two period columns comparable
+    // between rows: a year's amount next to a month's is an order of magnitude.
+    await page.getByRole("combobox", { name: "Billing interval" }).click();
+    await page.getByRole("option", { name: "Yearly" }).click();
+    await expect(page.getByText("Showing 1-1 of 1 teams")).toBeVisible();
+    await expect(page.getByRole("row", { name: /Initrode/ })).toBeVisible();
+
+    // Every other team is on a monthly plan, trials and the granted one
+    // included: the filter is on how a team is billed, not on whether it pays.
+    await page.getByRole("combobox", { name: "Billing interval" }).click();
+    await page.getByRole("option", { name: "Monthly" }).click();
+    await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
+    await expect(page.getByRole("row", { name: /Initrode/ })).toBeHidden();
+  },
+);
 
 staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
   test.slow();
