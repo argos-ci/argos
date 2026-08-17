@@ -15,7 +15,7 @@ import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
 import { LinkButton } from "@/ui/Button";
 import { Code } from "@/ui/Code";
-import { HeadlessLink, Link, LinkButton as TextLinkButton } from "@/ui/Link";
+import { HeadlessLink, Link, LinkStyleButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Pre } from "@/ui/Pre";
@@ -338,9 +338,9 @@ function InstallStep(props: {
         status === "complete" && (
           <span className="text-low text-sm">
             Set up with {framework.name} ·{" "}
-            <TextLinkButton onClick={() => setForceOpen((open) => !open)}>
+            <LinkStyleButton onClick={() => setForceOpen((open) => !open)}>
               {forceOpen ? "close" : "change"}
-            </TextLinkButton>
+            </LinkStyleButton>
           </span>
         )
       }

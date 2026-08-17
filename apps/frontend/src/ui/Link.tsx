@@ -1,24 +1,23 @@
 import {
   createContext,
   use,
+  type ComponentPropsWithRef,
   type HTMLAttributeAnchorTarget,
-  type RefAttributes,
 } from "react";
-import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
-import {
-  Button,
-  Link as RACLink,
-  LinkProps as RACLinkProps,
-  type ButtonProps,
-} from "react-aria-components";
 
-export type HeadlessLinkProps = RACLinkProps & {
-  ref?: React.Ref<HTMLAnchorElement>;
+import { RouterLink } from "./RouterLink";
+
+export type HeadlessLinkProps = ComponentPropsWithRef<"a"> & {
   external?: boolean;
 };
 
+/**
+ * Whether we are already inside a link. An anchor nested in an anchor is
+ * invalid HTML — the parser closes the outer one at the inner one's tag — so a
+ * link that finds itself inside another renders as a {@link FakeLink}.
+ */
 const LinkContext = createContext<boolean>(false);
 
 export function HeadlessLink({
@@ -30,16 +29,12 @@ export function HeadlessLink({
   ...props
 }: HeadlessLinkProps) {
   const inLink = use(LinkContext);
-  const isExternal =
-    external !== undefined
-      ? external
-      : typeof children !== "function" && target === "_blank";
+  const isExternal = external ?? target === "_blank";
 
   if (inLink || !props.href) {
-    invariant(typeof children !== "function");
     return (
       <FakeLink
-        className={clsx("rac-focus", className)}
+        className={clsx("focus-ring", className)}
         href={props.href}
         target={target}
         isExternal={isExternal}
@@ -49,50 +44,51 @@ export function HeadlessLink({
     );
   }
   return (
-    <RACLink
-      ref={ref}
-      className={clsx("rac-focus", className)}
-      target={target}
-      {...props}
-    >
-      {(props) => {
-        const content =
-          typeof children === "function" ? children(props) : children;
-        return (
-          <LinkContext value>
-            {isExternal ? (
-              <>
-                {content}
-                <ExternalIndicator />
-              </>
-            ) : (
-              content
-            )}
-          </LinkContext>
-        );
-      }}
-    </RACLink>
+    <LinkContext value>
+      <RouterLink
+        ref={ref}
+        className={clsx("focus-ring", className)}
+        target={target}
+        {...props}
+      >
+        {children}
+        {isExternal ? <ExternalIndicator /> : null}
+      </RouterLink>
+    </LinkContext>
   );
 }
 
 function getLinkClassName(props: Pick<LinkProps, "variant">) {
   const { variant = "primary" } = props;
   return clsx(
-    "rac-focus no-underline",
-    "not-data-disabled:hover:underline no-data-disabled:cursor-pointer",
+    "focus-ring no-underline",
+    // A dead link stops reading as one, and it dies two ways: an anchor with
+    // no href — `FakeLink` marks it `data-disabled` — or a disabled
+    // `LinkStyleButton`. react-aria spelled both `data-disabled`; the DOM
+    // spells the second one `:disabled`.
+    "not-data-disabled:not-disabled:hover:underline",
+    "not-data-disabled:not-disabled:cursor-pointer",
     { neutral: "text-default", primary: "text-primary-low" }[variant],
   );
 }
 
-export function LinkButton({
+/**
+ * A button that reads as a link: the same colour, and the same underline on
+ * hover, but it runs an action instead of going somewhere.
+ *
+ * Named for what it wears, because `ui/Button`'s `LinkButton` is the mirror
+ * image — a link wearing a button — and the two used to be told apart only by
+ * which module they were imported from.
+ */
+export function LinkStyleButton({
   className,
   variant,
+  type = "button",
   ...props
-}: ButtonProps &
-  RefAttributes<HTMLButtonElement> &
-  Pick<LinkProps, "variant">) {
+}: ComponentPropsWithRef<"button"> & Pick<LinkProps, "variant">) {
   return (
-    <Button
+    <button
+      type={type}
       className={clsx(getLinkClassName({ variant }), className)}
       {...props}
     />

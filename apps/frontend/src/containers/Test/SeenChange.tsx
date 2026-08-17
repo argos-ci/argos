@@ -36,7 +36,7 @@ export function SeenChange(props: {
         <div className="text-low text-xs">
           In build{" "}
           <HeadlessLink
-            className="rac-focus hover:text-default underline"
+            className="hover:text-default underline"
             href={getBuildURL({
               ...params,
               buildNumber: diff.build.number,
