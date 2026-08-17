@@ -1,8 +1,9 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { diffInCalendarDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
+import clsx from "clsx";
 import { CreditCardIcon, SearchIcon } from "lucide-react";
 import { parseAsStringEnum, useQueryState } from "nuqs";
 import { Helmet } from "react-helmet";
@@ -28,6 +29,7 @@ import {
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
+import { Loader } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton } from "@/ui/Select";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
@@ -46,6 +48,7 @@ const StaffTeamsQuery = graphql(`
     $first: Int!
     $search: String
     $interval: PlanInterval
+    $status: AccountSubscriptionStatus
     $orderBy: StaffTeamOrderBy!
   ) {
     staffTeams(
@@ -53,6 +56,7 @@ const StaffTeamsQuery = graphql(`
       first: $first
       search: $search
       interval: $interval
+      status: $status
       orderBy: $orderBy
     ) {
       pageInfo {
@@ -181,6 +185,44 @@ type SortKey =
 
 const PAGE_SIZE = 100;
 
+/**
+ * How long a query has to run before the table says it is busy.
+ *
+ * Long enough that a page which comes back quickly changes nothing on screen —
+ * search runs on every keystroke, and dimming the table each time would be a
+ * strobe. Short enough that ordering by an amount, which prices every billed
+ * team, never looks like a click that did nothing.
+ */
+const BUSY_DELAY_MS = 300;
+
+/**
+ * Whether `active` has been true for longer than `delay`, so a wait too short
+ * to notice is never reported as one.
+ */
+function useDelayedFlag(active: boolean, delay: number): boolean {
+  const [raised, setRaised] = useState(false);
+  const [lastActive, setLastActive] = useState(active);
+
+  // Adjusted during render rather than from an effect: React documents this for
+  // resetting state a prop derives from, and it lowers the flag in the same
+  // pass that clears the wait instead of after a second one.
+  if (lastActive !== active) {
+    setLastActive(active);
+    setRaised(false);
+  }
+
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    const timeout = setTimeout(() => setRaised(true), delay);
+    return () => clearTimeout(timeout);
+  }, [active, delay]);
+
+  return raised;
+}
+
 const INTERVAL_FILTER_KEYS = ["all", "month", "year"] as const;
 
 type IntervalFilter = (typeof INTERVAL_FILTER_KEYS)[number];
@@ -201,6 +243,47 @@ const INTERVAL_FILTERS: Record<
   month: { label: "Monthly", interval: PlanInterval.Month },
   year: { label: "Yearly", interval: PlanInterval.Year },
 };
+
+const STATUS_FILTER_ALL = "all";
+
+/**
+ * The subscription states the directory can be narrowed to.
+ *
+ * Every state the schema knows, in lifecycle order rather than alphabetically —
+ * the list is read as a funnel, from a trial that has not committed to anything
+ * through to the ways a subscription ends. `trialing_with_payment_method` is
+ * spelled out here where there is room for it, unlike in the column.
+ */
+const STATUS_FILTERS: { value: AccountSubscriptionStatus; label: string }[] = [
+  { value: AccountSubscriptionStatus.Trialing, label: "Trialing" },
+  {
+    value: AccountSubscriptionStatus.TrialingWithPaymentMethod,
+    label: "Trialing with card",
+  },
+  { value: AccountSubscriptionStatus.Active, label: "Active" },
+  { value: AccountSubscriptionStatus.PastDue, label: "Past due" },
+  { value: AccountSubscriptionStatus.Unpaid, label: "Unpaid" },
+  { value: AccountSubscriptionStatus.Paused, label: "Paused" },
+  { value: AccountSubscriptionStatus.TrialExpired, label: "Trial expired" },
+  { value: AccountSubscriptionStatus.Canceled, label: "Canceled" },
+  { value: AccountSubscriptionStatus.Incomplete, label: "Incomplete" },
+  {
+    value: AccountSubscriptionStatus.IncompleteExpired,
+    label: "Incomplete expired",
+  },
+];
+
+const STATUS_FILTER_KEYS = [
+  STATUS_FILTER_ALL,
+  ...STATUS_FILTERS.map((status) => status.value),
+] as const;
+
+type StatusFilter = (typeof STATUS_FILTER_KEYS)[number];
+
+function getStatusFilterLabel(filter: StatusFilter): string {
+  const status = STATUS_FILTERS.find((item) => item.value === filter);
+  return status ? status.label : "All statuses";
+}
 
 /**
  * The server's ordering for each column and direction.
@@ -675,82 +758,112 @@ function StaffTeamsTable(props: {
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
+  /** A new page is on its way while the previous one is still on screen. */
+  isRefreshing: boolean;
 }) {
-  const { teams, openedTeams, setOpenedTeams, sortKey, sortDirection, onSort } =
-    props;
+  const {
+    teams,
+    openedTeams,
+    setOpenedTeams,
+    sortKey,
+    sortDirection,
+    onSort,
+    isRefreshing,
+  } = props;
+  const isBusy = useDelayedFlag(isRefreshing, BUSY_DELAY_MS);
 
   return (
-    <div className="overflow-x-auto rounded-sm border">
-      <table className="w-full min-w-300 table-fixed border-collapse">
-        {/* Widths live on the headers rather than in a `colgroup`: the
+    // The rows stay put while the next page loads — replacing them with a
+    // spinner would make every sort look like a page that had to be rebuilt.
+    // Dimmed and marked busy instead, because ordering by an amount prices
+    // every billed team and takes long enough to look like nothing happened.
+    <div className="relative" aria-busy={isBusy}>
+      {isBusy ? (
+        <div className="absolute inset-0 z-10 flex items-start justify-center pt-24">
+          {/* The wait is already past the threshold by the time this mounts,
+              so the loader has nothing left of its own to hold back. */}
+          <Loader className="text-primary-low size-10" delay={0} />
+        </div>
+      ) : null}
+      <div
+        className={clsx(
+          "overflow-x-auto rounded-sm border transition-opacity",
+          // Not `pointer-events-none`: a reader can still scroll the table
+          // sideways and open a row while the next page is on its way.
+          isBusy && "opacity-40",
+        )}
+      >
+        <table className="w-full min-w-300 table-fixed border-collapse">
+          {/* Widths live on the headers rather than in a `colgroup`: the
             positional mapping broke silently whenever a column moved. */}
-        <thead>
-          <tr className="text-low border-b text-xs font-semibold">
-            <SortHeader
-              label="Team"
-              sortKey="team"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[22%] text-left"
-            />
-            <SortHeader
-              label="Created"
-              sortKey="createdAt"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[11%] text-left"
-            />
-            <th className="w-[12%] px-4 py-3 text-left">Subscription</th>
-            <SortHeader
-              label="Members"
-              sortKey="members"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[7%] text-right"
-            />
-            {/* Two periods rather than one: a single settled figure says what a
+          <thead>
+            <tr className="text-low border-b text-xs font-semibold">
+              <SortHeader
+                label="Team"
+                sortKey="team"
+                activeSortKey={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+                className="w-[22%] text-left"
+              />
+              <SortHeader
+                label="Created"
+                sortKey="createdAt"
+                activeSortKey={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+                className="w-[11%] text-left"
+              />
+              <th className="w-[12%] px-4 py-3 text-left">Subscription</th>
+              <SortHeader
+                label="Members"
+                sortKey="members"
+                activeSortKey={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+                className="w-[7%] text-right"
+              />
+              {/* Two periods rather than one: a single settled figure says what a
                 team is worth, the pair says which way it is going. */}
-            <SortHeader
-              label="Last period"
-              sortKey="previousPeriod"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[11%] text-right"
-            />
-            <SortHeader
-              label="Current period"
-              sortKey="currentPeriod"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[11%] text-right"
-            />
-            <th className="w-[16%] px-4 py-3 text-right">Links</th>
-            <th className="w-[10%] px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {teams.map((team, index) => (
-            <StaffTeamRow
-              key={team.id}
-              team={team}
-              index={index}
-              isLast={index === teams.length - 1}
-              isOpened={Boolean(openedTeams[team.id])}
-              toggleMembers={() => {
-                setOpenedTeams((state) => ({
-                  ...state,
-                  [team.id]: !state[team.id],
-                }));
-              }}
-            />
-          ))}
-        </tbody>
-      </table>
+              <SortHeader
+                label="Last period"
+                sortKey="previousPeriod"
+                activeSortKey={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+                className="w-[11%] text-right"
+              />
+              <SortHeader
+                label="Current period"
+                sortKey="currentPeriod"
+                activeSortKey={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+                className="w-[11%] text-right"
+              />
+              <th className="w-[16%] px-4 py-3 text-right">Links</th>
+              <th className="w-[10%] px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((team, index) => (
+              <StaffTeamRow
+                key={team.id}
+                team={team}
+                index={index}
+                isLast={index === teams.length - 1}
+                isOpened={Boolean(openedTeams[team.id])}
+                toggleMembers={() => {
+                  setOpenedTeams((state) => ({
+                    ...state,
+                    [team.id]: !state[team.id],
+                  }));
+                }}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -769,14 +882,22 @@ function StaffTeamsList() {
     ),
   );
 
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsStringEnum<StatusFilter>([...STATUS_FILTER_KEYS]).withDefault(
+      STATUS_FILTER_ALL,
+    ),
+  );
+
   const normalizedSearch = deferredSearch.trim();
 
-  const { data, previousData, error } = useQuery(StaffTeamsQuery, {
+  const { data, previousData, loading, error } = useQuery(StaffTeamsQuery, {
     variables: {
       after: (page - 1) * PAGE_SIZE,
       first: PAGE_SIZE,
       search: normalizedSearch || null,
       interval: INTERVAL_FILTERS[intervalFilter].interval,
+      status: statusFilter === STATUS_FILTER_ALL ? null : statusFilter,
       orderBy: ORDER_BY[sortKey][sortDirection],
     },
   });
@@ -867,6 +988,26 @@ function StaffTeamsList() {
               ))}
             </ListBox>
           </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setPage(1);
+              setStatusFilter(value);
+            }}
+          >
+            <SelectButton aria-label="Subscription status" className="text-sm">
+              {getStatusFilterLabel(statusFilter)}
+            </SelectButton>
+            <ListBox>
+              {STATUS_FILTER_KEYS.map((key) => (
+                <ListBoxItem key={key} value={key}>
+                  <ListBoxItemLabel>
+                    {getStatusFilterLabel(key)}
+                  </ListBoxItemLabel>
+                </ListBoxItem>
+              ))}
+            </ListBox>
+          </Select>
           <TextInputGroup className="w-72">
             <TextInputIcon>
               <SearchIcon />
@@ -891,6 +1032,7 @@ function StaffTeamsList() {
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={onSort}
+        isRefreshing={loading}
       />
       <div className="mt-3 flex items-center justify-between text-sm">
         <div className="text-low">

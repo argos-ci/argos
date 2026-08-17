@@ -14,6 +14,7 @@ const StaffTeamsQuery = `
     $first: Int!
     $search: String
     $interval: PlanInterval
+    $status: AccountSubscriptionStatus
     $orderBy: StaffTeamOrderBy!
   ) {
     staffTeams(
@@ -21,6 +22,7 @@ const StaffTeamsQuery = `
       first: $first
       search: $search
       interval: $interval
+      status: $status
       orderBy: $orderBy
     ) {
       pageInfo {
@@ -55,6 +57,7 @@ async function queryTeams(
     first?: number;
     search?: string | null;
     interval?: "month" | "year" | null;
+    status?: string | null;
     orderBy?: string;
   },
 ) {
@@ -76,6 +79,7 @@ async function queryTeams(
         first: 100,
         search: null,
         interval: null,
+        status: null,
         orderBy: "NAME_ASC",
         ...variables,
       },
@@ -257,6 +261,68 @@ describe("GraphQL staffTeams", () => {
       });
 
       expect(getSlugs(res)).not.toContain("interval-unsubscribed");
+    });
+  });
+
+  describe("filtering by subscription state", () => {
+    let viewer: Viewer;
+
+    beforeEach(async () => {
+      viewer = await createViewer({ staff: true });
+
+      const plan = await factory.Plan.create({ usageBased: true });
+      const states = [
+        { slug: "state-active", status: "active", trialEndDate: null },
+        {
+          slug: "state-trialing",
+          status: "trialing",
+          trialEndDate: addDays(new Date(), 10).toISOString(),
+        },
+      ] as const;
+
+      for (const state of states) {
+        const account = await factory.TeamAccount.create({ slug: state.slug });
+        const subscriber = await factory.User.create();
+        await factory.Subscription.create({
+          accountId: account.id,
+          planId: plan.id,
+          subscriberId: subscriber.id,
+          status: state.status,
+          trialEndDate: state.trialEndDate,
+          startDate: addDays(new Date(), -5).toISOString(),
+        });
+      }
+
+      // No subscription at all, so no state to match either filter.
+      await factory.TeamAccount.create({ slug: "state-none" });
+    });
+
+    it("keeps only the teams in the requested state", async () => {
+      const res = await queryTeams(viewer, {
+        search: "state-",
+        status: "active",
+      });
+
+      expect(getSlugs(res)).toEqual(["state-active"]);
+    });
+
+    it("tells a trial apart from a paid subscription", async () => {
+      const res = await queryTeams(viewer, {
+        search: "state-",
+        status: "trialing",
+      });
+
+      expect(getSlugs(res)).toEqual(["state-trialing"]);
+    });
+
+    it("returns every team when no state is requested", async () => {
+      const res = await queryTeams(viewer, { search: "state-" });
+
+      expect(getSlugs(res).toSorted()).toEqual([
+        "state-active",
+        "state-none",
+        "state-trialing",
+      ]);
     });
   });
 });

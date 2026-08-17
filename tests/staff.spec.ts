@@ -446,6 +446,42 @@ staffTest(
   },
 );
 
+staffTest(
+  "staff teams show the table is busy while re-sorting",
+  async ({ page, pipelineTeams }) => {
+    await page.goto("/staff/teams");
+    await page.getByRole("searchbox").fill(pipelineTeams.prefix);
+    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+    // Ordering by an amount prices every billed team, which takes long enough
+    // on real data to look like the click did nothing. Held here so the state
+    // the delay produces can be asserted at all.
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/graphql", async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    const table = page.getByRole("table");
+    await page.getByRole("button", { name: "Last period" }).click();
+
+    await expect(
+      table.locator("xpath=ancestor::div[@aria-busy]"),
+    ).toHaveAttribute("aria-busy", "true");
+    // The rows already fetched stay readable underneath rather than being
+    // replaced by a spinner.
+    await expect(page.getByRole("row", { name: /Soylent/ })).toBeVisible();
+
+    release();
+    await expect(
+      table.locator("xpath=ancestor::div[@aria-busy]"),
+    ).toHaveAttribute("aria-busy", "false");
+  },
+);
+
 /** The team names in the order the table renders them. */
 async function getTeamNames(page: Page): Promise<string[]> {
   const names = await page

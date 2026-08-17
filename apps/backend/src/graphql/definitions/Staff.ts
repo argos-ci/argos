@@ -2,12 +2,14 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { Account, StaffTeamContact } from "@/database/models";
+import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
   getAccountBillings,
   type AccountBilling,
 } from "@/database/services/period-usage";
 
 import type {
+  IAccountSubscriptionStatus,
   IPlanInterval,
   IResolvers,
   IStaffTeamOrderBy,
@@ -69,7 +71,7 @@ const MAX_STAFF_TEAMS_PAGE_SIZE = 100;
  * The amount orderings are absent on purpose: what a team bills is not a column
  * but the result of pricing its periods, so it cannot be reached from an `ORDER
  * BY` without restating the billing rules in SQL. They are ordered in
- * `orderAccountsByBilling` instead, against the same computation the page
+ * `filterAndOrderAccounts` instead, against the same computation the page
  * displays.
  */
 const DB_ORDERINGS: Partial<Record<IStaffTeamOrderBy, string>> = {
@@ -128,25 +130,36 @@ function getPeriodAmount(
 }
 
 /**
- * Order a batch of teams by what they bill, and narrow them to one interval.
+ * Narrow a batch of teams to an interval and a subscription state, then order
+ * them by what they bill.
  *
  * Teams that bill nothing sort below every billed one whichever way the column
  * runs — ascending, they would otherwise fill the first page with rows that
  * have no amount at all, which is never what the column is being asked.
  */
-function orderAccountsByBilling(input: {
+function filterAndOrderAccounts(input: {
   accounts: Account[];
   billings: Map<string, AccountBilling>;
+  statuses: Map<string, AccountSubscriptionStatus | null>;
   orderBy: IStaffTeamOrderBy;
   interval: IPlanInterval | null;
+  status: IAccountSubscriptionStatus | null;
 }): Account[] {
-  const { accounts, billings, orderBy, interval } = input;
+  const { accounts, billings, statuses, orderBy, interval, status } = input;
 
-  const candidates = interval
-    ? accounts.filter(
-        (account) => billings.get(account.id)?.plan?.interval === interval,
-      )
-    : accounts;
+  let candidates = accounts;
+
+  if (interval) {
+    candidates = candidates.filter(
+      (account) => billings.get(account.id)?.plan?.interval === interval,
+    );
+  }
+
+  if (status) {
+    candidates = candidates.filter(
+      (account) => statuses.get(account.id) === status,
+    );
+  }
 
   const amountOrdering = AMOUNT_ORDERINGS[orderBy];
 
@@ -320,6 +333,11 @@ export const typeDefs = gql`
       search: String
       "Keeps only teams billed on that interval. Teams with no plan are dropped."
       interval: PlanInterval
+      """
+      Keeps only teams in that subscription state. Teams with no subscription at
+      all are dropped, having no state to match.
+      """
+      status: AccountSubscriptionStatus
       orderBy: StaffTeamOrderBy! = NAME_ASC
     ): StaffTeamConnection!
     "List teams created within the last \`days\` days, newest first (staff only)"
@@ -417,7 +435,7 @@ export const resolvers: IResolvers = {
     staffTeams: async (_root, args, ctx) => {
       assertStaff(ctx);
 
-      const { after, orderBy, interval } = args;
+      const { after, orderBy, interval, status } = args;
       const first = Math.min(args.first, MAX_STAFF_TEAMS_PAGE_SIZE);
 
       if (first < 1 || after < 0) {
@@ -445,25 +463,42 @@ export const resolvers: IResolvers = {
 
       const dbOrdering = DB_ORDERINGS[orderBy];
 
-      // Ordering by an amount, or narrowing to one billing interval, cannot be
-      // decided without resolving what each team is billed — so every candidate
-      // is priced, not just the page. The orderings the database can apply on
-      // its own take the cheap path below, where only the page is ever priced.
-      if (!dbOrdering || interval) {
-        // Ordered here too when the database can: the filter below preserves
-        // the order it is given, so a column ordering under an interval filter
-        // stays the ordering that was asked for.
+      // Ordering by an amount, or narrowing to an interval or a subscription
+      // state, cannot be decided from a column: each one is derived, so every
+      // candidate has to be resolved rather than just the page. The orderings
+      // the database can apply on its own take the cheap path below, where only
+      // the page it returns is ever resolved.
+      if (!dbOrdering || interval || status) {
+        // Ordered here too when the database can: the filters below preserve
+        // the order they are given, so a column ordering under a filter stays
+        // the ordering that was asked for.
         const accounts = await query.clone().modify((builder) => {
           if (dbOrdering) {
             builder.orderByRaw(dbOrdering);
           }
         });
-        const billings = await getAccountBillings(accounts);
-        const ordered = orderAccountsByBilling({
+
+        // Only what the request actually needs: a state filter costs a
+        // subscription lookup, an interval filter and the amount orderings cost
+        // a pricing pass, and neither pays for the other.
+        const needsBilling =
+          Boolean(interval) || Boolean(AMOUNT_ORDERINGS[orderBy]);
+        const [billings, statuses] = await Promise.all([
+          needsBilling
+            ? getAccountBillings(accounts)
+            : new Map<string, AccountBilling>(),
+          status
+            ? Account.getSubscriptionStatuses(accounts)
+            : new Map<string, AccountSubscriptionStatus | null>(),
+        ]);
+
+        const ordered = filterAndOrderAccounts({
           accounts,
           billings,
+          statuses,
           orderBy,
           interval: interval ?? null,
+          status: status ?? null,
         });
 
         return paginateResult({
