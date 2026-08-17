@@ -4,7 +4,7 @@ import { parseAsStringEnum } from "nuqs";
 import { BuildType } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
-import { SelectButton } from "@/ui/Select";
+import { SelectStyleButton } from "@/ui/Select";
 import { StackedItems } from "@/ui/StackedItems";
 import { buildTypeDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
@@ -29,7 +29,7 @@ export function BuildTypeFilter(props: {
   return (
     <MenuRoot>
       <MenuTrigger>
-        <SelectButton className="text-sm">
+        <SelectStyleButton className="text-sm">
           <StackedItems>
             {BuildTypes.map((type) => {
               return (
@@ -49,7 +49,7 @@ export function BuildTypeFilter(props: {
           <Badge>
             {value.size}/{BuildTypes.length}
           </Badge>
-        </SelectButton>
+        </SelectStyleButton>
       </MenuTrigger>
       <Menu aria-label="Build type">
         {BuildTypes.map((status) => {

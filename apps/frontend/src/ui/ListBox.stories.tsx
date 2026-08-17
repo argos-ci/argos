@@ -7,68 +7,85 @@ import {
   ListBoxItemLabel,
   ListBoxSeparator,
 } from "./ListBox";
-import { StoryTitle } from "./StoryTitle";
+import { Select, SelectButton, SelectValue } from "./Select";
+import {
+  openOverlayParameters,
+  OverlaySlot,
+  OverlayStage,
+} from "./storyOverlay";
 
+/**
+ * The options a `Select` drops. They are Base UI select parts now rather than
+ * a standalone react-aria list box, so they only exist inside a select — which
+ * is how all sixteen call sites already used them.
+ */
 const meta = {
   title: "UI/ListBox",
   component: ListBox,
+  args: { children: null },
 } satisfies Meta<typeof ListBox>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: () => (
-    <div className="flex flex-col">
-      <StoryTitle>Single Selection</StoryTitle>
-      <div className="border-thin max-w-xs rounded-lg">
-        <ListBox aria-label="Options" selectionMode="single">
-          <ListBoxItem id="edit">Edit</ListBoxItem>
-          <ListBoxItem id="duplicate">Duplicate</ListBoxItem>
-          <ListBoxSeparator />
-          <ListBoxItem id="delete">Delete</ListBoxItem>
-        </ListBox>
-      </div>
+const ACTIONS = { edit: "Edit", duplicate: "Duplicate", delete: "Delete" };
+const REVIEWERS = { jane: "Jane Doe", long: "A reviewer with a long name" };
 
-      <StoryTitle>Multiple Selection</StoryTitle>
-      <div className="border-thin max-w-xs rounded-lg">
-        <ListBox aria-label="Browsers" selectionMode="multiple">
-          <ListBoxItem id="chrome">Chrome</ListBoxItem>
-          <ListBoxItem id="firefox">Firefox</ListBoxItem>
-          <ListBoxItem id="safari">Safari</ListBoxItem>
-          <ListBoxItem id="edge">Edge</ListBoxItem>
-        </ListBox>
-      </div>
-    </div>
+export const Default: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage>
+      <OverlaySlot>
+        <Select items={ACTIONS} value="edit" aria-label="Options" defaultOpen>
+          <SelectButton>
+            <SelectValue />
+          </SelectButton>
+          <ListBox>
+            <ListBoxItem value="edit">Edit</ListBoxItem>
+            <ListBoxItem value="duplicate">Duplicate</ListBoxItem>
+            <ListBoxSeparator />
+            <ListBoxItem value="delete">Delete</ListBoxItem>
+          </ListBox>
+        </Select>
+      </OverlaySlot>
+    </OverlayStage>
   ),
 };
 
 /**
- * Label and description rows are styled through the `slot` DOM attribute
- * (`has-[[slot=description]]:flex-wrap`, `**:[[slot=label]]:truncate`), which
- * react-aria's `Text` sets for us. A replacement that drops the attribute
- * breaks these silently.
+ * An option can carry a second line saying what choosing it means. The name
+ * ellipsizes; the description wraps under it.
  */
 export const LabelAndDescription: Story = {
+  parameters: openOverlayParameters,
   render: () => (
-    <div className="flex flex-col">
-      <StoryTitle>Label and description</StoryTitle>
-      <div className="border-thin max-w-xs rounded-lg">
-        <ListBox aria-label="Reviewers" selectionMode="single">
-          <ListBoxItem id="jane" textValue="Jane Doe">
-            <ListBoxItemLabel>Jane Doe</ListBoxItemLabel>
-            <ListBoxItemDescription>jane@argos-ci.com</ListBoxItemDescription>
-          </ListBoxItem>
-          <ListBoxItem id="long" textValue="A very long name">
-            <ListBoxItemLabel>
-              A reviewer whose name is long enough to be truncated
-            </ListBoxItemLabel>
-            <ListBoxItemDescription>
-              someone.with.a.long.address@example.com
-            </ListBoxItemDescription>
-          </ListBoxItem>
-        </ListBox>
-      </div>
-    </div>
+    <OverlayStage>
+      <OverlaySlot>
+        <Select
+          items={REVIEWERS}
+          value="jane"
+          aria-label="Reviewers"
+          defaultOpen
+        >
+          <SelectButton>
+            <SelectValue />
+          </SelectButton>
+          <ListBox className="w-64">
+            <ListBoxItem value="jane">
+              <ListBoxItemLabel>Jane Doe</ListBoxItemLabel>
+              <ListBoxItemDescription>jane@argos-ci.com</ListBoxItemDescription>
+            </ListBoxItem>
+            <ListBoxItem value="long">
+              <ListBoxItemLabel>
+                A reviewer whose name is long enough to be truncated
+              </ListBoxItemLabel>
+              <ListBoxItemDescription>
+                someone.with.a.long.address@example.com
+              </ListBoxItemDescription>
+            </ListBoxItem>
+          </ListBox>
+        </Select>
+      </OverlaySlot>
+    </OverlayStage>
   ),
 };

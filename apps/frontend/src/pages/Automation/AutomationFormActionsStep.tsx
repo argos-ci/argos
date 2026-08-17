@@ -19,8 +19,7 @@ import {
   ListBoxItemIcon,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
-import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
+import { SelectButton, Select, SelectField, SelectValue } from "@/ui/Select";
 import { getSlackAuthURL } from "@/util/slack";
 
 import { useAccountParams } from "../Account/AccountParams";
@@ -214,22 +213,16 @@ function SendWebhookMessageAction(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <SelectPopover>
-          <ListBox>
-            {webhooks.map((webhook) => (
-              <ListBoxItem
-                key={webhook.id}
-                id={webhook.id}
-                textValue={webhook.name}
-              >
-                <ListBoxItemIcon>
-                  <Logo />
-                </ListBoxItemIcon>
-                <ListBoxItemLabel>{webhook.name}</ListBoxItemLabel>
-              </ListBoxItem>
-            ))}
-          </ListBox>
-        </SelectPopover>
+        <ListBox>
+          {webhooks.map((webhook) => (
+            <ListBoxItem key={webhook.id} value={webhook.id}>
+              <ListBoxItemIcon>
+                <Logo />
+              </ListBoxItemIcon>
+              <ListBoxItemLabel>{webhook.name}</ListBoxItemLabel>
+            </ListBoxItem>
+          ))}
+        </ListBox>
       </SelectField>
     </div>
   );
@@ -344,12 +337,10 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
             </Task>
           );
         })}
-        <SelectField
-          control={form.control}
-          name={name}
+        <Select<string>
           aria-label="Action Types"
           value={null}
-          onChange={(key) => {
+          onValueChange={(key) => {
             switch (key) {
               case "sendSlackMessage": {
                 append({
@@ -385,23 +376,17 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
             <SelectValue />
           </SelectButton>
           <FieldError />
-          <SelectPopover>
-            <ListBox>
-              {ACTIONS.map((action) => (
-                <ListBoxItem
-                  key={action.type}
-                  id={action.type}
-                  textValue={action.label}
-                >
-                  <ListBoxItemIcon>
-                    <action.icon />
-                  </ListBoxItemIcon>
-                  <ListBoxItemLabel>{action.label}</ListBoxItemLabel>
-                </ListBoxItem>
-              ))}
-            </ListBox>
-          </SelectPopover>
-        </SelectField>
+          <ListBox>
+            {ACTIONS.map((action) => (
+              <ListBoxItem key={action.type} value={action.type}>
+                <ListBoxItemIcon>
+                  <action.icon />
+                </ListBoxItemIcon>
+                <ListBoxItemLabel>{action.label}</ListBoxItemLabel>
+              </ListBoxItem>
+            ))}
+          </ListBox>
+        </Select>
       </div>
     </div>
   );

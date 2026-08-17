@@ -62,6 +62,26 @@
               {
                 "name": "sonner",
                 "message": "Import { toast, Toaster } from \"@/ui/Toaster\" instead, it handles theming and emphasizes duplicate toasts."
+              },
+              {
+                "name": "react-aria-components",
+                "importNames": [
+                  "Select",
+                  "SelectValue",
+                  "ListBox",
+                  "ListBoxItem",
+                  "Popover",
+                  "Dialog",
+                  "DialogTrigger",
+                  "Modal",
+                  "ModalOverlay",
+                  "Menu",
+                  "MenuTrigger",
+                  "MenuItem",
+                  "Autocomplete",
+                  "SearchField"
+                ],
+                "message": "These have moved to Base UI: import from @/ui/Select, @/ui/ListBox, @/ui/Dialog, @/ui/Modal, @/ui/Popover or @/ui/menu-kit. A react-aria part inside a Base UI tree type-checks and then throws at runtime, which no screenshot catches."
               }
             ]
           }

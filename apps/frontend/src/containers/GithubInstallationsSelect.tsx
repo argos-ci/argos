@@ -9,7 +9,6 @@ import {
   ListBoxItemIcon,
   ListBoxSeparator,
 } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { getGitHubAppInstallURL } from "./GitHub";
@@ -52,16 +51,27 @@ export function GithubInstallationsSelect(props: {
     <Select
       aria-label="Accounts"
       value={value}
-      onChange={(key) => {
+      onValueChange={(key) => {
         if (key === "switch-git-provider") {
           invariant(props.onSwitchProvider, "Expected onSwitchProvider");
           props.onSwitchProvider();
           return;
         }
+        // A select's rows carry values, not links, so the row that adds an
+        // account opens its URL here rather than being an anchor.
+        if (key === "add-github-account") {
+          window.open(
+            getGitHubAppInstallURL(props.app, { accountId: props.accountId }),
+            "_blank",
+            "noopener",
+          );
+          return;
+        }
         props.setValue(String(key));
       }}
+      disabled={disabled}
     >
-      <SelectButton ref={ref} className="w-full" isDisabled={disabled}>
+      <SelectButton ref={ref} className="w-full">
         {activeInstallation ? (
           <div className="flex items-center gap-2">
             <MarkGithubIcon />
@@ -73,50 +83,33 @@ export function GithubInstallationsSelect(props: {
         )}
       </SelectButton>
 
-      <SelectPopover>
-        <ListBox>
-          {installations.map((installation) => {
-            return (
-              <ListBoxItem
-                key={installation.id}
-                id={installation.id}
-                textValue={
-                  installation.account.name || installation.account.login
-                }
-              >
-                <ListBoxItemIcon>
-                  <MarkGithubIcon />
-                </ListBoxItemIcon>
-                {installation.account.name || installation.account.login}
-              </ListBoxItem>
-            );
-          })}
-          <ListBoxSeparator />
-          <ListBoxItem
-            href={getGitHubAppInstallURL(props.app, {
-              accountId: props.accountId,
-            })}
-            target="_blank"
-            textValue="Add GitHub Account"
-          >
-            <ListBoxItemIcon>
-              <PlusIcon />
-            </ListBoxItemIcon>
-            Add GitHub Account
-          </ListBoxItem>
-          {props.onSwitchProvider && (
-            <ListBoxItem
-              id="switch-git-provider"
-              textValue="Switch Git Provider"
-            >
+      <ListBox>
+        {installations.map((installation) => {
+          return (
+            <ListBoxItem key={installation.id} value={installation.id}>
               <ListBoxItemIcon>
-                <ListIcon />
+                <MarkGithubIcon />
               </ListBoxItemIcon>
-              Switch Git Provider
+              {installation.account.name || installation.account.login}
             </ListBoxItem>
-          )}
-        </ListBox>
-      </SelectPopover>
+          );
+        })}
+        <ListBoxSeparator />
+        <ListBoxItem value="add-github-account">
+          <ListBoxItemIcon>
+            <PlusIcon />
+          </ListBoxItemIcon>
+          Add GitHub Account
+        </ListBoxItem>
+        {props.onSwitchProvider && (
+          <ListBoxItem value="switch-git-provider">
+            <ListBoxItemIcon>
+              <ListIcon />
+            </ListBoxItemIcon>
+            Switch Git Provider
+          </ListBoxItem>
+        )}
+      </ListBox>
     </Select>
   );
 }

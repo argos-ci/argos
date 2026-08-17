@@ -69,7 +69,7 @@ export const Closed: Story = {
             <Button variant="secondary">Actions</Button>
           </MenuTrigger>
           <Menu aria-label="Actions">
-            <MenuItem icon={<PencilIcon />} keyboardShortcut="⌘E">
+            <MenuItem icon={<PencilIcon />} keyboardShortcut={["⌘", "E"]}>
               Edit
             </MenuItem>
             <MenuItem icon={<CopyIcon />}>Duplicate</MenuItem>
@@ -97,7 +97,7 @@ export const Open: Story = {
         <Menu aria-label="Actions">
           <MenuSection>
             <MenuHeading>Actions</MenuHeading>
-            <MenuItem icon={<PencilIcon />} keyboardShortcut="⌘E">
+            <MenuItem icon={<PencilIcon />} keyboardShortcut={["⌘", "E"]}>
               Edit
             </MenuItem>
             <MenuItem icon={<CopyIcon />} suffix="2 copies">

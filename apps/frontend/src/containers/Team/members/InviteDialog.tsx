@@ -161,15 +161,14 @@ export function InviteDialog(props: {
                       name={`members.${index}.level`}
                       render={({ field }) => (
                         <MemberLevelSelect
-                          ref={field.ref}
                           hasFineGrainedAccessControl={
                             team.plan?.fineGrainedAccessControlIncluded ?? false
                           }
                           value={field.value}
-                          onChange={field.onChange}
+                          onValueChange={field.onChange}
                           onBlur={field.onBlur}
                           className="flex-1"
-                          isDisabled={isSubmitting}
+                          disabled={isSubmitting}
                         />
                       )}
                     />

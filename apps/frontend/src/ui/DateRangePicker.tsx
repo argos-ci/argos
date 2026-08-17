@@ -1,3 +1,6 @@
+/* oxlint-disable no-restricted-imports -- The date picker is the last
+   react-aria island: its calendar, popover and dialog are all react-aria's and
+   only work together. They go when it moves to react-day-picker. */
 import { use } from "react";
 import { parseDate } from "@internationalized/date";
 import { clsx } from "clsx";
@@ -14,6 +17,7 @@ import {
   DateSegment,
   Dialog,
   Group,
+  Popover as RACPopover,
   Heading,
   FieldErrorContext as RACFieldErrorContext,
   RangeCalendar,
@@ -22,7 +26,7 @@ import {
 } from "react-aria-components";
 
 import { FieldError, FieldErrorContext } from "./FieldError";
-import { SelectPopover } from "./Popover";
+import { popupSurfaceClassName, popupZIndexClassName } from "./popupSurface";
 
 type DateRange = {
   from: Date;
@@ -125,7 +129,12 @@ export function DateRangePicker({
         </Button>
       </Group>
       <DateRangeFieldError />
-      <SelectPopover>
+      {/* react-aria's own popover: the calendar reads the picker's state
+          through react-aria context, which Base UI's popover cannot carry. */}
+      <RACPopover
+        offset={4}
+        className={clsx(popupSurfaceClassName, popupZIndexClassName)}
+      >
         <Dialog className="p-3">
           <RangeCalendar className="flex flex-col gap-3">
             <header className="flex items-center justify-between">
@@ -182,7 +191,7 @@ export function DateRangePicker({
             </CalendarGrid>
           </RangeCalendar>
         </Dialog>
-      </SelectPopover>
+      </RACPopover>
     </AriaDateRangePicker>
   );
 }

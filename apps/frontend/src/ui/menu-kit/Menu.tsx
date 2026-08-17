@@ -21,12 +21,24 @@ import {
 } from "lucide-react";
 
 import {
+  getMenuItemClassName,
+  menuHeadingClassName,
+  menuItemDescriptionClassName,
+  menuItemIconClassName,
+  menuItemSuffixClassName,
+  menuListClassName,
+  menuSeparatorClassName,
+  menuTextClassName,
+  selectedMenuItemClassName,
+} from "../menuStyle";
+import {
   popupAnimationClassName,
   popupExitAnimationClassName,
   popupSurfaceClassName,
   popupZIndexClassName,
 } from "../popupSurface";
 import { RouterLink } from "../RouterLink";
+import { Shortcut } from "../Shortcut";
 import { Tooltip } from "../Tooltip";
 import { filterMenuNodes, pruneOrphans } from "./filter";
 import {
@@ -822,7 +834,7 @@ function MenuList(
           id={listId}
           role="listbox"
           aria-label={props["aria-label"]}
-          className="min-h-0 flex-1 overflow-y-auto p-1.5"
+          className={clsx("min-h-0 flex-1", menuListClassName)}
           style={{
             maxHeight: `min(${MENU_MAX_HEIGHT}px, var(--available-height))`,
           }}
@@ -867,13 +879,9 @@ function MenuNodeRenderer(props: { node: MenuNode }) {
   const { node } = props;
   switch (node.type) {
     case "separator":
-      return <div className="border-t-thin -mx-1.5 my-1.5" />;
+      return <div className={menuSeparatorClassName} />;
     case "heading":
-      return (
-        <div className="text-low px-2 py-1.5 text-xs font-medium">
-          {node.title}
-        </div>
-      );
+      return <div className={menuHeadingClassName}>{node.title}</div>;
     case "placeholder":
       return node.element;
     case "item":
@@ -903,7 +911,8 @@ export type MenuItemProps = {
   filterPriority?: number;
   icon?: ReactNode;
   suffix?: ReactNode;
-  keyboardShortcut?: ReactNode;
+  /** The shortcut that runs this row, one key per box: `["⌘", "E"]`. */
+  keyboardShortcut?: readonly string[];
   disabled?: boolean;
   variant?: "default" | "danger";
   checked?: boolean;
@@ -1017,12 +1026,12 @@ function MenuItemRow(
     // submenu row `tabIndex={0}` and Tab would walk the triggers.
     tabIndex: -1,
     className: clsx(
-      "group/menu-item text-menu flex cursor-default items-center gap-2 rounded-lg px-2.5 py-1.5 font-[450]",
-      itemProps.variant === "danger"
-        ? "text-danger-low/90 data-active:bg-danger-hover/70"
-        : "text-default/90 data-active:bg-hover/70",
+      getMenuItemClassName({
+        variant: itemProps.variant,
+        interactive: Boolean(itemProps.href),
+      }),
       itemProps.disabled && "opacity-disabled",
-      highlighted && "bg-active/70 font-medium",
+      highlighted && selectedMenuItemClassName,
     ),
   };
 
@@ -1041,9 +1050,7 @@ function MenuItemRow(
         </span>
       ) : null}
       {itemProps.icon ? (
-        <span className="text-low group-data-active/menu-item:text-default group-data-[variant=danger]/menu-item:text-danger-low shrink-0 [&_svg]:size-[1em]">
-          {itemProps.icon}
-        </span>
+        <span className={menuItemIconClassName}>{itemProps.icon}</span>
       ) : null}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate">
@@ -1056,18 +1063,16 @@ function MenuItemRow(
           {itemProps.children}
         </span>
         {itemProps.subtitle ? (
-          <span className="text-low truncate text-xs">
+          <span className={menuItemDescriptionClassName}>
             {itemProps.subtitle}
           </span>
         ) : null}
       </span>
       {itemProps.keyboardShortcut ? (
-        <span className="text-low shrink-0 text-xs">
-          {itemProps.keyboardShortcut}
-        </span>
+        <Shortcut keys={itemProps.keyboardShortcut} />
       ) : null}
       {itemProps.suffix ? (
-        <span className="text-low shrink-0 text-xs font-normal">
+        <span className={clsx(menuItemSuffixClassName, "font-normal")}>
           {itemProps.suffix}
         </span>
       ) : null}
@@ -1297,7 +1302,7 @@ function getSubMenuContent(node: ItemNode): ReactNode {
 /** Shown in place of the items while they are still being fetched. */
 export function MenuLoader() {
   return (
-    <p aria-busy className="text-low px-2.5 py-1.5 text-xs">
+    <p aria-busy className={menuTextClassName}>
       Loading…
     </p>
   );
@@ -1306,7 +1311,7 @@ MenuLoader[MENU_PART] = "placeholder" satisfies MenuPartKind;
 
 /** A line of prose among the rows — a hint, or a reason the list is short. */
 export function MenuText(props: { children: ReactNode }) {
-  return <p className="text-low px-2.5 py-1.5 text-xs">{props.children}</p>;
+  return <p className={menuTextClassName}>{props.children}</p>;
 }
 MenuText[MENU_PART] = "placeholder" satisfies MenuPartKind;
 

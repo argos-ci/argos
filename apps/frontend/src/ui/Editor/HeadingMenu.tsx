@@ -2,7 +2,6 @@ import type { Editor } from "@tiptap/react";
 import { ChevronDownIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { Kbd } from "@/ui/Kbd";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { Button } from "../Button";
@@ -52,11 +51,7 @@ export function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
             key={option.key}
             textValue={option.label}
             checked={selectedKey === option.key}
-            keyboardShortcut={option.keys.map((key) => (
-              <Kbd key={key} className="ml-0.5">
-                {key}
-              </Kbd>
-            ))}
+            keyboardShortcut={option.keys}
             onAction={() => {
               const chain = editor.chain().focus();
               if (option.key === "paragraph") {

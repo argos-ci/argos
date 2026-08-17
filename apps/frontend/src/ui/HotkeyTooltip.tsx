@@ -1,6 +1,6 @@
 import { cloneElement } from "react";
 
-import { Kbd } from "./Kbd";
+import { Shortcut } from "./Shortcut";
 import { Tooltip, TooltipProps } from "./Tooltip";
 
 export function HotkeyTooltip({
@@ -32,9 +32,7 @@ export function HotkeyTooltip({
             {keysEnabled && keys.length > 0 ? (
               <>
                 <span className="text-low">·</span>
-                {keys.map((key) => (
-                  <Kbd key={key}>{key}</Kbd>
-                ))}
+                <Shortcut keys={keys} variant="boxed" />
               </>
             ) : null}
           </div>

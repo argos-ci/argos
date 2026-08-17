@@ -71,8 +71,7 @@ import {
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { PageLoader } from "@/ui/PageLoader";
-import { SelectPopover } from "@/ui/Popover";
-import { Select, SelectButton } from "@/ui/Select";
+import { Select, SelectButton, SelectStyleButton } from "@/ui/Select";
 import { StatTile } from "@/ui/StatTile";
 import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
@@ -1338,14 +1337,14 @@ export function ProjectFilterMenu(props: {
   return (
     <MenuRoot>
       <MenuTrigger>
-        <SelectButton className="shrink-0 text-sm whitespace-nowrap">
+        <SelectStyleButton className="shrink-0 text-sm whitespace-nowrap">
           {label}
           {selected.length > 1 ? (
             <Badge>
               {selected.length}/{projects.length}
             </Badge>
           ) : null}
-        </SelectButton>
+        </SelectStyleButton>
       </MenuTrigger>
       {/* Past a handful of projects the field is worth showing up front;
           below that the menu's own hidden one is enough. */}
@@ -1369,22 +1368,20 @@ function PeriodSelect(props: {
     <Select
       aria-label="Levels"
       value={props.value}
-      onChange={(value) => props.onChange(value as Period)}
+      onValueChange={(value) => props.onChange(value as Period)}
     >
       <SelectButton className="w-full shrink-0 text-sm whitespace-nowrap">
         {PeriodLabels[props.value]}
       </SelectButton>
-      <SelectPopover>
-        <ListBox>
-          {Object.entries(PeriodLabels).map(([key, label]) => {
-            return (
-              <ListBoxItem key={key} id={key} textValue={key}>
-                <ListBoxItemLabel>{label}</ListBoxItemLabel>
-              </ListBoxItem>
-            );
-          })}
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        {Object.entries(PeriodLabels).map(([key, label]) => {
+          return (
+            <ListBoxItem key={key} value={key}>
+              <ListBoxItemLabel>{label}</ListBoxItemLabel>
+            </ListBoxItem>
+          );
+        })}
+      </ListBox>
     </Select>
   );
 }

@@ -48,7 +48,7 @@ export function MemberLevelEditor(props: {
       className="text-low"
       hasFineGrainedAccessControl={hasFineGrainedAccessControl}
       value={member.level}
-      onChange={(value) => {
+      onValueChange={(value) => {
         client.mutate({
           mutation: SetTeamMemberLevelMutation,
           variables: {
