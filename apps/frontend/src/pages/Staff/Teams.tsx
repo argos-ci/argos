@@ -11,7 +11,11 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
-import { AccountSubscriptionStatus, PlanInterval } from "@/gql/graphql";
+import {
+  AccountSubscriptionStatus,
+  PlanInterval,
+  StaffTeamOrderBy,
+} from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
@@ -37,34 +41,51 @@ import { formatPrice, getPeriodFlatPrice, type PricedPlan } from "./pricing";
 import { getStripeCustomerURL } from "./stripe";
 
 const StaffTeamsQuery = graphql(`
-  query StaffTeams_staffTeams {
-    staffTeams {
-      id
-      createdAt
-      slug
-      name
-      membersCount
-      subscriptionStatus
-      stripeCustomerId
-      staff {
-        flatPrice
-        plan {
-          id
-          name
-          displayName
-          interval
-        }
-        periodUsage {
-          billingPeriods {
-            from
-            to
-            closed
-            additionalScreenshotsCost
+  query StaffTeams_staffTeams(
+    $after: Int!
+    $first: Int!
+    $search: String
+    $interval: PlanInterval
+    $orderBy: StaffTeamOrderBy!
+  ) {
+    staffTeams(
+      after: $after
+      first: $first
+      search: $search
+      interval: $interval
+      orderBy: $orderBy
+    ) {
+      pageInfo {
+        totalCount
+      }
+      edges {
+        id
+        createdAt
+        slug
+        name
+        membersCount
+        subscriptionStatus
+        stripeCustomerId
+        staff {
+          flatPrice
+          plan {
+            id
+            name
+            displayName
+            interval
+          }
+          periodUsage {
+            billingPeriods {
+              from
+              to
+              closed
+              additionalScreenshotsCost
+            }
           }
         }
-      }
-      avatar {
-        ...AccountAvatarFragment
+        avatar {
+          ...AccountAvatarFragment
+        }
       }
     }
   }
@@ -116,7 +137,9 @@ const StaffTeamMembersQuery = graphql(`
   }
 `);
 
-type TeamNode = DocumentType<typeof StaffTeamsQuery>["staffTeams"][number];
+type TeamNode = DocumentType<
+  typeof StaffTeamsQuery
+>["staffTeams"]["edges"][number];
 
 /**
  * A team with its staff block resolved.
@@ -180,13 +203,34 @@ const INTERVAL_FILTERS: Record<
 };
 
 /**
- * A team with no plan matches neither interval: the filter is on how a team is
- * billed, and one that is not billed has no interval to match.
+ * The server's ordering for each column and direction.
+ *
+ * Ordering happens there rather than here because the directory is paginated
+ * there: sorting a page of a hundred among several hundred teams would only
+ * reorder what the page already held.
  */
-function checkTeamMatchesInterval(team: TeamItem, filter: IntervalFilter) {
-  const { interval } = INTERVAL_FILTERS[filter];
-  return interval === null || team.staff.plan?.interval === interval;
-}
+const ORDER_BY: Record<SortKey, Record<SortDirection, StaffTeamOrderBy>> = {
+  team: {
+    asc: StaffTeamOrderBy.NameAsc,
+    desc: StaffTeamOrderBy.NameDesc,
+  },
+  createdAt: {
+    asc: StaffTeamOrderBy.CreatedAsc,
+    desc: StaffTeamOrderBy.CreatedDesc,
+  },
+  members: {
+    asc: StaffTeamOrderBy.MembersAsc,
+    desc: StaffTeamOrderBy.MembersDesc,
+  },
+  previousPeriod: {
+    asc: StaffTeamOrderBy.PreviousPeriodAsc,
+    desc: StaffTeamOrderBy.PreviousPeriodDesc,
+  },
+  currentPeriod: {
+    asc: StaffTeamOrderBy.CurrentPeriodAsc,
+    desc: StaffTeamOrderBy.CurrentPeriodDesc,
+  },
+};
 
 /** One period of a team, with what it came to. */
 type BilledPeriod = { period: BillingPeriod; amount: number };
@@ -256,26 +300,6 @@ function getTeamBilling(team: TeamItem): TeamBilling | null {
     previous: toBilled(billingPeriods.find((period) => period.closed)),
     current: toBilled(billingPeriods.find((period) => !period.closed)),
   };
-}
-
-/**
- * Sortable value per column. Teams that bill nothing sort below every billed one
- * rather than tying with a $0 amount, which no billed team can have — the flat
- * price alone puts a floor under it.
- */
-function getSortValue(team: TeamItem, key: SortKey): string | number {
-  switch (key) {
-    case "team":
-      return (team.name || team.slug).toLowerCase();
-    case "createdAt":
-      return new Date(team.createdAt).getTime();
-    case "members":
-      return team.membersCount;
-    case "previousPeriod":
-      return getTeamBilling(team)?.previous?.amount ?? -1;
-    case "currentPeriod":
-      return getTeamBilling(team)?.current?.amount ?? -1;
-  }
 }
 
 /**
@@ -387,19 +411,6 @@ function BilledPeriodCells(props: {
       </td>
     </>
   );
-}
-
-function checkTeamMatchesSearch(team: TeamItem, search: string) {
-  if (!search) {
-    return true;
-  }
-
-  const haystack = [team.name, team.slug]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(search);
 }
 
 /**
@@ -745,7 +756,6 @@ function StaffTeamsTable(props: {
 }
 
 function StaffTeamsList() {
-  const { data, loading, error } = useQuery(StaffTeamsQuery);
   const [openedTeams, setOpenedTeams] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
@@ -759,7 +769,17 @@ function StaffTeamsList() {
     ),
   );
 
-  const normalizedSearch = deferredSearch.trim().toLowerCase();
+  const normalizedSearch = deferredSearch.trim();
+
+  const { data, previousData, error } = useQuery(StaffTeamsQuery, {
+    variables: {
+      after: (page - 1) * PAGE_SIZE,
+      first: PAGE_SIZE,
+      search: normalizedSearch || null,
+      interval: INTERVAL_FILTERS[intervalFilter].interval,
+      orderBy: ORDER_BY[sortKey][sortDirection],
+    },
+  });
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -773,53 +793,19 @@ function StaffTeamsList() {
     setSortDirection(key === "team" || key === "createdAt" ? "asc" : "desc");
   };
 
-  const filteredAndSortedTeams = useMemo(() => {
-    const teams = (data?.staffTeams ?? [])
-      .filter(checkHasStaffData)
-      .filter((team) => checkTeamMatchesInterval(team, intervalFilter))
-      .filter((team) => checkTeamMatchesSearch(team, normalizedSearch));
-
-    const directionFactor = sortDirection === "asc" ? 1 : -1;
-
-    teams.sort((a, b) => {
-      const left = getSortValue(a, sortKey);
-      const right = getSortValue(b, sortKey);
-
-      if (typeof left === "string" && typeof right === "string") {
-        return left.localeCompare(right) * directionFactor;
-      }
-
-      return (Number(left) - Number(right)) * directionFactor;
-    });
-
-    return teams;
-  }, [
-    data?.staffTeams,
-    intervalFilter,
-    normalizedSearch,
-    sortDirection,
-    sortKey,
-  ]);
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredAndSortedTeams.length / PAGE_SIZE),
+  // The page already on screen stays there while the next one loads. Reading
+  // `data` alone would empty the table back to a spinner on every sort, search
+  // and page change, since each one is a different query.
+  const connection = (data ?? previousData)?.staffTeams;
+  const teams = useMemo(
+    () => (connection?.edges ?? []).filter(checkHasStaffData),
+    [connection?.edges],
   );
+  const totalCount = connection?.pageInfo.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-
-  const paginatedTeams = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredAndSortedTeams.slice(start, start + PAGE_SIZE);
-  }, [currentPage, filteredAndSortedTeams]);
-  const displayFrom =
-    filteredAndSortedTeams.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const displayTo = Math.min(
-    currentPage * PAGE_SIZE,
-    filteredAndSortedTeams.length,
-  );
-
-  if (loading) {
-    return <PageLoader />;
-  }
+  const displayFrom = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const displayTo = Math.min(currentPage * PAGE_SIZE, totalCount);
 
   if (error) {
     const isForbidden =
@@ -841,7 +827,11 @@ function StaffTeamsList() {
     throw error;
   }
 
-  if (!data) {
+  // Only the very first load has nothing to show. Guarding on `data` instead
+  // would replace the whole page — search box included — with a spinner on
+  // every sort, filter and page change, since each one is a different query
+  // and Apollo empties `data` while it runs.
+  if (!connection) {
     return <PageLoader />;
   }
 
@@ -895,7 +885,7 @@ function StaffTeamsList() {
         </PageHeaderActions>
       </PageHeader>
       <StaffTeamsTable
-        teams={paginatedTeams}
+        teams={teams}
         openedTeams={openedTeams}
         setOpenedTeams={setOpenedTeams}
         sortKey={sortKey}
@@ -904,8 +894,7 @@ function StaffTeamsList() {
       />
       <div className="mt-3 flex items-center justify-between text-sm">
         <div className="text-low">
-          Showing {displayFrom}-{displayTo} of {filteredAndSortedTeams.length}{" "}
-          teams
+          Showing {displayFrom}-{displayTo} of {totalCount} teams
         </div>
         <div className="flex items-center gap-2">
           <Button

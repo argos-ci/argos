@@ -1,6 +1,6 @@
 /* oxlint-disable no-empty-pattern */
 import type { BuildType } from "@argos/schemas/build-type";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import type { Account } from "../apps/backend/src/database/models";
 import {
@@ -427,8 +427,32 @@ staffTest(
     await page.getByRole("option", { name: "Monthly" }).click();
     await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
     await expect(page.getByRole("row", { name: /Initrode/ })).toBeHidden();
+
+    // Ordering and filtering are applied on the server, on two different code
+    // paths: narrowing to an interval has to keep the order the column asked
+    // for — newest first, which is the default — rather than fall back to
+    // whatever order it happened to read the rows in.
+    await expect
+      .poll(() => getTeamNames(page))
+      .toEqual([
+        "Northwind",
+        "Globex",
+        "Initech",
+        "Hexagon",
+        "Vandelay",
+        "Umbrella",
+        "Soylent",
+      ]);
   },
 );
+
+/** The team names in the order the table renders them. */
+async function getTeamNames(page: Page): Promise<string[]> {
+  const names = await page
+    .locator("tbody tr td:first-child .font-medium")
+    .allInnerTexts();
+  return names.map((name) => name.trim());
+}
 
 staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
   test.slow();
