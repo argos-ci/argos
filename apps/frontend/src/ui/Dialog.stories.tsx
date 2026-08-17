@@ -217,3 +217,41 @@ export const PendingBlocksDismissal: Story = {
     });
   },
 };
+
+/**
+ * A dialog is named by its title even when the caller styles that title
+ * itself through `render`. Nothing visible says whether the wiring holds —
+ * `aria-labelledby` pointing at a missing id reads as a name right up until a
+ * screen reader asks — so it is asserted. Only one dialog at a time: an open
+ * modal marks every other one `aria-hidden`, which hides it from the roles.
+ */
+export const StyledTitleNamesTheDialog: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <div className="flex h-screen w-full items-start justify-center p-16">
+      <DialogTrigger defaultOpen>
+        <Button variant="secondary">Settings</Button>
+        <Modal dismissible>
+          <Dialog>
+            <DialogBody>
+              <DialogTitle render={<h2 className="mb-4 font-medium" />}>
+                Customize overlay
+              </DialogTitle>
+              <DialogText>Body size, still the dialog's name.</DialogText>
+            </DialogBody>
+          </Dialog>
+        </Modal>
+      </DialogTrigger>
+    </div>
+  ),
+  play: async () => {
+    // Named by the title the caller styled.
+    await expect(
+      await screen.findByRole("dialog", { name: "Customize overlay" }),
+    ).toBeVisible();
+    // And the caller's styling won: this is not the default title heading.
+    await expect(screen.getByText("Customize overlay")).not.toHaveClass(
+      "text-xl",
+    );
+  },
+};

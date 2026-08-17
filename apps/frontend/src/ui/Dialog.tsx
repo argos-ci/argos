@@ -1,10 +1,12 @@
 import {
+  cloneElement,
   ComponentPropsWithRef,
   createContext,
   use,
   useEffect,
   useId,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { invariant } from "@argos/util/invariant";
@@ -58,12 +60,32 @@ export function DialogBody(props: ComponentPropsWithRef<"div">) {
   );
 }
 
+/**
+ * The dialog's title, and what names it: the dialog points its
+ * `aria-labelledby` here.
+ *
+ * A dialog that wants its title to read differently passes the element to
+ * render, and gets the wiring without the styling — the same `render` escape
+ * hatch Base UI's own parts take:
+ *
+ * ```tsx
+ * <DialogTitle render={<h2 className="mb-4 font-medium" />}>
+ *   Customize overlay
+ * </DialogTitle>
+ * ```
+ */
 export function DialogTitle(props: {
   ref?: React.Ref<HTMLHeadingElement>;
   children: React.ReactNode;
+  render?: ReactElement<{ id?: string; children?: ReactNode }>;
 }) {
-  const { ref, children } = props;
+  const { ref, children, render } = props;
   const id = use(DialogTitleIdContext);
+  if (render) {
+    // Only the id: a caller who renders their own element puts their own ref
+    // on it, and threading one through here would be reading a ref in render.
+    return cloneElement(render, { id }, children);
+  }
   return (
     <h2 ref={ref} id={id} className="mb-4 text-xl font-medium">
       {children}

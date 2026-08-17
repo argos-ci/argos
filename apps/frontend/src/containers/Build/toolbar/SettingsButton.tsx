@@ -2,11 +2,10 @@ import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom } from "jotai/react";
 import { PaintbrushIcon } from "lucide-react";
-import { Heading } from "react-aria-components";
 
 import { Button } from "@/ui/Button";
 import { ColorSwatchPicker, ColorSwatchPickerItem } from "@/ui/ColorPicker";
-import { Dialog, DialogBody, DialogTrigger } from "@/ui/Dialog";
+import { Dialog, DialogBody, DialogTitle, DialogTrigger } from "@/ui/Dialog";
 import { Label } from "@/ui/Label";
 import { Popover } from "@/ui/Popover";
 import {
@@ -37,13 +36,13 @@ export const SettingsButton = memo(() => {
 
 function OverlaySettingsDialog() {
   return (
-    <Dialog className="w-80 select-none" aria-label="Customize overlay">
+    <Dialog className="w-80 select-none">
       <DialogBody>
-        {/* Not a `DialogTitle`: this one reads at body size. The dialog is
-            named by `aria-label` instead, which says the same words. */}
-        <Heading level={2} className="mb-4 font-medium">
+        {/* Reads at body size rather than a dialog title's, but still names
+            the dialog. */}
+        <DialogTitle render={<h2 className="mb-4 font-medium" />}>
           Customize overlay
-        </Heading>
+        </DialogTitle>
         <div className="flex flex-col gap-6">
           <ColorPicker />
           <OpacityPicker />
