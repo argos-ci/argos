@@ -52,9 +52,9 @@ export function ReviewCommentSubmitButton(props: {
   /** Label/tooltip used when the build can't be drafted against. */
   fallbackLabel: string;
   isEmpty: boolean;
-  isPending: boolean;
+  pending: boolean;
   disabled?: boolean;
-  onPress: () => void;
+  onClick: () => void;
   className?: string;
 }) {
   const {
@@ -62,9 +62,9 @@ export function ReviewCommentSubmitButton(props: {
     altHeld,
     fallbackLabel,
     isEmpty,
-    isPending,
+    pending,
     disabled,
-    onPress,
+    onClick,
     className,
   } = props;
   const reviewMode = canAddToReview && !altHeld;
@@ -99,9 +99,9 @@ export function ReviewCommentSubmitButton(props: {
         // Truly disabled (not focusable/clickable) while submitting or when
         // disabled by the parent. When merely empty it only *looks* disabled but
         // stays clickable so the press can surface the "empty" toast.
-        isDisabled={disabled || isPending}
+        disabled={disabled || pending}
         aria-disabled={isEmpty}
-        onPress={onPress}
+        onClick={onClick}
         className={className}
       >
         <Icon />

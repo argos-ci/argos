@@ -74,7 +74,7 @@ export function EnableSAMLSSOAddOnButton(props: {
     return (
       <Tooltip content={disabledReason}>
         <div className="flex">
-          <Button isDisabled>Enable</Button>
+          <Button disabled>Enable</Button>
         </div>
       </Tooltip>
     );

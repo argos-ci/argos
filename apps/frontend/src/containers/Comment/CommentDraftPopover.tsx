@@ -31,12 +31,12 @@ export function CommentDraftPopover(props: {
   const [value, setValue] = useState<EditorValue>(null);
   // Remounts the editor to clear it after a successful submit.
   const [editorKey, setEditorKey] = useState(0);
-  const [isPending, setIsPending] = useState(false);
+  const [pending, setIsPending] = useState(false);
   const emptyToastId = useId();
   const isEmpty = !hasEditorContent(value);
 
   const submit = () => {
-    if (isPending) {
+    if (pending) {
       return;
     }
     if (isEmpty) {
@@ -78,7 +78,7 @@ export function CommentDraftPopover(props: {
           onSubmit={submit}
           mentions={mentions}
           placeholder="Add a comment"
-          disabled={isPending}
+          disabled={pending}
           autoFocus
           aria-label="Add a comment"
           variant="plain"
@@ -90,8 +90,8 @@ export function CommentDraftPopover(props: {
           altHeld={altHeld}
           fallbackLabel="Submit the comment"
           isEmpty={isEmpty}
-          isPending={isPending}
-          onPress={submit}
+          pending={pending}
+          onClick={submit}
           className="shrink-0"
         />
       </div>

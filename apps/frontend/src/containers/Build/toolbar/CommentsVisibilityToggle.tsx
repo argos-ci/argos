@@ -17,7 +17,7 @@ export const CommentsVisibilityToggle = memo(() => {
         variant="secondary"
         iconOnly
         aria-label={label}
-        onPress={() => setCommentsVisible(!visible)}
+        onClick={() => setCommentsVisible(!visible)}
       >
         {visible ? <MessageSquareIcon /> : <MessageSquareOffIcon />}
       </Button>

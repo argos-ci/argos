@@ -185,7 +185,7 @@ export function TeamDelete(props: {
           </div>
           <Tooltip content="Cancel your subscription before deleting the team.">
             <div className="flex">
-              <DeleteButton isDisabled />
+              <DeleteButton disabled />
             </div>
           </Tooltip>
         </CardFooter>

@@ -65,7 +65,7 @@ function BrowseSnapshotSection(props: { build: Build }) {
         <Button
           autoFocus
           variant={canStartReview ? "primary" : "secondary"}
-          onPress={browse}
+          onClick={browse}
         >
           {label}
         </Button>

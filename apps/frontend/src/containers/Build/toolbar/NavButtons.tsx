@@ -8,28 +8,23 @@ import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 export function NextButton(props: {
-  onPress: () => void;
-  isDisabled: boolean;
+  onClick: () => void;
+  disabled: boolean;
   /**
    * The shortcut this button owns. Same arrow key either way — what differs is
    * how the `?` dialog words it, which depends on what is being navigated.
    */
   hotkeyName?: HotkeyName;
 }) {
-  const { onPress, isDisabled, hotkeyName = "goToNextDiff" } = props;
-  const hotkey = useBuildHotkey(hotkeyName, onPress, {
+  const { onClick, disabled, hotkeyName = "goToNextDiff" } = props;
+  const hotkey = useBuildHotkey(hotkeyName, onClick, {
     preventDefault: true,
-    enabled: !isDisabled,
+    enabled: !disabled,
     allowInInput: true,
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <Button
-        variant="ghost"
-        iconOnly
-        isDisabled={isDisabled}
-        onPress={onPress}
-      >
+      <Button variant="ghost" iconOnly disabled={disabled} onClick={onClick}>
         <ArrowDownIcon />
       </Button>
     </HotkeyTooltip>
@@ -37,8 +32,8 @@ export function NextButton(props: {
 }
 
 export function PreviousButton(props: {
-  onPress: () => void;
-  isDisabled?: boolean;
+  onClick: () => void;
+  disabled?: boolean;
   /**
    * On the first snapshot, the button returns to the build overview. Only the
    * tooltip says so: the sidebar already has a home button for the overview, and
@@ -49,14 +44,14 @@ export function PreviousButton(props: {
   hotkeyName?: HotkeyName;
 }) {
   const {
-    onPress,
-    isDisabled = false,
+    onClick,
+    disabled = false,
     toOverview = false,
     hotkeyName = "goToPreviousDiff",
   } = props;
-  const hotkey = useBuildHotkey(hotkeyName, onPress, {
+  const hotkey = useBuildHotkey(hotkeyName, onClick, {
     preventDefault: true,
-    enabled: !isDisabled,
+    enabled: !disabled,
     allowInInput: true,
   });
   return (
@@ -64,12 +59,7 @@ export function PreviousButton(props: {
       description={toOverview ? "Go to overview" : hotkey.description}
       keys={hotkey.displayKeys}
     >
-      <Button
-        variant="ghost"
-        iconOnly
-        isDisabled={isDisabled}
-        onPress={onPress}
-      >
+      <Button variant="ghost" iconOnly disabled={disabled} onClick={onClick}>
         <ArrowUpIcon />
       </Button>
     </HotkeyTooltip>

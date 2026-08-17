@@ -66,7 +66,7 @@ const FilterChip = (props: {
         className="shrink-0"
         scale="xs"
         icon={XIcon}
-        onPress={() => {
+        onClick={() => {
           const otherKeys = state.active.difference(filterGroup.filterKeys);
           state.setActive(otherKeys);
         }}

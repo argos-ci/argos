@@ -196,7 +196,7 @@ export function AiPromptButton(props: {
             aria-label={
               iconOnly ? (clipboard.copied ? "Copied" : copyLabel) : undefined
             }
-            onPress={() => copy(primary)}
+            onClick={() => copy(primary)}
           >
             <PrimaryContent
               iconOnly={iconOnly}

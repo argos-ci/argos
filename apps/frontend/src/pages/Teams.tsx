@@ -192,7 +192,7 @@ const JoinMutation = graphql(`
 function JoinButton(
   props: { teamAccountId: string; redirect?: string | null } & Omit<
     ButtonProps,
-    "onPress"
+    "onClick"
   >,
 ) {
   const { redirect, teamAccountId, ...buttonProps } = props;
@@ -210,8 +210,8 @@ function JoinButton(
   return (
     <Button
       {...buttonProps}
-      isDisabled={loading || !!data || buttonProps.isDisabled}
-      onPress={() => {
+      disabled={loading || !!data || buttonProps.disabled}
+      onClick={() => {
         accept().catch(() => {});
       }}
     />

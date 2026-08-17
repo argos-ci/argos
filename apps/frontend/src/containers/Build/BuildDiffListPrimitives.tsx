@@ -1,15 +1,14 @@
 import { ComponentPropsWithRef, memo, Suspense } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { Button as BaseButton } from "@base-ui/react/button";
 import { clsx } from "clsx";
-import { AriaButtonProps, HoverProps, useButton } from "react-aria";
 
 import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
-import { useObjectRef } from "@/ui/useObjectRef";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import { RemoteMinimap } from "./RemoteMinimap";
@@ -228,34 +227,30 @@ export function DiffCard(props: DiffCardProps) {
   );
 }
 
+/**
+ * A row that behaves as a button while staying a `<div>` — the diff list needs
+ * the element to be a div for its virtualiser's measurements.
+ *
+ * `nativeButton={false}` is how Base UI is told that: it then supplies the
+ * role, the tab index and the Enter/Space handling that a real button gets for
+ * free, which is what react-aria's `useButton` was doing here.
+ */
 export function ListItemButton(
-  props: Pick<AriaButtonProps<"div">, "onPress" | "isDisabled"> &
-    Pick<HoverProps, "onHoverChange"> &
-    ComponentPropsWithRef<"div">,
+  props: Omit<
+    React.ComponentProps<typeof BaseButton>,
+    "nativeButton" | "render"
+  >,
 ) {
-  const { ref: propRef, onPress, isDisabled, className, ...rest } = props;
-  const ref = useObjectRef(propRef);
-  const { buttonProps } = useButton(
-    {
-      elementType: "div",
-      onPress,
-      isDisabled,
-      // Handed to `useButton` rather than left to the spread below: it returns
-      // an `aria-current` of its own, and being spread last it would overwrite
-      // the caller's with the undefined it read from props it was never given.
-      "aria-current": rest["aria-current"],
-    },
-    ref,
-  );
+  const { className, ...rest } = props;
   return (
-    <div
-      ref={ref}
+    <BaseButton
+      nativeButton={false}
+      render={<div />}
       className={clsx(
         "group/item relative cursor-default text-left focus:outline-hidden",
         className,
       )}
       {...rest}
-      {...buttonProps}
     />
   );
 }

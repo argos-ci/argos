@@ -296,7 +296,7 @@ function getRows(
 
 function ListHeader(props: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
-  onClick: RACButtonProps["onPress"];
+  onClick: RACButtonProps["onClick"];
   item: ListHeaderRow;
   activeIndex: number;
 }) {
@@ -310,7 +310,7 @@ function ListHeader(props: {
         "group/list-header bg-app data-hovered:bg-subtle data-focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
-      onPress={onClick}
+      onClick={onClick}
     >
       <ChevronDownIcon
         className={clsx(
@@ -381,7 +381,7 @@ function ShowSubItemToggle(
       <Button
         variant="secondary"
         size="small"
-        onPress={() => {
+        onClick={() => {
           onToggleGroupItem();
         }}
       >
@@ -451,12 +451,12 @@ const ListItem = memo(function ListItem(props: {
     <ListItemButton
       ref={ref}
       data-index={index}
-      onPress={() => {
+      onClick={() => {
         if (item.diff) {
           setActiveDiff(item.diff);
         }
       }}
-      isDisabled={!item.diff}
+      disabled={!item.diff}
       className="size-full"
     >
       <StatusDiffCard isActive={active} status={status}>
@@ -496,7 +496,7 @@ const ListItem = memo(function ListItem(props: {
               {isGroupItem && (
                 <div className="shrink-0 py-2">
                   <ShowSubItemToggle
-                    onPress={() => {
+                    onClick={() => {
                       onToggleGroupItem(item.diff?.group ?? null);
                     }}
                     onToggleGroupItem={() =>

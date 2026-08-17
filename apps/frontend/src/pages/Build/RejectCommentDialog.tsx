@@ -281,15 +281,15 @@ function RejectCommentDialog(props: {
         </div>
         {/*
           DialogDismiss disables itself while the modal action is pending and
-          closes the dialog after `onPress`. Skipping still advances to the next
+          closes the dialog after the click. Skipping still advances to the next
           diff to review, matching a submitted note.
         */}
         <DialogDismiss onClick={onProceed}>Skip</DialogDismiss>
         <Button
           variant="primary"
-          isPending={isPending}
+          pending={isPending}
           aria-disabled={isEmpty}
-          onPress={submit}
+          onClick={submit}
         >
           Add to review
         </Button>

@@ -28,7 +28,7 @@ export const CommentToolToggle = memo(() => {
           iconOnly
           aria-pressed={mode === "hand"}
           aria-label="Move tool"
-          onPress={activateHand}
+          onClick={activateHand}
         >
           <HandIcon />
         </Button>
@@ -43,7 +43,7 @@ export const CommentToolToggle = memo(() => {
           iconOnly
           aria-pressed={mode === "comment"}
           aria-label="Comment tool"
-          onPress={activateComment}
+          onClick={activateComment}
         >
           <MessageSquarePlusIcon />
         </Button>

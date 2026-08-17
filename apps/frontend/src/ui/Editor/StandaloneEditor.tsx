@@ -66,7 +66,7 @@ export interface StandaloneEditorProps {
   renderSubmit?: (args: {
     submit: () => void;
     isEmpty: boolean;
-    isPending: boolean;
+    pending: boolean;
     disabled: boolean;
   }) => React.ReactNode;
   /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
@@ -170,8 +170,8 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             <Button
               variant="ghost"
               size="small"
-              onPress={onCancel}
-              isDisabled={isPending}
+              onClick={onCancel}
+              disabled={isPending}
             >
               Cancel
             </Button>
@@ -183,12 +183,12 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
               <Button
                 variant="secondary"
                 size="small"
-                onPress={submit}
+                onClick={submit}
                 // Truly disabled (not focusable/clickable) while submitting or
                 // when disabled by the parent. When the editor is merely empty
                 // it only *looks* disabled but stays clickable, so the press can
                 // surface the "empty" toast.
-                isDisabled={disabled || isPending}
+                disabled={disabled || isPending}
                 aria-disabled={isEmpty}
               >
                 {submitLabel}
@@ -207,7 +207,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 {renderSubmit({
                   submit,
                   isEmpty,
-                  isPending,
+                  pending: isPending,
                   disabled: Boolean(disabled),
                 })}
               </div>
@@ -226,9 +226,9 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                   // disabled by the parent. When the editor is merely empty it only
                   // *looks* disabled but stays clickable, so the press can surface the
                   // "empty" toast.
-                  isDisabled={disabled || isPending}
+                  disabled={disabled || isPending}
                   aria-disabled={isEmpty}
-                  onPress={submit}
+                  onClick={submit}
                   className="ml-auto"
                 >
                   <ArrowUpIcon />

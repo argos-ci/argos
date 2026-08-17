@@ -389,7 +389,7 @@ function ConsentForm(props: {
         <div className="mt-4 flex w-full flex-col gap-2">
           <Button
             type="submit"
-            isDisabled={status === "loading"}
+            disabled={status === "loading"}
             size="large"
             className="w-full justify-center"
           >

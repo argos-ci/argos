@@ -124,7 +124,7 @@ export function ProjectContributorsList(props: {
               )}
               {result.data.project.contributors.pageInfo.hasNextPage && (
                 <ListLoadMore
-                  onPress={() => {
+                  onClick={() => {
                     result.fetchMore({
                       variables: { after: contributors.length },
                       updateQuery: (prev, { fetchMoreResult }) => {

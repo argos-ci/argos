@@ -52,8 +52,8 @@ function useTestAutomation(props: UseTestAutomationProps) {
   return {
     isSent,
     buttonProps: {
-      isPending: testResult.loading,
-      onPress: async () => {
+      pending: testResult.loading,
+      onClick: async () => {
         try {
           form.clearErrors();
           await form.trigger();
@@ -94,14 +94,14 @@ function useTestAutomation(props: UseTestAutomationProps) {
 }
 
 interface TestAutomationButtonProps extends UseTestAutomationProps {
-  isDisabled?: boolean;
+  disabled?: boolean;
 }
 
 export function TestAutomationButton(props: TestAutomationButtonProps) {
-  const { isDisabled } = props;
+  const { disabled } = props;
   const { isSent, buttonProps } = useTestAutomation(props);
   return (
-    <Button variant="secondary" {...buttonProps} isDisabled={isDisabled}>
+    <Button variant="secondary" {...buttonProps} disabled={disabled}>
       {isSent ? (
         <>
           <ButtonIcon>

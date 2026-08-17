@@ -497,7 +497,7 @@ export function AnalyticsDashboard(props: {
           description="Builds created, by project."
           action={
             <ExportButton
-              isDisabled={!metrics}
+              disabled={!metrics}
               onExport={() => {
                 invariant(metrics);
                 exportToCSV({
@@ -543,7 +543,7 @@ export function AnalyticsDashboard(props: {
           description="Screenshots captured, by project."
           action={
             <ExportButton
-              isDisabled={!metrics}
+              disabled={!metrics}
               onExport={() => {
                 invariant(metrics);
                 exportToCSV({
@@ -933,14 +933,14 @@ function ChartCard(props: {
   );
 }
 
-function ExportButton(props: { isDisabled: boolean; onExport: () => void }) {
+function ExportButton(props: { disabled: boolean; onExport: () => void }) {
   return (
     <Tooltip content="Export to CSV">
       <Button
         variant="secondary"
         iconOnly
-        isDisabled={props.isDisabled}
-        onPress={props.onExport}
+        disabled={props.disabled}
+        onClick={props.onExport}
       >
         <FileDownIcon />
       </Button>

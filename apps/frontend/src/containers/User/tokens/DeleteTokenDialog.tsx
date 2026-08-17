@@ -68,8 +68,8 @@ export function DeleteTokenDialog(props: DeleteTokenDialogProps) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             deleteToken();
           }}
         >

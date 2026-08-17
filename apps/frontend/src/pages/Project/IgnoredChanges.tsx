@@ -705,7 +705,7 @@ function IgnoredChangeRow(props: {
             variant="secondary"
             size="small"
             className="opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
-            onPress={() =>
+            onClick={() =>
               onUnignore({
                 changeId: ignoredChange.id,
                 testName: test.name,

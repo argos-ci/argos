@@ -60,8 +60,8 @@ export function DeleteCommentDialog(props: { commentId: string }) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             deleteComment().catch(() => {
               // Error is surfaced through the `error` state above.
             });

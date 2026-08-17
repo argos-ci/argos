@@ -47,8 +47,8 @@ export function SendUserEmailVerificationButton(
   return (
     <Button
       variant="secondary"
-      isPending={loading}
-      onPress={() => {
+      pending={loading}
+      onClick={() => {
         sendUserEmailVerification().catch(() => {
           // Ignore error here
         });

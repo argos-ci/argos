@@ -109,7 +109,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                   variant="ghost"
                   iconOnly
                   size="small"
-                  onPress={() => setSearchMode(false)}
+                  onClick={() => setSearchMode(false)}
                 >
                   <XIcon />
                 </Button>
@@ -131,7 +131,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 <Button
                   variant="ghost"
                   iconOnly
-                  onPress={() => enterSearchMode()}
+                  onClick={() => enterSearchMode()}
                   size="small"
                 >
                   <SearchIcon />

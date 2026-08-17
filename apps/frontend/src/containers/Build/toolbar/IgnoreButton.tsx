@@ -166,7 +166,7 @@ function EnabledIgnoreButton(props: {
       >
         <BaseIgnoreButton
           aria-pressed={isIgnored}
-          onPress={toggle}
+          onClick={toggle}
           variant={isIgnored ? "danger" : "secondary"}
         />
       </HotkeyTooltip>
@@ -207,7 +207,7 @@ function EnabledIgnoreButton(props: {
                 </Checkbox>
               </div>
               <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onPress={ignoreChange}>
+              <Button variant="destructive" onClick={ignoreChange}>
                 Ignore Change
               </Button>
             </DialogFooter>
@@ -239,7 +239,7 @@ function EnabledIgnoreButton(props: {
             </DialogBody>
             <DialogFooter>
               <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onPress={unignoreChange}>
+              <Button variant="destructive" onClick={unignoreChange}>
                 Unignore Change
               </Button>
             </DialogFooter>
@@ -266,5 +266,5 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
     return <EnabledIgnoreButton diff={diff} onIgnoreChange={onIgnoreChange} />;
   }
 
-  return <BaseIgnoreButton isDisabled />;
+  return <BaseIgnoreButton disabled />;
 });

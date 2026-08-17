@@ -323,8 +323,8 @@ function DeleteWebhookDialog(props: { webhook: MsTeamsWebhook }) {
         <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => {
+          pending={loading}
+          onClick={() => {
             deleteWebhook().catch(() => {
               // The error is shown in the dialog.
             });

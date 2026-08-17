@@ -385,7 +385,7 @@ function ChangesExplorer(props: {
             <EmptyStateActions>
               <Button
                 variant="secondary"
-                onPress={() => filterState.setValue("all")}
+                onClick={() => filterState.setValue("all")}
               >
                 See all changes
               </Button>
@@ -469,11 +469,8 @@ function BuildHeader(props: {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex shrink-0 gap-1">
-        <PreviousButton
-          onPress={goToPreviousDiff}
-          isDisabled={!previousChange}
-        />
-        <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
+        <PreviousButton onClick={goToPreviousDiff} disabled={!previousChange} />
+        <NextButton onClick={goToNextDiff} disabled={!nextChange} />
       </div>
       <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff}>
         <IgnoreButton diff={change.stats.lastSeenDiff} />
@@ -550,7 +547,7 @@ function ChangesList(props: {
       {test.changes.edges.map((change) => {
         const isActive = activeChange?.id === change.id;
         return (
-          <ListItemButton key={change.id} onPress={() => onSelect(change.id)}>
+          <ListItemButton key={change.id} onClick={() => onSelect(change.id)}>
             <DiffCard isActive={isActive} variant="primary">
               <DiffImage
                 diff={change.stats.lastSeenDiff}

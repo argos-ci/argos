@@ -30,7 +30,7 @@ type Screen = "providers" | "verifyEmail" | "saml";
 
 export function LoginOptions(props: {
   redirect?: string | null;
-  isDisabled?: boolean;
+  disabled?: boolean;
   className?: string;
   email: string;
   onEmailChange: (email: string) => void;
@@ -61,8 +61,8 @@ export function LoginOptions(props: {
                 redirect={redirect}
                 size="large"
                 className="w-full justify-center"
-                isDisabled={props.isDisabled}
-                onPress={() => setLastLoginMethod("google")}
+                disabled={props.disabled}
+                onClick={() => setLastLoginMethod("google")}
               >
                 Continue with Google
               </GoogleLoginButton>
@@ -72,8 +72,8 @@ export function LoginOptions(props: {
                 redirect={redirect}
                 size="large"
                 className="w-full justify-center"
-                isDisabled={props.isDisabled}
-                onPress={() => setLastLoginMethod("github")}
+                disabled={props.disabled}
+                onClick={() => setLastLoginMethod("github")}
               >
                 Continue with GitHub
               </GitHubLoginButton>
@@ -83,8 +83,8 @@ export function LoginOptions(props: {
                 redirect={redirect}
                 size="large"
                 className="w-full justify-center"
-                isDisabled={props.isDisabled}
-                onPress={() => setLastLoginMethod("gitlab")}
+                disabled={props.disabled}
+                onClick={() => setLastLoginMethod("gitlab")}
               >
                 Continue with GitLab
               </GitLabLoginButton>
@@ -93,8 +93,8 @@ export function LoginOptions(props: {
               variant="secondary"
               size="large"
               className="w-full justify-center"
-              isDisabled={props.isDisabled}
-              onPress={() => setScreen("saml")}
+              disabled={props.disabled}
+              onClick={() => setScreen("saml")}
             >
               Continue with SAML SSO
             </Button>
@@ -104,7 +104,7 @@ export function LoginOptions(props: {
                   redirect={redirect}
                   size="large"
                   className="w-full justify-center"
-                  isDisabled={props.isDisabled}
+                  disabled={props.disabled}
                   onSuccess={() => setLastLoginMethod("passkey")}
                 />
               </LastUsedIndicator>
@@ -186,7 +186,7 @@ function SamlForm(props: {
         <Button
           variant="secondary"
           className="flex-1 justify-center"
-          onPress={props.onBack}
+          onClick={props.onBack}
           type="button"
         >
           Back

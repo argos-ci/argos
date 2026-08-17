@@ -214,7 +214,7 @@ enum GitProvider {
 }
 
 function GitHubButton(props: {
-  onPress: ButtonProps["onPress"];
+  onClick: React.MouseEventHandler<HTMLElement>;
   hasInstallations: boolean;
   hasValidGitHubToken: boolean;
   children?: React.ReactNode;
@@ -247,12 +247,12 @@ function GitHubButton(props: {
 }
 
 function GitHubBaseButton(props: {
-  onPress: ButtonProps["onPress"];
+  onClick: React.MouseEventHandler<HTMLElement>;
   children?: React.ReactNode;
   size?: ButtonProps["size"];
 }) {
   return (
-    <Button variant="github" size={props.size} onPress={props.onPress}>
+    <Button variant="github" size={props.size} onClick={props.onClick}>
       <ButtonIcon>
         <MarkGithubIcon />
       </ButtonIcon>
@@ -401,7 +401,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             </LinkButton>
             <LinkButton
               variant="secondary"
-              onPress={() => setAndStoreProvider(null)}
+              onClick={() => setAndStoreProvider(null)}
             >
               Use another Git provider
             </LinkButton>
@@ -422,7 +422,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
         <div className="flex items-center justify-between gap-4">
           <div className="flex gap-4">
             <GitHubButton
-              onPress={() => setAndStoreProvider(GitProvider.GitHub)}
+              onClick={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
               hasValidGitHubToken={hasValidGitHubToken}
             >
@@ -430,13 +430,13 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             </GitHubButton>
             {ghLightGhInstallation && (
               <GitHubBaseButton
-                onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+                onClick={() => setAndStoreProvider(GitProvider.GitHubLight)}
               >
                 GitHub (no content-access)
               </GitHubBaseButton>
             )}
             <GitLabButton
-              onPress={() => setAndStoreProvider(GitProvider.GitLab)}
+              onClick={() => setAndStoreProvider(GitProvider.GitLab)}
             >
               GitLab
             </GitLabButton>
@@ -459,7 +459,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
           </div>
           <div className="flex flex-col items-center gap-3">
             <GitHubButton
-              onPress={() => setAndStoreProvider(GitProvider.GitHub)}
+              onClick={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
               hasValidGitHubToken={hasValidGitHubToken}
             >
@@ -467,13 +467,13 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             </GitHubButton>
             {ghLightGhInstallation && (
               <GitHubBaseButton
-                onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+                onClick={() => setAndStoreProvider(GitProvider.GitHubLight)}
               >
                 Continue with GitHub (no content-access)
               </GitHubBaseButton>
             )}
             <GitLabButton
-              onPress={() => setAndStoreProvider(GitProvider.GitLab)}
+              onClick={() => setAndStoreProvider(GitProvider.GitLab)}
             >
               Continue with GitLab
             </GitLabButton>

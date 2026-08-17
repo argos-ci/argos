@@ -64,8 +64,8 @@ export function StripePortalLink({
 
   return asButton ? (
     <Button
-      isDisabled={disabled}
-      onPress={handlePress}
+      disabled={disabled}
+      onClick={handlePress}
       className="!cursor-pointer"
     >
       {children}
@@ -74,7 +74,7 @@ export function StripePortalLink({
     <LinkButton
       isDisabled={disabled}
       className="inline-flex cursor-pointer items-center"
-      onPress={handlePress}
+      onClick={handlePress}
     >
       {children}
     </LinkButton>
@@ -119,7 +119,7 @@ const useRedirectToStripeCheckout = () => {
 };
 
 export function StripeCheckoutButton({
-  isDisabled,
+  disabled,
   accountId,
   successUrl,
   cancelUrl,
@@ -134,14 +134,14 @@ export function StripeCheckoutButton({
   return (
     <Button
       type="button"
-      onPress={() => {
+      onClick={() => {
         redirect({
           accountId,
           successUrl,
           cancelUrl,
         });
       }}
-      isDisabled={isDisabled || status === "loading"}
+      disabled={disabled || status === "loading"}
       {...props}
     />
   );

@@ -484,7 +484,7 @@ export function AutomationConditionsStep(props: {
               form={form}
               name={`${name}.${index}`}
             />
-            <RemoveButton onPress={() => remove(index)} />
+            <RemoveButton onClick={() => remove(index)} />
           </Task>
         ))}
 

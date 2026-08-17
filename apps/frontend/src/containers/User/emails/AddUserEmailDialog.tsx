@@ -110,7 +110,7 @@ export function AddUserEmailDialog() {
                 existing resources you wish to keep must be transferred before
                 the account deletion.
               </p>
-              <Button className="self-center" onPress={() => logout()}>
+              <Button className="self-center" onClick={() => logout()}>
                 Switch account
               </Button>
             </Card>

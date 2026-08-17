@@ -252,7 +252,7 @@ export function ConfigureGitHubSSO(props: {
     return (
       <Tooltip content={props.disabledReason}>
         <div className="flex">
-          <Button isDisabled>{getButtonLabel(props.priced)}</Button>
+          <Button disabled>{getButtonLabel(props.priced)}</Button>
         </div>
       </Tooltip>
     );

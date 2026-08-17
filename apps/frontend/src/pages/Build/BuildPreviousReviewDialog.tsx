@@ -99,7 +99,7 @@ function ReapplyPreviousApprovalsButton(props: {
   const { close } = useOverlayTriggerState();
   return (
     <Button
-      onPress={() => {
+      onClick={() => {
         if (checkIsPending()) {
           return;
         }

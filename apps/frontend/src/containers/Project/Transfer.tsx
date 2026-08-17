@@ -109,10 +109,10 @@ const SelectAccountStep = (props: SelectAccountStepProps) => {
       <DialogFooter>
         <DialogDismiss>Cancel</DialogDismiss>
         <Button
-          onPress={() => {
+          onClick={() => {
             props.onContinue();
           }}
-          isDisabled={!props.targetAccountId}
+          disabled={!props.targetAccountId}
         >
           Continue
         </Button>
@@ -342,7 +342,7 @@ const ReviewStep = (props: ReviewStepProps) => {
           })()}
         </DialogBody>
         <DialogFooter>
-          <Button variant="secondary" onPress={props.onBack}>
+          <Button variant="secondary" onClick={props.onBack}>
             Back
           </Button>
           <FormSubmit control={form.control}>Transfer</FormSubmit>

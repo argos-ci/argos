@@ -79,7 +79,7 @@ export const Default: Story = {
 
       <StoryTitle>Interactive</StoryTitle>
       <div className="flex flex-wrap gap-3">
-        <ChipButton color="primary" onPress={() => {}}>
+        <ChipButton color="primary" onClick={() => {}}>
           Button Chip
         </ChipButton>
         <ChipLink color="info" href="#">
@@ -95,13 +95,13 @@ export const Default: Story = {
               Color scheme
             </Chip>
             <Chip scale={scale}>is</Chip>
-            <ChipButton scale={scale} icon={SunIcon} onPress={() => {}}>
+            <ChipButton scale={scale} icon={SunIcon} onClick={() => {}}>
               light
             </ChipButton>
             <ChipButton
               scale={scale}
               icon={XIcon}
-              onPress={() => {}}
+              onClick={() => {}}
               aria-label="Remove Color scheme filter"
             />
           </ButtonGroup>
@@ -122,10 +122,10 @@ export const KeyboardFocus: Story = {
   },
   render: () => (
     <div className="flex flex-wrap items-center gap-4 p-4">
-      <ChipButton color="primary" icon={ZapIcon} onPress={() => {}}>
+      <ChipButton color="primary" icon={ZapIcon} onClick={() => {}}>
         Focused
       </ChipButton>
-      <ChipButton color="danger" icon={FlameIcon} onPress={() => {}}>
+      <ChipButton color="danger" icon={FlameIcon} onClick={() => {}}>
         Danger
       </ChipButton>
     </div>

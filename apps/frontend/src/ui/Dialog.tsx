@@ -126,11 +126,11 @@ export function DialogDismiss(props: {
       ref={ref}
       className={rest.single ? "flex-1 justify-center" : undefined}
       variant="secondary"
-      onPress={() => {
+      onClick={() => {
         props.onClick?.();
         state.close();
       }}
-      isDisabled={rest.disabled || actionContext?.isPending}
+      disabled={rest.disabled || actionContext?.isPending}
     >
       {rest.children}
     </Button>
@@ -155,7 +155,7 @@ export function DialogActionButton(
   return (
     <Button
       {...rest}
-      isPending={actionContext.isPending ?? undefined}
+      pending={actionContext.isPending ?? undefined}
       onAsyncAction={async () => {
         actionContext.setIsPending(true);
         try {

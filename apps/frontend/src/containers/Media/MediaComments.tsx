@@ -277,7 +277,7 @@ function PinCommentToggle(props: {
         size="small"
         iconOnly
         aria-label="Cancel"
-        onPress={() => onPlacingChange(false)}
+        onClick={() => onPlacingChange(false)}
       >
         <XIcon />
       </Button>
@@ -289,7 +289,7 @@ function PinCommentToggle(props: {
         size="small"
         iconOnly
         aria-label="Pin a comment"
-        onPress={() => onPlacingChange(true)}
+        onClick={() => onPlacingChange(true)}
       >
         <MapPinPlusInsideIcon />
       </Button>
@@ -442,7 +442,7 @@ function MediaPinnedReference(props: {
         : "Pinned on another version";
   return (
     <RACButton
-      onPress={onNavigate}
+      onClick={onNavigate}
       aria-label="Go to the pinned comment"
       // No hover style or default cursor of its own: the surrounding card
       // shares this button's navigation and carries the hover affordance.

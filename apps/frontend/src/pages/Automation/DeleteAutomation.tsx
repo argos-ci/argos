@@ -84,7 +84,7 @@ export function DeleteAutomationDialog(props: {
         <DialogDismiss>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          onPress={() => {
+          onClick={() => {
             deactivateAutomationRule().catch((error) => {
               console.error("Failed to delete automation rule:", error);
             });

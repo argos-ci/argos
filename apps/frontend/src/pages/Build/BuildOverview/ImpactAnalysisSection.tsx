@@ -94,7 +94,7 @@ function AffectedItemsSection(props: {
       </ul>
       {collapsible && !expanded ? (
         <RACButton
-          onPress={() => setExpanded((value) => !value)}
+          onClick={() => setExpanded((value) => !value)}
           className="rac-focus text-low data-hovered:bg-ui data-hovered:text-default mx-2 mt-3 cursor-default rounded-full px-2 py-0.5 text-sm transition"
         >
           {props.seeAllLabel(items.length)}

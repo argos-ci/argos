@@ -190,7 +190,7 @@ function PageContent(props: { accountSlug: string }) {
         <Heading>No tests</Heading>
         <Text slot="description">There is no tests matching the filters.</Text>
         <EmptyStateActions>
-          <Button onPress={() => setFilters(null)}>Reset filters</Button>
+          <Button onClick={() => setFilters(null)}>Reset filters</Button>
         </EmptyStateActions>
       </EmptyState>
     );

@@ -87,17 +87,17 @@ export function ListRowLoader(props: ListRowProps & ListLoaderProps) {
   );
 }
 
-export function ListLoadMore(props: { onPress: () => void }) {
+export function ListLoadMore(props: { onClick: () => void }) {
   const [isPending, startTransition] = useTransition();
   return (
     <div className="pt-2">
       <Button
         variant="secondary"
         className="w-full justify-center"
-        isPending={isPending}
-        onPress={() => {
+        pending={isPending}
+        onClick={() => {
           startTransition(() => {
-            props.onPress();
+            props.onClick();
           });
         }}
       >

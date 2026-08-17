@@ -139,8 +139,8 @@ function AuthCLIContent(props: {
 
       <div className="flex w-full flex-col gap-2">
         <Button
-          onPress={authorize}
-          isDisabled={status === "loading" || !me}
+          onClick={authorize}
+          disabled={status === "loading" || !me}
           size="large"
           className="w-full justify-center"
         >

@@ -100,9 +100,9 @@ export const RemoveFromTeamDialog = memo(
           )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
-            isDisabled={loading}
+            disabled={loading}
             variant="destructive"
-            onPress={() => {
+            onClick={() => {
               removeFromTeam().catch(() => {});
             }}
           >

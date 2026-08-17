@@ -18,7 +18,7 @@ export function RemoveMenu(props: {
   label: string;
   actionLabel: string;
   onRemove: () => void;
-  isDisabled?: boolean;
+  disabled?: boolean;
   tooltip?: string | null;
 }) {
   return (
@@ -34,7 +34,7 @@ export function RemoveMenu(props: {
           onAction={() => {
             props.onRemove();
           }}
-          disabled={props.isDisabled}
+          disabled={props.disabled}
         >
           {props.tooltip && <MenuItemTooltip content={props.tooltip} />}
           {props.actionLabel}

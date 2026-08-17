@@ -104,10 +104,10 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
             />
           </div>
           <Button
-            onPress={() => {
+            onClick={() => {
               props.onSelectProject(project);
             }}
-            isDisabled={props.disabled}
+            disabled={props.disabled}
           >
             {props.connectButtonLabel}
           </Button>

@@ -16,10 +16,10 @@ export function FormSubmit<
   TContext = any,
   TTransformedValues = TFieldValues,
 >(props: FormSubmitProps<TFieldValues, TContext, TTransformedValues>) {
-  const { control, isDisabled: isDisabledProp } = props;
+  const { control, disabled: disabledProp } = props;
   const formState = useFormState({ control });
-  const isDisabled =
-    isDisabledProp || (props.disableIfPristine && !formState.isDirty);
+  const disabled =
+    disabledProp || (props.disableIfPristine && !formState.isDirty);
   return (
     <Button
       type="submit"
@@ -29,8 +29,8 @@ export function FormSubmit<
       // react-aria's `preventFocusOnPress`; refusing the mousedown is what it
       // did underneath.
       onMouseDown={(event) => event.preventDefault()}
-      isDisabled={isDisabled}
-      isPending={props.isPending || formState.isSubmitting}
+      disabled={disabled}
+      pending={props.pending || formState.isSubmitting}
     >
       {props.children ?? "Save"}
     </Button>

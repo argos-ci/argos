@@ -154,7 +154,7 @@ function MediaListItem(props: {
   return (
     <ListItemButton
       ref={ref}
-      onPress={() => {
+      onClick={() => {
         // The row already on screen: navigating to it would reload the page it
         // is showing.
         if (!isActive) {

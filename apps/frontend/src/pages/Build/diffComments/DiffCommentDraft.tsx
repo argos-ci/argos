@@ -92,8 +92,8 @@ export function DiffCommentDraft(props: {
           <Button
             variant="ghost"
             size="small"
-            onPress={onCancel}
-            isDisabled={isPending}
+            onClick={onCancel}
+            disabled={isPending}
           >
             Cancel
           </Button>
@@ -118,10 +118,10 @@ export function DiffCommentDraft(props: {
             <Button
               variant="secondary"
               size="small"
-              onPress={submit}
+              onClick={submit}
               // Stays clickable while empty so the press can surface the toast;
               // only truly disabled while a submit is in flight.
-              isDisabled={isPending}
+              disabled={isPending}
               aria-disabled={isEmpty}
             >
               {reviewMode ? (

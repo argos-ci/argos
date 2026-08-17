@@ -89,23 +89,23 @@ export const Default: Story = {
 
       <StoryTitle>Disabled</StoryTitle>
       <div className="flex flex-wrap items-center gap-4">
-        <Button variant="primary" isDisabled>
+        <Button variant="primary" disabled>
           Primary
         </Button>
-        <Button variant="secondary" isDisabled>
+        <Button variant="secondary" disabled>
           Secondary
         </Button>
-        <Button variant="destructive" isDisabled>
+        <Button variant="destructive" disabled>
           Destructive
         </Button>
       </div>
 
       <StoryTitle>Pending</StoryTitle>
       <div className="flex flex-wrap items-center gap-4">
-        <Button variant="primary" isPending>
+        <Button variant="primary" pending>
           Saving…
         </Button>
-        <Button variant="secondary" isPending>
+        <Button variant="secondary" pending>
           Loading…
         </Button>
       </div>

@@ -78,7 +78,7 @@ export function AuthWithEmail(props: {
             Verifying…
           </div>
         ) : (
-          <LinkButton className="w-full text-center" onPress={onBack}>
+          <LinkButton className="w-full text-center" onClick={onBack}>
             ← Back
           </LinkButton>
         )}
