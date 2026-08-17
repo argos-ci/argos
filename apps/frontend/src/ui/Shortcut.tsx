@@ -1,25 +1,46 @@
 import { clsx } from "clsx";
 
+import { Kbd } from "./Kbd";
 import { menuItemSuffixClassName } from "./menuStyle";
 
 /**
- * A keyboard shortcut on a menu row.
+ * How a shortcut is drawn, which depends on what surrounds it.
  *
- * Plain muted text rather than boxed keys: a menu is already a list of framed
- * rows, and a row of little boxes down its right edge competes with the words
- * it is meant to annotate. The boxed {@link Kbd} is still right where the keys
- * are the subject — the hotkeys dialog, the build summary's hints — rather
- * than a footnote to a command.
+ * - `text` — plain muted keys, for a menu. A menu is already a list of framed
+ *   rows, and boxing the shortcut too gives every row a second thing to look
+ *   at, competing with the words it annotates.
+ * - `boxed` — keys in {@link Kbd}'s frames, for a tooltip, where the shortcut
+ *   is one of only two things on screen and the frames read as keycaps rather
+ *   than clutter.
+ */
+export type ShortcutVariant = "text" | "boxed";
+
+/**
+ * A keyboard shortcut, wherever it is shown.
+ *
+ * One component because the same shortcut used to render three ways depending
+ * on where you read it. It still has two looks, but they are a choice now
+ * rather than an accident — see {@link ShortcutVariant}.
  *
  * Keys are given one per element, so `["⌘", "E"]` rather than `"⌘E"`.
  */
 export function Shortcut(props: {
   keys: readonly string[];
+  variant?: ShortcutVariant;
   className?: string;
 }) {
-  const { keys, className } = props;
+  const { keys, variant = "text", className } = props;
   if (keys.length === 0) {
     return null;
+  }
+  if (variant === "boxed") {
+    return (
+      <span className={clsx("flex shrink-0 items-center gap-0.5", className)}>
+        {keys.map((key) => (
+          <Kbd key={key}>{key}</Kbd>
+        ))}
+      </span>
+    );
   }
   return (
     <span

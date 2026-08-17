@@ -32,7 +32,7 @@ export function HotkeyTooltip({
             {keysEnabled && keys.length > 0 ? (
               <>
                 <span className="text-low">·</span>
-                <Shortcut keys={keys} />
+                <Shortcut keys={keys} variant="boxed" />
               </>
             ) : null}
           </div>
