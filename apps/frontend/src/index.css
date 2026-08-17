@@ -352,14 +352,22 @@
 /**
  * A control that is currently on.
  *
- * Two attributes for one idea: a toggle button says so with `aria-pressed`,
- * while a tab or an option says it with `aria-selected`. The button surface is
- * worn by both — `PillTab` is a tab in a button's clothes — so the "on" look
- * has to answer to either, or a selected pill sits there looking untouched.
+ * Four attributes for one idea, because each kind of control spells it its own
+ * way: a toggle says `aria-pressed`, a tab says `aria-selected`, and a trigger
+ * whose menu is showing says `aria-expanded` — plus Base UI's own
+ * `data-popup-open`, which its triggers set alongside it. The button surface
+ * is worn by all of them, so the "on" look has to answer to any of them.
  *
  * `="true"` matters: `aria-selected="false"` is on every unselected tab.
  */
-@custom-variant on (&:is([aria-pressed="true"], [aria-selected="true"]));
+@custom-variant on (
+  &:is(
+      [aria-pressed="true"],
+      [aria-selected="true"],
+      [aria-expanded="true"],
+      [data-popup-open]
+    )
+);
 
 @utility rac-focus {
   &[data-focused]:not([data-focus-visible]) {

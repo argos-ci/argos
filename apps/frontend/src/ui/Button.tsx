@@ -44,12 +44,15 @@ type ButtonOptions = {
 };
 
 /**
- * Icons a step back from the label, forward again on hover. `*:` reaches the
- * icon because `ButtonIcon` clones it as a direct child, and an `iconOnly`
- * button's icon is its only child.
+ * Icons a step back from the label, forward again on hover — or for good, once
+ * the control is on. Hover alone is not enough there: an open trigger and a
+ * chosen tab take no hover at all, so their icon would have stayed dimmed with
+ * the menu sitting open beneath it. `*:` reaches the icon because `ButtonIcon`
+ * clones it as a direct child, and an `iconOnly` button's icon is its only
+ * child.
  */
 const ICON_STEPS_BACK = clsx(
-  "*:not-data-colored-icon:text-low enabled-hover:*:not-data-colored-icon:text-default",
+  "*:not-data-colored-icon:text-low enabled-hover:*:not-data-colored-icon:text-default on:*:not-data-colored-icon:text-default",
 );
 
 /**
@@ -67,7 +70,7 @@ const EDGE = clsx(
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "text-white bg-primary-solid enabled-hover:bg-primary-solid-hover enabled-active:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
+    "text-white bg-primary-solid enabled-hover:bg-primary-solid-hover enabled-active:bg-primary-solid-active on:bg-primary-solid-active",
   // A wash rather than a fill: `bg-ui` at half opacity lifts the button off
   // whatever it sits on — the app background, a panel, an image — without
   // reading as a filled button next to `primary`. Icons sit one step back from
@@ -81,7 +84,6 @@ const variantClassNames: Record<ButtonVariant, string> = {
     // the fill as well made a control that is already on look like it was
     // about to change.
     "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
-    "aria-expanded:bg-raised-active data-popup-open:bg-raised-active",
   ),
   // No fill at rest, and the same "on" fill as `secondary` once it has one, so
   // a toolbar mixing the two never shows the state two shades apart.
@@ -92,7 +94,6 @@ const variantClassNames: Record<ButtonVariant, string> = {
     // the fill as well made a control that is already on look like it was
     // about to change.
     "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
-    "aria-expanded:bg-raised-active",
   ),
   // The quiet colored actions — approve, reject, delete — as opposed to
   // `destructive`, which is a solid call to action. The color is in the icon and
@@ -108,17 +109,17 @@ const variantClassNames: Record<ButtonVariant, string> = {
     "on:bg-success-active on:enabled-hover:bg-success-active on:enabled-hover:text-success",
   ),
   destructive:
-    "text-white bg-danger-solid enabled-hover:bg-danger-solid-hover enabled-active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
+    "text-white bg-danger-solid enabled-hover:bg-danger-solid-hover enabled-active:bg-danger-solid-active on:bg-danger-solid-active",
   github:
-    "text-white bg-github enabled-hover:bg-github-hover enabled-active:bg-github-active aria-expanded:bg-github-active",
+    "text-white bg-github enabled-hover:bg-github-hover enabled-active:bg-github-active on:bg-github-active",
   gitlab:
-    "text-white bg-gitlab enabled-hover:bg-gitlab-hover enabled-active:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    "text-white bg-gitlab enabled-hover:bg-gitlab-hover enabled-active:bg-gitlab-active on:bg-gitlab-active",
   // The only fill that is the page color itself, so the hairline is the whole
   // of the button's shape — it takes the same gray as a quiet button rather
   // than the near-black the solid fills sit behind. It used to be a `ring-1`,
   // which the focus ring then had to fight with.
   google:
-    "text-default edge-default bg-google enabled-hover:bg-google-hover enabled-active:bg-google-active aria-expanded:bg-google-active",
+    "text-default edge-default bg-google enabled-hover:bg-google-hover enabled-active:bg-google-active on:bg-google-active",
 };
 
 // With the edge out of the layout, the line box and the padding are the whole
