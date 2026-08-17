@@ -780,17 +780,20 @@ function StaffTeamsTable(props: {
     <div className="relative" aria-busy={isBusy}>
       {isBusy ? (
         <div className="absolute inset-0 z-10 flex items-start justify-center pt-24">
-          {/* The wait is already past the threshold by the time this mounts,
-              so the loader has nothing left of its own to hold back. */}
-          <Loader className="text-primary-low size-10" delay={0} />
+          {/* Uncolored like every other loader in the app — it reports a state,
+              it is not an accent. The wait is already past the threshold by the
+              time this mounts, so it has nothing left of its own to hold back. */}
+          <Loader className="text-low size-8" delay={0} />
         </div>
       ) : null}
       <div
         className={clsx(
           "overflow-x-auto rounded-sm border transition-opacity",
-          // Not `pointer-events-none`: a reader can still scroll the table
-          // sideways and open a row while the next page is on its way.
-          isBusy && "opacity-40",
+          // Enough to say the figures are no longer current, not so much that
+          // they stop being readable — the point of leaving the rows up is that
+          // they can still be read. Not `pointer-events-none` either: the table
+          // still scrolls sideways and rows still open while the page loads.
+          isBusy && "opacity-65",
         )}
       >
         <table className="w-full min-w-300 table-fixed border-collapse">
