@@ -323,6 +323,22 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant search-cancel (&::-webkit-search-cancel-button);
 
+/**
+ * Hover and press, but only on a control that can actually act.
+ *
+ * react-aria set `data-hovered` / `data-pressed` only while the control was
+ * enabled, so a disabled button never took a hover fill. Native `:hover` has
+ * no such scruples — it matches a disabled button too — and `aria-disabled`,
+ * which a pending button wears so it keeps its focus and its tooltip, is
+ * invisible to `:disabled`. These restore the old behaviour for both.
+ */
+@custom-variant enabled-hover (
+  &:not(:disabled):not([aria-disabled="true"]):hover
+);
+@custom-variant enabled-active (
+  &:not(:disabled):not([aria-disabled="true"]):active
+);
+
 @utility rac-focus {
   &[data-focused]:not([data-focus-visible]) {
     @apply outline-none;

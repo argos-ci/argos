@@ -24,8 +24,11 @@ export function FormSubmit<
     <Button
       type="submit"
       {...props}
-      // Required to focus correctly the field when we use `setError` in the `onSubmit`
-      preventFocusOnPress
+      // Keeps focus off the submit button when it is pressed, so a `setError`
+      // in `onSubmit` can put it on the offending field instead. This was
+      // react-aria's `preventFocusOnPress`; refusing the mousedown is what it
+      // did underneath.
+      onMouseDown={(event) => event.preventDefault()}
       isDisabled={isDisabled}
       isPending={props.isPending || formState.isSubmitting}
     >

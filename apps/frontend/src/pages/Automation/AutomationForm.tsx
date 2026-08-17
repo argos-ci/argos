@@ -1,12 +1,11 @@
 import { AutomationConditionSchema } from "@argos/schemas/automation-condition";
 import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { Trash2Icon } from "lucide-react";
-import type { PressEvent } from "react-aria";
 import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
-import { Button } from "@/ui/Button";
+import { Button, type ButtonProps } from "@/ui/Button";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { AutomationActionSchema } from "@/util/automation";
@@ -50,7 +49,7 @@ export function Task(props: { children: React.ReactNode }) {
   );
 }
 
-export function RemoveButton(props: { onPress: (e: PressEvent) => void }) {
+export function RemoveButton(props: { onPress: ButtonProps["onPress"] }) {
   return (
     <Tooltip content="Remove">
       <Button

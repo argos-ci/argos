@@ -13,13 +13,7 @@ import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, GitHubAppType } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
-import {
-  Button,
-  ButtonIcon,
-  ButtonProps,
-  LinkButton,
-  LinkButtonProps,
-} from "@/ui/Button";
+import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { Link } from "@/ui/Link";
 import { TextInput } from "@/ui/TextInput";
 import * as storage from "@/util/storage";
@@ -220,7 +214,7 @@ enum GitProvider {
 }
 
 function GitHubButton(props: {
-  onPress: LinkButtonProps["onPress"];
+  onPress: ButtonProps["onPress"];
   hasInstallations: boolean;
   hasValidGitHubToken: boolean;
   children?: React.ReactNode;
@@ -253,7 +247,7 @@ function GitHubButton(props: {
 }
 
 function GitHubBaseButton(props: {
-  onPress: LinkButtonProps["onPress"];
+  onPress: ButtonProps["onPress"];
   children?: React.ReactNode;
   size?: ButtonProps["size"];
 }) {
