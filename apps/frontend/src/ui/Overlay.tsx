@@ -42,23 +42,21 @@ function getTriggerRenderer(element: ReactElement): OverlayTriggerRenderer {
 }
 
 /**
- * The open state of an overlay — a dialog, a popover, the emoji picker — and
- * the ways to drive it.
+ * The open state of an overlay — a dialog, a popover, the emoji picker.
  *
- * Mirrors the react-stately object it replaces, so the many call sites of
- * `useOverlayTriggerState().close()` keep working unchanged. Only `close` is
- * used in anger; the rest is kept because the shape is the contract.
+ * `isOpen`/`setOpen` are what the overlay drives Base UI's root with; `close`
+ * is the only member anything outside `ui/` ever touches. It carried
+ * react-stately's full shape at first — `open()`, `toggle()` — which nothing
+ * ever called: that was react-aria's contract, and react-aria is gone.
  */
-export type OverlayTriggerState = {
+type OverlayState = {
   isOpen: boolean;
-  open: () => void;
   close: () => void;
-  toggle: () => void;
   setOpen: (open: boolean) => void;
 };
 
 type OverlayTriggerContextValue = {
-  state: OverlayTriggerState;
+  state: OverlayState;
   /**
    * How the overlay renders the control that opens it. Held rather than
    * rendered: the overlay wraps it in its own Base UI trigger part, which is
@@ -79,7 +77,7 @@ function useLocalOverlayState(props: {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-}): OverlayTriggerState {
+}): OverlayState {
   const { open: openProp, defaultOpen = false, onOpenChange } = props;
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const isOpen = openProp ?? uncontrolled;
@@ -87,14 +85,8 @@ function useLocalOverlayState(props: {
     setUncontrolled(next);
     onOpenChange?.(next);
   });
-  return useMemo<OverlayTriggerState>(
-    () => ({
-      isOpen,
-      setOpen,
-      open: () => setOpen(true),
-      close: () => setOpen(false),
-      toggle: () => setOpen(!isOpen),
-    }),
+  return useMemo<OverlayState>(
+    () => ({ isOpen, setOpen, close: () => setOpen(false) }),
     [isOpen, setOpen],
   );
 }
@@ -139,10 +131,14 @@ export function DialogTrigger(props: {
 }
 
 /**
- * The state of the overlay this component is rendered in. The single way for
- * dialog or popover content — at any depth — to close the overlay it lives in.
+ * Closes the overlay this component is rendered in, from any depth.
+ *
+ * Base UI has no equivalent: its dialog namespace exports parts and a
+ * module-scoped handle, and `Dialog.Close` is a button — none of which a
+ * mutation's `onCompleted` deep inside the dialog can call. That gap is why
+ * this file exists.
  */
-export function useOverlayTriggerState(): OverlayTriggerState {
+export function useOverlayTriggerState(): Pick<OverlayState, "close"> {
   const ctx = use(OverlayTriggerContext);
   invariant(
     ctx,
@@ -161,7 +157,7 @@ export function useOverlayRoot(props: {
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }): {
-  state: OverlayTriggerState;
+  state: OverlayState;
   renderTrigger: OverlayTriggerRenderer | null;
 } {
   const ctx = use(OverlayTriggerContext);
@@ -180,7 +176,7 @@ export function useOverlayRoot(props: {
  * also why the trigger element is hidden from descendants here.
  */
 export function OverlayContentProvider(props: {
-  state: OverlayTriggerState;
+  state: OverlayState;
   children: ReactNode;
 }) {
   const { state, children } = props;
