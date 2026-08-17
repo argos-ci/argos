@@ -96,7 +96,15 @@ export function SelectValue(props: {
   placeholder?: string;
 }) {
   const inherited = use(SelectPlaceholderContext);
-  return <BaseSelect.Value placeholder={inherited} {...props} />;
+  return (
+    <BaseSelect.Value
+      placeholder={inherited}
+      // A row of its own: a label may come with an icon beside it, and left
+      // to inline layout the two stack the moment the trigger is narrow.
+      className="flex min-w-0 items-center gap-2 truncate"
+      {...props}
+    />
+  );
 }
 
 export type SelectButtonProps = {
@@ -145,7 +153,7 @@ export function getSelectButtonClassName(options?: { size?: "sm" | "md" }) {
  * padding instead of being ellipsized.
  */
 export const selectButtonValueClassName =
-  "flex min-w-0 flex-1 items-center gap-2 overflow-hidden *:min-w-0";
+  "flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left whitespace-nowrap *:min-w-0";
 
 /**
  * A button that looks like a select's control but opens something else.

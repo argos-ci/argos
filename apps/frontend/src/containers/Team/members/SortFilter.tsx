@@ -11,11 +11,29 @@ import { Select, SelectButton, SelectValue } from "@/ui/Select";
 
 const OrderBySchema = z.enum(TeamMembersOrderBy);
 
-/** What each order is called, so the trigger can name the chosen one. */
-const OrderByLabels: Record<OrderBy, string> = {
-  [TeamMembersOrderBy.Date]: "Date",
-  [TeamMembersOrderBy.NameAsc]: "Name (A-Z)",
-  [TeamMembersOrderBy.NameDesc]: "Name (Z-A)",
+/**
+ * How each order reads on the trigger — icon included, the way react-aria's
+ * value did by rendering the chosen row's own markup.
+ */
+const OrderByLabels: Record<OrderBy, React.ReactNode> = {
+  [TeamMembersOrderBy.Date]: (
+    <>
+      <CalendarArrowDownIcon className="size-4 shrink-0" />
+      Date
+    </>
+  ),
+  [TeamMembersOrderBy.NameAsc]: (
+    <>
+      <ArrowDownAZIcon className="size-4 shrink-0" />
+      Name (A-Z)
+    </>
+  ),
+  [TeamMembersOrderBy.NameDesc]: (
+    <>
+      <ArrowDownZAIcon className="size-4 shrink-0" />
+      Name (Z-A)
+    </>
+  ),
 };
 type OrderBy = z.infer<typeof OrderBySchema>;
 
