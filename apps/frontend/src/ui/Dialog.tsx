@@ -2,6 +2,7 @@ import {
   ComponentPropsWithRef,
   createContext,
   use,
+  useEffect,
   useId,
   useState,
   type ReactNode,
@@ -179,6 +180,20 @@ export function Dialog({
   const { ref, role, children, "aria-label": ariaLabel, ...rest } = props;
   const state = useOverlayTriggerState();
   const titleId = useId();
+  // A dialog names itself through its `DialogTitle`, so one that has neither a
+  // title nor an `aria-label` points `aria-labelledby` at nothing and ends up
+  // with no accessible name at all. Nothing sees that — not a screenshot, not
+  // a type — so say it out loud where the browser can.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || ariaLabel) {
+      return;
+    }
+    if (!document.getElementById(titleId)) {
+      console.warn(
+        "A dialog has no accessible name: it renders no `DialogTitle`, and no `aria-label` was given. Add one of the two.",
+      );
+    }
+  }, [ariaLabel, titleId]);
   return (
     <DialogRoleContext value={role ?? "dialog"}>
       <DialogTitleIdContext value={ariaLabel ? undefined : titleId}>

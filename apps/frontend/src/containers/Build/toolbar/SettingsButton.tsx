@@ -37,9 +37,11 @@ export const SettingsButton = memo(() => {
 
 function OverlaySettingsDialog() {
   return (
-    <Dialog className="w-80 select-none">
+    <Dialog className="w-80 select-none" aria-label="Customize overlay">
       <DialogBody>
-        <Heading slot="title" level={2} className="mb-4 font-medium">
+        {/* Not a `DialogTitle`: this one reads at body size. The dialog is
+            named by `aria-label` instead, which says the same words. */}
+        <Heading level={2} className="mb-4 font-medium">
           Customize overlay
         </Heading>
         <div className="flex flex-col gap-6">
