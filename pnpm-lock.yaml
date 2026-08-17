@@ -644,9 +644,6 @@ importers:
       react-router:
         specifier: ^8.3.0
         version: 8.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react-stately:
-        specifier: ^3.49.0
-        version: 3.49.0(react@19.2.8)
       react-twc:
         specifier: ^1.5.1
         version: 1.5.1(@types/react@19.2.18)(react@19.2.8)
