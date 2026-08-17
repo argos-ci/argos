@@ -77,10 +77,10 @@ const variantClassNames: Record<ButtonVariant, string> = {
     "text-default bg-raised enabled-hover:bg-raised-hover enabled-active:bg-raised-active",
     EDGE,
     ICON_STEPS_BACK,
-    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // On, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
     // about to change.
-    "aria-pressed:bg-raised-active aria-pressed:enabled-hover:bg-raised-active aria-pressed:text-default",
+    "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
     "aria-expanded:bg-raised-active data-popup-open:bg-raised-active",
   ),
   // No fill at rest, and the same "on" fill as `secondary` once it has one, so
@@ -88,10 +88,10 @@ const variantClassNames: Record<ButtonVariant, string> = {
   ghost: clsx(
     "text-default bg-transparent enabled-hover:bg-hover enabled-active:bg-raised-active",
     ICON_STEPS_BACK,
-    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // On, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
     // about to change.
-    "aria-pressed:bg-raised-active aria-pressed:enabled-hover:bg-raised-active aria-pressed:text-default",
+    "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
     "aria-expanded:bg-raised-active",
   ),
   // The quiet colored actions — approve, reject, delete — as opposed to
@@ -100,12 +100,12 @@ const variantClassNames: Record<ButtonVariant, string> = {
   danger: clsx(
     "text-danger-low bg-raised enabled-hover:bg-danger-hover/50 enabled-active:bg-danger-active",
     "edge-default enabled-hover:edge-danger-hover group-[*]/button-group:enabled-hover:edge-default",
-    "aria-pressed:bg-danger-active aria-pressed:edge-danger aria-pressed:enabled-hover:bg-danger-active aria-pressed:enabled-hover:text-danger",
+    "on:bg-danger-active on:edge-danger on:enabled-hover:bg-danger-active on:enabled-hover:text-danger",
   ),
   success: clsx(
     "text-success-low bg-raised enabled-hover:bg-success-hover/50 enabled-active:bg-success-active",
     "edge-default enabled-hover:edge-success-hover group-[*]/button-group:enabled-hover:edge-default",
-    "aria-pressed:bg-success-active aria-pressed:enabled-hover:bg-success-active aria-pressed:enabled-hover:text-success",
+    "on:bg-success-active on:enabled-hover:bg-success-active on:enabled-hover:text-success",
   ),
   destructive:
     "text-white bg-danger-solid enabled-hover:bg-danger-solid-hover enabled-active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
@@ -220,7 +220,7 @@ export function getButtonClassName(options: {
     // the lift — pressed in rather than standing off the surface. `ghost` is
     // the exception, and the exception is the point of it: no edge at all, so
     // nothing marks it out until it is hovered.
-    variant !== "ghost" && "shadow-control aria-pressed:shadow-control-flat",
+    variant !== "ghost" && "shadow-control on:shadow-control-flat",
     variantClassName,
     sizeClassName,
     ring.focusVisible,

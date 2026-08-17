@@ -43,10 +43,6 @@ export function PillTab(
       {...props}
       className={clsx(
         getButtonClassName({ variant: "secondary", size: "small" }),
-        "cursor-pointer",
-        // Selected reads like a pressed button — the same fill, so the two are
-        // never a shade apart.
-        "data-selected:bg-raised-active data-selected:data-hovered:bg-raised-active data-selected:text-default data-selected:cursor-default",
         props.className,
       )}
     />
