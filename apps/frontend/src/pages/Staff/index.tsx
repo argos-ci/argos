@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { Outlet } from "react-router";
 
 import { PageLoader } from "@/ui/PageLoader";
-import { TabList } from "@/ui/Tab";
-import { TabLink, TabLinkPanel, TabsLink } from "@/ui/TabLink";
+import { TabLink, TabLinkPanel, TabsLink, TabLinkList } from "@/ui/TabLink";
 
 /**
  * Shell for the staff-only pages, mirroring the account layout so the staff
@@ -17,10 +16,10 @@ export function Component() {
   // tab bar sits on the app background like the account tabs do.
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabList className="px-4" aria-label="Staff navigation">
+      <TabLinkList className="px-4" aria-label="Staff navigation">
         <TabLink href="teams">All teams</TabLink>
         <TabLink href="trials">Trials</TabLink>
-      </TabList>
+      </TabLinkList>
       <hr className="border-t" />
       <TabLinkPanel className="flex flex-1 flex-col">
         <Suspense fallback={<PageLoader />}>

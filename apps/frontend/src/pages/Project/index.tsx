@@ -8,8 +8,7 @@ import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
-import { TabList } from "@/ui/Tab";
-import { TabLink, TabLinkPanel, TabsLink } from "@/ui/TabLink";
+import { TabLink, TabLinkPanel, TabsLink, TabLinkList } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 import type { ProjectOutletContext } from "./ProjectOutletContext";
@@ -51,7 +50,7 @@ function ProjectTabs(props: {
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabList className="px-4" aria-label="Project navigation">
+      <TabLinkList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
         {/* The ignore ledger is only meaningful while the feature is on; the
@@ -64,7 +63,7 @@ function ProjectTabs(props: {
         {permissions.includes(ProjectPermission.ViewSettings) && (
           <TabLink href="settings">Settings</TabLink>
         )}
-      </TabList>
+      </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel className="flex min-h-0 flex-1 flex-col">

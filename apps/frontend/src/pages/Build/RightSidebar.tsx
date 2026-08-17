@@ -2,12 +2,6 @@ import { useEffect } from "react";
 import clsx from "clsx";
 import { useAtom } from "jotai";
 import { PanelRightIcon } from "lucide-react";
-import {
-  TabList as RACTabList,
-  TabPanel,
-  Tabs,
-  type TabPanelProps,
-} from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -15,7 +9,7 @@ import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Sidebar } from "@/ui/Sidebar";
-import { PillTab } from "@/ui/Tab";
+import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
@@ -79,50 +73,48 @@ export function RightSidebar(
   }
   return (
     <Tabs
-      selectedKey={tab}
-      onSelectionChange={(key) => setTab(key as RightSidebarTab)}
+      value={tab}
+      onValueChange={(key) => setTab(key as RightSidebarTab)}
       className="flex min-h-0 max-w-80 flex-1 flex-col"
     >
-      {() => (
-        <Sidebar>
-          <RACTabList aria-label="Sidebar" className="flex shrink-0 gap-2 py-2">
-            <PillTab id="snapshot">Snapshot</PillTab>
-            <PillTab id="review">Review</PillTab>
-          </RACTabList>
-          <SidebarTabPanel id="snapshot">
-            <MetadataSection
-              diff={activeDiff}
-              siblingDiffs={siblingDiffs}
-              {...context}
-            />
-            {activeDiff.test ? (
-              <>
-                {activeDiff.change ? (
-                  <TestChangeSection
-                    test={activeDiff.test}
-                    change={activeDiff.change}
-                    occurrences={activeDiff.last7daysOccurrences}
-                  />
-                ) : null}
-                <TestInsightsSection test={activeDiff.test} />
-                <TestActivitySection
+      <Sidebar>
+        <TabList aria-label="Sidebar" className="flex shrink-0 gap-2 py-2">
+          <PillTab value="snapshot">Snapshot</PillTab>
+          <PillTab value="review">Review</PillTab>
+        </TabList>
+        <SidebarTabPanel value="snapshot">
+          <MetadataSection
+            diff={activeDiff}
+            siblingDiffs={siblingDiffs}
+            {...context}
+          />
+          {activeDiff.test ? (
+            <>
+              {activeDiff.change ? (
+                <TestChangeSection
                   test={activeDiff.test}
-                  change={activeDiff.change ?? null}
+                  change={activeDiff.change}
+                  occurrences={activeDiff.last7daysOccurrences}
                 />
-              </>
-            ) : null}
-          </SidebarTabPanel>
-          <SidebarTabPanel id="review">
-            <ReviewersSection build={build} />
-            <ReviewActivitySection build={build} />
-          </SidebarTabPanel>
-        </Sidebar>
-      )}
+              ) : null}
+              <TestInsightsSection test={activeDiff.test} />
+              <TestActivitySection
+                test={activeDiff.test}
+                change={activeDiff.change ?? null}
+              />
+            </>
+          ) : null}
+        </SidebarTabPanel>
+        <SidebarTabPanel value="review">
+          <ReviewersSection build={build} />
+          <ReviewActivitySection build={build} />
+        </SidebarTabPanel>
+      </Sidebar>
     </Tabs>
   );
 }
 
-function SidebarTabPanel(props: TabPanelProps) {
+function SidebarTabPanel(props: React.ComponentProps<typeof TabPanel>) {
   return (
     <TabPanel
       {...props}

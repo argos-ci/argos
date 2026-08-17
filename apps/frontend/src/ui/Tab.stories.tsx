@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TabPanel, Tabs } from "react-aria-components";
 
-import { PillTab, Tab, TabList } from "./Tab";
+import { PillTab, Tab, TabList, TabPanel, Tabs } from "./Tab";
 
 const meta = {
   title: "UI/Tab",
   component: Tab,
+  args: { value: "overview", children: "Overview" },
 } satisfies Meta<typeof Tab>;
 
 export default meta;
@@ -13,19 +13,19 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
-    <Tabs>
+    <Tabs defaultValue="overview">
       <TabList>
-        <Tab id="overview">Overview</Tab>
-        <Tab id="builds">Builds</Tab>
-        <Tab id="settings">Settings</Tab>
+        <Tab value="overview">Overview</Tab>
+        <Tab value="builds">Builds</Tab>
+        <Tab value="settings">Settings</Tab>
       </TabList>
-      <TabPanel id="overview" className="p-4 text-sm">
+      <TabPanel value="overview" className="p-4 text-sm">
         Overview content
       </TabPanel>
-      <TabPanel id="builds" className="p-4 text-sm">
+      <TabPanel value="builds" className="p-4 text-sm">
         Builds content
       </TabPanel>
-      <TabPanel id="settings" className="p-4 text-sm">
+      <TabPanel value="settings" className="p-4 text-sm">
         Settings content
       </TabPanel>
     </Tabs>
@@ -41,15 +41,15 @@ export const Default: Story = {
  */
 export const Pill: Story = {
   render: () => (
-    <Tabs>
+    <Tabs defaultValue="snapshot">
       <TabList className="flex gap-2 p-4">
-        <PillTab id="snapshot">Snapshot</PillTab>
-        <PillTab id="review">Review</PillTab>
+        <PillTab value="snapshot">Snapshot</PillTab>
+        <PillTab value="review">Review</PillTab>
       </TabList>
-      <TabPanel id="snapshot" className="px-4 pb-4 text-sm">
+      <TabPanel value="snapshot" className="px-4 pb-4 text-sm">
         Snapshot content
       </TabPanel>
-      <TabPanel id="review" className="px-4 pb-4 text-sm">
+      <TabPanel value="review" className="px-4 pb-4 text-sm">
         Review content
       </TabPanel>
     </Tabs>
