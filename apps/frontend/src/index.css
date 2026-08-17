@@ -324,6 +324,20 @@
 @custom-variant search-cancel (&::-webkit-search-cancel-button);
 
 /**
+ * Focused, and reached by keyboard.
+ *
+ * For everything that is not a text field, `focus-visible:` already means
+ * this. A text input is the exception: the browser matches `:focus-visible` on
+ * a plain click too, so a field that should only ring for the keyboard has to
+ * be told how focus arrived — see `util/focus-modality`, which publishes it.
+ *
+ * Use this **only** in `ui/TextInput`.
+ */
+@custom-variant kbd-focus (
+  &:where(html[data-focus-modality="keyboard"] *):focus
+);
+
+/**
  * Hover, but only where it can lead somewhere.
  *
  * Hovering promises that pressing will do something. Three kinds of control

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { userEvent } from "storybook/test";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import { Label } from "./Label";
 import { StoryTitle } from "./StoryTitle";
@@ -53,6 +53,13 @@ export const Default: Story = {
 export const KeyboardFocus: Story = {
   play: async () => {
     await userEvent.tab();
+    const input = await screen.findByPlaceholderText("Focused");
+    await expect(input).toHaveFocus();
+    // Asserted, not merely photographed: paired with `PointerFocus`, this is
+    // what says the ring tracks the keyboard rather than never appearing.
+    await waitFor(() => {
+      expect(getComputedStyle(input).boxShadow).not.toBe("none");
+    });
   },
   render: () => (
     <div className="flex max-w-xs flex-col gap-4 p-4">
@@ -63,6 +70,38 @@ export const KeyboardFocus: Story = {
       <div>
         <Label invalid>Invalid</Label>
         <TextInput placeholder="Invalid" aria-invalid="true" />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * The other half of the contract, and the half a wrong translation would break
+ * quietly: clicked into, the field takes the focus border but **no ring**.
+ *
+ * `focus-visible:` would have looked right in every other component and been
+ * wrong here — the browser matches a clicked text input too — so the ring is
+ * asserted away rather than left to a baseline nobody re-reads.
+ */
+export const PointerFocus: Story = {
+  play: async () => {
+    const input = await screen.findByPlaceholderText("Clicked");
+    const restingBorder = getComputedStyle(input).borderColor;
+    await userEvent.click(input);
+    await expect(input).toHaveFocus();
+    await waitFor(() => {
+      // Tailwind draws the ring as a box-shadow, so its absence is the test.
+      expect(getComputedStyle(input).boxShadow).toBe("none");
+    });
+    // The border still moves, so a clicked field does read as focused — the
+    // ring is the only thing the keyboard buys.
+    await expect(getComputedStyle(input).borderColor).not.toBe(restingBorder);
+  },
+  render: () => (
+    <div className="flex max-w-xs flex-col gap-4 p-4">
+      <div>
+        <Label>Clicked</Label>
+        <TextInput placeholder="Clicked" />
       </div>
     </div>
   ),

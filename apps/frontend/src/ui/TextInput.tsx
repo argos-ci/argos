@@ -1,11 +1,9 @@
-import { ComponentPropsWithRef, type RefAttributes } from "react";
+import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
-import { Input, InputProps } from "react-aria-components";
 
 type TextInputScale = "sm" | "md" | "lg";
 
-export interface TextInputProps
-  extends InputProps, RefAttributes<HTMLInputElement> {
+export interface TextInputProps extends ComponentPropsWithRef<"input"> {
   scale?: TextInputScale;
 }
 
@@ -18,7 +16,7 @@ const sizeClassNames: Record<TextInputScale, string> = {
 export function TextInput(props: TextInputProps) {
   const { scale = "md", ...rest } = props;
   return (
-    <Input
+    <input
       {...rest}
       className={clsx(
         rest.className,
@@ -31,12 +29,13 @@ export function TextInput(props: TextInputProps) {
         /* Focus: the border marks the field however it was reached, the ring
            only when it was reached by keyboard. CSS `:focus-visible` cannot
            draw that line — a text input matches it on a plain click too — so
-           the ring keys off react-aria's own modality tracking instead. */
+           the ring keys off the modality `util/focus-modality` publishes,
+           which is the one thing react-aria was still doing here. */
         "focus:border-active focus:outline-hidden",
-        "data-focus-visible:ring-primary-active data-focus-visible:ring-2",
+        "kbd-focus:ring-primary-active kbd-focus:ring-2",
         /* Invalid: red all the way through, ring included. */
         "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:not-disabled:hover:border-danger-hover",
-        "aria-invalid:data-focus-visible:ring-danger-active",
+        "aria-invalid:kbd-focus:ring-danger-active",
         /* Disabled */
         "disabled:opacity-disabled",
         /* Addon  */
