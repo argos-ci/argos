@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
 import { clsx } from "clsx";
 import {
   CheckIcon,
@@ -8,7 +10,6 @@ import {
   GitCommitHorizontalIcon,
   SquareTerminalIcon,
 } from "lucide-react";
-import { RadioButton, RadioField, RadioGroup } from "react-aria-components";
 import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
@@ -350,7 +351,7 @@ function InstallStep(props: {
           <RadioGroup
             aria-label="Test framework"
             value={framework.id}
-            onChange={(value) => {
+            onValueChange={(value) => {
               if (checkIsFrameworkId(value)) {
                 selectFramework(value);
               }
@@ -358,12 +359,16 @@ function InstallStep(props: {
             className="grid grid-cols-3 gap-2 sm:grid-cols-6"
           >
             {FRAMEWORKS.map((framework) => (
-              <RadioField key={framework.id} value={framework.id}>
-                <RadioButton className="data-selected:border-primary-active data-selected:bg-primary-subtle data-selected:text-primary hover:bg-hover data-focus-visible:ring-primary-active flex h-full cursor-default flex-col items-center gap-2 rounded-md border px-2 py-3 transition focus:outline-hidden data-focus-visible:ring-2">
-                  {framework.logo}
-                  <span className="text-xs">{framework.name}</span>
-                </RadioButton>
-              </RadioField>
+              // react-aria split the label from the thing it labelled;
+              // `Radio.Root` is both, so the pair collapses into one tile.
+              <Radio.Root
+                key={framework.id}
+                value={framework.id}
+                className="data-checked:border-primary-active data-checked:bg-primary-subtle data-checked:text-primary hover:bg-hover focus-visible:ring-primary-active flex h-full cursor-default flex-col items-center gap-2 rounded-md border px-2 py-3 transition focus:outline-hidden focus-visible:ring-2"
+              >
+                {framework.logo}
+                <span className="text-xs">{framework.name}</span>
+              </Radio.Root>
             ))}
           </RadioGroup>
           <p className="text-low text-sm">

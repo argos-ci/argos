@@ -7,6 +7,7 @@ import "./index.css";
 import { config } from "./config";
 import { APIError } from "./util/api";
 import { getSingleErrorCode } from "./util/error";
+import { trackFocusModality } from "./util/focus-modality";
 
 if (process.env["NODE_ENV"] === "production") {
   Sentry.init({
@@ -60,6 +61,10 @@ if (process.env["NODE_ENV"] === "production") {
     },
   });
 }
+
+// Before the first render, so a field focused on load is judged against a
+// modality that is already published.
+trackFocusModality();
 
 const container = document.querySelector("#root");
 invariant(container, "No #root element found");

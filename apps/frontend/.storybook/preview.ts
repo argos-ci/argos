@@ -4,6 +4,10 @@ import { MemoryRouter } from "react-router";
 
 import { TooltipProvider } from "../src/ui/Tooltip";
 import "../src/index.css";
+import { trackFocusModality } from "../src/util/focus-modality";
+
+// `TextInput`'s keyboard-only focus ring reads the modality this publishes.
+trackFocusModality();
 
 // Provide a mock clientData so that `src/config.ts` does not throw when
 // modules are eagerly resolved by Vite.

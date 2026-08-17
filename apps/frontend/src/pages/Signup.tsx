@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
 import clsx from "clsx";
 import { CheckIcon } from "lucide-react";
-import { Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
   useController,
@@ -47,17 +48,21 @@ function AccountTypeField<
   const { control, name } = props;
   const { field } = useController({ control, name });
   const { ref } = field;
+  const labelId = useId();
   return (
     <RadioGroup
-      orientation="vertical"
+      aria-orientation="vertical"
       className={clsx("w-full", props.className)}
       ref={ref}
-      onChange={field.onChange}
+      onValueChange={field.onChange}
       value={field.value}
-      isDisabled={field.disabled}
+      disabled={field.disabled}
       onBlur={field.onBlur}
+      // react-aria's `RadioGroup` named itself from the `Label` it found in
+      // context. Base UI's is a plain group, so the two are wired by hand.
+      aria-labelledby={labelId}
     >
-      <Label>Choose your use case to get started</Label>
+      <Label id={labelId}>Choose your use case to get started</Label>
       <div className="flex flex-col">
         <RadioAccordion value="hobby">
           <div className="flex items-center justify-between gap-4">
@@ -91,29 +96,24 @@ function AccountTypeField<
 function RadioAccordion(props: { value: string; children: ReactNode }) {
   const { children, ...rest } = props;
   return (
-    <Radio
+    <Radio.Root
       {...rest}
       className={clsx(
-        "bg-app peer flex items-center gap-4 border p-4 text-sm",
-        "data-hovered:bg-subtle",
+        "bg-app group peer flex items-center gap-4 border p-4 text-sm",
+        "hover:bg-subtle",
         "first:rounded-t first:border-b-0",
         "last:rounded-b",
         "not-first:not-last:border-b-0",
       )}
     >
-      {({ isSelected }) => (
-        <>
-          {isSelected ? (
-            <div className="bg-primary-solid flex size-5 items-center justify-center rounded-full">
-              <CheckIcon className="size-3.5 text-white" />
-            </div>
-          ) : (
-            <div className="bg-active m-1 size-3 rounded-full" />
-          )}
-          <div className="flex-1">{children}</div>
-        </>
-      )}
-    </Radio>
+      {/* react-aria handed the row its `isSelected`; Base UI publishes it as
+          `data-checked`, so the two marks swap in CSS instead. */}
+      <div className="bg-primary-solid hidden size-5 items-center justify-center rounded-full group-data-checked:flex">
+        <CheckIcon className="size-3.5 text-white" />
+      </div>
+      <div className="bg-active m-1 size-3 rounded-full group-data-checked:hidden" />
+      <div className="flex-1">{children}</div>
+    </Radio.Root>
   );
 }
 
