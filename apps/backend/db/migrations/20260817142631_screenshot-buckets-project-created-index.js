@@ -20,16 +20,32 @@
  */
 export const up = async (knex) => {
   // A concurrent build that fails leaves the index in place, marked invalid —
-  // a cancelled deploy or a statement timeout is enough. Knex records nothing
-  // for a migration that threw, so `up` runs again on the next deploy; without
-  // this drop, `IF NOT EXISTS` would find that invalid index, build nothing and
-  // report success. The table would carry an index every insert maintains and
-  // no query can use, and the scan this exists to bound would stay as it was.
-  await knex.raw(`
-    DROP INDEX CONCURRENTLY IF EXISTS screenshot_buckets_projectid_createdat_index
+  // a cancelled deploy, a statement timeout or a deadlock is enough. Knex
+  // records nothing for a migration that threw, so `up` runs again on the next
+  // deploy, and `IF NOT EXISTS` alone would find that invalid index, build
+  // nothing and report success: the table would carry an index every insert
+  // maintains and no query can use.
+  //
+  // Only an invalid one is dropped, never a working one. On a table this size
+  // the index is worth building by hand, at a chosen moment, ahead of the
+  // deploy that needs it — and a blanket drop would tear that down and rebuild
+  // it, which is the opposite of the point.
+  const invalid = await knex.raw(`
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_index i ON i.indexrelid = c.oid
+    WHERE c.relname = 'screenshot_buckets_projectid_createdat_index'
+      AND NOT i.indisvalid
   `);
+
+  if (invalid.rows.length > 0) {
+    await knex.raw(`
+      DROP INDEX CONCURRENTLY screenshot_buckets_projectid_createdat_index
+    `);
+  }
+
   await knex.raw(`
-    CREATE INDEX CONCURRENTLY screenshot_buckets_projectid_createdat_index
+    CREATE INDEX CONCURRENTLY IF NOT EXISTS screenshot_buckets_projectid_createdat_index
     ON screenshot_buckets ("projectId", "createdAt")
     INCLUDE ("screenshotCount", "storybookScreenshotCount")
   `);
