@@ -1,16 +1,18 @@
-import { Children, cloneElement, useState } from "react";
-import { clsx } from "clsx";
 import {
-  Button as RACButton,
-  ButtonProps as RACButtonProps,
-  Link as RACLink,
-  LinkProps as RACLinkProps,
-} from "react-aria-components";
+  Children,
+  cloneElement,
+  useState,
+  type ComponentPropsWithRef,
+  type MouseEvent,
+} from "react";
+import { Button as BaseButton } from "@base-ui/react/button";
+import { clsx } from "clsx";
 
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { Loader } from "./Loader";
+import { RouterLink } from "./RouterLink";
 
 export type ButtonVariant =
   | "primary"
@@ -42,12 +44,15 @@ type ButtonOptions = {
 };
 
 /**
- * Icons a step back from the label, forward again on hover. `*:` reaches the
- * icon because `ButtonIcon` clones it as a direct child, and an `iconOnly`
- * button's icon is its only child.
+ * Icons a step back from the label, forward again on hover — or for good, once
+ * the control is on. Hover alone is not enough there: an open trigger and a
+ * chosen tab take no hover at all, so their icon would have stayed dimmed with
+ * the menu sitting open beneath it. `*:` reaches the icon because `ButtonIcon`
+ * clones it as a direct child, and an `iconOnly` button's icon is its only
+ * child.
  */
 const ICON_STEPS_BACK = clsx(
-  "*:not-data-colored-icon:text-low data-hovered:*:not-data-colored-icon:text-default",
+  "*:not-data-colored-icon:text-low enabled-hover:*:not-data-colored-icon:text-default on:*:not-data-colored-icon:text-default",
 );
 
 /**
@@ -59,64 +64,62 @@ const ICON_STEPS_BACK = clsx(
  */
 const EDGE = clsx(
   "edge-default",
-  "data-hovered:edge-hover",
-  "group-[*]/button-group:data-hovered:edge-default",
+  "enabled-hover:edge-hover",
+  "group-[*]/button-group:enabled-hover:edge-default",
 );
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "text-white bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active active:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
+    "text-white bg-primary-solid enabled-hover:bg-primary-solid-hover enabled-active:bg-primary-solid-active on:bg-primary-solid-active",
   // A wash rather than a fill: `bg-ui` at half opacity lifts the button off
   // whatever it sits on — the app background, a panel, an image — without
   // reading as a filled button next to `primary`. Icons sit one step back from
   // the label and come forward on hover, so a row of icon buttons stays quiet
   // until it is pointed at.
   secondary: clsx(
-    "text-default bg-raised data-hovered:bg-raised-hover data-pressed:bg-raised-active active:bg-raised-active",
+    "text-default bg-raised enabled-hover:bg-raised-hover enabled-active:bg-raised-active",
     EDGE,
     ICON_STEPS_BACK,
-    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // On, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
     // about to change.
-    "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
-    "aria-expanded:bg-raised-active data-popup-open:bg-raised-active",
+    "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
   ),
   // No fill at rest, and the same "on" fill as `secondary` once it has one, so
   // a toolbar mixing the two never shows the state two shades apart.
   ghost: clsx(
-    "text-default bg-transparent data-hovered:bg-hover data-pressed:bg-raised-active active:bg-raised-active",
+    "text-default bg-transparent enabled-hover:bg-hover enabled-active:bg-raised-active",
     ICON_STEPS_BACK,
-    // Pressed, the fill stays put and only the icon brightens on hover: moving
+    // On, the fill stays put and only the icon brightens on hover: moving
     // the fill as well made a control that is already on look like it was
     // about to change.
-    "aria-pressed:bg-raised-active aria-pressed:data-hovered:bg-raised-active aria-pressed:text-default",
-    "aria-expanded:bg-raised-active",
+    "on:bg-raised-active on:enabled-hover:bg-raised-active on:text-default",
   ),
   // The quiet colored actions — approve, reject, delete — as opposed to
   // `destructive`, which is a solid call to action. The color is in the icon and
   // the label, and only fills in on hover.
   danger: clsx(
-    "text-danger-low bg-raised data-hovered:bg-danger-hover/50 data-pressed:bg-danger-active active:bg-danger-active",
-    "edge-default data-hovered:edge-danger-hover group-[*]/button-group:data-hovered:edge-default",
-    "aria-pressed:bg-danger-active aria-pressed:edge-danger aria-pressed:data-hovered:bg-danger-active aria-pressed:data-hovered:text-danger",
+    "text-danger-low bg-raised enabled-hover:bg-danger-hover/50 enabled-active:bg-danger-active",
+    "edge-default enabled-hover:edge-danger-hover group-[*]/button-group:enabled-hover:edge-default",
+    "on:bg-danger-active on:edge-danger on:enabled-hover:bg-danger-active on:enabled-hover:text-danger",
   ),
   success: clsx(
-    "text-success-low bg-raised data-hovered:bg-success-hover/50 data-pressed:bg-success-active active:bg-success-active",
-    "edge-default data-hovered:edge-success-hover group-[*]/button-group:data-hovered:edge-default",
-    "aria-pressed:bg-success-active aria-pressed:data-hovered:bg-success-active aria-pressed:data-hovered:text-success",
+    "text-success-low bg-raised enabled-hover:bg-success-hover/50 enabled-active:bg-success-active",
+    "edge-default enabled-hover:edge-success-hover group-[*]/button-group:enabled-hover:edge-default",
+    "on:bg-success-active on:enabled-hover:bg-success-active on:enabled-hover:text-success",
   ),
   destructive:
-    "text-white bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
+    "text-white bg-danger-solid enabled-hover:bg-danger-solid-hover enabled-active:bg-danger-solid-active on:bg-danger-solid-active",
   github:
-    "text-white bg-github data-hovered:bg-github-hover data-pressed:bg-github-active active:bg-github-active aria-expanded:bg-github-active",
+    "text-white bg-github enabled-hover:bg-github-hover enabled-active:bg-github-active on:bg-github-active",
   gitlab:
-    "text-white bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active active:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    "text-white bg-gitlab enabled-hover:bg-gitlab-hover enabled-active:bg-gitlab-active on:bg-gitlab-active",
   // The only fill that is the page color itself, so the hairline is the whole
   // of the button's shape — it takes the same gray as a quiet button rather
   // than the near-black the solid fills sit behind. It used to be a `ring-1`,
   // which the focus ring then had to fight with.
   google:
-    "text-default edge-default bg-google data-hovered:bg-google-hover data-pressed:bg-google-active active:bg-google-active aria-expanded:bg-google-active",
+    "text-default edge-default bg-google enabled-hover:bg-google-hover enabled-active:bg-google-active on:bg-google-active",
 };
 
 // With the edge out of the layout, the line box and the padding are the whole
@@ -142,8 +145,8 @@ const iconOnlySizeClassNames: Record<ButtonSize, string> = {
 };
 
 // Ring color per variant, the single source of truth for both the
-// keyboard-focus ring (`data-focus-visible`) and the always-on ring drawn by
-// `showFocusRing` (`data-focused`, e.g. an autofocused default action). Keeping
+// keyboard-focus ring (`:focus-visible`) and the always-on ring drawn by
+// `showFocusRing` (`:focus`, e.g. an autofocused default action). Keeping
 // the two states side by side stops them from drifting apart; the values are
 // full literals so Tailwind keeps generating the classes.
 const ringClassNames: Record<
@@ -151,40 +154,40 @@ const ringClassNames: Record<
   { focusVisible: string; focused: string }
 > = {
   primary: {
-    focusVisible: "data-focus-visible:ring-primary",
-    focused: "data-focused:ring-primary",
+    focusVisible: "focus-visible:ring-primary",
+    focused: "focus:ring-primary",
   },
   secondary: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
+    focusVisible: "focus-visible:ring-default",
+    focused: "focus:ring-default",
   },
   ghost: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
+    focusVisible: "focus-visible:ring-default",
+    focused: "focus:ring-default",
   },
   danger: {
-    focusVisible: "data-focus-visible:ring-danger",
-    focused: "data-focused:ring-danger",
+    focusVisible: "focus-visible:ring-danger",
+    focused: "focus:ring-danger",
   },
   success: {
-    focusVisible: "data-focus-visible:ring-success",
-    focused: "data-focused:ring-success",
+    focusVisible: "focus-visible:ring-success",
+    focused: "focus:ring-success",
   },
   destructive: {
-    focusVisible: "data-focus-visible:ring-danger",
-    focused: "data-focused:ring-danger",
+    focusVisible: "focus-visible:ring-danger",
+    focused: "focus:ring-danger",
   },
   github: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
+    focusVisible: "focus-visible:ring-default",
+    focused: "focus:ring-default",
   },
   gitlab: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
+    focusVisible: "focus-visible:ring-default",
+    focused: "focus:ring-default",
   },
   google: {
-    focusVisible: "data-focus-visible:ring-default",
-    focused: "data-focused:ring-default",
+    focusVisible: "focus-visible:ring-default",
+    focused: "focus:ring-default",
   },
 };
 
@@ -218,11 +221,11 @@ export function getButtonClassName(options: {
     // the lift — pressed in rather than standing off the surface. `ghost` is
     // the exception, and the exception is the point of it: no edge at all, so
     // nothing marks it out until it is hovered.
-    variant !== "ghost" && "shadow-control aria-pressed:shadow-control-flat",
+    variant !== "ghost" && "shadow-control on:shadow-control-flat",
     variantClassName,
     sizeClassName,
     ring.focusVisible,
-    showFocusRing && ["data-focused:ring-4", ring.focused],
+    showFocusRing && ["focus:ring-4", ring.focused],
     "rounded-full",
     // ButtonGroup integration: drop the inner rounded ends so the segments butt
     // together, and where they meet each one's hairline draws the seam.
@@ -234,7 +237,7 @@ export function getButtonClassName(options: {
     "group-[*]/button-group:[:is(button,a)~&]:rounded-l-none",
     "group-[*]/button-group:[&:has(~:is(button,a))]:rounded-r-none",
     iconOnly && "justify-center",
-    "focus:outline-hidden data-focus-visible:ring-4",
+    "focus:outline-hidden focus-visible:ring-4",
     "items-center inline-flex select-none whitespace-nowrap font-sans font-medium",
     "aria-disabled:opacity-disabled aria-disabled:cursor-not-allowed",
     "disabled:opacity-disabled disabled:cursor-not-allowed",
@@ -261,10 +264,20 @@ function getButtonProps(options: ButtonOptions) {
 }
 
 export interface ButtonProps
-  extends
-    RACButtonProps,
-    ButtonOptions,
-    React.RefAttributes<HTMLButtonElement> {
+  extends Omit<ComponentPropsWithRef<"button">, "disabled">, ButtonOptions {
+  /**
+   * Kept from react-aria for now, and mapped to a click: renaming it at ~150
+   * call sites is its own change, so that a visual diff here can only be the
+   * new internals.
+   */
+  onPress?: (event: MouseEvent<HTMLElement>) => void;
+  isDisabled?: boolean;
+  /**
+   * Holds the button in flight: it keeps its focus and its tooltip — hence
+   * `aria-disabled` rather than `disabled` — swallows presses, and shows a
+   * spinner. react-aria's button had this built in; Base UI's does not.
+   */
+  isPending?: boolean;
   /**
    * Run an asynchronous action when the button is pressed.
    * Automatically set the button in pending mode and
@@ -297,6 +310,10 @@ export function Button({
   children,
   onAsyncAction,
   onPress,
+  onClick,
+  isDisabled,
+  isPending,
+  type = "button",
   ...props
 }: ButtonProps) {
   const buttonProps = getButtonProps({
@@ -305,60 +322,81 @@ export function Button({
     iconOnly,
     showFocusRing,
   });
-  const [isPending, setIsPending] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const pending = isPending ?? isRunning;
   return (
-    <RACButton
+    <BaseButton
       {...buttonProps}
       className={clsx(buttonProps.className, "cursor-default", className)}
-      isPending={props.isPending ?? isPending}
-      onPress={(event) => {
+      disabled={isDisabled}
+      // Pending is not disabled: the button stays focusable, so it keeps its
+      // place in the tab order and its tooltip stays reachable.
+      aria-disabled={pending || undefined}
+      type={type}
+      onClick={(event) => {
+        if (pending) {
+          event.preventDefault();
+          return;
+        }
         onPress?.(event);
+        onClick?.(event);
         const promise = onAsyncAction?.();
         if (promise) {
-          setIsPending(true);
+          setIsRunning(true);
           promise
             .catch((error) => {
               toast.error(getErrorMessage(error));
             })
             .finally(() => {
-              setIsPending(false);
+              setIsRunning(false);
             });
         }
       }}
       {...props}
     >
-      {(renderProps) => {
-        const childrenRes =
-          typeof children === "function" ? children(renderProps) : children;
-        if (renderProps.isPending) {
-          if (iconOnly) {
-            return <Loader delay={0} />;
-          }
-          return (
-            <>
-              <ButtonIcon>
-                <Loader delay={0} />
-              </ButtonIcon>
-              {childrenRes}
-            </>
-          );
-        }
-        return childrenRes;
-      }}
-    </RACButton>
+      {pending ? (
+        iconOnly ? (
+          <Loader delay={0} />
+        ) : (
+          <>
+            <ButtonIcon>
+              <Loader delay={0} />
+            </ButtonIcon>
+            {children}
+          </>
+        )
+      ) : (
+        children
+      )}
+    </BaseButton>
   );
 }
 
 export interface LinkButtonProps
-  extends RACLinkProps, ButtonOptions, React.RefAttributes<HTMLAnchorElement> {}
+  extends ComponentPropsWithRef<"a">, ButtonOptions {
+  /** Mapped to a click, like `Button`'s — renamed in its own change. */
+  onPress?: (event: MouseEvent<HTMLElement>) => void;
+  /**
+   * A link cannot be `disabled`, so it says so and refuses the navigation —
+   * which is what react-aria's `Link` did with the same prop.
+   */
+  isDisabled?: boolean;
+}
 
+/**
+ * A link wearing the button's clothes. `RouterLink` keeps an in-app path on
+ * the client router and leaves a scheme like `codex://` a plain anchor —
+ * which is what react-aria's `RouterProvider` used to do for every link.
+ */
 export function LinkButton({
-  ref,
   className,
   variant,
   size,
   iconOnly,
   showFocusRing,
+  onPress,
+  onClick,
+  isDisabled,
   ...props
 }: LinkButtonProps) {
   const buttonProps = getButtonProps({
@@ -368,10 +406,18 @@ export function LinkButton({
     showFocusRing,
   });
   return (
-    <RACLink
-      ref={ref}
+    <RouterLink
       {...buttonProps}
       className={clsx(buttonProps.className, className)}
+      aria-disabled={isDisabled || undefined}
+      onClick={(event) => {
+        if (isDisabled) {
+          event.preventDefault();
+          return;
+        }
+        onPress?.(event);
+        onClick?.(event);
+      }}
       {...props}
     />
   );

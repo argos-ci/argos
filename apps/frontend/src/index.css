@@ -323,6 +323,52 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant search-cancel (&::-webkit-search-cancel-button);
 
+/**
+ * Hover, but only where it can lead somewhere.
+ *
+ * Hovering promises that pressing will do something. Three kinds of control
+ * cannot keep that promise, and none of them should light up:
+ *
+ * - **Disabled.** react-aria set `data-hovered` only while the control was
+ *   enabled; native `:hover` matches a disabled button happily, and
+ *   `aria-disabled` — which a pending button wears so it keeps its focus and
+ *   its tooltip — is invisible to `:disabled`.
+ * - **The chosen tab.** It is already the one you are on.
+ * - **The open trigger.** Its menu is already showing; the fill it wears says
+ *   so, and moving it under the pointer reads as the menu about to change.
+ *
+ * A pressed *toggle* is none of these — pressing it again turns it off — so it
+ * keeps its hover.
+ */
+@custom-variant enabled-hover (
+  &:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]):not(
+      [aria-expanded="true"]
+    ):not([data-popup-open]):hover
+);
+@custom-variant enabled-active (
+  &:not(:disabled):not([aria-disabled="true"]):active
+);
+
+/**
+ * A control that is currently on.
+ *
+ * Four attributes for one idea, because each kind of control spells it its own
+ * way: a toggle says `aria-pressed`, a tab says `aria-selected`, and a trigger
+ * whose menu is showing says `aria-expanded` — plus Base UI's own
+ * `data-popup-open`, which its triggers set alongside it. The button surface
+ * is worn by all of them, so the "on" look has to answer to any of them.
+ *
+ * `="true"` matters: `aria-selected="false"` is on every unselected tab.
+ */
+@custom-variant on (
+  &:is(
+      [aria-pressed="true"],
+      [aria-selected="true"],
+      [aria-expanded="true"],
+      [data-popup-open]
+    )
+);
+
 @utility rac-focus {
   &[data-focused]:not([data-focus-visible]) {
     @apply outline-none;
