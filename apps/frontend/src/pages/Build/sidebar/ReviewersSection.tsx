@@ -204,13 +204,13 @@ export function ReviewersSection(props: { build: Build }) {
         />
       )}
       <Modal
-        isOpen={Boolean(reviewToDismiss)}
+        open={Boolean(reviewToDismiss)}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
             setReviewToDismiss(null);
           }
         }}
-        isDismissable
+        dismissible
       >
         {reviewToDismiss ? (
           <DismissReviewDialog

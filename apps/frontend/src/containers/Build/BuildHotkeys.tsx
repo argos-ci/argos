@@ -518,14 +518,14 @@ const BuildHotkeysDialogWithState = memo(
       state.setIsOpen((value) => !value),
     );
     return (
-      <Modal isOpen={state.isOpen} onOpenChange={state.setIsOpen} isDismissable>
+      <Modal open={state.isOpen} onOpenChange={state.setIsOpen} dismissible>
         <Dialog>
           <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
             <Button
               variant="secondary"
               iconOnly
-              slot="close"
+              onPress={() => state.setIsOpen(false)}
               aria-label="Close"
               className="absolute top-3 right-3 z-10"
             >

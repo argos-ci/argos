@@ -8,7 +8,7 @@ import {
   ListBoxItemIcon,
   ListBoxSeparator,
 } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { GitLabLogo } from "./GitLab";
@@ -56,7 +56,7 @@ export const GitlabNamespacesSelect = (props: {
         </div>
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ListBox>
           {namespaces.map((namespace) => {
             return (
@@ -86,7 +86,7 @@ export const GitlabNamespacesSelect = (props: {
             Switch Git Provider
           </ListBoxItem>
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 };

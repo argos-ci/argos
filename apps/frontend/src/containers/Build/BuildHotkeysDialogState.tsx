@@ -3,7 +3,7 @@ import { createContext, use, useMemo, useState } from "react";
 import { ModalProps } from "@/ui/Modal";
 
 export type HotkeysDialogState = {
-  isOpen: ModalProps["isOpen"];
+  isOpen: ModalProps["open"];
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 

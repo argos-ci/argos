@@ -71,7 +71,7 @@ import {
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { PageLoader } from "@/ui/PageLoader";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { StatTile } from "@/ui/StatTile";
 import { Text } from "@/ui/Text";
@@ -1374,7 +1374,7 @@ function PeriodSelect(props: {
       <SelectButton className="w-full shrink-0 text-sm whitespace-nowrap">
         {PeriodLabels[props.value]}
       </SelectButton>
-      <Popover>
+      <SelectPopover>
         <ListBox>
           {Object.entries(PeriodLabels).map(([key, label]) => {
             return (
@@ -1384,7 +1384,7 @@ function PeriodSelect(props: {
             );
           })}
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

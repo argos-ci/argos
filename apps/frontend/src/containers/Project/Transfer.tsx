@@ -378,7 +378,7 @@ const SuccessStep = (props: SuccessStepProps) => {
       <DialogFooter>
         <DialogDismiss
           single
-          onPress={() => {
+          onClick={() => {
             props.onContinue();
           }}
         >

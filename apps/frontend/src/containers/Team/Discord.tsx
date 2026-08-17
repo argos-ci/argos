@@ -285,7 +285,7 @@ function WebhookActionsMenu(props: { webhook: DiscordWebhook }) {
           </MenuItem>
         </Menu>
       </MenuRoot>
-      <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Modal open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DeleteWebhookDialog webhook={webhook} />
       </Modal>
     </>
@@ -320,7 +320,7 @@ function DeleteWebhookDialog(props: { webhook: DiscordWebhook }) {
         {error ? (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         ) : null}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
         <Button
           variant="destructive"
           isPending={loading}

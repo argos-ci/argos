@@ -701,7 +701,7 @@ function CommentMessage(props: {
         </div>
         <CommentReactionList comment={comment} />
       </div>
-      <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Modal open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DeleteCommentDialog commentId={comment.id} />
       </Modal>
     </>

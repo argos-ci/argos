@@ -344,13 +344,13 @@ export function PasskeyAuth(props: {
       </ProviderCard>
 
       {editing.value ? (
-        <Modal isOpen={editing.isOpen} onOpenChange={editing.onOpenChange}>
+        <Modal open={editing.isOpen} onOpenChange={editing.onOpenChange}>
           <EditPasskeyDialog passkey={editing.value} />
         </Modal>
       ) : null}
 
       {deleting.value ? (
-        <Modal isOpen={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
+        <Modal open={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
           <DeletePasskeyDialog passkey={deleting.value} />
         </Modal>
       ) : null}

@@ -1,6 +1,5 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentProps } from "react";
 import { SmilePlusIcon } from "lucide-react";
-import { DialogTrigger, type PopoverProps } from "react-aria-components";
 import {
   useController,
   type Control,
@@ -14,9 +13,10 @@ import { Button, type ButtonProps } from "./Button";
 import { Dialog } from "./Dialog";
 import type { Emoji, EmojiPickerProps } from "./EmojiPickerGrid";
 import { Loader } from "./Loader";
+import { DialogTrigger } from "./Overlay";
 import { Popover } from "./Popover";
 
-export { DialogTrigger as EmojiPickerTrigger } from "react-aria-components";
+export { DialogTrigger as EmojiPickerTrigger } from "./Overlay";
 
 /**
  * The picker grid carries the full emojibase dataset — 571 kB of JSON, plus the
@@ -52,7 +52,10 @@ export function EmojiPicker(props: EmojiPickerProps) {
   );
 }
 
-export type EmojiPickerPopoverProps = Omit<PopoverProps, "children"> & {
+export type EmojiPickerPopoverProps = Omit<
+  ComponentProps<typeof Popover>,
+  "children"
+> & {
   /** Called with the selected {@link Emoji} (use `emoji.emoji` for the character). */
   onEmojiSelect: (emoji: Emoji) => void;
 };

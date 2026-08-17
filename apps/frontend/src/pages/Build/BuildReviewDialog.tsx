@@ -39,7 +39,7 @@ export function useReviewDialog() {
 }
 
 const BuildReviewModal = memo(function BuildReviewModal(props: {
-  isOpen: NonNullable<ModalProps["isOpen"]>;
+  isOpen: NonNullable<ModalProps["open"]>;
   onOpenChange: NonNullable<ModalProps["onOpenChange"]>;
   project: DocumentType<typeof _ProjectFragment>;
 }) {
@@ -48,7 +48,7 @@ const BuildReviewModal = memo(function BuildReviewModal(props: {
     return null;
   }
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
+    <Modal open={isOpen} onOpenChange={onOpenChange} dismissible>
       {/* Same review surface as the header popover, just hosted in a modal. */}
       <Dialog aria-label="Submit your review">
         <BuildReviewForm

@@ -1,5 +1,5 @@
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { AccountItem, AccountItemProps } from "./AccountItem";
@@ -39,7 +39,7 @@ export function AccountSelector(props: {
         )}
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ListBox>
           {props.accounts.map((account) => {
             const disabledReason = props.disabledReasons?.[account.id];
@@ -62,7 +62,7 @@ export function AccountSelector(props: {
             );
           })}
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

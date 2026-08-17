@@ -28,7 +28,7 @@ import {
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 const _ProjectFragment = graphql(`
@@ -66,9 +66,9 @@ function ProjectDefaultUserLevelField(props: { control: Control<Inputs> }) {
           : ProjectContributorLevelLabel[controller.field.value]}
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ProjectContributorLevelListBox clearable />
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }

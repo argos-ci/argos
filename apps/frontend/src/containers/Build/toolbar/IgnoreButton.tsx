@@ -2,7 +2,6 @@ import { memo, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
-import { DialogTrigger } from "react-aria-components";
 
 import { useAuth } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -11,6 +10,7 @@ import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
+import { DialogTrigger } from "@/ui/Dialog";
 import {
   Dialog,
   DialogBody,
@@ -171,7 +171,7 @@ function EnabledIgnoreButton(props: {
         />
       </HotkeyTooltip>
       <DialogTrigger
-        isOpen={dialog === "ignore"}
+        open={dialog === "ignore"}
         onOpenChange={(open) => {
           if (!open) {
             setDialog(null);
@@ -215,7 +215,7 @@ function EnabledIgnoreButton(props: {
         </Modal>
       </DialogTrigger>
       <DialogTrigger
-        isOpen={dialog === "unignore"}
+        open={dialog === "unignore"}
         onOpenChange={(open) => {
           if (!open) {
             setDialog(null);

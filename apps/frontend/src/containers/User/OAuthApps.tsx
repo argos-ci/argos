@@ -251,7 +251,7 @@ export function OAuthApps(props: {
       </CardBody>
 
       {revoking.value ? (
-        <Modal isOpen={revoking.isOpen} onOpenChange={revoking.onOpenChange}>
+        <Modal open={revoking.isOpen} onOpenChange={revoking.onOpenChange}>
           <RevokeAppDialog
             accountId={account.id}
             id={revoking.value.id}

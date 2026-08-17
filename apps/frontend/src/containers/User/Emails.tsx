@@ -1,7 +1,6 @@
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon, PlusIcon } from "lucide-react";
-import { DialogTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -13,6 +12,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
+import { DialogTrigger } from "@/ui/Dialog";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListRow } from "@/ui/List";
 import {
@@ -185,7 +185,7 @@ export function UserEmails(props: {
         primary email.
       </CardFooter>
       {deleting.value ? (
-        <Modal isOpen={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
+        <Modal open={deleting.isOpen} onOpenChange={deleting.onOpenChange}>
           <DeleteUserEmailDialog email={deleting.value} />
         </Modal>
       ) : null}

@@ -15,7 +15,7 @@ import {
   ListBoxItemDescription,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { SelectButton, SelectField } from "@/ui/Select";
 
 type DeploymentAuthLevel =
@@ -100,7 +100,7 @@ export function DeploymentAuthentication(props: {
                   {deploymentAuthDef.label}
                 </SelectButton>
                 <FieldError />
-                <Popover className="max-w-sm">
+                <SelectPopover className="max-w-sm">
                   <ListBox>
                     <ListBoxItem
                       id={DeploymentAuth.DomainPrivate}
@@ -123,7 +123,7 @@ export function DeploymentAuthentication(props: {
                       </ListBoxItemDescription>
                     </ListBoxItem>
                   </ListBox>
-                </Popover>
+                </SelectPopover>
               </SelectField>
             )}
           </div>

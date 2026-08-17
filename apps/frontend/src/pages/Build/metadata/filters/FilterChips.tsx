@@ -5,7 +5,6 @@ import { XIcon } from "lucide-react";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip, ChipButton } from "@/ui/Chip";
 import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
-import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 import { Truncable } from "@/ui/Truncable";
 
@@ -117,14 +116,12 @@ const ChipValueButton = (props: {
           </div>
         </ChipButton>
       </MenuTrigger>
-      <Popover placement="bottom start">
-        <FilterCategoryMenu
-          filterGroup={filterGroup}
-          state={state}
-          className="min-w-32"
-          splitSelected
-        />
-      </Popover>
+      <FilterCategoryMenu
+        filterGroup={filterGroup}
+        state={state}
+        className="min-w-32"
+        splitSelected
+      />
     </MenuRoot>
   );
 };

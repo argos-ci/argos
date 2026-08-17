@@ -128,13 +128,13 @@ export function RejectCommentDialogProvider(props: {
       {children}
       {build ? (
         <Modal
-          isOpen={state != null}
+          open={state != null}
           onOpenChange={(open) => {
             if (!open) {
               setState(null);
             }
           }}
-          isDismissable
+          dismissible
         >
           {state ? (
             <RejectCommentDialog
@@ -284,7 +284,7 @@ function RejectCommentDialog(props: {
           closes the dialog after `onPress`. Skipping still advances to the next
           diff to review, matching a submitted note.
         */}
-        <DialogDismiss onPress={onProceed}>Skip</DialogDismiss>
+        <DialogDismiss onClick={onProceed}>Skip</DialogDismiss>
         <Button
           variant="primary"
           isPending={isPending}

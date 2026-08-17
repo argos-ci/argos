@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
-import { DialogTrigger } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
@@ -19,6 +18,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
+import { DialogTrigger } from "@/ui/Dialog";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { Heading } from "@/ui/Heading";

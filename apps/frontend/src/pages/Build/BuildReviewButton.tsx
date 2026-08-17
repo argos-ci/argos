@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { DialogTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
+import { DialogTrigger } from "@/ui/Dialog";
 import { Dialog } from "@/ui/Dialog";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
@@ -37,7 +37,7 @@ function BaseReviewButton(props: {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+    <DialogTrigger open={isOpen} onOpenChange={setIsOpen}>
       <Button
         className="shrink-0"
         isDisabled={props.disabled}
@@ -45,7 +45,7 @@ function BaseReviewButton(props: {
       >
         {props.children ?? "Submit review"}
       </Button>
-      <Popover placement="bottom end" className="overflow-hidden">
+      <Popover side="bottom" align="end" className="overflow-hidden">
         <Dialog aria-label="Submit review">
           <BuildReviewForm
             build={props.build}

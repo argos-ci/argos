@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Label } from "./Label";
 import { ListBox, ListBoxItem } from "./ListBox";
-import { Popover } from "./Popover";
+import { SelectPopover } from "./Popover";
 import { Select, SelectButton, SelectValue } from "./Select";
 import {
   openOverlayParameters,
@@ -24,22 +24,22 @@ export const Default: Story = {
       <Select placeholder="Choose…">
         <Label>Small</Label>
         <SelectButton size="sm">Choose…</SelectButton>
-        <Popover>
+        <SelectPopover>
           <ListBox>
             <ListBoxItem id="a">Option A</ListBoxItem>
             <ListBoxItem id="b">Option B</ListBoxItem>
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </Select>
       <Select placeholder="Choose…">
         <Label>Medium</Label>
         <SelectButton size="md">Choose…</SelectButton>
-        <Popover>
+        <SelectPopover>
           <ListBox>
             <ListBoxItem id="a">Option A</ListBoxItem>
             <ListBoxItem id="b">Option B</ListBoxItem>
           </ListBox>
-        </Popover>
+        </SelectPopover>
       </Select>
     </div>
   ),
@@ -59,13 +59,13 @@ export const Open: Story = {
           <SelectButton size="sm">
             <SelectValue />
           </SelectButton>
-          <Popover>
+          <SelectPopover>
             <ListBox>
               <ListBoxItem id="a">Option A</ListBoxItem>
               <ListBoxItem id="b">Option B</ListBoxItem>
               <ListBoxItem id="c">Option C</ListBoxItem>
             </ListBox>
-          </Popover>
+          </SelectPopover>
         </Select>
       </OverlaySlot>
 
@@ -74,7 +74,7 @@ export const Open: Story = {
           <SelectButton size="md">
             <SelectValue />
           </SelectButton>
-          <Popover>
+          <SelectPopover>
             <ListBox>
               <ListBoxItem id="a">Option A</ListBoxItem>
               <ListBoxItem id="b">Option B</ListBoxItem>
@@ -82,7 +82,7 @@ export const Open: Story = {
                 Option C
               </ListBoxItem>
             </ListBox>
-          </Popover>
+          </SelectPopover>
         </Select>
       </OverlaySlot>
     </OverlayStage>

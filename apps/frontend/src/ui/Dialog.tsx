@@ -1,23 +1,30 @@
-import { ComponentPropsWithRef, createContext, use, useState } from "react";
+import {
+  cloneElement,
+  ComponentPropsWithRef,
+  createContext,
+  use,
+  useEffect,
+  useId,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import {
-  Heading,
-  OverlayTriggerStateContext,
-  Dialog as RACDialog,
-  DialogProps as RACDialogProps,
-} from "react-aria-components";
-import type { OverlayTriggerState } from "react-stately";
 
 import { Button, ButtonProps } from "./Button";
 import { ModalActionContext } from "./Modal";
+import { useOverlayTriggerState } from "./Overlay";
 import { usePersistentValue } from "./usePersistentValue";
 
-export { DialogTrigger } from "react-aria-components";
+export { DialogTrigger, useOverlayTriggerState } from "./Overlay";
 
-type DialogRole = NonNullable<RACDialogProps["role"]>;
+type DialogRole = "dialog" | "alertdialog";
 
 const DialogRoleContext = createContext<DialogRole>("dialog");
+
+/** Set by `Dialog`, read by `DialogTitle` so the dialog can label itself. */
+const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
 export function DialogFooter(props: ComponentPropsWithRef<"div">) {
   const role = use(DialogRoleContext);
@@ -53,25 +60,37 @@ export function DialogBody(props: ComponentPropsWithRef<"div">) {
   );
 }
 
+/**
+ * The dialog's title, and what names it: the dialog points its
+ * `aria-labelledby` here.
+ *
+ * A dialog that wants its title to read differently passes the element to
+ * render, and gets the wiring without the styling — the same `render` escape
+ * hatch Base UI's own parts take:
+ *
+ * ```tsx
+ * <DialogTitle render={<h2 className="mb-4 font-medium" />}>
+ *   Customize overlay
+ * </DialogTitle>
+ * ```
+ */
 export function DialogTitle(props: {
   ref?: React.Ref<HTMLHeadingElement>;
   children: React.ReactNode;
+  render?: ReactElement<{ id?: string; children?: ReactNode }>;
 }) {
-  const { ref, children } = props;
+  const { ref, children, render } = props;
+  const id = use(DialogTitleIdContext);
+  if (render) {
+    // Only the id: a caller who renders their own element puts their own ref
+    // on it, and threading one through here would be reading a ref in render.
+    return cloneElement(render, { id }, children);
+  }
   return (
-    <Heading ref={ref} slot="title" className="mb-4 text-xl font-medium">
+    <h2 ref={ref} id={id} className="mb-4 text-xl font-medium">
       {children}
-    </Heading>
+    </h2>
   );
-}
-
-export function useOverlayTriggerState(): OverlayTriggerState {
-  const ctx = use(OverlayTriggerStateContext);
-  invariant(
-    ctx,
-    "useOverlayTriggerState must be used within an OverlayTrigger",
-  );
-  return ctx;
 }
 
 /**
@@ -95,9 +114,9 @@ export function useDialogValueState<S>(initialState: S | (() => S)) {
 export function DialogDismiss(props: {
   ref?: React.Ref<HTMLButtonElement>;
   children: React.ReactNode;
-  onPress?: ButtonProps["onPress"];
+  onClick?: () => void;
   single?: boolean;
-  isDisabled?: boolean;
+  disabled?: boolean;
 }) {
   const { ref, ...rest } = props;
   const state = useOverlayTriggerState();
@@ -107,11 +126,11 @@ export function DialogDismiss(props: {
       ref={ref}
       className={rest.single ? "flex-1 justify-center" : undefined}
       variant="secondary"
-      onPress={(event) => {
-        props.onPress?.(event);
+      onPress={() => {
+        props.onClick?.();
         state.close();
       }}
-      isDisabled={rest.isDisabled || actionContext?.isPending}
+      isDisabled={rest.disabled || actionContext?.isPending}
     >
       {rest.children}
     </Button>
@@ -149,8 +168,16 @@ export function DialogActionButton(
   );
 }
 
-type DialogProps = RACDialogProps & {
+type DialogProps = {
   ref?: React.Ref<HTMLDivElement>;
+  role?: DialogRole;
+  className?: string;
+  "aria-label"?: string;
+  /**
+   * The dialog's content — or a function of the overlay state, for content
+   * that closes the dialog itself.
+   */
+  children?: ReactNode | ((state: { close: () => void }) => ReactNode);
   size?: "auto" | "medium";
   /**
    * Whether the dialog should be scrollable or not.
@@ -159,27 +186,59 @@ type DialogProps = RACDialogProps & {
   scrollable?: boolean;
 };
 
+/**
+ * The dialog itself, inside a `Modal` or a `Popover`.
+ *
+ * This element carries the `dialog` / `alertdialog` role, exactly as it did on
+ * react-aria — the overlay popup around it stays `presentation` — so
+ * `getByRole("dialog")` keeps finding one element, and its box.
+ */
 export function Dialog({
   className,
   size = "auto",
   scrollable = true,
   ...props
 }: DialogProps) {
-  const { ref, role, ...rest } = props;
+  const { ref, role, children, "aria-label": ariaLabel, ...rest } = props;
+  const state = useOverlayTriggerState();
+  const titleId = useId();
+  // A dialog names itself through its `DialogTitle`, so one that has neither a
+  // title nor an `aria-label` points `aria-labelledby` at nothing and ends up
+  // with no accessible name at all. Nothing sees that — not a screenshot, not
+  // a type — so say it out loud where the browser can.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || ariaLabel) {
+      return;
+    }
+    if (!document.getElementById(titleId)) {
+      console.warn(
+        "A dialog has no accessible name: it renders no `DialogTitle`, and no `aria-label` was given. Add one of the two.",
+      );
+    }
+  }, [ariaLabel, titleId]);
   return (
     <DialogRoleContext value={role ?? "dialog"}>
-      <RACDialog
-        ref={ref}
-        role={role}
-        className={clsx(
-          className,
-          "relative max-h-[inherit] max-w-full focus:outline-hidden",
-          role === "alertdialog" && size === "auto" ? "w-xl" : null,
-          size === "medium" && "w-xl",
-          scrollable === false ? "overflow-hidden" : "overflow-auto",
-        )}
-        {...rest}
-      />
+      <DialogTitleIdContext value={ariaLabel ? undefined : titleId}>
+        <div
+          ref={ref}
+          role={role ?? "dialog"}
+          aria-modal="true"
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabel ? undefined : titleId}
+          className={clsx(
+            className,
+            "relative max-h-[inherit] max-w-full focus:outline-hidden",
+            role === "alertdialog" && size === "auto" ? "w-xl" : null,
+            size === "medium" && "w-xl",
+            scrollable === false ? "overflow-hidden" : "overflow-auto",
+          )}
+          {...rest}
+        >
+          {typeof children === "function"
+            ? children({ close: state.close })
+            : children}
+        </div>
+      </DialogTitleIdContext>
     </DialogRoleContext>
   );
 }

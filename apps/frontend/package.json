@@ -86,7 +86,6 @@
     "react-helmet": "^6.1.0",
     "react-hook-form": "^7.84.0",
     "react-router": "catalog:",
-    "react-stately": "^3.49.0",
     "react-twc": "^1.5.1",
     "recharts": "^3.10.1",
     "rxjs": "^7.8.2",

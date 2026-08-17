@@ -9,7 +9,7 @@ import {
   ListBoxItemIcon,
   ListBoxSeparator,
 } from "@/ui/ListBox";
-import { Popover } from "@/ui/Popover";
+import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { getGitHubAppInstallURL } from "./GitHub";
@@ -73,7 +73,7 @@ export function GithubInstallationsSelect(props: {
         )}
       </SelectButton>
 
-      <Popover>
+      <SelectPopover>
         <ListBox>
           {installations.map((installation) => {
             return (
@@ -116,7 +116,7 @@ export function GithubInstallationsSelect(props: {
             </ListBoxItem>
           )}
         </ListBox>
-      </Popover>
+      </SelectPopover>
     </Select>
   );
 }
