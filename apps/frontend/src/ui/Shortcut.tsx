@@ -1,14 +1,17 @@
 import { clsx } from "clsx";
 
-import { Kbd } from "./Kbd";
+import { menuItemSuffixClassName } from "./menuStyle";
 
 /**
- * A keyboard shortcut, wherever it is shown.
+ * A keyboard shortcut on a menu row.
  *
- * One component because the same shortcut used to render three ways depending
- * on where you read it: plain text on a menu row, boxed keys in the editor's
- * slash menu, and boxed keys again — with different spacing — in a hotkey
- * tooltip. Keys are given one per box, so `["⌘", "E"]` rather than `"⌘E"`.
+ * Plain muted text rather than boxed keys: a menu is already a list of framed
+ * rows, and a row of little boxes down its right edge competes with the words
+ * it is meant to annotate. The boxed {@link Kbd} is still right where the keys
+ * are the subject — the hotkeys dialog, the build summary's hints — rather
+ * than a footnote to a command.
+ *
+ * Keys are given one per element, so `["⌘", "E"]` rather than `"⌘E"`.
  */
 export function Shortcut(props: {
   keys: readonly string[];
@@ -19,9 +22,17 @@ export function Shortcut(props: {
     return null;
   }
   return (
-    <span className={clsx("flex shrink-0 items-center gap-0.5", className)}>
+    <span
+      className={clsx(
+        menuItemSuffixClassName,
+        // `<kbd>` is monospace by default, which reads as a second typeface
+        // next to the row's label.
+        "flex items-center gap-1 [&>kbd]:font-sans",
+        className,
+      )}
+    >
       {keys.map((key) => (
-        <Kbd key={key}>{key}</Kbd>
+        <kbd key={key}>{key}</kbd>
       ))}
     </span>
   );
