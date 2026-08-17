@@ -324,22 +324,26 @@
 @custom-variant search-cancel (&::-webkit-search-cancel-button);
 
 /**
- * Hover and press, but only on a control they can lead somewhere.
+ * Hover, but only where it can lead somewhere.
  *
- * react-aria set `data-hovered` / `data-pressed` only while the control was
- * enabled, so a disabled button never took a hover fill. Native `:hover` has
- * no such scruples — it matches a disabled button too — and `aria-disabled`,
- * which a pending button wears so it keeps its focus and its tooltip, is
- * invisible to `:disabled`.
+ * Hovering promises that pressing will do something. Three kinds of control
+ * cannot keep that promise, and none of them should light up:
  *
- * A selected tab is left out of the hover for the same reason rather than a
- * different one: it is already the chosen one, so lighting it up would promise
- * something that pressing it cannot deliver. Its fill, its edge and its shadow
- * all stay exactly where they are. A pressed *toggle* is not the same thing —
- * pressing it again turns it off — so it keeps its hover.
+ * - **Disabled.** react-aria set `data-hovered` only while the control was
+ *   enabled; native `:hover` matches a disabled button happily, and
+ *   `aria-disabled` — which a pending button wears so it keeps its focus and
+ *   its tooltip — is invisible to `:disabled`.
+ * - **The chosen tab.** It is already the one you are on.
+ * - **The open trigger.** Its menu is already showing; the fill it wears says
+ *   so, and moving it under the pointer reads as the menu about to change.
+ *
+ * A pressed *toggle* is none of these — pressing it again turns it off — so it
+ * keeps its hover.
  */
 @custom-variant enabled-hover (
-  &:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]):hover
+  &:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]):not(
+      [aria-expanded="true"]
+    ):not([data-popup-open]):hover
 );
 @custom-variant enabled-active (
   &:not(:disabled):not([aria-disabled="true"]):active
