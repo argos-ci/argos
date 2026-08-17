@@ -1,5 +1,4 @@
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { AccountItem, AccountItemProps } from "./AccountItem";
@@ -17,7 +16,14 @@ export function AccountSelector(props: {
   disabledReasons?: Record<string, string>;
 }) {
   if (!props.accounts) {
-    return <SelectButton isDisabled>Loading…</SelectButton>;
+    // Still a real select, just an empty disabled one: `SelectButton` is Base
+    // UI's trigger and has to have its root above it.
+    return (
+      <Select aria-label="Accounts" disabled>
+        <SelectButton className="w-full">Loading…</SelectButton>
+        <ListBox>{null}</ListBox>
+      </Select>
+    );
   }
 
   const activeAccount =
@@ -29,7 +35,7 @@ export function AccountSelector(props: {
     <Select
       aria-label="Accounts"
       value={props.value}
-      onChange={(value) => props.setValue(String(value))}
+      onValueChange={(value) => props.setValue(String(value))}
     >
       <SelectButton className="w-full">
         {activeAccount ? (
@@ -39,30 +45,27 @@ export function AccountSelector(props: {
         )}
       </SelectButton>
 
-      <SelectPopover>
-        <ListBox>
-          {props.accounts.map((account) => {
-            const disabledReason = props.disabledReasons?.[account.id];
-            return (
-              <ListBoxItem
-                key={account.id}
-                id={account.id}
-                isDisabled={Boolean(disabledReason)}
-                textValue={account.name || account.slug}
-              >
-                <div className="flex w-full items-center justify-between gap-4">
-                  <AccountItem account={account} showPlan />
-                  {disabledReason ? (
-                    <span className="text-low shrink-0 text-xs">
-                      {disabledReason}
-                    </span>
-                  ) : null}
-                </div>
-              </ListBoxItem>
-            );
-          })}
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        {props.accounts.map((account) => {
+          const disabledReason = props.disabledReasons?.[account.id];
+          return (
+            <ListBoxItem
+              key={account.id}
+              value={account.id}
+              disabled={Boolean(disabledReason)}
+            >
+              <div className="flex w-full items-center justify-between gap-4">
+                <AccountItem account={account} showPlan />
+                {disabledReason ? (
+                  <span className="text-low shrink-0 text-xs">
+                    {disabledReason}
+                  </span>
+                ) : null}
+              </div>
+            </ListBoxItem>
+          );
+        })}
+      </ListBox>
     </Select>
   );
 }

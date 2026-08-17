@@ -1,58 +1,62 @@
-import type { RefAttributes } from "react";
-import { SelectValue, type SelectProps } from "react-aria-components";
-
 import {
   ListBox,
   ListBoxItem,
   ListBoxItemDescription,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
-import { Select, SelectButton, type SelectButtonProps } from "@/ui/Select";
+import {
+  Select,
+  SelectButton,
+  SelectValue,
+  type SelectButtonProps,
+} from "@/ui/Select";
+
+/** What each role is called, so the trigger can name the chosen one. */
+const MemberLevelLabels = {
+  contributor: "Contributor",
+  member: "Member",
+  owner: "Owner",
+};
 
 export function MemberLevelSelect(
   props: {
     hasFineGrainedAccessControl: boolean;
     className?: string;
-  } & SelectProps<object> &
-    Pick<SelectButtonProps, "size"> &
-    RefAttributes<HTMLDivElement>,
+  } & Omit<React.ComponentProps<typeof Select<string>>, "children" | "items"> &
+    Pick<SelectButtonProps, "size">,
 ) {
   const { hasFineGrainedAccessControl, size, className, ...rest } = props;
 
   return (
-    <Select aria-label="User role" className={className} {...rest}>
+    <Select
+      aria-label="User role"
+      items={MemberLevelLabels}
+      className={className}
+      {...rest}
+    >
       <SelectButton size={size}>
-        <SelectValue>
-          {({ selectedText, defaultChildren }) => {
-            return selectedText ?? defaultChildren;
-          }}
-        </SelectValue>
+        <SelectValue />
       </SelectButton>
-      <SelectPopover>
-        <ListBox>
-          {hasFineGrainedAccessControl && (
-            <ListBoxItem id="contributor" textValue="Contributor">
-              <ListBoxItemLabel>Contributor</ListBoxItemLabel>
-              <ListBoxItemDescription>
-                Access control at the project level
-              </ListBoxItemDescription>
-            </ListBoxItem>
-          )}
-          <ListBoxItem id="member" textValue="Member">
-            <ListBoxItemLabel>Member</ListBoxItemLabel>
+      <ListBox>
+        {hasFineGrainedAccessControl && (
+          <ListBoxItem value="contributor">
+            <ListBoxItemLabel>Contributor</ListBoxItemLabel>
             <ListBoxItemDescription>
-              See and review builds
+              Access control at the project level
             </ListBoxItemDescription>
           </ListBoxItem>
-          <ListBoxItem id="owner" textValue="Owner">
-            <ListBoxItemLabel>Owner</ListBoxItemLabel>
-            <ListBoxItemDescription>
-              Admin level access to the entire team
-            </ListBoxItemDescription>
-          </ListBoxItem>
-        </ListBox>
-      </SelectPopover>
+        )}
+        <ListBoxItem value="member">
+          <ListBoxItemLabel>Member</ListBoxItemLabel>
+          <ListBoxItemDescription>See and review builds</ListBoxItemDescription>
+        </ListBoxItem>
+        <ListBoxItem value="owner">
+          <ListBoxItemLabel>Owner</ListBoxItemLabel>
+          <ListBoxItemDescription>
+            Admin level access to the entire team
+          </ListBoxItemDescription>
+        </ListBoxItem>
+      </ListBox>
     </Select>
   );
 }

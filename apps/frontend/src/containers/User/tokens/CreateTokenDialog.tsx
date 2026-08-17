@@ -22,7 +22,6 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { Pre } from "@/ui/Pre";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
@@ -304,19 +303,16 @@ export function CreateTokenDialog(props: {
                 <SelectButton className="w-full text-sm">
                   <SelectValue />
                 </SelectButton>
-                <SelectPopover>
-                  <ListBox>
-                    {EXPIRATION_OPTIONS.map((option) => (
-                      <ListBoxItem
-                        key={String(option.days ?? "no-expiration")}
-                        id={String(option.days ?? "no-expiration")}
-                        textValue={option.label}
-                      >
-                        {option.label}
-                      </ListBoxItem>
-                    ))}
-                  </ListBox>
-                </SelectPopover>
+                <ListBox>
+                  {EXPIRATION_OPTIONS.map((option) => (
+                    <ListBoxItem
+                      key={String(option.days ?? "no-expiration")}
+                      value={String(option.days ?? "no-expiration")}
+                    >
+                      {option.label}
+                    </ListBoxItem>
+                  ))}
+                </ListBox>
               </SelectField>
               {expireInDaysValue === "no-expiration" ? (
                 <div className="bg-pending-subtle text-pending-low mt-2 flex items-start gap-2 rounded-md p-2 text-xs">

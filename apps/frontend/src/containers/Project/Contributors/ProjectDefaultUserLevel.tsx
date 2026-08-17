@@ -28,7 +28,6 @@ import {
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { Modal } from "@/ui/Modal";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 const _ProjectFragment = graphql(`
@@ -50,7 +49,7 @@ function ProjectDefaultUserLevelField(props: { control: Control<Inputs> }) {
       name={controller.field.name}
       value={controller.field.value}
       onBlur={controller.field.onBlur}
-      onChange={(value) => {
+      onValueChange={(value) => {
         invariant(typeof value === "string");
         controller.field.onChange(value as ProjectUserLevel);
       }}
@@ -66,9 +65,7 @@ function ProjectDefaultUserLevelField(props: { control: Control<Inputs> }) {
           : ProjectContributorLevelLabel[controller.field.value]}
       </SelectButton>
 
-      <SelectPopover>
-        <ProjectContributorLevelListBox clearable />
-      </SelectPopover>
+      <ProjectContributorLevelListBox clearable />
     </Select>
   );
 }

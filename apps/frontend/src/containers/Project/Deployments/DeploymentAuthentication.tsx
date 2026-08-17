@@ -15,7 +15,6 @@ import {
   ListBoxItemDescription,
   ListBoxItemLabel,
 } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { SelectButton, SelectField } from "@/ui/Select";
 
 type DeploymentAuthLevel =
@@ -100,30 +99,24 @@ export function DeploymentAuthentication(props: {
                   {deploymentAuthDef.label}
                 </SelectButton>
                 <FieldError />
-                <SelectPopover className="max-w-sm">
-                  <ListBox>
-                    <ListBoxItem
-                      id={DeploymentAuth.DomainPrivate}
-                      textValue="Standard protection"
-                    >
-                      <ListBoxItemLabel>Standard protection</ListBoxItemLabel>
-                      <ListBoxItemDescription>
-                        Protect all except production custom domains for your
-                        project.
-                      </ListBoxItemDescription>
-                    </ListBoxItem>
-                    <ListBoxItem
-                      id={DeploymentAuth.Private}
-                      textValue="All deployments"
-                      isDisabled={!isTeam}
-                    >
-                      <ListBoxItemLabel>All deployments</ListBoxItemLabel>
-                      <ListBoxItemDescription>
-                        {isTeam ? "Protect all domains." : "Requires a team."}
-                      </ListBoxItemDescription>
-                    </ListBoxItem>
-                  </ListBox>
-                </SelectPopover>
+                <ListBox>
+                  <ListBoxItem value={DeploymentAuth.DomainPrivate}>
+                    <ListBoxItemLabel>Standard protection</ListBoxItemLabel>
+                    <ListBoxItemDescription>
+                      Protect all except production custom domains for your
+                      project.
+                    </ListBoxItemDescription>
+                  </ListBoxItem>
+                  <ListBoxItem
+                    value={DeploymentAuth.Private}
+                    disabled={!isTeam}
+                  >
+                    <ListBoxItemLabel>All deployments</ListBoxItemLabel>
+                    <ListBoxItemDescription>
+                      {isTeam ? "Protect all domains." : "Requires a team."}
+                    </ListBoxItemDescription>
+                  </ListBoxItem>
+                </ListBox>
               </SelectField>
             )}
           </div>

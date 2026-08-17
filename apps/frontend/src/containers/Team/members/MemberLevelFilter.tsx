@@ -1,10 +1,8 @@
-import { SelectValue } from "react-aria-components";
 import z from "zod";
 
 import { TeamUserLevel } from "@/gql/graphql";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
-import { Select, SelectButton } from "@/ui/Select";
+import { Select, SelectButton, SelectValue } from "@/ui/Select";
 
 const FilterUserLevelSchema = z.enum([
   "all",
@@ -14,6 +12,14 @@ const FilterUserLevelSchema = z.enum([
 ]);
 
 export type FilterUserLevel = z.infer<typeof FilterUserLevelSchema>;
+
+/** What each role is called, so the trigger can name the chosen one. */
+const FilterUserLevelLabels: Record<FilterUserLevel, string> = {
+  all: "All roles",
+  [TeamUserLevel.Contributor]: "Contributor",
+  [TeamUserLevel.Member]: "Member",
+  [TeamUserLevel.Owner]: "Owner",
+};
 
 export function MemberLevelFilter(props: {
   hasFineGrainedAccessControl: boolean;
@@ -25,22 +31,21 @@ export function MemberLevelFilter(props: {
   return (
     <Select
       aria-label="User role"
+      items={FilterUserLevelLabels}
       value={value}
-      onChange={(value) => onChange(FilterUserLevelSchema.parse(value))}
+      onValueChange={(value) => onChange(FilterUserLevelSchema.parse(value))}
     >
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <SelectPopover>
-        <ListBox>
-          <ListBoxItem id="all">All roles</ListBoxItem>
-          {hasFineGrainedAccessControl && (
-            <ListBoxItem id="contributor">Contributor</ListBoxItem>
-          )}
-          <ListBoxItem id="member">Member</ListBoxItem>
-          <ListBoxItem id="owner">Owner</ListBoxItem>
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        <ListBoxItem value="all">All roles</ListBoxItem>
+        {hasFineGrainedAccessControl && (
+          <ListBoxItem value="contributor">Contributor</ListBoxItem>
+        )}
+        <ListBoxItem value="member">Member</ListBoxItem>
+        <ListBoxItem value="owner">Owner</ListBoxItem>
+      </ListBox>
     </Select>
   );
 }

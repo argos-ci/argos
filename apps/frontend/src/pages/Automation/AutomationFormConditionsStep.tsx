@@ -8,9 +8,12 @@ import { useFieldArray } from "react-hook-form";
 import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { MenuItemIcon } from "@/ui/Menu";
-import { SelectPopover } from "@/ui/Popover";
+import {
+  ListBox,
+  ListBoxItem,
+  ListBoxItemIcon,
+  ListBoxItemLabel,
+} from "@/ui/ListBox";
 import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
 import {
   checkIsGlobCondition,
@@ -61,29 +64,20 @@ function BuildConclusionCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <SelectPopover>
-          <ListBox>
-            {conclusions.map(({ status, value }) => {
-              const descriptor = buildStatusDescriptors[status];
-              const Icon = descriptor.icon;
-              return (
-                <ListBoxItem
-                  key={value}
-                  id={value}
-                  textValue={descriptor.label}
-                  className="text-sm"
-                >
-                  <MenuItemIcon>
-                    <Icon
-                      className={lowTextColorClassNames[descriptor.color]}
-                    />
-                  </MenuItemIcon>
-                  {descriptor.label}
-                </ListBoxItem>
-              );
-            })}
-          </ListBox>
-        </SelectPopover>
+        <ListBox>
+          {conclusions.map(({ status, value }) => {
+            const descriptor = buildStatusDescriptors[status];
+            const Icon = descriptor.icon;
+            return (
+              <ListBoxItem key={value} value={value} className="text-sm">
+                <ListBoxItemIcon>
+                  <Icon className={lowTextColorClassNames[descriptor.color]} />
+                </ListBoxItemIcon>
+                {descriptor.label}
+              </ListBoxItem>
+            );
+          })}
+        </ListBox>
       </SelectField>
     </div>
   );
@@ -152,20 +146,13 @@ function BuildNameCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <SelectPopover>
-          <ListBox>
-            {buildNames.map((name) => (
-              <ListBoxItem
-                key={name}
-                id={name}
-                textValue={name}
-                className="text-sm"
-              >
-                {name}
-              </ListBoxItem>
-            ))}
-          </ListBox>
-        </SelectPopover>
+        <ListBox>
+          {buildNames.map((name) => (
+            <ListBoxItem key={name} value={name} className="text-sm">
+              {name}
+            </ListBoxItem>
+          ))}
+        </ListBox>
       </SelectField>
     </div>
   );
@@ -226,23 +213,16 @@ function BuildModeCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <SelectPopover>
-          <ListBox>
-            {buildModeOptions.map(({ mode, label, icon: Icon }) => (
-              <ListBoxItem
-                key={mode}
-                id={mode}
-                textValue={label}
-                className="text-sm"
-              >
-                <MenuItemIcon>
-                  <Icon />
-                </MenuItemIcon>
-                <ListBoxItemLabel>{label}</ListBoxItemLabel>
-              </ListBoxItem>
-            ))}
-          </ListBox>
-        </SelectPopover>
+        <ListBox>
+          {buildModeOptions.map(({ mode, label, icon: Icon }) => (
+            <ListBoxItem key={mode} value={mode} className="text-sm">
+              <ListBoxItemIcon>
+                <Icon />
+              </ListBoxItemIcon>
+              <ListBoxItemLabel>{label}</ListBoxItemLabel>
+            </ListBoxItem>
+          ))}
+        </ListBox>
       </SelectField>
     </div>
   );
@@ -271,29 +251,20 @@ function BuildTypeCondition(props: {
           <SelectValue />
         </SelectButton>
         <FieldError />
-        <SelectPopover>
-          <ListBox>
-            {Object.values(BuildType).map((type) => {
-              const descriptor = buildTypeDescriptors[type];
-              const Icon = descriptor.icon;
-              return (
-                <ListBoxItem
-                  key={type}
-                  id={type}
-                  textValue={descriptor.label}
-                  className="text-sm"
-                >
-                  <MenuItemIcon>
-                    <Icon
-                      className={lowTextColorClassNames[descriptor.color]}
-                    />
-                  </MenuItemIcon>
-                  <ListBoxItemLabel>{descriptor.label}</ListBoxItemLabel>
-                </ListBoxItem>
-              );
-            })}
-          </ListBox>
-        </SelectPopover>
+        <ListBox>
+          {Object.values(BuildType).map((type) => {
+            const descriptor = buildTypeDescriptors[type];
+            const Icon = descriptor.icon;
+            return (
+              <ListBoxItem key={type} value={type} className="text-sm">
+                <ListBoxItemIcon>
+                  <Icon className={lowTextColorClassNames[descriptor.color]} />
+                </ListBoxItemIcon>
+                <ListBoxItemLabel>{descriptor.label}</ListBoxItemLabel>
+              </ListBoxItem>
+            );
+          })}
+        </ListBox>
       </SelectField>
     </div>
   );
@@ -373,7 +344,7 @@ function OperatorSelector(props: {
     <Select
       aria-label="Operator"
       value={operator}
-      onChange={(value) => {
+      onValueChange={(value) => {
         const rawCondition = form.getValues(conditionName);
         const buildCondition = getBuildCondition(rawCondition);
         invariant(value === "eq" || value === "neq");
@@ -394,16 +365,10 @@ function OperatorSelector(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <SelectPopover>
-        <ListBox>
-          <ListBoxItem id="eq" textValue={labels.eq}>
-            {labels.eq}
-          </ListBoxItem>
-          <ListBoxItem id="neq" textValue={labels.neq}>
-            {labels.neq}
-          </ListBoxItem>
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        <ListBoxItem value="eq">{labels.eq}</ListBoxItem>
+        <ListBoxItem value="neq">{labels.neq}</ListBoxItem>
+      </ListBox>
     </Select>
   );
 }
@@ -431,7 +396,7 @@ function BranchOperatorSelector(props: {
     <Select
       aria-label="Operator"
       value={operator}
-      onChange={(value) => {
+      onValueChange={(value) => {
         const rawCondition = form.getValues(name);
         const buildCondition = getBuildCondition(rawCondition);
         invariant(buildCondition.type === "build-branch");
@@ -466,22 +431,12 @@ function BranchOperatorSelector(props: {
       <SelectButton>
         <SelectValue />
       </SelectButton>
-      <SelectPopover>
-        <ListBox>
-          <ListBoxItem id="eq" textValue="is">
-            is
-          </ListBoxItem>
-          <ListBoxItem id="neq" textValue="is not">
-            is not
-          </ListBoxItem>
-          <ListBoxItem id="glob" textValue="matches">
-            matches
-          </ListBoxItem>
-          <ListBoxItem id="not-glob" textValue="does not match">
-            does not match
-          </ListBoxItem>
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        <ListBoxItem value="eq">is</ListBoxItem>
+        <ListBoxItem value="neq">is not</ListBoxItem>
+        <ListBoxItem value="glob">matches</ListBoxItem>
+        <ListBoxItem value="not-glob">does not match</ListBoxItem>
+      </ListBox>
     </Select>
   );
 }
@@ -533,12 +488,10 @@ export function AutomationConditionsStep(props: {
           </Task>
         ))}
 
-        <SelectField
-          control={form.control}
-          name={name}
+        <Select<string>
           aria-label="Condition Types"
           value={null}
-          onChange={(key) => {
+          onValueChange={(key) => {
             switch (key) {
               case "build-conclusion":
               case "build-mode":
@@ -555,27 +508,21 @@ export function AutomationConditionsStep(props: {
                 throw new Error(`Unknown condition type: ${key}`);
             }
           }}
-          isDisabled={conditions.length === 0}
+          disabled={conditions.length === 0}
           placeholder="Add optional condition…"
         >
           <SelectButton className="w-full">
             <SelectValue />
           </SelectButton>
           <FieldError />
-          <SelectPopover>
-            <ListBox>
-              {conditions.map((condition) => (
-                <ListBoxItem
-                  key={condition.type}
-                  id={condition.type}
-                  textValue={condition.label}
-                >
-                  {condition.label}
-                </ListBoxItem>
-              ))}
-            </ListBox>
-          </SelectPopover>
-        </SelectField>
+          <ListBox>
+            {conditions.map((condition) => (
+              <ListBoxItem key={condition.type} value={condition.type}>
+                {condition.label}
+              </ListBoxItem>
+            ))}
+          </ListBox>
+        </Select>
       </div>
     </div>
   );

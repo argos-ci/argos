@@ -8,7 +8,6 @@ import {
 } from "@/containers/ProjectContributor";
 import { graphql } from "@/gql";
 import { ProjectUserLevel } from "@/gql/graphql";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { addContributor, OPTIMISTIC_CONTRIBUTOR_ID } from "./operations";
@@ -43,7 +42,7 @@ export function ProjectContributorLevelSelect(props: {
     <Select
       aria-label="Levels"
       value={props.level}
-      onChange={(value) => {
+      onValueChange={(value) => {
         invariant(typeof value === "string");
         client.mutate({
           mutation: AddOrUpdateContributorMutation,
@@ -77,9 +76,7 @@ export function ProjectContributorLevelSelect(props: {
         {props.level ? ProjectContributorLevelLabel[props.level] : "Add as"}
       </SelectButton>
 
-      <SelectPopover>
-        <ProjectContributorLevelListBox />
-      </SelectPopover>
+      <ProjectContributorLevelListBox />
     </Select>
   );
 }

@@ -1,82 +1,110 @@
+import type { ReactNode } from "react";
+import { Select as BaseSelect } from "@base-ui/react/select";
 import { clsx } from "clsx";
 import { CheckIcon } from "lucide-react";
+
 import {
-  ListBoxItemProps,
-  ListBoxProps,
-  ListBox as RACListBox,
-  ListBoxItem as RACListBoxItem,
-  Separator as RACSeparator,
-  Text,
-} from "react-aria-components";
+  getMenuItemClassName,
+  menuItemDescriptionClassName,
+  menuItemIconClassName,
+  menuListClassName,
+  menuSeparatorClassName,
+} from "./menuStyle";
+import {
+  popupAnimationClassName,
+  popupSurfaceClassName,
+  popupZIndexClassName,
+} from "./popupSurface";
 
-import { getMenuItemClassName, menuClassName } from "./Menu";
-
-export function ListBox<T extends object>({
-  className,
-  ...props
-}: ListBoxProps<T>) {
-  return (
-    <RACListBox<T> className={clsx(menuClassName, className)} {...props} />
-  );
-}
-
-// A list box is a menu that happens to hold options: same surface, same rows,
-// both of them defined in `Menu`.
-export { MenuItemIcon as ListBoxItemIcon } from "./Menu";
+/** Tallest the list gets before it scrolls, room permitting. */
+const LIST_MAX_HEIGHT = 416;
 
 /**
- * The same hairline `MenuSeparator` draws, but built on React Aria's
- * `Separator` rather than Base UI's.
+ * The options of a `Select`, and the popup that holds them.
  *
- * React Aria builds a collection out of its children and only understands its
- * own components: a Base UI `Separator` in here is not just ignored, it takes
- * every option after it out of the list. This can go back to sharing `Menu`'s
- * once the list box is Base UI too.
+ * The popup is part of the list rather than a wrapper around it — there is no
+ * `SelectPopover` any more, the way a menu owns its own surface.
  */
-export function ListBoxSeparator() {
-  return <RACSeparator className="border-t-thin -mx-1.5 my-1.5" />;
-}
-
-export function ListBoxItem(
-  props: ListBoxItemProps & {
-    children: React.ReactNode;
-  },
-) {
-  const { className, children, ...restProps } = props;
+export function ListBox(props: { children: ReactNode; className?: string }) {
+  const { children, className } = props;
   return (
-    <RACListBoxItem
-      className={clsx(
-        className,
-        getMenuItemClassName({ href: props.href }),
-        // The check mark sits outside the label and needs its own room; a menu
-        // item's icon brings its own margin instead.
-        "gap-2",
-      )}
-      {...restProps}
-    >
-      <CheckIcon className="size-4 shrink-0 opacity-0 not-in-[[role=listbox]]:hidden group-aria-selected/menu-item:opacity-100" />
-      {/* The label ellipsizes rather than overflow: the same markup renders as
-          the value of a select, where the available width is the button's. */}
-      <div className="flex min-w-0 items-center whitespace-nowrap has-[[slot=description]]:flex-wrap **:[[slot=label]]:truncate">
-        {children}
-      </div>
-    </RACListBoxItem>
+    <BaseSelect.Portal>
+      <BaseSelect.Positioner
+        sideOffset={4}
+        align="start"
+        // Base UI otherwise lays the chosen option over the trigger, which
+        // moves the popup somewhere the react-aria version never put it.
+        alignItemWithTrigger={false}
+        className={clsx(popupZIndexClassName, "max-w-(--available-width)")}
+      >
+        <BaseSelect.Popup
+          className={clsx(
+            popupSurfaceClassName,
+            popupAnimationClassName,
+            "flex-col overflow-hidden outline-hidden select-none",
+            className,
+          )}
+        >
+          <BaseSelect.List
+            className={menuListClassName}
+            style={{
+              maxHeight: `min(${LIST_MAX_HEIGHT}px, var(--available-height))`,
+            }}
+          >
+            {children}
+          </BaseSelect.List>
+        </BaseSelect.Popup>
+      </BaseSelect.Positioner>
+    </BaseSelect.Portal>
   );
 }
 
-export function ListBoxItemLabel(props: { children: React.ReactNode }) {
-  return <Text slot="label" {...props} />;
+/** The hairline between groups of options. */
+export function ListBoxSeparator() {
+  return <BaseSelect.Separator className={menuSeparatorClassName} />;
 }
 
-export function ListBoxItemDescription(props: { children: React.ReactNode }) {
+export function ListBoxItem(props: {
+  children: ReactNode;
+  value: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const { children, className, ...rest } = props;
   return (
-    <>
-      <div className="h-0 basis-full" />
-      <Text
-        slot="description"
-        className="text-low font-normal whitespace-normal"
-        {...props}
-      />
-    </>
+    <BaseSelect.Item
+      {...rest}
+      className={clsx(getMenuItemClassName(), className)}
+    >
+      {/* Always rendered, so every row's words line up whether or not it is
+          the chosen one. */}
+      <CheckIcon className="size-4 shrink-0 opacity-0 group-data-selected/menu-item:opacity-100" />
+      <span className="flex min-w-0 flex-1 flex-col">{children}</span>
+    </BaseSelect.Item>
+  );
+}
+
+/** The icon an option leads with. */
+export function ListBoxItemIcon(props: { children: ReactNode }) {
+  return <span className={menuItemIconClassName}>{props.children}</span>;
+}
+
+/**
+ * An option's name. It ellipsizes rather than widening the list.
+ *
+ * `ItemText` rather than a plain span: Base UI reads it to describe the option
+ * to assistive tech and for typeahead.
+ */
+export function ListBoxItemLabel(props: { children: ReactNode }) {
+  return <BaseSelect.ItemText className="truncate" {...props} />;
+}
+
+/** A second line under the option's name, saying what choosing it means. */
+export function ListBoxItemDescription(props: { children: ReactNode }) {
+  return (
+    <span
+      className={clsx(menuItemDescriptionClassName, "whitespace-normal")}
+      {...props}
+    />
   );
 }

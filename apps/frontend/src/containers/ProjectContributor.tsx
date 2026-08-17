@@ -16,14 +16,14 @@ export function ProjectContributorLevelListBox(props: { clearable?: boolean }) {
   return (
     <ListBox>
       {props.clearable && (
-        <ListBoxItem id="none" textValue="None">
+        <ListBoxItem value="none">
           <ListBoxItemLabel>No default level</ListBoxItemLabel>
           <ListBoxItemDescription>
             Contributors does not have access to the project by default
           </ListBoxItemDescription>
         </ListBoxItem>
       )}
-      <ListBoxItem id="viewer" textValue={ProjectContributorLevelLabel.viewer}>
+      <ListBoxItem value="viewer">
         <ListBoxItemLabel>
           {ProjectContributorLevelLabel.viewer}
         </ListBoxItemLabel>
@@ -31,16 +31,13 @@ export function ProjectContributorLevelListBox(props: { clearable?: boolean }) {
           See builds and screenshots
         </ListBoxItemDescription>
       </ListBoxItem>
-      <ListBoxItem
-        id="reviewer"
-        textValue={ProjectContributorLevelLabel.reviewer}
-      >
+      <ListBoxItem value="reviewer">
         <ListBoxItemLabel>
           {ProjectContributorLevelLabel.reviewer}
         </ListBoxItemLabel>
         <ListBoxItemDescription>See and review builds</ListBoxItemDescription>
       </ListBoxItem>
-      <ListBoxItem id="admin" textValue={ProjectContributorLevelLabel.admin}>
+      <ListBoxItem value="admin">
         <ListBoxItemLabel>
           {ProjectContributorLevelLabel.admin}
         </ListBoxItemLabel>

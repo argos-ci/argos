@@ -4,7 +4,7 @@ import { parseAsStringEnum } from "nuqs";
 import { BuildStatus } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
-import { SelectButton } from "@/ui/Select";
+import { SelectStyleButton } from "@/ui/Select";
 import { StackedItems } from "@/ui/StackedItems";
 import { buildStatusDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
@@ -43,7 +43,7 @@ export function BuildStatusFilter(props: {
   return (
     <MenuRoot>
       <MenuTrigger>
-        <SelectButton className="text-sm">
+        <SelectStyleButton className="text-sm">
           <StackedItems>
             {BuildStatuses.map((status) => {
               return (
@@ -65,7 +65,7 @@ export function BuildStatusFilter(props: {
           <Badge>
             {value.size}/{BuildStatuses.length}
           </Badge>
-        </SelectButton>
+        </SelectStyleButton>
       </MenuTrigger>
       <Menu aria-label="Build status">
         {BuildStatuses.map((status) => {

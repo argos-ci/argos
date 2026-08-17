@@ -2,7 +2,6 @@ import { invariant } from "@argos/util/invariant";
 import { parseAsStringEnum, useQueryState } from "nuqs";
 
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 export type PeriodsDefinition = Record<string, PeriodEntry>;
@@ -55,20 +54,18 @@ export function PeriodSelect<TDef extends PeriodsDefinition>(props: {
     <Select
       aria-label="Periods"
       value={String(value)}
-      onChange={(value) => setValue(String(value))}
+      onValueChange={(value) => setValue(String(value))}
     >
       <SelectButton className="text-sm">{current.label}</SelectButton>
-      <SelectPopover>
-        <ListBox>
-          {Object.entries(definition).map(([key, entry]) => {
-            return (
-              <ListBoxItem key={key} id={key} textValue={entry.label}>
-                <ListBoxItemLabel>{entry.label}</ListBoxItemLabel>
-              </ListBoxItem>
-            );
-          })}
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        {Object.entries(definition).map(([key, entry]) => {
+          return (
+            <ListBoxItem key={key} value={key}>
+              <ListBoxItemLabel>{entry.label}</ListBoxItemLabel>
+            </ListBoxItem>
+          );
+        })}
+      </ListBox>
     </Select>
   );
 }

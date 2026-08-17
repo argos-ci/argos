@@ -8,7 +8,6 @@ import {
   ListBoxItemIcon,
   ListBoxSeparator,
 } from "@/ui/ListBox";
-import { SelectPopover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { GitLabLogo } from "./GitLab";
@@ -39,15 +38,16 @@ export const GitlabNamespacesSelect = (props: {
     <Select
       aria-label="Namespaces"
       value={props.value}
-      onChange={(value) => {
+      onValueChange={(value) => {
         if (value === "switch-git-provider") {
           props.onSwitch();
           return;
         }
         props.setValue(String(value));
       }}
+      disabled={props.disabled}
     >
-      <SelectButton className="w-full" isDisabled={props.disabled}>
+      <SelectButton className="w-full">
         <div className="flex items-center gap-2">
           <GitLabLogo aria-hidden />
           {activeNamespace
@@ -56,37 +56,31 @@ export const GitlabNamespacesSelect = (props: {
         </div>
       </SelectButton>
 
-      <SelectPopover>
-        <ListBox>
-          {namespaces.map((namespace) => {
-            return (
-              <ListBoxItem
-                key={namespace.id}
-                id={namespace.id}
-                textValue={namespace.name || namespace.path}
-              >
-                <ListBoxItemIcon>
-                  <GitLabLogo />
-                </ListBoxItemIcon>
-                {namespace.name || namespace.path}
-              </ListBoxItem>
-            );
-          })}
-          <ListBoxItem id="all" textValue="All Projects...">
-            <ListBoxItemIcon>
-              <GitLabLogo />
-            </ListBoxItemIcon>
-            All Projects...
-          </ListBoxItem>
-          <ListBoxSeparator />
-          <ListBoxItem id="switch-git-provider" textValue="Switch Git Provider">
-            <ListBoxItemIcon>
-              <ListIcon />
-            </ListBoxItemIcon>
-            Switch Git Provider
-          </ListBoxItem>
-        </ListBox>
-      </SelectPopover>
+      <ListBox>
+        {namespaces.map((namespace) => {
+          return (
+            <ListBoxItem key={namespace.id} value={namespace.id}>
+              <ListBoxItemIcon>
+                <GitLabLogo />
+              </ListBoxItemIcon>
+              {namespace.name || namespace.path}
+            </ListBoxItem>
+          );
+        })}
+        <ListBoxItem value="all">
+          <ListBoxItemIcon>
+            <GitLabLogo />
+          </ListBoxItemIcon>
+          All Projects...
+        </ListBoxItem>
+        <ListBoxSeparator />
+        <ListBoxItem value="switch-git-provider">
+          <ListBoxItemIcon>
+            <ListIcon />
+          </ListBoxItemIcon>
+          Switch Git Provider
+        </ListBoxItem>
+      </ListBox>
     </Select>
   );
 };
