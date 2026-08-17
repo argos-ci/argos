@@ -8,8 +8,7 @@ import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
-import { TabList } from "@/ui/Tab";
-import { TabLink, TabLinkPanel, TabsLink } from "@/ui/TabLink";
+import { TabLink, TabLinkPanel, TabsLink, TabLinkList } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 
@@ -37,12 +36,12 @@ export const useAccountContext = () => {
 function AccountTabs({ account }: { account: Account }) {
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabList className="px-4" aria-label="Account navigation">
+      <TabLinkList className="px-4" aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="~/tests">Tests</TabLink>
         <TabLink href="settings">Settings</TabLink>
-      </TabList>
+      </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel className="flex flex-1 flex-col">

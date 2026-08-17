@@ -1,5 +1,4 @@
 import { Suspense, useState } from "react";
-import { TabPanel, Tabs } from "react-aria-components";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
@@ -15,7 +14,7 @@ import {
 import { DialogTrigger } from "@/ui/Dialog";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
-import { Tab, TabList } from "@/ui/Tab";
+import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 
 import { TeamGithubMembersList } from "./GitHubMembersList";
 import { InviteDialog } from "./InviteDialog";
@@ -95,15 +94,15 @@ export function TeamMembers(props: {
         <CardParagraph>
           Add members to your team to give them access to your projects.
         </CardParagraph>
-        <Tabs>
+        <Tabs defaultValue="members">
           <TabList className="border-b">
-            <Tab id="members">Members</Tab>
+            <Tab value="members">Members</Tab>
             {team.ssoGithubAccount ? (
-              <Tab id="pending-github-members">Pending GitHub Members</Tab>
+              <Tab value="pending-github-members">Pending GitHub Members</Tab>
             ) : null}
-            {amOwner ? <Tab id="pending">Pending Invitations</Tab> : null}
+            {amOwner ? <Tab value="pending">Pending Invitations</Tab> : null}
           </TabList>
-          <TabPanel id="members" className="my-4">
+          <TabPanel value="members" className="my-4">
             <Suspense fallback={<ListPlaceholder />}>
               <TeamMembersList
                 teamId={team.id}
@@ -115,7 +114,7 @@ export function TeamMembers(props: {
             </Suspense>
           </TabPanel>
           {team.ssoGithubAccount ? (
-            <TabPanel id="pending-github-members" className="my-4">
+            <TabPanel value="pending-github-members" className="my-4">
               <Suspense fallback={<ListPlaceholder aria-busy />}>
                 <TeamGithubMembersList
                   teamId={team.id}
@@ -129,7 +128,7 @@ export function TeamMembers(props: {
             </TabPanel>
           ) : null}
           {amOwner ? (
-            <TabPanel id="pending" className="my-4">
+            <TabPanel value="pending" className="my-4">
               <Suspense fallback={<ListPlaceholder aria-busy />}>
                 <TeamInvitesList team={team} amOwner={amOwner} />
               </Suspense>

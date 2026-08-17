@@ -1,13 +1,12 @@
 import { memo, startTransition, useCallback, useRef } from "react";
 import { SearchIcon, XIcon } from "lucide-react";
-import { TabList as RACTabList, TabPanel, Tabs } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { PillTab } from "@/ui/Tab";
+import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 
 import { BuildDiffList } from "./BuildDiffList";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
@@ -93,7 +92,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
   });
   return (
     <Tabs
-      defaultSelectedKey={!build.stats?.total ? "info" : "snapshots"}
+      defaultValue={!build.stats?.total ? "info" : "snapshots"}
       className="group/sidebar flex min-h-0 flex-1 shrink-0 flex-col"
     >
       {build.type !== BuildType.Skipped ? (
@@ -117,13 +116,13 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
             </>
           ) : (
             <>
-              <RACTabList
+              <TabList
                 className="flex flex-1 shrink-0 gap-2"
                 aria-label="Build details"
               >
-                <PillTab id="snapshots">Snapshots</PillTab>
-                <PillTab id="info">Info</PillTab>
-              </RACTabList>
+                <PillTab value="snapshots">Snapshots</PillTab>
+                <PillTab value="info">Info</PillTab>
+              </TabList>
               <HotkeyTooltip
                 keys={searchModeHotKey.displayKeys}
                 description="Find"
@@ -151,13 +150,16 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
       ) : (
         <>
           {build.type !== BuildType.Skipped ? (
-            <TabPanel id="snapshots" className="flex min-h-0 flex-1 flex-col">
+            <TabPanel
+              value="snapshots"
+              className="flex min-h-0 flex-1 flex-col"
+            >
               <FilterChips />
               <BuildDiffList />
             </TabPanel>
           ) : null}
 
-          <TabPanel id="info" className="flex-1 overflow-auto p-4">
+          <TabPanel value="info" className="flex-1 overflow-auto p-4">
             <BuildInfos
               build={build}
               repoUrl={props.repoUrl}
