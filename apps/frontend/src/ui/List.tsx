@@ -30,7 +30,7 @@ export function ListRowLink(props: Omit<HeadlessLinkProps, "external">) {
       {...props}
       className={clsx(
         listRowClassName,
-        "data-hovered:bg-hover data-focus-visible:bg-hover focus:outline-hidden",
+        "hover:bg-hover focus-visible:bg-hover focus:outline-hidden",
         props.className,
       )}
     />

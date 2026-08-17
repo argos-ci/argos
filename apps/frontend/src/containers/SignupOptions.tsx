@@ -18,7 +18,7 @@ import { Form } from "@/ui/Form";
 import { FormRootToastError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { LinkButton } from "@/ui/Link";
+import { LinkStyleButton } from "@/ui/Link";
 
 import { AuthWithEmail } from "./AuthWithEmail";
 import { lastLoginMethodAtom } from "./LastLoginMethod";
@@ -134,9 +134,9 @@ function EmailScreen(props: {
         </ButtonIcon>
         Continue with email
       </FormSubmit>
-      <LinkButton className="mt-6 w-full text-center" onClick={onBack}>
+      <LinkStyleButton className="mt-6 w-full text-center" onClick={onBack}>
         ← Other Sign Up options
-      </LinkButton>
+      </LinkStyleButton>
     </Form>
   );
 }
@@ -173,12 +173,12 @@ function ProvidersScreen(props: {
       >
         Continue with GitLab
       </GitLabLoginButton>
-      <LinkButton
+      <LinkStyleButton
         className="mt-2 w-full text-center"
         onClick={onContinueWithEmail}
       >
         Continue with Email →
-      </LinkButton>
+      </LinkStyleButton>
     </div>
   );
 }

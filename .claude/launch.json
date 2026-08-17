@@ -6,6 +6,15 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@argos/frontend", "storybook"],
       "port": 6006
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "NODE_ENV=test pnpm run --filter @argos/backend start-web"
+      ],
+      "port": 3000
     }
   ]
 }

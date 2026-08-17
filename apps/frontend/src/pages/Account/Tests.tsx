@@ -375,7 +375,7 @@ function TestRow(props: {
       <div className="w-40 truncate">
         <HeadlessLink
           href={`/${accountSlug}/${projectName}/tests`}
-          className="rac-focus hover:text-default truncate underline"
+          className="hover:text-default truncate underline"
         >
           {projectName}
         </HeadlessLink>

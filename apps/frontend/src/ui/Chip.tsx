@@ -1,23 +1,19 @@
 import {
   cloneElement,
-  ComponentProps,
+  ComponentPropsWithRef,
   createContext,
   isValidElement,
   use,
 } from "react";
 import { clsx } from "clsx";
-import {
-  Button as RACButton,
-  ButtonProps as RACButtonProps,
-  Link as RACLink,
-  LinkProps as RACLinkProps,
-} from "react-aria-components";
 
 import {
   lowTextColorClassNames,
   textColorClassNames,
   UIColor,
 } from "@/util/colors";
+
+import { RouterLink } from "./RouterLink";
 
 export type ChipColor = UIColor | "blank";
 
@@ -65,30 +61,30 @@ function useChipContextProps<T extends Partial<ChipOptions>>(props: T): T {
 
 const interactiveClassNames: Record<ChipColor, string> = {
   primary: clsx(
-    "data-hovered:not-aria-[current=page]:bg-primary-hover",
-    "data-hovered:not-aria-[current=page]:text-primary",
+    "hover:not-aria-[current=page]:bg-primary-hover",
+    "hover:not-aria-[current=page]:text-primary",
     "aria-[current=page]:bg-primary-active",
     "aria-[current=page]:text-primary",
-    "data-pressed:bg-primary-active",
-    "data-pressed:text-primary",
+    "active:bg-primary-active",
+    "active:text-primary",
   ),
-  info: "data-hovered:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active data-pressed:bg-info-active",
+  info: "hover:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active active:bg-info-active",
   success:
-    "data-hovered:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active data-pressed:bg-success-active",
+    "hover:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active active:bg-success-active",
   neutral:
-    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active aria-[current=page]:text-default data-pressed:bg-active",
+    "hover:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active aria-[current=page]:text-default active:bg-active",
   pending:
-    "data-hovered:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active data-pressed:bg-pending-active",
+    "hover:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active active:bg-pending-active",
   danger:
-    "data-hovered:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active data-pressed:bg-danger-active",
+    "hover:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active active:bg-danger-active",
   warning:
-    "data-hovered:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
+    "hover:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active active:bg-warning-active",
   storybook:
-    "data-hovered:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
+    "hover:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active active:bg-storybook-active",
   blank: clsx(
-    "data-hovered:not-aria-[current=page]:bg-hover data-pressed:bg-active",
+    "hover:not-aria-[current=page]:bg-hover active:bg-active",
     "group-[*]/button-group:not-aria-[current=page]:opacity-60",
-    "group-[*]/button-group:data-hovered:not-aria-[current=page]:opacity-100",
+    "group-[*]/button-group:hover:not-aria-[current=page]:opacity-100",
     "group-[*]/button-group:border-default",
   ),
 };
@@ -153,7 +149,7 @@ function getChipClassName(props: {
   return clsx(
     colorClassNames[color],
     interactive && interactiveClassNames[color],
-    interactive && "rac-focus",
+    interactive && "focus-ring",
     textSizeClassName[scale],
     spacingClassName[scale],
     "py-(--chip-py)",
@@ -233,28 +229,20 @@ export function Chip(rawProps: ChipProps) {
   return <div {...chipProps} />;
 }
 
-export type ChipLinkProps = Omit<
-  RACLinkProps,
-  "color" | "className" | "children"
-> &
-  Pick<ComponentProps<"a">, "className" | "children"> &
+export type ChipLinkProps = Omit<ComponentPropsWithRef<"a">, "color"> &
   ChipOptions;
 
 export function ChipLink(rawProps: ChipLinkProps) {
   const props = useChipContextProps(rawProps);
   const { chipProps } = useChip({ ...props, elementType: "a" });
-  return <RACLink {...chipProps} />;
+  return <RouterLink {...chipProps} />;
 }
 
-type ChipButtonProps = Omit<
-  RACButtonProps,
-  "color" | "className" | "children"
-> &
-  Pick<ComponentProps<"button">, "className" | "children"> &
+type ChipButtonProps = Omit<ComponentPropsWithRef<"button">, "color"> &
   ChipOptions;
 
-export function ChipButton(rawProps: ChipButtonProps) {
+export function ChipButton({ type = "button", ...rawProps }: ChipButtonProps) {
   const props = useChipContextProps(rawProps);
   const { chipProps } = useChip({ ...props, elementType: "button" });
-  return <RACButton {...chipProps} />;
+  return <button type={type} {...chipProps} />;
 }

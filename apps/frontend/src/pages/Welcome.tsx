@@ -33,7 +33,7 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Heading } from "@/ui/Heading";
 import { Label } from "@/ui/Label";
-import { LinkButton } from "@/ui/Link";
+import { LinkStyleButton } from "@/ui/Link";
 import { resolveWelcomeRedirect } from "@/util/welcome";
 
 const AutoJoinQuery = graphql(`
@@ -405,9 +405,9 @@ function WelcomeForm() {
         ) : null}
 
         <div className="mt-8 flex items-center justify-between gap-4">
-          <LinkButton
+          <LinkStyleButton
             className="text-sm"
-            isDisabled={isSkipping || form.formState.isSubmitting}
+            disabled={isSkipping || form.formState.isSubmitting}
             onClick={() => {
               setIsSkipping(true);
               complete(null).catch(() => {
@@ -418,7 +418,7 @@ function WelcomeForm() {
             }}
           >
             Skip
-          </LinkButton>
+          </LinkStyleButton>
           <div className="flex items-center gap-4">
             <FormRootError control={form.control} />
             <FormSubmit control={form.control} size="large">

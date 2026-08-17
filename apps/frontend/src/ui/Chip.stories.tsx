@@ -112,9 +112,9 @@ export const Default: Story = {
 };
 
 /**
- * Keyboard focus on a chip button — the one baseline of the `rac-focus`
- * utility, which encodes react-aria's "outline on keyboard focus only" contract
- * and has to be rebuilt on `:focus-visible`.
+ * Keyboard focus on a chip button — the one baseline of the `focus-ring`
+ * utility, which keeps react-aria's "outline on keyboard focus only" contract
+ * now that it is the browser's own `:focus-visible` doing the deciding.
  */
 export const KeyboardFocus: Story = {
   play: async () => {

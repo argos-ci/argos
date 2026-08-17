@@ -3,7 +3,7 @@ import { useState } from "react";
 import { APIError, fetchApi } from "@/util/api";
 
 import { Button, ButtonProps } from "./Button";
-import { LinkButton } from "./Link";
+import { LinkStyleButton } from "./Link";
 import { toast } from "./Toaster";
 import { useEventCallback } from "./useEventCallback";
 
@@ -71,13 +71,13 @@ export function StripePortalLink({
       {children}
     </Button>
   ) : (
-    <LinkButton
-      isDisabled={disabled}
-      className="inline-flex cursor-pointer items-center"
+    <LinkStyleButton
+      disabled={disabled}
+      className="inline-flex items-center"
       onClick={handlePress}
     >
       {children}
-    </LinkButton>
+    </LinkStyleButton>
   );
 }
 

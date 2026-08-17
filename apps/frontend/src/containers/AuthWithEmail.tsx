@@ -4,7 +4,7 @@ import { AlertCircleIcon } from "lucide-react";
 
 import { graphql } from "@/gql";
 import { ErrorMessage } from "@/ui/ErrorMessage";
-import { LinkButton } from "@/ui/Link";
+import { LinkStyleButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { OTPInput } from "@/ui/OTPInput";
 import { checkIsErrorCode, getErrorMessage } from "@/util/error";
@@ -78,9 +78,9 @@ export function AuthWithEmail(props: {
             Verifying…
           </div>
         ) : (
-          <LinkButton className="w-full text-center" onClick={onBack}>
+          <LinkStyleButton className="w-full text-center" onClick={onBack}>
             ← Back
-          </LinkButton>
+          </LinkStyleButton>
         )}
       </div>
     </div>

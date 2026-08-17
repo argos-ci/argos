@@ -767,7 +767,7 @@ function PageHeader(props: { media: Media }) {
           <Tooltip content="See all builds">
             <HeadlessLink
               href={`/${media.project.slug}/builds`}
-              className="text-low data-hovered:text-default rac-focus min-w-0 truncate text-xs leading-none transition"
+              className="text-low hover:text-default min-w-0 truncate text-xs leading-none transition"
             >
               {media.project.slug}
             </HeadlessLink>

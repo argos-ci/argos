@@ -82,7 +82,7 @@ const ProjectLink = memo(
       <Tooltip content="See all builds">
         <HeadlessLink
           href={`${getProjectURL({ accountSlug, projectName })}/builds`}
-          className="text-low data-hovered:text-default rac-focus truncate text-xs leading-tight transition"
+          className="text-low hover:text-default truncate text-xs leading-tight transition"
         >
           {accountSlug}/{projectName}
         </HeadlessLink>
@@ -228,7 +228,7 @@ export const BuildHeader = memo(
                     projectName: props.projectName,
                     buildNumber: props.buildNumber,
                   })}
-                  className="data-hovered:text-default rac-focus truncate text-sm leading-tight font-medium transition"
+                  className="hover:text-default truncate text-sm leading-tight font-medium transition"
                 >
                   Build {props.buildNumber}
                   {build && build.name !== "default" ? ` • ${build.name}` : ""}
