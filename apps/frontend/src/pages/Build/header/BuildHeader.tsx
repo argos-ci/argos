@@ -242,13 +242,7 @@ export const BuildHeader = memo(
                   {build && build.name !== "default" ? ` • ${build.name}` : ""}
                 </HeadlessLink>
               </Tooltip>
-              {build ? (
-                <BuildSwitcher
-                  accountSlug={props.accountSlug}
-                  projectName={props.projectName}
-                  build={build}
-                />
-              ) : null}
+              {build ? <BuildSwitcher build={build} /> : null}
             </div>
             <div className="flex min-w-0">
               <ProjectLink

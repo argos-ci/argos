@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict I3c71ozcUc6qIxshE9FEt2xxcp0iTprj3I7DbqFDTBMY5k3xcGbjx5vlNVrhV8O
+\restrict 5RhyAs841JlVJNR1LIh9P6SJCznUR94GrKXX1oPTcgDMpLo9yQql3wcfO8FUnY9
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -4504,6 +4504,13 @@ CREATE INDEX builds_number_index ON public.builds USING btree (number);
 
 
 --
+-- Name: builds_prheadcommit_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_prheadcommit_idx ON public.builds USING btree ("prHeadCommit") WHERE ("prHeadCommit" IS NOT NULL);
+
+
+--
 -- Name: builds_project_type_name_createdat_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6237,7 +6244,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict I3c71ozcUc6qIxshE9FEt2xxcp0iTprj3I7DbqFDTBMY5k3xcGbjx5vlNVrhV8O
+\unrestrict 5RhyAs841JlVJNR1LIh9P6SJCznUR94GrKXX1oPTcgDMpLo9yQql3wcfO8FUnY9
 
 -- Knex migrations
 
@@ -6484,3 +6491,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260813191611_comment-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260814161900_build-review-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260816090349_subscription-flat-price.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());

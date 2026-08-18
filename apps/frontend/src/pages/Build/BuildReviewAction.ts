@@ -98,9 +98,9 @@ export function useCreateBuildReviewMutation(
       // Approving or rejecting settles this build, so it's the moment to offer
       // the next one. A neutral comment deliberately leaves the build
       // undecided — sending the reviewer elsewhere would fight that intent.
-      const siblingBuilds = result.data?.createBuildReview.siblingBuilds;
-      if (siblingBuilds && input.event !== BuildReviewEvent.Comment) {
-        promptNextReview(siblingBuilds);
+      const reviewedBuild = result.data?.createBuildReview;
+      if (reviewedBuild && input.event !== BuildReviewEvent.Comment) {
+        promptNextReview(reviewedBuild);
       }
       return result;
     },

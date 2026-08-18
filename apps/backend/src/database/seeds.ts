@@ -1010,13 +1010,22 @@ export async function createFallbackBaselineScenario(input: {
 }
 
 /**
- * Two builds sharing one head commit and branch, told apart by their build
- * name — the shape a project gets when a commit runs several suites. Both end
- * up with changes waiting, so finishing one leaves the other to review.
+ * Three builds sharing one head commit and branch — the shape a commit gets
+ * when it runs several suites, and when a monorepo splits them over several
+ * Argos projects. Two live in the given project, told apart by their build
+ * name; the third lives in a second project of the same account and reuses the
+ * `default` name, which is what a build name alone cannot disambiguate. All
+ * three end up with changes waiting, so finishing one leaves the others to
+ * review.
  */
 export async function createSiblingBuildsScenario(input: {
   projectId: string;
-}): Promise<{ defaultBuild: Build; storybookBuild: Build }> {
+}): Promise<{
+  defaultBuild: Build;
+  storybookBuild: Build;
+  docsBuild: Build;
+  docsProject: Project;
+}> {
   const { projectId } = input;
   const seededAt = getSeedInstant();
   const branch = "feat/sparkle";
@@ -1047,8 +1056,12 @@ export async function createSiblingBuildsScenario(input: {
     }),
   ]);
 
-  async function createSiblingBuild(options: { name: string; number: number }) {
-    const { name, number } = options;
+  async function createSiblingBuild(options: {
+    name: string;
+    number: number;
+    projectId?: string;
+  }) {
+    const { name, number, projectId = input.projectId } = options;
     const bucketProps = {
       name,
       projectId,
@@ -1122,9 +1135,24 @@ export async function createSiblingBuildsScenario(input: {
     return build;
   }
 
+  const project = await Project.query().findById(projectId);
+  invariant(project, "Project not found");
+  const docsProject = await createProject({
+    accountId: project.accountId,
+    name: `${project.name}-docs`,
+  });
+
   return {
     defaultBuild: await createSiblingBuild({ name: "default", number: 1 }),
     storybookBuild: await createSiblingBuild({ name: "storybook", number: 2 }),
+    // A number of its own: build numbers run per project, so the pair
+    // (project, number) is what addresses a build across the commit.
+    docsBuild: await createSiblingBuild({
+      name: "default",
+      number: 7,
+      projectId: docsProject.id,
+    }),
+    docsProject,
   };
 }
 
