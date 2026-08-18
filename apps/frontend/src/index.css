@@ -348,16 +348,19 @@
  *   `aria-disabled` — which a pending button wears so it keeps its focus and
  *   its tooltip — is invisible to `:disabled`.
  * - **The chosen tab.** It is already the one you are on.
- * - **The open trigger.** Its menu is already showing; the fill it wears says
- *   so, and moving it under the pointer reads as the menu about to change.
+ * - **The open trigger.** Its popup is already showing; the fill it wears says
+ *   so, and moving it under the pointer reads as the popup about to change.
  *
  * A pressed *toggle* is none of these — pressing it again turns it off — so it
  * keeps its hover.
+ *
+ * An open trigger is recognised by `aria-expanded="true"` alone, and
+ * deliberately not by Base UI's `data-popup-open` — see `on` below for why.
  */
 @custom-variant enabled-hover (
   &:not(:disabled):not([aria-disabled="true"]):not([aria-selected="true"]):not(
       [aria-expanded="true"]
-    ):not([data-popup-open]):hover
+    ):hover
 );
 @custom-variant enabled-active (
   &:not(:disabled):not([aria-disabled="true"]):active
@@ -366,21 +369,25 @@
 /**
  * A control that is currently on.
  *
- * Four attributes for one idea, because each kind of control spells it its own
+ * Three attributes for one idea, because each kind of control spells it its own
  * way: a toggle says `aria-pressed`, a tab says `aria-selected`, and a trigger
- * whose menu is showing says `aria-expanded` — plus Base UI's own
- * `data-popup-open`, which its triggers set alongside it. The button surface
- * is worn by all of them, so the "on" look has to answer to any of them.
+ * whose popup is showing says `aria-expanded`. The button surface is worn by
+ * all of them, so the "on" look has to answer to any of them.
+ *
+ * Not Base UI's `data-popup-open`, which its triggers set alongside
+ * `aria-expanded`: a **tooltip** trigger sets it too, and it sets it exactly
+ * while the pointer is resting on the control. Reading it made a tooltip's own
+ * trigger wear the pressed look — darker fill, no lift — the moment its
+ * tooltip appeared, and took `enabled-hover` off it at the same time, so a
+ * hover ran backwards. A tooltip is not a state its trigger is in; it shows
+ * because the pointer is there. Every trigger this app dresses as a button —
+ * menu, popover, select, dialog, all Base UI popovers underneath — sets
+ * `aria-expanded`, so nothing is lost by reading only that.
  *
  * `="true"` matters: `aria-selected="false"` is on every unselected tab.
  */
 @custom-variant on (
-  &:is(
-      [aria-pressed="true"],
-      [aria-selected="true"],
-      [aria-expanded="true"],
-      [data-popup-open]
-    )
+  &:is([aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"])
 );
 
 @utility rac-focus {
