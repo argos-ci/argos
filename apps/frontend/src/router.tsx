@@ -1,15 +1,11 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
-import { RouterProvider } from "react-aria-components";
 import {
   createBrowserRouter,
   Navigate,
-  NavigateOptions,
   Outlet,
-  useHref,
-  useNavigate,
   useParams,
   useRouteError,
 } from "react-router";
@@ -21,54 +17,17 @@ import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
 import { Loader } from "./ui/Loader";
-import { checkIsExternalHref } from "./ui/RouterLink";
 import { TooltipProvider } from "./ui/Tooltip";
 import { checkIsErrorCode } from "./util/error";
 
-declare module "react-aria-components" {
-  interface RouterConfig {
-    routerOptions: NavigateOptions;
-  }
-}
-
-function useAbsoluteHref(path: string) {
-  const relative = useHref(path);
-  if (checkIsExternalHref(path)) {
-    return path;
-  }
-  return relative;
-}
-
 function Root() {
-  const navigate = useNavigate();
-  const navigateWithExternalLinks = useCallback(
-    (to: string, options?: NavigateOptions) => {
-      if (checkIsExternalHref(to)) {
-        if (options?.replace) {
-          window.location.replace(to);
-        } else {
-          window.location.assign(to);
-        }
-        return;
-      }
-      navigate(to, options);
-    },
-    [navigate],
-  );
-
   return (
-    <RouterProvider
-      navigate={navigateWithExternalLinks}
-      // oxlint-disable-next-line react/react-compiler -- RouterProvider's API takes the hook itself and calls it internally.
-      useHref={useAbsoluteHref}
-    >
-      {/* Base UI reads tooltip delays from a provider rather than from each
-          tooltip, and one shared provider is also what gives them their
-          warm-up: once any tooltip has opened, the next opens immediately. */}
-      <TooltipProvider>
-        <Outlet />
-      </TooltipProvider>
-    </RouterProvider>
+    // Base UI reads tooltip delays from a provider rather than from each
+    // tooltip, and one shared provider is also what gives them their warm-up:
+    // once any tooltip has opened, the next opens immediately.
+    <TooltipProvider>
+      <Outlet />
+    </TooltipProvider>
   );
 }
 
