@@ -9,7 +9,6 @@ import {
   MessageSquareCheckIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { Button as RACButton } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -466,7 +465,8 @@ function ResolvedThreadHeader(props: {
 }) {
   const { collapsed, commentCount, authorName, onToggle } = props;
   return (
-    <RACButton
+    <button
+      type="button"
       onClick={onToggle}
       aria-label={collapsed ? "Expand thread" : "Collapse thread"}
       className="text-low hover:text-default flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs transition select-none"
@@ -486,7 +486,7 @@ function ResolvedThreadHeader(props: {
           <ChevronsDownUpIcon className="size-3.5 shrink-0" />
         </>
       )}
-    </RACButton>
+    </button>
   );
 }
 
@@ -640,14 +640,15 @@ function CommentMessage(props: {
                   </div>
                 }
               >
-                <RACButton
+                <button
+                  type="button"
                   onClick={copyLink}
                   aria-label="Copy link to comment"
                   className="text-low hover:text-default shrink-0 text-left text-xs transition"
                 >
                   <Time date={comment.date} tooltip="none" />
                   {isEdited ? " (edited)" : null}
-                </RACButton>
+                </button>
               </Tooltip>
               {comment.pending ? <PendingCommentBadge /> : null}
             </div>

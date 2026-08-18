@@ -90,7 +90,10 @@
                   "RadioButton",
                   "RadioField",
                   "Input",
-                  "Label"
+                  "Label",
+                  "Button",
+                  "ButtonProps",
+                  "ToggleButton"
                 ],
                 "message": "These have moved to Base UI: import from @/ui/Select, @/ui/ListBox, @/ui/Dialog, @/ui/Modal, @/ui/Popover, @/ui/Link, @/ui/Tab or @/ui/menu-kit. A react-aria part inside a Base UI tree type-checks and then throws at runtime, which no screenshot catches."
               }

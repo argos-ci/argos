@@ -1,7 +1,6 @@
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
 import { SmilePlusIcon } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
@@ -154,13 +153,14 @@ export function CommentReactionList(props: { comment: Comment }) {
     <div className="flex flex-wrap items-center gap-1 px-2 pb-2">
       {comment.reactions.map((group) => (
         <Tooltip key={group.emoji} content={getReactionTooltip(group)}>
-          <RACButton
-            isDisabled={!canReact}
+          <button
+            type="button"
+            disabled={!canReact}
             onClick={() => toggle(group)}
             className={clsx(
               "flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium transition",
-              "cursor-default focus:outline-hidden data-focus-visible:ring-4",
-              canReact && "data-hovered:border-hover",
+              "cursor-default focus:outline-hidden focus-visible:ring-4",
+              canReact && "hover:border-hover",
               group.reactedByMe
                 ? "border-primary bg-active text-default"
                 : "text-low",
@@ -168,7 +168,7 @@ export function CommentReactionList(props: { comment: Comment }) {
           >
             <span className="text-sm leading-none">{group.emoji}</span>
             <span className="tabular-nums">{group.count}</span>
-          </RACButton>
+          </button>
         </Tooltip>
       ))}
       <CommentAddReactionButton comment={comment} />

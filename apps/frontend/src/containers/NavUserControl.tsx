@@ -12,7 +12,6 @@ import {
   ShieldUserIcon,
   SunIcon,
 } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
@@ -94,15 +93,16 @@ function UserMenu(props: { account: AuthAccount }) {
   return (
     <MenuRoot>
       <MenuTrigger>
-        <RACButton
+        <button
+          type="button"
           className={clsx(
-            "rac-focus bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
-            "data-hovered:border-primary-hover data-pressed:border-primary-active aria-expanded:border-primary-active",
+            "focus-ring bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
+            "enabled-hover:border-primary-hover active:border-primary-active aria-expanded:border-primary-active",
           )}
           aria-label="User settings"
         >
           <AccountAvatar avatar={account.avatar} className="size-7" />
-        </RACButton>
+        </button>
       </MenuTrigger>
       <Menu side="bottom" align="end" className="w-60">
         <MenuItem

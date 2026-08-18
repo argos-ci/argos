@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ComponentIcon, FlaskConicalIcon, RadarIcon } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
@@ -93,12 +92,13 @@ function AffectedItemsSection(props: {
         ))}
       </ul>
       {collapsible && !expanded ? (
-        <RACButton
+        <button
+          type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="rac-focus text-low data-hovered:bg-ui data-hovered:text-default mx-2 mt-3 cursor-default rounded-full px-2 py-0.5 text-sm transition"
+          className="focus-ring text-low hover:bg-ui hover:text-default mx-2 mt-3 cursor-default rounded-full px-2 py-0.5 text-sm transition"
         >
           {props.seeAllLabel(items.length)}
-        </RACButton>
+        </button>
       ) : null}
     </Panel>
   );

@@ -2,7 +2,6 @@ import { useMutation } from "@apollo/client/react";
 import { formatRelativeDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { MonitorIcon, SmartphoneIcon } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 
 import { logout } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
@@ -295,10 +294,11 @@ function UserSessions(props: { sessions: readonly Session[] }) {
               </DialogTrigger>
             </div>
             {others.map((session) => (
-              <RACButton
+              <button
+                type="button"
                 key={session.id}
                 onClick={() => revoking.open(session)}
-                className="group bg-app data-focus-visible:bg-hover data-hovered:bg-hover flex w-full items-center gap-3 border-b p-4 last:border-b-0 focus:outline-hidden"
+                className="group bg-app focus-visible:bg-hover hover:bg-hover flex w-full items-center gap-3 border-b p-4 last:border-b-0 focus:outline-hidden"
               >
                 <SessionRowLayout
                   session={session}
@@ -315,7 +315,7 @@ function UserSessions(props: { sessions: readonly Session[] }) {
                     </span>
                   }
                 />
-              </RACButton>
+              </button>
             ))}
           </List>
         ) : null}

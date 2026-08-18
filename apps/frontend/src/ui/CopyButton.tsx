@@ -1,7 +1,10 @@
-import { useImperativeHandle, useState } from "react";
+import {
+  useImperativeHandle,
+  useState,
+  type ComponentPropsWithRef,
+} from "react";
 import { clsx } from "clsx";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { Button, ButtonProps } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { Tooltip } from "./Tooltip";
@@ -12,7 +15,10 @@ export function CopyButton({
   className,
   copyRef,
   ...props
-}: ButtonProps & { text: string; copyRef?: React.Ref<() => void> }) {
+}: ComponentPropsWithRef<"button"> & {
+  text: string;
+  copyRef?: React.Ref<() => void>;
+}) {
   const clipboard = useClipboard({ copiedTimeout: 2000 });
   const copy = useEventCallback(() => clipboard.copy(text));
   useImperativeHandle(copyRef, () => copy, [copy]);
@@ -23,9 +29,10 @@ export function CopyButton({
       open={clipboard.copied || isTooltipOpen}
       onOpenChange={setIsTooltipOpen}
     >
-      <Button
+      <button
+        type="button"
         className={clsx(
-          "text-low data-hovered:text-default bg-ui data-hovered:bg-hover data-pressed:bg-active data-focus-visible:ring-default cursor-default rounded-sm p-1 transition focus:outline-hidden data-focus-visible:ring-4",
+          "text-low hover:text-default bg-ui hover:bg-hover active:bg-active focus-visible:ring-default cursor-default rounded-sm p-1 transition focus:outline-hidden focus-visible:ring-4",
           className,
         )}
         onClick={copy}
@@ -47,7 +54,7 @@ export function CopyButton({
             <CheckIcon className="size-[1em]" />
           </div>
         </div>
-      </Button>
+      </button>
     </Tooltip>
   );
 }

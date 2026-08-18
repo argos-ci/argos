@@ -3,7 +3,6 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { EyeOffIcon } from "lucide-react";
-import { Button } from "react-aria-components";
 
 import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { DocumentType, graphql } from "@/gql";
@@ -68,12 +67,13 @@ function AttachedSnapshotToggle(props: {
           : "Click to attach this snapshot to your comment."
       }
     >
-      <Button
+      <button
+        type="button"
         onClick={onToggle}
         aria-pressed={attached}
         aria-label={`${attached ? "Detach" : "Attach"} snapshot ${name}`}
         className={clsx(
-          "border-thin hover:bg-hover rac-focus flex min-w-0 items-center gap-1.5 rounded-md py-0.5 pr-2 pl-1 text-xs transition",
+          "border-thin hover:bg-hover focus-ring flex min-w-0 items-center gap-1.5 rounded-md py-0.5 pr-2 pl-1 text-xs transition",
           attached ? "text-default" : "text-low opacity-60",
         )}
       >
@@ -90,7 +90,7 @@ function AttachedSnapshotToggle(props: {
           )}
         </span>
         <span className="min-w-0 truncate font-medium">{name}</span>
-      </Button>
+      </button>
     </Tooltip>
   );
 }

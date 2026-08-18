@@ -8,7 +8,6 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 import { useLocation } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
@@ -441,12 +440,13 @@ function MediaPinnedReference(props: {
         ? `Pinned on v${version.number}`
         : "Pinned on another version";
   return (
-    <RACButton
+    <button
+      type="button"
       onClick={onNavigate}
       aria-label="Go to the pinned comment"
       // No hover style or default cursor of its own: the surrounding card
       // shares this button's navigation and carries the hover affordance.
-      className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
+      className="text-low focus-ring flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
     >
       {thumbnailUrl ? (
         <MediaWell className="size-6 shrink-0">
@@ -457,6 +457,6 @@ function MediaPinnedReference(props: {
       ) : null}
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
       <MapPinPenIcon aria-hidden="true" className="size-3.5 shrink-0" />
-    </RACButton>
+    </button>
   );
 }
