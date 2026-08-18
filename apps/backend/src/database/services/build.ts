@@ -38,24 +38,28 @@ export type BuildsFilters = {
 };
 
 /**
- * Build a query matching the builds of a project with optional filters
- * applied. The returned query has no ordering or pagination, callers are
- * expected to apply their own.
+ * Build a query matching the builds of a project — or of several, when the
+ * caller spans projects, as the sibling builds of a commit do — with optional
+ * filters applied. The returned query has no ordering or pagination, callers
+ * are expected to apply their own.
  *
  * Branch and commit predicates go through project-scoped subqueries on
  * `screenshot_buckets` instead of a join, so they stay indexable on
  * projects with a large number of builds.
  */
 export function queryBuilds(input: {
-  projectId: string;
+  projectId: string | string[];
   filters?: BuildsFilters | null;
 }) {
-  const { projectId, filters } = input;
+  const { filters } = input;
+  const projectIds = Array.isArray(input.projectId)
+    ? input.projectId
+    : [input.projectId];
   const projectBucketsQuery = () =>
-    ScreenshotBucket.query().select("id").where("projectId", projectId);
+    ScreenshotBucket.query().select("id").whereIn("projectId", projectIds);
 
   return Build.query()
-    .where("builds.projectId", projectId)
+    .whereIn("builds.projectId", projectIds)
     .where((query) => {
       if (filters?.name) {
         query.where("builds.name", filters.name);

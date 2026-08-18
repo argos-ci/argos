@@ -97,8 +97,13 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
           buildType={data?.project?.build?.type ?? null}
         >
           <BuildDiffProvider params={params} build={build}>
-            <BuildReviewDialogProvider project={data?.project ?? null}>
-              <BuildNextReviewDialogProvider buildNumber={params.buildNumber}>
+            {/*
+             * The next-review prompt wraps the review dialog, not the other
+             * way around: the dialog hosts a review form of its own, outside
+             * `children`, and submitting from there raises the prompt too.
+             */}
+            <BuildNextReviewDialogProvider buildNumber={params.buildNumber}>
+              <BuildReviewDialogProvider project={data?.project ?? null}>
                 <RejectCommentDialogProvider build={build}>
                   <div className="flex h-screen min-h-0 flex-col">
                     {data?.project?.account && (
@@ -134,8 +139,8 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                     )}
                   </div>
                 </RejectCommentDialogProvider>
-              </BuildNextReviewDialogProvider>
-            </BuildReviewDialogProvider>
+              </BuildReviewDialogProvider>
+            </BuildNextReviewDialogProvider>
           </BuildDiffProvider>
         </BuildReviewStateProvider>
       </ProjectIgnoreEnabledProvider>

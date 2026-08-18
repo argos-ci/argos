@@ -178,9 +178,8 @@ loggedTest(
   "offers the next build of the commit once a review is submitted",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
-    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
-      projectId: project.id,
-    });
+    const { defaultBuild, storybookBuild, docsBuild, docsProject } =
+      await createSiblingBuildsScenario({ projectId: project.id });
 
     await page.goto(
       `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
@@ -188,8 +187,8 @@ loggedTest(
     await page.getByRole("button", { name: "Submit review" }).click();
     await page.getByRole("button", { name: "Approve" }).click();
 
-    // The other build ran on the same commit and nobody has reviewed it, so
-    // finishing this one hands the reviewer straight to it.
+    // Two more builds ran on the same commit and nobody has reviewed them, so
+    // finishing this one hands the reviewer straight to the next.
     //
     // The prompt waits on the review mutation's response, and the server only
     // answers it once the build notifications and the automations have been
@@ -197,15 +196,25 @@ loggedTest(
     const dialog = page.getByRole("dialog", { name: "Review the next build" });
     await expect(dialog).toBeVisible({ timeout: 15_000 });
     await expect(
-      dialog.getByText("One more build ran on this commit"),
+      dialog.getByText("2 more builds ran on this commit"),
     ).toBeVisible();
     // The row carries what the reviewer needs to choose: which build it is,
-    // and where its review stands.
+    // which project it ran in, and where its review stands.
     await expect(
       dialog.getByRole("link", {
-        name: `storybook Build ${storybookBuild.number} Changes detected`,
+        name: `storybook ${team.account.slug}/${project.name} Changes detected`,
       }),
     ).toBeVisible();
+    // The commit reaches beyond this project, and that build is offered with a
+    // link into its own project.
+    await expect(
+      dialog.getByRole("link", {
+        name: `default ${team.account.slug}/${docsProject.name} Changes detected`,
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/${team.account.slug}/${docsProject.name}/builds/${docsBuild.number}/overview`,
+    );
 
     await screenshot(page, "build-next-review-dialog", {
       replacements: {
@@ -226,7 +235,7 @@ loggedTest(
 );
 
 loggedTest(
-  "header switches between the builds of a commit",
+  "prompts for the next build from the review dialog too",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
@@ -236,21 +245,60 @@ loggedTest(
     await page.goto(
       `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
     );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    // Marking the build's only change opens the review dialog on its own. That
+    // dialog hosts a review form outside the page's children — it has to reach
+    // the same next-build prompt the header popover does. IconButtons carry no
+    // accessible name, so the thumb icon locates the button.
+    await page.locator("button:has(.lucide-thumbs-up)").first().click();
+    const reviewDialog = page.getByRole("dialog", {
+      name: "Submit your review",
+    });
+    await expect(reviewDialog).toBeVisible();
+
+    await reviewDialog.getByRole("button", { name: "Approve" }).click();
+    const dialog = page.getByRole("dialog", { name: "Review the next build" });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(
+      dialog.getByRole("link", { name: `Review ${storybookBuild.name}` }),
+    ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "header switches between the builds of a commit",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, storybookBuild, docsBuild, docsProject } =
+      await createSiblingBuildsScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
     await page.getByRole("button", { name: "Switch build" }).click();
 
     // Every build of the commit is listed with where its review stands, the
-    // one being looked at included. The menu kit is a listbox driven by a
-    // search field, so its rows are options rather than menu items.
+    // one being looked at included, and each names the project it ran in — the
+    // two projects of the commit both call their suite `default`. The menu kit
+    // is a listbox driven by a search field, so its rows are options rather
+    // than menu items.
     const menu = page.getByRole("listbox");
     await expect(
       menu.getByRole("option", {
-        name: `Changes detected ${defaultBuild.name} #${defaultBuild.number}`,
+        name: `Changes detected ${defaultBuild.name} #${defaultBuild.number} ${team.account.slug}/${project.name}`,
       }),
     ).toBeVisible();
-    const storybookItem = menu.getByRole("option", {
-      name: `Changes detected ${storybookBuild.name} #${storybookBuild.number}`,
+    await expect(
+      menu.getByRole("option", {
+        name: `Changes detected ${storybookBuild.name} #${storybookBuild.number} ${team.account.slug}/${project.name}`,
+      }),
+    ).toBeVisible();
+    const docsItem = menu.getByRole("option", {
+      name: `Changes detected ${docsBuild.name} #${docsBuild.number} ${team.account.slug}/${docsProject.name}`,
     });
-    await expect(storybookItem).toBeVisible();
+    await expect(docsItem).toBeVisible();
 
     await screenshot(page, "build-switcher", {
       replacements: {
@@ -258,9 +306,13 @@ loggedTest(
       },
     });
 
-    await storybookItem.click();
+    // Switching lands on the build of the other project, not on a build of
+    // this one that happens to share its number.
+    await docsItem.click();
     await expect(page).toHaveURL(
-      new RegExp(`/builds/${storybookBuild.number}/overview$`),
+      new RegExp(
+        `/${team.account.slug}/${docsProject.name}/builds/${docsBuild.number}/overview$`,
+      ),
     );
   },
 );

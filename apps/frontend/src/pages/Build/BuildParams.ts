@@ -50,6 +50,23 @@ export function useBuildParams(): BuildParams | null {
   return params;
 }
 
+/**
+ * Parameters of a build that names its own project, rather than of the build
+ * the current route points at. The builds of a single commit can live in
+ * several projects, so a link to one cannot assume the project it is rendered
+ * from.
+ */
+export function getBuildParams(build: {
+  number: number;
+  project: { name: string; account: { slug: string } };
+}): BuildParams {
+  return {
+    accountSlug: build.project.account.slug,
+    projectName: build.project.name,
+    buildNumber: build.number,
+  };
+}
+
 export function getBuildURL(params: BuildParams): string {
   return `${getProjectURL(params)}/builds/${params.buildNumber}${params.diffId ? `/${params.diffId}` : ""}`;
 }

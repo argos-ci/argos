@@ -1,5 +1,6 @@
 import { createContext, use, useEffect, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
+import { clsx } from "clsx";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
@@ -19,12 +20,16 @@ import { Modal } from "@/ui/Modal";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { useProjectParams } from "../Project/ProjectParams";
-import { getBuildOverviewURL } from "./BuildParams";
+import { getBuildOverviewURL, getBuildParams } from "./BuildParams";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 const _BuildFragment = graphql(`
   fragment BuildNextReviewDialog_Build on Build {
+    id
+    project {
+      id
+      slug
+    }
     siblingBuilds {
       id
       number
@@ -32,6 +37,15 @@ const _BuildFragment = graphql(`
       status
       subset
       viewerHasSubmittedReview
+      project {
+        id
+        slug
+        name
+        account {
+          id
+          slug
+        }
+      }
       stats {
         ...BuildStatsIndicator_BuildStats
       }
@@ -40,9 +54,8 @@ const _BuildFragment = graphql(`
   }
 `);
 
-export type SiblingBuild = DocumentType<
-  typeof _BuildFragment
->["siblingBuilds"][number];
+type ReviewedBuild = DocumentType<typeof _BuildFragment>;
+export type SiblingBuild = ReviewedBuild["siblingBuilds"][number];
 
 /**
  * The builds still waiting for the viewer to make a call: nobody has concluded
@@ -61,7 +74,7 @@ type ContextValue = {
    * Offer to move on to the next build of the same commit awaiting a review.
    * Does nothing when there is none — the reviewer is done with this commit.
    */
-  promptNextReview: (builds: SiblingBuild[]) => void;
+  promptNextReview: (build: ReviewedBuild) => void;
 };
 
 const BuildNextReviewDialogContext = createContext<ContextValue | null>(null);
@@ -80,13 +93,13 @@ export function BuildNextReviewDialogProvider(props: {
   children: React.ReactNode;
 }) {
   const { buildNumber, children } = props;
-  const dialog = useDialogValueState<SiblingBuild[] | null>(null);
+  const dialog = useDialogValueState<ReviewedBuild | null>(null);
 
-  const promptNextReview = useEventCallback((builds: SiblingBuild[]) => {
-    if (getBuildsAwaitingReview(builds).length === 0) {
+  const promptNextReview = useEventCallback((build: ReviewedBuild) => {
+    if (getBuildsAwaitingReview(build.siblingBuilds).length === 0) {
       return;
     }
-    dialog.open(builds);
+    dialog.open(build);
   });
   const value = useMemo(() => ({ promptNextReview }), [promptNextReview]);
 
@@ -107,7 +120,7 @@ export function BuildNextReviewDialogProvider(props: {
           onOpenChange={dialog.onOpenChange}
           dismissible
         >
-          <BuildNextReviewDialog builds={dialog.value} />
+          <BuildNextReviewDialog build={dialog.value} />
         </Modal>
       ) : null}
       <BuildNextReviewDialogContext value={value}>
@@ -117,13 +130,19 @@ export function BuildNextReviewDialogProvider(props: {
   );
 }
 
-function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
-  const { builds } = props;
-  const projectParams = useProjectParams();
-  invariant(projectParams, "The build page always has project params");
+function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
+  const { build } = props;
+  const builds = build.siblingBuilds;
   const awaitingReview = getBuildsAwaitingReview(builds);
   const [nextBuild] = awaitingReview;
   invariant(nextBuild, "The dialog only opens when a build awaits a review");
+  // A commit can spread its suites over several projects, and then the build
+  // name alone stops being enough to tell them apart — both projects of a
+  // monorepo call theirs `default`. Named only when it is somewhere else than
+  // the project being reviewed, so the usual case stays quiet.
+  const showProject = builds.some(
+    (sibling) => sibling.project.id !== build.project.id,
+  );
 
   return (
     <Dialog size="medium">
@@ -135,13 +154,10 @@ function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
             : `${awaitingReview.length} more builds ran on this commit and still need your review.`}
         </DialogText>
         <List>
-          {builds.map((build) => (
+          {builds.map((sibling) => (
             <ListRowLink
-              key={build.id}
-              href={getBuildOverviewURL({
-                ...projectParams,
-                buildNumber: build.number,
-              })}
+              key={sibling.id}
+              href={getBuildOverviewURL(getBuildParams(sibling))}
               className="flex items-center gap-4 p-3 text-sm"
             >
               {/*
@@ -149,20 +165,24 @@ function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
                * name is what tells the builds apart, and it is the same word
                * the reviewer configured in CI.
                */}
-              <div className="w-28 shrink-0">
-                <Truncable className="font-medium">{build.name}</Truncable>
-                <div className="text-low mt-0.5 text-xs tabular-nums">
-                  Build {build.number}
+              <div className={clsx("shrink-0", showProject ? "w-44" : "w-28")}>
+                <Truncable className="font-medium">{sibling.name}</Truncable>
+                <div className="text-low mt-0.5 text-xs">
+                  {showProject ? (
+                    <Truncable>{sibling.project.slug}</Truncable>
+                  ) : (
+                    <span className="tabular-nums">Build {sibling.number}</span>
+                  )}
                 </div>
               </div>
               <div className="w-44 shrink-0">
-                <BuildStatusChip build={build} scale="sm" />
+                <BuildStatusChip build={sibling} scale="sm" />
               </div>
               <div className="hidden grow justify-end sm:flex">
-                {build.stats ? (
+                {sibling.stats ? (
                   <BuildStatsIndicator
-                    stats={build.stats}
-                    isSubsetBuild={build.subset}
+                    stats={sibling.stats}
+                    isSubsetBuild={sibling.subset}
                     className="flex-wrap justify-end"
                   />
                 ) : null}
@@ -174,10 +194,7 @@ function BuildNextReviewDialog(props: { builds: SiblingBuild[] }) {
       <DialogFooter>
         <DialogDismiss>Not now</DialogDismiss>
         <LinkButton
-          href={getBuildOverviewURL({
-            ...projectParams,
-            buildNumber: nextBuild.number,
-          })}
+          href={getBuildOverviewURL(getBuildParams(nextBuild))}
           autoFocus
         >
           Review {nextBuild.name}

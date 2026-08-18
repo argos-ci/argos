@@ -8,8 +8,8 @@ import {
   type BuildBaselineIneligibilityReason,
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
+import { getSiblingBuilds } from "@/build/siblings";
 import { Build, BuildNotificationSubscription } from "@/database/models";
-import { queryBuilds } from "@/database/services/build";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -140,7 +140,9 @@ export const typeDefs = gql`
     commentsCount: Int!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
-    "The commit's other suites on this branch: one build per name, latest run, this build's own name excluded"
+    "Project the build belongs to"
+    project: Project!
+    "The commit's other suites on this branch, across every project the viewer can reach: one build per name, latest run, this build's own suite excluded"
     siblingBuilds: [Build!]!
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
@@ -470,34 +472,14 @@ export const resolvers: IResolvers = {
     },
     siblingBuilds: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
-      // Without a branch we cannot tell a sibling from any other build that
-      // happens to share the commit.
-      if (!compareBucket.branch) {
-        return [];
-      }
-      // One build per name: a suite that was re-run leaves older builds behind
-      // on the same commit, and only its latest run is worth reviewing.
-      const latestPerName = queryBuilds({
-        projectId: build.projectId,
-        filters: {
-          branch: compareBucket.branch,
-          commit: build.prHeadCommit ?? compareBucket.commit,
-        },
-      })
-        .select("builds.id")
-        .distinctOn("builds.name")
-        .orderBy("builds.name")
-        .orderBy("builds.id", "desc");
-
-      // Told apart by name, not by id: siblings are the commit's *other*
-      // suites. Dropping this build's name rather than this build drops its
-      // own earlier runs with it — a re-run of one suite is the same suite,
-      // and offering it as somewhere else to go would list the same word
-      // twice and put a switcher on every build of every re-run commit.
-      return Build.query()
-        .whereIn("builds.id", latestPerName)
-        .whereNot("builds.name", build.name)
-        .orderBy("builds.name");
+      return getSiblingBuilds({
+        build,
+        compareBucket,
+        user: ctx.auth?.user ?? null,
+      });
+    },
+    project: async (build, _args, ctx) => {
+      return getProject(ctx, build);
     },
     subscribed: async (build, _args, ctx) => {
       if (!ctx.auth) {
