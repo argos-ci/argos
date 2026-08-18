@@ -1,5 +1,5 @@
-import { parseDate } from "@internationalized/date";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 
 import { DateRangePicker } from "./DateRangePicker";
 import { openOverlayParameters, OverlayStage } from "./storyOverlay";
@@ -17,7 +17,6 @@ const meta = {
   component: DateRangePicker,
   args: {
     "aria-label": "Custom period",
-    granularity: "day",
     value: VALUE,
     onChange: () => {},
   },
@@ -26,18 +25,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// `minValue`/`maxValue` pass straight through to react-aria, which speaks
-// `@internationalized/date` rather than `Date` — unlike `value`, which the
-// wrapper converts.
-const MIN_VALUE = parseDate("2024-03-01");
-const MAX_VALUE = parseDate("2024-03-29");
+const MIN_DATE = new Date("2024-03-01T00:00:00");
+const MAX_DATE = new Date("2024-03-29T00:00:00");
 
 /**
- * The field on its own: two segmented date inputs and the calendar button.
+ * The field on its own: the chosen range, and the calendar button.
  *
- * This component has no baseline today and it is the one place the Base UI
- * migration cannot land like-for-like — Base UI has no calendar, and the
- * segmented inputs have no replacement in `react-day-picker` either.
+ * react-aria's two segmented `DateInput`s are gone — `react-day-picker` has no
+ * counterpart, and this is the one place the Base UI migration could not land
+ * like-for-like. The range is read here and edited in the calendar, which is
+ * how the control was already used.
  */
 export const Default: Story = {
   render: (args) => (
@@ -51,7 +48,7 @@ export const Default: Story = {
 /** The range calendar: selected range, its two ends, and out-of-bounds days. */
 export const Open: Story = {
   parameters: openOverlayParameters,
-  args: { minValue: MIN_VALUE, maxValue: MAX_VALUE, isOpen: true },
+  args: { minDate: MIN_DATE, maxDate: MAX_DATE, defaultOpen: true },
   render: (args) => (
     <OverlayStage>
       <div className="w-72">
@@ -62,14 +59,9 @@ export const Open: Story = {
 };
 
 /**
- * The validation message, which only exists because react-aria runs the
- * `validate` prop and `DateRangeFieldError` bridges the result into the kit's
- * own field-error context. Nothing else covers that bridge, and if it breaks the
- * message simply stops rendering.
- *
- * It rides on the component's `validationBehavior="aria"` default rather than
- * setting the prop here, so this also guards that default: under react-aria's
- * own `"native"`, the message would wait for a form submit that never comes.
+ * The validation message. `validate` runs against whatever is selected and the
+ * component publishes the result on the kit's field-error context, so nothing
+ * at the call site has to thread the message down.
  */
 export const Invalid: Story = {
   args: {
@@ -81,4 +73,38 @@ export const Invalid: Story = {
       <DateRangePicker {...args} />
     </div>
   ),
+};
+
+/**
+ * Picking a range takes two clicks, and the first one must not commit: a
+ * half-made range would otherwise reach the call site as `from` with no `to`.
+ * No screenshot can see the intermediate state, so it is asserted.
+ */
+export const PickingARangeCommitsOnce: Story = {
+  parameters: openOverlayParameters,
+  args: { minDate: MIN_DATE, maxDate: MAX_DATE, onChange: fn() },
+  render: (args) => (
+    <OverlayStage>
+      <div className="w-72">
+        <DateRangePicker {...args} />
+      </div>
+    </OverlayStage>
+  ),
+  play: async ({ args }) => {
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Custom period" }),
+    );
+    await expect(await screen.findByRole("grid")).toBeVisible();
+    // The first click starts a new range: nothing is committed, and the
+    // calendar stays up waiting for the other end.
+    await userEvent.click(screen.getByRole("button", { name: /March 6/ }));
+    await expect(args.onChange).not.toHaveBeenCalled();
+    await expect(screen.getByRole("grid")).toBeVisible();
+    // The second click completes it, commits once, and closes.
+    await userEvent.click(screen.getByRole("button", { name: /March 12/ }));
+    await expect(args.onChange).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    });
+  },
 };

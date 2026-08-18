@@ -7,7 +7,7 @@ import { Link } from "react-router";
  * installed on the machine (`claude-cli://`, `codex://`, `cursor://`). React
  * Router must not try to resolve those as in-app paths.
  */
-export function checkIsExternalHref(path: string) {
+function checkIsExternalHref(path: string) {
   return /^[a-z][a-z\d+.-]*:\/\//i.test(path) || path.startsWith("mailto:");
 }
 

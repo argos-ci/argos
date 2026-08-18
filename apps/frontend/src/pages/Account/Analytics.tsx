@@ -19,7 +19,6 @@ import {
 } from "@argos/util/date";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
-import { getLocalTimeZone, today } from "@internationalized/date";
 import clsx from "clsx";
 import {
   FileDownIcon,
@@ -1417,25 +1416,17 @@ function CustomPeriodPicker(props: {
   return (
     <DateRangePicker
       aria-label="Custom analytics period"
-      granularity="day"
       value={draft}
-      maxValue={today(getLocalTimeZone())}
+      maxDate={maxDay}
       onChange={(next) => {
         setDraft(next);
         if (checkIsDurationValid(next) && next.to <= maxDay) {
           onChange(next);
         }
       }}
-      validate={(entered) => {
-        if (!entered) {
-          return null;
-        }
-        const range = {
-          from: new Date(`${entered.start}T00:00:00`),
-          to: new Date(`${entered.end}T00:00:00`),
-        };
-        // Only the duration limit — react-aria reports a reversed range and a
-        // day past `maxValue` itself, with a message specific to each.
+      validate={(range) => {
+        // Only the duration limit: the calendar cannot produce a reversed
+        // range, and `maxDate` puts later days out of reach.
         if (getDurationInDays(range) <= MAX_DURATION_DAYS) {
           return null;
         }

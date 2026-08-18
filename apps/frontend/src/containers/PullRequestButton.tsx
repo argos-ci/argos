@@ -5,7 +5,6 @@ import {
   GitPullRequestIcon,
 } from "@primer/octicons-react";
 import { clsx } from "clsx";
-import { FocusableOptions } from "react-aria";
 
 import { DocumentType, graphql } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
@@ -154,7 +153,7 @@ function PullRequestInfo(props: {
 
 function PullRequestInfoTooltip(props: {
   pullRequest: DocumentType<typeof _PullRequestInfoFragment>;
-  children: React.ReactElement<FocusableOptions>;
+  children: React.ReactElement;
 }) {
   const { pullRequest } = props;
   return (

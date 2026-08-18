@@ -265,11 +265,6 @@ export function createMentionExtension(options: MentionExtensionOptions) {
               editor: props.editor,
             });
             popup = document.createElement("div");
-            // Mark as a top layer so react-aria's interact-outside ignores
-            // clicks on it — otherwise selecting a mention inside a dialog or
-            // popover would dismiss that overlay. Also keeps it visible to
-            // screen readers (excluded from the modal's `aria-hidden`).
-            popup.setAttribute("data-react-aria-top-layer", "true");
             popup.append(component.element);
             document.body.append(popup);
             positionSuggestionPopup(popup, props.clientRect);
