@@ -18,6 +18,15 @@ function doc(text: string) {
   };
 }
 
+/**
+ * The test ID in the breadcrumb is a sqid of the `tests` row id, so the Postgres
+ * sequence decides it and it differs from one run to the next. Mask it, or every
+ * screenshot of the test view reports a change.
+ */
+function maskTestId(testId: string) {
+  return { replacements: { [testId]: "SPARKLE-XXX" } };
+}
+
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
@@ -45,11 +54,7 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
     throw new Error("Test ID should be present in the URL");
   }
   const testId = match[1];
-  await screenshot(page, "test-detail", {
-    replacements: {
-      [testId]: "SPARKLE-XXX",
-    },
-  });
+  await screenshot(page, "test-detail", maskTestId(testId));
 });
 
 loggedTest("test view with a change", async ({ page, team, project }) => {
@@ -83,7 +88,7 @@ loggedTest("test view with a change", async ({ page, team, project }) => {
     )
     .toBe(true);
 
-  await screenshot(page, "test-view-change");
+  await screenshot(page, "test-view-change", maskTestId(testId));
 });
 
 loggedTest(
@@ -114,7 +119,7 @@ loggedTest(
     // The filter is in the URL, so the view survives a reload and can be shared.
     await expect(page).toHaveURL(/changes=ignored/);
 
-    await screenshot(page, "test-view-ignored-changes");
+    await screenshot(page, "test-view-ignored-changes", maskTestId(testId));
   },
 );
 
@@ -149,7 +154,7 @@ loggedTest(
     const unsubscribe = page.getByRole("button", { name: "Unsubscribe" });
     await expect(unsubscribe).toBeVisible();
 
-    await screenshot(page, "test-view-comment");
+    await screenshot(page, "test-view-comment", maskTestId(testId));
 
     // And the toggle opts back out.
     await unsubscribe.click();
@@ -195,7 +200,7 @@ loggedTest(
       page.getByRole("img", { name: /^Posted through/ }),
     ).toHaveCount(1);
 
-    await screenshot(page, "test-view-agent-comment");
+    await screenshot(page, "test-view-agent-comment", maskTestId(testId));
   },
 );
 
