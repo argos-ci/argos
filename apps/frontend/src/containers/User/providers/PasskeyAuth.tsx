@@ -7,7 +7,6 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 import { useForm } from "react-hook-form";
 
 import {
@@ -308,8 +307,9 @@ export function PasskeyAuth(props: {
         <ProviderContent>
           <div className="font-medium">Passkeys</div>
           {passkeys.length > 0 ? (
-            <RACButton
-              className="text-low data-focus-visible:text-default data-hovered:text-default flex items-center gap-1 focus:outline-hidden"
+            <button
+              type="button"
+              className="text-low focus-visible:text-default hover:text-default flex items-center gap-1 focus:outline-hidden"
               onClick={() => setIsExpanded((expanded) => !expanded)}
             >
               {passkeys.length} passkey{passkeys.length > 1 ? "s" : ""}{" "}
@@ -319,7 +319,7 @@ export function PasskeyAuth(props: {
               ) : (
                 <ChevronDownIcon className="size-4" />
               )}
-            </RACButton>
+            </button>
           ) : (
             <div className="text-low">No passkeys registered</div>
           )}

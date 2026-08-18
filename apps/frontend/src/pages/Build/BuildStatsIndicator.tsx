@@ -2,7 +2,6 @@ import { Fragment, memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 
 import {
   DIFF_STATS_GROUPS,
@@ -26,20 +25,23 @@ const getStatCountColorClassName = (
 ) => {
   switch (color) {
     case "danger":
-      return clsx("text-danger-low", interactive && "data-hovered:text-danger");
+      return clsx(
+        "text-danger-low",
+        interactive && "not-disabled:hover:text-danger",
+      );
     case "warning":
       return clsx(
         "text-warning-low",
-        interactive && "data-hovered:text-warning",
+        interactive && "not-disabled:hover:text-warning",
       );
     case "success":
       return clsx(
         "text-success-low",
-        interactive && "data-hovered:text-success",
+        interactive && "not-disabled:hover:text-success",
       );
     case "neutral":
     default:
-      return clsx("text-low", interactive && "data-hovered:text");
+      return clsx("text-low", interactive && "not-disabled:hover:text");
   }
 };
 
@@ -83,17 +85,18 @@ function InteractiveStatCount({
   const hotkey = useBuildHotkey(hotkeyName, onActive);
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
-      <RACButton
+      <button
+        type="button"
         className={clsx(
           colorClassName,
-          "data-disabled:opacity-disabled rac-focus flex cursor-default items-center gap-1 py-2 transition",
+          "disabled:opacity-disabled focus-ring flex cursor-default items-center gap-1 py-2 transition",
         )}
         onClick={onActive}
-        isDisabled={count === 0}
+        disabled={count === 0}
       >
         <Icon className="size-3" />
         <span className="text-xs">{count}</span>
-      </RACButton>
+      </button>
     </HotkeyTooltip>
   );
 }

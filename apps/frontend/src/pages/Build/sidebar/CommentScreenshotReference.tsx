@@ -1,7 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import { useSetAtom } from "jotai/react";
 import { MapPinIcon } from "lucide-react";
-import { Button } from "react-aria-components";
 
 import {
   commentsVisibleAtom,
@@ -106,12 +105,13 @@ export function CommentScreenshotReference(props: {
   const isPoint = anchor?.__typename === "CommentPointAnchor";
 
   return (
-    <Button
+    <button
+      type="button"
       onClick={goToDiff}
       aria-label={`Go to snapshot ${screenshotDiff.name}`}
       // No hover style or default cursor of its own: the surrounding card
       // shares this button's navigation and carries the hover affordance.
-      className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
+      className="text-low focus-ring flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
     >
       <ScreenshotDiffThumbnail
         screenshotDiff={screenshotDiff}
@@ -127,6 +127,6 @@ export function CommentScreenshotReference(props: {
       {linesLabel ? (
         <span className="shrink-0 tabular-nums">{linesLabel}</span>
       ) : null}
-    </Button>
+    </button>
   );
 }

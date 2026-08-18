@@ -1,4 +1,12 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentPropsWithRef,
+} from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -15,10 +23,6 @@ import {
   SquareStackIcon,
 } from "lucide-react";
 import memoize from "memoize";
-import {
-  Button as RACButton,
-  ButtonProps as RACButtonProps,
-} from "react-aria-components";
 
 import {
   checkIsDiffGroupName,
@@ -296,7 +300,7 @@ function getRows(
 
 function ListHeader(props: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
-  onClick: RACButtonProps["onClick"];
+  onClick: ComponentPropsWithRef<"button">["onClick"];
   item: ListHeaderRow;
   activeIndex: number;
 }) {
@@ -304,17 +308,18 @@ function ListHeader(props: {
   const borderB = item.borderBottom ? "border-b-thin" : "";
   const def = getDiffGroupDefinition(item.name);
   return (
-    <RACButton
+    <button
+      type="button"
       className={clsx(
         borderB,
-        "group/list-header bg-app data-hovered:bg-subtle data-focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center pr-2 text-left select-none focus:outline-hidden",
+        "group/list-header bg-app hover:bg-subtle focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
       onClick={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "text-low m-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-focus-visible/list-header:opacity-100",
+          "text-low m-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-focus-visible/list-header:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />
@@ -324,7 +329,7 @@ function ListHeader(props: {
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
       </Badge>
-    </RACButton>
+    </button>
   );
 }
 
