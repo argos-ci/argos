@@ -226,6 +226,39 @@ loggedTest(
 );
 
 loggedTest(
+  "prompts for the next build from the review dialog too",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    // Marking the build's only change opens the review dialog on its own. That
+    // dialog hosts a review form outside the page's children — it has to reach
+    // the same next-build prompt the header popover does. IconButtons carry no
+    // accessible name, so the thumb icon locates the button.
+    await page.locator("button:has(.lucide-thumbs-up)").first().click();
+    const reviewDialog = page.getByRole("dialog", {
+      name: "Submit your review",
+    });
+    await expect(reviewDialog).toBeVisible();
+
+    await reviewDialog.getByRole("button", { name: "Approve" }).click();
+    const dialog = page.getByRole("dialog", { name: "Review the next build" });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(
+      dialog.getByRole("link", { name: `Review ${storybookBuild.name}` }),
+    ).toBeVisible();
+  },
+);
+
+loggedTest(
   "header switches between the builds of a commit",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
