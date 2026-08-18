@@ -155,7 +155,7 @@ function FlowMinimapToggle() {
         iconOnly
         aria-label="Flow minimap"
         aria-pressed={visible}
-        onPress={() => setVisible(!visible)}
+        onClick={() => setVisible(!visible)}
       >
         <WaypointsIcon />
       </Button>

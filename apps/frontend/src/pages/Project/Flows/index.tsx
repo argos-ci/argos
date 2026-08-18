@@ -1,10 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 import { WaypointsIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
 import { Link } from "react-router";
 
 import { BuildType } from "@/gql/graphql";
 import { Chip } from "@/ui/Chip";
+import { Heading } from "@/ui/Heading";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import {
   EmptyState,
@@ -14,6 +14,7 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 
 import { NotFound } from "../../NotFound";

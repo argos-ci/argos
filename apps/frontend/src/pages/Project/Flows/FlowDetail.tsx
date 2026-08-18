@@ -57,7 +57,7 @@ function VariantGroups(props: {
                 aria-current={
                   selection.browser === browser ? "page" : undefined
                 }
-                onPress={() => onChange({ browser })}
+                onClick={() => onChange({ browser })}
               >
                 {getBrowserLabel(browser)}
               </ChipButton>
@@ -75,7 +75,7 @@ function VariantGroups(props: {
                 aria-current={
                   selection.viewport === viewport ? "page" : undefined
                 }
-                onPress={() => onChange({ viewport })}
+                onClick={() => onChange({ viewport })}
               >
                 {viewport}
               </ChipButton>
@@ -90,7 +90,7 @@ function VariantGroups(props: {
               key={mode}
               className="cursor-default"
               aria-current={selection.mode === mode ? "page" : undefined}
-              onPress={() => onChange({ mode })}
+              onClick={() => onChange({ mode })}
             >
               {mode}
             </ChipButton>
@@ -105,7 +105,7 @@ function VariantGroups(props: {
                 icon={colorSchemeIcons[scheme]}
                 className="cursor-default"
                 aria-current={selection.scheme === scheme ? "page" : undefined}
-                onPress={() => onChange({ scheme })}
+                onClick={() => onChange({ scheme })}
               >
                 {scheme === "dark" ? "Dark" : "Light"}
               </ChipButton>
@@ -241,8 +241,8 @@ function Storyboard(props: {
                   size="small"
                   iconOnly
                   aria-label="Move up"
-                  isDisabled={index === 0}
-                  onPress={() => move(index, -1)}
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
                 >
                   <ArrowUpIcon />
                 </Button>
@@ -251,8 +251,8 @@ function Storyboard(props: {
                   size="small"
                   iconOnly
                   aria-label="Move down"
-                  isDisabled={index === steps.length - 1}
-                  onPress={() => move(index, 1)}
+                  disabled={index === steps.length - 1}
+                  onClick={() => move(index, 1)}
                 >
                   <ArrowDownIcon />
                 </Button>
@@ -363,7 +363,7 @@ function PageContent(props: { params: ProjectParams; flowId: string }) {
               <Button
                 variant="secondary"
                 size="small"
-                onPress={() => resetFlowOrder(flow.key)}
+                onClick={() => resetFlowOrder(flow.key)}
               >
                 Reset
               </Button>
