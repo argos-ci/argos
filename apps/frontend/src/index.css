@@ -383,32 +383,13 @@
     )
 );
 
-@utility rac-focus {
-  &[data-focused]:not([data-focus-visible]) {
-    @apply outline-none;
-  }
-
-  &[data-focus-visible] {
-    @apply outline-1 outline-offset-1 outline-(--violet-10);
-  }
-}
-
-@utility rac-focus-group {
-  .group:focus & {
-    @apply outline-none;
-  }
-
-  .group[data-focus-visible] & {
-    @apply outline-1 outline-offset-1 outline-(--violet-10);
-  }
-}
-
 /**
- * The same focus contract as `rac-focus`, on an element that is itself
- * focusable rather than a child of one. Base UI parts are the control — a
- * `Switch.Root` *is* the button — so they need no `group` indirection, and no
- * `data-focus-visible` either: the browser's own `:focus-visible` is what
- * react-aria's modality tracking was standing in for.
+ * An outline on keyboard focus, and nothing on a click.
+ *
+ * Goes on the focusable element itself: a Base UI part *is* the control — a
+ * `Switch.Root` is the button — so there is no `group` indirection to make,
+ * and no attribute to read either. The browser's own `:focus-visible` is what
+ * react-aria's modality tracking used to stand in for.
  *
  * Text inputs are the exception and must not use this — see the comment in
  * `ui/TextInput.tsx`.
