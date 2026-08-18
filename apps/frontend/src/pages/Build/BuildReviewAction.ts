@@ -8,6 +8,7 @@ import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { EditorValue } from "@/ui/Editor/Editor";
 import { useEventCallback } from "@/ui/useEventCallback";
 
+import { useBuildNextReviewPrompt } from "./BuildNextReviewDialog";
 import {
   useBuildReviewAPI,
   useGetReviewedDiffStatuses,
@@ -25,6 +26,10 @@ const CreateBuildReviewMutation = graphql(`
       id
       status
       ...BuildReviewAction_Build
+      # Re-read the siblings on the way out: the prompt is about what is left
+      # to review right now, and someone else may have settled one of them
+      # since this page loaded.
+      ...BuildNextReviewDialog_Build
     }
   }
 `);
@@ -48,6 +53,7 @@ export function useCreateBuildReviewMutation(
 ) {
   const api = useBuildReviewAPI();
   const openReviewSidebar = useOpenReviewSidebar();
+  const { promptNextReview } = useBuildNextReviewPrompt();
   const projectParams = useProjectParams();
   const client = useApolloClient();
 
@@ -89,6 +95,13 @@ export function useCreateBuildReviewMutation(
       options?.onCompleted?.();
       api.setDiffStatuses(diffStatuses);
       openReviewSidebar();
+      // Approving or rejecting settles this build, so it's the moment to offer
+      // the next one. A neutral comment deliberately leaves the build
+      // undecided — sending the reviewer elsewhere would fight that intent.
+      const siblingBuilds = result.data?.createBuildReview.siblingBuilds;
+      if (siblingBuilds && input.event !== BuildReviewEvent.Comment) {
+        promptNextReview(siblingBuilds);
+      }
       return result;
     },
   );

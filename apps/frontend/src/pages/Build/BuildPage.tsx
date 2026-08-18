@@ -9,6 +9,7 @@ import { BuildStatus } from "@/gql/graphql";
 import { Loader } from "@/ui/Loader";
 
 import { BuildDiffProvider } from "./BuildDiffState";
+import { BuildNextReviewDialogProvider } from "./BuildNextReviewDialog";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildReviewDialogProvider } from "./BuildReviewDialog";
@@ -97,41 +98,43 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
         >
           <BuildDiffProvider params={params} build={build}>
             <BuildReviewDialogProvider project={data?.project ?? null}>
-              <RejectCommentDialogProvider build={build}>
-                <div className="flex h-screen min-h-0 flex-col">
-                  {data?.project?.account && (
-                    <>
-                      <PaymentBanner account={data.project.account} />
-                      <OvercapacityBanner
-                        account={data.project.account}
-                        accountSlug={params.accountSlug}
-                      />
-                    </>
-                  )}
-                  <BuildHeader
-                    buildNumber={params.buildNumber}
-                    accountSlug={params.accountSlug}
-                    projectName={params.projectName}
-                    build={build}
-                    project={data?.project ?? null}
-                  />
-                  {project && build ? (
-                    <BuildWorkspace
-                      params={params}
+              <BuildNextReviewDialogProvider buildNumber={params.buildNumber}>
+                <RejectCommentDialogProvider build={build}>
+                  <div className="flex h-screen min-h-0 flex-col">
+                    {data?.project?.account && (
+                      <>
+                        <PaymentBanner account={data.project.account} />
+                        <OvercapacityBanner
+                          account={data.project.account}
+                          accountSlug={params.accountSlug}
+                        />
+                      </>
+                    )}
+                    <BuildHeader
+                      buildNumber={params.buildNumber}
+                      accountSlug={params.accountSlug}
+                      projectName={params.projectName}
                       build={build}
-                      project={project}
+                      project={data?.project ?? null}
                     />
-                  ) : (
-                    // Initial load: the query is still in flight (a missing
-                    // build is caught by BuildNotFound above). Render a loader
-                    // with `aria-busy` so Argos waits for the build to render
-                    // before screenshotting, instead of catching a blank body.
-                    <div className="flex min-h-0 flex-1 items-center justify-center">
-                      <Loader className="size-16" />
-                    </div>
-                  )}
-                </div>
-              </RejectCommentDialogProvider>
+                    {project && build ? (
+                      <BuildWorkspace
+                        params={params}
+                        build={build}
+                        project={project}
+                      />
+                    ) : (
+                      // Initial load: the query is still in flight (a missing
+                      // build is caught by BuildNotFound above). Render a loader
+                      // with `aria-busy` so Argos waits for the build to render
+                      // before screenshotting, instead of catching a blank body.
+                      <div className="flex min-h-0 flex-1 items-center justify-center">
+                        <Loader className="size-16" />
+                      </div>
+                    )}
+                  </div>
+                </RejectCommentDialogProvider>
+              </BuildNextReviewDialogProvider>
             </BuildReviewDialogProvider>
           </BuildDiffProvider>
         </BuildReviewStateProvider>

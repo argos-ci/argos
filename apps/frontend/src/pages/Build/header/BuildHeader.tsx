@@ -29,6 +29,7 @@ import {
 } from "../BuildReviewButton";
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { createBuildReviewPrompt } from "./BuildReviewPrompt";
+import { BuildSwitcher } from "./BuildSwitcher";
 
 const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
@@ -46,6 +47,7 @@ const _BuildFragment = graphql(`
     ...BuildTestStatusChip_Build
     ...BuildBaselineEligibilityChip_Build
     ...BuildReviewability_Build
+    ...BuildSwitcher_Build
   }
 `);
 
@@ -216,7 +218,13 @@ export const BuildHeader = memo(
             <SyncingIcon />
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <div className="mb-1 flex min-w-0 items-start gap-1">
+            {/*
+             * Centered rather than top-aligned: the title truncates instead of
+             * wrapping, so there is no second line for the mode indicator and
+             * the build switcher to hang off — they read as misaligned against
+             * a single line of text.
+             */}
+            <div className="mb-1 flex min-w-0 items-center gap-1">
               <BuildModeIndicator
                 mode={build ? build.mode : BuildMode.Ci}
                 scale="sm"
@@ -234,6 +242,13 @@ export const BuildHeader = memo(
                   {build && build.name !== "default" ? ` • ${build.name}` : ""}
                 </HeadlessLink>
               </Tooltip>
+              {build ? (
+                <BuildSwitcher
+                  accountSlug={props.accountSlug}
+                  projectName={props.projectName}
+                  build={build}
+                />
+              ) : null}
             </div>
             <div className="flex min-w-0">
               <ProjectLink

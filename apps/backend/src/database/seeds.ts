@@ -1010,6 +1010,125 @@ export async function createFallbackBaselineScenario(input: {
 }
 
 /**
+ * Two builds sharing one head commit and branch, told apart by their build
+ * name — the shape a project gets when a commit runs several suites. Both end
+ * up with changes waiting, so finishing one leaves the other to review.
+ */
+export async function createSiblingBuildsScenario(input: {
+  projectId: string;
+}): Promise<{ defaultBuild: Build; storybookBuild: Build }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const branch = "feat/sparkle";
+  const baseCommit = "b1a7a4a1e5f0c3d2b9a8e7f6c5d4b3a2f1e0d9c8";
+  const headCommit = "c2b8b5b2f6a1d4e3c0b9f8a7d6e5c4b3a2f1e0d9";
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  async function createSiblingBuild(options: { name: string; number: number }) {
+    const { name, number } = options;
+    const bucketProps = {
+      name,
+      projectId,
+      complete: true,
+      valid: true,
+      screenshotCount: 1,
+      storybookScreenshotCount: 0,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    };
+    const [baseBucket, compareBucket] =
+      await ScreenshotBucket.query().insertAndFetch([
+        { ...bucketProps, branch: "main", commit: baseCommit },
+        { ...bucketProps, branch, commit: headCommit },
+      ]);
+    invariant(baseBucket && compareBucket);
+
+    const test = await Test.query().insertAndFetch({
+      name: "home.png",
+      buildName: name,
+      projectId,
+    });
+
+    const [baseScreenshot, compareScreenshot] =
+      await Screenshot.query().insertAndFetch([
+        {
+          screenshotBucketId: baseBucket.id,
+          testId: test.id,
+          name: "home.png",
+          s3Id: baseFile.key,
+          fileId: baseFile.id,
+        },
+        {
+          screenshotBucketId: compareBucket.id,
+          testId: test.id,
+          name: "home.png",
+          s3Id: compareFile.key,
+          fileId: compareFile.id,
+        },
+      ]);
+    invariant(baseScreenshot && compareScreenshot);
+
+    const build = await Build.query().insertAndFetch({
+      name,
+      number,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    });
+
+    await ScreenshotDiff.query().insert({
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      testId: test.id,
+      score: 0.3,
+      jobStatus: "complete" as const,
+      s3Id: diffFile.key,
+      fileId: diffFile.id,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    });
+
+    // Computes the build stats and conclusion the build page relies on.
+    await concludeBuild({ build, notify: false });
+
+    return build;
+  }
+
+  return {
+    defaultBuild: await createSiblingBuild({ name: "default", number: 1 }),
+    storybookBuild: await createSiblingBuild({ name: "storybook", number: 2 }),
+  };
+}
+
+/**
  * Manifest for the "real world" build scenario below.
  *
  * The referenced assets (screenshots, diffs, Playwright traces and markdown
