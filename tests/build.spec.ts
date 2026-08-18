@@ -239,15 +239,16 @@ loggedTest(
     await page.getByRole("button", { name: "Switch build" }).click();
 
     // Every build of the commit is listed with where its review stands, the
-    // one being looked at included.
-    const menu = page.getByRole("menu");
+    // one being looked at included. The menu kit is a listbox driven by a
+    // search field, so its rows are options rather than menu items.
+    const menu = page.getByRole("listbox");
     await expect(
-      menu.getByRole("menuitem", {
-        name: `${defaultBuild.name} #${defaultBuild.number} Changes detected`,
+      menu.getByRole("option", {
+        name: `Changes detected ${defaultBuild.name} #${defaultBuild.number}`,
       }),
     ).toBeVisible();
-    const storybookItem = menu.getByRole("menuitem", {
-      name: `${storybookBuild.name} #${storybookBuild.number} Changes detected`,
+    const storybookItem = menu.getByRole("option", {
+      name: `Changes detected ${storybookBuild.name} #${storybookBuild.number}`,
     });
     await expect(storybookItem).toBeVisible();
 

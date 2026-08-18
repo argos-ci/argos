@@ -103,9 +103,9 @@ export function BuildNextReviewDialogProvider(props: {
     <>
       {dialog.value ? (
         <Modal
-          isOpen={dialog.isOpen}
+          open={dialog.isOpen}
           onOpenChange={dialog.onOpenChange}
-          isDismissable
+          dismissible
         >
           <BuildNextReviewDialog builds={dialog.value} />
         </Modal>

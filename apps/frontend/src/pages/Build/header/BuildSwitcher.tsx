@@ -1,17 +1,17 @@
-import { CheckIcon } from "lucide-react";
-import { MenuTrigger } from "react-aria-components";
-
-import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
+import { BuildStatus, BuildType } from "@/gql/graphql";
+import { UpDownMenuButton } from "@/ui/Menu";
 import {
   Menu,
+  MenuHeading,
   MenuItem,
-  MenuItemIcon,
-  MenuTitle,
-  UpDownMenuButton,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+  MenuRoot,
+  MenuSection,
+  MenuTrigger,
+} from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
+import { getBuildDescriptor } from "@/util/build";
+import { lowTextColorClassNames } from "@/util/colors";
 
 import { getBuildOverviewURL } from "../BuildParams";
 
@@ -20,17 +20,42 @@ const _BuildFragment = graphql(`
     id
     number
     name
-    ...BuildStatusChip_Build
+    type
+    status
     siblingBuilds {
       id
       number
       name
-      ...BuildStatusChip_Build
+      type
+      status
     }
   }
 `);
 
 type Build = DocumentType<typeof _BuildFragment>;
+
+/**
+ * Where a build's review stands, as the icon alone. The full status chip says
+ * the same thing with a label and the reviewers' avatars, which is more than a
+ * menu row can carry — the build name is what the reader scans for, and a
+ * column of chips buries it. These are the same icons the build list and the
+ * status filter use, and the label rides along as the icon's `aria-label`
+ * rather than a tooltip: one per row would fire over the neighbouring rows as
+ * the pointer runs down the column.
+ */
+function BuildStatusIcon(props: {
+  type: BuildType | null;
+  status: BuildStatus;
+}) {
+  const descriptor = getBuildDescriptor(props.type, props.status);
+  const Icon = descriptor.icon;
+  return (
+    <Icon
+      aria-label={descriptor.label}
+      className={lowTextColorClassNames[descriptor.color]}
+    />
+  );
+}
 
 /**
  * Hops between the builds a single commit produced. A commit that runs several
@@ -51,13 +76,15 @@ export function BuildSwitcher(props: {
     a.name.localeCompare(b.name),
   );
   return (
-    <MenuTrigger>
+    <MenuRoot>
       <Tooltip content="Switch build">
-        <UpDownMenuButton aria-label="Switch build" className="shrink-0" />
+        <MenuTrigger>
+          <UpDownMenuButton aria-label="Switch build" className="shrink-0" />
+        </MenuTrigger>
       </Tooltip>
-      <Popover placement="bottom start">
-        <Menu>
-          <MenuTitle>Builds on this commit</MenuTitle>
+      <Menu side="bottom" align="start">
+        <MenuSection>
+          <MenuHeading>Builds on this commit</MenuHeading>
           {builds.map((item) => (
             <MenuItem
               key={item.id}
@@ -66,29 +93,22 @@ export function BuildSwitcher(props: {
                 projectName,
                 buildNumber: item.number,
               })}
+              icon={<BuildStatusIcon type={item.type} status={item.status} />}
+              checked={item.id === build.id}
+              textValue={item.name}
             >
-              <MenuItemIcon>
-                <CheckIcon
-                  className={item.id === build.id ? undefined : "opacity-0"}
-                />
-              </MenuItemIcon>
               {/*
                * Named by its build name, not its number: on one commit the
                * name is what tells the builds apart, and it is the same word
                * the reviewer configured in CI. The number follows it, muted,
                * to tie the row back to the header.
                */}
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="truncate">
-                  {item.name}{" "}
-                  <span className="text-low tabular-nums">#{item.number}</span>
-                </span>
-                <BuildStatusChip build={item} scale="sm" />
-              </span>
+              {item.name}{" "}
+              <span className="text-low tabular-nums">#{item.number}</span>
             </MenuItem>
           ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+        </MenuSection>
+      </Menu>
+    </MenuRoot>
   );
 }
