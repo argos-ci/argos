@@ -33,12 +33,18 @@ export function ScreenshotDiffThumbnail(props: {
   iconClassName?: string;
   /** How the image fills the box. */
   fit?: "contain" | "cover";
+  /**
+   * ImageKit transformations; size them for the rendered box (at 2x) or the
+   * thumbnail comes out blurry.
+   */
+  transformations?: string[];
 }) {
   const {
     screenshotDiff,
     className,
     iconClassName = className,
     fit = "contain",
+    transformations = ["w-32", "h-32", "c-at_max"],
   } = props;
   const screenshot =
     screenshotDiff.compareScreenshot ?? screenshotDiff.baseScreenshot ?? null;
@@ -57,10 +63,12 @@ export function ScreenshotDiffThumbnail(props: {
       >
         <ImageKitPicture
           src={thumbnailUrl}
-          transformations={["w-32", "h-32", "c-at_max"]}
+          transformations={transformations}
           className={clsx(
             "size-full",
-            fit === "cover" ? "object-cover" : "object-contain",
+            // Cropping a page capture from the top keeps the part that makes
+            // it recognizable; a centred crop lands on a random band of body.
+            fit === "cover" ? "object-cover object-top" : "object-contain",
           )}
           alt=""
         />

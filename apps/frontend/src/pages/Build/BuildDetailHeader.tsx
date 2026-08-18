@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
+import { WaypointsIcon } from "lucide-react";
 import { Link } from "react-router";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -15,6 +16,7 @@ import {
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
 import { BuildType } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -24,6 +26,8 @@ import { getTestURL } from "../Test/TestParams";
 import {
   checkDiffCanBeReviewed,
   Diff,
+  useActiveDiffFlow,
+  useFlowMinimapState,
   useGoToBuildOverview,
   useGoToNextDiff,
   useGoToPreviousDiff,
@@ -58,28 +62,32 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       <DetailToolbarNav>
         <BuildNavButtons />
       </DetailToolbarNav>
-      <DetailToolbarTitle
-        render={
-          testId
-            ? (title) => (
-                <Tooltip content="View test details">
-                  <Link
-                    to={getTestURL(
-                      { ...params, testId },
-                      { change: diff.change?.id },
-                    )}
-                    className="group hover:underline-link"
-                  >
-                    {title}
-                  </Link>
-                </Tooltip>
-              )
-            : undefined
-        }
-      >
-        {diff.name}
-      </DetailToolbarTitle>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <FlowLine />
+        <DetailToolbarTitle
+          render={
+            testId
+              ? (title) => (
+                  <Tooltip content="View test details">
+                    <Link
+                      to={getTestURL(
+                        { ...params, testId },
+                        { change: diff.change?.id },
+                      )}
+                      className="group hover:underline-link"
+                    >
+                      {title}
+                    </Link>
+                  </Tooltip>
+                )
+              : undefined
+          }
+        >
+          {diff.name}
+        </DetailToolbarTitle>
+      </div>
       <BuildDiffDetailToolbar diff={diff} fitControls={<AriaSnapshotToggle />}>
+        <FlowMinimapToggle />
         <BuildDetailIgnoreButton diff={diff} />
         <TrackButtons diff={diff} disabled={!canBeReviewed} />
         <Separator orientation="vertical" className="mx-1 h-6" />
@@ -110,6 +118,52 @@ function BuildDetailIgnoreButton(props: { diff: Diff }) {
   });
 
   return <IgnoreButton diff={diff} onIgnoreChange={handleIgnoreChange} />;
+}
+
+/**
+ * Journey context above the screenshot name: the flow's title and the step
+ * position, secondary and single-line. Nothing when the screenshot is not a
+ * step of a multi-step flow.
+ */
+function FlowLine() {
+  const flow = useActiveDiffFlow();
+  if (!flow) {
+    return null;
+  }
+  return (
+    <div
+      className="text-low truncate text-xs"
+      title={flow.identity.key}
+      data-testid="flow-line"
+    >
+      {flow.identity.title}
+      {flow.stepIndex !== -1
+        ? ` · ${flow.stepIndex + 1}/${flow.steps.length}`
+        : null}
+    </div>
+  );
+}
+
+/** Same look and behavior as the other toolbar toggles. */
+function FlowMinimapToggle() {
+  const flow = useActiveDiffFlow();
+  const { visible, setVisible } = useFlowMinimapState();
+  if (!flow) {
+    return null;
+  }
+  return (
+    <Tooltip content={visible ? "Hide flow minimap" : "Show flow minimap"}>
+      <Button
+        variant="secondary"
+        iconOnly
+        aria-label="Flow minimap"
+        aria-pressed={visible}
+        onClick={() => setVisible(!visible)}
+      >
+        <WaypointsIcon />
+      </Button>
+    </Tooltip>
+  );
 }
 
 const BuildNavButtons = memo(function BuildNavButtons() {

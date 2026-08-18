@@ -33,11 +33,20 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import {
+  compareSteps,
+  getCaptureIndex,
+  getVariantSignature,
+  resolveFlowIdentity,
+  type FlowIdentity,
+} from "./flow-model";
+import { orderDiffsByFlow } from "./flow-order";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
   diffMatchesFilters,
   useCreateFilterState,
 } from "./metadata/filters/util";
+import { resolveDiffMetadata } from "./sidebar/metadata/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -84,6 +93,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -146,6 +158,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -549,8 +564,121 @@ function groupDiffs(
     }
     return groups;
   }, {});
-  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null).filter(
-    (x) => x !== null,
+  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null)
+    .filter((x) => x !== null)
+    .map((group) => ({
+      ...group,
+      // Within a status section, follow the journeys: the diffs of a flow
+      // stay adjacent, in step order.
+      diffs: orderDiffsByFlow(
+        group.diffs.filter((diff) => diff !== null),
+        describeDiffForFlow,
+      ),
+    }));
+}
+
+function describeDiffForFlow(diff: Diff) {
+  return {
+    name: diff.name,
+    variantKey: diff.variantKey,
+    group: diff.group ?? null,
+    metadata: resolveDiffMetadata(diff),
+  };
+}
+
+/**
+ * Visibility of the flow minimap in the build detail, persisted as a user
+ * preference.
+ */
+const FLOW_MINIMAP_STORAGE_KEY = "preferences.build.flow-minimap";
+
+type FlowMinimapContextValue = {
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+};
+
+const FlowMinimapContext = createContext<FlowMinimapContextValue | null>(null);
+
+export function useFlowMinimapState() {
+  const context = use(FlowMinimapContext);
+  invariant(
+    context,
+    "useFlowMinimapState must be used within a BuildDiffProvider",
+  );
+  return context;
+}
+
+export type ActiveDiffFlow = {
+  identity: FlowIdentity;
+  /** The steps of the journey in order, each with its variants. */
+  steps: { key: string; diffs: Diff[] }[];
+  /** Position of the active diff's step in `steps`. */
+  stepIndex: number;
+};
+
+/**
+ * The flow context of the active diff: the journey it belongs to, its steps
+ * (variants collapsed) in order, and the active step position. Null when the
+ * active diff has no flow information or the journey has a single step —
+ * a test that captures one screen is regular visual testing, not a journey.
+ */
+export function useActiveDiffFlow(): ActiveDiffFlow | null {
+  const { activeDiff, allDiffs } = useBuildDiffState();
+  return useMemo(() => {
+    if (!activeDiff) {
+      return null;
+    }
+    const identity = resolveFlowIdentity(resolveDiffMetadata(activeDiff));
+    if (!identity) {
+      return null;
+    }
+    const stepMap = new Map<
+      string,
+      { key: string; captureIndex: number | null; diffs: Diff[] }
+    >();
+    for (const diff of allDiffs) {
+      const metadata = resolveDiffMetadata(diff);
+      if (resolveFlowIdentity(metadata)?.key !== identity.key) {
+        continue;
+      }
+      const key = diff.variantKey;
+      const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
+      stepMap.set(key, step);
+      step.diffs.push(diff);
+      const captureIndex = getCaptureIndex(metadata);
+      if (captureIndex !== null) {
+        step.captureIndex = Math.min(
+          step.captureIndex ?? Number.MAX_SAFE_INTEGER,
+          captureIndex,
+        );
+      }
+    }
+    const steps = [...stepMap.values()].toSorted(compareSteps);
+    if (steps.length < 2) {
+      return null;
+    }
+    return {
+      identity,
+      steps,
+      stepIndex: steps.findIndex((step) => step.key === activeDiff.variantKey),
+    };
+  }, [activeDiff, allDiffs]);
+}
+
+/**
+ * The diff of `step` that is the same variant as `reference` (same browser,
+ * viewport, scheme…), or the step's first diff when that variant is missing.
+ * Moving between steps stays on one viewport this way.
+ */
+export function pickStepDiff(
+  step: ActiveDiffFlow["steps"][number],
+  reference: Diff,
+): Diff | null {
+  const signature = getVariantSignature(reference);
+  return (
+    step.diffs.find((diff) => getVariantSignature(diff) === signature) ??
+    step.diffs[0] ??
+    null
   );
 }
 
@@ -727,6 +855,21 @@ export function BuildDiffProvider(props: {
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
+  const [minimapVisible, setMinimapVisibleState] = useState<boolean>(
+    () => localStorage.getItem(FLOW_MINIMAP_STORAGE_KEY) === "true",
+  );
+  const setMinimapVisible = useCallback((visible: boolean) => {
+    localStorage.setItem(FLOW_MINIMAP_STORAGE_KEY, String(visible));
+    setMinimapVisibleState(visible);
+  }, []);
+  const minimapValue = useMemo(
+    (): FlowMinimapContextValue => ({
+      visible: minimapVisible,
+      setVisible: setMinimapVisible,
+    }),
+    [minimapVisible, setMinimapVisible],
+  );
+
   const groups = useMemo(() => {
     return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
   }, [filteredDiffs, reviewState?.diffStatuses]);
@@ -845,7 +988,9 @@ export function BuildDiffProvider(props: {
     <FilterStateContext value={filterState}>
       <SearchModeContext value={searchModeValue}>
         <SearchContext value={searchValue}>
-          <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          <FlowMinimapContext value={minimapValue}>
+            <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          </FlowMinimapContext>
         </SearchContext>
       </SearchModeContext>
     </FilterStateContext>
