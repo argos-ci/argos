@@ -140,7 +140,7 @@ export const typeDefs = gql`
     commentsCount: Int!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
-    "Other builds covering the same head commit and branch, one per build name"
+    "The commit's other suites on this branch: one build per name, latest run, this build's own name excluded"
     siblingBuilds: [Build!]!
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
@@ -489,9 +489,14 @@ export const resolvers: IResolvers = {
         .orderBy("builds.name")
         .orderBy("builds.id", "desc");
 
+      // Told apart by name, not by id: siblings are the commit's *other*
+      // suites. Dropping this build's name rather than this build drops its
+      // own earlier runs with it — a re-run of one suite is the same suite,
+      // and offering it as somewhere else to go would list the same word
+      // twice and put a switcher on every build of every re-run commit.
       return Build.query()
         .whereIn("builds.id", latestPerName)
-        .whereNot("builds.id", build.id)
+        .whereNot("builds.name", build.name)
         .orderBy("builds.name");
     },
     subscribed: async (build, _args, ctx) => {
