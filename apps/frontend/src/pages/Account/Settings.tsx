@@ -12,6 +12,7 @@ import { Route, Routes } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
+import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
@@ -74,6 +75,7 @@ const AccountQuery = graphql(`
       ...PlanCard_Account
       ...TeamAddOns_Team
       ...AccountGitLab_Account
+      ...AccountCursorOrigin_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
       ...TeamDomains_Team
@@ -267,6 +269,7 @@ function PageContent() {
           {isTeam && <TeamDiscord account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
+          {hasAdminPermission && <AccountCursorOrigin account={account} />}
         </>
       ),
     },

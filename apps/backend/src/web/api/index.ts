@@ -4,6 +4,7 @@ import { Application, Router } from "express";
 import { getProtectedResourceMetadata } from "@/oauth/metadata";
 
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github";
+import { apiMiddleware as originApiMiddleware } from "../middlewares/origin";
 import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend";
 import { subdomain } from "../util";
 import { argosHeadersMiddleware } from "./argosHeaders";
@@ -18,6 +19,7 @@ export const installApiRouter = (app: Application) => {
 
   router.use(status);
   router.use(githubApiMiddleware);
+  router.use(originApiMiddleware);
   router.use(resendApiMiddleware);
   router.use(argosHeadersMiddleware);
   // RFC 9728 Protected Resource Metadata for the REST API, pointing MCP/OAuth

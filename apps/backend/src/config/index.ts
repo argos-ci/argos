@@ -342,6 +342,37 @@ export function createConfig() {
         env: "GITHUB_LIGHT_WEBHOOK_FALLBACK_SECRET",
       },
     },
+    origin: {
+      appId: {
+        doc: "Cursor Origin app ID (`app_…`), also the JWT issuer and key ID",
+        format: String,
+        default: "",
+        env: "ORIGIN_APP_ID",
+      },
+      privateKey: {
+        doc: "Ed25519 private key (PKCS#8 PEM) paired with a registered app signing key",
+        format: String,
+        default: "",
+        env: "ORIGIN_APP_PRIVATE_KEY",
+      },
+      apiBaseUrl: {
+        format: String,
+        default: "https://api.cursor.com/v1/origin",
+        env: "ORIGIN_API_BASE_URL",
+      },
+      installUrl: {
+        doc: "Consent page a workspace admin is sent to install the app",
+        format: String,
+        default: "https://cursor.com/codebase/apps/install",
+        env: "ORIGIN_INSTALL_URL",
+      },
+      webUrl: {
+        doc: "Base URL of the Origin web UI, repositories live under `{webUrl}/{owner}/{repo}`",
+        format: String,
+        default: "https://cursor.com/codebase",
+        env: "ORIGIN_WEB_URL",
+      },
+    },
     gitlab: {
       appId: {
         doc: "App ID",
@@ -634,6 +665,10 @@ export function createConfig() {
   config.set(
     "github.privateKey",
     config.get("github.privateKey").replace(/\\n/g, "\n"),
+  );
+  config.set(
+    "origin.privateKey",
+    config.get("origin.privateKey").replace(/\\n/g, "\n"),
   );
 
   if (process.env["APP_DATABASE_URL"]) {

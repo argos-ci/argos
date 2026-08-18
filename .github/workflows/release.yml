@@ -353,6 +353,8 @@ jobs:
             GITLAB_ARGOS_AUTH_SECRET=/production/gitlab_argos_auth_secret
             GOOGLE_CLIENT_ID=/production/google_client_id
             GOOGLE_CLIENT_SECRET=/production/google_client_secret
+            ORIGIN_APP_ID=/production/origin_app_id
+            ORIGIN_APP_PRIVATE_KEY=/production/origin_app_private_key
             REDIS_URL=/production/redis_url
             RESEND_API_KEY=/production/resend_api_key
             RESEND_WEBHOOK_SECRET=/production/resend_webhook_secret

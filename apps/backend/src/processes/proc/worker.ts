@@ -10,6 +10,7 @@ import { mediaDiffJob } from "@/media/diff-job";
 import { purgeExpiredMedia } from "@/media/purge";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
+import { originPullRequestJob } from "@/origin-pull-request/job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
@@ -34,6 +35,7 @@ createJobWorker(
   mediaDiffJob,
   notificationMessageJob,
   notificationWorkflowJob,
+  originPullRequestJob,
   synchronizeJob,
   screenshotDiffJob,
 );

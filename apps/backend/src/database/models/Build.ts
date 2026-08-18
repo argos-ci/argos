@@ -32,6 +32,7 @@ import { BuildReview } from "./BuildReview";
 import { BuildShard } from "./BuildShard";
 import { Comment } from "./Comment";
 import { GithubPullRequest } from "./GithubPullRequest";
+import { OriginPullRequest } from "./OriginPullRequest";
 import { Project } from "./Project";
 import { ScreenshotBucket } from "./ScreenshotBucket";
 import { ScreenshotDiff } from "./ScreenshotDiff";
@@ -76,6 +77,7 @@ export class Build extends Model {
           prNumber: { type: ["integer", "null"] },
           prHeadCommit: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },
+          originPullRequestId: { type: ["string", "null"] },
           baseCommit: {
             anyOf: [
               { type: "null" },
@@ -140,6 +142,7 @@ export class Build extends Model {
   prNumber!: number | null;
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
+  originPullRequestId!: string | null;
   baseCommit!: string | null;
   parentCommits!: string[] | null;
   baseBranch!: string | null;
@@ -211,6 +214,14 @@ export class Build extends Model {
           to: "github_pull_requests.id",
         },
       },
+      originPullRequest: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: OriginPullRequest,
+        join: {
+          from: "builds.originPullRequestId",
+          to: "origin_pull_requests.id",
+        },
+      },
       mergeQueueGhPullRequests: {
         relation: Model.HasManyRelation,
         modelClass: BuildMergeQueueGhPullRequest,
@@ -243,6 +254,7 @@ export class Build extends Model {
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
   pullRequest?: GithubPullRequest | null;
+  originPullRequest?: OriginPullRequest | null;
   mergeQueueGhPullRequests?: BuildMergeQueueGhPullRequest[];
   shards?: BuildShard[];
   comments?: Comment[];

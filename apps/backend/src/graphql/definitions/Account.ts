@@ -9,6 +9,7 @@ import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { completeLogin } from "@/auth/login";
+import config from "@/config";
 import { Account } from "@/database/models";
 import {
   authenticateWithEmail,
@@ -26,6 +27,11 @@ import {
   InvalidAccountMetricsInputError,
 } from "@/metrics/account";
 import { sendNotification } from "@/notification";
+import {
+  getOriginInstallUrl,
+  signOriginInstallState,
+  synchronizeOriginInstallation,
+} from "@/origin";
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
 import { encodeStripeClientReferenceId } from "@/stripe";
@@ -200,6 +206,10 @@ export const typeDefs = gql`
     msTeamsWebhooks: [MsTeamsWebhook!]!
     discordWebhooks: [DiscordWebhook!]!
     githubAccount: GithubAccount
+    "The Cursor Origin installation linked to the account."
+    originInstallation: OriginInstallation
+    "URL to install the Argos app on Cursor Origin for this account, admins only."
+    originInstallUrl: String
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
     blockWhenSpendLimitIsReached: Boolean!
@@ -215,6 +225,10 @@ export const typeDefs = gql`
   }
 
   input UninstallSlackInput {
+    accountId: ID!
+  }
+
+  input SyncOriginInstallationInput {
     accountId: ID!
   }
 
@@ -254,6 +268,8 @@ export const typeDefs = gql`
     updateAccount(input: UpdateAccountInput!): Account!
     "Uninstall Slack"
     uninstallSlack(input: UninstallSlackInput!): Account!
+    "Refresh the repositories reachable through the account's Cursor Origin installation"
+    syncOriginInstallation(input: SyncOriginInstallationInput!): Account!
     "Disconnect GitHub Account"
     disconnectGitHubAuth(input: DisconnectGitHubAuthInput!): Account!
     "Disconnect GitLab Account"
@@ -447,6 +463,31 @@ export const commonAccountResolvers: IResolvers["Team"] = {
   },
   discordWebhooks: async (account, _args, ctx) => {
     return ctx.loaders.DiscordWebhooksByAccountId.load(account.id);
+  },
+  originInstallation: async (account, _args, ctx) => {
+    if (!account.originInstallationId) {
+      return null;
+    }
+    const installation = await ctx.loaders.OriginInstallation.load(
+      account.originInstallationId,
+    );
+    invariant(installation);
+    if (installation.deleted) {
+      return null;
+    }
+    return installation;
+  },
+  originInstallUrl: async (account, _args, ctx) => {
+    if (!config.get("origin.appId")) {
+      return null;
+    }
+    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    if (!permissions.includes("admin")) {
+      return null;
+    }
+    return getOriginInstallUrl({
+      state: signOriginInstallState({ accountId: account.id }),
+    });
   },
   githubAccount: async (account, _args, ctx) => {
     if (!account.githubAccountId) {
@@ -650,6 +691,18 @@ export const resolvers: IResolvers = {
         return account;
       }
       await uninstallSlackInstallation(boltApp, account.slackInstallation);
+      return account.$query();
+    },
+    syncOriginInstallation: async (_root, args, ctx) => {
+      const { accountId } = args.input;
+      const account = await getAdminAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      if (!account.originInstallationId) {
+        return account;
+      }
+      await synchronizeOriginInstallation(account.originInstallationId);
       return account.$query();
     },
     disconnectGitHubAuth: async (_root, args, ctx) => {

@@ -61,6 +61,23 @@ const ImportGitlabProjectMutation = graphql(`
   }
 `);
 
+const ImportOriginProjectMutation = graphql(`
+  mutation NewProject_importOriginProject(
+    $originRepositoryId: ID!
+    $accountSlug: String!
+  ) {
+    importOriginProject(
+      input: {
+        originRepositoryId: $originRepositoryId
+        accountSlug: $accountSlug
+      }
+    ) {
+      id
+      slug
+    }
+  }
+`);
+
 const CreateProjectMutation = graphql(`
   mutation NewProject_createProject($name: String!, $accountSlug: String!) {
     createProject(input: { name: $name, accountSlug: $accountSlug }) {
@@ -107,8 +124,8 @@ function CreateProjectForm(props: { accountSlug: string }) {
   return (
     <Form form={form} onSubmit={onSubmit}>
       <p className="text-low mb-4 text-sm">
-        Start with just a name. You can connect a GitHub or GitLab repository
-        later from your project settings.
+        Start with just a name. You can connect a GitHub, GitLab or Cursor
+        Origin repository later from your project settings.
       </p>
       <FormTextInput
         control={form.control}
@@ -165,7 +182,21 @@ export function Component() {
     },
   );
 
-  const loading = githubImportLoading || gitlabImportLoading;
+  const [importOriginProject, { loading: originImportLoading }] = useMutation(
+    ImportOriginProjectMutation,
+    {
+      onCompleted: (result) => {
+        if (result) {
+          const project = result.importOriginProject;
+          navigate(`/${project.slug}`);
+        }
+      },
+      update: invalidateAccount,
+    },
+  );
+
+  const loading =
+    githubImportLoading || gitlabImportLoading || originImportLoading;
 
   return (
     <Page>
@@ -206,6 +237,16 @@ export function Component() {
                   importGitLabProject({
                     variables: {
                       gitlabProjectId: glProject.id,
+                      accountSlug: params.accountSlug,
+                    },
+                  }).catch((error) => {
+                    toast.error(getErrorMessage(error));
+                  });
+                }}
+                onSelectOriginRepository={(repository) => {
+                  importOriginProject({
+                    variables: {
+                      originRepositoryId: repository.id,
                       accountSlug: params.accountSlug,
                     },
                   }).catch((error) => {

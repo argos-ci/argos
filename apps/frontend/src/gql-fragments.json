@@ -55,6 +55,9 @@
       "MediaDiff",
       "MediaVersion",
       "MsTeamsWebhook",
+      "OriginInstallation",
+      "OriginPullRequest",
+      "OriginRepository",
       "Plan",
       "Project",
       "ProjectContributor",
@@ -72,11 +75,13 @@
       "User"
     ],
     "PullRequest": [
-      "GithubPullRequest"
+      "GithubPullRequest",
+      "OriginPullRequest"
     ],
     "Repository": [
       "GithubRepository",
-      "GitlabProject"
+      "GitlabProject",
+      "OriginRepository"
     ]
   }
 }

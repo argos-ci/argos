@@ -24,6 +24,11 @@ import {
   GitlabProjectList,
   GitlabProjectListProps,
 } from "../GitlabProjectList";
+import { CursorOriginLogo, OriginButton } from "../Origin";
+import {
+  OriginRepositoryList,
+  type OriginRepository,
+} from "../OriginRepositoryList";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -40,6 +45,12 @@ const ConnectRepositoryQuery = graphql(`
         }
       }
       permissions
+      originInstallation {
+        id
+        targetSlug
+        ...OriginRepositoryList_OriginInstallation
+      }
+      originInstallUrl
       ... on Team {
         githubLightInstallation {
           id
@@ -211,6 +222,43 @@ enum GitProvider {
   GitHub = "github",
   GitHubLight = "github-light",
   GitLab = "gitlab",
+  Origin = "origin",
+}
+
+type OriginRepositoriesProps = {
+  installation: NonNullable<
+    NonNullable<
+      DocumentType<typeof ConnectRepositoryQuery>["account"]
+    >["originInstallation"]
+  >;
+  accountId: string;
+  disabled?: boolean;
+  onSwitch: () => void;
+  onSelectOriginRepository: (repository: OriginRepository) => void;
+  connectButtonLabel: string;
+};
+
+function OriginRepositories(props: OriginRepositoriesProps) {
+  return (
+    <div className="flex max-w-4xl flex-col gap-4" style={{ height: 400 }}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm">
+          <CursorOriginLogo className="size-4" />
+          <span className="font-medium">{props.installation.targetSlug}</span>
+        </div>
+        <Button variant="secondary" size="small" onClick={props.onSwitch}>
+          Use another Git provider
+        </Button>
+      </div>
+      <OriginRepositoryList
+        installation={props.installation}
+        accountId={props.accountId}
+        disabled={props.disabled}
+        onSelectRepository={props.onSelectOriginRepository}
+        connectButtonLabel={props.connectButtonLabel}
+      />
+    </div>
+  );
 }
 
 function GitHubButton(props: {
@@ -278,6 +326,7 @@ function GitLabButton({
 type ConnectRepositoryProps = {
   onSelectRepository: GithubInstallationsProps["onSelectRepository"];
   onSelectProject: GitlabProjectListProps["onSelectProject"];
+  onSelectOriginRepository: OriginRepositoriesProps["onSelectOriginRepository"];
   disabled?: boolean;
   accountSlug: string;
   variant: "link" | "import";
@@ -365,6 +414,45 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
       }
       break;
     }
+    case GitProvider.Origin: {
+      if (account.originInstallation) {
+        return (
+          <OriginRepositories
+            installation={account.originInstallation}
+            accountId={account.id}
+            disabled={props.disabled}
+            connectButtonLabel={buttonLabels[props.variant]}
+            onSwitch={() => setAndStoreProvider(null)}
+            onSelectOriginRepository={props.onSelectOriginRepository}
+          />
+        );
+      }
+
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-4">
+          <div
+            className="text-center text-lg"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            To import a project from Cursor Origin, install the Argos app on
+            your Origin codebase first.
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            {account.originInstallUrl && (
+              <LinkButton href={account.originInstallUrl}>
+                Install Argos on Origin
+              </LinkButton>
+            )}
+            <LinkButton
+              variant="secondary"
+              onClick={() => setAndStoreProvider(null)}
+            >
+              Use another Git provider
+            </LinkButton>
+          </div>
+        </div>
+      );
+    }
     case GitProvider.GitLab: {
       if (
         account.gitlabAccessToken &&
@@ -440,6 +528,11 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             >
               GitLab
             </GitLabButton>
+            <OriginButton
+              onClick={() => setAndStoreProvider(GitProvider.Origin)}
+            >
+              Cursor Origin
+            </OriginButton>
           </div>
           <div>
             Need another provider?{" "}
@@ -477,6 +570,11 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             >
               Continue with GitLab
             </GitLabButton>
+            <OriginButton
+              onClick={() => setAndStoreProvider(GitProvider.Origin)}
+            >
+              Continue with Cursor Origin
+            </OriginButton>
           </div>
         </div>
       );
