@@ -135,14 +135,24 @@ async function createBilledTeam(input: {
   flatPrice: number | null;
   /** Screenshots uploaded during each closed period, most recent first. */
   screenshotsByClosedPeriod: number[];
+  /**
+   * Screenshots uploaded since the running period opened, which is what the
+   * Screenshots column reports. Left out where the team has yet to build into
+   * the period it is in — a real state, and the one that reads as zero.
+   */
+  screenshotsInRunningPeriod?: number;
 }): Promise<Account> {
   const { account } = await createTeamAccount({
     slug: input.slug,
     name: input.name,
   });
-  await account
-    .$query()
-    .patch({ createdAt: daysFromNow(-input.createdDaysAgo) });
+  await account.$query().patch({
+    createdAt: daysFromNow(-input.createdDaysAgo),
+    // A billed team reached checkout, so it has a Stripe customer and its row
+    // carries the third link. Without one the Links column renders two links
+    // out of three and never reaches the width it needs.
+    stripeCustomerId: `cus_${input.slug}`,
+  });
 
   const subscription = await Subscription.query().insertAndFetch({
     planId: input.planId,
@@ -179,18 +189,25 @@ async function createBilledTeam(input: {
     name: "usage",
   });
 
-  // One build per closed period, rather than a bare bucket: the Screenshots
-  // column is summed off build stats while billing reads the buckets, and in
-  // real data every bucket comes from a build. Sequential because the build
-  // number is resolved with a `max(number) + 1` sub-query.
-  for (const [
-    index,
-    screenshotCount,
-  ] of input.screenshotsByClosedPeriod.entries()) {
-    // Index 0 is the period still running, so the closed ones start at 1.
-    const periodStart = periodStarts[index + 1];
+  // Index 0 is the period still running, so the closed ones start at 1.
+  const volumes = [
+    ...(input.screenshotsInRunningPeriod === undefined
+      ? []
+      : [{ index: 0, screenshotCount: input.screenshotsInRunningPeriod }]),
+    ...input.screenshotsByClosedPeriod.map((screenshotCount, index) => ({
+      index: index + 1,
+      screenshotCount,
+    })),
+  ];
+
+  // One build per period, rather than a bare bucket: the Screenshots column is
+  // summed off build stats while billing reads the buckets, and in real data
+  // every bucket comes from a build. Sequential because the build number is
+  // resolved with a `max(number) + 1` sub-query.
+  for (const { index, screenshotCount } of volumes) {
+    const periodStart = periodStarts[index];
     if (!periodStart) {
-      throw new Error("missing closed period");
+      throw new Error("missing period");
     }
     const createdAt = new Date(periodStart.getTime() + 3_600_000).toISOString();
     const bucket = await ScreenshotBucket.query().insertAndFetch({
@@ -316,6 +333,9 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         periodStartDaysAgo: 14,
         flatPrice: 100,
         screenshotsByClosedPeriod: [50_000, 40_000],
+        // Well inside the 35k quota with half the period still to run: the
+        // column says so long before the invoice does.
+        screenshotsInRunningPeriod: 12_340,
       }),
       // A contract whose amount Argos has not read yet: the row falls back to
       // the guess for its plan rather than to the cheapest plan we sell.
@@ -342,6 +362,9 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         flatPrice: 750,
         periodStartDaysAgo: 9,
         screenshotsByClosedPeriod: [60_000],
+        // Already 6k past the quota, which is the whole point of the column:
+        // the running amount has started moving with days still left on it.
+        screenshotsInRunningPeriod: 41_000,
       }),
       // Billed by the year. Stripe states both halves of the amount for a year,
       // so the row has to quote the year — dividing it into a month would
@@ -401,6 +424,25 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await expect(page.getByRole("row", { name: /Initrode/ })).toContainText(
     "$12,000",
   );
+
+  // Soylent is 12,340 into the 35k this month, well inside it — so the running
+  // amount is still the flat price alone. On Pro, which includes the same
+  // 35k on every row, the quota itself is left unsaid.
+  const soylent = page.getByRole("row", { name: /Soylent/ });
+  await expect(soylent).toContainText("12,340");
+  await expect(soylent).not.toContainText("35,000");
+
+  // Umbrella is on a contract, so its quota is named — and it is 6k past it
+  // with days still to run: $750 flat plus $30 of overage, which is the figure
+  // the column exists to explain.
+  const umbrella = page.getByRole("row", { name: /Umbrella/ });
+  await expect(umbrella).toContainText("41,000");
+  await expect(umbrella).toContainText("/ 35,000");
+  await expect(umbrella).toContainText("$780");
+
+  // The running period is partial by construction, so what is left of it is
+  // what tells a genuine drop from a period that simply opened three days ago.
+  await expect(umbrella).toContainText(/\d+ days left/);
 
   await screenshot(page, "staff-all-teams");
 });
@@ -520,7 +562,8 @@ staffTest(
 
     // Soylent uploaded 50k screenshots over its last closed month: 15k past the
     // 35k included, at $0.005, on top of the $100 flat plan. The month still
-    // running holds nothing, so reading that one instead would print $100.
+    // running holds 12,340, well inside the quota, so reading that one instead
+    // would print $100.
     await expect(page.getByText("$175")).toBeVisible();
     // Umbrella is on Enterprise: same 60k over the same quota, but its
     // contract is $750, read from the subscription rather than assumed. The row

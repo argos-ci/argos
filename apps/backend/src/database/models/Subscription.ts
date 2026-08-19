@@ -141,34 +141,63 @@ export class Subscription extends Model {
     interval: SubscriptionInterval,
     count: number,
   ): Date[] {
+    const currentIndex = this.getCurrentPeriodIndex(now, interval);
+
+    return Array.from({ length: count }, (_, index) =>
+      this.getResetDateAt(now, interval, currentIndex + index),
+    );
+  }
+
+  /**
+   * End of the billing period holding `now` — the moment the next one opens,
+   * and the day the included quota resets on.
+   *
+   * The counterpart of `getPeriodStarts`, for the one period whose end cannot
+   * be read off the period after it: the running one has none yet.
+   */
+  getPeriodEnd(now: Date, interval: SubscriptionInterval): Date {
+    // One interval past the current period's own start, walked with the same
+    // anniversary rule — so a period that opened on the 31st still ends where
+    // the next one opens in a 30-day month.
+    return this.getResetDateAt(
+      now,
+      interval,
+      this.getCurrentPeriodIndex(now, interval) - 1,
+    );
+  }
+
+  /**
+   * The anniversary `index` whole intervals back from the one holding `now`.
+   * A negative index walks forward instead, which is what reads the next one.
+   */
+  getResetDateAt(now: Date, interval: SubscriptionInterval, index: number) {
     const startDate = new Date(this.startDate);
     const anniversaryOffset =
       startDate.getTime() - getStartOf(startDate, interval).getTime();
-
-    const getResetDateAt = (index: number) => {
-      const intervalStart = shiftIntervals(
-        getStartOf(now, interval),
-        interval,
-        -index,
-      );
-      const nextIntervalStart = shiftIntervals(intervalStart, interval, 1);
-      // A subscription that started on the 31st has no anniversary in a
-      // 30-day month: it resets when the next interval opens.
-      return new Date(
-        Math.min(
-          intervalStart.getTime() + anniversaryOffset,
-          nextIntervalStart.getTime(),
-        ),
-      );
-    };
-
-    // The period holding `now` opens on this interval's own anniversary once
-    // that anniversary has passed, and on the previous one until then.
-    const currentIndex = getResetDateAt(0).getTime() < now.getTime() ? 0 : 1;
-
-    return Array.from({ length: count }, (_, index) =>
-      getResetDateAt(currentIndex + index),
+    const intervalStart = shiftIntervals(
+      getStartOf(now, interval),
+      interval,
+      -index,
     );
+    const nextIntervalStart = shiftIntervals(intervalStart, interval, 1);
+    // A subscription that started on the 31st has no anniversary in a
+    // 30-day month: it resets when the next interval opens.
+    return new Date(
+      Math.min(
+        intervalStart.getTime() + anniversaryOffset,
+        nextIntervalStart.getTime(),
+      ),
+    );
+  }
+
+  /**
+   * Which anniversary the period holding `now` opened on: this interval's own
+   * once it has passed, and the previous one until then.
+   */
+  getCurrentPeriodIndex(now: Date, interval: SubscriptionInterval): number {
+    return this.getResetDateAt(now, interval, 0).getTime() < now.getTime()
+      ? 0
+      : 1;
   }
 }
 

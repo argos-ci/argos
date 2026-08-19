@@ -39,7 +39,12 @@ import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { getAccountURL } from "../Account/AccountParams";
-import { formatPrice, getPeriodFlatPrice, type PricedPlan } from "./pricing";
+import {
+  formatPrice,
+  getPeriodFlatPrice,
+  PRO_PLAN_NAME,
+  type PricedPlan,
+} from "./pricing";
 import { getStripeCustomerURL } from "./stripe";
 
 const StaffTeamsQuery = graphql(`
@@ -72,6 +77,7 @@ const StaffTeamsQuery = graphql(`
         stripeCustomerId
         staff {
           flatPrice
+          includedScreenshots
           plan {
             id
             name
@@ -80,9 +86,9 @@ const StaffTeamsQuery = graphql(`
           }
           periodUsage {
             billingPeriods {
-              from
-              to
+              endsAt
               closed
+              screenshotsCount
               additionalScreenshotsCost
             }
           }
@@ -417,28 +423,81 @@ function getAmountHint(team: TeamItem, billing: TeamBilling): string {
 }
 
 /**
- * How far into the running period the team is.
+ * How much of the running period is left.
  *
  * The running period is partial by construction, so it reads lower than the one
- * before it whatever the team is doing. How far in it is tells a genuine drop
- * from a period that simply opened three days ago.
+ * before it whatever the team is doing. What is left of it tells a genuine drop
+ * from a period that simply opened three days ago — and, unlike a count from the
+ * start, it also says when the figure beside it becomes comparable.
  *
- * Counted from the period's own start rather than shown as a fraction: a
- * running period's `to` is the moment it was read, and its end is derived server
- * side from a subscription anniversary this page cannot reproduce. Neutralized
- * for visual tests — it moves every day, and the table would rebaseline
- * overnight.
+ * Read off `endsAt` rather than the period's `to`, which on a running period is
+ * only the moment it was read: the real end follows the subscription's
+ * anniversary. Neutralized for visual tests — it moves every day, and the table
+ * would rebaseline overnight.
  */
 function PeriodProgress(props: { period: BillingPeriod }) {
-  const days = diffInCalendarDays(
-    new Date(props.period.to),
-    new Date(props.period.from),
+  // Floored: a period read moments past its own end has not rolled over yet,
+  // and a negative count reads as a bug rather than as a boundary.
+  const remaining = Math.max(
+    0,
+    diffInCalendarDays(new Date(props.period.endsAt), new Date()),
   );
 
   return (
     <div className="text-low text-xs" data-visual-test="transparent">
-      {days === 1 ? "1 day in" : `${days} days in`}
+      {remaining === 1 ? "1 day left" : `${remaining} days left`}
     </div>
+  );
+}
+
+/**
+ * What the running period has consumed, against what the subscription includes
+ * in each one.
+ *
+ * The running period rather than the whole history: the quota resets at every
+ * period, so a lifetime total has nothing to be read against — and this is the
+ * figure that says whether the amount in the next invoice is about to move.
+ *
+ * The quota is named only where it is worth reading. Pro is nearly every row
+ * and always includes the same amount, so printing it there would repeat one
+ * number down the whole column. What is left is the contracts, where it was
+ * negotiated — and where it is the only thing that makes the count above it
+ * mean anything.
+ */
+function ScreenshotsCell(props: {
+  team: TeamItem;
+  billing: TeamBilling | null;
+}) {
+  const { team, billing } = props;
+
+  // No running period is no consumption to report: a team on a flat plan, on a
+  // granted one, on a trial — whose usage Stripe never bills, so no period is
+  // opened for it — or with no subscription at all.
+  if (!billing?.current) {
+    return <span className="text-low">—</span>;
+  }
+
+  const { includedScreenshots } = team.staff;
+  // Pro includes the same amount on every one of its rows, which is nearly all
+  // of them, so naming it there would repeat one figure down the column.
+  const quota =
+    includedScreenshots === null || billing.plan.name === PRO_PLAN_NAME
+      ? null
+      : includedScreenshots.toLocaleString();
+
+  return (
+    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage.">
+      <div>
+        <div className="font-medium">
+          {billing.current.period.screenshotsCount.toLocaleString()}
+        </div>
+        {/* A blank rather than nothing: an empty div collapses, and the count
+            would then sit half a line above the amounts beside it. */}
+        <div className="text-low text-xs">
+          {quota === null ? <>&nbsp;</> : `/ ${quota}`}
+        </div>
+      </div>
+    </Tooltip>
   );
 }
 
@@ -676,6 +735,11 @@ function StaffTeamRow(props: {
         <td className="p-4 text-right text-sm tabular-nums">
           {team.membersCount}
         </td>
+        {/* Before the two amounts rather than after: the row reads as what the
+            team is, then what it consumed, then what that comes to. */}
+        <td className="p-4 text-right text-sm tabular-nums">
+          <ScreenshotsCell team={team} billing={billing} />
+        </td>
         <BilledPeriodCells team={team} billing={billing} />
         <td className="p-4 text-right text-sm">
           <div className="flex items-center justify-end gap-3 whitespace-nowrap">
@@ -707,7 +771,7 @@ function StaffTeamRow(props: {
               : `bg-app ${isLast ? "" : "border-b"}`
           }
         >
-          <td colSpan={8} className="border-t px-4 py-3">
+          <td colSpan={9} className="border-t px-4 py-3">
             {detailsError ? (
               <div className="text-danger-low text-sm">
                 Failed to load team details.
@@ -812,7 +876,7 @@ function StaffTeamsTable(props: {
           isBusy && "opacity-65",
         )}
       >
-        <table className="w-full min-w-300 table-fixed border-collapse">
+        <table className="w-full min-w-312 table-fixed border-collapse">
           {/* Widths live on the headers rather than in a `colgroup`: the
             positional mapping broke silently whenever a column moved. */}
           <thead>
@@ -823,7 +887,7 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[22%] text-left"
+                className="w-[16%] text-left"
               />
               <SortHeader
                 label="Created"
@@ -833,15 +897,25 @@ function StaffTeamsTable(props: {
                 onSort={onSort}
                 className="w-[11%] text-left"
               />
-              <th className="w-[12%] px-4 py-3 text-left">Subscription</th>
+              <th className="w-[8%] px-4 py-3 text-left">Subscription</th>
               <SortHeader
                 label="Members"
                 sortKey="members"
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[7%] text-right"
+                className="w-[8%] text-right"
               />
+              {/* Not sortable, unlike the amounts beside it: the ordering would
+                  have to be computed over every candidate the way theirs is,
+                  and nothing has asked to read the directory that way yet. */}
+              <th className="w-[9%] px-4 py-3 text-right">
+                <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. It resets when the period closes.">
+                  <span className="underline decoration-dotted underline-offset-2">
+                    Screenshots
+                  </span>
+                </Tooltip>
+              </th>
               {/* Two periods rather than one: a single settled figure says what a
                 team is worth, the pair says which way it is going. */}
               <SortHeader
@@ -850,7 +924,7 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[11%] text-right"
+                className="w-[9%] text-right"
               />
               <SortHeader
                 label="Current period"
@@ -860,7 +934,7 @@ function StaffTeamsTable(props: {
                 onSort={onSort}
                 className="w-[11%] text-right"
               />
-              <th className="w-[16%] px-4 py-3 text-right">Links</th>
+              <th className="w-[18%] px-4 py-3 text-right">Links</th>
               <th className="w-[10%] px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>

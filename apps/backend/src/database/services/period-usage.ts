@@ -10,8 +10,24 @@ type BillingPeriodUsage = {
   from: Date;
   /** End of the period, or the moment it was read while still running. */
   to: Date;
+  /**
+   * When the period closes, whether or not it has.
+   *
+   * Distinct from `to`, which stops at the moment a running period was read.
+   * This is the anniversary the next period opens on, and the day the included
+   * quota resets. It cannot be derived outside this module: the boundary
+   * follows the subscription, not the calendar.
+   */
+  endsAt: Date;
   /** False while the period is still accumulating usage. */
   closed: boolean;
+  /**
+   * Screenshots consumed over the period — Storybook ones included, and the
+   * units standalone media uploads are billed as, which is what the overage
+   * below is computed on. So it is above the sum of the period's buckets on a
+   * project that records video.
+   */
+  screenshotsCount: number;
   /**
    * Cost of the screenshots consumed beyond the included quota over the
    * period, in the subscription's currency.
@@ -75,6 +91,14 @@ export type AccountBilling = {
    */
   flatPrice: number | null;
   /**
+   * Screenshots included in each billing period before the overage starts: the
+   * amount the subscription states, and the plan's published one when it
+   * states none — the same fallback `Account.getIncludedScreenshots` meters on.
+   * Null only when there is no plan to fall back to, and for a granted plan,
+   * which counts nothing against a quota.
+   */
+  includedScreenshots: number | null;
+  /**
    * Usage-based billing. Null when the plan is not usage-based: there is no
    * overage to compute and no period to compute it over, which is a different
    * answer from one that consumed nothing.
@@ -111,6 +135,12 @@ type AccountPeriod = {
   index: number;
   from: Date;
   to: Date;
+  /**
+   * When the period closes, which the window above stops short of on the
+   * running one — `to` is the moment it was read. Carried here rather than
+   * recomputed later because it takes the subscription to derive.
+   */
+  endsAt: Date;
 };
 
 /** Screenshots uploaded over one window, split by the way they are billed. */
@@ -430,8 +460,10 @@ export async function getAccountBillings(
         result.set(account.id, {
           plan: forcedPlanById.get(account.forcedPlanId) ?? null,
           // A granted plan is not paid for, so there is no amount to report
-          // even when a leftover subscription still carries one.
+          // even when a leftover subscription still carries one, and no quota
+          // either — nothing is ever counted against it.
           flatPrice: null,
+          includedScreenshots: null,
           periodUsage: null,
         });
       }
@@ -481,6 +513,10 @@ export async function getAccountBillings(
       result.set(account.id, {
         plan: subscription?.plan ?? null,
         flatPrice: subscription?.flatPrice ?? null,
+        includedScreenshots:
+          subscription?.includedScreenshots ??
+          subscription?.plan?.includedScreenshots ??
+          null,
         periodUsage: null,
       });
       continue;
@@ -492,6 +528,10 @@ export async function getAccountBillings(
       subscription.plan.interval,
       READ_PERIOD_COUNT,
     );
+    const runningPeriodEnd = subscription.getPeriodEnd(
+      now,
+      subscription.plan.interval,
+    );
     periodsByAccountId.set(
       account.id,
       starts.map((from, index) => ({
@@ -499,6 +539,9 @@ export async function getAccountBillings(
         index,
         from,
         to: starts[index - 1] ?? now,
+        // A closed period ends exactly where the next one opens. The running
+        // one has no next period yet, so its end comes off the anniversary.
+        endsAt: starts[index - 1] ?? runningPeriodEnd,
       })),
     );
   }
@@ -530,9 +573,17 @@ export async function getAccountBillings(
         0,
     };
 
+    // Stripe states the quota on the subscription when its price carries the
+    // metadata, and nothing when it does not — a GitHub subscription included.
+    // The plan's own quota is what the account is metered against in that case,
+    // so it is what the overage below has to be computed on too.
+    const includedScreenshots =
+      subscription.includedScreenshots ?? plan.includedScreenshots;
+
     result.set(accountId, {
       plan,
       flatPrice: subscription.flatPrice,
+      includedScreenshots,
       periodUsage: {
         billingPeriods: accountPeriods
           .filter((period) => checkIsBilledPeriod(period, subscription))
@@ -540,23 +591,21 @@ export async function getAccountBillings(
             const periodTotals = totals.get(period.index) ?? EMPTY_TOTALS;
             // The included quota resets at every period, so the overage is
             // computed period by period rather than off a running total.
-            const additional =
-              subscription.includedScreenshots === null
-                ? null
-                : computeAdditionalScreenshots({
-                    neutral: periodTotals.all - periodTotals.storybook,
-                    storybook: periodTotals.storybook,
-                    included: subscription.includedScreenshots,
-                  });
+            const additional = computeAdditionalScreenshots({
+              neutral: periodTotals.all - periodTotals.storybook,
+              storybook: periodTotals.storybook,
+              included: includedScreenshots,
+            });
 
             return {
               from: period.from,
               to: period.to,
+              endsAt: period.endsAt,
               closed: period.index > 0,
-              additionalScreenshotCost: additional
-                ? additional.neutral * price.neutral +
-                  additional.storybook * price.storybook
-                : 0,
+              screenshotsCount: periodTotals.all,
+              additionalScreenshotCost:
+                additional.neutral * price.neutral +
+                additional.storybook * price.storybook,
             };
           }),
       },
