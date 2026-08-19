@@ -82,6 +82,22 @@ export const typeDefs = gql`
   """
   type JourneySegment {
     flow: Flow!
+    steps: [JourneyStep!]!
+  }
+
+  """
+  One screen of a journey, and every way it was captured.
+
+  A single \`argosScreenshot\` call can produce a file per viewport, per color
+  scheme and per browser. Those are one step seen several ways, not several
+  steps — the same grouping Argos applies everywhere else through the variant
+  key.
+  """
+  type JourneyStep {
+    key: String!
+    "What the author named the screen"
+    name: String!
+    "Every capture of the step, one per variant"
     screenshots: [Screenshot!]!
   }
 
@@ -108,6 +124,10 @@ export const typeDefs = gql`
     segments: [JourneySegment!]!
     "How many tests contribute to it"
     testCount: Int!
+    """
+    How many screens it walks — steps, not files: a screen captured at two
+    viewports is one screen seen twice.
+    """
     screenshotCount: Int!
   }
 
@@ -228,7 +248,7 @@ export const resolvers: IResolvers = {
     screenshotCount: (journey) =>
       journey.segments.reduce(
         (total: number, segment: JourneySegment) =>
-          total + segment.screenshots.length,
+          total + segment.steps.length,
         0,
       ),
   },

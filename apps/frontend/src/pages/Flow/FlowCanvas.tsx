@@ -52,10 +52,12 @@ const SCREEN_TITLE_SPACE = LABEL_HEIGHT * MAX_LABEL_SCALE;
 export type CanvasScreen = {
   id: string;
   name: string;
-  url: string;
-  width: number | null;
-  height: number | null;
-  path: string | null;
+  /**
+   * The capture answering the current variant, or null when this screen was
+   * not taken in it — a step the suite skips on mobile keeps its place in the
+   * line rather than closing the gap it leaves.
+   */
+  capture: { url: string; path: string | null } | null;
 };
 
 export type CanvasSegment = {
@@ -71,14 +73,18 @@ export type CanvasSegment = {
  * inverse — which is what makes a name stay readable when the whole journey is
  * zoomed out to fit.
  */
+function useLabelScale(): number {
+  const zoom = useStore((state) => state.transform[2]);
+  return Math.min(1 / zoom, MAX_LABEL_SCALE);
+}
+
 function StableLabel(props: {
   children: React.ReactNode;
   className?: string;
   width: number;
 }) {
   const { children, className, width } = props;
-  const zoom = useStore((state) => state.transform[2]);
-  const scale = Math.min(1 / zoom, MAX_LABEL_SCALE);
+  const scale = useLabelScale();
   return (
     // Anchored to the bottom of its slot and grown from there, so a label that
     // gets bigger as the canvas zooms out moves away from what it names instead
@@ -99,10 +105,11 @@ function StableLabel(props: {
   );
 }
 
-type ScreenNodeData = CanvasScreen & { index: number };
+type ScreenNodeData = CanvasScreen & { missingLabel: string };
 
 function ScreenNode(props: NodeProps<Node<ScreenNodeData>>) {
   const { data } = props;
+  const { capture } = data;
   return (
     // The name goes above the image, deliberately: a screenshot of a long page
     // is very tall, and a caption underneath it ends up nowhere near the thing
@@ -113,20 +120,44 @@ function ScreenNode(props: NodeProps<Node<ScreenNodeData>>) {
     >
       <StableLabel width={SCREEN_WIDTH} className="pb-2">
         <div className="truncate text-sm font-semibold">{data.name}</div>
-        {data.path ? (
-          <div className="text-low truncate text-xs">{data.path}</div>
+        {capture?.path ? (
+          <div className="text-low truncate text-xs">{capture.path}</div>
         ) : null}
       </StableLabel>
-      <div className="bg-app h-full overflow-hidden rounded-lg border shadow-md">
-        <ImageKitPicture
-          src={data.url}
-          alt={data.name}
-          className="block w-full"
-          transformations={[`w-${SCREEN_WIDTH * 2}`]}
-        />
-      </div>
+      {capture ? (
+        <div className="bg-app h-full overflow-hidden rounded-lg border shadow-md">
+          <ImageKitPicture
+            src={capture.url}
+            alt={data.name}
+            className="block w-full"
+            transformations={[`w-${SCREEN_WIDTH * 2}`]}
+          />
+        </div>
+      ) : (
+        <MissingCapture label={data.missingLabel} />
+      )}
       <Handle type="target" position={Position.Left} className="opacity-0" />
       <Handle type="source" position={Position.Right} className="opacity-0" />
+    </div>
+  );
+}
+
+/**
+ * The frame a screen would occupy, kept in place when the chosen variant has no
+ * capture for it. Its text is held at its on-screen size like the names around
+ * it: it is an annotation about the canvas, not something drawn on it.
+ */
+function MissingCapture(props: { label: string }) {
+  const { label } = props;
+  const scale = useLabelScale();
+  return (
+    <div className="border-strong flex h-full items-center justify-center rounded-lg border border-dashed px-2">
+      <span
+        className="text-low text-center text-xs"
+        style={{ transform: `scale(${scale})` }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
@@ -151,15 +182,14 @@ function SegmentNode(props: NodeProps<Node<SegmentNodeData>>) {
 
 const nodeTypes = { screen: ScreenNode, segment: SegmentNode };
 
-function buildGraph(segments: CanvasSegment[]): {
-  nodes: Node[];
-  edges: Edge[];
-} {
+function buildGraph(
+  segments: CanvasSegment[],
+  missingLabel: string,
+): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   let offsetX = 0;
   let previousScreenId: string | null = null;
-  let index = 0;
 
   for (const segment of segments) {
     const count = segment.screens.length;
@@ -190,7 +220,7 @@ function buildGraph(segments: CanvasSegment[]): {
           x: SEGMENT_PADDING + screenIndex * (SCREEN_WIDTH + SCREEN_GAP),
           y: SEGMENT_PADDING + SCREEN_TITLE_SPACE,
         },
-        data: { ...screen, index: index++ },
+        data: { ...screen, missingLabel },
         draggable: false,
         selectable: false,
       });
@@ -220,9 +250,16 @@ function buildGraph(segments: CanvasSegment[]): {
  * a design tool; the wheel is deliberately not a zoom, which would make the
  * canvas jump every time someone scrolls the page under it.
  */
-export function FlowCanvas(props: { segments: CanvasSegment[] }) {
-  const { segments } = props;
-  const { nodes, edges } = useMemo(() => buildGraph(segments), [segments]);
+export function FlowCanvas(props: {
+  segments: CanvasSegment[];
+  /** Shown in place of a screen the current variant does not have. */
+  missingLabel: string;
+}) {
+  const { segments, missingLabel } = props;
+  const { nodes, edges } = useMemo(
+    () => buildGraph(segments, missingLabel),
+    [segments, missingLabel],
+  );
 
   return (
     <div className="border-subtle h-[560px] w-full overflow-hidden rounded-lg border">

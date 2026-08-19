@@ -3,13 +3,13 @@ import gqlTag from "graphql-tag";
 
 import { getStartDateFromPeriod } from "@/metrics/test";
 import { getImageKitUrl, getPublicFileUrl } from "@/storage";
+import { getVariantKey } from "@/util/variant-key";
 
 import {
   IResolvers,
   IScreenshotDiffResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types";
-import { getVariantKey } from "../services/variant-key";
 
 const { gql } = gqlTag;
 

@@ -416,7 +416,7 @@ function PageContent(props: { params: ProjectParams }) {
                 percentage down for being right. */}
             {flowStats.flowCount} tests ran in the reference build,{" "}
             {flowStats.capturingFlowCount} of them took at least one screenshot.{" "}
-            {flowStats.screenshotCount} screens captured across{" "}
+            {flowStats.screenshotCount} screenshots captured across{" "}
             {flowStats.urlCount} distinct URLs.
           </Text>
         </PageHeaderContent>

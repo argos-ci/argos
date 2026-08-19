@@ -813,7 +813,17 @@ export async function createFlowsScenario(input: {
     .castTo<{ max: number | null } | undefined>();
   const buildNumber = (lastBuild?.max ?? 0) + 1;
 
-  type SeedScreen = { name: string; url: string };
+  type SeedScreen = {
+    name: string;
+    url: string;
+    /** Viewport widths the screen was captured at, as the SDK would. */
+    widths?: number[];
+  };
+
+  // What `viewports: ["iphone-xr", "macbook-13"]` produces: one file per width,
+  // suffixed the way the SDK suffixes them, which is what `getVariantKey` reads
+  // back to fold them into one step.
+  const VIEWPORTS = [414, 1280];
   type SeedFlow = {
     title: string;
     line: number;
@@ -863,7 +873,13 @@ export async function createFlowsScenario(input: {
           outcome: "flaky",
           screens: [
             { name: "loan-options", url: `${origin}/loans/new/options` },
-            { name: "loan-pre-check", url: `${origin}/loans/new/pre-check` },
+            {
+              name: "loan-pre-check",
+              url: `${origin}/loans/new/pre-check`,
+              // Desktop only: the mobile run skips it, which is the gap the
+              // canvas is meant to show rather than close.
+              widths: [1280],
+            },
           ],
         },
       ],
@@ -928,7 +944,15 @@ export async function createFlowsScenario(input: {
   const screenshotCount = specs.reduce(
     (total, spec) =>
       total +
-      spec.tests.reduce((count, test) => count + test.screens.length, 0),
+      spec.tests.reduce(
+        (count, test) =>
+          count +
+          test.screens.reduce(
+            (files, screen) => files + (screen.widths ?? VIEWPORTS).length,
+            0,
+          ),
+        0,
+      ),
     0,
   );
 
@@ -997,29 +1021,38 @@ export async function createFlowsScenario(input: {
       });
 
       await Promise.all(
-        test.screens.map((screen, index) => {
-          const metadata: ScreenshotMetadata = {
-            url: screen.url,
-            test: { id: pwTestId, title: test.title, titlePath },
-            capture: { index, trigger: "manual" },
-            automationLibrary: { name: "@playwright/test", version: "1.62.1" },
-            sdk: { name: "@argos-ci/playwright", version: "7.4.6" },
-          };
-          // The SDK prefixes every name with the runner project, and the
-          // journey folder sits under it — which is exactly what the journey
-          // key is read back from.
-          const folder = spec.journey ? `${spec.journey}/` : "";
-          return Screenshot.query().insert({
-            screenshotBucketId: bucket.id,
-            flowRunId: run.id,
-            name: `${runnerProject}/${folder}${screen.name}`,
-            s3Id: file.key,
-            fileId: file.id,
-            metadata,
-            createdAt: seededAt,
-            updatedAt: seededAt,
-          });
-        }),
+        test.screens.flatMap((screen, index) =>
+          (screen.widths ?? VIEWPORTS).map((width) => {
+            const metadata: ScreenshotMetadata = {
+              url: screen.url,
+              viewport: { width, height: Math.round(width * 1.8) },
+              browser: { name: runnerProject, version: "141.0" },
+              // One index per call, not per file: the viewport variants are the
+              // same step of the journey seen twice, so they share it.
+              capture: { index, trigger: "manual" },
+              test: { id: pwTestId, title: test.title, titlePath },
+              automationLibrary: {
+                name: "@playwright/test",
+                version: "1.62.1",
+              },
+              sdk: { name: "@argos-ci/playwright", version: "7.4.6" },
+            };
+            // The SDK prefixes every name with the runner project, the journey
+            // folder sits under it, and the viewport is a suffix — the exact
+            // shape the journey key and the variant key are read back from.
+            const folder = spec.journey ? `${spec.journey}/` : "";
+            return Screenshot.query().insert({
+              screenshotBucketId: bucket.id,
+              flowRunId: run.id,
+              name: `${runnerProject}/${folder}${screen.name} vw-${width}.png`,
+              s3Id: file.key,
+              fileId: file.id,
+              metadata,
+              createdAt: seededAt,
+              updatedAt: seededAt,
+            });
+          }),
+        ),
       );
     }
   }

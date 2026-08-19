@@ -26,6 +26,11 @@ loggedTest(
         exact: false,
       }),
     ).toBeVisible();
+    // Files, not screens: the same screen captured at two viewports is two
+    // screenshots, and the header says so.
+    await expect(
+      page.getByText("19 screenshots captured", { exact: false }),
+    ).toBeVisible();
 
     // Grouped by spec file, in declaration order.
     await expect(page.getByText("e2e/auth-guard.spec.ts")).toBeVisible();
@@ -113,7 +118,7 @@ loggedTest(
 
     // The flow id lives in the URL, which the screenshot does not capture, so
     // nothing has to be masked here.
-    expect(page.url()).toMatch(/\/flows\/\d+$/);
+    expect(page.url()).toMatch(/\/flows\/\d+/);
     await screenshot(page, "project-flow-journey");
   },
 );
@@ -154,5 +159,38 @@ loggedTest(
     await expect(
       page.getByText("This test takes no screenshot", { exact: false }),
     ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "folds the viewports of a screen into one step, and switches between them",
+  async ({ page, team, project }) => {
+    await createFlowsScenario({ projectId: project.id });
+
+    await page.goto(`/${team.account.slug}/${project.name}/flows`);
+    await page.getByRole("link", { name: "supplier-invoice" }).click();
+
+    // Six screens, not twelve: a screen captured at two viewports is one step
+    // of the journey seen twice.
+    await expect(
+      page.getByText("6 screens across 3 tests", { exact: false }),
+    ).toBeVisible();
+
+    // The widest viewport opens first, being the one that covers every step.
+    const viewport = page.getByRole("combobox", { name: "Viewport" });
+    await expect(viewport).toContainText("1280 px");
+    await expect(
+      page.getByText("loan-pre-check", { exact: true }),
+    ).toBeVisible();
+
+    await viewport.click();
+    await page.getByRole("option", { name: "414 px" }).click();
+
+    // The step the mobile run skips keeps its place, and says why it is empty.
+    await expect(page.getByText("Not captured at 414 px")).toBeVisible();
+    // And the choice is in the URL, so the link can be sent as it is read.
+    await expect(page).toHaveURL(/viewport=414/);
+
+    await screenshot(page, "project-flow-journey-mobile");
   },
 );

@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ArrowLeftIcon } from "lucide-react";
+import { parseAsString, useQueryStates } from "nuqs";
 import { useParams } from "react-router";
 
 import { graphql, type DocumentType } from "@/gql";
@@ -10,19 +11,31 @@ import {
   Page,
   PageContainer,
   PageHeader,
+  PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { PageLoader } from "@/ui/PageLoader";
 import { RouterLink } from "@/ui/RouterLink";
+import { Select, SelectButton } from "@/ui/Select";
 import { Text } from "@/ui/Text";
 
 import { NotFound } from "../NotFound";
 import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
 import { ProjectTitle } from "../Project/ProjectTitle";
 import type { CanvasSegment } from "./FlowCanvas";
+import {
+  DIMENSION_LABELS,
+  getValueLabel,
+  getVariantOptions,
+  matchesSelection,
+  VARIANT_DIMENSIONS,
+  type VariantDimension,
+  type VariantSelection,
+} from "./variants";
 
 // The canvas pulls in a graph library and a stylesheet; the page is reachable
-// from every row of the Flows tab, so it is not worth putting that in the
+// from every section of the Flows tab, so it is not worth putting that in the
 // bundle everyone downloads.
 const FlowCanvas = lazy(() =>
   import("./FlowCanvas").then((module) => ({ default: module.FlowCanvas })),
@@ -49,14 +62,22 @@ const FlowQuery = graphql(`
               title
               file
             }
-            screenshots {
-              id
+            steps {
+              key
               name
-              url
-              width
-              height
-              metadata {
+              screenshots {
+                id
                 url
+                metadata {
+                  url
+                  colorScheme
+                  viewport {
+                    width
+                  }
+                  browser {
+                    name
+                  }
+                }
               }
             }
           }
@@ -83,34 +104,42 @@ function getPathname(url: string): string | null {
   }
 }
 
-/**
- * The name a screen carries on the canvas: its own, with the journey folder
- * and the runner project taken off. Repeating `supplier-invoice/` above every
- * screen of the supplier-invoice journey says nothing.
- */
-function getScreenLabel(name: string): string {
-  const segments = name.split("/");
-  return segments.at(-1) ?? name;
-}
-
-function useCanvasSegments(flow: Flow): CanvasSegment[] {
-  return useMemo(
-    () =>
-      flow.journey.segments.map((segment) => ({
-        flowId: segment.flow.id,
-        title: segment.flow.title,
-        screens: segment.screenshots.map((screenshot) => ({
-          id: screenshot.id,
-          name: getScreenLabel(screenshot.name),
-          url: screenshot.url,
-          width: screenshot.width ?? null,
-          height: screenshot.height ?? null,
-          path: screenshot.metadata?.url
-            ? getPathname(screenshot.metadata.url)
-            : null,
-        })),
-      })),
-    [flow],
+function VariantSelect(props: {
+  dimension: VariantDimension;
+  values: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { dimension, values, value, onChange } = props;
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        const parsed = values.find((item) => item === next);
+        if (parsed) {
+          onChange(parsed);
+        }
+      }}
+    >
+      {/* The label goes on the trigger, not on the wrapper: a `div` with an
+          `aria-label` exposes nothing, so the control would reach a screen
+          reader unnamed. Its text still carries the chosen value. */}
+      <SelectButton
+        aria-label={DIMENSION_LABELS[dimension]}
+        className="text-sm"
+      >
+        {getValueLabel(dimension, value)}
+      </SelectButton>
+      <ListBox>
+        {values.map((item) => (
+          <ListBoxItem key={item} value={item}>
+            <ListBoxItemLabel>
+              {getValueLabel(dimension, item)}
+            </ListBoxItemLabel>
+          </ListBoxItem>
+        ))}
+      </ListBox>
+    </Select>
   );
 }
 
@@ -120,8 +149,80 @@ function useCanvasSegments(flow: Flow): CanvasSegment[] {
  */
 function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
   const { flow, params } = props;
-  const segments = useCanvasSegments(flow);
   const { journey } = flow;
+
+  const steps = useMemo(
+    () => journey.segments.flatMap((segment) => segment.steps),
+    [journey],
+  );
+  const options = useMemo(() => getVariantOptions(steps), [steps]);
+
+  // The selection lives in the URL: this page exists to be sent to someone, and
+  // a link that opens on the viewport the sender was looking at is the point.
+  const [chosen, setChosen] = useQueryStates(
+    {
+      viewport: parseAsString,
+      browser: parseAsString,
+      theme: parseAsString,
+    },
+    { history: "replace" },
+  );
+
+  const selection = useMemo(() => {
+    const result: VariantSelection = {};
+    for (const dimension of VARIANT_DIMENSIONS) {
+      const values = options[dimension];
+      if (!values || values.length === 0) {
+        continue;
+      }
+      // `getVariantOptions` sorts by coverage, so the head is the value that
+      // leaves the fewest gaps.
+      const [best] = values;
+      invariant(best, "a listed dimension has at least one value");
+      const wanted = chosen[dimension];
+      result[dimension] = wanted && values.includes(wanted) ? wanted : best;
+    }
+    return result;
+  }, [options, chosen]);
+
+  const segments = useMemo<CanvasSegment[]>(
+    () =>
+      journey.segments.map((segment) => ({
+        flowId: segment.flow.id,
+        title: segment.flow.title,
+        screens: segment.steps.map((step) => {
+          const screenshot = step.screenshots.find((item) =>
+            matchesSelection(item, selection),
+          );
+          return {
+            // Keyed by the step within its test: two tests of one journey can
+            // walk the same screen, and the canvas must not merge their nodes.
+            id: `${segment.flow.id}:${step.key}`,
+            name: step.name,
+            capture: screenshot
+              ? {
+                  url: screenshot.url,
+                  path: screenshot.metadata?.url
+                    ? getPathname(screenshot.metadata.url)
+                    : null,
+                }
+              : null,
+          };
+        }),
+      })),
+    [journey, selection],
+  );
+
+  const missingLabel = useMemo(() => {
+    const parts = VARIANT_DIMENSIONS.map((dimension) => {
+      const value = selection[dimension];
+      return value ? getValueLabel(dimension, value) : null;
+    }).filter((part) => part !== null);
+    return parts.length > 0
+      ? `Not captured at ${parts.join(" · ")}`
+      : "Not captured";
+  }, [selection]);
+
   // The journey names the page when it has one: the reader came to see a path
   // through the product, and the test that happened to be clicked is one step
   // of it.
@@ -147,6 +248,24 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
             <span className="font-mono">{flow.file}</span>
           </Text>
         </PageHeaderContent>
+        <PageHeaderActions>
+          {VARIANT_DIMENSIONS.map((dimension) => {
+            const values = options[dimension];
+            const value = selection[dimension];
+            if (!values || !value) {
+              return null;
+            }
+            return (
+              <VariantSelect
+                key={dimension}
+                dimension={dimension}
+                values={values}
+                value={value}
+                onChange={(next) => setChosen({ [dimension]: next })}
+              />
+            );
+          })}
+        </PageHeaderActions>
       </PageHeader>
 
       {journey.screenshotCount === 0 ? (
@@ -156,7 +275,7 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
         </Text>
       ) : (
         <Suspense fallback={<PageLoader />}>
-          <FlowCanvas segments={segments} />
+          <FlowCanvas segments={segments} missingLabel={missingLabel} />
         </Suspense>
       )}
     </PageContainer>

@@ -10,6 +10,7 @@ import {
   FlowRun,
   Screenshot,
 } from "@/database/models";
+import { getVariantKey } from "@/util/variant-key";
 
 /**
  * Escape a value to be used as a literal inside a SQL `LIKE` pattern.
@@ -406,17 +407,59 @@ export function getJourneyKey(
   screenshotName: string,
   runnerProject: string,
 ): string | null {
-  const withoutProject =
-    runnerProject && screenshotName.startsWith(`${runnerProject}/`)
-      ? screenshotName.slice(runnerProject.length + 1)
-      : screenshotName;
+  const withoutProject = stripRunnerProject(screenshotName, runnerProject);
   const index = withoutProject.lastIndexOf("/");
   return index > 0 ? withoutProject.slice(0, index) : null;
 }
 
+/**
+ * The SDK prefixes every screenshot name with the runner project it was taken
+ * under. It is stripped by the exact name the run reports rather than by the
+ * list of browsers `getVariantKey` knows, because a project is free to be
+ * called anything — `Desktop Chrome`, `logged-in` — and an unstripped prefix
+ * would make the same screen under two browsers look like two screens.
+ */
+function stripRunnerProject(
+  screenshotName: string,
+  runnerProject: string,
+): string {
+  return runnerProject && screenshotName.startsWith(`${runnerProject}/`)
+    ? screenshotName.slice(runnerProject.length + 1)
+    : screenshotName;
+}
+
+/**
+ * The step of a journey a screenshot belongs to.
+ *
+ * One call to `argosScreenshot` can produce several files — one per viewport,
+ * per color scheme, per browser — and they are the same step of the journey
+ * seen several ways, not several steps. `getVariantKey` is what already tells
+ * them apart everywhere else in Argos, so it is what tells them apart here.
+ */
+export function getStepKey(
+  screenshotName: string,
+  runnerProject: string,
+): string {
+  return getVariantKey(stripRunnerProject(screenshotName, runnerProject));
+}
+
+/**
+ * @graphqlType
+ * Referenced by name from the codegen mappers rather than imported, so nothing
+ * in TypeScript points at it — which is what the tag tells knip.
+ */
+export type JourneyStep = {
+  /** What makes these screenshots one step: their shared variant key. */
+  key: string;
+  /** The last segment of the key, which is what the author named the screen. */
+  name: string;
+  /** Every capture of the step, one per variant. */
+  screenshots: Screenshot[];
+};
+
 export type JourneySegment = {
   flow: Flow;
-  screenshots: Screenshot[];
+  steps: JourneyStep[];
 };
 
 export type Journey = {
@@ -470,6 +513,31 @@ export function compareCaptureOrder(a: Screenshot, b: Screenshot): number {
   const aIndex = a.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
   const bIndex = b.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
   return aIndex - bIndex || a.name.localeCompare(b.name);
+}
+
+/**
+ * Fold the captures of a test into the steps it walked.
+ *
+ * The screenshots arrive in capture order, so the steps come out in it too: a
+ * step is placed where its first capture falls, and its variants gather behind
+ * it rather than each claiming a place in the line.
+ */
+function groupIntoSteps(screenshots: ScreenshotRow[]): JourneyStep[] {
+  const steps = new Map<string, JourneyStep>();
+  for (const screenshot of screenshots) {
+    const key = getStepKey(screenshot.name, screenshot.runnerProject);
+    const step = steps.get(key);
+    if (step) {
+      step.screenshots.push(screenshot);
+    } else {
+      steps.set(key, {
+        key,
+        name: key.split("/").at(-1) ?? key,
+        screenshots: [screenshot],
+      });
+    }
+  }
+  return [...steps.values()];
 }
 
 /**
@@ -569,7 +637,7 @@ export async function loadFlowJourneys(
         )
         .map(({ flow: segmentFlow, screenshots }) => ({
           flow: segmentFlow,
-          screenshots,
+          steps: groupIntoSteps(screenshots),
         }));
 
       const [entry] = resolved;

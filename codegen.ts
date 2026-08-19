@@ -61,6 +61,7 @@ const config: CodegenConfig = {
           FlowStats: "../../database/services/flows.js#BuildFlowStats",
           Journey: "../../database/services/flows.js#Journey",
           JourneySegment: "../../database/services/flows.js#JourneySegment",
+          JourneyStep: "../../database/services/flows.js#JourneyStep",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
           GithubAccount: "../../database/models/index.js#GithubAccount",
