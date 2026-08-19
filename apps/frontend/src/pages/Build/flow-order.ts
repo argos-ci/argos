@@ -4,7 +4,7 @@ import {
   getVariantSignature,
   resolveFlowIdentity,
   type FlowMetadata,
-} from "./flow-model";
+} from "@/util/flow-model";
 
 /** What the ordering needs to know about a diff. */
 export type FlowOrderable = {

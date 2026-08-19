@@ -24,6 +24,12 @@ import {
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
+import {
+  getVariantSignature,
+  groupJourneys,
+  resolveFlowIdentity,
+  type FlowIdentity,
+} from "@/util/flow-model";
 
 import {
   getBuildOverviewURL,
@@ -33,13 +39,6 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import {
-  compareSteps,
-  getCaptureIndex,
-  getVariantSignature,
-  resolveFlowIdentity,
-  type FlowIdentity,
-} from "./flow-model";
 import { orderDiffsByFlow } from "./flow-order";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
@@ -624,6 +623,16 @@ export type ActiveDiffFlow = {
  */
 export function useActiveDiffFlow(): ActiveDiffFlow | null {
   const { activeDiff, allDiffs } = useBuildDiffState();
+  // Journeys depend on the build's diffs only: one grouping serves every
+  // active diff.
+  const journeys = useMemo(
+    () =>
+      groupJourneys(allDiffs, (diff) => ({
+        variantKey: diff.variantKey,
+        metadata: resolveDiffMetadata(diff),
+      })),
+    [allDiffs],
+  );
   return useMemo(() => {
     if (!activeDiff) {
       return null;
@@ -632,37 +641,18 @@ export function useActiveDiffFlow(): ActiveDiffFlow | null {
     if (!identity) {
       return null;
     }
-    const stepMap = new Map<
-      string,
-      { key: string; captureIndex: number | null; diffs: Diff[] }
-    >();
-    for (const diff of allDiffs) {
-      const metadata = resolveDiffMetadata(diff);
-      if (resolveFlowIdentity(metadata)?.key !== identity.key) {
-        continue;
-      }
-      const key = diff.variantKey;
-      const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
-      stepMap.set(key, step);
-      step.diffs.push(diff);
-      const captureIndex = getCaptureIndex(metadata);
-      if (captureIndex !== null) {
-        step.captureIndex = Math.min(
-          step.captureIndex ?? Number.MAX_SAFE_INTEGER,
-          captureIndex,
-        );
-      }
-    }
-    const steps = [...stepMap.values()].toSorted(compareSteps);
-    if (steps.length < 2) {
+    const journey = journeys.find((j) => j.identity.key === identity.key);
+    if (!journey) {
       return null;
     }
     return {
       identity,
-      steps,
-      stepIndex: steps.findIndex((step) => step.key === activeDiff.variantKey),
+      steps: journey.steps,
+      stepIndex: journey.steps.findIndex(
+        (step) => step.key === activeDiff.variantKey,
+      ),
     };
-  }, [activeDiff, allDiffs]);
+  }, [activeDiff, journeys]);
 }
 
 /**

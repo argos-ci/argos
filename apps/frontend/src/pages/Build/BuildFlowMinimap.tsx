@@ -4,6 +4,7 @@ import { ChevronRightIcon } from "lucide-react";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { getStepLabel } from "@/util/flow-model";
 
 import {
   pickStepDiff,
@@ -11,7 +12,6 @@ import {
   useBuildDiffState,
   useFlowMinimapState,
 } from "./BuildDiffState";
-import { getStepLabel } from "./flow-model";
 import { getViewportIconKind } from "./metadata/metadataIcons";
 import { resolveDiffMetadata } from "./sidebar/metadata/utils";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
