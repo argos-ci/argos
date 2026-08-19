@@ -106,12 +106,12 @@ export const typeDefs = gql`
   }
 
   """
-  A path through the product, from the screenshots that walk it.
+  A path through the product, walked by the tests of one spec file.
 
-  Identified by the folder its screenshots share
-  (\`supplier-invoice/loan-beneficiary\` gives \`supplier-invoice\`), so it can
-  span several tests. A test whose screenshots sit at the root is a journey of
-  one.
+  Identified by the file rather than by a folder the screenshot names happen to
+  share: a folder is a convention a suite may or may not follow, and a journey
+  that only exists when it does is a lucky path, not a feature. Every test has a
+  file, so every test belongs to exactly one journey.
   """
   type Journey {
     """
@@ -122,8 +122,8 @@ export const typeDefs = gql`
     same page is a link that lies about where it goes.
     """
     entryFlowId: ID!
-    "The shared folder, null when the screenshots sit at the root"
-    name: String
+    "The spec file the journey is read from"
+    name: String!
     "The tests that contribute to it, in the order the suite declares them"
     segments: [JourneySegment!]!
     "How many tests contribute to it"

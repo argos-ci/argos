@@ -95,6 +95,18 @@ type Flow = NonNullable<
  * The path a screenshot was taken on. The origin is noise here — every screen
  * of a run shares it — and a malformed URL is not worth failing a page over.
  */
+/**
+ * A spec file's own name, without its directories or its extensions —
+ * `e2e/logged/post-loan.spec.ts` reads as `post-loan`, which is what its author
+ * called the thing it tests.
+ */
+function getJourneyTitle(file: string): string {
+  const base = file.split("/").at(-1) ?? file;
+  return base
+    .replace(/\.(spec|test)\.[cm]?[jt]sx?$/, "")
+    .replace(/\.[cm]?[jt]sx?$/, "");
+}
+
 function getPathname(url: string): string | null {
   try {
     const parsed = new URL(url);
@@ -223,10 +235,11 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
       : "Not captured";
   }, [selection]);
 
-  // The journey names the page when it has one: the reader came to see a path
-  // through the product, and the test that happened to be clicked is one step
-  // of it.
-  const title = journey.name ?? flow.title;
+  // The journey names the page, not the test that happened to be clicked: the
+  // reader came to see a path through the product. Its file makes a poor
+  // heading in full, so the heading is the name the file was given and the path
+  // stays in the line below, where it identifies without shouting.
+  const title = getJourneyTitle(journey.name);
   const testCount = journey.segments.length;
 
   return (
@@ -270,8 +283,9 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
 
       {journey.screenCount === 0 ? (
         <Text slot="description">
-          This test takes no screenshot, so there is no journey to walk. Add an{" "}
-          <code>argosScreenshot</code> call to see its screens here.
+          No test in this file takes a screenshot, so there is no journey to
+          walk. Add an <code>argosScreenshot</code> call to see its screens
+          here.
         </Text>
       ) : (
         <Suspense fallback={<PageLoader />}>

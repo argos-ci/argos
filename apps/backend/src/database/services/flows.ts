@@ -351,29 +351,6 @@ export async function getFlowRates(params: {
 }
 
 /**
- * The journey a screenshot belongs to: the folder its name sits in.
- *
- * A suite that walks one long path through the product rarely does it in one
- * test — it is split into several, and what ties them back together is the
- * prefix the screenshots share (`screenshots(page, "supplier-invoice")` in
- * Playwright, `supplier-invoice/loan-beneficiary` on the way out). That prefix
- * is the journey.
- *
- * The runner project is stripped first: the SDK prefixes every name with it
- * (`chromium/supplier-invoice/…`), and a journey is the same journey whichever
- * browser walked it. A name with no folder left belongs to no journey — its
- * test is the whole story.
- */
-export function getJourneyKey(
-  screenshotName: string,
-  runnerProject: string,
-): string | null {
-  const withoutProject = stripRunnerProject(screenshotName, runnerProject);
-  const index = withoutProject.lastIndexOf("/");
-  return index > 0 ? withoutProject.slice(0, index) : null;
-}
-
-/**
  * The SDK prefixes every screenshot name with the runner project it was taken
  * under. It is stripped by the exact name the run reports rather than by the
  * list of browsers `getVariantKey` knows, because a project is free to be
@@ -424,8 +401,14 @@ export type JourneySegment = {
 };
 
 export type Journey = {
-  /** The shared folder, null when the flow's screenshots sit at the root. */
-  key: string | null;
+  /**
+   * The spec file the tests of the journey live in.
+   *
+   * The file rather than a shared screenshot folder: a folder is a convention a
+   * suite may or may not follow, and a journey that only exists when it does is
+   * a lucky path, not a feature. Every test has a file.
+   */
+  key: string;
   /**
    * The flow the journey is read from — the first test that walks it.
    *
@@ -539,20 +522,6 @@ export async function loadFlowJourneys(
     ]);
     const flowById = new Map(buildFlows.map((item) => [item.id, item]));
 
-    // The journey of a flow is the folder its own screenshots sit in. A flow
-    // whose screenshots disagree is not a thing a suite produces, so the first
-    // one that has a folder decides.
-    const keyByFlow = new Map<string, string>();
-    for (const row of rows) {
-      if (keyByFlow.has(row.flowId)) {
-        continue;
-      }
-      const key = getJourneyKey(row.name, row.runnerProject);
-      if (key) {
-        keyByFlow.set(row.flowId, key);
-      }
-    }
-
     const rowsByFlow = new Map<string, ScreenshotRow[]>();
     for (const row of rows) {
       const list = rowsByFlow.get(row.flowId) ?? [];
@@ -564,12 +533,12 @@ export async function loadFlowJourneys(
       if (flow.projectId !== build.projectId) {
         continue;
       }
-      const key = keyByFlow.get(flow.id) ?? null;
       // Flows of the journey, in declaration order — which is the order the
       // suite walks them, and so the order the journey reads in.
-      const flowIdsOfJourney = key
-        ? [...keyByFlow].filter(([, k]) => k === key).map(([id]) => id)
-        : [flow.id];
+      const key = flow.file;
+      const flowIdsOfJourney = [...rowsByFlow.keys()].filter(
+        (id) => flowById.get(id)?.file === key,
+      );
 
       const resolved: JourneySegment[] = flowIdsOfJourney
         .map((id) => {

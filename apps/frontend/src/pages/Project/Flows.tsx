@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -123,46 +123,28 @@ function Rate(props: { value: number; className?: string }) {
 }
 
 /**
- * Whether this row has screens, and — when nothing above it says so — the way
- * to them.
+ * Whether this row has screens.
  *
- * A journey is named once, in the section header above the tests that share it,
- * so repeating its name on every row would say nothing a reader has not just
- * read. The exception is a test whose screenshots sit at the root: it has no
- * folder, so no section header carries it, and its own icon is the only way in.
+ * An indicator, not a link: the journey is the spec file, so the way into it is
+ * said once in the header above rather than repeated down every row.
  */
-function ScreensCell(props: { flow: Flow; params: ProjectParams }) {
-  const { flow, params } = props;
+function ScreensCell(props: { flow: Flow }) {
+  const { flow } = props;
   if (flow.screenCount === 0) {
     // A test with no screenshot leaves the cell empty, so the gap is what
     // stands out rather than a column of zeros.
     return null;
   }
-
-  const { journey } = flow;
   const label = `${flow.screenCount} screen${flow.screenCount > 1 ? "s" : ""}`;
-
-  if (journey.name) {
-    return (
-      <Tooltip content={label}>
-        <ImageIcon className="text-primary-low size-4" />
-      </Tooltip>
-    );
-  }
-
   return (
-    <RouterLink
-      href={`/${params.accountSlug}/${params.projectName}/flows/${journey.entryFlowId}`}
-      aria-label={`See the ${label} of this test`}
-      className="text-primary-low hover:text-primary"
-    >
-      <ImageIcon className="size-4" />
-    </RouterLink>
+    <Tooltip content={label}>
+      <ImageIcon className="text-primary-low size-4" />
+    </Tooltip>
   );
 }
 
-function FlowRow(props: { flow: Flow; params: ProjectParams }) {
-  const { flow, params } = props;
+function FlowRow(props: { flow: Flow }) {
+  const { flow } = props;
   const skipReason = flow.annotations.find(
     (annotation) => annotation.type === "skip" || annotation.type === "fixme",
   )?.description;
@@ -200,7 +182,7 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
         ) : null}
       </div>
       <div className="flex w-20 justify-end">
-        <ScreensCell flow={flow} params={params} />
+        <ScreensCell flow={flow} />
       </div>
       <div className="w-28 text-right tabular-nums">
         <Rate
@@ -220,82 +202,40 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
  * them is a matter of cutting the list where the file changes, and never
  * reorders what the server sent.
  */
-type JourneySection = {
-  /** Null for the tests whose screenshots sit at the root, which share none. */
-  name: string | null;
+type SpecGroup = {
+  file: string;
+  flows: Flow[];
+  /** The flow the file's journey is read from: its first test. */
   entryFlowId: string;
   screenCount: number;
-  flows: Flow[];
 };
-
-type SpecGroup = { file: string; flows: Flow[]; sections: JourneySection[] };
 
 /**
  * Flows come back in declaration order — by file, then by line — so grouping is
- * a matter of cutting the list where the file or the journey changes, and never
- * reorders what the server sent.
+ * a matter of cutting the list where the file changes, and never reorders what
+ * the server sent.
  *
- * Journeys are a level of their own rather than a label on the file: one spec
- * commonly holds several of them (a component test, then two variants of the
- * same request), so naming the journey on the file would name three at once and
- * tell nobody which test belongs to which.
+ * A file is also a journey, so the group carries the way into it: said once, in
+ * the header, rather than repeated down every row underneath.
  */
 function useFlowsBySpec(flows: Flow[]): SpecGroup[] {
   return useMemo(() => {
     const groups: SpecGroup[] = [];
     for (const flow of flows) {
-      let group = groups.at(-1);
-      if (!group || group.file !== flow.file) {
-        group = { file: flow.file, flows: [], sections: [] };
-        groups.push(group);
-      }
-      group.flows.push(flow);
-
-      const name = flow.journey.name;
-      const section = group.sections.at(-1);
-      // Consecutive tests with no journey of their own share one section: it
-      // draws no header, so there is nothing to repeat.
-      if (section && section.name === name) {
-        section.flows.push(flow);
+      const last = groups.at(-1);
+      if (last && last.file === flow.file) {
+        last.flows.push(flow);
       } else {
-        group.sections.push({
-          name,
+        groups.push({
+          file: flow.file,
+          flows: [flow],
           entryFlowId: flow.journey.entryFlowId,
           screenCount: flow.journey.screenCount,
-          flows: [flow],
         });
       }
     }
     return groups;
   }, [flows]);
-}
-
-/**
- * The journey a run of tests shares, named and linked once — which is all a
- * reader needs, and all the list has room to say without repeating itself down
- * every row underneath.
- */
-function JourneyHeaderRow(props: {
-  section: JourneySection;
-  params: ProjectParams;
-}) {
-  const { section, params } = props;
-  const { name, flows, screenCount } = section;
-  return (
-    <div className="bg-subtle flex items-center gap-3 border-b px-4 py-2">
-      <RouterLink
-        href={`/${params.accountSlug}/${params.projectName}/flows/${section.entryFlowId}`}
-        className="text-primary-low hover:text-primary flex min-w-0 items-center gap-1.5 text-xs font-semibold"
-      >
-        <RouteIcon className="size-3.5 shrink-0" />
-        <span className="truncate">{name}</span>
-      </RouterLink>
-      <span className="text-low text-xs tabular-nums">
-        {screenCount} screen{screenCount === 1 ? "" : "s"}
-        {flows.length > 1 ? ` across ${flows.length} tests` : null}
-      </span>
-    </div>
-  );
 }
 
 function PageContent(props: { params: ProjectParams }) {
@@ -473,21 +413,27 @@ function PageContent(props: { params: ProjectParams }) {
             return (
               <List key={group.file}>
                 <ListHeaderRow>
-                  <div className="flex-1 truncate font-mono">{group.file}</div>
+                  {screens > 0 ? (
+                    <RouterLink
+                      href={`/${params.accountSlug}/${params.projectName}/flows/${group.entryFlowId}`}
+                      className="text-primary-low hover:text-primary flex min-w-0 flex-1 items-center gap-1.5"
+                      aria-label={`See the ${group.file} journey`}
+                    >
+                      <RouteIcon className="size-3.5 shrink-0" />
+                      <span className="truncate font-mono">{group.file}</span>
+                    </RouterLink>
+                  ) : (
+                    <div className="flex-1 truncate font-mono">
+                      {group.file}
+                    </div>
+                  )}
                   <div className="text-low tabular-nums">
                     {screens} screen{screens === 1 ? "" : "s"} · {capturing}/
                     {group.flows.length} capture
                   </div>
                 </ListHeaderRow>
-                {group.sections.map((section) => (
-                  <Fragment key={section.name ?? section.entryFlowId}>
-                    {section.name ? (
-                      <JourneyHeaderRow section={section} params={params} />
-                    ) : null}
-                    {section.flows.map((flow) => (
-                      <FlowRow key={flow.id} flow={flow} params={params} />
-                    ))}
-                  </Fragment>
+                {group.flows.map((flow) => (
+                  <FlowRow key={flow.id} flow={flow} />
                 ))}
               </List>
             );

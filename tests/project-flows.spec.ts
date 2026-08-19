@@ -34,13 +34,13 @@ loggedTest(
       page.getByText("does not bounce a signed-in user via /login"),
     ).toBeVisible();
 
-    // The journey is named and linked once, above the tests that share it —
-    // not repeated down every row, where it would say nothing new.
-    const journeyLink = page.getByRole("link", { name: "supplier-invoice" });
-    await expect(journeyLink).toHaveCount(1);
+    // The journey is the spec file, linked once from its header — not repeated
+    // down every row, where it would say nothing new.
     await expect(
-      page.getByText("6 screens across 3 tests", { exact: false }),
-    ).toBeVisible();
+      page.getByRole("link", {
+        name: "See the e2e/logged/post-loan.spec.ts journey",
+      }),
+    ).toHaveCount(1);
 
     // The describes a test is nested in sit before its title: a title alone
     // says too little once a suite nests them, and two tests named the same in
@@ -91,10 +91,15 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     // Any test of the journey opens the whole journey, not just its own share
     // of it — which is the point: a reader came for the path, not the test.
-    await page.getByRole("link", { name: "supplier-invoice" }).click();
+    await page
+      .getByRole("link", {
+        name: "See the e2e/logged/post-loan.spec.ts journey",
+      })
+      .click();
 
+    // Named by the spec, not by the full path: a file path makes a poor heading.
     await expect(
-      page.getByRole("heading", { name: "supplier-invoice" }),
+      page.getByRole("heading", { name: "post-loan" }),
     ).toBeVisible();
     await expect(
       page.getByText("6 screens across 3 tests", { exact: false }),
@@ -129,7 +134,11 @@ loggedTest(
     await createFlowsScenario({ projectId: project.id });
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page.getByRole("link", { name: "receivable-invoice" }).click();
+    await page
+      .getByRole("link", {
+        name: "See the e2e/logged/receivable-invoice.spec.ts journey",
+      })
+      .click();
 
     await expect(
       page.getByRole("heading", { name: "receivable-invoice" }),
@@ -139,16 +148,16 @@ loggedTest(
 );
 
 loggedTest(
-  "says so when a test captures nothing at all",
+  "says so when a whole file captures nothing",
   async ({ page, team, project }) => {
     await createFlowsScenario({ projectId: project.id });
 
-    // A test that captures nothing has no link on its row — there is nothing to
-    // look at — so the page is reached by its address.
+    // A file where nothing captures has no journey, so its header carries no
+    // link — the page is reached by its address.
     const { Flow } = await import("../apps/backend/src/database/models");
     const flow = await Flow.query().findOne({
       projectId: project.id,
-      title: "does not bounce a signed-in user via /login",
+      title: "archives a project",
     });
     if (!flow) {
       throw new Error("the scenario seeds this test");
@@ -157,7 +166,9 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows/${flow.id}`);
 
     await expect(
-      page.getByText("This test takes no screenshot", { exact: false }),
+      page.getByText("No test in this file takes a screenshot", {
+        exact: false,
+      }),
     ).toBeVisible();
   },
 );
@@ -168,7 +179,11 @@ loggedTest(
     await createFlowsScenario({ projectId: project.id });
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page.getByRole("link", { name: "supplier-invoice" }).click();
+    await page
+      .getByRole("link", {
+        name: "See the e2e/logged/post-loan.spec.ts journey",
+      })
+      .click();
 
     // Six screens, not twelve: a screen captured at two viewports is one step
     // of the journey seen twice.

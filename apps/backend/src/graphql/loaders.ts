@@ -2039,13 +2039,18 @@ function createFlowRunScreenshotsLoader() {
  */
 function createFlowJourneyLoader() {
   return new DataLoader<string, Journey>(async (flowIds) => {
-    const journeys = await loadFlowJourneys(flowIds);
-    // A flow with no screenshot has no journey to belong to, so it is its own
-    // entry point — which keeps the link on its row pointing somewhere real.
+    const [journeys, flows] = await Promise.all([
+      loadFlowJourneys(flowIds),
+      Flow.query().findByIds([...flowIds]),
+    ]);
+    const fileByFlow = new Map(flows.map((flow) => [flow.id, flow.file]));
+    // A flow with no screenshot has nothing to walk, but it still belongs to
+    // its file — and it is its own entry point, which keeps a link on its row
+    // pointing somewhere real.
     return flowIds.map(
       (flowId) =>
         journeys.get(flowId) ?? {
-          key: null,
+          key: fileByFlow.get(flowId) ?? "",
           entryFlowId: flowId,
           segments: [],
         },
