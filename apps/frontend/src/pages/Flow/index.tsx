@@ -283,9 +283,8 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
 
       {journey.screenCount === 0 ? (
         <Text slot="description">
-          No test in this file takes a screenshot, so there is no journey to
-          walk. Add an <code>argosScreenshot</code> call to see its screens
-          here.
+          No test in this file takes a screenshot, so there is no flow to walk.
+          Add an <code>argosScreenshot</code> call to see its screens here.
         </Text>
       ) : (
         <Suspense fallback={<PageLoader />}>

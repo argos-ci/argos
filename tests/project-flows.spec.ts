@@ -38,7 +38,7 @@ loggedTest(
     // down every row, where it would say nothing new.
     await expect(
       page.getByRole("link", {
-        name: "See the e2e/logged/post-loan.spec.ts journey",
+        name: "Open the flow e2e/logged/post-loan.spec.ts",
       }),
     ).toHaveCount(1);
 
@@ -93,7 +93,7 @@ loggedTest(
     // of it — which is the point: a reader came for the path, not the test.
     await page
       .getByRole("link", {
-        name: "See the e2e/logged/post-loan.spec.ts journey",
+        name: "Open the flow e2e/logged/post-loan.spec.ts",
       })
       .click();
 
@@ -136,7 +136,7 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     await page
       .getByRole("link", {
-        name: "See the e2e/logged/receivable-invoice.spec.ts journey",
+        name: "Open the flow e2e/logged/receivable-invoice.spec.ts",
       })
       .click();
 
@@ -181,7 +181,7 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     await page
       .getByRole("link", {
-        name: "See the e2e/logged/post-loan.spec.ts journey",
+        name: "Open the flow e2e/logged/post-loan.spec.ts",
       })
       .click();
 

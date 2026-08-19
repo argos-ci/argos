@@ -2,10 +2,11 @@ import { useMemo, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
+  ArrowRightIcon,
   CameraIcon,
   FileImageIcon,
   ImageIcon,
-  RouteIcon,
+  PlugIcon,
   SearchIcon,
 } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
@@ -317,7 +318,7 @@ function PageContent(props: { params: ProjectParams }) {
           <EmptyStateLearnMore href="https://argos-ci.com/docs/reference/playwright" />
           <EmptyStateSteps>
             <EmptyStateStep
-              icon={<RouteIcon />}
+              icon={<PlugIcon />}
               step="In your config"
               title="Enable the reporter"
             >
@@ -354,7 +355,7 @@ function PageContent(props: { params: ProjectParams }) {
           <Heading>Flows</Heading>
           <Text slot="headline">
             Every end-to-end test the reference build ran, and the screens it
-            captured — the ones that capture nothing included. Open a journey to
+            captured — the ones that capture nothing included. Open a flow to
             walk its screens in order.
           </Text>
         </PageHeaderContent>
@@ -403,34 +404,24 @@ function PageContent(props: { params: ProjectParams }) {
             <div className="w-28 text-right">Flaky Rate</div>
           </div>
           {groups.map((group) => {
-            const capturing = group.flows.filter(
-              (flow) => flow.screenCount > 0,
-            ).length;
-            const screens = group.flows.reduce(
-              (total, flow) => total + flow.screenCount,
-              0,
-            );
             return (
               <List key={group.file}>
                 <ListHeaderRow>
-                  {screens > 0 ? (
+                  <div className="flex-1 truncate font-mono">{group.file}</div>
+                  {/* The way in, said in words. The file name reads as a
+                      heading, so making it the link left the reader guessing
+                      what pressing it would do. A file where nothing captures
+                      has nothing to open, and shows no link at all. */}
+                  {group.screenCount > 0 ? (
                     <RouterLink
                       href={`/${params.accountSlug}/${params.projectName}/flows/${group.entryFlowId}`}
-                      className="text-primary-low hover:text-primary flex min-w-0 flex-1 items-center gap-1.5"
-                      aria-label={`See the ${group.file} journey`}
+                      aria-label={`Open the flow ${group.file}`}
+                      className="text-primary-low hover:text-primary flex shrink-0 items-center gap-1"
                     >
-                      <RouteIcon className="size-3.5 shrink-0" />
-                      <span className="truncate font-mono">{group.file}</span>
+                      Open the flow
+                      <ArrowRightIcon className="size-3.5" />
                     </RouterLink>
-                  ) : (
-                    <div className="flex-1 truncate font-mono">
-                      {group.file}
-                    </div>
-                  )}
-                  <div className="text-low tabular-nums">
-                    {screens} screen{screens === 1 ? "" : "s"} · {capturing}/
-                    {group.flows.length} capture
-                  </div>
+                  ) : null}
                 </ListHeaderRow>
                 {group.flows.map((flow) => (
                   <FlowRow key={flow.id} flow={flow} />
