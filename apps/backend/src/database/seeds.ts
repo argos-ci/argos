@@ -13,6 +13,13 @@ import { Comment } from "./models/Comment";
 import { Deployment } from "./models/Deployment";
 import { DeploymentAlias } from "./models/DeploymentAlias";
 import { File } from "./models/File";
+import { Flow } from "./models/Flow";
+import {
+  FlowRun,
+  type FlowRunAnnotation,
+  type FlowRunOutcome,
+  type FlowRunStatus,
+} from "./models/FlowRun";
 import { GithubAccount } from "./models/GithubAccount";
 import { GithubInstallation } from "./models/GithubInstallation";
 import { GithubPullRequest } from "./models/GithubPullRequest";
@@ -776,6 +783,184 @@ export async function createTestChangeScenario(input: {
   ]);
 
   return { test, build };
+}
+
+/**
+ * A reference build whose test report covers the three states the Flows tab
+ * exists to tell apart: a test that captures a journey, a test that runs and
+ * captures nothing, and a test that never ran at all.
+ *
+ * Kept separate from {@link createBuildScenario} so it can be used on its own
+ * without perturbing the other scenarios' baselines.
+ */
+export async function createFlowsScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const buildName = "default";
+
+  const bucket = await ScreenshotBucket.query().insertAndFetch({
+    name: buildName,
+    branch: "main",
+    projectId,
+    commit: "8f1a2b3c4d5e6f708192a3b4c5d6e7f809a1b2c3",
+    complete: true,
+    valid: true,
+    screenshotCount: 4,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  });
+
+  const build = await Build.query().insertAndFetch({
+    name: buildName,
+    number: 1,
+    type: "reference" as const,
+    jobStatus: "complete" as const,
+    compareScreenshotBucketId: bucket.id,
+    projectId,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  });
+
+  const file = await ensureFile({
+    type: "screenshot",
+    width: 375,
+    height: 720,
+    key: "dummy-375x720.png",
+    contentType: "image/png",
+  });
+
+  type SeedFlow = {
+    title: string;
+    line: number;
+    status: FlowRunStatus;
+    outcome?: FlowRunOutcome;
+    annotations?: FlowRunAnnotation[];
+    screens: { name: string; url: string }[];
+  };
+
+  const specs: { file: string; tests: SeedFlow[] }[] = [
+    {
+      file: "tests/auth-guard.spec.ts",
+      tests: [
+        {
+          title: "sends a signed-out visitor to /login",
+          line: 51,
+          status: "passed" as const,
+          screens: [{ name: "login", url: "https://app.argos-ci.dev/login" }],
+        },
+        {
+          title: "does not bounce a signed-in user via /login",
+          line: 32,
+          status: "passed" as const,
+          screens: [],
+        },
+      ],
+    },
+    {
+      file: "tests/build.spec.ts",
+      tests: [
+        {
+          title: "reviews a build",
+          line: 12,
+          status: "passed" as const,
+          screens: [
+            { name: "builds", url: "https://app.argos-ci.dev/builds" },
+            {
+              name: "build-overview",
+              url: "https://app.argos-ci.dev/builds/1",
+            },
+            {
+              name: "build-approved",
+              url: "https://app.argos-ci.dev/builds/1",
+            },
+          ],
+        },
+        {
+          title: "aborts a build",
+          line: 44,
+          status: "passed" as const,
+          outcome: "flaky" as const,
+          screens: [],
+        },
+      ],
+    },
+    {
+      file: "tests/settings.spec.ts",
+      tests: [
+        {
+          title: "archives a project",
+          line: 118,
+          status: "skipped" as const,
+          outcome: "skipped" as const,
+          annotations: [
+            { type: "skip", description: "flaky on CI since 12/03" },
+          ],
+          screens: [],
+        },
+      ],
+    },
+  ];
+
+  for (const spec of specs) {
+    for (const test of spec.tests) {
+      const titlePath = [spec.file, test.title];
+      const flow = await Flow.query().insertAndFetch({
+        projectId,
+        buildName,
+        key: titlePath.join(" > "),
+        file: spec.file,
+        title: test.title,
+        titlePath,
+        lastSeenAt: seededAt,
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      });
+
+      // The runner's test id is what screenshots carry in `metadata.test.id`,
+      // so it is what ties the two together here as well.
+      const pwTestId = `seed-${flow.id}`;
+      const run = await FlowRun.query().insertAndFetch({
+        buildId: build.id,
+        flowId: flow.id,
+        pwProject: "chromium",
+        pwTestId,
+        status: test.status,
+        outcome: test.outcome ?? null,
+        duration: 1200,
+        line: test.line,
+        annotations: test.annotations ?? null,
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      });
+
+      await Promise.all(
+        test.screens.map((screen, index) => {
+          const metadata: ScreenshotMetadata = {
+            url: screen.url,
+            test: { id: pwTestId, title: test.title, titlePath },
+            capture: { index, trigger: "manual" },
+            automationLibrary: { name: "@playwright/test", version: "1.62.1" },
+            sdk: { name: "@argos-ci/playwright", version: "7.4.6" },
+          };
+          return Screenshot.query().insert({
+            screenshotBucketId: bucket.id,
+            flowRunId: run.id,
+            name: `${test.title} ${screen.name}`,
+            s3Id: file.key,
+            fileId: file.id,
+            metadata,
+            createdAt: seededAt,
+            updatedAt: seededAt,
+          });
+        }),
+      );
+    }
+  }
+
+  return { build };
 }
 
 /**

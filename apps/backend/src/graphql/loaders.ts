@@ -29,6 +29,8 @@ import {
   DeploymentAlias,
   DiscordWebhook,
   File,
+  Flow,
+  FlowRun,
   GithubAccount,
   GithubAccountMember,
   GithubInstallation,
@@ -55,6 +57,7 @@ import {
   User,
 } from "@/database/models";
 import type { ProjectPermission } from "@/database/models/Project";
+import { getFlowRates, type FlowRates } from "@/database/services/flows";
 import {
   getAccountBillings,
   getAccountStorybookTotals,
@@ -1894,8 +1897,171 @@ function createUsersShareTeamLoader() {
   );
 }
 
+/**
+ * The build every flow of a project is read against: its latest reference
+ * build, which is what the Flows tab shows.
+ */
+function createProjectReferenceBuildLoader() {
+  return new DataLoader<string, Build | null>(async (projectIds) => {
+    const builds = await Build.query()
+      .distinctOn("projectId")
+      .whereIn("projectId", [...projectIds])
+      .where("type", "reference")
+      .orderBy([
+        { column: "projectId" },
+        { column: "createdAt", order: "desc" },
+        { column: "number", order: "desc" },
+      ]);
+    const byProject = new Map(builds.map((build) => [build.projectId, build]));
+    return projectIds.map((projectId) => byProject.get(projectId) ?? null);
+  });
+}
+
+type FlowReferenceContext = {
+  runs: FlowRun[];
+  screenshots: Screenshot[];
+};
+
+const EMPTY_FLOW_CONTEXT: FlowReferenceContext = { runs: [], screenshots: [] };
+
+/**
+ * Order screenshots the way the test walked them.
+ *
+ * `capture.index` is recorded by the SDK; a screenshot without one — an older
+ * SDK, or a runner capturing a failure on its own — sorts after the ones that
+ * have it, rather than jumping to the front of the journey.
+ */
+function compareCaptureOrder(a: Screenshot, b: Screenshot): number {
+  const aIndex = a.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
+  const bIndex = b.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
+  return aIndex - bIndex || a.name.localeCompare(b.name);
+}
+
+/**
+ * What a flow did in the reference build: its runs and the screenshots they
+ * took, in capture order.
+ */
+function createFlowReferenceContextLoader() {
+  return new DataLoader<string, FlowReferenceContext>(async (flowIds) => {
+    const flows = await Flow.query().findByIds([...flowIds]);
+    const projectIds = [...new Set(flows.map((flow) => flow.projectId))];
+
+    const builds = await Build.query()
+      .distinctOn("projectId")
+      .whereIn("projectId", projectIds)
+      .where("type", "reference")
+      .orderBy([
+        { column: "projectId" },
+        { column: "createdAt", order: "desc" },
+        { column: "number", order: "desc" },
+      ]);
+    const buildIdByProject = new Map(
+      builds.map((build) => [build.projectId, build.id]),
+    );
+
+    // A flow only ever belongs to one project, so it only ever reads against
+    // one build; the runs are filtered back down per flow below.
+    const runs = builds.length
+      ? await FlowRun.query()
+          .whereIn("flowId", [...flowIds])
+          .whereIn(
+            "buildId",
+            builds.map((build) => build.id),
+          )
+      : [];
+
+    const screenshots = runs.length
+      ? await Screenshot.query().whereIn(
+          "flowRunId",
+          runs.map((run) => run.id),
+        )
+      : [];
+    const screenshotsByRun = new Map<string, Screenshot[]>();
+    for (const screenshot of screenshots) {
+      invariant(screenshot.flowRunId, "queried by flow run");
+      const list = screenshotsByRun.get(screenshot.flowRunId) ?? [];
+      list.push(screenshot);
+      screenshotsByRun.set(screenshot.flowRunId, list);
+    }
+
+    const flowById = new Map(flows.map((flow) => [flow.id, flow]));
+    return flowIds.map((flowId) => {
+      const flow = flowById.get(flowId);
+      if (!flow) {
+        return EMPTY_FLOW_CONTEXT;
+      }
+      const buildId = buildIdByProject.get(flow.projectId);
+      if (!buildId) {
+        return EMPTY_FLOW_CONTEXT;
+      }
+      const flowRuns = runs.filter(
+        (run) => run.flowId === flowId && run.buildId === buildId,
+      );
+      return {
+        runs: flowRuns,
+        screenshots: flowRuns
+          .flatMap((run) => screenshotsByRun.get(run.id) ?? [])
+          .sort(compareCaptureOrder),
+      };
+    });
+  });
+}
+
+function createFlowRunScreenshotsLoader() {
+  return new DataLoader<string, Screenshot[]>(async (flowRunIds) => {
+    const screenshots = await Screenshot.query().whereIn("flowRunId", [
+      ...flowRunIds,
+    ]);
+    return flowRunIds.map((flowRunId) =>
+      screenshots
+        .filter((screenshot) => screenshot.flowRunId === flowRunId)
+        .sort(compareCaptureOrder),
+    );
+  });
+}
+
+const NO_FLOW_RATES: FlowRates = { failureRate: 0, flakyRate: 0 };
+
+function createFlowRatesLoader() {
+  return new DataLoader<{ flowId: string; from: Date }, FlowRates, string>(
+    async (inputs) => {
+      // The window is an argument of the field, so a single query can mix
+      // several of them; each one is its own aggregate.
+      const byWindow = new Map<number, string[]>();
+      for (const input of inputs) {
+        const time = input.from.getTime();
+        const flowIds = byWindow.get(time) ?? [];
+        flowIds.push(input.flowId);
+        byWindow.set(time, flowIds);
+      }
+
+      const results = new Map<string, FlowRates>();
+      await Promise.all(
+        [...byWindow].map(async ([time, flowIds]) => {
+          const rates = await getFlowRates({ flowIds, from: new Date(time) });
+          for (const [flowId, value] of rates) {
+            results.set(`${flowId}:${time}`, value);
+          }
+        }),
+      );
+
+      return inputs.map(
+        (input) =>
+          results.get(`${input.flowId}:${input.from.getTime()}`) ??
+          NO_FLOW_RATES,
+      );
+    },
+    { cacheKeyFn: (input) => `${input.flowId}:${input.from.getTime()}` },
+  );
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
+  Flow: createModelLoader(Flow),
+  ProjectReferenceBuild: createProjectReferenceBuildLoader(),
+  FlowReferenceContext: createFlowReferenceContextLoader(),
+  FlowRunScreenshots: createFlowRunScreenshotsLoader(),
+  FlowRates: createFlowRatesLoader(),
   Presence: createPresenceLoader(),
   UsersShareTeam: createUsersShareTeamLoader(),
   AccountFromRelation: createAccountFromRelationLoader(),

@@ -129,6 +129,24 @@ const StoryMetadataSchema = z
   })
   .meta({ description: "Storybook story metadata" });
 
+const CaptureSchema = z
+  .object({
+    index: z.number().int().min(0).optional().meta({
+      description:
+        "The 0-based position of the screenshot within its test, following capture order",
+    }),
+    trigger: z
+      .enum(["manual", "automatic"])
+      .optional()
+      .meta({
+        description:
+          "What produced the screenshot: an explicit `argosScreenshot` call " +
+          "(`manual`) or the test runner capturing a failure on its own " +
+          "(`automatic`). Defaults to `manual` when absent.",
+      }),
+  })
+  .meta({ description: "How the screenshot was captured within its test" });
+
 export const ScreenshotMetadataSchema = z
   .object({
     $schema: z
@@ -162,6 +180,7 @@ export const ScreenshotMetadataSchema = z
     story: StoryMetadataSchema.nullish().meta({
       description: "Storybook story metadata",
     }),
+    capture: CaptureSchema.nullish(),
     tags: z
       .array(z.string())
       .optional()
@@ -176,3 +195,4 @@ export const ScreenshotMetadataJSONSchema = z.toJSONSchema(
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;
 export type ScreenshotMetadataSDK = z.infer<typeof SdkSchema>;
 export type ScreenshotMetadataStory = z.infer<typeof StoryMetadataSchema>;
+export type ScreenshotMetadataCapture = z.infer<typeof CaptureSchema>;

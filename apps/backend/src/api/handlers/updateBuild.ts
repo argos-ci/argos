@@ -1,6 +1,7 @@
 import {
   BuildMetadata,
   BuildMetadataSchema,
+  stripTestsFromBuildMetadata,
 } from "@argos/schemas/build-metadata";
 import { TransactionOrKnex } from "objection";
 import { z } from "zod";
@@ -16,6 +17,7 @@ import {
   Screenshot,
   ScreenshotBucket,
 } from "@/database/models";
+import { ingestTestReport } from "@/database/services/flows";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
@@ -247,6 +249,13 @@ async function handleUpdateParallel(ctx: Context) {
           trx,
         });
 
+        await ingestTestReport({
+          build,
+          shard,
+          tests: body.metadata?.testReport?.tests ?? [],
+          trx,
+        });
+
         // The shard isn't complete yet: more requests of the same shard will
         // follow before it counts towards the build's batches.
         if (!final) {
@@ -258,7 +267,9 @@ async function handleUpdateParallel(ctx: Context) {
           build,
           shard,
           requestId,
-          metadata: body.metadata ?? null,
+          // The test list has just become rows; keeping it on the shard too
+          // would store a second, unqueryable copy of it.
+          metadata: stripTestsFromBuildMetadata(body.metadata ?? null),
           parallelTotal,
           expectedTotal,
         });
@@ -379,7 +390,7 @@ async function completeParallelShard(params: {
 async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
   const final = body.final ?? true;
-  const metadata = body.metadata ?? null;
+  const metadata = stripTestsFromBuildMetadata(body.metadata ?? null);
   // Serialize the requests of a single build. The api-client aborts and retries
   // a request after a timeout while the server may still be processing the
   // original one, so two requests can run concurrently. Without a unique
@@ -392,6 +403,12 @@ async function handleUpdateSingle(ctx: Context) {
         await insertFilesAndScreenshots({
           screenshots: body.screenshots,
           build,
+          trx,
+        });
+        await ingestTestReport({
+          build,
+          shard: null,
+          tests: body.metadata?.testReport?.tests ?? [],
           trx,
         });
         if (!final) {

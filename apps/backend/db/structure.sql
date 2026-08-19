@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
+\restrict W20ChdoDQyxlLCtN7knrqhlmTLtgWbrEshGOHFRtlffD8k7wCjSIji4fYw0Rs2c
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -929,6 +929,93 @@ ALTER SEQUENCE public.files_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.files_id_seq OWNED BY public.files.id;
+
+
+--
+-- Name: flow_runs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.flow_runs (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "buildId" bigint NOT NULL,
+    "flowId" bigint NOT NULL,
+    "buildShardId" bigint,
+    "pwProject" character varying(255) DEFAULT ''::character varying NOT NULL,
+    "pwTestId" character varying(255),
+    status character varying(24) NOT NULL,
+    outcome character varying(24),
+    duration integer,
+    retry integer,
+    line integer,
+    tags jsonb,
+    annotations jsonb
+);
+
+
+ALTER TABLE public.flow_runs OWNER TO postgres;
+
+--
+-- Name: flow_runs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.flow_runs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.flow_runs_id_seq OWNER TO postgres;
+
+--
+-- Name: flow_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.flow_runs_id_seq OWNED BY public.flow_runs.id;
+
+
+--
+-- Name: flows; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.flows (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "projectId" bigint NOT NULL,
+    "buildName" character varying(255) NOT NULL,
+    key character varying(1024) NOT NULL,
+    file character varying(1024) NOT NULL,
+    title character varying(1024) NOT NULL,
+    "titlePath" jsonb NOT NULL,
+    "lastSeenAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE public.flows OWNER TO postgres;
+
+--
+-- Name: flows_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.flows_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.flows_id_seq OWNER TO postgres;
+
+--
+-- Name: flows_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.flows_id_seq OWNED BY public.flows.id;
 
 
 --
@@ -2260,7 +2347,8 @@ CREATE TABLE public.screenshots (
     threshold real,
     "baseName" character varying(1024),
     "parentName" character varying(255),
-    "baseNames" jsonb
+    "baseNames" jsonb,
+    "flowRunId" bigint
 );
 
 
@@ -3091,6 +3179,20 @@ ALTER TABLE ONLY public.files ALTER COLUMN id SET DEFAULT nextval('public.files_
 
 
 --
+-- Name: flow_runs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs ALTER COLUMN id SET DEFAULT nextval('public.flow_runs_id_seq'::regclass);
+
+
+--
+-- Name: flows id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flows ALTER COLUMN id SET DEFAULT nextval('public.flows_id_seq'::regclass);
+
+
+--
 -- Name: github_account_members id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3682,6 +3784,38 @@ ALTER TABLE ONLY public.files
 
 ALTER TABLE ONLY public.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flow_runs flow_runs_buildid_flowid_pwproject_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs
+    ADD CONSTRAINT flow_runs_buildid_flowid_pwproject_unique UNIQUE ("buildId", "flowId", "pwProject");
+
+
+--
+-- Name: flow_runs flow_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs
+    ADD CONSTRAINT flow_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flows flows_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flows
+    ADD CONSTRAINT flows_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flows flows_projectid_buildname_key_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flows
+    ADD CONSTRAINT flows_projectid_buildname_key_unique UNIQUE ("projectId", "buildName", key);
 
 
 --
@@ -4651,6 +4785,20 @@ CREATE INDEX deployments_projectid_environment_index ON public.deployments USING
 
 
 --
+-- Name: flow_runs_buildid_pwtestid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX flow_runs_buildid_pwtestid_index ON public.flow_runs USING btree ("buildId", "pwTestId");
+
+
+--
+-- Name: flow_runs_flowid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX flow_runs_flowid_createdat_index ON public.flow_runs USING btree ("flowId", "createdAt");
+
+
+--
 -- Name: github_account_members_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5051,6 +5199,13 @@ CREATE INDEX screenshots_createdat ON public.screenshots USING btree ("createdAt
 --
 
 CREATE INDEX screenshots_fileid_index ON public.screenshots USING btree ("fileId");
+
+
+--
+-- Name: screenshots_flowrunid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_flowrunid_index ON public.screenshots USING btree ("flowRunId");
 
 
 --
@@ -5624,6 +5779,38 @@ ALTER TABLE ONLY public.discord_webhooks
 
 
 --
+-- Name: flow_runs flow_runs_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs
+    ADD CONSTRAINT flow_runs_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: flow_runs flow_runs_buildshardid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs
+    ADD CONSTRAINT flow_runs_buildshardid_foreign FOREIGN KEY ("buildShardId") REFERENCES public.build_shards(id) ON DELETE SET NULL;
+
+
+--
+-- Name: flow_runs flow_runs_flowid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flow_runs
+    ADD CONSTRAINT flow_runs_flowid_foreign FOREIGN KEY ("flowId") REFERENCES public.flows(id) ON DELETE CASCADE;
+
+
+--
+-- Name: flows flows_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.flows
+    ADD CONSTRAINT flows_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: github_account_members github_account_members_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6008,6 +6195,14 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
+-- Name: screenshots screenshots_flowrunid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshots
+    ADD CONSTRAINT screenshots_flowrunid_foreign FOREIGN KEY ("flowRunId") REFERENCES public.flow_runs(id) ON DELETE SET NULL;
+
+
+--
 -- Name: screenshots screenshots_playwrighttracefileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6251,7 +6446,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
+\unrestrict W20ChdoDQyxlLCtN7knrqhlmTLtgWbrEshGOHFRtlffD8k7wCjSIji4fYw0Rs2c
 
 -- Knex migrations
 
@@ -6500,3 +6695,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260816090349_subscription-flat-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260817142631_screenshot-buckets-project-created-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260819140722_flows-test-coverage.js', 1, NOW());

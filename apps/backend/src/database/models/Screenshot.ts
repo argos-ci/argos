@@ -10,6 +10,7 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { BuildShard } from "./BuildShard";
 import { File } from "./File";
+import { FlowRun } from "./FlowRun";
 import { ScreenshotBucket } from "./ScreenshotBucket";
 import { Test } from "./Test";
 
@@ -43,6 +44,7 @@ export class Screenshot extends Model {
           screenshotBucketId: { type: "string" },
           fileId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
+          flowRunId: { type: ["string", "null"] },
           metadata: {
             anyOf: [
               ScreenshotMetadataJSONSchema as JSONSchema,
@@ -69,6 +71,7 @@ export class Screenshot extends Model {
   screenshotBucketId!: string;
   fileId!: string | null;
   testId!: string | null;
+  flowRunId!: string | null;
   metadata!: ScreenshotMetadata | null;
   playwrightTraceFileId!: string | null;
   buildShardId!: string | null;
@@ -105,9 +108,7 @@ export class Screenshot extends Model {
    * This method serves as a type-safe guard: any new properties added to the model
    * will require explicit consideration here.
    */
-  static partialClone(
-    model: Screenshot,
-  ): Omit<
+  static partialClone(model: Screenshot): Omit<
     Objection.ModelObject<Screenshot>,
     | "id"
     | "createdAt"
@@ -118,6 +119,10 @@ export class Screenshot extends Model {
     | "file"
     | "test"
     | "playwrightTraceFile"
+    // The run belongs to the build the screenshot came from, so a copy into
+    // another bucket must not carry it over.
+    | "flowRunId"
+    | "flowRun"
   > {
     return {
       name: model.name,
@@ -159,6 +164,14 @@ export class Screenshot extends Model {
           to: "tests.id",
         },
       },
+      flowRun: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: FlowRun,
+        join: {
+          from: "screenshots.flowRunId",
+          to: "flow_runs.id",
+        },
+      },
       playwrightTraceFile: {
         relation: Model.HasOneRelation,
         modelClass: File,
@@ -181,5 +194,6 @@ export class Screenshot extends Model {
   screenshotBucket?: ScreenshotBucket;
   file?: File;
   test?: Test | null;
+  flowRun?: FlowRun | null;
   playwrightTraceFile?: File | null;
 }

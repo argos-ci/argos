@@ -13,6 +13,7 @@ import * as Connection from "./Connection";
 import * as DateDefs from "./Date";
 import * as Deployment from "./Deployment";
 import * as DiscordWebhook from "./DiscordWebhook";
+import * as Flow from "./Flow";
 import * as GhApiInstallation from "./GhApiInstallation";
 import * as GhApiRepository from "./GhApiRepository";
 import * as GithubAccount from "./GithubAccount";
@@ -67,6 +68,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Connection,
   DateDefs,
   Deployment,
+  Flow,
   GhApiInstallation,
   GhApiRepository,
   GithubAccount,

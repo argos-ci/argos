@@ -19,6 +19,8 @@ export * from "./CommentMention";
 export * from "./CommentNotificationSubscription";
 export * from "./CommentReaction";
 export * from "./File";
+export * from "./Flow";
+export * from "./FlowRun";
 export * from "./GithubAccount";
 export * from "./GithubAccountMember";
 export * from "./GithubInstallation";

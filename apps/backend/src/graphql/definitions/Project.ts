@@ -17,6 +17,7 @@ import {
   User,
 } from "@/database/models";
 import { queryBuilds } from "@/database/services/build";
+import { getBuildFlowStats, queryBuildFlows } from "@/database/services/flows";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
@@ -227,6 +228,22 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    """
+    The end-to-end tests the reference build ran, in declaration order.
+
+    Driven by the runs of that build rather than by everything the project has
+    ever run, so a test deleted from the suite leaves the list as soon as a
+    build without it becomes the reference.
+    """
+    flows(
+      after: Int = 0
+      first: Int = 100
+      filters: FlowsFilterInput
+    ): FlowConnection!
+    "What the reference build captured"
+    flowStats: FlowStats!
+    "Get a single flow of the project"
+    flow(id: ID!): Flow
     "Deployments associated to the project"
     deployments(after: Int = 0, first: Int = 30): DeploymentConnection!
     "Production deployment domain"
@@ -563,6 +580,44 @@ export const resolvers: IResolvers = {
         return null;
       }
       return project.token;
+    },
+    flows: async (project, { first, after, filters }, ctx) => {
+      const build = await ctx.loaders.ProjectReferenceBuild.load(project.id);
+      // A project without a reference build has nothing to read flows against
+      // — the state of every project before its first approved build.
+      const result = build
+        ? await queryBuildFlows({
+            buildId: build.id,
+            after,
+            first,
+            filters: filters ?? null,
+          })
+        : { total: 0, results: [] };
+      return paginateResult({ result, after, first });
+    },
+    flow: async (project, { id }, ctx) => {
+      if (!isValidPgBigInt(id)) {
+        return null;
+      }
+      const flow = await ctx.loaders.Flow.load(id);
+      // A flow id is guessable, so ownership is checked rather than assumed
+      // from the route the client asked through.
+      if (!flow || flow.projectId !== project.id) {
+        return null;
+      }
+      return flow;
+    },
+    flowStats: async (project, _args, ctx) => {
+      const build = await ctx.loaders.ProjectReferenceBuild.load(project.id);
+      if (!build) {
+        return {
+          flowCount: 0,
+          capturingFlowCount: 0,
+          screenshotCount: 0,
+          urlCount: 0,
+        };
+      }
+      return getBuildFlowStats(build.id);
     },
     latestAutoApprovedBuild: async (project) => {
       const latestAutoApprovedBuild = await Build.query()

@@ -4,6 +4,7 @@ import { TransactionOrKnex } from "objection";
 
 import { raw, transaction } from "@/database";
 import { Build, BuildShard, Screenshot } from "@/database/models";
+import { attachScreenshotsToFlowRuns } from "@/database/services/flows";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
 /**
@@ -170,6 +171,10 @@ export async function finalizeBuild(input: {
         storybookScreenshotCount: counts.storybook,
         valid,
       }),
+      // Every screenshot and every reported test of the build is now stored, so
+      // this is the first moment the two can be matched up whatever order they
+      // arrived in.
+      attachScreenshotsToFlowRuns({ build, trx }),
     ]);
   });
 }
