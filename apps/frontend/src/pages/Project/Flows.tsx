@@ -8,7 +8,7 @@ import {
   RouteIcon,
   SearchIcon,
 } from "lucide-react";
-import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
+import { parseAsString, useQueryStates } from "nuqs";
 
 import { TestsIllustration } from "@/containers/EmptyStateIllustrations";
 import { graphql, type DocumentType } from "@/gql";
@@ -30,7 +30,8 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
+import { List, ListHeaderRow, ListRow } from "@/ui/List";
+import { RouterLink } from "@/ui/RouterLink";
 import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
@@ -40,6 +41,11 @@ import { useEventCallback } from "@/ui/useEventCallback";
 import { NotFound } from "../NotFound";
 import { useProjectParams, type ProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
+import {
+  getScreensFilterInput,
+  ScreensFilter,
+  ScreensFilterParser,
+} from "./ScreensFilter";
 
 const PAGE_SIZE = 200;
 
@@ -72,6 +78,12 @@ const ProjectFlowsQuery = graphql(`
           status
           flaky
           screenshotCount
+          journey {
+            entryFlowId
+            name
+            testCount
+            screenshotCount
+          }
           failureRate(period: $period)
           flakyRate(period: $period)
           annotations {
@@ -115,6 +127,47 @@ function Rate(props: { value: number; className?: string }) {
   return <span className={className}>{Math.round(value * 100)}%</span>;
 }
 
+/**
+ * Where a row's screens are: the journey they belong to.
+ *
+ * The link is on the screens rather than on the row, because a journey spans
+ * tests — three rows of `post-loan.spec.ts` all open the supplier-invoice
+ * journey, and a whole-row link would have made three identical destinations
+ * look like three different ones. Naming the journey on the affordance is what
+ * makes the sameness visible instead of surprising.
+ */
+function ScreensCell(props: { flow: Flow; params: ProjectParams }) {
+  const { flow, params } = props;
+  if (flow.screenshotCount === 0) {
+    // A test with no screenshot leaves the cell empty, so the gap is what
+    // stands out rather than a column of zeros.
+    return null;
+  }
+
+  const { journey } = flow;
+  const name = journey.name;
+  const label = name
+    ? `See the ${name} journey, ${journey.screenshotCount} screen${
+        journey.screenshotCount > 1 ? "s" : ""
+      }${journey.testCount > 1 ? ` across ${journey.testCount} tests` : ""}`
+    : `See the ${flow.screenshotCount} screen${
+        flow.screenshotCount > 1 ? "s" : ""
+      } of this test`;
+
+  return (
+    <RouterLink
+      href={`/${params.accountSlug}/${params.projectName}/flows/${journey.entryFlowId}`}
+      aria-label={label}
+      className="text-primary-low hover:text-primary flex min-w-0 items-center justify-end gap-1.5"
+    >
+      {name ? (
+        <span className="truncate text-xs font-medium">{name}</span>
+      ) : null}
+      <ImageIcon className="size-4 shrink-0" />
+    </RouterLink>
+  );
+}
+
 function FlowRow(props: { flow: Flow; params: ProjectParams }) {
   const { flow, params } = props;
   const skipReason = flow.annotations.find(
@@ -122,10 +175,7 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
   )?.description;
 
   return (
-    <ListRowLink
-      href={`/${params.accountSlug}/${params.projectName}/flows/${flow.id}`}
-      className="flex items-center gap-4 p-4 text-sm"
-    >
+    <ListRow className="flex items-center gap-4 p-4 text-sm">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Tooltip content={STATUS_LABEL[flow.status]}>
           <div
@@ -147,20 +197,8 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
           <span className="text-low shrink-0 italic">{skipReason}</span>
         ) : null}
       </div>
-      {/* An icon, not a count: at a glance the column answers "is there
-          anything to look at", and the row itself is the way to find out how
-          much. A test with no screenshot leaves the cell empty, so the gap is
-          what stands out rather than a column of zeros. */}
-      <div className="flex w-16 justify-end">
-        {flow.screenshotCount > 0 ? (
-          <Tooltip
-            content={`${flow.screenshotCount} screenshot${
-              flow.screenshotCount > 1 ? "s" : ""
-            }`}
-          >
-            <ImageIcon className="text-primary-low size-4" />
-          </Tooltip>
-        ) : null}
+      <div className="flex w-44 justify-end">
+        <ScreensCell flow={flow} params={params} />
       </div>
       <div className="w-20 text-right tabular-nums">
         <Rate
@@ -171,7 +209,7 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
       <div className="w-20 text-right tabular-nums">
         <Rate value={flow.flakyRate} className="text-pending-low font-medium" />
       </div>
-    </ListRowLink>
+    </ListRow>
   );
 }
 
@@ -200,11 +238,11 @@ function PageContent(props: { params: ProjectParams }) {
   const [filters, setFilters] = useQueryStates(
     {
       search: parseAsString,
-      withoutScreenshots: parseAsBoolean,
+      screens: ScreensFilterParser,
     },
     { history: "replace" },
   );
-  const hasFilters = Boolean(filters.search || filters.withoutScreenshots);
+  const hasFilters = Boolean(filters.search || filters.screens !== "all");
 
   const { data, fetchMore } = useSuspenseQuery(ProjectFlowsQuery, {
     variables: {
@@ -215,7 +253,7 @@ function PageContent(props: { params: ProjectParams }) {
       period: MetricsPeriod.Last_30Days,
       filters: {
         search: filters.search,
-        withoutScreenshots: filters.withoutScreenshots,
+        withScreenshots: getScreensFilterInput(filters.screens),
       },
     },
   });
@@ -320,16 +358,10 @@ function PageContent(props: { params: ProjectParams }) {
           </Text>
         </PageHeaderContent>
         <PageHeaderActions>
-          <Button
-            variant={filters.withoutScreenshots ? "primary" : "secondary"}
-            onClick={() =>
-              setFilters({
-                withoutScreenshots: filters.withoutScreenshots ? null : true,
-              })
-            }
-          >
-            Without screenshots
-          </Button>
+          <ScreensFilter
+            value={filters.screens}
+            onChange={(screens) => setFilters({ screens })}
+          />
           <TextInputGroup className="w-64">
             <TextInputIcon>
               <SearchIcon />
@@ -365,7 +397,7 @@ function PageContent(props: { params: ProjectParams }) {
               each file would drown the file names they sit next to. */}
           <div className="text-low flex items-center gap-4 px-4 text-xs font-semibold">
             <div className="flex-1">Test</div>
-            <div className="w-16 text-right">Screens</div>
+            <div className="w-44 text-right">Screens</div>
             <div className="w-20 text-right">Failures</div>
             <div className="w-20 text-right">Flaky</div>
           </div>

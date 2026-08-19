@@ -245,7 +245,7 @@ export async function queryBuildFlows(params: {
   first: number;
   filters?: {
     search?: string | null;
-    withoutScreenshots?: boolean | null;
+    withScreenshots?: boolean | null;
   } | null;
 }): Promise<{ total: number; results: Flow[] }> {
   const { buildId, after, first, filters } = params;
@@ -277,14 +277,17 @@ export async function queryBuildFlows(params: {
     });
   }
 
-  if (filters?.withoutScreenshots) {
-    query.whereNotExists(
-      Screenshot.query()
-        .alias("s")
-        .innerJoin("flow_runs as fr", "fr.id", "s.flowRunId")
-        .where("fr.buildId", buildId)
-        .whereRaw(`fr."flowId" = f.id`),
-    );
+  if (filters?.withScreenshots != null) {
+    const captures = Screenshot.query()
+      .alias("s")
+      .innerJoin("flow_runs as fr", "fr.id", "s.flowRunId")
+      .where("fr.buildId", buildId)
+      .whereRaw(`fr."flowId" = f.id`);
+    if (filters.withScreenshots) {
+      query.whereExists(captures);
+    } else {
+      query.whereNotExists(captures);
+    }
   }
 
   const [total, results] = await Promise.all([
@@ -419,6 +422,15 @@ export type JourneySegment = {
 export type Journey = {
   /** The shared folder, null when the flow's screenshots sit at the root. */
   key: string | null;
+  /**
+   * The flow the journey is read from — the first test that walks it.
+   *
+   * Every test of a journey shows the same journey, so they all have to point
+   * at one address: without it, three rows of the table would open three URLs
+   * rendering the same page, and sharing any of them would name a test that is
+   * one step of what the reader sees.
+   */
+  entryFlowId: string;
   segments: JourneySegment[];
 };
 
@@ -485,11 +497,18 @@ export async function loadFlowJourneys(
       { column: "number", order: "desc" },
     ]);
 
-  const flowById = new Map(flows.map((flow) => [flow.id, flow]));
   const result = new Map<string, Journey>();
 
   for (const build of builds) {
     const rows = await loadBuildScreenshots(build.id);
+
+    // Every flow of the build, not only the ones asked for: a journey pulls in
+    // its sibling tests, and fetching those one at a time inside the loop below
+    // would be an N+1 as soon as the list asks for a page of flows.
+    const buildFlows = await Flow.query().findByIds([
+      ...new Set(rows.map((row) => row.flowId)),
+    ]);
+    const flowById = new Map(buildFlows.map((item) => [item.id, item]));
 
     // The journey of a flow is the folder its own screenshots sit in. A flow
     // whose screenshots disagree is not a thing a suite produces, so the first
@@ -523,7 +542,7 @@ export async function loadFlowJourneys(
         ? [...keyByFlow].filter(([, k]) => k === key).map(([id]) => id)
         : [flow.id];
 
-      const segments = flowIdsOfJourney
+      const resolved: JourneySegment[] = flowIdsOfJourney
         .map((id) => {
           const screenshots = (rowsByFlow.get(id) ?? []).sort(
             compareCaptureOrder,
@@ -534,24 +553,6 @@ export async function loadFlowJourneys(
         .filter((segment) => segment.screenshots.length > 0)
         .map((segment) => {
           const segmentFlow = flowById.get(segment.id);
-          return { ...segment, flow: segmentFlow ?? null };
-        });
-
-      // Flows other than the one asked for are not in `flowById`, so they are
-      // fetched here rather than in the loop above.
-      const missingIds = segments
-        .filter((segment) => !segment.flow)
-        .map((segment) => segment.id);
-      if (missingIds.length > 0) {
-        const missing = await Flow.query().findByIds(missingIds);
-        for (const item of missing) {
-          flowById.set(item.id, item);
-        }
-      }
-
-      const resolved: JourneySegment[] = segments
-        .map((segment) => {
-          const segmentFlow = segment.flow ?? flowById.get(segment.id);
           invariant(segmentFlow, "the flow of a screenshot exists");
           return {
             flow: segmentFlow,
@@ -571,7 +572,12 @@ export async function loadFlowJourneys(
           screenshots,
         }));
 
-      result.set(flow.id, { key, segments: resolved });
+      const [entry] = resolved;
+      result.set(flow.id, {
+        key,
+        entryFlowId: entry?.flow.id ?? flow.id,
+        segments: resolved,
+      });
     }
   }
 

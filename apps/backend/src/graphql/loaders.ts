@@ -2013,8 +2013,6 @@ function createFlowRunScreenshotsLoader() {
   });
 }
 
-const EMPTY_JOURNEY: Journey = { key: null, segments: [] };
-
 /**
  * The journey a flow belongs to — possibly spanning several tests, which is
  * the normal shape of a long end-to-end path through a product.
@@ -2022,7 +2020,16 @@ const EMPTY_JOURNEY: Journey = { key: null, segments: [] };
 function createFlowJourneyLoader() {
   return new DataLoader<string, Journey>(async (flowIds) => {
     const journeys = await loadFlowJourneys(flowIds);
-    return flowIds.map((flowId) => journeys.get(flowId) ?? EMPTY_JOURNEY);
+    // A flow with no screenshot has no journey to belong to, so it is its own
+    // entry point — which keeps the link on its row pointing somewhere real.
+    return flowIds.map(
+      (flowId) =>
+        journeys.get(flowId) ?? {
+          key: null,
+          entryFlowId: flowId,
+          segments: [],
+        },
+    );
   });
 }
 

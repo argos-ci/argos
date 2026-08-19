@@ -94,10 +94,20 @@ export const typeDefs = gql`
   one.
   """
   type Journey {
+    """
+    The flow the journey is read from.
+
+    Every test of a journey shows the same journey, so they all address it
+    through this one — three rows of a list opening three URLs that render the
+    same page is a link that lies about where it goes.
+    """
+    entryFlowId: ID!
     "The shared folder, null when the screenshots sit at the root"
     name: String
     "The tests that contribute to it, in the order the suite declares them"
     segments: [JourneySegment!]!
+    "How many tests contribute to it"
+    testCount: Int!
     screenshotCount: Int!
   }
 
@@ -123,8 +133,11 @@ export const typeDefs = gql`
   input FlowsFilterInput {
     "Match against the test title and its file"
     search: String
-    "Keep only the tests that took no screenshot"
-    withoutScreenshots: Boolean
+    """
+    Keep only the tests that took a screenshot (\`true\`) or only the ones that
+    took none (\`false\`). Null keeps both.
+    """
+    withScreenshots: Boolean
   }
 `;
 
@@ -209,7 +222,9 @@ export const resolvers: IResolvers = {
     },
   },
   Journey: {
+    entryFlowId: (journey) => journey.entryFlowId,
     name: (journey) => journey.key,
+    testCount: (journey) => journey.segments.length,
     screenshotCount: (journey) =>
       journey.segments.reduce(
         (total: number, segment: JourneySegment) =>

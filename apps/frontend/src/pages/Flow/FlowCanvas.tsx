@@ -124,8 +124,10 @@ type SegmentNodeData = { title: string; screenCount: number };
 
 function SegmentNode(props: NodeProps<Node<SegmentNodeData>>) {
   const { data } = props;
+  // A wash rather than a dashed outline: zoomed out, a hairline all but
+  // disappears, while a filled block still reads as one group.
   return (
-    <div className="border-strong bg-subtle/50 relative h-full w-full rounded-xl border border-dashed">
+    <div className="border-subtle bg-ui/80 relative h-full w-full rounded-xl border">
       <StableLabel width={SCREEN_WIDTH * 2} className="pb-2.5">
         <div className="text-low truncate text-xs font-semibold">
           {data.title}

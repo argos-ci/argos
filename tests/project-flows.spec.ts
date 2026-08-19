@@ -31,11 +31,18 @@ loggedTest(
     await expect(page.getByText("e2e/auth-guard.spec.ts")).toBeVisible();
     await expect(page.getByText("e2e/logged/post-loan.spec.ts")).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /sends a signed-out visitor/ }),
+      page.getByText("sends a signed-out visitor to /login"),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /does not bounce a signed-in user/ }),
+      page.getByText("does not bounce a signed-in user via /login"),
     ).toBeVisible();
+
+    // A row is not a link: the journey is reached from the screens, which name
+    // it when it spans more than one test — so the three rows of the loan spec
+    // visibly point at the same place instead of silently doing so.
+    await expect(
+      page.getByRole("link", { name: /See the supplier-invoice journey/ }),
+    ).toHaveCount(3);
 
     // A skipped test carries the reason it was skipped, so the hole is
     // documented rather than mysterious.
@@ -51,21 +58,22 @@ loggedTest(
     await createFlowsScenario({ projectId: project.id });
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page.getByRole("button", { name: "Without screenshots" }).click();
+    // The only select on the page; its trigger shows the current value, like
+    // every other select in the app.
+    await page.getByRole("combobox").click();
+    await page.getByRole("option", { name: "Without screenshots" }).click();
 
     await expect(
-      page.getByRole("link", { name: /does not bounce a signed-in user/ }),
+      page.getByText("does not bounce a signed-in user via /login"),
     ).toBeVisible();
     // The tests that do capture are gone.
     await expect(
-      page.getByRole("link", { name: /sends a signed-out visitor/ }),
+      page.getByText("sends a signed-out visitor to /login"),
     ).toBeHidden();
-    await expect(
-      page.getByRole("link", { name: /uploads the supplier invoice/ }),
-    ).toBeHidden();
+    await expect(page.getByText("uploads the supplier invoice")).toBeHidden();
 
     // The filter is in the URL, so the view survives a reload and can be shared.
-    await expect(page).toHaveURL(/withoutScreenshots=true/);
+    await expect(page).toHaveURL(/screens=without/);
   },
 );
 
@@ -77,7 +85,10 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     // Any test of the journey opens the whole journey, not just its own share
     // of it — which is the point: a reader came for the path, not the test.
-    await page.getByRole("link", { name: /sets up the loan/ }).click();
+    await page
+      .getByRole("link", { name: /See the supplier-invoice journey/ })
+      .first()
+      .click();
 
     await expect(
       page.getByRole("heading", { name: "supplier-invoice" }),
@@ -116,7 +127,7 @@ loggedTest(
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     await page
-      .getByRole("link", { name: /requests a loan on a receivable invoice/ })
+      .getByRole("link", { name: /See the receivable-invoice journey/ })
       .click();
 
     await expect(
@@ -131,10 +142,18 @@ loggedTest(
   async ({ page, team, project }) => {
     await createFlowsScenario({ projectId: project.id });
 
-    await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page
-      .getByRole("link", { name: /does not bounce a signed-in user/ })
-      .click();
+    // A test that captures nothing has no link on its row — there is nothing to
+    // look at — so the page is reached by its address.
+    const { Flow } = await import("../apps/backend/src/database/models");
+    const flow = await Flow.query().findOne({
+      projectId: project.id,
+      title: "does not bounce a signed-in user via /login",
+    });
+    if (!flow) {
+      throw new Error("the scenario seeds this test");
+    }
+
+    await page.goto(`/${team.account.slug}/${project.name}/flows/${flow.id}`);
 
     await expect(
       page.getByText("This test takes no screenshot", { exact: false }),
