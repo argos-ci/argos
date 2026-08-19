@@ -42,6 +42,14 @@ loggedTest(
       page.getByText("6 screens across 3 tests", { exact: false }),
     ).toBeVisible();
 
+    // The describes a test is nested in sit before its title: a title alone
+    // says too little once a suite nests them, and two tests named the same in
+    // two describes would be the same row twice.
+    // Both tests of that spec are nested in it.
+    await expect(
+      page.getByText("loan request \u203a receivable \u203a", { exact: false }),
+    ).toHaveCount(2);
+
     // A skipped test carries the reason it was skipped, so the hole is
     // documented rather than mysterious.
     await expect(page.getByText("flaky on CI since 12/03")).toBeVisible();

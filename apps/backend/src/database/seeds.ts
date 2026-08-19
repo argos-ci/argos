@@ -826,6 +826,8 @@ export async function createFlowsScenario(input: {
   const VIEWPORTS = [414, 1280];
   type SeedFlow = {
     title: string;
+    /** `describe` blocks the test is nested in, as the runner reports them. */
+    describes?: string[];
     line: number;
     status: FlowRunStatus;
     outcome?: FlowRunOutcome;
@@ -834,6 +836,8 @@ export async function createFlowsScenario(input: {
   };
   type SeedSpec = {
     file: string;
+    /** Applied to every test below, the way a wrapping `describe` would. */
+    describes?: string[];
     /** Folder the screenshots of every test below are written to. */
     journey?: string;
     tests: SeedFlow[];
@@ -843,6 +847,7 @@ export async function createFlowsScenario(input: {
   const specs: SeedSpec[] = [
     {
       file: "e2e/logged/post-loan.spec.ts",
+      describes: ["supplier invoice"],
       journey: "supplier-invoice",
       tests: [
         {
@@ -886,6 +891,7 @@ export async function createFlowsScenario(input: {
     },
     {
       file: "e2e/logged/receivable-invoice.spec.ts",
+      describes: ["loan request", "receivable"],
       journey: "receivable-invoice",
       tests: [
         {
@@ -990,7 +996,12 @@ export async function createFlowsScenario(input: {
 
   for (const spec of specs) {
     for (const test of spec.tests) {
-      const titlePath = [spec.file, test.title];
+      const titlePath = [
+        spec.file,
+        ...(spec.describes ?? []),
+        ...(test.describes ?? []),
+        test.title,
+      ];
       const flow = await Flow.query().insertAndFetch({
         projectId,
         buildName,

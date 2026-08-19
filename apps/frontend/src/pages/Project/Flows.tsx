@@ -68,6 +68,7 @@ const ProjectFlowsQuery = graphql(`
         edges {
           id
           title
+          titlePath
           file
           status
           flaky
@@ -165,6 +166,10 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
   const skipReason = flow.annotations.find(
     (annotation) => annotation.type === "skip" || annotation.type === "fixme",
   )?.description;
+  // Everything between the file and the title: the describes the test is
+  // nested in. Without them a title like "works" says nothing, and two tests
+  // named the same in two describes are the same row twice.
+  const describes = flow.titlePath.slice(1, -1);
 
   return (
     <ListRow className="flex items-center gap-8 p-4 text-sm">
@@ -174,6 +179,11 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
             className={`size-2 shrink-0 rounded-full ${STATUS_COLOR[flow.status]}`}
           />
         </Tooltip>
+        {describes.length > 0 ? (
+          <span className="text-low max-w-2/5 shrink truncate">
+            {`${describes.join(" \u203a ")} \u203a`}
+          </span>
+        ) : null}
         <Truncable className="font-medium">{flow.title}</Truncable>
         {flow.status === FlowStatus.Failed ? (
           <Chip color="danger" scale="xs">
