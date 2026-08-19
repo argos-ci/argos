@@ -58,7 +58,6 @@ const config: CodegenConfig = {
           Flow: "../../database/models/index.js#Flow",
           FlowAnnotation: "../../database/models/index.js#FlowRunAnnotation",
           FlowRun: "../../database/models/index.js#FlowRun",
-          FlowStats: "../../database/services/flows.js#BuildFlowStats",
           Journey: "../../database/services/flows.js#Journey",
           JourneySegment: "../../database/services/flows.js#JourneySegment",
           JourneyStep: "../../database/services/flows.js#JourneyStep",

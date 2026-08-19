@@ -60,12 +60,6 @@ const ProjectFlowsQuery = graphql(`
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      flowStats {
-        flowCount
-        capturingFlowCount
-        screenshotCount
-        urlCount
-      }
       flows(after: $after, first: $first, filters: $filters) {
         pageInfo {
           totalCount
@@ -77,12 +71,12 @@ const ProjectFlowsQuery = graphql(`
           file
           status
           flaky
-          screenshotCount
+          screenCount
           journey {
             entryFlowId
             name
             testCount
-            screenshotCount
+            screenCount
           }
           failureRate(period: $period)
           flakyRate(period: $period)
@@ -138,16 +132,14 @@ function Rate(props: { value: number; className?: string }) {
  */
 function ScreensCell(props: { flow: Flow; params: ProjectParams }) {
   const { flow, params } = props;
-  if (flow.screenshotCount === 0) {
+  if (flow.screenCount === 0) {
     // A test with no screenshot leaves the cell empty, so the gap is what
     // stands out rather than a column of zeros.
     return null;
   }
 
   const { journey } = flow;
-  const label = `${flow.screenshotCount} screen${
-    flow.screenshotCount > 1 ? "s" : ""
-  }`;
+  const label = `${flow.screenCount} screen${flow.screenCount > 1 ? "s" : ""}`;
 
   if (journey.name) {
     return (
@@ -222,7 +214,7 @@ type JourneySection = {
   /** Null for the tests whose screenshots sit at the root, which share none. */
   name: string | null;
   entryFlowId: string;
-  screenshotCount: number;
+  screenCount: number;
   flows: Flow[];
 };
 
@@ -259,7 +251,7 @@ function useFlowsBySpec(flows: Flow[]): SpecGroup[] {
         group.sections.push({
           name,
           entryFlowId: flow.journey.entryFlowId,
-          screenshotCount: flow.journey.screenshotCount,
+          screenCount: flow.journey.screenCount,
           flows: [flow],
         });
       }
@@ -278,7 +270,7 @@ function JourneyHeaderRow(props: {
   params: ProjectParams;
 }) {
   const { section, params } = props;
-  const { name, flows, screenshotCount } = section;
+  const { name, flows, screenCount } = section;
   return (
     <div className="bg-subtle flex items-center gap-3 border-b px-4 py-2">
       <RouterLink
@@ -289,7 +281,7 @@ function JourneyHeaderRow(props: {
         <span className="truncate">{name}</span>
       </RouterLink>
       <span className="text-low text-xs tabular-nums">
-        {screenshotCount} screen{screenshotCount === 1 ? "" : "s"}
+        {screenCount} screen{screenCount === 1 ? "" : "s"}
         {flows.length > 1 ? ` across ${flows.length} tests` : null}
       </span>
     </div>
@@ -356,9 +348,9 @@ function PageContent(props: { params: ProjectParams }) {
     return <NotFound />;
   }
 
-  const { flowStats, flows } = project;
+  const { flows } = project;
 
-  if (flowStats.flowCount === 0 && !hasFilters) {
+  if (flows.pageInfo.totalCount === 0 && !hasFilters) {
     return (
       <PageContainer>
         <EmptyState>
@@ -411,13 +403,9 @@ function PageContent(props: { params: ProjectParams }) {
         <PageHeaderContent>
           <Heading>Flows</Heading>
           <Text slot="headline">
-            {/* Stated, not scored. A test that legitimately captures nothing —
-                a redirect guard, an API check — would drag a coverage
-                percentage down for being right. */}
-            {flowStats.flowCount} tests ran in the reference build,{" "}
-            {flowStats.capturingFlowCount} of them took at least one screenshot.{" "}
-            {flowStats.screenshotCount} screenshots captured across{" "}
-            {flowStats.urlCount} distinct URLs.
+            Every end-to-end test the reference build ran, and the screens it
+            captured — the ones that capture nothing included. Open a journey to
+            walk its screens in order.
           </Text>
         </PageHeaderContent>
         <PageHeaderActions>
@@ -466,10 +454,10 @@ function PageContent(props: { params: ProjectParams }) {
           </div>
           {groups.map((group) => {
             const capturing = group.flows.filter(
-              (flow) => flow.screenshotCount > 0,
+              (flow) => flow.screenCount > 0,
             ).length;
             const screens = group.flows.reduce(
-              (total, flow) => total + flow.screenshotCount,
+              (total, flow) => total + flow.screenCount,
               0,
             );
             return (

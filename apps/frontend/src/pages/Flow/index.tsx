@@ -55,7 +55,7 @@ const FlowQuery = graphql(`
         file
         journey {
           name
-          screenshotCount
+          screenCount
           segments {
             flow {
               id
@@ -242,8 +242,8 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
           </RouterLink>
           <Heading>{title}</Heading>
           <Text slot="headline">
-            {journey.screenshotCount} screen
-            {journey.screenshotCount === 1 ? "" : "s"}
+            {journey.screenCount} screen
+            {journey.screenCount === 1 ? "" : "s"}
             {testCount > 1 ? ` across ${testCount} tests` : null} &#183;{" "}
             <span className="font-mono">{flow.file}</span>
           </Text>
@@ -268,7 +268,7 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
         </PageHeaderActions>
       </PageHeader>
 
-      {journey.screenshotCount === 0 ? (
+      {journey.screenCount === 0 ? (
         <Text slot="description">
           This test takes no screenshot, so there is no journey to walk. Add an{" "}
           <code>argosScreenshot</code> call to see its screens here.

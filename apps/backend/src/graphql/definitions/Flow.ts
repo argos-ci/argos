@@ -57,7 +57,11 @@ export const typeDefs = gql`
     runs: [FlowRun!]!
     "Screenshots taken by the flow in the reference build, in capture order"
     screenshots: [Screenshot!]!
-    screenshotCount: Int!
+    """
+    Screens it walks — a screen captured at two viewports is one screen, seen
+    twice.
+    """
+    screenCount: Int!
     "The worst status across the runs of the reference build"
     status: FlowStatus!
     "Whether any run of the reference build only passed on a retry"
@@ -125,29 +129,15 @@ export const typeDefs = gql`
     "How many tests contribute to it"
     testCount: Int!
     """
-    How many screens it walks — steps, not files: a screen captured at two
-    viewports is one screen seen twice.
+    How many screens it walks — a screen captured at two viewports is one
+    screen, seen twice.
     """
-    screenshotCount: Int!
+    screenCount: Int!
   }
 
   type FlowConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Flow!]!
-  }
-
-  """
-  What the reference build captured, stated rather than scored: a test that
-  legitimately captures nothing would drag a percentage down for being right.
-  """
-  type FlowStats {
-    "Tests the reference build ran"
-    flowCount: Int!
-    "Tests that took at least one screenshot"
-    capturingFlowCount: Int!
-    screenshotCount: Int!
-    "Distinct URLs the screenshots were taken on"
-    urlCount: Int!
   }
 
   input FlowsFilterInput {
@@ -203,9 +193,9 @@ export const resolvers: IResolvers = {
       const context = await ctx.loaders.FlowReferenceContext.load(flow.id);
       return context.screenshots;
     },
-    screenshotCount: async (flow, _args, ctx) => {
+    screenCount: async (flow, _args, ctx) => {
       const context = await ctx.loaders.FlowReferenceContext.load(flow.id);
-      return context.screenshots.length;
+      return context.screenCount;
     },
     status: async (flow, _args, ctx) => {
       const context = await ctx.loaders.FlowReferenceContext.load(flow.id);
@@ -245,7 +235,7 @@ export const resolvers: IResolvers = {
     entryFlowId: (journey) => journey.entryFlowId,
     name: (journey) => journey.key,
     testCount: (journey) => journey.segments.length,
-    screenshotCount: (journey) =>
+    screenCount: (journey) =>
       journey.segments.reduce(
         (total: number, segment: JourneySegment) =>
           total + segment.steps.length,

@@ -60,6 +60,7 @@ import type { ProjectPermission } from "@/database/models/Project";
 import {
   compareCaptureOrder,
   getFlowRates,
+  getStepKey,
   loadFlowJourneys,
   type FlowRates,
   type Journey,
@@ -1926,9 +1927,19 @@ function createProjectReferenceBuildLoader() {
 type FlowReferenceContext = {
   runs: FlowRun[];
   screenshots: Screenshot[];
+  /**
+   * Screens, not files: one `argosScreenshot` call captured at two viewports is
+   * one screen of the journey seen twice, and counting the files would say
+   * eleven where the journey below says six.
+   */
+  screenCount: number;
 };
 
-const EMPTY_FLOW_CONTEXT: FlowReferenceContext = { runs: [], screenshots: [] };
+const EMPTY_FLOW_CONTEXT: FlowReferenceContext = {
+  runs: [],
+  screenshots: [],
+  screenCount: 0,
+};
 
 /**
  * What a flow did in the reference build: its runs and the screenshots they
@@ -1990,11 +2001,20 @@ function createFlowReferenceContextLoader() {
       const flowRuns = runs.filter(
         (run) => run.flowId === flowId && run.buildId === buildId,
       );
+      const flowScreenshots = flowRuns
+        .flatMap((run) => screenshotsByRun.get(run.id) ?? [])
+        .sort(compareCaptureOrder);
+      const stepKeys = new Set(
+        flowRuns.flatMap((run) =>
+          (screenshotsByRun.get(run.id) ?? []).map((screenshot) =>
+            getStepKey(screenshot.name, run.pwProject),
+          ),
+        ),
+      );
       return {
         runs: flowRuns,
-        screenshots: flowRuns
-          .flatMap((run) => screenshotsByRun.get(run.id) ?? [])
-          .sort(compareCaptureOrder),
+        screenshots: flowScreenshots,
+        screenCount: stepKeys.size,
       };
     });
   });

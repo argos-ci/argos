@@ -2071,7 +2071,7 @@ export async function seed() {
     private: false,
   });
 
-  const [awesomeProject] = await Promise.all([
+  await Promise.all([
     createProject({
       name: "awesome",
       token: "awesome-650ded7d72e85b52e099df6e56aa204d",
@@ -2089,11 +2089,6 @@ export async function seed() {
       accountId: jeremy.account.id,
     }),
   ]);
-
-  // The Flows tab reads the reference build's test report, which only the
-  // Playwright reporter produces — so without a seeded one there is nothing to
-  // look at in development.
-  await createFlowsScenario({ projectId: awesomeProject.id });
 
   const ghInstallation = await GithubInstallation.query().insertAndFetch({
     createdAt: "2016-12-08T22:59:55Z",
@@ -2143,6 +2138,13 @@ export async function seed() {
     authorUserId: greg.user.id,
     replierUserId: jeremy.user.id,
   });
+
+  // The Flows tab reads the reference build's test report, which only the
+  // Playwright reporter produces — so without a seeded one there is nothing to
+  // look at in development. It lands on the project that already carries
+  // everything else, and becomes its newest reference build: the tab reads the
+  // newest one by definition, so it could not be dated behind the others.
+  await createFlowsScenario({ projectId: bigProject.id });
 }
 
 /**

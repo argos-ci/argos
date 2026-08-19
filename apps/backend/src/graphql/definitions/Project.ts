@@ -17,7 +17,7 @@ import {
   User,
 } from "@/database/models";
 import { queryBuilds } from "@/database/services/build";
-import { getBuildFlowStats, queryBuildFlows } from "@/database/services/flows";
+import { queryBuildFlows } from "@/database/services/flows";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
@@ -240,8 +240,6 @@ export const typeDefs = gql`
       first: Int = 100
       filters: FlowsFilterInput
     ): FlowConnection!
-    "What the reference build captured"
-    flowStats: FlowStats!
     "Get a single flow of the project"
     flow(id: ID!): Flow
     "Deployments associated to the project"
@@ -606,18 +604,6 @@ export const resolvers: IResolvers = {
         return null;
       }
       return flow;
-    },
-    flowStats: async (project, _args, ctx) => {
-      const build = await ctx.loaders.ProjectReferenceBuild.load(project.id);
-      if (!build) {
-        return {
-          flowCount: 0,
-          capturingFlowCount: 0,
-          screenshotCount: 0,
-          urlCount: 0,
-        };
-      }
-      return getBuildFlowStats(build.id);
     },
     latestAutoApprovedBuild: async (project) => {
       const latestAutoApprovedBuild = await Build.query()

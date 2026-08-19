@@ -299,45 +299,6 @@ export async function queryBuildFlows(params: {
   return { total, results };
 }
 
-export type BuildFlowStats = {
-  flowCount: number;
-  capturingFlowCount: number;
-  screenshotCount: number;
-  urlCount: number;
-};
-
-/**
- * The sentence above the list: how much of the suite the build captured.
- *
- * Deliberately not a ratio. A test that legitimately captures nothing — a
- * redirect guard, an API check — would drag a coverage percentage down for
- * doing exactly the right thing, so the numbers are stated and left to the
- * reader.
- */
-export async function getBuildFlowStats(
-  buildId: string,
-): Promise<BuildFlowStats> {
-  const result = await FlowRun.query()
-    .alias("fr")
-    .leftJoin("screenshots as s", "s.flowRunId", "fr.id")
-    .where("fr.buildId", buildId)
-    .select(
-      raw(`count(distinct fr."flowId")::int as "flowCount"`),
-      raw(
-        `count(distinct fr."flowId") filter (where s.id is not null)::int as "capturingFlowCount"`,
-      ),
-      raw(`count(s.id)::int as "screenshotCount"`),
-      raw(`count(distinct s.metadata->>'url')::int as "urlCount"`),
-    )
-    .first()
-    .castTo<BuildFlowStats | undefined>();
-
-  // An aggregate without `group by` always yields exactly one row.
-  invariant(result, "flow stats not found");
-
-  return result;
-}
-
 export type FlowRates = {
   /** Share of runs that ended in failure over the window, 0 to 1. */
   failureRate: number;
