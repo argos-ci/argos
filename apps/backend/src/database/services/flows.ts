@@ -384,3 +384,196 @@ export async function getFlowRates(params: {
     ]),
   );
 }
+
+/**
+ * The journey a screenshot belongs to: the folder its name sits in.
+ *
+ * A suite that walks one long path through the product rarely does it in one
+ * test — it is split into several, and what ties them back together is the
+ * prefix the screenshots share (`screenshots(page, "supplier-invoice")` in
+ * Playwright, `supplier-invoice/loan-beneficiary` on the way out). That prefix
+ * is the journey.
+ *
+ * The runner project is stripped first: the SDK prefixes every name with it
+ * (`chromium/supplier-invoice/…`), and a journey is the same journey whichever
+ * browser walked it. A name with no folder left belongs to no journey — its
+ * test is the whole story.
+ */
+export function getJourneyKey(
+  screenshotName: string,
+  runnerProject: string,
+): string | null {
+  const withoutProject =
+    runnerProject && screenshotName.startsWith(`${runnerProject}/`)
+      ? screenshotName.slice(runnerProject.length + 1)
+      : screenshotName;
+  const index = withoutProject.lastIndexOf("/");
+  return index > 0 ? withoutProject.slice(0, index) : null;
+}
+
+export type JourneySegment = {
+  flow: Flow;
+  screenshots: Screenshot[];
+};
+
+export type Journey = {
+  /** The shared folder, null when the flow's screenshots sit at the root. */
+  key: string | null;
+  segments: JourneySegment[];
+};
+
+type ScreenshotRow = Screenshot & {
+  flowId: string;
+  runnerProject: string;
+  runLine: number | null;
+};
+
+/**
+ * Every screenshot of a build that belongs to a flow, with the flow it came
+ * from. One query rather than one per flow: a journey spans tests by
+ * definition, so the whole build is the working set either way.
+ */
+async function loadBuildScreenshots(buildId: string): Promise<ScreenshotRow[]> {
+  return Screenshot.query()
+    .alias("s")
+    .select(
+      "s.*",
+      raw(`fr."flowId" as "flowId"`),
+      raw(`fr."pwProject" as "runnerProject"`),
+      raw(`fr.line as "runLine"`),
+    )
+    .innerJoin("flow_runs as fr", "fr.id", "s.flowRunId")
+    .where("fr.buildId", buildId)
+    .castTo<ScreenshotRow[]>();
+}
+
+/**
+ * Order screenshots the way the test walked them.
+ *
+ * `capture.index` is recorded by the SDK; a screenshot without one — an older
+ * SDK, or a runner capturing a failure on its own — sorts after the ones that
+ * have it, rather than jumping to the front of the journey.
+ */
+export function compareCaptureOrder(a: Screenshot, b: Screenshot): number {
+  const aIndex = a.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
+  const bIndex = b.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
+  return aIndex - bIndex || a.name.localeCompare(b.name);
+}
+
+/**
+ * The journey each of these flows belongs to, read against the reference build
+ * of their project.
+ *
+ * A journey is returned even when the flow shares its folder with nobody: it
+ * is then a journey of one segment, which is what the flow page renders anyway.
+ */
+export async function loadFlowJourneys(
+  flowIds: readonly string[],
+): Promise<Map<string, Journey>> {
+  const flows = await Flow.query().findByIds([...flowIds]);
+  if (flows.length === 0) {
+    return new Map();
+  }
+
+  const builds = await Build.query()
+    .distinctOn("projectId")
+    .whereIn("projectId", [...new Set(flows.map((flow) => flow.projectId))])
+    .where("type", "reference")
+    .orderBy([
+      { column: "projectId" },
+      { column: "createdAt", order: "desc" },
+      { column: "number", order: "desc" },
+    ]);
+
+  const flowById = new Map(flows.map((flow) => [flow.id, flow]));
+  const result = new Map<string, Journey>();
+
+  for (const build of builds) {
+    const rows = await loadBuildScreenshots(build.id);
+
+    // The journey of a flow is the folder its own screenshots sit in. A flow
+    // whose screenshots disagree is not a thing a suite produces, so the first
+    // one that has a folder decides.
+    const keyByFlow = new Map<string, string>();
+    for (const row of rows) {
+      if (keyByFlow.has(row.flowId)) {
+        continue;
+      }
+      const key = getJourneyKey(row.name, row.runnerProject);
+      if (key) {
+        keyByFlow.set(row.flowId, key);
+      }
+    }
+
+    const rowsByFlow = new Map<string, ScreenshotRow[]>();
+    for (const row of rows) {
+      const list = rowsByFlow.get(row.flowId) ?? [];
+      list.push(row);
+      rowsByFlow.set(row.flowId, list);
+    }
+
+    for (const flow of flows) {
+      if (flow.projectId !== build.projectId) {
+        continue;
+      }
+      const key = keyByFlow.get(flow.id) ?? null;
+      // Flows of the journey, in declaration order — which is the order the
+      // suite walks them, and so the order the journey reads in.
+      const flowIdsOfJourney = key
+        ? [...keyByFlow].filter(([, k]) => k === key).map(([id]) => id)
+        : [flow.id];
+
+      const segments = flowIdsOfJourney
+        .map((id) => {
+          const screenshots = (rowsByFlow.get(id) ?? []).sort(
+            compareCaptureOrder,
+          );
+          const [first] = screenshots;
+          return { id, screenshots, line: first?.runLine ?? null };
+        })
+        .filter((segment) => segment.screenshots.length > 0)
+        .map((segment) => {
+          const segmentFlow = flowById.get(segment.id);
+          return { ...segment, flow: segmentFlow ?? null };
+        });
+
+      // Flows other than the one asked for are not in `flowById`, so they are
+      // fetched here rather than in the loop above.
+      const missingIds = segments
+        .filter((segment) => !segment.flow)
+        .map((segment) => segment.id);
+      if (missingIds.length > 0) {
+        const missing = await Flow.query().findByIds(missingIds);
+        for (const item of missing) {
+          flowById.set(item.id, item);
+        }
+      }
+
+      const resolved: JourneySegment[] = segments
+        .map((segment) => {
+          const segmentFlow = segment.flow ?? flowById.get(segment.id);
+          invariant(segmentFlow, "the flow of a screenshot exists");
+          return {
+            flow: segmentFlow,
+            screenshots: segment.screenshots,
+            line: segment.line,
+          };
+        })
+        .sort(
+          (a, b) =>
+            a.flow.file.localeCompare(b.flow.file) ||
+            (a.line ?? Number.MAX_SAFE_INTEGER) -
+              (b.line ?? Number.MAX_SAFE_INTEGER) ||
+            a.flow.title.localeCompare(b.flow.title),
+        )
+        .map(({ flow: segmentFlow, screenshots }) => ({
+          flow: segmentFlow,
+          screenshots,
+        }));
+
+      result.set(flow.id, { key, segments: resolved });
+    }
+  }
+
+  return result;
+}

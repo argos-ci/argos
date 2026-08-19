@@ -1,23 +1,32 @@
+import { lazy, Suspense, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useParams } from "react-router";
 
 import { graphql, type DocumentType } from "@/gql";
 import { Heading } from "@/ui/Heading";
-import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import {
   Page,
   PageContainer,
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { PageLoader } from "@/ui/PageLoader";
 import { RouterLink } from "@/ui/RouterLink";
 import { Text } from "@/ui/Text";
 
 import { NotFound } from "../NotFound";
 import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
 import { ProjectTitle } from "../Project/ProjectTitle";
+import type { CanvasSegment } from "./FlowCanvas";
+
+// The canvas pulls in a graph library and a stylesheet; the page is reachable
+// from every row of the Flows tab, so it is not worth putting that in the
+// bundle everyone downloads.
+const FlowCanvas = lazy(() =>
+  import("./FlowCanvas").then((module) => ({ default: module.FlowCanvas })),
+);
 
 const FlowQuery = graphql(`
   query FlowPage_project(
@@ -31,14 +40,25 @@ const FlowQuery = graphql(`
         id
         title
         file
-        screenshots {
-          id
+        journey {
           name
-          url
-          width
-          height
-          metadata {
-            url
+          screenshotCount
+          segments {
+            flow {
+              id
+              title
+              file
+            }
+            screenshots {
+              id
+              name
+              url
+              width
+              height
+              metadata {
+                url
+              }
+            }
           }
         }
       }
@@ -49,52 +69,6 @@ const FlowQuery = graphql(`
 type Flow = NonNullable<
   NonNullable<DocumentType<typeof FlowQuery>["project"]>["flow"]
 >;
-type Screen = Flow["screenshots"][number];
-
-/**
- * Width of a screen in the strip. Big enough to recognize the page at a
- * glance, which is the whole point of the page: it is read by someone who
- * wants to see the product, not the test.
- */
-const SCREEN_WIDTH = 304;
-
-/**
- * A long page would otherwise turn the strip into a wall: the top of a screen
- * is what makes it recognizable, so tall ones are cropped rather than shrunk
- * to a sliver.
- */
-const SCREEN_MAX_HEIGHT = 380;
-
-function Screen(props: { screen: Screen }) {
-  const { screen } = props;
-  const path = screen.metadata?.url ? getPathname(screen.metadata.url) : null;
-
-  return (
-    <figure className="m-0 shrink-0" style={{ width: SCREEN_WIDTH }}>
-      <div
-        className="bg-app overflow-hidden rounded-lg border shadow-md"
-        style={{ maxHeight: SCREEN_MAX_HEIGHT }}
-      >
-        <ImageKitPicture
-          src={screen.url}
-          alt={screen.name}
-          className="block w-full"
-          style={{
-            aspectRatio:
-              screen.width && screen.height
-                ? `${screen.width} / ${screen.height}`
-                : undefined,
-          }}
-          transformations={[`w-${SCREEN_WIDTH * 2}`]}
-        />
-      </div>
-      <figcaption className="flex flex-wrap items-baseline gap-x-2 pt-3">
-        <span className="font-mono text-sm font-medium">{screen.name}</span>
-        {path ? <span className="text-low text-xs">{path}</span> : null}
-      </figcaption>
-    </figure>
-  );
-}
 
 /**
  * The path a screenshot was taken on. The origin is noise here — every screen
@@ -107,6 +81,86 @@ function getPathname(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The name a screen carries on the canvas: its own, with the journey folder
+ * and the runner project taken off. Repeating `supplier-invoice/` above every
+ * screen of the supplier-invoice journey says nothing.
+ */
+function getScreenLabel(name: string): string {
+  const segments = name.split("/");
+  return segments.at(-1) ?? name;
+}
+
+function useCanvasSegments(flow: Flow): CanvasSegment[] {
+  return useMemo(
+    () =>
+      flow.journey.segments.map((segment) => ({
+        flowId: segment.flow.id,
+        title: segment.flow.title,
+        screens: segment.screenshots.map((screenshot) => ({
+          id: screenshot.id,
+          name: getScreenLabel(screenshot.name),
+          url: screenshot.url,
+          width: screenshot.width ?? null,
+          height: screenshot.height ?? null,
+          path: screenshot.metadata?.url
+            ? getPathname(screenshot.metadata.url)
+            : null,
+        })),
+      })),
+    [flow],
+  );
+}
+
+/**
+ * Split from the query so the hooks below never sit behind the "no such flow"
+ * branch.
+ */
+function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
+  const { flow, params } = props;
+  const segments = useCanvasSegments(flow);
+  const { journey } = flow;
+  // The journey names the page when it has one: the reader came to see a path
+  // through the product, and the test that happened to be clicked is one step
+  // of it.
+  const title = journey.name ?? flow.title;
+  const testCount = journey.segments.length;
+
+  return (
+    <PageContainer>
+      <PageHeader>
+        <PageHeaderContent>
+          <RouterLink
+            href={`/${params.accountSlug}/${params.projectName}/flows`}
+            className="text-low mb-1 flex w-fit items-center gap-1.5 text-sm"
+          >
+            <ArrowLeftIcon className="size-4" />
+            Flows
+          </RouterLink>
+          <Heading>{title}</Heading>
+          <Text slot="headline">
+            {journey.screenshotCount} screen
+            {journey.screenshotCount === 1 ? "" : "s"}
+            {testCount > 1 ? ` across ${testCount} tests` : null} &#183;{" "}
+            <span className="font-mono">{flow.file}</span>
+          </Text>
+        </PageHeaderContent>
+      </PageHeader>
+
+      {journey.screenshotCount === 0 ? (
+        <Text slot="description">
+          This test takes no screenshot, so there is no journey to walk. Add an{" "}
+          <code>argosScreenshot</code> call to see its screens here.
+        </Text>
+      ) : (
+        <Suspense fallback={<PageLoader />}>
+          <FlowCanvas segments={segments} />
+        </Suspense>
+      )}
+    </PageContainer>
+  );
 }
 
 function FlowContent(props: { params: ProjectParams; flowId: string }) {
@@ -124,54 +178,7 @@ function FlowContent(props: { params: ProjectParams; flowId: string }) {
     return <NotFound />;
   }
 
-  const screens = flow.screenshots;
-
-  return (
-    <PageContainer>
-      <PageHeader>
-        <PageHeaderContent>
-          <RouterLink
-            href={`/${params.accountSlug}/${params.projectName}/flows`}
-            className="text-low mb-1 flex w-fit items-center gap-1.5 text-sm"
-          >
-            <ArrowLeftIcon className="size-4" />
-            Flows
-          </RouterLink>
-          <Heading>{flow.title}</Heading>
-          <Text slot="headline">
-            {screens.length} screen{screens.length === 1 ? "" : "s"} ·{" "}
-            <span className="font-mono">{flow.file}</span>
-          </Text>
-        </PageHeaderContent>
-      </PageHeader>
-
-      {screens.length === 0 ? (
-        <Text slot="description">
-          This test takes no screenshot, so there is no journey to walk. Add an{" "}
-          <code>argosScreenshot</code> call to see its screens here.
-        </Text>
-      ) : (
-        // A single straight lane: one test, its screens in capture order. It
-        // scrolls sideways inside its own container so the page itself never
-        // does.
-        <div className="-mx-4 flex items-start gap-0 overflow-x-auto px-4 pb-4">
-          {screens.map((screen, index) => (
-            <div key={screen.id} className="flex items-start">
-              {index > 0 ? (
-                <div
-                  className="text-low flex shrink-0 justify-center"
-                  style={{ width: 46, paddingTop: 90 }}
-                >
-                  <ArrowRightIcon className="size-5" />
-                </div>
-              ) : null}
-              <Screen screen={screen} />
-            </div>
-          ))}
-        </div>
-      )}
-    </PageContainer>
-  );
+  return <FlowJourney flow={flow} params={params} />;
 }
 
 export function Component() {

@@ -19,17 +19,17 @@ loggedTest(
     // The denominator is the whole point: a test that captures nothing is
     // listed, which is what tells it apart from a test Argos never heard of.
     await expect(
-      page.getByText("5 tests ran in the reference build", { exact: false }),
+      page.getByText("8 tests ran in the reference build", { exact: false }),
     ).toBeVisible();
     await expect(
-      page.getByText("2 of them took at least one screenshot", {
+      page.getByText("5 of them took at least one screenshot", {
         exact: false,
       }),
     ).toBeVisible();
 
     // Grouped by spec file, in declaration order.
-    await expect(page.getByText("tests/auth-guard.spec.ts")).toBeVisible();
-    await expect(page.getByText("tests/settings.spec.ts")).toBeVisible();
+    await expect(page.getByText("e2e/auth-guard.spec.ts")).toBeVisible();
+    await expect(page.getByText("e2e/logged/post-loan.spec.ts")).toBeVisible();
     await expect(
       page.getByRole("link", { name: /sends a signed-out visitor/ }),
     ).toBeVisible();
@@ -56,12 +56,12 @@ loggedTest(
     await expect(
       page.getByRole("link", { name: /does not bounce a signed-in user/ }),
     ).toBeVisible();
-    // The two tests that do capture are gone.
+    // The tests that do capture are gone.
     await expect(
       page.getByRole("link", { name: /sends a signed-out visitor/ }),
     ).toBeHidden();
     await expect(
-      page.getByRole("link", { name: /reviews a build/ }),
+      page.getByRole("link", { name: /uploads the supplier invoice/ }),
     ).toBeHidden();
 
     // The filter is in the URL, so the view survives a reload and can be shared.
@@ -70,33 +70,59 @@ loggedTest(
 );
 
 loggedTest(
-  "opens a flow on its screens, in capture order",
+  "shows a journey walked across several tests",
   async ({ page, team, project }) => {
     await createFlowsScenario({ projectId: project.id });
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page.getByRole("link", { name: /reviews a build/ }).click();
+    // Any test of the journey opens the whole journey, not just its own share
+    // of it — which is the point: a reader came for the path, not the test.
+    await page.getByRole("link", { name: /sets up the loan/ }).click();
 
     await expect(
-      page.getByRole("heading", { name: "reviews a build" }),
+      page.getByRole("heading", { name: "supplier-invoice" }),
     ).toBeVisible();
-    await expect(page.getByText("3 screens", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("6 screens across 3 tests", { exact: false }),
+    ).toBeVisible();
 
-    // The screens are the ones the test captured, in the order it walked them.
-    const names = await page
-      .locator("figcaption span")
-      .filter({ hasText: /reviews a build/ })
-      .allInnerTexts();
-    expect(names).toEqual([
-      "reviews a build builds",
-      "reviews a build build-overview",
-      "reviews a build build-approved",
-    ]);
+    // The three tests that contribute to it are named on the canvas, and the
+    // screens carry their short names rather than the folder they share.
+    for (const title of [
+      "uploads the supplier invoice",
+      "sets up the loan",
+      "confirms the request",
+    ]) {
+      await expect(page.getByText(title, { exact: true })).toBeVisible();
+    }
+    await expect(
+      page.getByText("loan-beneficiary", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("loan-pre-check", { exact: true }),
+    ).toBeVisible();
 
     // The flow id lives in the URL, which the screenshot does not capture, so
     // nothing has to be masked here.
     expect(page.url()).toMatch(/\/flows\/\d+$/);
-    await screenshot(page, "project-flow");
+    await screenshot(page, "project-flow-journey");
+  },
+);
+
+loggedTest(
+  "shows a journey walked by a single test",
+  async ({ page, team, project }) => {
+    await createFlowsScenario({ projectId: project.id });
+
+    await page.goto(`/${team.account.slug}/${project.name}/flows`);
+    await page
+      .getByRole("link", { name: /requests a loan on a receivable invoice/ })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "receivable-invoice" }),
+    ).toBeVisible();
+    await expect(page.getByText("3 screens", { exact: false })).toBeVisible();
   },
 );
 

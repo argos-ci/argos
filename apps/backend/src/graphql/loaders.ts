@@ -57,7 +57,13 @@ import {
   User,
 } from "@/database/models";
 import type { ProjectPermission } from "@/database/models/Project";
-import { getFlowRates, type FlowRates } from "@/database/services/flows";
+import {
+  compareCaptureOrder,
+  getFlowRates,
+  loadFlowJourneys,
+  type FlowRates,
+  type Journey,
+} from "@/database/services/flows";
 import {
   getAccountBillings,
   getAccountStorybookTotals,
@@ -1925,19 +1931,6 @@ type FlowReferenceContext = {
 const EMPTY_FLOW_CONTEXT: FlowReferenceContext = { runs: [], screenshots: [] };
 
 /**
- * Order screenshots the way the test walked them.
- *
- * `capture.index` is recorded by the SDK; a screenshot without one — an older
- * SDK, or a runner capturing a failure on its own — sorts after the ones that
- * have it, rather than jumping to the front of the journey.
- */
-function compareCaptureOrder(a: Screenshot, b: Screenshot): number {
-  const aIndex = a.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
-  const bIndex = b.metadata?.capture?.index ?? Number.MAX_SAFE_INTEGER;
-  return aIndex - bIndex || a.name.localeCompare(b.name);
-}
-
-/**
  * What a flow did in the reference build: its runs and the screenshots they
  * took, in capture order.
  */
@@ -2020,6 +2013,19 @@ function createFlowRunScreenshotsLoader() {
   });
 }
 
+const EMPTY_JOURNEY: Journey = { key: null, segments: [] };
+
+/**
+ * The journey a flow belongs to — possibly spanning several tests, which is
+ * the normal shape of a long end-to-end path through a product.
+ */
+function createFlowJourneyLoader() {
+  return new DataLoader<string, Journey>(async (flowIds) => {
+    const journeys = await loadFlowJourneys(flowIds);
+    return flowIds.map((flowId) => journeys.get(flowId) ?? EMPTY_JOURNEY);
+  });
+}
+
 const NO_FLOW_RATES: FlowRates = { failureRate: 0, flakyRate: 0 };
 
 function createFlowRatesLoader() {
@@ -2061,6 +2067,7 @@ export const createLoaders = () => ({
   ProjectReferenceBuild: createProjectReferenceBuildLoader(),
   FlowReferenceContext: createFlowReferenceContextLoader(),
   FlowRunScreenshots: createFlowRunScreenshotsLoader(),
+  FlowJourney: createFlowJourneyLoader(),
   FlowRates: createFlowRatesLoader(),
   Presence: createPresenceLoader(),
   UsersShareTeam: createUsersShareTeamLoader(),

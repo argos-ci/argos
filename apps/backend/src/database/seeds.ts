@@ -786,9 +786,14 @@ export async function createTestChangeScenario(input: {
 }
 
 /**
- * A reference build whose test report covers the three states the Flows tab
- * exists to tell apart: a test that captures a journey, a test that runs and
- * captures nothing, and a test that never ran at all.
+ * A reference build whose test report covers what the Flows tab exists to show:
+ * a journey walked across several tests, a journey walked by one, a test that
+ * runs and captures nothing, and a test that never ran.
+ *
+ * The multi-test journey is the shape real suites take. A long path through a
+ * product is not one test — it is split, and what ties the pieces back together
+ * is the folder the screenshots share (`screenshots(page, "supplier-invoice")`
+ * on the Playwright side, `supplier-invoice/loan-beneficiary` on the way out).
  *
  * Kept separate from {@link createBuildScenario} so it can be used on its own
  * without perturbing the other scenarios' baselines.
@@ -799,6 +804,7 @@ export async function createFlowsScenario(input: {
   const { projectId } = input;
   const seededAt = getSeedInstant();
   const buildName = "default";
+  const runnerProject = "chromium";
 
   const lastBuild = await Build.query()
     .where("projectId", projectId)
@@ -807,6 +813,125 @@ export async function createFlowsScenario(input: {
     .castTo<{ max: number | null } | undefined>();
   const buildNumber = (lastBuild?.max ?? 0) + 1;
 
+  type SeedScreen = { name: string; url: string };
+  type SeedFlow = {
+    title: string;
+    line: number;
+    status: FlowRunStatus;
+    outcome?: FlowRunOutcome;
+    annotations?: FlowRunAnnotation[];
+    screens: SeedScreen[];
+  };
+  type SeedSpec = {
+    file: string;
+    /** Folder the screenshots of every test below are written to. */
+    journey?: string;
+    tests: SeedFlow[];
+  };
+
+  const origin = "https://app.defacto.dev";
+  const specs: SeedSpec[] = [
+    {
+      file: "e2e/logged/post-loan.spec.ts",
+      journey: "supplier-invoice",
+      tests: [
+        {
+          title: "uploads the supplier invoice",
+          line: 24,
+          status: "passed",
+          screens: [
+            { name: "invoice-upload", url: `${origin}/invoices/new/payable` },
+            { name: "invoice-form", url: `${origin}/invoices/new/8f2ab130` },
+          ],
+        },
+        {
+          title: "sets up the loan",
+          line: 71,
+          status: "passed",
+          screens: [
+            { name: "loan-set-up", url: `${origin}/loans/new` },
+            {
+              name: "loan-beneficiary",
+              url: `${origin}/loans/new/beneficiary`,
+            },
+          ],
+        },
+        {
+          title: "confirms the request",
+          line: 118,
+          status: "passed",
+          outcome: "flaky",
+          screens: [
+            { name: "loan-options", url: `${origin}/loans/new/options` },
+            { name: "loan-pre-check", url: `${origin}/loans/new/pre-check` },
+          ],
+        },
+      ],
+    },
+    {
+      file: "e2e/logged/receivable-invoice.spec.ts",
+      journey: "receivable-invoice",
+      tests: [
+        {
+          title: "requests a loan on a receivable invoice",
+          line: 12,
+          status: "passed",
+          screens: [
+            { name: "invoice-new", url: `${origin}/invoices/new` },
+            { name: "invoice-form", url: `${origin}/invoices/new/receivable` },
+            { name: "loan-set-up", url: `${origin}/loans/new` },
+          ],
+        },
+        {
+          title: "rejects an invoice over the limit",
+          line: 44,
+          status: "failed",
+          outcome: "unexpected",
+          screens: [],
+        },
+      ],
+    },
+    {
+      file: "e2e/auth-guard.spec.ts",
+      tests: [
+        {
+          title: "sends a signed-out visitor to /login",
+          line: 51,
+          status: "passed",
+          screens: [{ name: "login", url: `${origin}/login` }],
+        },
+        {
+          title: "does not bounce a signed-in user via /login",
+          line: 32,
+          status: "passed",
+          screens: [],
+        },
+      ],
+    },
+    {
+      file: "e2e/settings.spec.ts",
+      tests: [
+        {
+          title: "archives a project",
+          line: 118,
+          status: "skipped",
+          outcome: "skipped",
+          annotations: [
+            { type: "skip", description: "flaky on CI since 12/03" },
+          ],
+          screens: [],
+        },
+      ],
+    },
+  ];
+
+  const screenshotCount = specs.reduce(
+    (total, spec) =>
+      total +
+      spec.tests.reduce((count, test) => count + test.screens.length, 0),
+    0,
+  );
+
   const bucket = await ScreenshotBucket.query().insertAndFetch({
     name: buildName,
     branch: "main",
@@ -814,7 +939,7 @@ export async function createFlowsScenario(input: {
     commit: "8f1a2b3c4d5e6f708192a3b4c5d6e7f809a1b2c3",
     complete: true,
     valid: true,
-    screenshotCount: 4,
+    screenshotCount,
     storybookScreenshotCount: 0,
     createdAt: seededAt,
     updatedAt: seededAt,
@@ -839,78 +964,6 @@ export async function createFlowsScenario(input: {
     contentType: "image/png",
   });
 
-  type SeedFlow = {
-    title: string;
-    line: number;
-    status: FlowRunStatus;
-    outcome?: FlowRunOutcome;
-    annotations?: FlowRunAnnotation[];
-    screens: { name: string; url: string }[];
-  };
-
-  const specs: { file: string; tests: SeedFlow[] }[] = [
-    {
-      file: "tests/auth-guard.spec.ts",
-      tests: [
-        {
-          title: "sends a signed-out visitor to /login",
-          line: 51,
-          status: "passed" as const,
-          screens: [{ name: "login", url: "https://app.argos-ci.dev/login" }],
-        },
-        {
-          title: "does not bounce a signed-in user via /login",
-          line: 32,
-          status: "passed" as const,
-          screens: [],
-        },
-      ],
-    },
-    {
-      file: "tests/build.spec.ts",
-      tests: [
-        {
-          title: "reviews a build",
-          line: 12,
-          status: "passed" as const,
-          screens: [
-            { name: "builds", url: "https://app.argos-ci.dev/builds" },
-            {
-              name: "build-overview",
-              url: "https://app.argos-ci.dev/builds/1",
-            },
-            {
-              name: "build-approved",
-              url: "https://app.argos-ci.dev/builds/1",
-            },
-          ],
-        },
-        {
-          title: "aborts a build",
-          line: 44,
-          status: "passed" as const,
-          outcome: "flaky" as const,
-          screens: [],
-        },
-      ],
-    },
-    {
-      file: "tests/settings.spec.ts",
-      tests: [
-        {
-          title: "archives a project",
-          line: 118,
-          status: "skipped" as const,
-          outcome: "skipped" as const,
-          annotations: [
-            { type: "skip", description: "flaky on CI since 12/03" },
-          ],
-          screens: [],
-        },
-      ],
-    },
-  ];
-
   for (const spec of specs) {
     for (const test of spec.tests) {
       const titlePath = [spec.file, test.title];
@@ -932,7 +985,7 @@ export async function createFlowsScenario(input: {
       const run = await FlowRun.query().insertAndFetch({
         buildId: build.id,
         flowId: flow.id,
-        pwProject: "chromium",
+        pwProject: runnerProject,
         pwTestId,
         status: test.status,
         outcome: test.outcome ?? null,
@@ -952,10 +1005,14 @@ export async function createFlowsScenario(input: {
             automationLibrary: { name: "@playwright/test", version: "1.62.1" },
             sdk: { name: "@argos-ci/playwright", version: "7.4.6" },
           };
+          // The SDK prefixes every name with the runner project, and the
+          // journey folder sits under it — which is exactly what the journey
+          // key is read back from.
+          const folder = spec.journey ? `${spec.journey}/` : "";
           return Screenshot.query().insert({
             screenshotBucketId: bucket.id,
             flowRunId: run.id,
-            name: `${test.title} ${screen.name}`,
+            name: `${runnerProject}/${folder}${screen.name}`,
             s3Id: file.key,
             fileId: file.id,
             metadata,

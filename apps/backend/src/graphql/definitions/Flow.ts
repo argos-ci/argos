@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import type { FlowRun } from "@/database/models";
+import type { JourneySegment } from "@/database/services/flows";
 import { getStartDateFromPeriod } from "@/metrics/test";
 
 import { IFlowStatus, type IResolvers } from "../__generated__/resolver-types";
@@ -68,6 +69,36 @@ export const typeDefs = gql`
     failureRate(period: MetricsPeriod!): Float!
     "Share of runs that only passed on a retry over the period, 0 to 1"
     flakyRate(period: MetricsPeriod!): Float!
+    "The journey this test takes part in, which may span other tests"
+    journey: Journey!
+  }
+
+  """
+  The screens of one journey contributed by one test.
+
+  A journey is split into segments because that is how suites are written: a
+  long path through the product is walked by several tests sharing a screenshot
+  folder, and which test took which screen is worth seeing.
+  """
+  type JourneySegment {
+    flow: Flow!
+    screenshots: [Screenshot!]!
+  }
+
+  """
+  A path through the product, from the screenshots that walk it.
+
+  Identified by the folder its screenshots share
+  (\`supplier-invoice/loan-beneficiary\` gives \`supplier-invoice\`), so it can
+  span several tests. A test whose screenshots sit at the root is a journey of
+  one.
+  """
+  type Journey {
+    "The shared folder, null when the screenshots sit at the root"
+    name: String
+    "The tests that contribute to it, in the order the suite declares them"
+    segments: [JourneySegment!]!
+    screenshotCount: Int!
   }
 
   type FlowConnection implements Connection {
@@ -166,6 +197,9 @@ export const resolvers: IResolvers = {
       });
       return rates.failureRate;
     },
+    journey: async (flow, _args, ctx) => {
+      return ctx.loaders.FlowJourney.load(flow.id);
+    },
     flakyRate: async (flow, args, ctx) => {
       const rates = await ctx.loaders.FlowRates.load({
         flowId: flow.id,
@@ -173,6 +207,15 @@ export const resolvers: IResolvers = {
       });
       return rates.flakyRate;
     },
+  },
+  Journey: {
+    name: (journey) => journey.key,
+    screenshotCount: (journey) =>
+      journey.segments.reduce(
+        (total: number, segment: JourneySegment) =>
+          total + segment.screenshots.length,
+        0,
+      ),
   },
   FlowRun: {
     status: (run) => GRAPHQL_STATUS[run.status],
