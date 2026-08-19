@@ -2,11 +2,22 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { Account, StaffTeamContact } from "@/database/models";
+import type { AccountSubscriptionStatus } from "@/database/models/Account";
+import {
+  getAccountBillings,
+  type AccountBilling,
+} from "@/database/services/period-usage";
 
-import type { IResolvers } from "../__generated__/resolver-types";
+import type {
+  IAccountSubscriptionStatus,
+  IPlanInterval,
+  IResolvers,
+  IStaffTeamOrderBy,
+} from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
 import { badUserInput, forbidden, unauthenticated } from "../util";
+import { paginateResult } from "./PageInfo";
 
 /** Every staff entry point opens with this — the check lives in one place. */
 function assertStaff(ctx: Context): asserts ctx is Context & {
@@ -45,6 +56,156 @@ const { gql } = gqlTag;
  * scan the whole build history.
  */
 const MAX_TRIAL_PIPELINE_DAYS = 365;
+
+/**
+ * Upper bound on a directory page.
+ *
+ * Every row returned costs a billing lookup, so the page size is what bounds
+ * the work an unbounded directory can be asked to do.
+ */
+const MAX_STAFF_TEAMS_PAGE_SIZE = 100;
+
+/**
+ * Orderings the database can apply on its own.
+ *
+ * The amount orderings are absent on purpose: what a team bills is not a column
+ * but the result of pricing its periods, so it cannot be reached from an `ORDER
+ * BY` without restating the billing rules in SQL. They are ordered in
+ * `filterAndOrderAccounts` instead, against the same computation the page
+ * displays.
+ */
+const DB_ORDERINGS: Partial<Record<IStaffTeamOrderBy, string>> = {
+  NAME_ASC: `coalesce(name, slug) asc`,
+  NAME_DESC: `coalesce(name, slug) desc`,
+  CREATED_ASC: `accounts."createdAt" asc, accounts.id asc`,
+  CREATED_DESC: `accounts."createdAt" desc, accounts.id desc`,
+  // Counted per row rather than joined and grouped: the directory is a few
+  // hundred teams and `team_users_teamid_index` answers each count outright,
+  // whereas a group-by would have to carry every other column through it.
+  MEMBERS_ASC: `(select count(*) from team_users where team_users."teamId" = accounts."teamId") asc`,
+  MEMBERS_DESC: `(select count(*) from team_users where team_users."teamId" = accounts."teamId") desc`,
+};
+
+/** Which period an amount ordering reads, and which way it runs. */
+const AMOUNT_ORDERINGS: Partial<
+  Record<IStaffTeamOrderBy, { period: "previous" | "current"; desc: boolean }>
+> = {
+  PREVIOUS_PERIOD_ASC: { period: "previous", desc: false },
+  PREVIOUS_PERIOD_DESC: { period: "previous", desc: true },
+  CURRENT_PERIOD_ASC: { period: "current", desc: false },
+  CURRENT_PERIOD_DESC: { period: "current", desc: true },
+};
+
+/**
+ * What a team billed over one period, or null when it billed nothing.
+ *
+ * The flat price is taken in the period's own unit, exactly as the column that
+ * displays it does — a yearly subscription's period is a year. This exists so
+ * the ordering and the figure on screen come out of one rule; a team ordered
+ * above another has to read higher than it too.
+ */
+function getPeriodAmount(
+  billing: AccountBilling,
+  period: "previous" | "current",
+): number | null {
+  const { periodUsage, plan } = billing;
+
+  if (!periodUsage || !plan) {
+    return null;
+  }
+
+  const billed =
+    period === "previous"
+      ? periodUsage.billingPeriods.find((item) => item.closed)
+      : periodUsage.billingPeriods.find((item) => !item.closed);
+
+  if (!billed) {
+    return null;
+  }
+
+  // Null when Stripe was never asked for the amount. Ordered as nothing rather
+  // than guessed at: the guess belongs to the display, which says it is one.
+  const flatPrice = billing.flatPrice ?? 0;
+  return flatPrice + billed.additionalScreenshotCost;
+}
+
+/**
+ * Narrow a batch of teams to an interval and a subscription state, then order
+ * them by what they bill.
+ *
+ * Teams that bill nothing sort below every billed one whichever way the column
+ * runs — ascending, they would otherwise fill the first page with rows that
+ * have no amount at all, which is never what the column is being asked.
+ */
+function filterAndOrderAccounts(input: {
+  accounts: Account[];
+  billings: Map<string, AccountBilling>;
+  statuses: Map<string, AccountSubscriptionStatus | null>;
+  orderBy: IStaffTeamOrderBy;
+  interval: IPlanInterval | null;
+  status: IAccountSubscriptionStatus | null;
+}): Account[] {
+  const { accounts, billings, statuses, orderBy, interval, status } = input;
+
+  let candidates = accounts;
+
+  if (interval) {
+    candidates = candidates.filter(
+      (account) => billings.get(account.id)?.plan?.interval === interval,
+    );
+  }
+
+  if (status) {
+    candidates = candidates.filter(
+      (account) => statuses.get(account.id) === status,
+    );
+  }
+
+  const amountOrdering = AMOUNT_ORDERINGS[orderBy];
+
+  // An interval filter under a column ordering: the narrowing above preserves
+  // the order the database already applied, so there is nothing to sort.
+  if (!amountOrdering) {
+    return candidates;
+  }
+
+  const amountByAccountId = new Map(
+    candidates.map((account) => {
+      const billing = billings.get(account.id);
+      return [
+        account.id,
+        billing ? getPeriodAmount(billing, amountOrdering.period) : null,
+      ];
+    }),
+  );
+
+  return [...candidates].sort((left, right) => {
+    const leftAmount = amountByAccountId.get(left.id) ?? null;
+    const rightAmount = amountByAccountId.get(right.id) ?? null;
+
+    if (leftAmount === null || rightAmount === null) {
+      if (leftAmount === rightAmount) {
+        return getDisplayName(left).localeCompare(getDisplayName(right));
+      }
+      return leftAmount === null ? 1 : -1;
+    }
+
+    // Tied amounts fall back to the name so the order is total, and a page
+    // boundary cannot show the same team twice.
+    if (leftAmount === rightAmount) {
+      return getDisplayName(left).localeCompare(getDisplayName(right));
+    }
+
+    return amountOrdering.desc
+      ? rightAmount - leftAmount
+      : leftAmount - rightAmount;
+  });
+}
+
+/** What the directory shows for a team, which is what it is ordered by. */
+function getDisplayName(account: Account): string {
+  return (account.name || account.slug || "").toLowerCase();
+}
 
 export const typeDefs = gql`
   "An owner of a team, as needed to write to them."
@@ -136,9 +297,49 @@ export const typeDefs = gql`
     contacted: Boolean!
   }
 
+  "How the team directory can be ordered."
+  enum StaffTeamOrderBy {
+    NAME_ASC
+    NAME_DESC
+    CREATED_ASC
+    CREATED_DESC
+    MEMBERS_ASC
+    MEMBERS_DESC
+    "By what the last closed period came to, teams billing nothing last."
+    PREVIOUS_PERIOD_ASC
+    PREVIOUS_PERIOD_DESC
+    "By what the running period has accrued, teams billing nothing last."
+    CURRENT_PERIOD_ASC
+    CURRENT_PERIOD_DESC
+  }
+
+  type StaffTeamConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [Team!]!
+  }
+
   extend type Query {
-    "List all teams (staff only)"
-    staffTeams: [Team!]!
+    """
+    List all teams (staff only).
+
+    Ordering, search and the interval filter are applied here rather than on the
+    client: the directory is unbounded, and every row it returns costs a billing
+    lookup.
+    """
+    staffTeams(
+      after: Int! = 0
+      first: Int! = 100
+      "Matches a team's name or slug, case-insensitively."
+      search: String
+      "Keeps only teams billed on that interval. Teams with no plan are dropped."
+      interval: PlanInterval
+      """
+      Keeps only teams in that subscription state. Teams with no subscription at
+      all are dropped, having no state to match.
+      """
+      status: AccountSubscriptionStatus
+      orderBy: StaffTeamOrderBy! = NAME_ASC
+    ): StaffTeamConnection!
     "List teams created within the last \`days\` days, newest first (staff only)"
     staffTrialPipeline(days: Int! = 30): [Team!]!
   }
@@ -186,22 +387,38 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
+    // Resolves to the account rather than to the usage itself: the Storybook
+    // mix below costs a scan of the account's whole history, so it is left to
+    // its own resolver and only runs when a document actually selects it.
     periodUsage: async (account, _args, ctx) => {
       const { periodUsage: usage } =
         await ctx.loaders.AccountBillingByAccountId.load(account.id);
-      if (!usage) {
-        return null;
-      }
-      return {
-        storybookRatio: usage.storybookRatio,
-        storybookScreenshotsCount: usage.storybookCount,
-        billingPeriods: usage.billingPeriods.map((period) => ({
-          from: period.from,
-          to: period.to,
-          closed: period.closed,
-          additionalScreenshotsCost: period.additionalScreenshotCost,
-        })),
-      };
+      return usage ? account : null;
+    },
+  },
+  TeamStaffPeriodUsage: {
+    billingPeriods: async (account, _args, ctx) => {
+      const { periodUsage: usage } =
+        await ctx.loaders.AccountBillingByAccountId.load(account.id);
+      invariant(usage, "period usage resolved for a team that has none");
+      return usage.billingPeriods.map((period) => ({
+        from: period.from,
+        to: period.to,
+        closed: period.closed,
+        additionalScreenshotsCost: period.additionalScreenshotCost,
+      }));
+    },
+    storybookRatio: async (account, _args, ctx) => {
+      const totals = await ctx.loaders.AccountStorybookTotalsByAccountId.load(
+        account.id,
+      );
+      return totals.ratio;
+    },
+    storybookScreenshotsCount: async (account, _args, ctx) => {
+      const totals = await ctx.loaders.AccountStorybookTotalsByAccountId.load(
+        account.id,
+      );
+      return totals.count;
     },
   },
   TeamStaffContact: {
@@ -215,13 +432,91 @@ export const resolvers: IResolvers = {
     },
   },
   Query: {
-    staffTeams: async (_root, _args, ctx) => {
+    staffTeams: async (_root, args, ctx) => {
       assertStaff(ctx);
 
-      return Account.query()
+      const { after, orderBy, interval, status } = args;
+      const first = Math.min(args.first, MAX_STAFF_TEAMS_PAGE_SIZE);
+
+      if (first < 1 || after < 0) {
+        throw badUserInput(
+          "`first` must be positive and `after` non-negative.",
+        );
+      }
+
+      const query = Account.query()
         .whereNotNull("teamId")
         .whereNull("userId")
-        .orderByRaw("coalesce(name, slug) asc");
+        .modify((builder) => {
+          const search = args.search?.trim();
+          if (search) {
+            // Escaped so a slug containing `%` or `_` matches itself rather
+            // than acting as a wildcard.
+            const pattern = `%${search.replaceAll(/[\\%_]/g, "\\$&")}%`;
+            builder.where((where) => {
+              where
+                .whereRaw(`name ilike ? escape '\\'`, [pattern])
+                .orWhereRaw(`slug ilike ? escape '\\'`, [pattern]);
+            });
+          }
+        });
+
+      const dbOrdering = DB_ORDERINGS[orderBy];
+
+      // Ordering by an amount, or narrowing to an interval or a subscription
+      // state, cannot be decided from a column: each one is derived, so every
+      // candidate has to be resolved rather than just the page. The orderings
+      // the database can apply on its own take the cheap path below, where only
+      // the page it returns is ever resolved.
+      if (!dbOrdering || interval || status) {
+        // Ordered here too when the database can: the filters below preserve
+        // the order they are given, so a column ordering under a filter stays
+        // the ordering that was asked for.
+        const accounts = await query.clone().modify((builder) => {
+          if (dbOrdering) {
+            builder.orderByRaw(dbOrdering);
+          }
+        });
+
+        // Only what the request actually needs: a state filter costs a
+        // subscription lookup, an interval filter and the amount orderings cost
+        // a pricing pass, and neither pays for the other.
+        const needsBilling =
+          Boolean(interval) || Boolean(AMOUNT_ORDERINGS[orderBy]);
+        const [billings, statuses] = await Promise.all([
+          needsBilling
+            ? getAccountBillings(accounts)
+            : new Map<string, AccountBilling>(),
+          status
+            ? Account.getSubscriptionStatuses(accounts)
+            : new Map<string, AccountSubscriptionStatus | null>(),
+        ]);
+
+        const ordered = filterAndOrderAccounts({
+          accounts,
+          billings,
+          statuses,
+          orderBy,
+          interval: interval ?? null,
+          status: status ?? null,
+        });
+
+        return paginateResult({
+          result: {
+            total: ordered.length,
+            results: ordered.slice(after, after + first),
+          },
+          after,
+          first,
+        });
+      }
+
+      const [total, results] = await Promise.all([
+        query.clone().resultSize(),
+        query.clone().orderByRaw(dbOrdering).limit(first).offset(after),
+      ]);
+
+      return paginateResult({ result: { total, results }, after, first });
     },
     staffTrialPipeline: async (_root, args, ctx) => {
       assertStaff(ctx);

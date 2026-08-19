@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5RhyAs841JlVJNR1LIh9P6SJCznUR94GrKXX1oPTcgDMpLo9yQql3wcfO8FUnY9
+\restrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -4949,6 +4949,13 @@ CREATE INDEX screenshot_buckets_projectid_commit_pattern_idx ON public.screensho
 
 
 --
+-- Name: screenshot_buckets_projectid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_projectid_createdat_index ON public.screenshot_buckets USING btree ("projectId", "createdAt") INCLUDE ("screenshotCount", "storybookScreenshotCount");
+
+
+--
 -- Name: screenshot_buckets_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6244,7 +6251,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5RhyAs841JlVJNR1LIh9P6SJCznUR94GrKXX1oPTcgDMpLo9yQql3wcfO8FUnY9
+\unrestrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
 
 -- Knex migrations
 
@@ -6491,4 +6498,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260813191611_comment-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260814161900_build-review-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260816090349_subscription-flat-price.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260817142631_screenshot-buckets-project-created-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());

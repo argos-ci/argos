@@ -27,11 +27,7 @@ import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
-import {
-  AccountSubscriptionStatus,
-  PlanInterval,
-  SignupSource,
-} from "@/gql/graphql";
+import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
@@ -55,6 +51,13 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "../Account/AccountParams";
+import {
+  formatPrice,
+  getFallbackMonthlyPrice,
+  getMonthlyFlatPrice,
+  PRO_PLAN_NAME,
+  toMonthlyAmount,
+} from "./pricing";
 import { getStripeCustomerURL } from "./stripe";
 import stripeLogo from "./stripe.svg";
 import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
@@ -193,75 +196,7 @@ type SortKey =
   | "estimatedPrice"
   | "contacted";
 
-const PRO_PLAN_NAME = "pro";
-
 type StaffPlan = NonNullable<PipelineTeam["staff"]["plan"]>;
-
-/**
- * Monthly price to assume for a plan when the subscription carries no amount of
- * its own — one Stripe has not been asked about since Argos started reading the
- * amount, or that has none to give.
- *
- * These are guesses, and they are the reason the plan is named under any amount
- * that is not Pro's. Enterprise is here because the alternative is worse: with
- * no entry at all a negotiated contract would fall back to the cheapest plan we
- * sell, and understate itself tenfold in a total that carries no warning.
- */
-const FALLBACK_MONTHLY_PRICES: Record<string, number | undefined> = {
-  [PRO_PLAN_NAME]: 100,
-  enterprise: 1000,
-};
-
-/** What a plan a trial can land on costs, for the rows that need a guess. */
-const DEFAULT_FALLBACK_MONTHLY_PRICE = 100;
-
-function getFallbackMonthlyPrice(plan: StaffPlan): number {
-  return FALLBACK_MONTHLY_PRICES[plan.name] ?? DEFAULT_FALLBACK_MONTHLY_PRICE;
-}
-
-/**
- * An amount stated for one billing period, read as a monthly one.
- *
- * Stripe states every amount per period — the plan's price and the overage
- * alike — and a yearly subscription's period is a year. The column compares
- * teams against each other, so it holds one unit: the month.
- */
-function toMonthlyAmount(amount: number, plan: StaffPlan): number {
-  return plan.interval === PlanInterval.Year ? amount / 12 : amount;
-}
-
-/**
- * What the plan costs per month.
- *
- * Read from Stripe and stored on the subscription, so a negotiated contract
- * quotes its own amount rather than a constant of ours. The fallbacks are
- * already monthly figures, which is why only the stored amount is converted.
- */
-function getMonthlyFlatPrice(
-  staff: PipelineTeam["staff"],
-  plan: StaffPlan,
-): number {
-  return staff.flatPrice === null
-    ? getFallbackMonthlyPrice(plan)
-    : toMonthlyAmount(staff.flatPrice, plan);
-}
-
-/**
- * Every amount on this page is printed in dollars, whatever the subscription is
- * billed in — the currency Argos reports revenue in, and the one the summary
- * tiles already add up. A euro contract is therefore read at parity rather than
- * converted, which is close enough for a pipeline view and far clearer than a
- * column mixing two currencies it cannot total.
- */
-const PRICE_FORMAT = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-function formatPrice(amount: number) {
-  return PRICE_FORMAT.format(amount);
-}
 
 type BillingPeriod = NonNullable<
   PipelineTeam["staff"]["periodUsage"]
@@ -312,7 +247,7 @@ function getEstimatedPrice(team: PipelineTeam): number | null {
   const { plan } = team.staff;
   invariant(plan, "a team billed by usage is on a plan");
 
-  const monthlyFlatPrice = getMonthlyFlatPrice(team.staff, plan);
+  const monthlyFlatPrice = getMonthlyFlatPrice(team.staff.flatPrice, plan);
 
   switch (team.subscriptionStatus) {
     case AccountSubscriptionStatus.Active: {

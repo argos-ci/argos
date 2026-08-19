@@ -1,6 +1,6 @@
 /* oxlint-disable no-empty-pattern */
 import type { BuildType } from "@argos/schemas/build-type";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import type { Account } from "../apps/backend/src/database/models";
 import {
@@ -164,9 +164,14 @@ async function createBilledTeam(input: {
     currency: "usd",
   });
 
+  // Read off the plan rather than taken as an argument: the backend prices
+  // against `plan.interval`, so a caller free to state its own could seed every
+  // bucket on monthly boundaries a yearly aggregate never looks at — the
+  // overage would silently read zero and the assertions would still pass.
+  const plan = await PlanModel.query().findById(input.planId).throwIfNotFound();
   const periodStarts = subscription.getPeriodStarts(
     new Date(),
-    "month",
+    plan.interval,
     input.screenshotsByClosedPeriod.length + 1,
   );
   const project = await createProject({
@@ -246,38 +251,49 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
     const prefix = `pipeline-${getUniqueTestIdentifier(testInfo)}`;
     const common = { planId: plan.id, subscriberId: user.user.id };
     // The shared plan is flat, so it has no usage to price. The teams below
-    // need three more: `pro`, which the price estimate is built for, one that
-    // is not, and a granted one that bills nothing at all — each row naming
-    // its plan when it is not Pro.
-    const [proPlan, enterprisePlan, grantedPlan] = await Promise.all([
-      PlanModel.query().insertAndFetch({
-        name: "pro",
-        includedScreenshots: 35_000,
-        usageBased: true,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-      PlanModel.query().insertAndFetch({
-        name: "enterprise",
-        includedScreenshots: 35_000,
-        usageBased: true,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-      PlanModel.query().insertAndFetch({
-        name: "open source",
-        includedScreenshots: 1_000_000,
-        usageBased: false,
-        githubSsoIncluded: true,
-        fineGrainedAccessControlIncluded: true,
-        samlIncluded: true,
-        interval: "month",
-      }),
-    ]);
+    // need four more: `pro`, which the price estimate is built for, one that
+    // is not, a granted one that bills nothing at all — each row naming its
+    // plan when it is not Pro — and one billed by the year, whose amounts are
+    // stated for a year rather than a month.
+    const [proPlan, enterprisePlan, grantedPlan, annualPlan] =
+      await Promise.all([
+        PlanModel.query().insertAndFetch({
+          name: "pro",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "enterprise",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "open source",
+          includedScreenshots: 1_000_000,
+          usageBased: false,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "month",
+        }),
+        PlanModel.query().insertAndFetch({
+          name: "enterprise annual",
+          includedScreenshots: 35_000,
+          usageBased: true,
+          githubSsoIncluded: true,
+          fineGrainedAccessControlIncluded: true,
+          samlIncluded: true,
+          interval: "year",
+        }),
+      ]);
     await Promise.all([
       // A granted plan reads as active everywhere while billing nothing, so
       // its row carries no price — only the plan, which is what says why.
@@ -327,6 +343,21 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         periodStartDaysAgo: 9,
         screenshotsByClosedPeriod: [60_000],
       }),
+      // Billed by the year. Stripe states both halves of the amount for a year,
+      // so the row has to quote the year — dividing it into a month would
+      // report a figure that was never charged. Its previous period predates
+      // the subscription row, which is why it has none.
+      createBilledTeam({
+        ...common,
+        planId: annualPlan.id,
+        slug: `${prefix}-initrode`,
+        name: "Initrode",
+        createdDaysAgo: 400,
+        trialEndedDaysAgo: 397,
+        periodStartDaysAgo: 216,
+        flatPrice: 12_000,
+        screenshotsByClosedPeriod: [],
+      }),
       createPipelineTeam({
         ...common,
         slug: `${prefix}-northwind`,
@@ -363,10 +394,99 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await page.goto("/staff/teams");
   await expect(page.getByRole("heading", { name: "All Teams" })).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-  await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
+  await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+  // A yearly subscription states its amounts for a year, so the column has to
+  // quote the year. Read as a monthly rate this row is a twelfth of itself.
+  await expect(page.getByRole("row", { name: /Initrode/ })).toContainText(
+    "$12,000",
+  );
 
   await screenshot(page, "staff-all-teams");
 });
+
+staffTest(
+  "staff teams filtered by billing interval",
+  async ({ page, pipelineTeams }) => {
+    await page.goto("/staff/teams");
+    await page.getByRole("searchbox").fill(pipelineTeams.prefix);
+    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+    // Narrowing to one interval is what makes the two period columns comparable
+    // between rows: a year's amount next to a month's is an order of magnitude.
+    await page.getByRole("combobox", { name: "Billing interval" }).click();
+    await page.getByRole("option", { name: "Yearly" }).click();
+    await expect(page.getByText("Showing 1-1 of 1 teams")).toBeVisible();
+    await expect(page.getByRole("row", { name: /Initrode/ })).toBeVisible();
+
+    // Every other team is on a monthly plan, trials and the granted one
+    // included: the filter is on how a team is billed, not on whether it pays.
+    await page.getByRole("combobox", { name: "Billing interval" }).click();
+    await page.getByRole("option", { name: "Monthly" }).click();
+    await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
+    await expect(page.getByRole("row", { name: /Initrode/ })).toBeHidden();
+
+    // Ordering and filtering are applied on the server, on two different code
+    // paths: narrowing to an interval has to keep the order the column asked
+    // for — newest first, which is the default — rather than fall back to
+    // whatever order it happened to read the rows in.
+    await expect
+      .poll(() => getTeamNames(page))
+      .toEqual([
+        "Northwind",
+        "Globex",
+        "Initech",
+        "Hexagon",
+        "Vandelay",
+        "Umbrella",
+        "Soylent",
+      ]);
+  },
+);
+
+staffTest(
+  "staff teams show the table is busy while re-sorting",
+  async ({ page, pipelineTeams }) => {
+    await page.goto("/staff/teams");
+    await page.getByRole("searchbox").fill(pipelineTeams.prefix);
+    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+
+    // Ordering by an amount prices every billed team, which takes long enough
+    // on real data to look like the click did nothing. Held here so the state
+    // the delay produces can be asserted at all.
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/graphql", async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    const table = page.getByRole("table");
+    await page.getByRole("button", { name: "Last period" }).click();
+
+    await expect(
+      table.locator("xpath=ancestor::div[@aria-busy]"),
+    ).toHaveAttribute("aria-busy", "true");
+    // The rows already fetched stay readable underneath rather than being
+    // replaced by a spinner.
+    await expect(page.getByRole("row", { name: /Soylent/ })).toBeVisible();
+
+    release();
+    await expect(
+      table.locator("xpath=ancestor::div[@aria-busy]"),
+    ).toHaveAttribute("aria-busy", "false");
+  },
+);
+
+/** The team names in the order the table renders them. */
+async function getTeamNames(page: Page): Promise<string[]> {
+  const names = await page
+    .locator("tbody tr td:first-child .font-medium")
+    .allInnerTexts();
+  return names.map((name) => name.trim());
+}
 
 staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
   test.slow();

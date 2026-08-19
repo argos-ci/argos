@@ -19,6 +19,7 @@
       "ProjectConnection",
       "ProjectContributorConnection",
       "ScreenshotDiffConnection",
+      "StaffTeamConnection",
       "TeamGithubMemberConnection",
       "TeamInviteConnection",
       "TeamMemberConnection",
