@@ -231,8 +231,20 @@ export const typeDefs = gql`
     from: DateTime!
     "End of the period, or now while it is still running."
     to: DateTime!
+    """
+    When the period closes, whether or not it has. Unlike \`to\`, this does not
+    stop at the moment a running period was read: it is the anniversary the next
+    period opens on, which follows the subscription rather than the calendar.
+    """
+    endsAt: DateTime!
     "False while the period is still accumulating usage."
     closed: Boolean!
+    """
+    Screenshots consumed over the period — Storybook ones included, and the
+    units standalone media uploads are billed as. So it runs above the sum of
+    the period's buckets on a project that records video.
+    """
+    screenshotsCount: Int!
     "Cost of the screenshots consumed beyond the included quota, this period."
     additionalScreenshotsCost: Float!
   }
@@ -283,6 +295,13 @@ export const typeDefs = gql`
     reading the amount.
     """
     flatPrice: Float
+    """
+    Screenshots included in each billing period before the overage starts: the
+    amount the subscription states, and the plan's published one when it states
+    none. Null only when there is no plan to fall back to, and for a granted
+    plan, which counts nothing against a quota.
+    """
+    includedScreenshots: Int
     "Billing usage. Null when the team is not on a usage-based plan."
     periodUsage: TeamStaffPeriodUsage
   }
@@ -387,6 +406,12 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
+    includedScreenshots: async (account, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        account.id,
+      );
+      return billing.includedScreenshots;
+    },
     // Resolves to the account rather than to the usage itself: the Storybook
     // mix below costs a scan of the account's whole history, so it is left to
     // its own resolver and only runs when a document actually selects it.
@@ -404,7 +429,9 @@ export const resolvers: IResolvers = {
       return usage.billingPeriods.map((period) => ({
         from: period.from,
         to: period.to,
+        endsAt: period.endsAt,
         closed: period.closed,
+        screenshotsCount: period.screenshotsCount,
         additionalScreenshotsCost: period.additionalScreenshotCost,
       }));
     },

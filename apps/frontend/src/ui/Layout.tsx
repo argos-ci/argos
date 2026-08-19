@@ -15,7 +15,7 @@ export function PageHeader(props: ComponentPropsWithRef<"div">) {
         <div
           {...props}
           className={clsx(
-            "mb-6 flex items-end justify-between gap-x-4",
+            "mb-6 flex flex-wrap justify-between items-end gap-x-4 gap-y-3",
             props.className,
           )}
         />

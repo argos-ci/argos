@@ -68,6 +68,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: null,
       flatPrice: null,
+      includedScreenshots: null,
       periodUsage: null,
     });
   });
@@ -91,6 +92,8 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(grantedAccount.id)).toEqual({
       plan: expect.objectContaining({ id: usageBasedPlan.id }),
       flatPrice: null,
+      // Nothing is counted against a quota on a plan that is not billed.
+      includedScreenshots: null,
       periodUsage: null,
     });
   });
@@ -129,6 +132,9 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: expect.objectContaining({ id: flatPlan.id }),
       flatPrice: null,
+      // Read off the subscription that won, not off the one that lost: the
+      // usage-based one includes a thousand.
+      includedScreenshots: 1_000_000,
       periodUsage: null,
     });
   });
@@ -363,6 +369,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(noSubscriptionAccount.id)).toEqual({
       plan: null,
       flatPrice: null,
+      includedScreenshots: null,
       periodUsage: null,
     });
   });

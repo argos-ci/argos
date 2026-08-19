@@ -13,7 +13,7 @@ export function InitialAvatar(props: {
       ref={ref}
       className={clsx(
         props.className,
-        "relative flex items-center justify-center rounded-full select-none",
+        "relative flex shrink-0 items-center justify-center rounded-full select-none",
       )}
       style={{
         backgroundColor: props.color,
