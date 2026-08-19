@@ -14,9 +14,9 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { PageLoader } from "@/ui/PageLoader";
-import { RouterLink } from "@/ui/RouterLink";
 import { Select, SelectButton } from "@/ui/Select";
 import { Text } from "@/ui/Text";
 
@@ -246,13 +246,13 @@ function FlowJourney(props: { flow: Flow; params: ProjectParams }) {
     <PageContainer>
       <PageHeader>
         <PageHeaderContent>
-          <RouterLink
+          <Link
             href={`/${params.accountSlug}/${params.projectName}/flows`}
             className="text-low mb-1 flex w-fit items-center gap-1.5 text-sm"
           >
             <ArrowLeftIcon className="size-4" />
             Flows
-          </RouterLink>
+          </Link>
           <Heading>{title}</Heading>
           <Text slot="headline">
             {journey.screenCount} screen

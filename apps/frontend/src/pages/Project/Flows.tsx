@@ -31,8 +31,8 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Link } from "@/ui/Link";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
-import { RouterLink } from "@/ui/RouterLink";
 import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
@@ -139,7 +139,9 @@ function ScreensCell(props: { flow: Flow }) {
   const label = `${flow.screenCount} screen${flow.screenCount > 1 ? "s" : ""}`;
   return (
     <Tooltip content={label}>
-      <ImageIcon className="text-primary-low size-4" />
+      {/* Deliberately not the link colour: this says the row has screens, it
+          does not take you to them. */}
+      <ImageIcon className="text-low size-4" />
     </Tooltip>
   );
 }
@@ -413,14 +415,14 @@ function PageContent(props: { params: ProjectParams }) {
                       what pressing it would do. A file where nothing captures
                       has nothing to open, and shows no link at all. */}
                   {group.screenCount > 0 ? (
-                    <RouterLink
+                    <Link
                       href={`/${params.accountSlug}/${params.projectName}/flows/${group.entryFlowId}`}
                       aria-label={`Open the flow ${group.file}`}
-                      className="text-primary-low hover:text-primary flex shrink-0 items-center gap-1"
+                      className="flex shrink-0 items-center gap-1"
                     >
                       Open the flow
                       <ArrowRightIcon className="size-3.5" />
-                    </RouterLink>
+                    </Link>
                   ) : null}
                 </ListHeaderRow>
                 {group.flows.map((flow) => (
