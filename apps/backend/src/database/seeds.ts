@@ -1965,6 +1965,15 @@ export async function seed() {
     private: false,
   });
 
+  // A small shop whose checkout test walks four screens, for the Flows tab.
+  const shopProject = await createProject({
+    name: "shop",
+    token: "shop-650ded7d72e85b52e099df6e56aa204d4fe9",
+    accountId: smoothAccount.id,
+    defaultBaseBranch: "main",
+  });
+  await createFlowScenario({ projectId: shopProject.id });
+
   await Promise.all([
     createProject({
       name: "awesome",
