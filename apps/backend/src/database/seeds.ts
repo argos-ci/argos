@@ -800,6 +800,13 @@ export async function createFlowsScenario(input: {
   const seededAt = getSeedInstant();
   const buildName = "default";
 
+  const lastBuild = await Build.query()
+    .where("projectId", projectId)
+    .max("number as max")
+    .first()
+    .castTo<{ max: number | null } | undefined>();
+  const buildNumber = (lastBuild?.max ?? 0) + 1;
+
   const bucket = await ScreenshotBucket.query().insertAndFetch({
     name: buildName,
     branch: "main",
@@ -815,7 +822,7 @@ export async function createFlowsScenario(input: {
 
   const build = await Build.query().insertAndFetch({
     name: buildName,
-    number: 1,
+    number: buildNumber,
     type: "reference" as const,
     jobStatus: "complete" as const,
     compareScreenshotBucketId: bucket.id,
@@ -1974,7 +1981,7 @@ export async function seed() {
     private: false,
   });
 
-  await Promise.all([
+  const [awesomeProject] = await Promise.all([
     createProject({
       name: "awesome",
       token: "awesome-650ded7d72e85b52e099df6e56aa204d",
@@ -1992,6 +1999,11 @@ export async function seed() {
       accountId: jeremy.account.id,
     }),
   ]);
+
+  // The Flows tab reads the reference build's test report, which only the
+  // Playwright reporter produces — so without a seeded one there is nothing to
+  // look at in development.
+  await createFlowsScenario({ projectId: awesomeProject.id });
 
   const ghInstallation = await GithubInstallation.query().insertAndFetch({
     createdAt: "2016-12-08T22:59:55Z",
