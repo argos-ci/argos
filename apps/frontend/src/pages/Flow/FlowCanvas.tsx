@@ -23,8 +23,6 @@ import "@xyflow/react/dist/style.css";
  */
 const SCREEN_WIDTH = 280;
 const SCREEN_IMAGE_HEIGHT = 176;
-/** Room kept above the images for their names. */
-const SCREEN_TITLE_SPACE = 52;
 const SCREEN_GAP = 48;
 const SEGMENT_PADDING = 20;
 const SEGMENT_GAP = 72;
@@ -37,6 +35,19 @@ const SEGMENT_GAP = 72;
  * them into banners that cover the screens they name.
  */
 const MAX_LABEL_SCALE = 2.5;
+
+/** Height of a two-line screen label at zoom 1: its name over its path. */
+const LABEL_HEIGHT = 38;
+
+/**
+ * Room kept above the images for their names.
+ *
+ * Derived rather than chosen: a label is drawn at up to {@link MAX_LABEL_SCALE}
+ * when the canvas is zoomed out, and `fitView` opens well below zoom 1 — so a
+ * space picked by eye at zoom 1 is overrun on arrival, and the first name of
+ * each group climbs over the frame around it.
+ */
+const SCREEN_TITLE_SPACE = LABEL_HEIGHT * MAX_LABEL_SCALE;
 
 export type CanvasScreen = {
   id: string;
@@ -124,10 +135,11 @@ type SegmentNodeData = { title: string; screenCount: number };
 
 function SegmentNode(props: NodeProps<Node<SegmentNodeData>>) {
   const { data } = props;
-  // A wash rather than a dashed outline: zoomed out, a hairline all but
-  // disappears, while a filled block still reads as one group.
+  // A violet wash rather than a dashed outline: zoomed out, a hairline all but
+  // disappears, while a filled block still reads as one group — and the accent
+  // ties the frame to the journey it belongs to.
   return (
-    <div className="border-subtle bg-ui/80 relative h-full w-full rounded-xl border">
+    <div className="border-primary bg-primary-ui relative h-full w-full rounded-xl border">
       <StableLabel width={SCREEN_WIDTH * 2} className="pb-2.5">
         <div className="text-low truncate text-xs font-semibold">
           {data.title}

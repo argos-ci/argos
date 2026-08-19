@@ -37,12 +37,13 @@ loggedTest(
       page.getByText("does not bounce a signed-in user via /login"),
     ).toBeVisible();
 
-    // A row is not a link: the journey is reached from the screens, which name
-    // it when it spans more than one test — so the three rows of the loan spec
-    // visibly point at the same place instead of silently doing so.
+    // The journey is named and linked once, above the tests that share it —
+    // not repeated down every row, where it would say nothing new.
+    const journeyLink = page.getByRole("link", { name: "supplier-invoice" });
+    await expect(journeyLink).toHaveCount(1);
     await expect(
-      page.getByRole("link", { name: /See the supplier-invoice journey/ }),
-    ).toHaveCount(3);
+      page.getByText("6 screens across 3 tests", { exact: false }),
+    ).toBeVisible();
 
     // A skipped test carries the reason it was skipped, so the hole is
     // documented rather than mysterious.
@@ -85,10 +86,7 @@ loggedTest(
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
     // Any test of the journey opens the whole journey, not just its own share
     // of it — which is the point: a reader came for the path, not the test.
-    await page
-      .getByRole("link", { name: /See the supplier-invoice journey/ })
-      .first()
-      .click();
+    await page.getByRole("link", { name: "supplier-invoice" }).click();
 
     await expect(
       page.getByRole("heading", { name: "supplier-invoice" }),
@@ -126,9 +124,7 @@ loggedTest(
     await createFlowsScenario({ projectId: project.id });
 
     await page.goto(`/${team.account.slug}/${project.name}/flows`);
-    await page
-      .getByRole("link", { name: /See the receivable-invoice journey/ })
-      .click();
+    await page.getByRole("link", { name: "receivable-invoice" }).click();
 
     await expect(
       page.getByRole("heading", { name: "receivable-invoice" }),

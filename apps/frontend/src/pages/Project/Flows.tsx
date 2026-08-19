@@ -1,4 +1,4 @@
-import { useMemo, useTransition } from "react";
+import { Fragment, useMemo, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -128,13 +128,13 @@ function Rate(props: { value: number; className?: string }) {
 }
 
 /**
- * Where a row's screens are: the journey they belong to.
+ * Whether this row has screens, and — when nothing above it says so — the way
+ * to them.
  *
- * The link is on the screens rather than on the row, because a journey spans
- * tests — three rows of `post-loan.spec.ts` all open the supplier-invoice
- * journey, and a whole-row link would have made three identical destinations
- * look like three different ones. Naming the journey on the affordance is what
- * makes the sameness visible instead of surprising.
+ * A journey is named once, in the section header above the tests that share it,
+ * so repeating its name on every row would say nothing a reader has not just
+ * read. The exception is a test whose screenshots sit at the root: it has no
+ * folder, so no section header carries it, and its own icon is the only way in.
  */
 function ScreensCell(props: { flow: Flow; params: ProjectParams }) {
   const { flow, params } = props;
@@ -145,25 +145,25 @@ function ScreensCell(props: { flow: Flow; params: ProjectParams }) {
   }
 
   const { journey } = flow;
-  const name = journey.name;
-  const label = name
-    ? `See the ${name} journey, ${journey.screenshotCount} screen${
-        journey.screenshotCount > 1 ? "s" : ""
-      }${journey.testCount > 1 ? ` across ${journey.testCount} tests` : ""}`
-    : `See the ${flow.screenshotCount} screen${
-        flow.screenshotCount > 1 ? "s" : ""
-      } of this test`;
+  const label = `${flow.screenshotCount} screen${
+    flow.screenshotCount > 1 ? "s" : ""
+  }`;
+
+  if (journey.name) {
+    return (
+      <Tooltip content={label}>
+        <ImageIcon className="text-primary-low size-4" />
+      </Tooltip>
+    );
+  }
 
   return (
     <RouterLink
       href={`/${params.accountSlug}/${params.projectName}/flows/${journey.entryFlowId}`}
-      aria-label={label}
-      className="text-primary-low hover:text-primary flex min-w-0 items-center justify-end gap-1.5"
+      aria-label={`See the ${label} of this test`}
+      className="text-primary-low hover:text-primary"
     >
-      {name ? (
-        <span className="truncate text-xs font-medium">{name}</span>
-      ) : null}
-      <ImageIcon className="size-4 shrink-0" />
+      <ImageIcon className="size-4" />
     </RouterLink>
   );
 }
@@ -175,7 +175,7 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
   )?.description;
 
   return (
-    <ListRow className="flex items-center gap-4 p-4 text-sm">
+    <ListRow className="flex items-center gap-8 p-4 text-sm">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Tooltip content={STATUS_LABEL[flow.status]}>
           <div
@@ -197,16 +197,16 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
           <span className="text-low shrink-0 italic">{skipReason}</span>
         ) : null}
       </div>
-      <div className="flex w-44 justify-end">
+      <div className="flex w-20 justify-end">
         <ScreensCell flow={flow} params={params} />
       </div>
-      <div className="w-20 text-right tabular-nums">
+      <div className="w-28 text-right tabular-nums">
         <Rate
           value={flow.failureRate}
           className="text-danger-low font-medium"
         />
       </div>
-      <div className="w-20 text-right tabular-nums">
+      <div className="w-28 text-right tabular-nums">
         <Rate value={flow.flakyRate} className="text-pending-low font-medium" />
       </div>
     </ListRow>
@@ -218,19 +218,82 @@ function FlowRow(props: { flow: Flow; params: ProjectParams }) {
  * them is a matter of cutting the list where the file changes, and never
  * reorders what the server sent.
  */
-function useFlowsBySpec(flows: Flow[]) {
+type JourneySection = {
+  /** Null for the tests whose screenshots sit at the root, which share none. */
+  name: string | null;
+  entryFlowId: string;
+  screenshotCount: number;
+  flows: Flow[];
+};
+
+type SpecGroup = { file: string; flows: Flow[]; sections: JourneySection[] };
+
+/**
+ * Flows come back in declaration order — by file, then by line — so grouping is
+ * a matter of cutting the list where the file or the journey changes, and never
+ * reorders what the server sent.
+ *
+ * Journeys are a level of their own rather than a label on the file: one spec
+ * commonly holds several of them (a component test, then two variants of the
+ * same request), so naming the journey on the file would name three at once and
+ * tell nobody which test belongs to which.
+ */
+function useFlowsBySpec(flows: Flow[]): SpecGroup[] {
   return useMemo(() => {
-    const groups: { file: string; flows: Flow[] }[] = [];
+    const groups: SpecGroup[] = [];
     for (const flow of flows) {
-      const last = groups.at(-1);
-      if (last && last.file === flow.file) {
-        last.flows.push(flow);
+      let group = groups.at(-1);
+      if (!group || group.file !== flow.file) {
+        group = { file: flow.file, flows: [], sections: [] };
+        groups.push(group);
+      }
+      group.flows.push(flow);
+
+      const name = flow.journey.name;
+      const section = group.sections.at(-1);
+      // Consecutive tests with no journey of their own share one section: it
+      // draws no header, so there is nothing to repeat.
+      if (section && section.name === name) {
+        section.flows.push(flow);
       } else {
-        groups.push({ file: flow.file, flows: [flow] });
+        group.sections.push({
+          name,
+          entryFlowId: flow.journey.entryFlowId,
+          screenshotCount: flow.journey.screenshotCount,
+          flows: [flow],
+        });
       }
     }
     return groups;
   }, [flows]);
+}
+
+/**
+ * The journey a run of tests shares, named and linked once — which is all a
+ * reader needs, and all the list has room to say without repeating itself down
+ * every row underneath.
+ */
+function JourneyHeaderRow(props: {
+  section: JourneySection;
+  params: ProjectParams;
+}) {
+  const { section, params } = props;
+  const { name, flows, screenshotCount } = section;
+  return (
+    <div className="bg-subtle flex items-center gap-3 border-b px-4 py-2">
+      <RouterLink
+        href={`/${params.accountSlug}/${params.projectName}/flows/${section.entryFlowId}`}
+        className="text-primary-low hover:text-primary flex min-w-0 items-center gap-1.5 text-xs font-semibold"
+      >
+        <RouteIcon className="size-3.5 shrink-0" />
+        <span className="truncate">{name}</span>
+      </RouterLink>
+      <span className="text-low text-xs tabular-nums">
+        {screenshotCount} screen{screenshotCount === 1 ? "" : "s"}
+        {flows.length > 1 ? ` across ${flows.length} tests` : null}
+      </span>
+    </div>
+  );
 }
 
 function PageContent(props: { params: ProjectParams }) {
@@ -395,11 +458,11 @@ function PageContent(props: { params: ProjectParams }) {
           {/* One header for the whole list rather than one per spec: the
               columns are the same everywhere, and repeating their names above
               each file would drown the file names they sit next to. */}
-          <div className="text-low flex items-center gap-4 px-4 text-xs font-semibold">
+          <div className="text-low flex items-center gap-8 px-4 text-xs font-semibold">
             <div className="flex-1">Test</div>
-            <div className="w-44 text-right">Screens</div>
-            <div className="w-20 text-right">Failures</div>
-            <div className="w-20 text-right">Flaky</div>
+            <div className="w-20 text-right">Screens</div>
+            <div className="w-28 text-right">Failure Rate</div>
+            <div className="w-28 text-right">Flaky Rate</div>
           </div>
           {groups.map((group) => {
             const capturing = group.flows.filter(
@@ -418,8 +481,15 @@ function PageContent(props: { params: ProjectParams }) {
                     {group.flows.length} capture
                   </div>
                 </ListHeaderRow>
-                {group.flows.map((flow) => (
-                  <FlowRow key={flow.id} flow={flow} params={params} />
+                {group.sections.map((section) => (
+                  <Fragment key={section.name ?? section.entryFlowId}>
+                    {section.name ? (
+                      <JourneyHeaderRow section={section} params={params} />
+                    ) : null}
+                    {section.flows.map((flow) => (
+                      <FlowRow key={flow.id} flow={flow} params={params} />
+                    ))}
+                  </Fragment>
                 ))}
               </List>
             );
