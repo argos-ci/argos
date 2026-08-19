@@ -122,7 +122,7 @@ export type JourneySource = {
   metadata: FlowMetadata;
 };
 
-export type JourneyStep<T> = {
+type JourneyStep<T> = {
   /** Variant-independent key (the backend `variantKey`). */
   key: string;
   label: string;
