@@ -258,16 +258,24 @@ jobs:
             --query 'tasks[0].taskArn' \
             --output text)
 
+          # ECS forgets a stopped task about an hour after it stops. Name it now,
+          # so a run opened the next morning still says what to go looking for.
+          echo "Task: $TASK_ARN (log stream ecs/argos-migrate/${TASK_ARN##*/} in /ecs/argos-migrate)"
+
           aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks \
+          TASK=$(aws ecs describe-tasks \
             --cluster "$ECS_CLUSTER" \
             --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
+            --output json)
+
+          # Null rather than a number whenever the container never ran at all,
+          # which the reasons below explain and the migration logs never do.
+          EXIT_CODE=$(jq -r '.tasks[0].containers[0].exitCode // "none"' <<<"$TASK")
 
           if [ "$EXIT_CODE" != "0" ]; then
             echo "Migration task failed with exit code: $EXIT_CODE"
+            jq -r '.tasks[0] | "Stopped reason: \(.stoppedReason // "-")", "Container reason: \(.containers[0].reason // "-")"' <<<"$TASK"
             exit 1
           fi
 
