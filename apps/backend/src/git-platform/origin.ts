@@ -1,4 +1,8 @@
-import { commentOriginPr, type OriginApi } from "@/origin";
+// Imported from the modules rather than the `@/origin` barrel, which pulls in
+// the webhook events and closes an import cycle back through
+// `@/build-notification`.
+import type { OriginApi } from "@/origin/api";
+import { commentOriginPr } from "@/origin/comment";
 import { redisLock } from "@/util/redis";
 
 import { getCommentBody } from "./comment";

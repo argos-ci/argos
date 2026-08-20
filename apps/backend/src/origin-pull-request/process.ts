@@ -1,7 +1,7 @@
 import type { OriginPullRequest } from "@/database/models";
 import { unretryable } from "@/job-core/error";
 import logger from "@/logger";
-import { getInstallationOriginApi } from "@/origin";
+import { getInstallationOriginApi } from "@/origin/client";
 
 import { fetchOriginPullRequest, parseOriginPullRequestData } from "./remote";
 

@@ -71,8 +71,12 @@ const PullRequestRefSchema = z.object({
 });
 
 const ActorSchema = z.object({
-  user: z.object({ id: z.string().optional(), email: z.string() }).optional(),
-  app: z.object({ id: z.string().optional(), slug: z.string() }).optional(),
+  user: z
+    .object({ id: z.string().optional(), email: z.string().default("") })
+    .optional(),
+  app: z
+    .object({ id: z.string().optional(), slug: z.string().default("") })
+    .optional(),
   serviceAccount: z.object({ id: z.string().optional() }).optional(),
 });
 
@@ -84,8 +88,8 @@ export const OriginApiPullRequestSchema = z.object({
   merged: z.boolean().default(false),
   title: z.string().default(""),
   body: z.string().default(""),
-  head: PullRequestRefSchema,
-  base: PullRequestRefSchema,
+  head: PullRequestRefSchema.default(() => ({ ref: "", sha: "" })),
+  base: PullRequestRefSchema.default(() => ({ ref: "", sha: "" })),
   author: ActorSchema.optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
@@ -177,6 +181,9 @@ const ErrorBodySchema = z.object({
   message: z.string().optional(),
 });
 
+/** How long a single Origin API call may take before it is aborted. */
+const REQUEST_TIMEOUT = 30_000;
+
 // --- Client ------------------------------------------------------------------
 
 type RepoIdentifier = { owner: string; repo: string };
@@ -187,7 +194,14 @@ function repoPath({ owner, repo }: RepoIdentifier): string {
 
 /**
  * Collect every page of a paginated endpoint.
+ *
+ * Bounded: a `nextPageToken` that repeats — or never empties — would otherwise
+ * spin forever and grow the array without limit. At 100 items a page the cap
+ * is far above any real namespace, so hitting it means something is wrong and
+ * it is logged rather than passed off as a complete list.
  */
+const MAX_PAGES = 100;
+
 async function paginate<T>(
   fetchPage: (pageToken: string) => Promise<{
     items: T[];
@@ -196,11 +210,19 @@ async function paginate<T>(
 ): Promise<T[]> {
   const items: T[] = [];
   let pageToken = "";
-  do {
-    const page = await fetchPage(pageToken);
-    items.push(...page.items);
-    pageToken = page.nextPageToken;
-  } while (pageToken);
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await fetchPage(pageToken);
+    items.push(...result.items);
+    // A token that does not advance would page over the same items forever.
+    if (!result.nextPageToken || result.nextPageToken === pageToken) {
+      return items;
+    }
+    pageToken = result.nextPageToken;
+  }
+  logger.warn(
+    { pages: MAX_PAGES, items: items.length },
+    "Origin pagination stopped at the page cap, the list may be incomplete",
+  );
   return items;
 }
 
@@ -232,6 +254,9 @@ export class OriginApi {
     }
     const response = await fetch(url, {
       method: init.method ?? "GET",
+      // Node's fetch waits forever by default; a hung Origin response must not
+      // pin a worker (or the build upload that is waiting on it).
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       headers: {
         authorization: `Bearer ${this.#token}`,
         accept: "application/json",

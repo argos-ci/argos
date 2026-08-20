@@ -360,6 +360,12 @@ export function createConfig() {
         default: "https://api.cursor.com/v1/origin",
         env: "ORIGIN_API_BASE_URL",
       },
+      issuer: {
+        doc: "`iss` claim Origin puts in installation receipts. Its own setting rather than the API base URL: pointing the client at a proxy or a regional host must not change the identity Argos verifies against",
+        format: String,
+        default: "https://api.cursor.com/v1/origin",
+        env: "ORIGIN_ISSUER",
+      },
       installUrl: {
         doc: "Consent page a workspace admin is sent to install the app",
         format: String,

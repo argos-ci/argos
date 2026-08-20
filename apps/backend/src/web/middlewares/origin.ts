@@ -8,7 +8,7 @@ import {
   getAppOriginApi,
   handleOriginEvent,
   OriginWebhookDeliverySchema,
-  synchronizeOriginInstallation,
+  originInstallationSyncJob,
   upsertOriginInstallation,
   verifyInstallationReceipt,
   verifyOriginInstallState,
@@ -52,18 +52,26 @@ router.post(
       return;
     }
 
-    const delivery = OriginWebhookDeliverySchema.safeParse(
-      JSON.parse(body.toString("utf8")),
-    );
+    // A body that is not JSON is a bad delivery, not a server fault: throwing
+    // here would answer 5xx, which is precisely what tells Origin to redeliver
+    // it forever.
+    const payload = (() => {
+      try {
+        return JSON.parse(body.toString("utf8")) as unknown;
+      } catch {
+        return null;
+      }
+    })();
+
+    const delivery = OriginWebhookDeliverySchema.safeParse(payload);
     if (!delivery.success) {
       res.status(400).send("Invalid delivery");
       return;
     }
 
-    if (
-      delivery.data.appId &&
-      delivery.data.appId !== config.get("origin.appId")
-    ) {
+    // Fail closed: the signing keys are the app-agnostic Origin key set, so a
+    // delivery that does not name our app is not ours to process.
+    if (delivery.data.appId !== config.get("origin.appId")) {
       res.status(400).send("Unexpected app");
       return;
     }
@@ -140,10 +148,10 @@ router.get(
     });
 
     await account.$query().patch({ originInstallationId: installation.id });
-    await synchronizeOriginInstallation(installation.id);
+    await originInstallationSyncJob.push(installation.id);
 
     const url = new URL(
-      `/${account.slug}/settings#cursor-origin`,
+      `/${account.slug}/settings/integrations#cursor-origin`,
       config.get("server.url"),
     );
     res.redirect(String(url));

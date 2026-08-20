@@ -48,13 +48,16 @@ function makeReceipt(input: {
 
 describe("verifyInstallationReceiptWithKeys", () => {
   const originalAppId = config.get("origin.appId");
+  const originalIssuer = config.get("origin.issuer");
 
   beforeEach(() => {
     config.set("origin.appId", APP_ID);
+    config.set("origin.issuer", ISSUER);
   });
 
   afterEach(() => {
     config.set("origin.appId", originalAppId);
+    config.set("origin.issuer", originalIssuer);
   });
 
   it("reads the installation and state from a valid receipt", () => {

@@ -29,8 +29,8 @@ import {
 import { sendNotification } from "@/notification";
 import {
   getOriginInstallUrl,
+  originInstallationSyncJob,
   signOriginInstallState,
-  synchronizeOriginInstallation,
 } from "@/origin";
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
@@ -468,6 +468,12 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!account.originInstallationId) {
       return null;
     }
+    // Origin repositories are never public, and the installation exposes every
+    // one it reaches — so this is admin-only, like the install URL below.
+    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    if (!permissions.includes("admin")) {
+      return null;
+    }
     const installation = await ctx.loaders.OriginInstallation.load(
       account.originInstallationId,
     );
@@ -702,7 +708,7 @@ export const resolvers: IResolvers = {
       if (!account.originInstallationId) {
         return account;
       }
-      await synchronizeOriginInstallation(account.originInstallationId);
+      await originInstallationSyncJob.push(account.originInstallationId);
       return account.$query();
     },
     disconnectGitHubAuth: async (_root, args, ctx) => {

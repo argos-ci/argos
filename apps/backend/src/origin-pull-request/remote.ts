@@ -2,11 +2,8 @@ import { truncate } from "@argos/util/string";
 import type { PartialModelObject } from "objection";
 
 import type { OriginPullRequest } from "@/database/models";
-import {
-  checkOriginErrorStatus,
-  type OriginApi,
-  type OriginApiPullRequest,
-} from "@/origin";
+import type { OriginApi, OriginApiPullRequest } from "@/origin/api";
+import { checkOriginErrorStatus } from "@/origin/error";
 
 /**
  * Fetch a pull request from Origin, `null` when it does not exist.
@@ -56,6 +53,6 @@ export function parseOriginPullRequestData(
   };
 }
 
-function stripRefPrefix(ref: string): string {
+export function stripRefPrefix(ref: string): string {
   return ref.replace(/^refs\/heads\//, "");
 }

@@ -2,10 +2,13 @@ import type { KeyObject } from "node:crypto";
 import { z } from "zod";
 
 import config from "@/config";
+import parentLogger from "@/logger";
 import { boom } from "@/util/error";
 import { redisCache } from "@/util/redis";
 
 import { publicKeyFromJwk } from "./jwt";
+
+const logger = parentLogger.child({ module: "origin/jwks" });
 
 /**
  * Origin's active signing keys. The same keys sign webhook deliveries and
@@ -21,8 +24,21 @@ const Ed25519JwkSchema = z.object({
   use: z.string().optional(),
 });
 
+/**
+ * Unknown entries are dropped rather than failing the document: Origin may
+ * publish a key Argos does not model, and one such key must not take every
+ * usable key down with it.
+ */
 const JsonWebKeySetSchema = z.object({
-  keys: z.array(Ed25519JwkSchema).default([]),
+  keys: z
+    .array(z.unknown())
+    .default([])
+    .transform((keys) =>
+      keys.flatMap((key) => {
+        const parsed = Ed25519JwkSchema.safeParse(key);
+        return parsed.success ? [parsed.data] : [];
+      }),
+    ),
 });
 
 type Ed25519Jwk = z.infer<typeof Ed25519JwkSchema>;
@@ -48,8 +64,20 @@ export async function getOriginSigningKeys(): Promise<
   { kid: string; key: KeyObject }[]
 > {
   const jwks = await jwksStore.get();
-  return jwks.map((jwk) => ({
-    kid: jwk.kid,
-    key: publicKeyFromJwk({ kty: jwk.kty, crv: jwk.crv, x: jwk.x }),
-  }));
+  // A key that cannot be built reads as one fewer key to try, never as a
+  // crash: callers verify signatures, and a throw here would answer 5xx to a
+  // webhook — making Origin redeliver — instead of rejecting it.
+  return jwks.flatMap((jwk) => {
+    try {
+      return [
+        {
+          kid: jwk.kid,
+          key: publicKeyFromJwk({ kty: jwk.kty, crv: jwk.crv, x: jwk.x }),
+        },
+      ];
+    } catch (error) {
+      logger.warn({ error, kid: jwk.kid }, "Unusable Origin signing key");
+      return [];
+    }
+  });
 }

@@ -6,5 +6,6 @@ export * from "./events";
 export * from "./install-state";
 export * from "./receipt";
 export * from "./synchronize";
+export * from "./synchronize-job";
 export * from "./url";
 export * from "./webhook";

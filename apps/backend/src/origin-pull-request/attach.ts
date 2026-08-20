@@ -17,7 +17,9 @@ export async function attachHeadBuildsToOriginPullRequest(
   pullRequest: OriginPullRequest,
   headSha: string,
 ) {
-  if (!headSha) {
+  const { headRef } = pullRequest;
+
+  if (!headSha || !headRef) {
     return;
   }
 
@@ -25,6 +27,13 @@ export async function attachHeadBuildsToOriginPullRequest(
     .joinRelated("[project, compareScreenshotBucket]")
     .where("project.originRepositoryId", pullRequest.originRepositoryId)
     .where("compareScreenshotBucket.commit", headSha)
+    // The commit alone is not the pull request: a release pull request opened
+    // from the default branch shares its head commit with the builds of that
+    // branch, and those must keep belonging to it. Only builds of the head
+    // branch itself are the pull request's.
+    .where("compareScreenshotBucket.branch", headRef)
+    // A monitoring build watches a branch, it is never a pull request check.
+    .where("builds.mode", "ci")
     .whereNull("builds.originPullRequestId")
     .whereNull("builds.githubPullRequestId")
     .where("builds.mergeQueue", false)

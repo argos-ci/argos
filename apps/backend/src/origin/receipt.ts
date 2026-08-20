@@ -67,7 +67,7 @@ export function verifyInstallationReceiptWithKeys(
   }
 
   if (
-    claims.data.iss !== config.get("origin.apiBaseUrl") ||
+    claims.data.iss !== config.get("origin.issuer") ||
     claims.data.aud !== config.get("origin.appId") ||
     claims.data.exp <= now
   ) {

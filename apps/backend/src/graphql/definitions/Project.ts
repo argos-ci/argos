@@ -521,10 +521,12 @@ async function getAccountOriginRepository(props: {
   account: Account;
   originRepositoryId: string;
 }): Promise<OriginRepository> {
-  invariant(
-    props.account.originInstallationId,
-    "The account has no Cursor Origin installation",
-  );
+  if (!props.account.originInstallationId) {
+    throw badUserInput("The account has no Cursor Origin installation");
+  }
+  if (!isValidPgBigInt(props.originRepositoryId)) {
+    throw badUserInput("Cursor Origin repository not found");
+  }
   const repository = await OriginRepository.query()
     .findById(props.originRepositoryId)
     .where({ originInstallationId: props.account.originInstallationId });

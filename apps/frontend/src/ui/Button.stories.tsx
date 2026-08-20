@@ -25,6 +25,7 @@ export const Default: Story = {
         <Button variant="destructive">Destructive</Button>
         <Button variant="github">GitHub</Button>
         <Button variant="gitlab">GitLab</Button>
+        <Button variant="origin">Cursor Origin</Button>
         <Button variant="google">Google</Button>
       </div>
 

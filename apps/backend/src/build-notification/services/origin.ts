@@ -1,7 +1,11 @@
 import type { OriginRepository } from "@/database/models";
 import { postOriginComment } from "@/git-platform/origin";
-import { getInstallationOriginApi, type OriginApi } from "@/origin";
+// Imported from the modules rather than the `@/origin` barrel: the barrel
+// re-exports the webhook events, which reach back into `@/build-notification`
+// through `@/origin-pull-request` and close an import cycle.
+import type { OriginApi } from "@/origin/api";
 import { postOriginCheckRun } from "@/origin/check-run";
+import { getInstallationOriginApi } from "@/origin/client";
 
 import type { SendNotificationContext } from "../context";
 import type { NotificationPayload } from "../notification";

@@ -12,10 +12,8 @@ import {
 import { OriginApiPullRequestSchema } from "./api";
 import { getInstallationOriginApi } from "./client";
 import { commentOriginPr } from "./comment";
-import {
-  synchronizeOriginInstallation,
-  upsertOriginInstallation,
-} from "./synchronize";
+import { upsertOriginInstallation } from "./synchronize";
+import { originInstallationSyncJob } from "./synchronize-job";
 import type { OriginWebhookDelivery } from "./webhook";
 
 const InstallationEventPayloadSchema = z.object({
@@ -63,7 +61,7 @@ export async function handleOriginEvent(delivery: OriginWebhookDelivery) {
         ...installation,
         deleted: false,
       });
-      await synchronizeOriginInstallation(local.id);
+      await originInstallationSyncJob.push(local.id);
       return;
     }
     case "installation.deleted": {
@@ -72,7 +70,7 @@ export async function handleOriginEvent(delivery: OriginWebhookDelivery) {
         ...installation,
         deleted: true,
       });
-      await synchronizeOriginInstallation(local.id);
+      await originInstallationSyncJob.push(local.id);
       return;
     }
     default: {

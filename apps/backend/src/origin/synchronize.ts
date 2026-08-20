@@ -146,7 +146,7 @@ export async function synchronizeOriginInstallation(
         await linkInstallationRepositories(refreshed, apiRepositories, trx);
       });
     },
-    { timeout: 60_000 },
+    { timeout: 120_000 },
   );
 }
 
@@ -157,6 +157,14 @@ export async function synchronizeOriginInstallation(
 async function refreshInstallation(
   installation: OriginInstallation,
 ): Promise<OriginInstallation> {
+  // An uninstall is authoritative and already recorded: Origin may still
+  // answer 200 with a tombstone (the app installation payload carries no
+  // `deletedAt`), and re-deriving `deleted` from it would resurrect the row.
+  // A reinstall comes back through `installation.created`, which clears the
+  // flag before this runs.
+  if (installation.deleted) {
+    return installation;
+  }
   try {
     const remote = await getAppOriginApi().getAppInstallation(
       installation.originId,
