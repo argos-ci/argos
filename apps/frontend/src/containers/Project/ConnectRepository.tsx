@@ -443,12 +443,12 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
                 Install Argos on Origin
               </LinkButton>
             )}
-            <LinkButton
+            <Button
               variant="secondary"
               onClick={() => setAndStoreProvider(null)}
             >
               Use another Git provider
-            </LinkButton>
+            </Button>
           </div>
         </div>
       );
@@ -487,12 +487,12 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             >
               Setup GitLab Access token
             </LinkButton>
-            <LinkButton
+            <Button
               variant="secondary"
               onClick={() => setAndStoreProvider(null)}
             >
               Use another Git provider
-            </LinkButton>
+            </Button>
           </div>
         </div>
       );
