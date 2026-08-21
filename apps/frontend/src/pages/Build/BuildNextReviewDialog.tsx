@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 
@@ -89,10 +89,9 @@ export function useBuildNextReviewPrompt(): ContextValue {
 }
 
 export function BuildNextReviewDialogProvider(props: {
-  buildNumber: number;
   children: React.ReactNode;
 }) {
-  const { buildNumber, children } = props;
+  const { children } = props;
   const dialog = useDialogValueState<ReviewedBuild | null>(null);
 
   const promptNextReview = useEventCallback((build: ReviewedBuild) => {
@@ -103,15 +102,8 @@ export function BuildNextReviewDialogProvider(props: {
   });
   const value = useMemo(() => ({ promptNextReview }), [promptNextReview]);
 
-  // The prompt belongs to the build that was just reviewed. Jumping to another
-  // build keeps this provider mounted (same route, different param), so close
-  // the dialog by hand — otherwise it outlives the navigation and keeps
-  // offering the previous build's siblings.
-  const close = useEventCallback(() => dialog.onOpenChange(false));
-  useEffect(() => {
-    close();
-  }, [buildNumber, close]);
-
+  // The prompt belongs to the build that was just reviewed, and it does not
+  // outlive it: jumping to one of the siblings remounts the build page.
   return (
     <>
       {dialog.value ? (
@@ -197,7 +189,7 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
           href={getBuildOverviewURL(getBuildParams(nextBuild))}
           autoFocus
         >
-          Review {nextBuild.name}
+          Review next build
         </LinkButton>
       </DialogFooter>
     </Dialog>
