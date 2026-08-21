@@ -417,10 +417,17 @@ export function useBuildDiffStatusState(args: {
   return [getDiffStatus(diffId), setDiffStatus] as const;
 }
 
+/**
+ * Local, not-yet-submitted evaluation statuses, persisted per build.
+ *
+ * The key must carry the account slug: project names are only unique within an
+ * account, so two accounts owning a project of the same name would otherwise
+ * share the storage of their same-numbered builds.
+ */
 const diffStatusesFamily = atomFamily(
-  (params: { projectName: string; buildNumber: number }) =>
+  (params: { accountSlug: string; projectName: string; buildNumber: number }) =>
     atomWithStorage<Record<string, EvaluationStatus>>(
-      `${params.projectName}#${params.buildNumber}.review.diffStatuses`,
+      `${params.accountSlug}/${params.projectName}#${params.buildNumber}.review.diffStatuses`,
       {},
     ),
 );
@@ -437,10 +444,11 @@ export function BuildReviewStateProvider(props: {
   const { buildStatus, buildType, params } = props;
   const stableParams = useMemo(
     () => ({
+      accountSlug: params.accountSlug,
       projectName: params.projectName,
       buildNumber: params.buildNumber,
     }),
-    [params.projectName, params.buildNumber],
+    [params.accountSlug, params.projectName, params.buildNumber],
   );
   const [diffStatuses, setDiffStatuses] = useAtom(
     diffStatusesFamily(stableParams),
