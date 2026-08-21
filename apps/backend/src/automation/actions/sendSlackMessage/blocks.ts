@@ -2,13 +2,14 @@ import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
-import { getRepositoryUrl } from "@/build/repository-url";
+import { getPullRequestUrl, getRepositoryUrl } from "@/build/repository-url";
 import { getStatsMessage } from "@/build/stats";
 import {
   Build,
   type Account,
   type BuildReview,
   type GithubPullRequest,
+  type OriginPullRequest,
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
@@ -100,7 +101,7 @@ export function detailsBlock(props: {
   build: Build;
   project: Project;
   compareScreenshotBucket: ScreenshotBucket | null;
-  pullRequest: GithubPullRequest | null;
+  pullRequest: GithubPullRequest | OriginPullRequest | null;
 }): SlackMessageBlock {
   const { build, compareScreenshotBucket, project, pullRequest } = props;
   const commit = compareScreenshotBucket?.commit;
@@ -111,9 +112,7 @@ export function detailsBlock(props: {
   const branch = compareScreenshotBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
   const pullRequestUrl =
-    repositoryURL && pullRequest
-      ? `${repositoryURL}/pull/${pullRequest.number}`
-      : undefined;
+    (pullRequest && getPullRequestUrl(project, pullRequest)) ?? undefined;
   const branchUrl =
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
   const commitUrl =

@@ -32,6 +32,9 @@ import * as Node from "./Node";
 import * as NotificationPreference from "./NotificationPreference";
 import * as OAuthClient from "./OAuthClient";
 import * as OAuthGrant from "./OAuthGrant";
+import * as OriginInstallation from "./OriginInstallation";
+import * as OriginPullRequest from "./OriginPullRequest";
+import * as OriginRepository from "./OriginRepository";
 import * as PageInfo from "./PageInfo";
 import * as Plan from "./Plan";
 import * as Project from "./Project";
@@ -87,6 +90,9 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   NotificationPreference,
   OAuthClient,
   OAuthGrant,
+  OriginInstallation,
+  OriginPullRequest,
+  OriginRepository,
   PageInfo,
   Plan,
   Project,

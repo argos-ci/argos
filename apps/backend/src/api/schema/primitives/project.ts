@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { GithubRepository, type Project } from "@/database/models";
+import { ORIGIN_CONTENTS_READ_SCOPE } from "@/origin/url";
 
 export const AccountSlug = z.string().min(1);
 export const ProjectName = z.string().min(1);
@@ -111,7 +112,7 @@ export async function serializeProject(
   project: Project,
 ): Promise<z.infer<typeof ProjectSchema>> {
   await project.$fetchGraph(
-    "[account,githubRepository.repoInstallations.installation,gitlabProject]",
+    "[account,githubRepository.repoInstallations.installation,gitlabProject,originRepository.installation]",
   );
 
   invariant(project.account, "account is not fetched");
@@ -132,8 +133,17 @@ export async function serializeProject(
     ? GithubRepository.pickBestInstallation(project.githubRepository)
     : null;
 
-  // We have remote content access if the installation is the main app
-  const hasRemoteContentAccess = installation?.app === "main";
+  // We have remote content access if the GitHub installation is the main app,
+  // or if the Origin installation was granted the contents scope.
+  const hasRemoteContentAccess = project.originRepository
+    ? Boolean(
+        project.originRepository.installation &&
+        !project.originRepository.installation.deleted &&
+        project.originRepository.installation.hasScope(
+          ORIGIN_CONTENTS_READ_SCOPE,
+        ),
+      )
+    : installation?.app === "main";
 
   return {
     id: project.id,

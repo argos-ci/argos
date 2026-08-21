@@ -6,7 +6,7 @@ import { getProjectURL, useProjectParams } from "@/pages/Project/ProjectParams";
 import { LinkButton } from "@/ui/Button";
 import { Link } from "@/ui/Link";
 
-import { RepositoryIcons } from "../Repository";
+import { getRepositoryLabel, RepositoryIcons } from "../Repository";
 
 const _ProjectFragment = graphql(`
   fragment ConnectedRepository_Project on Project {
@@ -73,7 +73,7 @@ export function ConnectedRepository(props: {
       )}
     >
       {repository
-        ? "This authentication is only available for projects connected to a GitHub repository, but this project is connected to a GitLab repository."
+        ? `This authentication is only available for projects connected to a GitHub repository, but this project is connected to a ${getRepositoryLabel(repository.__typename)} repository.`
         : "No GitHub repository is connected to this project. Connect one to use this authentication for your GitHub Actions runs."}
     </div>
   );

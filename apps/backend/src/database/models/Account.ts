@@ -13,6 +13,7 @@ import { GithubAccount } from "./GithubAccount";
 import { GithubInstallation } from "./GithubInstallation";
 import { MediaVersion } from "./MediaVersion";
 import { MsTeamsWebhook } from "./MsTeamsWebhook";
+import { OriginInstallation } from "./OriginInstallation";
 import { Plan } from "./Plan";
 import { Project } from "./Project";
 import { ScreenshotBucket } from "./ScreenshotBucket";
@@ -177,6 +178,7 @@ export class Account extends Model {
           gitlabBaseUrl: { type: ["string", "null"] },
           slackInstallationId: { type: ["string", "null"] },
           githubLightInstallationId: { type: ["string", "null"] },
+          originInstallationId: { type: ["string", "null"] },
           meteredSpendLimitByPeriod: {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
@@ -197,6 +199,7 @@ export class Account extends Model {
   gitlabBaseUrl!: string | null;
   slackInstallationId!: string | null;
   githubLightInstallationId!: string | null;
+  originInstallationId!: string | null;
   meteredSpendLimitByPeriod!: number | null;
   blockWhenSpendLimitIsReached!: boolean;
 
@@ -269,6 +272,14 @@ export class Account extends Model {
           to: "github_installations.id",
         },
       },
+      originInstallation: {
+        relation: Model.HasOneRelation,
+        modelClass: OriginInstallation,
+        join: {
+          from: "accounts.originInstallationId",
+          to: "origin_installations.id",
+        },
+      },
       teamSamlConfig: {
         relation: Model.HasOneRelation,
         modelClass: TeamSamlConfig,
@@ -303,6 +314,7 @@ export class Account extends Model {
   projects?: Project[];
   slackInstallation?: SlackInstallation | null;
   githubLightInstallation?: GithubInstallation | null;
+  originInstallation?: OriginInstallation | null;
   teamSamlConfig?: TeamSamlConfig | null;
   msTeamsWebhooks?: MsTeamsWebhook[];
   discordWebhooks?: DiscordWebhook[];
