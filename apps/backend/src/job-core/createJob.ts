@@ -81,53 +81,88 @@ type JobContext = {
   logger: Logger;
 };
 
-// Shared AMQP channels, one per direction, shared across every createJob
-// instance in the process. Keeping channels in singletons keeps the per-
-// connection channel count constant regardless of how many job types we
-// register, which is what stops us tripping RabbitMQ's channel_max limit.
-type ChannelDirection = "publisher" | "consumer";
-const sharedChannels = new Map<ChannelDirection, Promise<Channel>>();
-const sharedChannelLogger = parentLogger.child({ module: "job", shared: true });
+// amqplib emits "error" on a channel before closing it, and an EventEmitter
+// with no "error" listener throws. Termination observers detach theirs as soon
+// as they settle, so keep one attached for the channel's whole life.
+function keepChannelErrorHandled(channel: Channel) {
+  channel.on("error", () => undefined);
+}
 
-function getSharedChannel(direction: ChannelDirection): Promise<Channel> {
-  const existing = sharedChannels.get(direction);
-  if (existing) {
-    return existing;
+// One publisher channel for the whole process: it holds no consumer, so nothing
+// about it grows with the number of registered job types.
+const publisherLogger = parentLogger.child({
+  module: "job",
+  shared: true,
+  channelType: "publisher",
+});
+let publisherChannel: Promise<Channel> | null = null;
+
+function getPublisherChannel(): Promise<Channel> {
+  if (publisherChannel) {
+    return publisherChannel;
   }
-  const channelLogger = sharedChannelLogger.child({ channelType: direction });
   const promise = pRetry(
     async () => {
-      channelLogger.info("Creating shared channel");
+      publisherLogger.info("Creating publisher channel");
       const connection = await connect();
       const channel = await connection.createChannel();
-      // Allow many subscribers (one per job type) without triggering Node's
-      // MaxListenersExceededWarning.
+      keepChannelErrorHandled(channel);
+      // push() attaches a "drain" listener whenever a send is blocked, and
+      // every job in the process publishes through this one channel.
       channel.setMaxListeners(0);
       channel.once("close", () => {
-        channelLogger.info("Shared channel closed");
-        if (sharedChannels.get(direction) === promise) {
-          sharedChannels.delete(direction);
+        publisherLogger.info("Publisher channel closed");
+        if (publisherChannel === promise) {
+          publisherChannel = null;
         }
       });
-      channelLogger.info("Shared channel created");
+      publisherLogger.info("Publisher channel created");
       return channel;
     },
     {
       onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
-        channelLogger.info(
+        publisherLogger.info(
           { error, attemptNumber, retriesLeft },
-          "Shared channel creation attempt failed",
+          "Publisher channel creation attempt failed",
         );
       },
     },
   );
-  sharedChannels.set(direction, promise);
+  publisherChannel = promise;
   promise.catch(() => {
-    if (sharedChannels.get(direction) === promise) {
-      sharedChannels.delete(direction);
+    if (publisherChannel === promise) {
+      publisherChannel = null;
     }
   });
   return promise;
+}
+
+/**
+ * Consumers get a channel each.
+ *
+ * A broker caps how many consumers one channel may hold — ours at ten — and
+ * answers a breach with a connection-level 530, which takes down every other
+ * consumer on the connection with it. Sharing a single consumer channel
+ * therefore capped how many job types the worker could register at all, and
+ * crossing that cap broke every job rather than the one registered last.
+ * Channels are the cheap resource here (`channel_max` is 2047), and one
+ * consumer per channel also makes `prefetch` — which applies to the next
+ * consumer started on the channel — unambiguous.
+ */
+async function createConsumerChannel(): Promise<Channel> {
+  const connection = await connect();
+  const channel = await connection.createChannel();
+  keepChannelErrorHandled(channel);
+  return channel;
+}
+
+async function closeChannel(channel: Channel): Promise<void> {
+  try {
+    await channel.close();
+  } catch {
+    // Already closed, which is the usual way out of the consume loop: the
+    // broker or the connection got there first.
+  }
 }
 
 // Track which queues have been asserted on each channel so we only pay the
@@ -157,36 +192,9 @@ function ensureQueueAsserted(
   return promise;
 }
 
-// channel.prefetch with global=false applies to the *next* consumer started
-// on the channel. With a shared consumer channel we have to serialize the
-// prefetch + consume pair per job, otherwise concurrent setup from different
-// jobs can interleave and one job's prefetch ends up applied to another
-// job's consumer.
-const consumerSetupChain = new WeakMap<Channel, Promise<unknown>>();
-
-function runConsumerSetup<T>(
-  channel: Channel,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const previous = consumerSetupChain.get(channel) ?? Promise.resolve();
-  const next = previous.then(fn, fn);
-  consumerSetupChain.set(
-    channel,
-    next.catch(() => undefined),
-  );
-  return next;
-}
-
-// One observer per shared channel exposes its terminal state as a promise
-// instead of each createJob attaching its own close/error listeners.
-const channelTerminations = new WeakMap<Channel, Promise<void>>();
-
+// Resolves when the channel closes, rejects when it errors.
 function observeChannelTermination(channel: Channel): Promise<void> {
-  const existing = channelTerminations.get(channel);
-  if (existing) {
-    return existing;
-  }
-  const promise = new Promise<void>((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const onClose = () => {
       channel.off("error", onError);
       resolve();
@@ -198,8 +206,6 @@ function observeChannelTermination(channel: Channel): Promise<void> {
     channel.once("close", onClose);
     channel.once("error", onError);
   });
-  channelTerminations.set(channel, promise);
-  return promise;
 }
 
 export const createJob = <TValue extends string | number>(
@@ -224,7 +230,7 @@ export const createJob = <TValue extends string | number>(
   return {
     queue,
     async push(...values) {
-      const channel = await getSharedChannel("publisher");
+      const channel = await getPublisherChannel();
       await ensureQueueAsserted(channel, queue);
       const valuesSet = new Set(values);
       const sendOne = (value: TValue) => {
@@ -276,125 +282,105 @@ export const createJob = <TValue extends string | number>(
         async (): Promise<void> => {
           logger.info("Initialize consuming");
 
-          const channel = await getSharedChannel("consumer");
-          await ensureQueueAsserted(channel, queue);
-          // Retries are published from this channel, so the delay queues have
-          // to exist here. Asserting them during setup surfaces a bad
-          // declaration at startup instead of when a job first fails.
-          await Promise.all(
-            retryLadder.map((tier) =>
-              ensureQueueAsserted(
-                channel,
-                getRetryQueueName(queue, tier),
-                getRetryQueueOptions(queue, tier),
+          const channel = await createConsumerChannel();
+
+          try {
+            await ensureQueueAsserted(channel, queue);
+            // Retries are published from this channel, so the delay queues have
+            // to exist here. Asserting them during setup surfaces a bad
+            // declaration at startup instead of when a job first fails.
+            await Promise.all(
+              retryLadder.map((tier) =>
+                ensureQueueAsserted(
+                  channel,
+                  getRetryQueueName(queue, tier),
+                  getRetryQueueOptions(queue, tier),
+                ),
               ),
-            ),
-          );
+            );
 
-          let consumerTag: string | null = null;
+            // Lets the consume callback signal a fatal error to the outer loop.
+            // The channel goes down with the loop iteration, so the consumer
+            // stops with it and `runForever` re-enters on a fresh one.
+            let signalConsumerFault!: (error: unknown) => void;
+            const consumerFault = new Promise<never>((_, reject) => {
+              signalConsumerFault = reject;
+            });
+            // Prevent an unhandled rejection if the channel terminates first.
+            consumerFault.catch(() => undefined);
 
-          // Lets the consume callback signal a fatal per-consumer error to the
-          // outer loop without taking down the shared channel. Racing this
-          // against channel termination ensures `runForever` re-registers a
-          // fresh consumer for this queue after a cancel.
-          let signalConsumerFault!: (error: unknown) => void;
-          const consumerFault = new Promise<never>((_, reject) => {
-            signalConsumerFault = reject;
-          });
-          // Prevent an unhandled rejection if the channel terminates first.
-          consumerFault.catch(() => undefined);
+            await channel.prefetch(prefetch);
+            logger.info("Consuming queue");
+            await channel.consume(queue, async (msg) => {
+              if (!msg) {
+                return;
+              }
 
-          const { consumerTag: tag } = await runConsumerSetup(
-            channel,
-            async () => {
-              await channel.prefetch(prefetch);
-              logger.info("Consuming queue");
-              return channel.consume(queue, async (msg) => {
-                if (!msg) {
+              try {
+                let payload: Payload<TValue>;
+
+                try {
+                  payload = parseMessage<TValue>(msg.content);
+                } catch (error) {
+                  channel.ack(msg);
+                  logger.error({ error }, "Invalid payload");
                   return;
                 }
 
+                const id = payload.args[0];
+                const consumeLogger = logger.child({ id });
+                const ctx = { logger: consumeLogger };
                 try {
-                  let payload: Payload<TValue>;
+                  await this.run(id, ctx);
+                  channel.ack(msg);
+                } catch (error) {
+                  const tier = getRetryTier(retryLadder, payload.attempts);
 
-                  try {
-                    payload = parseMessage<TValue>(msg.content);
-                  } catch (error) {
+                  if (checkIsRetryable(error) && tier) {
+                    consumeLogger.info(
+                      {
+                        error,
+                        attempts: payload.attempts,
+                        delay: tier.delay,
+                      },
+                      "Retrying job after backoff",
+                    );
+
+                    // Published to the delay queue rather than back to the
+                    // job queue: it waits there for the tier's TTL, then
+                    // RabbitMQ dead-letters it onto the job queue.
+                    channel.sendToQueue(
+                      getRetryQueueName(queue, tier),
+                      serializeMessage({
+                        args: payload.args,
+                        attempts: payload.attempts + 1,
+                      }),
+                      { persistent: true },
+                    );
+
                     channel.ack(msg);
-                    logger.error({ error }, "Invalid payload");
                     return;
                   }
 
-                  const id = payload.args[0];
-                  const consumeLogger = logger.child({ id });
-                  const ctx = { logger: consumeLogger };
-                  try {
-                    await this.run(id, ctx);
-                    channel.ack(msg);
-                  } catch (error) {
-                    const tier = getRetryTier(retryLadder, payload.attempts);
-
-                    if (checkIsRetryable(error) && tier) {
-                      consumeLogger.info(
-                        {
-                          error,
-                          attempts: payload.attempts,
-                          delay: tier.delay,
-                        },
-                        "Retrying job after backoff",
-                      );
-
-                      // Published to the delay queue rather than back to the
-                      // job queue: it waits there for the tier's TTL, then
-                      // RabbitMQ dead-letters it onto the job queue.
-                      channel.sendToQueue(
-                        getRetryQueueName(queue, tier),
-                        serializeMessage({
-                          args: payload.args,
-                          attempts: payload.attempts + 1,
-                        }),
-                        { persistent: true },
-                      );
-
-                      channel.ack(msg);
-                      return;
-                    }
-
-                    channel.ack(msg);
-                    consumeLogger.error(
-                      { error },
-                      "Error while processing job",
-                    );
-                    await pRetry(() =>
-                      consumer.error?.(payload.args[0], error, ctx),
-                    );
-                  }
-                } catch (error) {
-                  logger.info({ error }, "Error when processing message");
-                  if (consumerTag) {
-                    try {
-                      await channel.cancel(consumerTag);
-                    } catch (cancelError) {
-                      logger.info(
-                        { error: cancelError },
-                        "Error while trying to cancel consumer following error",
-                      );
-                    }
-                  }
-                  signalConsumerFault(error);
+                  channel.ack(msg);
+                  consumeLogger.error({ error }, "Error while processing job");
+                  await pRetry(() =>
+                    consumer.error?.(payload.args[0], error, ctx),
+                  );
                 }
-              });
-            },
-          );
-          consumerTag = tag;
+              } catch (error) {
+                logger.info({ error }, "Error when processing message");
+                signalConsumerFault(error);
+              }
+            });
 
-          // Resolves on channel close, rejects on channel error or on a
-          // per-consumer fault signalled from the consume callback. Either
-          // way pRetry / runForever re-enters and re-registers the consumer.
-          await Promise.race([
-            observeChannelTermination(channel),
-            consumerFault,
-          ]);
+            await Promise.race([
+              observeChannelTermination(channel),
+              consumerFault,
+            ]);
+          } finally {
+            await closeChannel(channel);
+          }
         },
         {
           onError: (error) => {
