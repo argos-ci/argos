@@ -7,7 +7,11 @@ import { BuildHotkeysDialogStateProvider } from "@/containers/Build/BuildHotkeys
 
 import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
-import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
+import {
+  getBuildKey,
+  getBuildOverviewURL,
+  useBuildParams,
+} from "./BuildParams";
 
 export function Component() {
   const params = useBuildParams();
@@ -34,7 +38,13 @@ export function Component() {
         <title>{`Build ${params.buildNumber} • ${params.projectName}`}</title>
       </Helmet>
       <BuildHotkeysDialogStateProvider>
-        <BuildPage params={params} />
+        {/*
+         * Keyed by the build, not by the route: jumping from one build of a
+         * commit to the next (the next-review prompt, the build switcher)
+         * stays on the same route, and React would keep the page mounted with
+         * the previous build's screenshot list, filters and prompts.
+         */}
+        <BuildPage key={getBuildKey(params)} params={params} />
         <BuildHotkeysDialog env="build" />
       </BuildHotkeysDialogStateProvider>
     </>

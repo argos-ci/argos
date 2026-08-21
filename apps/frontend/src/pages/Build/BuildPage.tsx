@@ -102,7 +102,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
              * way around: the dialog hosts a review form of its own, outside
              * `children`, and submitting from there raises the prompt too.
              */}
-            <BuildNextReviewDialogProvider buildNumber={params.buildNumber}>
+            <BuildNextReviewDialogProvider>
               <BuildReviewDialogProvider project={data?.project ?? null}>
                 <RejectCommentDialogProvider build={build}>
                   <div className="flex h-screen min-h-0 flex-col">
