@@ -28,9 +28,8 @@ const _BuildFragment = graphql(`
 function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   const { search, setSearch } = useSearchState();
   return (
-    // `pl-1.375` is the overview button's hairline plus its padding, so the
-    // magnifier lands exactly where the home icon was and the row does not
-    // shift when search takes it over.
+    // `pl-1` keeps the magnifier off the sidebar's edge, in line with the icons
+    // the list below starts its rows with.
     <div className="relative flex-1 pl-1">
       <SearchIcon className="text-low pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2" />
       <input
@@ -38,7 +37,12 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
         type="text"
         autoFocus
         placeholder="Find..."
-        className="text-default placeholder:text-low w-full bg-transparent pr-2 pl-6 text-xs leading-6 outline-hidden"
+        // `block` and `leading-6` make the field exactly as tall as a pill tab
+        // (24px), so the row search takes over keeps the height it has in tabs
+        // mode and its hairline stays level with the toolbar's. Left inline, the
+        // field would sit in a line box 2px taller than itself — the space under
+        // its baseline — and the whole row would grow by those 2px.
+        className="text-default placeholder:text-low block w-full bg-transparent pr-2 pl-6 text-xs leading-6 outline-hidden"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {
