@@ -1,6 +1,7 @@
 import {
   Build,
   GithubPullRequest,
+  OriginPullRequest,
   ScreenshotBucket,
   type BuildMode,
 } from "@/database/models";
@@ -82,11 +83,19 @@ function queryEligibleBaselineBuilds(args: {
           qb
             // An approved review exists
             .whereExists(Build.acceptedReviewQuery())
-            // Or the associated pull request is merged
+            // Or the associated pull request is merged, whichever provider
+            // it comes from.
             .orWhereExists(
               GithubPullRequest.query()
                 .whereRaw(
                   'builds."githubPullRequestId" = github_pull_requests."id"',
+                )
+                .where("merged", true),
+            )
+            .orWhereExists(
+              OriginPullRequest.query()
+                .whereRaw(
+                  'builds."originPullRequestId" = origin_pull_requests."id"',
                 )
                 .where("merged", true),
             ),

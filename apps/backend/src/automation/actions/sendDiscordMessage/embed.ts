@@ -2,13 +2,14 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
-import { getRepositoryUrl } from "@/build/repository-url";
+import { getPullRequestUrl, getRepositoryUrl } from "@/build/repository-url";
 import { getStatsMessage } from "@/build/stats";
 import {
   Build,
   type Account,
   type BuildReview,
   type GithubPullRequest,
+  type OriginPullRequest,
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
@@ -71,7 +72,7 @@ function detailsFields(props: {
   build: Build;
   project: Project;
   compareScreenshotBucket: ScreenshotBucket | null;
-  pullRequest: GithubPullRequest | null;
+  pullRequest: GithubPullRequest | OriginPullRequest | null;
 }): DiscordEmbedField[] {
   const { build, compareScreenshotBucket, project, pullRequest } = props;
   const commit = compareScreenshotBucket?.commit;
@@ -81,10 +82,9 @@ function detailsFields(props: {
     : null;
   const branch = compareScreenshotBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
-  const pullRequestUrl =
-    repositoryURL && pullRequest
-      ? `${repositoryURL}/pull/${pullRequest.number}`
-      : null;
+  const pullRequestUrl = pullRequest
+    ? getPullRequestUrl(project, pullRequest)
+    : null;
   const branchUrl =
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : null;
   const commitUrl =
@@ -161,12 +161,14 @@ export async function buildDiscordEmbed(args: {
           githubAccount
         ]
         gitlabProject
+        originRepository
       ],
       pullRequest.[
         githubRepository.[
           githubAccount
         ]
       ]
+      originPullRequest
     ]
   `),
     message.event === "build.completed"
@@ -203,7 +205,7 @@ export async function buildDiscordEmbed(args: {
     build,
     project: richBuild.project,
     compareScreenshotBucket: message.payload.compareScreenshotBucket,
-    pullRequest: richBuild.pullRequest ?? null,
+    pullRequest: richBuild.pullRequest ?? richBuild.originPullRequest ?? null,
   });
 
   return {
