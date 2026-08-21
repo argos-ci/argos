@@ -33,37 +33,47 @@ type Dimensions = { width: number; height: number };
  * Everything a reviewer does with a diff mask, in one cluster: show or hide it,
  * step through the areas it marks, and restyle it.
  *
- * Shared by the build's diff toolbar and the media share page's compare toolbar.
- * The two surfaces run the same engine over comparable images and produce the
- * same kind of answer, so a reviewer who learned the controls on a build finds
- * them — and their shortcuts — unchanged on a before/after pair.
+ * Shared by the build's snapshot actions bar and the media share page's compare
+ * toolbar. The two surfaces run the same engine over comparable images and
+ * produce the same kind of answer, so a reviewer who learned the controls on a
+ * build finds them — and their shortcuts — unchanged on a before/after pair.
  *
  * Renders a fragment rather than its own row: each toolbar owns its separators
  * and spacing.
  */
-export const ChangesOverlayControls = memo(function ChangesOverlayControls() {
-  const { loading } = useBuildDiffHighlighterContext();
-  return (
-    <>
-      <OverlayToggle />
-      {/*
-       * All three enable together, once the changed areas have been detected —
-       * so the group is what is busy until then, not any one button. It also has
-       * to be the group because React Aria drops unknown ARIA props off the DOM
-       * node, `aria-busy` among them, and `ButtonGroup` is a plain div.
-       *
-       * Beyond announcing the wait, this is what makes Argos hold the screenshot
-       * until the answer is in, instead of catching the buttons disabled.
-       */}
-      <ButtonGroup aria-busy={loading}>
-        <GoToPreviousChangesButton />
-        <HighlightButton />
-        <GoToNextChangesButton />
-      </ButtonGroup>
-      <SettingsButton />
-    </>
-  );
-});
+export const ChangesOverlayControls = memo(
+  function ChangesOverlayControls(props: {
+    /**
+     * Whether the overlay style settings belong in this cluster. The build page
+     * keeps them in the top bar instead — how the mask is painted is a
+     * preference about the pane, not something done to the snapshot.
+     */
+    settings?: boolean;
+  }) {
+    const { settings = true } = props;
+    const { loading } = useBuildDiffHighlighterContext();
+    return (
+      <>
+        <OverlayToggle />
+        {/*
+         * All three enable together, once the changed areas have been detected —
+         * so the group is what is busy until then, not any one button. It also has
+         * to be the group because React Aria drops unknown ARIA props off the DOM
+         * node, `aria-busy` among them, and `ButtonGroup` is a plain div.
+         *
+         * Beyond announcing the wait, this is what makes Argos hold the screenshot
+         * until the answer is in, instead of catching the buttons disabled.
+         */}
+        <ButtonGroup aria-busy={loading}>
+          <GoToPreviousChangesButton />
+          <HighlightButton />
+          <GoToNextChangesButton />
+        </ButtonGroup>
+        {settings && <SettingsButton />}
+      </>
+    );
+  },
+);
 
 /**
  * The mask, painted in the reviewer's overlay colour.

@@ -14,16 +14,34 @@ import { CommentsEnabledContext } from "./CommentsContext";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
 import { FitToggle } from "./toolbar/FitToggle";
+import { SettingsButton } from "./toolbar/SettingsButton";
 import { ViewToggle } from "./toolbar/ViewToggle";
 
 interface BuildDiffDetailToolbarProps {
   diff: BuildDiffDetailDocument;
   fitControls?: React.ReactNode;
+  /**
+   * Whether the controls that act on the snapshot itself belong in this bar —
+   * reading its mask, walking its changes, commenting on it. The build page
+   * renders them in the actions bar under the snapshot instead, where what
+   * they act on is; this bar keeps how the pane is laid out.
+   */
+  snapshotControls?: boolean;
   children?: React.ReactNode;
 }
 
+/** Whether the diff has a mask, and so overlay controls to go with it. */
+export function checkDiffHasChangesOverlay(
+  diff: BuildDiffDetailDocument,
+): boolean {
+  return (
+    diff.status === ScreenshotDiffStatus.Changed ||
+    diff.status === ScreenshotDiffStatus.Ignored
+  );
+}
+
 /** Whether point comments can be placed on this diff's changes image. */
-function checkCanCommentOnDiff(diff: BuildDiffDetailDocument): boolean {
+export function checkCanCommentOnDiff(diff: BuildDiffDetailDocument): boolean {
   switch (diff.status) {
     case ScreenshotDiffStatus.Changed:
     case ScreenshotDiffStatus.Ignored:
@@ -52,10 +70,8 @@ function checkCanCommentOnTextDiff(diff: BuildDiffDetailDocument): boolean {
 }
 
 export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
-  const { diff, children, fitControls } = props;
-  const shouldShowToolbarControls =
-    diff.status === ScreenshotDiffStatus.Changed ||
-    diff.status === ScreenshotDiffStatus.Ignored;
+  const { diff, children, fitControls, snapshotControls = true } = props;
+  const showOverlayControls = checkDiffHasChangesOverlay(diff);
 
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
@@ -76,16 +92,18 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
       <FitToggle />
       {fitControls}
-      {shouldShowToolbarControls && (
+      {showOverlayControls && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
-          <ChangesOverlayControls />
+          {/* Reading the mask happens next to the snapshot; how it is painted
+              is a preference, and preferences live up here. */}
+          {snapshotControls ? <ChangesOverlayControls /> : <SettingsButton />}
         </>
       )}
       {showComments && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
-          {showCommentTool && <CommentToolToggle />}
+          {showCommentTool && snapshotControls && <CommentToolToggle />}
           <CommentsVisibilityToggle />
         </>
       )}
