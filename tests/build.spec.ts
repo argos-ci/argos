@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { BuildReview } from "../apps/backend/src/database/models";
+import {
+  BuildReview,
+  ScreenshotDiff,
+} from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createFallbackBaselineScenario,
@@ -231,6 +234,20 @@ loggedTest(
     // The prompt belongs to the build it was raised on: it must not survive
     // the jump and keep pointing at the build the reviewer just left.
     await expect(dialog).toBeHidden();
+
+    // Landing on the next build means reviewing *its* snapshots: starting the
+    // review has to open a snapshot of the build being looked at, not one the
+    // previous build left in the list.
+    const storybookDiff = await ScreenshotDiff.query()
+      .findOne({ buildId: storybookBuild.id })
+      .throwIfNotFound();
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${storybookBuild.number}/${storybookDiff.id}$`),
+    );
+    await expect(page.getByRole("heading", { name: "home.png" })).toBeVisible();
   },
 );
 

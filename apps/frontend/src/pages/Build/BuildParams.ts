@@ -67,6 +67,16 @@ export function getBuildParams(build: {
   };
 }
 
+/**
+ * Identity of a build, independent of the snapshot being looked at. Keys the
+ * build page: React reuses a route component across a param change, and
+ * everything the page holds — the screenshot list, the filters, the snapshot
+ * it opened on — belongs to one build.
+ */
+export function getBuildKey(params: BuildParams): string {
+  return `${params.accountSlug}/${params.projectName}/${params.buildNumber}`;
+}
+
 export function getBuildURL(params: BuildParams): string {
   return `${getProjectURL(params)}/builds/${params.buildNumber}${params.diffId ? `/${params.diffId}` : ""}`;
 }
