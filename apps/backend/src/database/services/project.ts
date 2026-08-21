@@ -141,11 +141,7 @@ export function queryAccountProjects(args: {
 }
 
 /** Where a project creation originated, used in the creation notification. */
-export type ProjectCreationSource =
-  | "GitHub"
-  | "GitLab"
-  | "Cursor Origin"
-  | null;
+export type ProjectCreationSource = "GitHub" | "GitLab" | null;
 
 /**
  * Create a project owned by the given account.

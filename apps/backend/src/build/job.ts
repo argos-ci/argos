@@ -8,7 +8,6 @@ import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
-import { originPullRequestJob } from "@/origin-pull-request/job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { updateStripeUsage } from "@/stripe";
 import { redisLock } from "@/util/redis";
@@ -113,15 +112,10 @@ async function syncGitlabProject(project: Project) {
 }
 
 export async function performBuild(build: Build) {
-  // Ensure that the pull request has been processed
+  // Ensure that the GitHub pull request has been processed
   // to be sure we get the base branch name.
   if (build.githubPullRequestId) {
     await githubPullRequestJob.run(build.githubPullRequestId, {
-      logger: logger.child({ module: "perform-build" }),
-    });
-  }
-  if (build.originPullRequestId) {
-    await originPullRequestJob.run(build.originPullRequestId, {
       logger: logger.child({ module: "perform-build" }),
     });
   }

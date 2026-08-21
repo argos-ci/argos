@@ -135,8 +135,6 @@ export const typeDefs = gql`
     msTeamsWebhooks: [MsTeamsWebhook!]!
     discordWebhooks: [DiscordWebhook!]!
     githubAccount: GithubAccount
-    originInstallation: OriginInstallation
-    originInstallUrl: String
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
     blockWhenSpendLimitIsReached: Boolean!

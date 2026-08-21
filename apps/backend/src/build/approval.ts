@@ -109,9 +109,6 @@ function getPreviousBuildsQuery(args: {
   if (build.githubPullRequestId) {
     buildQuery.where("builds.githubPullRequestId", build.githubPullRequestId);
   }
-  if (build.originPullRequestId) {
-    buildQuery.where("builds.originPullRequestId", build.originPullRequestId);
-  }
 
   return buildQuery;
 }

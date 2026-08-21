@@ -87,29 +87,6 @@ const UnlinkGitlabProjectMutation = graphql(`
   }
 `);
 
-const LinkOriginRepositoryMutation = graphql(`
-  mutation ProjectGitRepository_linkOriginRepository(
-    $projectId: ID!
-    $originRepositoryId: ID!
-  ) {
-    linkOriginRepository(
-      input: { projectId: $projectId, originRepositoryId: $originRepositoryId }
-    ) {
-      id
-      ...ProjectGitRepository_Project
-    }
-  }
-`);
-
-const UnlinkOriginRepositoryMutation = graphql(`
-  mutation ProjectGitRepository_unlinkOriginRepository($projectId: ID!) {
-    unlinkOriginRepository(input: { projectId: $projectId }) {
-      id
-      ...ProjectGitRepository_Project
-    }
-  }
-`);
-
 const UpdateEnablePrCommentMutation = graphql(`
   mutation ProjectGitRepository_updateEnablePrComment(
     $projectId: ID!
@@ -182,35 +159,6 @@ const UnlinkGitlabProjectButton = (props: {
   );
 };
 
-const UnlinkOriginRepositoryButton = (props: {
-  project: ProjectGitRepository_ProjectFragment;
-}) => {
-  const client = useApolloClient();
-  const unlink = () =>
-    client.mutate({
-      mutation: UnlinkOriginRepositoryMutation,
-      variables: {
-        projectId: props.project.id,
-      },
-      optimisticResponse: {
-        unlinkOriginRepository: {
-          id: props.project.id,
-          repository: null,
-        } as ProjectGitRepository_ProjectFragment,
-      },
-    });
-  return (
-    <Button
-      variant="secondary"
-      onClick={() => {
-        unlink().catch(() => {});
-      }}
-    >
-      Disconnect
-    </Button>
-  );
-};
-
 const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
   const [linkGithubRepository, { loading: linkGithubRepositoryLoading }] =
     useMutation(LinkGithubRepositoryMutation, {
@@ -236,22 +184,7 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
         } as ProjectGitRepository_ProjectFragment,
       },
     });
-  const [linkOriginRepository, { loading: linkOriginRepositoryLoading }] =
-    useMutation(LinkOriginRepositoryMutation, {
-      optimisticResponse: {
-        linkOriginRepository: {
-          id: props.projectId,
-          repository: {
-            __typename: "OriginRepository",
-            id: "new",
-          },
-        } as ProjectGitRepository_ProjectFragment,
-      },
-    });
-  const loading =
-    linkGithubRepositoryLoading ||
-    linkGitlabProjectLoading ||
-    linkOriginRepositoryLoading;
+  const loading = linkGithubRepositoryLoading || linkGitlabProjectLoading;
   return (
     <ConnectRepository
       variant="link"
@@ -274,16 +207,6 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
           variables: {
             projectId: props.projectId,
             gitlabProjectId: project.id,
-          },
-        }).catch((error) => {
-          toast.error(getErrorMessage(error));
-        });
-      }}
-      onSelectOriginRepository={(repository) => {
-        linkOriginRepository({
-          variables: {
-            projectId: props.projectId,
-            originRepositoryId: repository.id,
           },
         }).catch((error) => {
           toast.error(getErrorMessage(error));
@@ -366,8 +289,6 @@ export const ProjectGitRepository = (props: {
                     return <UnlinkGithubRepositoryButton project={project} />;
                   case "GitlabProject":
                     return <UnlinkGitlabProjectButton project={project} />;
-                  case "OriginRepository":
-                    return <UnlinkOriginRepositoryButton project={project} />;
                   default:
                     return null;
                 }
@@ -393,8 +314,7 @@ export const ProjectGitRepository = (props: {
           </Card>
         )}
       </CardBody>
-      {(project.repository?.__typename === "GithubRepository" ||
-        project.repository?.__typename === "OriginRepository") && (
+      {project.repository?.__typename === "GithubRepository" && (
         <GitOptionsForm project={project} />
       )}
     </Card>

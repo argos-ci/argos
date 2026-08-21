@@ -61,7 +61,6 @@ const PullRequestStatusIcon = (props: {
 
 const _PullRequestInfoFragment = graphql(`
   fragment PullRequestInfo_PullRequest on PullRequest {
-    __typename
     title
     draft
     merged
@@ -86,12 +85,9 @@ function PullRequestInfo(props: {
   pullRequest: DocumentType<typeof _PullRequestInfoFragment>;
 }) {
   const { pullRequest } = props;
-  if (!pullRequest.title || !pullRequest.date) {
+  if (!pullRequest.title || !pullRequest.date || !pullRequest.creator) {
     return null;
   }
-  // Only GitHub tells who opened the pull request.
-  const creator =
-    pullRequest.__typename === "GithubPullRequest" ? pullRequest.creator : null;
   return (
     <div className="flex gap-2">
       <div className="mt-1 flex shrink-0">
@@ -138,18 +134,14 @@ function PullRequestInfo(props: {
             return (
               <>
                 {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
-                <Time date={pullRequest.date} tooltip="title" />
-                {creator && (
-                  <>
-                    {" "}
-                    by
-                    <ImageAvatar
-                      src={`https://github.com/${creator.login}.png?size=32`}
-                      className="size-4 shrink-0"
-                    />
-                    <span>{creator.name || creator.login}</span>
-                  </>
-                )}
+                <Time date={pullRequest.date} tooltip="title" /> by
+                <ImageAvatar
+                  src={`https://github.com/${pullRequest.creator.login}.png?size=32`}
+                  className="size-4 shrink-0"
+                />
+                <span>
+                  {pullRequest.creator.name || pullRequest.creator.login}
+                </span>
               </>
             );
           })()}
@@ -169,7 +161,9 @@ function PullRequestInfoTooltip(props: {
       variant="info"
       disableHoverableContent={false}
       content={
-        !pullRequest.title || !pullRequest.date ? null : (
+        !pullRequest.title ||
+        !pullRequest.date ||
+        !pullRequest.creator ? null : (
           <PullRequestInfo pullRequest={props.pullRequest} />
         )
       }

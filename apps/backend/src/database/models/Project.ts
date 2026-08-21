@@ -20,7 +20,6 @@ import { Account } from "./Account";
 import { Build } from "./Build";
 import { GithubRepository } from "./GithubRepository";
 import { GitlabProject } from "./GitlabProject";
-import { OriginRepository } from "./OriginRepository";
 import { ProjectUser } from "./ProjectUser";
 import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
@@ -137,7 +136,6 @@ export class Project extends Model {
           accountId: { type: "string" },
           githubRepositoryId: { type: ["null", "string"] },
           gitlabProjectId: { type: ["null", "string"] },
-          originRepositoryId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
           githubActionsOidcEnabled: { type: "boolean" },
           tokenlessAuthEnabled: { type: "boolean" },
@@ -187,7 +185,6 @@ export class Project extends Model {
   accountId!: string;
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
-  originRepositoryId!: string | null;
   prCommentEnabled!: boolean;
   githubActionsOidcEnabled!: boolean;
   tokenlessAuthEnabled!: boolean;
@@ -262,14 +259,6 @@ export class Project extends Model {
           to: "gitlab_projects.id",
         },
       },
-      originRepository: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: OriginRepository,
-        join: {
-          from: "projects.originRepositoryId",
-          to: "origin_repositories.id",
-        },
-      },
     };
   }
 
@@ -277,7 +266,6 @@ export class Project extends Model {
   account?: Account;
   githubRepository?: GithubRepository | null;
   gitlabProject?: GitlabProject | null;
-  originRepository?: OriginRepository | null;
 
   override async $beforeInsert(queryContext: QueryContext) {
     await super.$beforeInsert(queryContext);
@@ -406,7 +394,6 @@ export class Project extends Model {
       return !this.gitlabProject.private;
     }
 
-    // Origin repositories are never public.
     return false;
   }
 
@@ -422,20 +409,14 @@ export class Project extends Model {
    * Get the default repository branch or fallback to "main".
    */
   async $getDefaultGitRepoBranch() {
-    await this.$fetchGraph(
-      "[githubRepository, gitlabProject, originRepository]",
-      {
-        skipFetched: true,
-      },
-    );
+    await this.$fetchGraph("[githubRepository, gitlabProject]", {
+      skipFetched: true,
+    });
     if (this.githubRepository) {
       return this.githubRepository.defaultBranch;
     }
     if (this.gitlabProject) {
       return this.gitlabProject.defaultBranch;
-    }
-    if (this.originRepository) {
-      return this.originRepository.defaultBranch;
     }
     return "main";
   }

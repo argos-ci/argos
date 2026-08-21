@@ -1,4 +1,3 @@
-import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
@@ -9,31 +8,6 @@ import { Build } from "@/database/models/Build";
 import type { BuildNotification } from "@/database/models/BuildNotification";
 import { UnretryableError } from "@/job-core/error";
 
-/**
- * The notification type describing a build in its current state, what a
- * consumer catching up on a build should be told.
- */
-export function getBuildNotificationTypeFromBuildStatus(
-  buildStatus: BuildAggregatedStatus,
-): BuildNotification["type"] | null {
-  switch (buildStatus) {
-    case "accepted":
-      return "diff-accepted";
-    case "rejected":
-      return "diff-rejected";
-    case "changes-detected":
-      return "diff-detected";
-    case "pending":
-      return "queued";
-    case "progress":
-      return "progress";
-    case "no-changes":
-      return "no-diff-detected";
-    default:
-      return null;
-  }
-}
-
 export const NotificationPayloadSchema = z.object({
   description: z.string(),
   context: z.string(),
@@ -43,10 +17,6 @@ export const NotificationPayloadSchema = z.object({
   gitlab: z.object({
     state: z.enum(["pending", "running", "success", "failed", "canceled"]),
   }),
-  origin: z.object({
-    status: z.enum(["queued", "in_progress", "completed"]),
-    conclusion: z.enum(["success", "failure"]).nullable(),
-  }),
   url: z.url(),
 });
 export type NotificationPayload = z.infer<typeof NotificationPayloadSchema>;
@@ -55,11 +25,7 @@ export type NotificationPayload = z.infer<typeof NotificationPayloadSchema>;
  * Check if the project has a sibling project with the same repository.
  */
 async function checkHasSiblingProject(project: Project): Promise<boolean> {
-  if (
-    !project.githubRepositoryId &&
-    !project.gitlabProjectId &&
-    !project.originRepositoryId
-  ) {
+  if (!project.githubRepositoryId && !project.gitlabProjectId) {
     return false;
   }
 
@@ -71,10 +37,6 @@ async function checkHasSiblingProject(project: Project): Promise<boolean> {
 
   if (project.gitlabProjectId) {
     query.orWhere("gitlabProjectId", project.gitlabProjectId);
-  }
-
-  if (project.originRepositoryId) {
-    query.orWhere("originRepositoryId", project.originRepositoryId);
   }
 
   const projectCount = await query.resultSize();
@@ -113,14 +75,12 @@ export function getNotificationStates(args: {
 }): {
   github: NotificationPayload["github"]["state"];
   gitlab: NotificationPayload["gitlab"]["state"];
-  origin: NotificationPayload["origin"];
 } {
   const { buildNotificationType, buildType } = args;
   if (buildType === "skipped") {
     return {
       github: "success",
       gitlab: "success",
-      origin: { status: "completed", conclusion: "success" },
     };
   }
   const isAutoApproved = buildType === "reference";
@@ -129,45 +89,36 @@ export function getNotificationStates(args: {
       return {
         github: "pending",
         gitlab: "pending",
-        origin: { status: "queued", conclusion: null },
       };
     }
     case "progress": {
       return {
         github: "pending",
         gitlab: "running",
-        origin: { status: "in_progress", conclusion: null },
       };
     }
     case "no-diff-detected": {
       return {
         github: "success",
         gitlab: "success",
-        origin: { status: "completed", conclusion: "success" },
       };
     }
     case "diff-detected": {
       return {
         github: isAutoApproved ? "success" : "failure",
         gitlab: isAutoApproved ? "success" : "failed",
-        origin: {
-          status: "completed",
-          conclusion: isAutoApproved ? "success" : "failure",
-        },
       };
     }
     case "diff-accepted": {
       return {
         github: "success",
         gitlab: "success",
-        origin: { status: "completed", conclusion: "success" },
       };
     }
     case "diff-rejected": {
       return {
         github: "failure",
         gitlab: "failed",
-        origin: { status: "completed", conclusion: "failure" },
       };
     }
     default: {
@@ -267,7 +218,6 @@ export async function getNotificationPayload(args: {
     gitlab: {
       state: states.gitlab,
     },
-    origin: states.origin,
     url: buildUrl,
   };
 }
