@@ -432,7 +432,6 @@ function ChangesExplorer(props: {
                 <BuildDiffDetail
                   build={activeChange.stats.lastSeenDiff.build}
                   diff={activeChange.stats.lastSeenDiff}
-                  repoUrl={null}
                 />
               </div>
             </CommentsEnabledContext>

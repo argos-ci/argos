@@ -110,7 +110,7 @@ buildExamples.forEach((build) => {
       await expect(page).toHaveURL(
         new RegExp(`/builds/${number}/(?!overview)[^/]+$`),
       );
-      await expect(page.getByText(`Changes from`)).toBeVisible();
+      await expect(page.getByText("Changes", { exact: true })).toBeVisible();
     }
     await screenshot(page, `build-${build.name}`, {
       replacements: {

@@ -157,9 +157,7 @@ export function BuildWorkspace(props: {
                       return <BuildOverview build={build} repoUrl={repoUrl} />;
                     }
 
-                    return (
-                      build && <BuildDetail build={build} repoUrl={repoUrl} />
-                    );
+                    return build && <BuildDetail build={build} />;
                 }
               })()}
               <RightSidebar
@@ -203,12 +201,9 @@ function Toolbar() {
   );
 }
 
-function BuildDetail(props: {
-  build: DocumentType<typeof _BuildFragment>;
-  repoUrl: string | null;
-}) {
+function BuildDetail(props: { build: DocumentType<typeof _BuildFragment> }) {
   const { activeDiff, ariaDiff } = useBuildDiffState();
-  const { build, repoUrl } = props;
+  const { build } = props;
   const snapshotType = useAtomValue(snapshotTypeAtom);
   const shownDiff = snapshotType === "aria" && ariaDiff ? ariaDiff : activeDiff;
   return (
@@ -216,7 +211,7 @@ function BuildDetail(props: {
     // rather than scroll away with a full-page snapshot, and `pb-14` to leave
     // it a gutter of its own instead of covering the foot of the snapshot.
     <div className="relative flex min-h-0 min-w-0 flex-1 pb-14">
-      <BuildDiffDetail build={build} diff={shownDiff} repoUrl={repoUrl} />
+      <BuildDiffDetail build={build} diff={shownDiff} />
       {activeDiff ? (
         <ScreenshotActionsToolbar
           diff={activeDiff}
