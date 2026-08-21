@@ -377,7 +377,10 @@ function BuildScreenshotHeader(props: {
         disableHoverableContent={false}
         content={props.details}
       >
-        <div tabIndex={0} className="text-xs leading-6 font-medium select-none">
+        <div
+          tabIndex={0}
+          className="underline-emphasis text-xs leading-6 font-medium select-none"
+        >
           {props.label}
         </div>
       </Tooltip>
@@ -445,11 +448,19 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
       )}
       {build.baseBranch && (
         <ScreenshotHeaderDetail label="Branch">
-          <BranchLink repoUrl={repoUrl} branch={build.baseBranch} />
+          <BranchLink
+            repoUrl={repoUrl}
+            branch={build.baseBranch}
+            externalIcon={false}
+          />
         </ScreenshotHeaderDetail>
       )}
       <ScreenshotHeaderDetail label="Commit">
-        <CommitLink repoUrl={repoUrl} commit={baseScreenshotBucket.commit} />
+        <CommitLink
+          repoUrl={repoUrl}
+          commit={baseScreenshotBucket.commit}
+          externalIcon={false}
+        />
       </ScreenshotHeaderDetail>
     </ScreenshotHeaderDetails>
   );
@@ -472,11 +483,19 @@ function ChangesDetails(props: { build: BuildFragmentDocument }) {
     <ScreenshotHeaderDetails>
       {build.branch && (
         <ScreenshotHeaderDetail label="Branch">
-          <BranchLink repoUrl={repoUrl} branch={build.branch} />
+          <BranchLink
+            repoUrl={repoUrl}
+            branch={build.branch}
+            externalIcon={false}
+          />
         </ScreenshotHeaderDetail>
       )}
       <ScreenshotHeaderDetail label="Commit">
-        <CommitLink repoUrl={repoUrl} commit={build.commit} />
+        <CommitLink
+          repoUrl={repoUrl}
+          commit={build.commit}
+          externalIcon={false}
+        />
       </ScreenshotHeaderDetail>
     </ScreenshotHeaderDetails>
   );
