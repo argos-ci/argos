@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { BuildReview } from "../apps/backend/src/database/models";
+import {
+  BuildReview,
+  ScreenshotDiff,
+} from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createFallbackBaselineScenario,
@@ -222,15 +225,27 @@ loggedTest(
       },
     });
 
-    await dialog
-      .getByRole("link", { name: `Review ${storybookBuild.name}` })
-      .click();
+    await dialog.getByRole("link", { name: "Review next build" }).click();
     await expect(page).toHaveURL(
       new RegExp(`/builds/${storybookBuild.number}/overview$`),
     );
     // The prompt belongs to the build it was raised on: it must not survive
     // the jump and keep pointing at the build the reviewer just left.
     await expect(dialog).toBeHidden();
+
+    // Landing on the next build means reviewing *its* snapshots: starting the
+    // review has to open a snapshot of the build being looked at, not one the
+    // previous build left in the list.
+    const storybookDiff = await ScreenshotDiff.query()
+      .findOne({ buildId: storybookBuild.id })
+      .throwIfNotFound();
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${storybookBuild.number}/${storybookDiff.id}$`),
+    );
+    await expect(page.getByRole("heading", { name: "home.png" })).toBeVisible();
   },
 );
 
@@ -238,7 +253,7 @@ loggedTest(
   "prompts for the next build from the review dialog too",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
-    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
+    const { defaultBuild } = await createSiblingBuildsScenario({
       projectId: project.id,
     });
 
@@ -262,7 +277,7 @@ loggedTest(
     const dialog = page.getByRole("dialog", { name: "Review the next build" });
     await expect(dialog).toBeVisible({ timeout: 15_000 });
     await expect(
-      dialog.getByRole("link", { name: `Review ${storybookBuild.name}` }),
+      dialog.getByRole("link", { name: "Review next build" }),
     ).toBeVisible();
   },
 );
