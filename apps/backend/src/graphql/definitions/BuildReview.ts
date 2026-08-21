@@ -25,7 +25,13 @@ import {
   type IResolvers,
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { resolveAgent } from "./Agent";
 
 const { gql } = gqlTag;
@@ -189,16 +195,24 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot approve or reject this build");
       }
 
-      await createBuildReview({
-        build,
-        userId: auth.user.id,
-        event: parseEvent(input.event),
-        body: (input.body ?? undefined) as JSONContent | undefined,
-        snapshotReviews: input.screenshotDiffReviews.map((diffReviewInput) => ({
-          screenshotDiffId: diffReviewInput.screenshotDiffId,
-          state: parseScreenshotDiffReviewState(diffReviewInput.state),
-        })),
-      });
+      try {
+        // Shared with the REST API — same input validation, so its client
+        // errors have to keep reading as client errors here too.
+        await createBuildReview({
+          build,
+          userId: auth.user.id,
+          event: parseEvent(input.event),
+          body: (input.body ?? undefined) as JSONContent | undefined,
+          snapshotReviews: input.screenshotDiffReviews.map(
+            (diffReviewInput) => ({
+              screenshotDiffId: diffReviewInput.screenshotDiffId,
+              state: parseScreenshotDiffReviewState(diffReviewInput.state),
+            }),
+          ),
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
 
       return build;
     },

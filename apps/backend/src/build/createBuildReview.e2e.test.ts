@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { test as base, describe, expect } from "vitest";
 
 import {
@@ -7,10 +8,12 @@ import {
   BuildReview,
   Comment,
   ScreenshotDiff,
+  ScreenshotDiffReview,
   User,
 } from "@/database/models";
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
+import { HTTPError } from "@/util/error";
 
 import { createBuildReview } from "./createBuildReview";
 
@@ -18,6 +21,7 @@ const test = base.extend<{
   user: User;
   build: Build;
   screenshotDiffs: ScreenshotDiff[];
+  otherBuildScreenshotDiff: ScreenshotDiff;
 }>({
   user: async ({}, use) => {
     await setupDatabase();
@@ -48,6 +52,20 @@ const test = base.extend<{
       },
     ]);
     await use(diffs);
+  },
+  otherBuildScreenshotDiff: async ({}, use) => {
+    const otherBuild = await factory.Build.create({
+      conclusion: "changes-detected",
+      jobStatus: "complete",
+    });
+    const screenshots = await factory.Screenshot.createMany(2);
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: otherBuild.id,
+      baseScreenshotId: screenshots[0]!.id,
+      compareScreenshotId: screenshots[1]!.id,
+      score: 0.5,
+    });
+    await use(diff);
   },
 });
 
@@ -161,6 +179,62 @@ describe("#createBuildReview", () => {
     );
     expect(byDiffId[screenshotDiffs[0]!.id]).toBe("rejected");
     expect(byDiffId[screenshotDiffs[1]!.id]).toBe("approved");
+  });
+
+  test("rejects the review when a reviewed diff belongs to another build", async ({
+    user,
+    build,
+    screenshotDiffs,
+    otherBuildScreenshotDiff,
+  }) => {
+    const error = await createBuildReview({
+      build,
+      userId: user.id,
+      event: "APPROVE",
+      snapshotReviews: [
+        { screenshotDiffId: screenshotDiffs[0]!.id, state: "approved" },
+        { screenshotDiffId: otherBuildScreenshotDiff.id, state: "approved" },
+      ],
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    invariant(error instanceof HTTPError, "expected an HTTP error");
+    expect(error.statusCode).toBe(400);
+    expect(error.message).toContain(otherBuildScreenshotDiff.id);
+
+    // All or nothing: the foreign id poisons the whole review rather than
+    // being dropped, so the valid one is not recorded either.
+    const reviews = await BuildReview.query().where({ buildId: build.id });
+    expect(reviews).toHaveLength(0);
+    const diffReviews = await ScreenshotDiffReview.query().whereIn(
+      "screenshotDiffId",
+      [screenshotDiffs[0]!.id, otherBuildScreenshotDiff.id],
+    );
+    expect(diffReviews).toHaveLength(0);
+  });
+
+  test("rejects the review when a reviewed diff does not exist", async ({
+    user,
+    build,
+  }) => {
+    const error = await createBuildReview({
+      build,
+      userId: user.id,
+      event: "APPROVE",
+      snapshotReviews: [{ screenshotDiffId: "999999999", state: "approved" }],
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    // Used to reach the insert and come back as a foreign-key violation.
+    invariant(error instanceof HTTPError, "expected an HTTP error");
+    expect(error.statusCode).toBe(400);
+
+    const reviews = await BuildReview.query().where({ buildId: build.id });
+    expect(reviews).toHaveLength(0);
   });
 
   test("attaches a comment when a body is provided", async ({

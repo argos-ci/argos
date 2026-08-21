@@ -15,6 +15,7 @@ import {
   Build,
   BuildReview,
   Comment,
+  ScreenshotDiff,
   ScreenshotDiffReview,
   User,
 } from "@/database/models";
@@ -72,6 +73,59 @@ function getBuildNotificationType(
   }
 }
 
+/**
+ * Number of offending ids named in the error message. A client can send
+ * hundreds of them, and the first few are enough to debug from.
+ */
+const MAX_REPORTED_INVALID_DIFF_IDS = 10;
+
+/**
+ * Check that every reviewed screenshot diff belongs to the build being
+ * reviewed.
+ *
+ * The client picks the diff ids, so nothing stops it from sending another
+ * build's — a frontend bug did exactly that, and the rows landed under the
+ * wrong build's review. Rejecting beats dropping the offending entries
+ * silently: an agent posting to `POST .../builds/{buildNumber}/reviews` with
+ * stale ids would otherwise get a 200 back for a review that recorded none of
+ * the decisions it made.
+ *
+ * Unknown ids fail here too, which is what we want — they used to reach the
+ * insert and come back as a foreign-key violation, i.e. a 500.
+ */
+async function assertSnapshotReviewsBelongToBuild(input: {
+  build: Build;
+  snapshotReviews: { screenshotDiffId: string }[];
+}): Promise<void> {
+  const { build, snapshotReviews } = input;
+
+  if (snapshotReviews.length === 0) {
+    return;
+  }
+
+  const diffIds = Array.from(
+    new Set(snapshotReviews.map((review) => review.screenshotDiffId)),
+  );
+  const buildDiffs = await ScreenshotDiff.query()
+    .select("id")
+    .where("buildId", build.id)
+    .whereIn("id", diffIds);
+
+  if (buildDiffs.length === diffIds.length) {
+    return;
+  }
+
+  const buildDiffIds = new Set(buildDiffs.map((diff) => diff.id));
+  const invalidIds = diffIds.filter((id) => !buildDiffIds.has(id));
+  const reportedIds = invalidIds.slice(0, MAX_REPORTED_INVALID_DIFF_IDS);
+  const omittedCount = invalidIds.length - reportedIds.length;
+
+  throw boom(
+    400,
+    `Some reviewed screenshot diffs do not belong to build ${build.number}: ${reportedIds.join(", ")}${omittedCount > 0 ? ` and ${omittedCount} more` : ""}`,
+  );
+}
+
 export async function createBuildReview(input: {
   build: Build;
   userId: string;
@@ -116,6 +170,8 @@ export async function createBuildReview(input: {
   if (body !== undefined && isCommentTooLarge(body)) {
     throw boom(400, "Comment is too large");
   }
+
+  await assertSnapshotReviewsBelongToBuild({ build, snapshotReviews });
 
   const state = getReviewStateFromEvent(event);
 

@@ -306,6 +306,45 @@ describe("createReview", () => {
       });
   });
 
+  test("returns 400 when a snapshot belongs to another build", async ({
+    project,
+    build,
+    screenshotDiffs,
+    scopedPatToken,
+  }) => {
+    const otherBuild = await factory.Build.create({
+      projectId: project.id,
+      conclusion: null,
+    });
+    const screenshots = await factory.Screenshot.createMany(2);
+    const otherDiff = await factory.ScreenshotDiff.create({
+      buildId: otherBuild.id,
+      baseScreenshotId: screenshots[0]!.id,
+      compareScreenshotId: screenshots[1]!.id,
+      score: 0.4,
+    });
+
+    // An agent reviewing with stale ids has to hear about it: a 200 here would
+    // report a review that recorded none of the decisions it sent.
+    await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        event: "APPROVE",
+        snapshots: [
+          { id: screenshotDiffs[0]!.id, conclusion: "APPROVE" },
+          { id: otherDiff.id, conclusion: "APPROVE" },
+        ],
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toContain(otherDiff.id);
+      });
+
+    const reviews = await BuildReview.query().where({ buildId: build.id });
+    expect(reviews).toHaveLength(0);
+  });
+
   test("returns 400 when neither event nor conclusion is provided", async ({
     build,
     scopedPatToken,
