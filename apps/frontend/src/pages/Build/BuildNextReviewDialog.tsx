@@ -189,7 +189,7 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
           href={getBuildOverviewURL(getBuildParams(nextBuild))}
           autoFocus
         >
-          Review {nextBuild.name}
+          Review next build
         </LinkButton>
       </DialogFooter>
     </Dialog>
