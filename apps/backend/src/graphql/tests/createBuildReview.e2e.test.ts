@@ -196,6 +196,67 @@ describe("GraphQL createBuildReview mutation", () => {
     expect(reviews).toHaveLength(0);
   });
 
+  test("rejects a review targeting another build's screenshot diff", async ({
+    fixture,
+  }) => {
+    const otherBuild = await factory.Build.create({
+      projectId: fixture.project.id,
+      conclusion: null,
+    });
+    const screenshots = await factory.Screenshot.createMany(2);
+    const otherDiff = await factory.ScreenshotDiff.create({
+      buildId: otherBuild.id,
+      baseScreenshotId: screenshots[0]!.id,
+      compareScreenshotId: screenshots[1]!.id,
+      score: 0.4,
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: fixture.userAccount.user!,
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+            mutation CreateBuildReview($input: CreateBuildReviewInput!) {
+              createBuildReview(
+                input: $input
+              ) {
+                status
+              }
+            }
+          `,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            event: "APPROVE",
+            screenshotDiffReviews: [
+              {
+                screenshotDiffId: fixture.screenshotDiffs[0]!.id,
+                state: "APPROVED",
+              },
+              { screenshotDiffId: otherDiff.id, state: "APPROVED" },
+            ],
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toContain(otherDiff.id);
+    // A client mistake, not a server fault: it must not page the team.
+    expect(res.body.errors[0].extensions.code).toBe("BAD_USER_INPUT");
+
+    const reviews = await BuildReview.query().where({
+      buildId: fixture.build.id,
+    });
+    expect(reviews).toHaveLength(0);
+  });
+
   test("returns an error if unauthorized", async ({ fixture }) => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
