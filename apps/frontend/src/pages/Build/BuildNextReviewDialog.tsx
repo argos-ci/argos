@@ -197,12 +197,6 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
           href={getBuildOverviewURL(getBuildParams(nextBuild))}
           autoFocus
         >
-          {/*
-           * Unnamed: the rows above are where a build is picked out, and they
-           * have two lines to do it with. Naming the first one here only
-           * raises the question of what the word means — `default` says
-           * nothing, and anything better takes a rule the reader has to infer.
-           */}
           Review next build
         </LinkButton>
       </DialogFooter>

@@ -51,6 +51,28 @@ dependency bumps, and internal fixes no user could ever observe. Do not use
 `style` — the formatter owns formatting, so the type has nothing left to
 describe.
 
+## Comments
+
+**A comment has to say something the code cannot.** A constraint coming from
+elsewhere in the system, a race, a workaround, a decision whose better-looking
+alternative is wrong — those earn their lines, and the codebase is full of
+them on purpose. Everything else is noise a reader wades through and a
+maintainer has to keep true.
+
+So do not write:
+
+- a restatement of the line below it — `// Review the next build` over a
+  button that reads "Review next build";
+- a defence of what is _not_ in the code. An approach considered and dropped
+  belongs in the pull request, where it is read once, not in the file, where
+  it is read forever;
+- an explanation of a name that is already clear, or a banner announcing a
+  section the structure already shows.
+
+Comment the part that is actually surprising, not the whole block around it.
+When the explanation keeps growing, the code usually wants a named function
+instead.
+
 ## TypeScript
 
 - Never use `!` (non-null assertion). Use `invariant` for required values.
