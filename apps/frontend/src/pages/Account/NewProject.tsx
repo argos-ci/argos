@@ -5,6 +5,7 @@ import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 
+import { useOriginEnabled } from "@/containers/Origin";
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
 import { Card } from "@/ui/Card";
@@ -105,6 +106,7 @@ type CreateProjectInputs = {
 function CreateProjectForm(props: { accountSlug: string }) {
   const navigate = useNavigate();
   const client = useApolloClient();
+  const originEnabled = useOriginEnabled();
   const form = useForm<CreateProjectInputs>({
     defaultValues: { name: "" },
   });
@@ -124,8 +126,9 @@ function CreateProjectForm(props: { accountSlug: string }) {
   return (
     <Form form={form} onSubmit={onSubmit}>
       <p className="text-low mb-4 text-sm">
-        Start with just a name. You can connect a GitHub, GitLab or Cursor
-        Origin repository later from your project settings.
+        Start with just a name. You can connect a{" "}
+        {originEnabled ? "GitHub, GitLab or Cursor Origin" : "GitHub or GitLab"}{" "}
+        repository later from your project settings.
       </p>
       <FormTextInput
         control={form.control}
