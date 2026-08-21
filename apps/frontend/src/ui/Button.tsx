@@ -22,7 +22,6 @@ export type ButtonVariant =
   | "destructive"
   | "github"
   | "gitlab"
-  | "origin"
   | "google";
 export type ButtonSize = "medium" | "small" | "large";
 
@@ -114,8 +113,6 @@ const variantClassNames: Record<ButtonVariant, string> = {
     "text-white bg-github enabled-hover:bg-github-hover enabled-active:bg-github-active on:bg-github-active",
   gitlab:
     "text-white bg-gitlab enabled-hover:bg-gitlab-hover enabled-active:bg-gitlab-active on:bg-gitlab-active",
-  origin:
-    "text-white bg-origin enabled-hover:bg-origin-hover enabled-active:bg-origin-active on:bg-origin-active",
   // The only fill that is the page color itself, so the hairline is the whole
   // of the button's shape — it takes the same gray as a quiet button rather
   // than the near-black the solid fills sit behind. It used to be a `ring-1`,
@@ -184,10 +181,6 @@ const ringClassNames: Record<
     focused: "focus:ring-default",
   },
   gitlab: {
-    focusVisible: "focus-visible:ring-default",
-    focused: "focus:ring-default",
-  },
-  origin: {
     focusVisible: "focus-visible:ring-default",
     focused: "focus:ring-default",
   },

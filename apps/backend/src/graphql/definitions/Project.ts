@@ -12,7 +12,6 @@ import {
   Deployment,
   GithubInstallation,
   GitlabProject,
-  OriginRepository,
   Project,
   Screenshot,
   User,
@@ -40,7 +39,6 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
-import { checkOriginEnabled } from "@/origin/access";
 import { HTTPError } from "@/util/error";
 import { safeParseTestId } from "@/util/test-id";
 
@@ -264,11 +262,6 @@ export const typeDefs = gql`
     accountSlug: String!
   }
 
-  input ImportOriginProjectInput {
-    originRepositoryId: ID!
-    accountSlug: String!
-  }
-
   input UpdateProjectInput {
     id: ID!
     defaultBaseBranch: String
@@ -308,15 +301,6 @@ export const typeDefs = gql`
   }
 
   input UnlinkGitlabProjectInput {
-    projectId: ID!
-  }
-
-  input LinkOriginRepositoryInput {
-    projectId: ID!
-    originRepositoryId: ID!
-  }
-
-  input UnlinkOriginRepositoryInput {
     projectId: ID!
   }
 
@@ -364,12 +348,6 @@ export const typeDefs = gql`
     linkGitlabProject(input: LinkGitlabProjectInput!): Project!
     "Unlink Gitlab Project"
     unlinkGitlabProject(input: UnlinkGitlabProjectInput!): Project!
-    "Import a Cursor Origin repository as a new project"
-    importOriginProject(input: ImportOriginProjectInput!): Project!
-    "Link a Cursor Origin repository to a project"
-    linkOriginRepository(input: LinkOriginRepositoryInput!): Project!
-    "Unlink the Cursor Origin repository of a project"
-    unlinkOriginRepository(input: UnlinkOriginRepositoryInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
     "Delete Project"
@@ -508,70 +486,6 @@ const importGitlabProject = async (props: {
     email: props.creator.email,
     account,
     source: "GitLab",
-  });
-
-  return project;
-};
-
-/**
- * Resolve an Origin repository the account's installation reaches. The account
- * only sees repositories through its installation, so a repository outside of
- * it is not the account's to link.
- */
-async function getAccountOriginRepository(props: {
-  account: Account;
-  originRepositoryId: string;
-}): Promise<OriginRepository> {
-  if (!props.account.originInstallationId) {
-    throw badUserInput("The account has no Cursor Origin installation");
-  }
-  if (!isValidPgBigInt(props.originRepositoryId)) {
-    throw badUserInput("Cursor Origin repository not found");
-  }
-  const repository = await OriginRepository.query()
-    .findById(props.originRepositoryId)
-    .where({ originInstallationId: props.account.originInstallationId });
-  if (!repository) {
-    throw badUserInput("Cursor Origin repository not found");
-  }
-  return repository;
-}
-
-const importOriginProject = async (props: {
-  accountSlug: string;
-  creator: User;
-  originRepositoryId: string;
-}) => {
-  const account = await Account.query()
-    .findOne({ slug: props.accountSlug })
-    .throwIfNotFound();
-
-  const permissions = await account.$getPermissions(props.creator);
-  if (!permissions.includes("admin")) {
-    throw forbidden();
-  }
-
-  const repository = await getAccountOriginRepository({
-    account,
-    originRepositoryId: props.originRepositoryId,
-  });
-
-  const name = await resolveProjectName({
-    name: repository.name,
-    accountId: account.id,
-  });
-
-  const project = await Project.query().insertAndFetch({
-    name,
-    accountId: account.id,
-    originRepositoryId: repository.id,
-  });
-
-  await notifyProjectCreation({
-    project,
-    email: props.creator.email,
-    account,
-    source: "Cursor Origin",
   });
 
   return project;
@@ -806,9 +720,6 @@ export const resolvers: IResolvers = {
       if (project.gitlabProjectId) {
         return ctx.loaders.GitlabProject.load(project.gitlabProjectId);
       }
-      if (project.originRepositoryId) {
-        return ctx.loaders.OriginRepository.load(project.originRepositoryId);
-      }
       return null;
     },
     defaultBaseBranch: async (project) => {
@@ -1003,19 +914,6 @@ export const resolvers: IResolvers = {
         installationId: args.input.installationId,
       });
     },
-    importOriginProject: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      if (!checkOriginEnabled(ctx.auth.user)) {
-        throw forbidden();
-      }
-      return importOriginProject({
-        accountSlug: args.input.accountSlug,
-        originRepositoryId: args.input.originRepositoryId,
-        creator: ctx.auth.user,
-      });
-    },
     importGitlabProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -1097,7 +995,6 @@ export const resolvers: IResolvers = {
       return project.$query().patchAndFetch({
         githubRepositoryId: ghRepo.id,
         gitlabProjectId: null,
-        originRepositoryId: null,
       });
     },
     unlinkGithubRepository: async (_root, args, ctx) => {
@@ -1135,7 +1032,6 @@ export const resolvers: IResolvers = {
       return project.$query().patchAndFetch({
         gitlabProjectId: gitlabProject.id,
         githubRepositoryId: null,
-        originRepositoryId: null,
       });
     },
     unlinkGitlabProject: async (_root, args, ctx) => {
@@ -1146,43 +1042,6 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch({
         gitlabProjectId: null,
-      });
-    },
-    linkOriginRepository: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      if (!checkOriginEnabled(ctx.auth.user)) {
-        throw forbidden();
-      }
-
-      const project = await getAdminProject({
-        id: args.input.projectId,
-        user: ctx.auth.user,
-        withGraphFetched: "account",
-      });
-
-      invariant(project.account, "account not fetched");
-
-      const repository = await getAccountOriginRepository({
-        account: project.account,
-        originRepositoryId: args.input.originRepositoryId,
-      });
-
-      return project.$query().patchAndFetch({
-        originRepositoryId: repository.id,
-        githubRepositoryId: null,
-        gitlabProjectId: null,
-      });
-    },
-    unlinkOriginRepository: async (_root, args, ctx) => {
-      const project = await getAdminProject({
-        id: args.input.projectId,
-        user: ctx.auth?.user,
-      });
-
-      return project.$query().patchAndFetch({
-        originRepositoryId: null,
       });
     },
     transferProject: async (_root, args, ctx) => {

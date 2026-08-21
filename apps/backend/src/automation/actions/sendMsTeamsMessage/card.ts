@@ -2,14 +2,13 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
-import { getPullRequestUrl, getRepositoryUrl } from "@/build/repository-url";
+import { getRepositoryUrl } from "@/build/repository-url";
 import { getStatsMessage } from "@/build/stats";
 import {
   Build,
   type Account,
   type BuildReview,
   type GithubPullRequest,
-  type OriginPullRequest,
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
@@ -97,7 +96,7 @@ function detailsBlock(props: {
   build: Build;
   project: Project;
   compareScreenshotBucket: ScreenshotBucket | null;
-  pullRequest: GithubPullRequest | OriginPullRequest | null;
+  pullRequest: GithubPullRequest | null;
 }): AdaptiveCardElement | null {
   const { build, compareScreenshotBucket, project, pullRequest } = props;
   const commit = compareScreenshotBucket?.commit;
@@ -107,9 +106,10 @@ function detailsBlock(props: {
     : null;
   const branch = compareScreenshotBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
-  const pullRequestUrl = pullRequest
-    ? getPullRequestUrl(project, pullRequest)
-    : null;
+  const pullRequestUrl =
+    repositoryURL && pullRequest
+      ? `${repositoryURL}/pull/${pullRequest.number}`
+      : null;
   const branchUrl =
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : null;
   const commitUrl =
@@ -185,14 +185,12 @@ export async function buildMsTeamsCard(args: {
           githubAccount
         ]
         gitlabProject
-        originRepository
       ],
       pullRequest.[
         githubRepository.[
           githubAccount
         ]
       ]
-      originPullRequest
     ]
   `),
     message.event === "build.completed"
@@ -225,7 +223,7 @@ export async function buildMsTeamsCard(args: {
     build,
     project: richBuild.project,
     compareScreenshotBucket: message.payload.compareScreenshotBucket,
-    pullRequest: richBuild.pullRequest ?? richBuild.originPullRequest ?? null,
+    pullRequest: richBuild.pullRequest ?? null,
   });
 
   if (details) {

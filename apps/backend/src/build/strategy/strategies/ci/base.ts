@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import {
   Build,
   type GithubPullRequest,
-  type OriginPullRequest,
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
@@ -17,20 +16,15 @@ import {
 } from "./query";
 import { GithubStrategy } from "./strategies/github";
 import { GitlabStrategy } from "./strategies/gitlab";
-import { OriginStrategy } from "./strategies/origin";
 import type { MergeBaseStrategy } from "./types";
 
-const gitProviders: MergeBaseStrategy<any>[] = [
-  GithubStrategy,
-  GitlabStrategy,
-  OriginStrategy,
-];
+const gitProviders: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 
 export type GetCIBaseArgs = {
   build: Build;
   compareScreenshotBucket: ScreenshotBucket;
   project: Project;
-  pullRequest: GithubPullRequest | OriginPullRequest | null;
+  pullRequest: GithubPullRequest | null;
   context: CIStrategyContext;
 };
 

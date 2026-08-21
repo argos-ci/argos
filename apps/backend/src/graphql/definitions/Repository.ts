@@ -22,8 +22,6 @@ export const resolvers: IResolvers = {
           return "GithubRepository";
         case "GitlabProject":
           return "GitlabProject";
-        case "OriginRepository":
-          return "OriginRepository";
         default:
           throw new Error(
             `Unknown repository type: ${repository.constructor.name}`,

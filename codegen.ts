@@ -63,10 +63,6 @@ const config: CodegenConfig = {
           GithubPullRequest: "../../database/models/index.js#GithubPullRequest",
           GithubRepository: "../../database/models/index.js#GithubRepository",
           GitlabProject: "../../database/models/index.js#GitlabProject",
-          OriginInstallation:
-            "../../database/models/index.js#OriginInstallation",
-          OriginPullRequest: "../../database/models/index.js#OriginPullRequest",
-          OriginRepository: "../../database/models/index.js#OriginRepository",
           GitlabUser: "../../database/models/index.js#GitlabUser",
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",

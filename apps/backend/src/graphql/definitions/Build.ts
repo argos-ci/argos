@@ -376,13 +376,10 @@ export const resolvers: IResolvers = {
       return compareBucket.branch || null;
     },
     pullRequest: async (build, _args, ctx) => {
-      if (build.githubPullRequestId) {
-        return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
+      if (!build.githubPullRequestId) {
+        return null;
       }
-      if (build.originPullRequestId) {
-        return ctx.loaders.OriginPullRequest.load(build.originPullRequestId);
-      }
-      return null;
+      return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
     },
     parallel: (build) => {
       if (build.batchCount !== null && build.externalId !== null) {
@@ -551,9 +548,7 @@ export const resolvers: IResolvers = {
             ctx.loaders.BuildAggregatedStatus.load(build),
             build.githubPullRequestId
               ? ctx.loaders.GithubPullRequest.load(build.githubPullRequestId)
-              : build.originPullRequestId
-                ? ctx.loaders.OriginPullRequest.load(build.originPullRequestId)
-                : null,
+              : null,
           ]);
         return getBuildBaselineEligibility({
           build,

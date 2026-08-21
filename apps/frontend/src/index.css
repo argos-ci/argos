@@ -165,10 +165,6 @@
   --background-color-gitlab-hover: rgb(252 109 38);
   --background-color-gitlab-active: rgb(252 109 38);
 
-  --background-color-origin: rgb(20 20 20);
-  --background-color-origin-hover: rgb(60 60 60);
-  --background-color-origin-active: rgb(60 60 60);
-
   --background-color-google: var(--gray-1);
   --background-color-google-hover: var(--gray-2);
   --background-color-google-active: var(--gray-3);

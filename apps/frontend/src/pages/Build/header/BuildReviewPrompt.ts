@@ -1,19 +1,16 @@
 import { DocumentType, graphql } from "@/gql";
 
 const _BuildReviewPromptPullRequestFragment = graphql(`
-  fragment BuildReviewPrompt_PullRequest on PullRequest {
-    __typename
+  fragment BuildReviewPrompt_PullRequest on GithubPullRequest {
     id
     number
     url
     title
     draft
     merged
-    ... on GithubPullRequest {
-      creator {
-        login
-        name
-      }
+    creator {
+      login
+      name
     }
   }
 `);
@@ -24,8 +21,7 @@ function formatPullRequestAuthor(
     | null
     | undefined,
 ) {
-  // Only GitHub tells who opened the pull request.
-  if (pullRequest?.__typename !== "GithubPullRequest" || !pullRequest.creator) {
+  if (!pullRequest?.creator) {
     return null;
   }
 

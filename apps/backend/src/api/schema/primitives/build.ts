@@ -3,16 +3,16 @@ import { BuildStatsSchema } from "@argos/schemas/build-stats";
 import {
   BuildAggregatedStatusSchema,
   BuildConclusionSchema,
+  type BuildAggregatedStatus,
 } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import {
-  getBuildNotificationTypeFromBuildStatus,
   getNotificationPayload,
   NotificationPayloadSchema,
 } from "@/build-notification";
-import { Build, ScreenshotBucket } from "@/database/models";
+import { Build, BuildNotification, ScreenshotBucket } from "@/database/models";
 import { queryBuilds } from "@/database/services/build";
 
 import { PageParamsSchema } from "./pagination";
@@ -140,6 +140,27 @@ export const BuildSchema = z
     description: "Build",
     id: "Build",
   });
+
+function getBuildNotificationTypeFromBuildStatus(
+  buildStatus: BuildAggregatedStatus,
+): BuildNotification["type"] | null {
+  switch (buildStatus) {
+    case "accepted":
+      return "diff-accepted";
+    case "rejected":
+      return "diff-rejected";
+    case "changes-detected":
+      return "diff-detected";
+    case "pending":
+      return "queued";
+    case "progress":
+      return "progress";
+    case "no-changes":
+      return "no-diff-detected";
+    default:
+      return null;
+  }
+}
 
 /**
  * Serialize a list of builds into the public API shape, fetching any missing

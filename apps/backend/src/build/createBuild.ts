@@ -14,10 +14,6 @@ import {
 import { subscribeBuildPullRequestCreator } from "@/database/services/build-notification-subscription";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
-import {
-  getOrCreateOriginPullRequest,
-  resolveOriginPullRequestNumber,
-} from "@/origin-pull-request";
 import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
@@ -125,73 +121,41 @@ export async function createBuild(params: {
     );
   }
 
-  const [pullRequest, originPullRequest, mergeQueuePullRequests, isPartial] =
-    await Promise.all([
-      (async () => {
-        if (!params.prNumber) {
-          return null;
-        }
-        if (!params.project.githubRepositoryId) {
-          return null;
-        }
-        return getOrCreatePullRequest({
-          githubRepositoryId: params.project.githubRepositoryId,
-          number: params.prNumber,
-        });
-      })(),
-      (async () => {
-        if (!params.project.originRepositoryId) {
-          return null;
-        }
-        await params.project.$fetchGraph("originRepository", {
-          skipFetched: true,
-        });
-        invariant(
-          params.project.originRepository,
-          "originRepository not found",
-        );
-        // Origin has no CI of its own, so the build may only name its branch:
-        // Origin then says which pull request it belongs to. Not for the
-        // default branch, nothing opens a pull request from it.
-        const { originRepository } = params.project;
-        const prNumber =
-          params.prNumber ??
-          (params.branch === originRepository.defaultBranch
-            ? null
-            : await resolveOriginPullRequestNumber({
-                repository: originRepository,
-                branch: params.branch,
-              }));
-        if (!prNumber) {
-          return null;
-        }
-        return getOrCreateOriginPullRequest({
-          originRepositoryId: params.project.originRepositoryId,
-          number: prNumber,
-        });
-      })(),
-      (async () => {
-        if (mergeQueuePrNumbers.length === 0) {
-          return [];
-        }
-        const { githubRepositoryId } = params.project;
-        invariant(githubRepositoryId, "Checked before");
-        return Promise.all(
-          mergeQueuePrNumbers.map((number) =>
-            getOrCreatePullRequest({
-              githubRepositoryId,
-              number,
-            }),
-          ),
-        );
-      })(),
-      checkIsPartialBuild({
-        ciProvider: params.ciProvider ?? null,
-        project: params.project,
-        runAttempt: params.runAttempt ?? null,
-        runId: params.runId ?? null,
-      }),
-    ]);
+  const [pullRequest, mergeQueuePullRequests, isPartial] = await Promise.all([
+    (async () => {
+      if (!params.prNumber) {
+        return null;
+      }
+      if (!params.project.githubRepositoryId) {
+        return null;
+      }
+      return getOrCreatePullRequest({
+        githubRepositoryId: params.project.githubRepositoryId,
+        number: params.prNumber,
+      });
+    })(),
+    (async () => {
+      if (mergeQueuePrNumbers.length === 0) {
+        return [];
+      }
+      const { githubRepositoryId } = params.project;
+      invariant(githubRepositoryId, "Checked before");
+      return Promise.all(
+        mergeQueuePrNumbers.map((number) =>
+          getOrCreatePullRequest({
+            githubRepositoryId,
+            number,
+          }),
+        ),
+      );
+    })(),
+    checkIsPartialBuild({
+      ciProvider: params.ciProvider ?? null,
+      project: params.project,
+      runAttempt: params.runAttempt ?? null,
+      runId: params.runId ?? null,
+    }),
+  ]);
 
   const build = await redisLock.acquire(
     ["create-build", params.project.id],
@@ -214,10 +178,9 @@ export async function createBuild(params: {
           batchCount: params.parallel ? 0 : null,
           projectId: params.project.id,
           name: buildName,
-          prNumber: params.prNumber ?? originPullRequest?.number ?? null,
+          prNumber: params.prNumber,
           prHeadCommit: params.prHeadCommit,
           githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
-          originPullRequestId: originPullRequest?.id ?? null,
           baseCommit: params.baseCommit,
           parentCommits: params.parentCommits,
           baseBranch: params.baseBranch,
