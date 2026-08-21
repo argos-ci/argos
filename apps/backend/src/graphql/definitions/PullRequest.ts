@@ -30,6 +30,8 @@ export const resolvers: IResolvers = {
       switch (pullRequest.constructor.name) {
         case "GithubPullRequest":
           return "GithubPullRequest";
+        case "OriginPullRequest":
+          return "OriginPullRequest";
         default:
           throw new Error(
             `Unknown pullRequest type: ${pullRequest.constructor.name}`,

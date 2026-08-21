@@ -12,9 +12,11 @@ import { Route, Routes } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
+import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
+import { useOriginEnabled } from "@/containers/Origin";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamAddOns } from "@/containers/Team/AddOns";
@@ -74,6 +76,7 @@ const AccountQuery = graphql(`
       ...PlanCard_Account
       ...TeamAddOns_Team
       ...AccountGitLab_Account
+      ...AccountCursorOrigin_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
       ...TeamDomains_Team
@@ -146,6 +149,7 @@ function PageContent() {
     variables: { slug: accountSlug },
   });
   useScrollToHash();
+  const originEnabled = useOriginEnabled();
 
   if (!account) {
     return <NotFound />;
@@ -267,6 +271,9 @@ function PageContent() {
           {isTeam && <TeamDiscord account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
+          {hasAdminPermission && originEnabled && (
+            <AccountCursorOrigin account={account} />
+          )}
         </>
       ),
     },

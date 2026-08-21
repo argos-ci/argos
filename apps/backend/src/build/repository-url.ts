@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { type Project } from "@/database/models";
 import { UnretryableError } from "@/job-core";
+import { getOriginRepositoryUrl } from "@/origin/url";
 
 /**
  * Get the web URL of the Git repository backing a project, if any.
@@ -38,11 +39,39 @@ export function getRepositoryUrl(project: Project): string | null {
     return `https://gitlab.com/${project.gitlabProject.pathWithNamespace}`;
   }
 
+  if (project.originRepositoryId) {
+    invariant(
+      project.originRepository,
+      "originRepository relation is expected to be loaded",
+      UnretryableError,
+    );
+
+    return getOriginRepositoryUrl(project.originRepository);
+  }
+
   return null;
 }
 
+/**
+ * Get the web URL of a pull request of the repository backing a project.
+ *
+ * Same expectations as {@link getRepositoryUrl}. GitHub and Origin spell the
+ * path the same way.
+ */
+export function getPullRequestUrl(
+  project: Project,
+  pullRequest: { number: number },
+): string | null {
+  const repositoryUrl = getRepositoryUrl(project);
+  if (!repositoryUrl) {
+    return null;
+  }
+  return `${repositoryUrl}/pull/${pullRequest.number}`;
+}
+
 /** The relations {@link getRepositoryUrl} reads. */
-const REPOSITORY_GRAPH = "[githubRepository.githubAccount, gitlabProject]";
+const REPOSITORY_GRAPH =
+  "[githubRepository.githubAccount, gitlabProject, originRepository]";
 
 /** Whether a project carries the *whole* graph {@link getRepositoryUrl} needs. */
 function hasRepositoryGraph(project: Project): boolean {
@@ -53,7 +82,10 @@ function hasRepositoryGraph(project: Project): boolean {
     // "loaded" is what makes `getRepositoryUrl` throw.
     return Boolean(project.githubRepository?.githubAccount);
   }
-  return Boolean(project.gitlabProject);
+  if (project.gitlabProjectId) {
+    return Boolean(project.gitlabProject);
+  }
+  return Boolean(project.originRepository);
 }
 
 /**
@@ -65,7 +97,11 @@ function hasRepositoryGraph(project: Project): boolean {
  * graph, so it can only ever improve what is on the project.
  */
 export async function loadRepositoryGraph(project: Project): Promise<void> {
-  if (!project.githubRepositoryId && !project.gitlabProjectId) {
+  if (
+    !project.githubRepositoryId &&
+    !project.gitlabProjectId &&
+    !project.originRepositoryId
+  ) {
     return;
   }
   await project.$fetchGraph(REPOSITORY_GRAPH);
@@ -84,7 +120,11 @@ export async function loadRepositoryGraph(project: Project): Promise<void> {
 export async function fetchRepositoryUrl(
   project: Project,
 ): Promise<string | null> {
-  if (!project.githubRepositoryId && !project.gitlabProjectId) {
+  if (
+    !project.githubRepositoryId &&
+    !project.gitlabProjectId &&
+    !project.originRepositoryId
+  ) {
     return null;
   }
   if (hasRepositoryGraph(project)) {

@@ -20,7 +20,7 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
     return {
       checkIsAutoApproved: (branch: string) => {
         // If there is a pull request, we never auto-approve the build.
-        if (build.githubPullRequestId) {
+        if (build.githubPullRequestId || build.originPullRequestId) {
           return false;
         }
 
@@ -40,9 +40,16 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   getBase: async (build, context) => {
     const richBuild = await build
       .$query()
-      .withGraphFetched("[project,compareScreenshotBucket,pullRequest]");
+      .withGraphFetched(
+        "[project,compareScreenshotBucket,pullRequest,originPullRequest]",
+      );
 
-    const { project, compareScreenshotBucket, pullRequest = null } = richBuild;
+    const {
+      project,
+      compareScreenshotBucket,
+      pullRequest = null,
+      originPullRequest = null,
+    } = richBuild;
 
     invariant(
       compareScreenshotBucket,
@@ -55,7 +62,7 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
       build,
       compareScreenshotBucket,
       project,
-      pullRequest,
+      pullRequest: pullRequest ?? originPullRequest,
       context,
     };
 

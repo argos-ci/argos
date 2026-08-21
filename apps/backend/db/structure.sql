@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
+\restrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -126,6 +126,7 @@ CREATE TABLE public.accounts (
     "githubLightInstallationId" bigint,
     "meteredSpendLimitByPeriod" integer,
     "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
+    "originInstallationId" bigint,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -563,6 +564,7 @@ CREATE TABLE public.builds (
     "concludedAt" timestamp with time zone,
     "mergeQueue" boolean DEFAULT false NOT NULL,
     subset boolean DEFAULT false NOT NULL,
+    "originPullRequestId" bigint,
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
@@ -1463,7 +1465,7 @@ CREATE TABLE public.media (
     visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
     "shareToken" character varying(255) NOT NULL,
     branch character varying(255),
-    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY ((ARRAY['before'::character varying, 'after'::character varying])::text[]))))
+    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY (ARRAY[('before'::character varying)::text, ('after'::character varying)::text]))))
 );
 
 
@@ -1937,6 +1939,142 @@ ALTER SEQUENCE public.oauth_refresh_tokens_id_seq OWNED BY public.oauth_refresh_
 
 
 --
+-- Name: origin_installations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.origin_installations (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "originId" character varying(255) NOT NULL,
+    "targetSlug" character varying(255) NOT NULL,
+    "targetId" character varying(255) NOT NULL,
+    "repoSelectionMode" text DEFAULT 'all'::text NOT NULL,
+    scopes jsonb DEFAULT '[]'::jsonb NOT NULL,
+    deleted boolean DEFAULT false NOT NULL,
+    token text,
+    "tokenExpiresAt" timestamp with time zone,
+    CONSTRAINT "origin_installations_repoSelectionMode_check" CHECK (("repoSelectionMode" = ANY (ARRAY['all'::text, 'selected'::text])))
+);
+
+
+ALTER TABLE public.origin_installations OWNER TO postgres;
+
+--
+-- Name: origin_installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.origin_installations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.origin_installations_id_seq OWNER TO postgres;
+
+--
+-- Name: origin_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.origin_installations_id_seq OWNED BY public.origin_installations.id;
+
+
+--
+-- Name: origin_pull_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.origin_pull_requests (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" character varying(255) NOT NULL,
+    "originRepositoryId" bigint NOT NULL,
+    number integer NOT NULL,
+    "originId" character varying(255),
+    title character varying(255),
+    "headRef" character varying(255),
+    "baseRef" character varying(255),
+    "baseSha" character varying(255),
+    state text,
+    date timestamp with time zone,
+    "closedAt" timestamp with time zone,
+    "mergedAt" timestamp with time zone,
+    merged boolean,
+    draft boolean,
+    "commentId" character varying(255),
+    "commentDeleted" boolean DEFAULT false NOT NULL,
+    "mediaCommentId" character varying(255),
+    "mediaCommentDeleted" boolean DEFAULT false NOT NULL,
+    CONSTRAINT origin_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
+);
+
+
+ALTER TABLE public.origin_pull_requests OWNER TO postgres;
+
+--
+-- Name: origin_pull_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.origin_pull_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.origin_pull_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: origin_pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.origin_pull_requests_id_seq OWNED BY public.origin_pull_requests.id;
+
+
+--
+-- Name: origin_repositories; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.origin_repositories (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "originId" character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    "ownerSlug" character varying(255) NOT NULL,
+    "ownerId" character varying(255) NOT NULL,
+    "defaultBranch" character varying(255) NOT NULL,
+    "originInstallationId" bigint
+);
+
+
+ALTER TABLE public.origin_repositories OWNER TO postgres;
+
+--
+-- Name: origin_repositories_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.origin_repositories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.origin_repositories_id_seq OWNER TO postgres;
+
+--
+-- Name: origin_repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.origin_repositories_id_seq OWNED BY public.origin_repositories.id;
+
+
+--
 -- Name: plans; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2086,6 +2224,7 @@ CREATE TABLE public.projects (
     "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     "buildNumber" integer DEFAULT 0 NOT NULL,
+    "originRepositoryId" bigint,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
@@ -3259,6 +3398,27 @@ ALTER TABLE ONLY public.oauth_refresh_tokens ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: origin_installations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_installations ALTER COLUMN id SET DEFAULT nextval('public.origin_installations_id_seq'::regclass);
+
+
+--
+-- Name: origin_pull_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_pull_requests ALTER COLUMN id SET DEFAULT nextval('public.origin_pull_requests_id_seq'::regclass);
+
+
+--
+-- Name: origin_repositories id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_repositories ALTER COLUMN id SET DEFAULT nextval('public.origin_repositories_id_seq'::regclass);
+
+
+--
 -- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4013,6 +4173,54 @@ ALTER TABLE ONLY public.oauth_refresh_tokens
 
 
 --
+-- Name: origin_installations origin_installations_originid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_installations
+    ADD CONSTRAINT origin_installations_originid_unique UNIQUE ("originId");
+
+
+--
+-- Name: origin_installations origin_installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_installations
+    ADD CONSTRAINT origin_installations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: origin_pull_requests origin_pull_requests_originrepositoryid_number_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_pull_requests
+    ADD CONSTRAINT origin_pull_requests_originrepositoryid_number_unique UNIQUE ("originRepositoryId", number);
+
+
+--
+-- Name: origin_pull_requests origin_pull_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_pull_requests
+    ADD CONSTRAINT origin_pull_requests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: origin_repositories origin_repositories_originid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_repositories
+    ADD CONSTRAINT origin_repositories_originid_unique UNIQUE ("originId");
+
+
+--
+-- Name: origin_repositories origin_repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_repositories
+    ADD CONSTRAINT origin_repositories_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4375,6 +4583,13 @@ CREATE INDEX accounts_githubaccountid_index ON public.accounts USING btree ("git
 --
 
 CREATE INDEX accounts_githublightinstallationid_index ON public.accounts USING btree ("githubLightInstallationId");
+
+
+--
+-- Name: accounts_origininstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_origininstallationid_index ON public.accounts USING btree ("originInstallationId");
 
 
 --
@@ -4851,6 +5066,20 @@ CREATE INDEX oauth_refresh_tokens_oauthgrantid_index ON public.oauth_refresh_tok
 
 
 --
+-- Name: origin_pull_requests_originrepositoryid_headref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX origin_pull_requests_originrepositoryid_headref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "headRef");
+
+
+--
+-- Name: origin_repositories_origininstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX origin_repositories_origininstallationid_index ON public.origin_repositories USING btree ("originInstallationId");
+
+
+--
 -- Name: plans_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4897,6 +5126,13 @@ CREATE INDEX projects_githubrepositoryid_index ON public.projects USING btree ("
 --
 
 CREATE INDEX projects_name_index ON public.projects USING btree (name);
+
+
+--
+-- Name: projects_originrepositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_originrepositoryid_index ON public.projects USING btree ("originRepositoryId");
 
 
 --
@@ -5232,6 +5468,14 @@ ALTER TABLE ONLY public.accounts
 
 
 --
+-- Name: accounts accounts_origininstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_origininstallationid_foreign FOREIGN KEY ("originInstallationId") REFERENCES public.origin_installations(id);
+
+
+--
 -- Name: accounts accounts_slackinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5437,6 +5681,14 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id);
+
+
+--
+-- Name: builds builds_originpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.builds
+    ADD CONSTRAINT builds_originpullrequestid_foreign FOREIGN KEY ("originPullRequestId") REFERENCES public.origin_pull_requests(id);
 
 
 --
@@ -5880,6 +6132,22 @@ ALTER TABLE ONLY public.oauth_refresh_tokens
 
 
 --
+-- Name: origin_pull_requests origin_pull_requests_originrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_pull_requests
+    ADD CONSTRAINT origin_pull_requests_originrepositoryid_foreign FOREIGN KEY ("originRepositoryId") REFERENCES public.origin_repositories(id);
+
+
+--
+-- Name: origin_repositories origin_repositories_origininstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.origin_repositories
+    ADD CONSTRAINT origin_repositories_origininstallationid_foreign FOREIGN KEY ("originInstallationId") REFERENCES public.origin_installations(id);
+
+
+--
 -- Name: project_domains project_domains_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5925,6 +6193,14 @@ ALTER TABLE ONLY public.projects
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_gitlabprojectid_foreign FOREIGN KEY ("gitlabProjectId") REFERENCES public.gitlab_projects(id);
+
+
+--
+-- Name: projects projects_originrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_originrepositoryid_foreign FOREIGN KEY ("originRepositoryId") REFERENCES public.origin_repositories(id);
 
 
 --
@@ -6251,7 +6527,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7ZNuMOx9htnDBoQxI2tgKIWTHfsUuO4vbIXjOYAWoeVRKx9Nu1ZgVPjVv7PAxGx
+\unrestrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
 
 -- Knex migrations
 
@@ -6499,4 +6775,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260814161900_build-review-agent.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260816090349_subscription-flat-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260817142631_screenshot-buckets-project-created-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818083531_cursor-origin.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());

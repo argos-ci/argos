@@ -93,6 +93,7 @@ export async function getAggregatedNotificationPayload(args: {
     gitlab: {
       state: states.gitlab,
     },
+    origin: states.origin,
     url: projectUrl,
   };
 

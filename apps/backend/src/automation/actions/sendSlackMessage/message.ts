@@ -41,12 +41,14 @@ export async function buildSlackMessage(args: {
           githubAccount
         ]
         gitlabProject
+        originRepository
       ],
       pullRequest.[
         githubRepository.[
           githubAccount
         ]
       ]
+      originPullRequest
     ]
   `),
     message.event === "build.completed"
@@ -79,7 +81,7 @@ export async function buildSlackMessage(args: {
       build,
       project: richBuild.project,
       compareScreenshotBucket: message.payload.compareScreenshotBucket,
-      pullRequest: richBuild.pullRequest ?? null,
+      pullRequest: richBuild.pullRequest ?? richBuild.originPullRequest ?? null,
     }),
   );
 
