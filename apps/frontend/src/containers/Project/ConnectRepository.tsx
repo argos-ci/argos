@@ -24,7 +24,7 @@ import {
   GitlabProjectList,
   GitlabProjectListProps,
 } from "../GitlabProjectList";
-import { CursorOriginLogo, OriginButton } from "../Origin";
+import { CursorOriginLogo, OriginButton, useOriginEnabled } from "../Origin";
 import {
   OriginRepositoryList,
   type OriginRepository,
@@ -338,9 +338,16 @@ const buttonLabels: Record<ConnectRepositoryProps["variant"], string> = {
 };
 
 export function ConnectRepository(props: ConnectRepositoryProps) {
-  const [provider, setProvider] = useState<GitProvider | null>(
+  const originEnabled = useOriginEnabled();
+  const [storedProvider, setProvider] = useState<GitProvider | null>(
     storage.getItem("gitProvider") as GitProvider | null,
   );
+  // A provider that is no longer offered must not come back out of storage:
+  // whoever last used this browser may have been staff.
+  const provider =
+    storedProvider === GitProvider.Origin && !originEnabled
+      ? null
+      : storedProvider;
   const setAndStoreProvider = useCallback((provider: GitProvider | null) => {
     setProvider(provider);
     if (provider) {
@@ -528,11 +535,13 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             >
               GitLab
             </GitLabButton>
-            <OriginButton
-              onClick={() => setAndStoreProvider(GitProvider.Origin)}
-            >
-              Cursor Origin
-            </OriginButton>
+            {originEnabled && (
+              <OriginButton
+                onClick={() => setAndStoreProvider(GitProvider.Origin)}
+              >
+                Cursor Origin
+              </OriginButton>
+            )}
           </div>
           <div>
             Need another provider?{" "}
@@ -570,11 +579,13 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             >
               Continue with GitLab
             </GitLabButton>
-            <OriginButton
-              onClick={() => setAndStoreProvider(GitProvider.Origin)}
-            >
-              Continue with Cursor Origin
-            </OriginButton>
+            {originEnabled && (
+              <OriginButton
+                onClick={() => setAndStoreProvider(GitProvider.Origin)}
+              >
+                Continue with Cursor Origin
+              </OriginButton>
+            )}
           </div>
         </div>
       );

@@ -16,6 +16,7 @@ import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
+import { useOriginEnabled } from "@/containers/Origin";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamAddOns } from "@/containers/Team/AddOns";
@@ -148,6 +149,7 @@ function PageContent() {
     variables: { slug: accountSlug },
   });
   useScrollToHash();
+  const originEnabled = useOriginEnabled();
 
   if (!account) {
     return <NotFound />;
@@ -269,7 +271,9 @@ function PageContent() {
           {isTeam && <TeamDiscord account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
-          {hasAdminPermission && <AccountCursorOrigin account={account} />}
+          {hasAdminPermission && originEnabled && (
+            <AccountCursorOrigin account={account} />
+          )}
         </>
       ),
     },

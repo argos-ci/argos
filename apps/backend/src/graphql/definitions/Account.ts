@@ -28,6 +28,7 @@ import {
 } from "@/metrics/account";
 import { sendNotification } from "@/notification";
 import {
+  checkOriginEnabled,
   getOriginInstallUrl,
   originInstallationSyncJob,
   signOriginInstallState,
@@ -46,7 +47,12 @@ import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getVisibleProjectIds } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
-import { badUserInput, toGraphQLError, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -465,6 +471,9 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return ctx.loaders.DiscordWebhooksByAccountId.load(account.id);
   },
   originInstallation: async (account, _args, ctx) => {
+    if (!checkOriginEnabled(ctx.auth?.user)) {
+      return null;
+    }
     if (!account.originInstallationId) {
       return null;
     }
@@ -484,6 +493,9 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return installation;
   },
   originInstallUrl: async (account, _args, ctx) => {
+    if (!checkOriginEnabled(ctx.auth?.user)) {
+      return null;
+    }
     if (!config.get("origin.appId")) {
       return null;
     }
@@ -700,6 +712,9 @@ export const resolvers: IResolvers = {
       return account.$query();
     },
     syncOriginInstallation: async (_root, args, ctx) => {
+      if (!checkOriginEnabled(ctx.auth?.user)) {
+        throw forbidden();
+      }
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,

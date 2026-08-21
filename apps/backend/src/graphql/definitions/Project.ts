@@ -40,6 +40,7 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
+import { checkOriginEnabled } from "@/origin/access";
 import { HTTPError } from "@/util/error";
 import { safeParseTestId } from "@/util/test-id";
 
@@ -1006,6 +1007,9 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
+      if (!checkOriginEnabled(ctx.auth.user)) {
+        throw forbidden();
+      }
       return importOriginProject({
         accountSlug: args.input.accountSlug,
         originRepositoryId: args.input.originRepositoryId,
@@ -1147,6 +1151,9 @@ export const resolvers: IResolvers = {
     linkOriginRepository: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
+      }
+      if (!checkOriginEnabled(ctx.auth.user)) {
+        throw forbidden();
       }
 
       const project = await getAdminProject({

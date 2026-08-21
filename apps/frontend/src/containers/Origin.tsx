@@ -1,5 +1,22 @@
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 
+import { useAuth } from "./Auth";
+
+/**
+ * Whether the Cursor Origin integration is offered to the viewer.
+ *
+ * Staff-only while it is unreleased: merged so it can be exercised against the
+ * real Origin API, not offered to users. The server enforces the same rule —
+ * `checkOriginEnabled` nulls the installation and its install URL, and refuses
+ * the import and link mutations — so this only keeps the UI from advertising
+ * something the API would reject. Remove this hook, its call sites and the
+ * backend helper to release.
+ */
+export function useOriginEnabled(): boolean {
+  const auth = useAuth();
+  return auth.status === "authenticated" && Boolean(auth.account?.staff);
+}
+
 /**
  * Cursor Origin mark: the isometric cube of the Cursor logo.
  */
