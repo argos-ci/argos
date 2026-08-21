@@ -222,9 +222,7 @@ loggedTest(
       },
     });
 
-    await dialog
-      .getByRole("link", { name: `Review ${storybookBuild.name}` })
-      .click();
+    await dialog.getByRole("link", { name: "Review next build" }).click();
     await expect(page).toHaveURL(
       new RegExp(`/builds/${storybookBuild.number}/overview$`),
     );
@@ -238,7 +236,7 @@ loggedTest(
   "prompts for the next build from the review dialog too",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
-    const { defaultBuild, storybookBuild } = await createSiblingBuildsScenario({
+    const { defaultBuild } = await createSiblingBuildsScenario({
       projectId: project.id,
     });
 
@@ -262,7 +260,7 @@ loggedTest(
     const dialog = page.getByRole("dialog", { name: "Review the next build" });
     await expect(dialog).toBeVisible({ timeout: 15_000 });
     await expect(
-      dialog.getByRole("link", { name: `Review ${storybookBuild.name}` }),
+      dialog.getByRole("link", { name: "Review next build" }),
     ).toBeVisible();
   },
 );
