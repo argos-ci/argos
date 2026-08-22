@@ -402,3 +402,35 @@ loggedTest(
     await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
   },
 );
+
+loggedTest(
+  "labels shortcuts with the reader's own modifier key",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    // The platform is read once, when the module evaluates, so the override
+    // has to be in place before the page loads. Nothing else catches this:
+    // ⌘ is right on every machine the app is developed on, and wrong on the
+    // keyboard of everyone told to press it on Windows or Linux.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "platform", { get: () => "Win32" });
+    });
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // The dialog answers a document listener the app registers on mount, so
+    // the key is simply lost until the build has rendered.
+    await expect(
+      page.getByRole("button", { name: "Submit review" }),
+    ).toBeVisible();
+    await page.keyboard.press("?");
+
+    const dialog = page.getByRole("dialog", { name: "Keyboard Shortcuts" });
+    await expect(dialog.getByText("Undo last review mark")).toBeVisible();
+    await expect(dialog.getByText("⌘", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByText("⇧", { exact: true })).toHaveCount(0);
+    await expect(
+      dialog.locator("kbd").filter({ hasText: "Ctrl" }).first(),
+    ).toBeVisible();
+  },
+);
