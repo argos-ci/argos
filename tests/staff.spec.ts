@@ -621,6 +621,11 @@ staffTest(
 );
 
 loggedTest("staff pages are refused to regular users", async ({ page }) => {
-  await page.goto("/staff/trials");
-  await expect(page.getByText("Access restricted")).toBeVisible();
+  // Every staff page, not just one: each owns its own query, so each has to
+  // turn the refusal into something a reader can act on rather than into a
+  // figure that failed to load.
+  for (const path of ["/staff/teams", "/staff/trials", "/staff/revenue"]) {
+    await page.goto(path);
+    await expect(page.getByText("Access restricted")).toBeVisible();
+  }
 });

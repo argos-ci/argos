@@ -1,3 +1,4 @@
+import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
@@ -13,6 +14,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AuthGuard } from "@/containers/AuthGuard";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
+import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { ChartCard } from "@/ui/ChartCard";
 import type { ChartConfig } from "@/ui/Charts";
 import {
@@ -29,6 +31,7 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Link } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { StatTile } from "@/ui/StatTile";
 import { Text } from "@/ui/Text";
@@ -53,10 +56,12 @@ const StaffRevenueQuery = graphql(`
       monthlyPlans {
         revenue
         teamsCount
+        foreignRevenue
       }
       yearlyPlans {
         revenue
         teamsCount
+        foreignRevenue
       }
     }
   }
@@ -139,7 +144,16 @@ function formatMonth(month: string): string {
 
 /** The figures behind a half, appended to its tooltip. */
 function getSplitNote(split: Split): string {
-  return ` ${split.teamsCount} ${split.teamsCount === 1 ? "team" : "teams"}.`;
+  const teams = ` ${split.teamsCount} ${split.teamsCount === 1 ? "team" : "teams"}.`;
+  // Named only when there is some: on an all-dollar month the caveat would be
+  // noise, and on a month with euros in it the reader has to know the total
+  // holds two currencies added at parity.
+  const foreign =
+    split.foreignRevenue > 0
+      ? ` ${formatPrice(split.foreignRevenue)} of it was invoiced in another currency and is counted at parity, not converted.`
+      : "";
+
+  return `${teams}${foreign}`;
 }
 
 /**
@@ -524,6 +538,29 @@ function StaffRevenuePage() {
     variables: { months: PAGE_MONTHS },
   });
   const months = data?.staffRevenue ?? null;
+
+  // Told rather than reported as a failed figure, as the other staff pages do:
+  // a reader without access has no figures to wait for, and three tiles reading
+  // "unavailable" would send them looking for an outage. Every other failure
+  // stays on the tiles, where it does not take the page down with it.
+  const isForbidden =
+    error !== undefined &&
+    CombinedGraphQLErrors.is(error) &&
+    error.errors.some((item) => item.extensions?.code === "FORBIDDEN");
+
+  if (isForbidden) {
+    return (
+      <PageContainer>
+        <Alert>
+          <AlertTitle>Access restricted</AlertTitle>
+          <AlertText>This page is only available to staff users.</AlertText>
+          <AlertText>
+            <Link href="/teams">Go to your teams</Link>
+          </AlertText>
+        </Alert>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
