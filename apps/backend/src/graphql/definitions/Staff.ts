@@ -7,6 +7,7 @@ import {
   getAccountBillings,
   type AccountBilling,
 } from "@/database/services/period-usage";
+import { getStaffRevenue, MAX_MONTHS } from "@/stripe/revenue";
 
 import type {
   IAccountSubscriptionStatus,
@@ -340,6 +341,40 @@ export const typeDefs = gql`
     CURRENT_PERIOD_DESC
   }
 
+  "What the teams on one billing interval contributed to a month."
+  type StaffRevenueSplit {
+    revenue: Float!
+    "How many teams contributed."
+    teamsCount: Int!
+  }
+
+  """
+  What Argos invoiced over one calendar month.
+
+  Read from the Stripe invoices themselves rather than recomputed from usage, so
+  the amounts carry what Stripe actually charged — negotiated prices, coupons,
+  credit notes — instead of a second pricing engine of ours that would have to
+  agree with the first. Amounts exclude tax, are net of credit notes, and
+  currencies are added at parity.
+  """
+  type StaffRevenueMonth {
+    "The first instant of the month, in UTC — what names it on screen."
+    month: DateTime!
+    "The two splits below, added up."
+    revenue: Float!
+    "What teams billed by the month were invoiced that month."
+    monthlyPlans: StaffRevenueSplit!
+    """
+    What the annual contracts in force are worth per month: their latest invoice
+    over twelve.
+
+    The same on every month, being a rate. Amortizing each annual invoice over
+    the twelve months it covers would be exact, but it would mean reading a year
+    of invoices to report one month — which a request cannot afford.
+    """
+    yearlyPlans: StaffRevenueSplit!
+  }
+
   type StaffTeamConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Team!]!
@@ -369,6 +404,15 @@ export const typeDefs = gql`
     ): StaffTeamConnection!
     "List teams created within the last \`days\` days, newest first (staff only)"
     staffTrialPipeline(days: Int! = 30): [Team!]!
+    """
+    What Argos invoiced over the last \`months\` calendar months, oldest first
+    and the running one last (staff only).
+
+    Its own query rather than a field on \`staffTeams\`: it walks Stripe's
+    invoices, so it loads beside the table instead of ahead of it. Every month
+    costs a walk of its own, which is what \`months\` is bounded for.
+    """
+    staffRevenue(months: Int! = 3): [StaffRevenueMonth!]!
   }
 
   extend type Mutation {
@@ -558,6 +602,15 @@ export const resolvers: IResolvers = {
       ]);
 
       return paginateResult({ result: { total, results }, after, first });
+    },
+    staffRevenue: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      if (args.months < 1 || args.months > MAX_MONTHS) {
+        throw badUserInput(`\`months\` must be between 1 and ${MAX_MONTHS}.`);
+      }
+
+      return getStaffRevenue(args.months);
     },
     staffTrialPipeline: async (_root, args, ctx) => {
       assertStaff(ctx);
