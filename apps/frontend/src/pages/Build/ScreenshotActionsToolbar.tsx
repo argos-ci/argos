@@ -69,7 +69,7 @@ export const ScreenshotActionsToolbar = memo(
         {/* Left to right, the order a snapshot is dealt with: see the change,
             walk through it, annotate it, then rule on it. The verdict is last,
             at the end the eye arrives at and under "Submit review". */}
-        <div className="bg-app border-thin pointer-events-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 shadow-md">
+        <div className="bg-app border-thin pointer-events-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 shadow-xs">
           {showOverlayControls && <ChangesOverlayControls settings={false} />}
           {showOverlayControls && (showCommentTool || showVerdict) && (
             <Separator orientation="vertical" className="mx-0.5 h-6" />
