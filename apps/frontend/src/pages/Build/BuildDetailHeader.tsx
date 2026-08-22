@@ -9,20 +9,15 @@ import {
   DetailToolbarNav,
   DetailToolbarTitle,
 } from "@/containers/Build/toolbar/DetailToolbar";
-import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
-import { BuildType } from "@/gql/graphql";
-import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
-import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useProjectParams } from "../Project/ProjectParams";
 import { getTestURL } from "../Test/TestParams";
 import {
-  checkDiffCanBeReviewed,
   Diff,
   useGoToBuildOverview,
   useGoToNextDiff,
@@ -30,24 +25,12 @@ import {
   useHasNextDiff,
   useHasPreviousDiff,
 } from "./BuildDiffState";
-import {
-  useAcknowledgeMarkedDiff,
-  useBuildDiffStatusState,
-} from "./BuildReviewState";
-import { EvaluationStatus } from "./EvaluationStatus";
 import { RightSidebarToggle } from "./RightSidebar";
-import { TrackButtons } from "./TrackButtons";
 
 export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   diff: Diff;
-  buildType: BuildType | null;
-  isSubsetBuild: boolean;
 }) {
-  const { diff, buildType, isSubsetBuild } = props;
-  const canBeReviewed =
-    buildType !== BuildType.Reference &&
-    checkDiffCanBeReviewed(diff.status, { isSubsetBuild });
-
+  const { diff } = props;
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
@@ -79,38 +62,19 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       >
         {diff.name}
       </DetailToolbarTitle>
-      <BuildDiffDetailToolbar diff={diff} fitControls={<AriaSnapshotToggle />}>
-        <BuildDetailIgnoreButton diff={diff} />
-        <TrackButtons diff={diff} disabled={!canBeReviewed} />
-        <Separator orientation="vertical" className="mx-1 h-6" />
+      {/* What is about the pane: the view mode, the fit, the overlay's style,
+          comment visibility. Everything that acts on the snapshot itself is in
+          `ScreenshotActionsToolbar`, under it. */}
+      <BuildDiffDetailToolbar
+        diff={diff}
+        snapshotControls={false}
+        fitControls={<AriaSnapshotToggle />}
+      >
         <RightSidebarToggle />
       </BuildDiffDetailToolbar>
     </DetailToolbar>
   );
 });
-
-function BuildDetailIgnoreButton(props: { diff: Diff }) {
-  const { diff } = props;
-
-  const [status, setStatus] = useBuildDiffStatusState({
-    diffId: diff.id,
-    diffGroup: diff.group ?? null,
-  });
-  const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff();
-
-  const handleIgnoreChange = useEventCallback(() => {
-    if (checkIsPending()) {
-      return;
-    }
-
-    if (status === EvaluationStatus.Pending) {
-      setStatus(EvaluationStatus.Accepted);
-      acknowledge();
-    }
-  });
-
-  return <IgnoreButton diff={diff} onIgnoreChange={handleIgnoreChange} />;
-}
 
 const BuildNavButtons = memo(function BuildNavButtons() {
   const goToNextDiff = useGoToNextDiff();

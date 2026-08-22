@@ -32,14 +32,17 @@ import {
   fetchBlob,
   ImageActionsMenu,
 } from "@/containers/Build/ScreenshotActions";
+import { useProjectRepositoryUrl } from "@/containers/Project/RepositoryContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
+import { getBuildURL } from "@/pages/Build/BuildParams";
 import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
+import { BranchLink, CommitLink } from "@/pages/Build/GitLink";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
-import { Code } from "@/ui/Code";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
+import { Link } from "@/ui/Link";
 import { MenuItem, MenuSeparator } from "@/ui/menu-kit";
-import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
@@ -87,8 +90,13 @@ const _BuildFragment = graphql(`
     }
     createdAt
     branch
+    commit
     type
     baseBranch
+    baseBuild {
+      id
+      number
+    }
     baseScreenshotBucket {
       id
       createdAt
@@ -346,35 +354,168 @@ async function createMaskedCompareBlob(props: {
   return canvasToBlob(canvas);
 }
 
+/** Keeps a pane without a header aligned with the one beside it. */
 function BuildScreenshotHeaderPlaceholder() {
-  return <div className="h-10.5" />;
+  return <div className="h-6" />;
 }
 
-const BuildScreenshotHeader = memo(
-  (props: {
-    label: string;
-    gitRef: string | null | undefined;
-    date: string | null;
-  }) => {
-    const { label, gitRef, date } = props;
-    return (
-      <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
-        <div className="flex max-w-full items-center gap-1">
-          <div className="shrink-0 text-xs leading-6 font-medium select-none">
-            {label}
-            {gitRef ? " from" : null}
-          </div>
-          {gitRef && (
-            <Code className="truncate" title={gitRef}>
-              {gitRef}
-            </Code>
-          )}
+/**
+ * The label over a pane, naming which side of the comparison it shows. The
+ * details the line used to spell out — branch, commit, date — live in a hover
+ * card instead, which also has room for what never fit: where the baseline
+ * comes from.
+ */
+function BuildScreenshotHeader(props: {
+  label: string;
+  details: React.ReactNode;
+}) {
+  return (
+    <div className="text-low flex shrink-0 justify-center">
+      <Tooltip
+        variant="info"
+        // The card holds links, so it has to stay hoverable.
+        disableHoverableContent={false}
+        content={props.details}
+      >
+        {/* `heading` rather than a bare focusable div: it names the pane, so
+            it is what a screen reader should land on when walking the page —
+            and the level says it sits under the snapshot's name in the bar
+            above, the way `DetailToolbarTitle` states its own. */}
+        <div
+          role="heading"
+          aria-level={2}
+          tabIndex={0}
+          className="underline-emphasis text-xs leading-6 font-medium select-none"
+        >
+          {props.label}
         </div>
-        {date && <Time date={date} className="text-xxs" />}
-      </div>
+      </Tooltip>
+    </div>
+  );
+}
+
+/**
+ * What a side of the comparison is, then where it came from.
+ *
+ * The sentence leads because the labels do not explain themselves: a reviewer
+ * meeting "Baseline" for the first time needs to know it is the state being
+ * compared against before a commit sha means anything.
+ */
+function ScreenshotHeaderDetails(props: {
+  description: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="max-w-2xs p-0.5 text-xs">
+      <p className="text-low text-balance">{props.description}</p>
+      <dl className="border-t-thin mt-2 grid grid-cols-[auto_auto] gap-x-4 gap-y-1 pt-2">
+        {props.children}
+      </dl>
+    </div>
+  );
+}
+
+function ScreenshotHeaderDetail(props: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <dt className="text-low">{props.label}</dt>
+      <dd className="font-medium">{props.children}</dd>
+    </>
+  );
+}
+
+const BaselineScreenshotHeader = memo(
+  (props: { build: BuildFragmentDocument }) => {
+    const { build } = props;
+    if (!build.baseScreenshotBucket) {
+      return <BuildScreenshotHeaderPlaceholder />;
+    }
+    return (
+      <BuildScreenshotHeader
+        label="Baseline"
+        details={<BaselineDetails build={build} />}
+      />
     );
   },
 );
+
+/** Mounted only while the card is open, like every tooltip content. */
+function BaselineDetails(props: { build: BuildFragmentDocument }) {
+  const { build } = props;
+  const params = useProjectParams();
+  invariant(params, "can't be used outside of a project route");
+  const repoUrl = useProjectRepositoryUrl();
+  const { baseScreenshotBucket } = build;
+  invariant(baseScreenshotBucket, "guarded by BaselineScreenshotHeader");
+  return (
+    <ScreenshotHeaderDetails
+      description={
+        <>
+          The snapshot this build was compared against, kept from the last
+          approved build.{" "}
+          <Link
+            href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build"
+            target="_blank"
+          >
+            Learn more
+          </Link>
+        </>
+      }
+    >
+      {build.baseBuild && (
+        <ScreenshotHeaderDetail label="Build">
+          <Link
+            className="font-mono"
+            href={getBuildURL({
+              ...params,
+              buildNumber: build.baseBuild.number,
+            })}
+          >
+            #{build.baseBuild.number}
+          </Link>
+        </ScreenshotHeaderDetail>
+      )}
+      {build.baseBranch && (
+        <ScreenshotHeaderDetail label="Branch">
+          <BranchLink repoUrl={repoUrl} branch={build.baseBranch} />
+        </ScreenshotHeaderDetail>
+      )}
+      <ScreenshotHeaderDetail label="Commit">
+        <CommitLink repoUrl={repoUrl} commit={baseScreenshotBucket.commit} />
+      </ScreenshotHeaderDetail>
+    </ScreenshotHeaderDetails>
+  );
+}
+
+const ChangesScreenshotHeader = memo(
+  (props: { build: BuildFragmentDocument }) => (
+    <BuildScreenshotHeader
+      label="Changes"
+      details={<ChangesDetails build={props.build} />}
+    />
+  ),
+);
+
+/** Mounted only while the card is open, like every tooltip content. */
+function ChangesDetails(props: { build: BuildFragmentDocument }) {
+  const { build } = props;
+  const repoUrl = useProjectRepositoryUrl();
+  return (
+    <ScreenshotHeaderDetails description="The snapshot this build captured. Approving it makes it the next baseline.">
+      {build.branch && (
+        <ScreenshotHeaderDetail label="Branch">
+          <BranchLink repoUrl={repoUrl} branch={build.branch} />
+        </ScreenshotHeaderDetail>
+      )}
+      <ScreenshotHeaderDetail label="Commit">
+        <CommitLink repoUrl={repoUrl} commit={build.commit} />
+      </ScreenshotHeaderDetail>
+    </ScreenshotHeaderDetails>
+  );
+}
 
 const MissingScreenshotInfo = memo(
   (props: {
@@ -1244,33 +1385,19 @@ const BuildScreenshots = memo(
       invariant(diff.baseScreenshot);
       if (!checkIsImageContentType(diff.compareScreenshot.contentType)) {
         return (
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-4">
+          // `pt-2`, not `p-4`: the header row tops out level with the right
+          // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pt-2 pb-4">
             <BuildSnapshotsDiff
               base={{
                 url: diff.baseScreenshot.url,
                 contentType: diff.baseScreenshot.contentType,
-                header: build.baseScreenshotBucket ? (
-                  <BuildScreenshotHeader
-                    label="Baseline"
-                    gitRef={
-                      build.baseBranch ?? build.baseScreenshotBucket.commit
-                    }
-                    date={build.baseScreenshotBucket.createdAt}
-                  />
-                ) : (
-                  <BuildScreenshotHeaderPlaceholder />
-                ),
+                header: <BaselineScreenshotHeader build={build} />,
               }}
               head={{
                 url: diff.compareScreenshot.url,
                 contentType: diff.compareScreenshot.contentType,
-                header: (
-                  <BuildScreenshotHeader
-                    label="Changes"
-                    gitRef={build.branch}
-                    date={build.createdAt}
-                  />
-                ),
+                header: <ChangesScreenshotHeader build={build} />,
               }}
               build={build}
               screenshotDiffId={diff.id}
@@ -1280,54 +1407,29 @@ const BuildScreenshots = memo(
       }
     }
 
+    const columnClassName =
+      "relative flex min-h-0 min-w-0 flex-1 flex-col gap-2 [[hidden]]:hidden";
+
     return (
-      <div className="flex min-h-0 min-w-0 flex-1 gap-4 p-4">
-        <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
-          hidden={!showBaseline}
-        >
-          {build.baseScreenshotBucket ? (
-            <BuildScreenshotHeader
-              label="Baseline"
-              gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
-              date={build.baseScreenshotBucket.createdAt}
-            />
-          ) : (
-            <BuildScreenshotHeaderPlaceholder />
-          )}
+      // `pt-2`, not `p-4`: the header row tops out level with the right
+      // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
+      <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
+        <div className={columnClassName} hidden={!showBaseline}>
+          <BaselineScreenshotHeader build={build} />
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <BaseScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
         </div>
-        <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
-          hidden={!showChanges}
-        >
+        <div className={columnClassName} hidden={!showChanges}>
           {blendMode ? (
             <div className="flex shrink-0 justify-center gap-6">
-              {build.baseScreenshotBucket ? (
-                <BuildScreenshotHeader
-                  label="Baseline"
-                  gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
-                  date={build.baseScreenshotBucket.createdAt}
-                />
-              ) : (
-                <BuildScreenshotHeaderPlaceholder />
-              )}
-              <BuildScreenshotHeader
-                label="Changes"
-                gitRef={build.branch}
-                date={build.createdAt}
-              />
+              <BaselineScreenshotHeader build={build} />
+              <ChangesScreenshotHeader build={build} />
             </div>
           ) : (
-            <BuildScreenshotHeader
-              label="Changes"
-              gitRef={build.branch}
-              date={build.createdAt}
-            />
+            <ChangesScreenshotHeader build={build} />
           )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
@@ -1486,7 +1588,6 @@ const useScrollToTop = (
 export function BuildDiffDetail(props: {
   build: BuildFragmentDocument;
   diff: BuildDiffDetailDocument | null;
-  repoUrl: string | null;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }) {
