@@ -365,7 +365,10 @@ loggedTest(
     // A standalone changed snapshot, so the mark lands on it alone: the other
     // changed ones are bundled under a "3 similar" group, which is marked as
     // a whole.
-    await page.getByRole("button", { name: "dummy-375x1440.png" }).click();
+    await page
+      .getByRole("button", { name: "dummy-375x1440.png" })
+      .first()
+      .click();
 
     // `aria-pressed` narrows it to the toolbar's own accept button: a diff
     // list header carries the same thumb once its whole group is accepted, and
@@ -404,6 +407,31 @@ loggedTest(
 );
 
 loggedTest(
+  "answers the digit shortcuts on a layout where digits are shifted",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // Waiting on a diff row, not just on the page shell: the hotkeys are
+    // registered as the sidebar mounts, and a key pressed before that is
+    // simply lost.
+    await expect(
+      page.getByRole("button", { name: "dummy-375x1440.png" }).first(),
+    ).toBeVisible();
+
+    // The digit row is shifted on an AZERTY keyboard, so the "2" the dialog
+    // names arrives as `Digit2` with shift held — which is what pressing the
+    // key with shift produces here too, whatever character it prints.
+    await page.keyboard.press("Shift+Digit2");
+
+    // Going to the first changed snapshot leaves the overview for a diff.
+    await expect(page).not.toHaveURL(/\/overview$/);
+  },
+);
+
+loggedTest(
   "labels shortcuts with the reader's own modifier key",
   async ({ page, auth, team, project, builds }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
@@ -421,7 +449,7 @@ loggedTest(
     // The dialog answers a document listener the app registers on mount, so
     // the key is simply lost until the build has rendered.
     await expect(
-      page.getByRole("button", { name: "Submit review" }),
+      page.getByRole("button", { name: "dummy-375x1440.png" }).first(),
     ).toBeVisible();
     await page.keyboard.press("?");
 

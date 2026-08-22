@@ -1,3 +1,6 @@
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { toast } from "@/ui/Toaster";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -15,22 +18,40 @@ import { EvaluationStatus } from "./EvaluationStatus";
  */
 function describeAppliedChange(change: AppliedReviewMarkChange): string {
   const statuses = Object.values(change.statuses);
+  const [firstStatus] = statuses;
+  invariant(firstStatus, "A recorded change always touches at least one diff");
   const count = statuses.length;
   const noun = count === 1 ? "change" : "changes";
-  const isUniform = statuses.every((status) => status === statuses[0]);
-  if (!isUniform) {
+  if (statuses.some((status) => status !== firstStatus)) {
     return `${count} review marks restored`;
   }
-  switch (statuses[0]) {
+  switch (firstStatus) {
     case EvaluationStatus.Accepted:
       return `${count} ${noun} marked as accepted`;
     case EvaluationStatus.Rejected:
       return `${count} ${noun} marked as rejected`;
-    default:
+    case EvaluationStatus.Pending:
       return count === 1
         ? "1 change is pending review again"
         : `${count} changes are pending review again`;
+    default:
+      assertNever(firstStatus);
   }
+}
+
+/**
+ * Rejecting invites the reviewer to write a note, which is a build comment the
+ * moment they submit it. Taking the rejection back leaves that note behind —
+ * it is on the server, where this stack deliberately does not reach — so the
+ * snapshot would otherwise carry a written justification for a rejection that
+ * no longer exists, with nothing saying so.
+ */
+function checkTakesBackRejection(change: AppliedReviewMarkChange): boolean {
+  return Object.entries(change.replaced).some(
+    ([diffId, status]) =>
+      status === EvaluationStatus.Rejected &&
+      change.statuses[diffId] !== EvaluationStatus.Rejected,
+  );
 }
 
 /**
@@ -58,11 +79,13 @@ export function BuildReviewHistoryHotkeys() {
     if (diff) {
       setActiveDiff(diff, true);
     }
-    toast.success(describeAppliedChange(change));
+    toast.success(describeAppliedChange(change), {
+      description: checkTakesBackRejection(change)
+        ? "Any note you left explaining the rejection stays on the snapshot."
+        : undefined,
+    });
   });
 
-  // No permission check: a reviewer who cannot mark never records a step, so
-  // the stacks stay empty and both keys are no-ops for them.
   const enabled = Boolean(history);
   useBuildHotkey("undoReviewMark", () => apply(history?.undo() ?? null), {
     enabled,
