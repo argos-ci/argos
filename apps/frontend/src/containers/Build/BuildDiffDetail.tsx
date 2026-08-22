@@ -388,11 +388,24 @@ function BuildScreenshotHeader(props: {
   );
 }
 
-function ScreenshotHeaderDetails(props: { children: React.ReactNode }) {
+/**
+ * What a side of the comparison is, then where it came from.
+ *
+ * The sentence leads because the labels do not explain themselves: a reviewer
+ * meeting "Baseline" for the first time needs to know it is the state being
+ * compared against before a commit sha means anything.
+ */
+function ScreenshotHeaderDetails(props: {
+  description: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 p-0.5 text-xs">
-      {props.children}
-    </dl>
+    <div className="max-w-2xs p-0.5 text-xs">
+      <p className="text-low text-balance">{props.description}</p>
+      <dl className="border-t-thin mt-2 grid grid-cols-[auto_auto] gap-x-4 gap-y-1 pt-2">
+        {props.children}
+      </dl>
+    </div>
   );
 }
 
@@ -432,7 +445,7 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   const { baseScreenshotBucket } = build;
   invariant(baseScreenshotBucket, "guarded by BaselineScreenshotHeader");
   return (
-    <ScreenshotHeaderDetails>
+    <ScreenshotHeaderDetails description="The snapshot this build was compared against, kept from the last approved build.">
       {build.baseBuild && (
         <ScreenshotHeaderDetail label="Build">
           <Link
@@ -472,7 +485,7 @@ function ChangesDetails(props: { build: BuildFragmentDocument }) {
   const { build } = props;
   const repoUrl = useProjectRepositoryUrl();
   return (
-    <ScreenshotHeaderDetails>
+    <ScreenshotHeaderDetails description="The snapshot this build captured. Approving it makes it the next baseline.">
       {build.branch && (
         <ScreenshotHeaderDetail label="Branch">
           <BranchLink repoUrl={repoUrl} branch={build.branch} />
@@ -1375,14 +1388,14 @@ const BuildScreenshots = memo(
       }
     }
 
+    const columnClassName =
+      "relative flex min-h-0 min-w-0 flex-1 flex-col gap-2 [[hidden]]:hidden";
+
     return (
       // `pt-2`, not `p-4`: the header row tops out level with the right
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
-        <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
-          hidden={!showBaseline}
-        >
+        <div className={columnClassName} hidden={!showBaseline}>
           <BaselineScreenshotHeader build={build} />
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
@@ -1390,10 +1403,7 @@ const BuildScreenshots = memo(
             </ScaleProvider>
           </div>
         </div>
-        <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
-          hidden={!showChanges}
-        >
+        <div className={columnClassName} hidden={!showChanges}>
           {blendMode ? (
             <div className="flex shrink-0 justify-center gap-6">
               <BaselineScreenshotHeader build={build} />
