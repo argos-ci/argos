@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Kbd } from "@/ui/Kbd";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { isMacOS } from "@/util/os";
+import { isMacOS, MOD, SHIFT } from "@/util/os";
 
 import {
   HotkeysDialogState,
@@ -17,7 +17,12 @@ import {
 type HotkeyEnv = "test" | "build" | "media";
 
 export type Hotkey = {
+  /**
+   * The combination to match, in which "⌘" stands for the platform modifier —
+   * Command on macOS, Control everywhere else — and never for a literal key.
+   */
   keys: string[];
+  /** The same combination as the reader's own keyboard labels it. */
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
@@ -40,7 +45,7 @@ const hotkeyGroups = [
       },
       enterSearchMode: {
         keys: ["⌘", "KeyF"],
-        displayKeys: ["⌘", "F"],
+        displayKeys: [MOD, "F"],
         description: "Find snapshot",
         envs: ["build"],
       },
@@ -260,19 +265,19 @@ const hotkeyGroups = [
     hotkeys: {
       copyAsSelectedFormat: {
         keys: ["⌘", "KeyC"],
-        displayKeys: ["⌘", "C"],
+        displayKeys: [MOD, "C"],
         description: "Copy as the selected format",
         envs: ["media"],
       },
       copyMediaLink: {
         keys: ["⌘", "⇧", "Comma"],
-        displayKeys: ["⌘", "⇧", ","],
+        displayKeys: [MOD, SHIFT, ","],
         description: "Copy link",
         envs: ["media"],
       },
       downloadMedia: {
         keys: ["⌘", "⇧", "KeyD"],
-        displayKeys: ["⌘", "⇧", "D"],
+        displayKeys: [MOD, SHIFT, "D"],
         description: "Download",
         envs: ["media"],
       },
@@ -307,13 +312,13 @@ const hotkeyGroups = [
       },
       undoReviewMark: {
         keys: ["⌘", "KeyZ"],
-        displayKeys: ["⌘", "Z"],
+        displayKeys: [MOD, "Z"],
         description: "Undo last review mark",
         envs: ["build"],
       },
       redoReviewMark: {
         keys: ["⌘", "⇧", "KeyZ"],
-        displayKeys: ["⌘", "⇧", "Z"],
+        displayKeys: [MOD, SHIFT, "Z"],
         description: "Redo last undone review mark",
         envs: ["build"],
       },

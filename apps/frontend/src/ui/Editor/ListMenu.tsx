@@ -3,9 +3,9 @@ import { ChevronDownIcon, ListIcon, ListOrderedIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import { MOD, SHIFT } from "@/util/os";
 
 import { Button } from "../Button";
-import { MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 
 const LIST_OPTIONS = [
