@@ -7,12 +7,16 @@ describe("getInvoiceRevenue", () => {
   function invoice(fields: {
     total: number;
     total_excluding_tax?: number | null;
+    taxes?: number[];
+    currency?: string;
     pre?: number;
     post?: number;
   }) {
     return {
+      currency: fields.currency ?? "usd",
       total: fields.total,
       total_excluding_tax: fields.total_excluding_tax ?? null,
+      total_taxes: fields.taxes?.map((amount) => ({ amount })) ?? null,
       pre_payment_credit_notes_amount: fields.pre ?? 0,
       post_payment_credit_notes_amount: fields.post ?? 0,
     };
@@ -24,11 +28,26 @@ describe("getInvoiceRevenue", () => {
       getInvoiceRevenue(
         invoice({ total: 12_000, total_excluding_tax: 10_000 }),
       ),
-    ).toBe(100);
+    ).toEqual({ amount: 100, currency: "usd" });
   });
 
-  it("falls back to the total when no tax is broken out", () => {
-    expect(getInvoiceRevenue(invoice({ total: 10_000 }))).toBe(100);
+  it("takes the listed taxes off when no pre-tax total is stated", () => {
+    // Falling back to the total alone would let the VAT through as revenue.
+    expect(
+      getInvoiceRevenue(invoice({ total: 12_000, taxes: [1_500, 500] })),
+    ).toEqual({ amount: 100, currency: "usd" });
+  });
+
+  it("reports the currency it was raised in", () => {
+    expect(
+      getInvoiceRevenue(
+        invoice({
+          total: 10_000,
+          total_excluding_tax: 10_000,
+          currency: "eur",
+        }),
+      ),
+    ).toEqual({ amount: 100, currency: "eur" });
   });
 
   it("nets out credit notes issued before and after payment", () => {
@@ -42,7 +61,7 @@ describe("getInvoiceRevenue", () => {
           pre: 1_500,
           post: 2_500,
         }),
-      ),
+      ).amount,
     ).toBe(60);
   });
 
@@ -50,7 +69,7 @@ describe("getInvoiceRevenue", () => {
     expect(
       getInvoiceRevenue(
         invoice({ total: 10_000, total_excluding_tax: 10_000, post: 10_000 }),
-      ),
+      ).amount,
     ).toBe(0);
   });
 });

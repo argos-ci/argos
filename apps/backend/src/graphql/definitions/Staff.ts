@@ -346,6 +346,16 @@ export const typeDefs = gql`
     revenue: Float!
     "How many teams contributed."
     teamsCount: Int!
+    """
+    The part of \`revenue\` invoiced in a currency other than US dollars, added
+    in at parity.
+
+    Stripe states each invoice in the currency it was raised in, and converting
+    one into another needs a rate on the day, which nothing here has. So a euro
+    invoice is counted as though it were dollars, and this says how much of the
+    figure rests on that.
+    """
+    foreignRevenue: Float!
   }
 
   """
@@ -408,9 +418,9 @@ export const typeDefs = gql`
     What Argos invoiced over the last \`months\` calendar months, oldest first
     and the running one last (staff only).
 
-    Its own query rather than a field on \`staffTeams\`: it walks Stripe's
-    invoices, so it loads beside the table instead of ahead of it. Every month
-    costs a walk of its own, which is what \`months\` is bounded for.
+    Read from Stripe when asked, never stored: the invoices change behind us as
+    they are paid, voided and credited. Every month costs a paginated walk of
+    its own, which is what \`months\` is bounded for.
     """
     staffRevenue(months: Int! = 3): [StaffRevenueMonth!]!
   }
@@ -606,6 +616,9 @@ export const resolvers: IResolvers = {
     staffRevenue: async (_root, args, ctx) => {
       assertStaff(ctx);
 
+      // Guarded here as well as in the service: this one answers a bad request
+      // with a bad-request error rather than an invariant the client cannot
+      // read.
       if (args.months < 1 || args.months > MAX_MONTHS) {
         throw badUserInput(`\`months\` must be between 1 and ${MAX_MONTHS}.`);
       }
