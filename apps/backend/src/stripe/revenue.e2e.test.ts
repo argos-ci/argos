@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getBilledTeams } from "./revenue";
+import { getBilledTeams, getTeamCustomerIds } from "./revenue";
 
 describe("getBilledTeams", () => {
   beforeEach(async () => {
@@ -110,5 +110,50 @@ describe("getBilledTeams", () => {
 
     expect(teams).toHaveLength(1);
     expect(teams[0]?.interval).toBe("year");
+  });
+});
+
+describe("getTeamCustomerIds", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  it("keeps a team whose subscription has ended", async () => {
+    // Its invoices were still sent, and the month it was invoiced in has to
+    // keep them — that departure is exactly what a comparison between two
+    // months exists to show.
+    const account = await factory.TeamAccount.create({
+      stripeCustomerId: "cus_churned",
+    });
+    const plan = await factory.Plan.create({ usageBased: true });
+    const user = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: account.id,
+      planId: plan.id,
+      currency: "usd",
+      provider: "stripe",
+      stripeSubscriptionId: "sub_churned",
+      subscriberId: user.id,
+      startDate: new Date("2021-01-01").toISOString(),
+      endDate: new Date("2024-01-01").toISOString(),
+      status: "canceled",
+    });
+
+    await expect(getTeamCustomerIds()).resolves.toEqual(
+      new Set(["cus_churned"]),
+    );
+  });
+
+  it("leaves out a personal account", async () => {
+    // Whatever a personal account was invoiced is not this page's subject.
+    await factory.UserAccount.create({ stripeCustomerId: "cus_personal" });
+
+    await expect(getTeamCustomerIds()).resolves.toEqual(new Set());
+  });
+
+  it("leaves out a team that never reached Stripe", async () => {
+    await factory.TeamAccount.create({ stripeCustomerId: null });
+
+    await expect(getTeamCustomerIds()).resolves.toEqual(new Set());
   });
 });
