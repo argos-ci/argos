@@ -2,10 +2,9 @@ import { ScreenshotMetadataMediaType } from "@/gql/graphql";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { mediaTypeIcons } from "../../metadata/metadataIcons";
-import { MetadataRow } from "./MetadataRow";
+import { mediaTypeIcons } from "../metadataIcons";
 
-export function MediaTypeRow(props: {
+export function MediaTypeChip(props: {
   mediaType: ScreenshotMetadataMediaType | null;
 }) {
   const { mediaType } = props;
@@ -13,10 +12,8 @@ export function MediaTypeRow(props: {
     return null;
   }
   return (
-    <MetadataRow>
-      <Tooltip content="Print mode (media: print)">
-        <Chip icon={mediaTypeIcons[mediaType]}>Print</Chip>
-      </Tooltip>
-    </MetadataRow>
+    <Tooltip content="Print mode (media: print)">
+      <Chip icon={mediaTypeIcons[mediaType]}>Print</Chip>
+    </Tooltip>
   );
 }

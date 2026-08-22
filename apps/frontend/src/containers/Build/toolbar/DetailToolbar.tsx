@@ -28,7 +28,9 @@ export function DetailToolbarNav(props: { children: React.ReactNode }) {
 
 /**
  * What is on screen, named. Takes the space the controls leave and gives it
- * back — `min-w-0` so a long name truncates instead of pushing them off the row.
+ * back — a long name truncates rather than pushing them off the row, but only
+ * down to `min-w-40`: past that the row wraps instead, because a heading
+ * squeezed to two syllables names nothing.
  *
  * `heading` rather than an `h1` element: the slot is used on pages that already
  * have one, and the level is stated explicitly rather than inferred.
@@ -56,7 +58,7 @@ export function DetailToolbarTitle(props: {
   );
   return (
     <div
-      className={clsx("flex min-w-0 flex-1", meta && "items-baseline gap-2")}
+      className={clsx("flex min-w-40 flex-1", meta && "items-baseline gap-2")}
     >
       {render ? render(title) : title}
       {meta ? (

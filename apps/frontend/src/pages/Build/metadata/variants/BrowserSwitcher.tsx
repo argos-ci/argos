@@ -9,18 +9,17 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
-import { BrowserIcon } from "../../metadata/browser/BrowserIcon";
-import { getBrowserLabel } from "../../metadata/browser/browserLabels";
-import { MetadataRow } from "./MetadataRow";
+import { BrowserIcon } from "../browser/BrowserIcon";
+import { getBrowserLabel } from "../browser/browserLabels";
 import {
   getUniqueBrowsers,
   hashBrowser,
   resolveDiffMetadata,
   useGetDiffPath,
   type MetadataBrowser,
-} from "./utils";
+} from "../utils";
 
-export function BrowserRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
+export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
   const getDiffPath = useGetDiffPath();
   const metadata = resolveDiffMetadata(diff);
@@ -33,42 +32,38 @@ export function BrowserRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
   if (browsers.length === 1) {
     const browser = browsers[0]!;
     return (
-      <MetadataRow>
-        <Chip icon={<BrowserIcon browser={browser} />}>
-          {getBrowserLabel(browser.name)}
-          <span className="text-low ml-1">v{browser.version}</span>
-        </Chip>
-      </MetadataRow>
+      <Chip icon={<BrowserIcon browser={browser} />}>
+        {getBrowserLabel(browser.name)}
+        <span className="text-low ml-1">v{browser.version}</span>
+      </Chip>
     );
   }
   const activeKey = metadata?.browser ? hashBrowser(metadata.browser) : null;
   const activeIndex = browsers.findIndex((b) => hashBrowser(b) === activeKey);
   return (
-    <MetadataRow>
-      <ButtonGroup>
-        {browsers.map((browser, index) => {
-          const key = hashBrowser(browser);
-          const isActive = activeKey === key;
-          const isNextActive = (activeIndex + 1) % browsers.length === index;
-          const resolvedDiff = isActive
-            ? diff
-            : siblingDiffs.find((d) => {
-                const m = resolveDiffMetadata(d);
-                return m?.browser && hashBrowser(m.browser) === key;
-              });
-          invariant(resolvedDiff, "diff cannot be null");
-          return (
-            <BrowserChipLink
-              key={key}
-              browser={browser}
-              aria-current={isActive ? "page" : undefined}
-              href={getDiffPath(resolvedDiff.id) ?? ""}
-              shortcutEnabled={isNextActive}
-            />
-          );
-        })}
-      </ButtonGroup>
-    </MetadataRow>
+    <ButtonGroup>
+      {browsers.map((browser, index) => {
+        const key = hashBrowser(browser);
+        const isActive = activeKey === key;
+        const isNextActive = (activeIndex + 1) % browsers.length === index;
+        const resolvedDiff = isActive
+          ? diff
+          : siblingDiffs.find((d) => {
+              const m = resolveDiffMetadata(d);
+              return m?.browser && hashBrowser(m.browser) === key;
+            });
+        invariant(resolvedDiff, "diff cannot be null");
+        return (
+          <BrowserChipLink
+            key={key}
+            browser={browser}
+            aria-current={isActive ? "page" : undefined}
+            href={getDiffPath(resolvedDiff.id) ?? ""}
+            shortcutEnabled={isNextActive}
+          />
+        );
+      })}
+    </ButtonGroup>
   );
 }
 

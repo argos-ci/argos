@@ -12,8 +12,8 @@ import {
   isRelevantTag,
   type TagWithSource,
 } from "../../metadata/tags/util";
+import type { Metadata } from "../../metadata/utils";
 import { MetadataRow } from "./MetadataRow";
-import type { Metadata } from "./utils";
 
 const TAG_SOURCE_META: Record<
   TagWithSource["source"],

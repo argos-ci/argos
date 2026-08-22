@@ -4,11 +4,11 @@ import { ChipLink } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 import { canParseURL } from "@/util/url";
 
-import { MetadataRow } from "./MetadataRow";
 import {
   resolvePreviewUrlFromDeployment,
   type AutomationLibrary,
-} from "./utils";
+} from "../../metadata/utils";
+import { MetadataRow } from "./MetadataRow";
 
 export function UrlRow(props: {
   url: string | null;

@@ -25,6 +25,7 @@ import {
   useHasNextDiff,
   useHasPreviousDiff,
 } from "./BuildDiffState";
+import { VariantSwitchers } from "./metadata/variants/VariantSwitchers";
 import { RightSidebarToggle } from "./RightSidebar";
 
 export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
@@ -62,6 +63,9 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       >
         {diff.name}
       </DetailToolbarTitle>
+      {/* Which variant of the snapshot is on screen, and the siblings to jump
+          to. */}
+      <VariantSwitchers diff={diff} />
       {/* What is about the pane: the view mode, the fit, the overlay's style,
           comment visibility. Everything that acts on the snapshot itself is in
           `ScreenshotActionsToolbar`, under it. */}

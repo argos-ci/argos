@@ -5,8 +5,8 @@ import { Link } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
+import { resolveDiffMetadata } from "../../metadata/utils";
 import { MetadataRow } from "./MetadataRow";
-import { resolveDiffMetadata } from "./utils";
 
 export function TraceRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;

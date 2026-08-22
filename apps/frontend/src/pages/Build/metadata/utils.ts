@@ -6,7 +6,7 @@ import {
 } from "@/gql/graphql";
 import { canParseURL } from "@/util/url";
 
-import type { Diff } from "../../BuildDiffState";
+import type { Diff } from "../BuildDiffState";
 
 export type Metadata = NonNullable<
   NonNullable<Diff["baseScreenshot"]>["metadata"]
