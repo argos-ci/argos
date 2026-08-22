@@ -2274,7 +2274,8 @@ CREATE TABLE public.screenshot_buckets (
     CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL))),
     CONSTRAINT chk_complete_true_storybookscreenshotcount_not_null CHECK (((complete = false) OR ("storybookScreenshotCount" IS NOT NULL))),
     CONSTRAINT screenshot_buckets_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text])))
-);
+)
+WITH (autovacuum_vacuum_insert_scale_factor='0', autovacuum_vacuum_insert_threshold='20000');
 
 
 ALTER TABLE public.screenshot_buckets OWNER TO postgres;
@@ -6777,3 +6778,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260817142631_screenshot-buckets-project-created-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818083531_cursor-origin.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
