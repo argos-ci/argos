@@ -448,19 +448,11 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
       )}
       {build.baseBranch && (
         <ScreenshotHeaderDetail label="Branch">
-          <BranchLink
-            repoUrl={repoUrl}
-            branch={build.baseBranch}
-            externalIcon={false}
-          />
+          <BranchLink repoUrl={repoUrl} branch={build.baseBranch} />
         </ScreenshotHeaderDetail>
       )}
       <ScreenshotHeaderDetail label="Commit">
-        <CommitLink
-          repoUrl={repoUrl}
-          commit={baseScreenshotBucket.commit}
-          externalIcon={false}
-        />
+        <CommitLink repoUrl={repoUrl} commit={baseScreenshotBucket.commit} />
       </ScreenshotHeaderDetail>
     </ScreenshotHeaderDetails>
   );
@@ -483,19 +475,11 @@ function ChangesDetails(props: { build: BuildFragmentDocument }) {
     <ScreenshotHeaderDetails>
       {build.branch && (
         <ScreenshotHeaderDetail label="Branch">
-          <BranchLink
-            repoUrl={repoUrl}
-            branch={build.branch}
-            externalIcon={false}
-          />
+          <BranchLink repoUrl={repoUrl} branch={build.branch} />
         </ScreenshotHeaderDetail>
       )}
       <ScreenshotHeaderDetail label="Commit">
-        <CommitLink
-          repoUrl={repoUrl}
-          commit={build.commit}
-          externalIcon={false}
-        />
+        <CommitLink repoUrl={repoUrl} commit={build.commit} />
       </ScreenshotHeaderDetail>
     </ScreenshotHeaderDetails>
   );
@@ -1369,7 +1353,9 @@ const BuildScreenshots = memo(
       invariant(diff.baseScreenshot);
       if (!checkIsImageContentType(diff.compareScreenshot.contentType)) {
         return (
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-4">
+          // `pt-2`, not `p-4`: the header row tops out level with the right
+          // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pt-2 pb-4">
             <BuildSnapshotsDiff
               base={{
                 url: diff.baseScreenshot.url,
@@ -1390,7 +1376,9 @@ const BuildScreenshots = memo(
     }
 
     return (
-      <div className="flex min-h-0 min-w-0 flex-1 gap-4 p-4">
+      // `pt-2`, not `p-4`: the header row tops out level with the right
+      // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
+      <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
         <div
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
           hidden={!showBaseline}

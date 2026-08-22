@@ -51,10 +51,43 @@ export function HeadlessLink({
         target={target}
         {...props}
       >
-        {children}
-        {isExternal ? <ExternalIndicator /> : null}
+        {isExternal ? <ExternalContent>{children}</ExternalContent> : children}
       </RouterLink>
     </LinkContext>
+  );
+}
+
+/**
+ * The content of an external link, with the indicator icon glued to it.
+ *
+ * Glued, because browsers treat the inline SVG as its own wrap opportunity, so
+ * next to a long label the icon drops to a line of its own — and no glue
+ * character prevents it: Chromium breaks around an atomic inline even across a
+ * no-break space. Sharing a no-wrap span with the label's last characters is
+ * what actually holds: the break opportunity ends up inside the span, where
+ * `nowrap` suppresses it, so the icon only ever wraps together with the tail.
+ * Content that isn't a plain string keeps the plain suffix — there is no tail
+ * to split off.
+ */
+function ExternalContent(props: { children: React.ReactNode }) {
+  const { children } = props;
+  if (typeof children !== "string" || children.length === 0) {
+    return (
+      <>
+        {children}
+        <ExternalIndicator />
+      </>
+    );
+  }
+  const splitAt = Math.max(0, children.length - 3);
+  return (
+    <>
+      {children.slice(0, splitAt)}
+      <span className="whitespace-nowrap">
+        {children.slice(splitAt)}
+        <ExternalIndicator />
+      </span>
+    </>
   );
 }
 
@@ -126,10 +159,7 @@ function FakeLink({
 }) {
   const content =
     isExternal && href ? (
-      <>
-        {children}
-        <ExternalIndicator />
-      </>
+      <ExternalContent>{children}</ExternalContent>
     ) : (
       children
     );
