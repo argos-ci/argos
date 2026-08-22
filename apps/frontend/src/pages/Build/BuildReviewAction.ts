@@ -11,6 +11,7 @@ import { useEventCallback } from "@/ui/useEventCallback";
 import { useBuildNextReviewPrompt } from "./BuildNextReviewDialog";
 import {
   useBuildReviewAPI,
+  useBuildReviewHistory,
   useGetReviewedDiffStatuses,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
@@ -52,6 +53,7 @@ export function useCreateBuildReviewMutation(
   options?: { onCompleted?: () => void },
 ) {
   const api = useBuildReviewAPI();
+  const history = useBuildReviewHistory();
   const openReviewSidebar = useOpenReviewSidebar();
   const { promptNextReview } = useBuildNextReviewPrompt();
   const projectParams = useProjectParams();
@@ -61,6 +63,7 @@ export function useCreateBuildReviewMutation(
   const createReview = useEventCallback(
     async (input: { event: BuildReviewEvent; body?: EditorValue }) => {
       invariant(api, `Reviewing a build requires api to be defined`);
+      invariant(history, `Reviewing a build requires the review history`);
       invariant(projectParams, `Reviewing a build requires project params`);
       const diffStatuses = getReviewedDiffStatuses(input.event);
       const screenshotDiffReviews = Object.entries(diffStatuses)
@@ -94,6 +97,10 @@ export function useCreateBuildReviewMutation(
       });
       options?.onCompleted?.();
       api.setDiffStatuses(diffStatuses);
+      // The marks now live on the server: there is nothing local left to walk
+      // back, and undoing into a pre-review state would only misrepresent what
+      // was submitted.
+      history.clear();
       openReviewSidebar();
       // Approving or rejecting settles this build, so it's the moment to offer
       // the next one. A neutral comment deliberately leaves the build

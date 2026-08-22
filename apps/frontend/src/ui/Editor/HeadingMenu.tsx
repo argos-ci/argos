@@ -3,9 +3,9 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import { ALT, MOD } from "@/util/os";
 
 import { Button } from "../Button";
-import { ALT, MOD } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 
 const PARAGRAPH_HEADING_OPTION = {

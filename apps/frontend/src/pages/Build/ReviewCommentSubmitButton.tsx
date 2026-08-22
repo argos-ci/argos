@@ -4,8 +4,8 @@ import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
-import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { MOD } from "@/util/os";
 
 export const ReviewCommentSubmitButton_Build = graphql(`
   fragment ReviewCommentSubmitButton_Build on Build {

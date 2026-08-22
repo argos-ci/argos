@@ -357,3 +357,112 @@ loggedTest(
     await screenshot(page, "build-agent-review");
   },
 );
+
+loggedTest(
+  "undoes and redoes review marks with the keyboard",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // A standalone changed snapshot, so the mark lands on it alone: the other
+    // changed ones are bundled under a "3 similar" group, which is marked as
+    // a whole.
+    await page
+      .getByRole("button", { name: "dummy-375x1440.png" })
+      .first()
+      .click();
+
+    // `aria-pressed` narrows it to the toolbar's own accept button: a diff
+    // list header carries the same thumb once its whole group is accepted, and
+    // it comes first in the document.
+    const acceptButton = page.locator(
+      "button[aria-pressed]:has(.lucide-thumbs-up)",
+    );
+
+    // Marking a snapshot takes the reviewer to the next one, which is why a
+    // mistake is always noticed from somewhere else: undo has to put the mark
+    // back *and* bring its snapshot back on screen.
+    const firstDiffURL = page.url();
+    await acceptButton.click();
+    await expect(page).not.toHaveURL(firstDiffURL);
+    const secondDiffURL = page.url();
+    await acceptButton.click();
+    await expect(page).not.toHaveURL(secondDiffURL);
+
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page).toHaveURL(secondDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "false");
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page).toHaveURL(firstDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "false");
+
+    // Shift is the only thing telling redo apart from undo, so a redo that
+    // also read as an undo would walk the reviewer backwards here instead of
+    // forwards.
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(page).toHaveURL(firstDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(page).toHaveURL(secondDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
+  },
+);
+
+loggedTest(
+  "answers the digit shortcuts on a layout where digits are shifted",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // Waiting on a diff row, not just on the page shell: the hotkeys are
+    // registered as the sidebar mounts, and a key pressed before that is
+    // simply lost.
+    await expect(
+      page.getByRole("button", { name: "dummy-375x1440.png" }).first(),
+    ).toBeVisible();
+
+    // The digit row is shifted on an AZERTY keyboard, so the "2" the dialog
+    // names arrives as `Digit2` with shift held — which is what pressing the
+    // key with shift produces here too, whatever character it prints.
+    await page.keyboard.press("Shift+Digit2");
+
+    // Going to the first changed snapshot leaves the overview for a diff.
+    await expect(page).not.toHaveURL(/\/overview$/);
+  },
+);
+
+loggedTest(
+  "labels shortcuts with the reader's own modifier key",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    // The platform is read once, when the module evaluates, so the override
+    // has to be in place before the page loads. Nothing else catches this:
+    // ⌘ is right on every machine the app is developed on, and wrong on the
+    // keyboard of everyone told to press it on Windows or Linux.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "platform", { get: () => "Win32" });
+    });
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // The dialog answers a document listener the app registers on mount, so
+    // the key is simply lost until the build has rendered.
+    await expect(
+      page.getByRole("button", { name: "dummy-375x1440.png" }).first(),
+    ).toBeVisible();
+    await page.keyboard.press("?");
+
+    const dialog = page.getByRole("dialog", { name: "Keyboard Shortcuts" });
+    await expect(dialog.getByText("Undo last review mark")).toBeVisible();
+    await expect(dialog.getByText("⌘", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByText("⇧", { exact: true })).toHaveCount(0);
+    await expect(
+      dialog.locator("kbd").filter({ hasText: "Ctrl" }).first(),
+    ).toBeVisible();
+  },
+);

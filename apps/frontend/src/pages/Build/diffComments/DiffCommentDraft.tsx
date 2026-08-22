@@ -5,11 +5,11 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
-import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
+import { MOD } from "@/util/os";
 
 type Avatar = React.ComponentProps<typeof AccountAvatar>["avatar"];
 

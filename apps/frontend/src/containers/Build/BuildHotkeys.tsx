@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Kbd } from "@/ui/Kbd";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { isMacOS } from "@/util/os";
+import { isMacOS, MOD, SHIFT } from "@/util/os";
 
 import {
   HotkeysDialogState,
@@ -17,7 +17,12 @@ import {
 type HotkeyEnv = "test" | "build" | "media";
 
 export type Hotkey = {
+  /**
+   * The combination to match, in which "⌘" stands for the platform modifier —
+   * Command on macOS, Control everywhere else — and never for a literal key.
+   */
   keys: string[];
+  /** The same combination as the reader's own keyboard labels it. */
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
@@ -40,7 +45,7 @@ const hotkeyGroups = [
       },
       enterSearchMode: {
         keys: ["⌘", "KeyF"],
-        displayKeys: ["⌘", "F"],
+        displayKeys: [MOD, "F"],
         description: "Find snapshot",
         envs: ["build"],
       },
@@ -260,19 +265,19 @@ const hotkeyGroups = [
     hotkeys: {
       copyAsSelectedFormat: {
         keys: ["⌘", "KeyC"],
-        displayKeys: ["⌘", "C"],
+        displayKeys: [MOD, "C"],
         description: "Copy as the selected format",
         envs: ["media"],
       },
       copyMediaLink: {
         keys: ["⌘", "⇧", "Comma"],
-        displayKeys: ["⌘", "⇧", ","],
+        displayKeys: [MOD, SHIFT, ","],
         description: "Copy link",
         envs: ["media"],
       },
       downloadMedia: {
         keys: ["⌘", "⇧", "KeyD"],
-        displayKeys: ["⌘", "⇧", "D"],
+        displayKeys: [MOD, SHIFT, "D"],
         description: "Download",
         envs: ["media"],
       },
@@ -305,6 +310,18 @@ const hotkeyGroups = [
         description: "Ignore change",
         envs: ["test", "build"],
       },
+      undoReviewMark: {
+        keys: ["⌘", "KeyZ"],
+        displayKeys: [MOD, "Z"],
+        description: "Undo last review mark",
+        envs: ["build"],
+      },
+      redoReviewMark: {
+        keys: ["⌘", "⇧", "KeyZ"],
+        displayKeys: [MOD, SHIFT, "Z"],
+        description: "Redo last undone review mark",
+        envs: ["build"],
+      },
     },
   },
 ] satisfies HotkeyGroup[];
@@ -323,6 +340,34 @@ function checkIsModifiedPressed(event: KeyboardEvent) {
     return event.metaKey;
   }
   return event.ctrlKey;
+}
+
+/**
+ * Whether typing `key` can require shift, which makes an undeclared
+ * `event.shiftKey` say nothing about the reviewer's intent.
+ *
+ * Two cases: a literal character carries the answer in `event.key` already —
+ * "?" *is* shift+/ — and a digit is written as a physical code, but the digit
+ * row is shifted on an AZERTY layout, so pressing the "1" the dialog names
+ * sends `Digit1` with shift held.
+ */
+function checkKeyCanNeedShift(key: string): boolean {
+  if (key === "⌘" || key === "⌥" || key === "⇧") {
+    return false;
+  }
+  return key.length === 1 || key.startsWith("Digit");
+}
+
+/**
+ * Whether `event`'s shift state matches what `hotkey` asks for.
+ */
+function checkShiftMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
+  if (hotkey.keys.some((key) => key === "⇧")) {
+    return event.shiftKey;
+  }
+  // Shift is otherwise forbidden — ⌘⇧Z must not read as ⌘Z — except where the
+  // key itself may have needed it.
+  return hotkey.keys.some(checkKeyCanNeedShift) || !event.shiftKey;
 }
 
 type HotkeyOptions = {
@@ -349,7 +394,6 @@ type HotkeyRegistration = {
 function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
   const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
   const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
-  const shiftShouldBePressed = hotkey.keys.some((key) => key === "⇧");
   const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
 
   if (hasDigits && altShouldBePressed !== event.altKey) {
@@ -360,9 +404,7 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
-  // Only demanded, never forbidden: plenty of existing keys ("?") are typed
-  // *with* shift without declaring it.
-  if (shiftShouldBePressed && !event.shiftKey) {
+  if (!checkShiftMatches(hotkey, event)) {
     return false;
   }
 
