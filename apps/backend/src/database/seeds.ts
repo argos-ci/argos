@@ -1856,6 +1856,10 @@ export async function seed() {
     authorUserId: greg.user.id,
     replierUserId: jeremy.user.id,
   });
+
+  await createPullRequestScenario({
+    projectId: bigProject.id,
+  });
 }
 
 /**
@@ -2447,6 +2451,347 @@ async function createMediaPullRequest(projectId: string): Promise<string> {
   });
 
   return pullRequest.id;
+}
+
+/**
+ * A bucket and its build attached to a pull request — the minimum a build row
+ * needs to exist and resolve a status. No screenshots: the pull request list
+ * only reads the build's status chip, never its diffs.
+ */
+async function createPullRequestBuild(input: {
+  projectId: string;
+  githubPullRequestId: string;
+  name?: string;
+  conclusion: "no-changes" | "changes-detected";
+  branch: string;
+  commit: string;
+  createdAt: string;
+}): Promise<Build> {
+  const name = input.name ?? "default";
+  const bucket = await ScreenshotBucket.query().insertAndFetch({
+    name,
+    projectId: input.projectId,
+    commit: input.commit,
+    branch: input.branch,
+    complete: true,
+    valid: true,
+    screenshotCount: 0,
+    storybookScreenshotCount: 0,
+    createdAt: input.createdAt,
+    updatedAt: input.createdAt,
+  });
+  return Build.query().insertAndFetch({
+    projectId: input.projectId,
+    compareScreenshotBucketId: bucket.id,
+    githubPullRequestId: input.githubPullRequestId,
+    name,
+    jobStatus: "complete",
+    type: "check",
+    conclusion: input.conclusion,
+    stats: {
+      failure: 0,
+      added: 0,
+      unchanged: 12,
+      changed: input.conclusion === "changes-detected" ? 3 : 0,
+      removed: 0,
+      total: input.conclusion === "changes-detected" ? 15 : 12,
+      retryFailure: 0,
+      ignored: 0,
+    },
+    baseBranch: "main",
+    baseBranchResolvedFrom: "project",
+    createdAt: input.createdAt,
+    updatedAt: input.createdAt,
+  });
+}
+
+export type PullRequestScenario = {
+  openPullRequest: GithubPullRequest;
+  mergedPullRequest: GithubPullRequest;
+  draftPullRequest: GithubPullRequest;
+  closedPullRequest: GithubPullRequest;
+  /** Builds of the open pull request, most recent first — the list's order. */
+  openPullRequestBuilds: Build[];
+  /** Media published to the open pull request, upload order. */
+  openPullRequestMedias: Media[];
+};
+
+/**
+ * Pull requests for the project's pull request list: one per state the row can
+ * draw — open, merged, draft and closed — with enough builds and media on the
+ * open one to overflow the row's chips and thumbnails.
+ *
+ * Links the project to a GitHub repository of its own, since a seeded project
+ * has none and pull requests cannot exist without one. Fixed timestamps keep
+ * the visual baselines stable, and the image keys reuse the `dummy-*` /
+ * `bear-*` files that exist in the test bucket so thumbnails load.
+ */
+export async function createPullRequestScenario(input: {
+  projectId: string;
+}): Promise<PullRequestScenario> {
+  const { projectId } = input;
+  const project = await Project.query().findById(projectId);
+  invariant(project, "project should exist");
+
+  const githubAccount = await GithubAccount.query().insertAndFetch({
+    githubId: 92000000 + Number(projectId),
+    name: "Wanda Maximoff",
+    login: `wanda-${projectId}`,
+    email: null,
+    type: "user",
+  });
+
+  const repository = await GithubRepository.query().insertAndFetch({
+    name: "sparkle",
+    private: false,
+    defaultBranch: "main",
+    githubId: 93000000 + Number(projectId),
+    githubAccountId: githubAccount.id,
+  });
+
+  await project.$query().patch({ githubRepositoryId: repository.id });
+
+  const [
+    openPullRequest,
+    mergedPullRequest,
+    draftPullRequest,
+    closedPullRequest,
+  ] = await GithubPullRequest.query().insertAndFetch([
+    {
+      githubRepositoryId: repository.id,
+      number: 48,
+      title: "Add dark mode to the dashboard",
+      state: "open" as const,
+      merged: false,
+      draft: false,
+      jobStatus: "complete" as const,
+      creatorId: githubAccount.id,
+      headRef: "feat/dark-mode",
+      baseRef: "main",
+      date: "2026-04-22T09:00:00.000Z",
+      createdAt: "2026-04-22T09:00:00.000Z",
+      updatedAt: "2026-04-22T09:00:00.000Z",
+    },
+    {
+      githubRepositoryId: repository.id,
+      number: 45,
+      title: "Fix login button alignment",
+      state: "closed" as const,
+      merged: true,
+      mergedAt: "2026-04-21T16:00:00.000Z",
+      draft: false,
+      jobStatus: "complete" as const,
+      creatorId: githubAccount.id,
+      headRef: "fix/login-button",
+      baseRef: "main",
+      date: "2026-04-21T10:00:00.000Z",
+      createdAt: "2026-04-21T10:00:00.000Z",
+      updatedAt: "2026-04-21T16:00:00.000Z",
+    },
+    {
+      githubRepositoryId: repository.id,
+      number: 46,
+      title: "Refactor color tokens",
+      state: "open" as const,
+      merged: false,
+      draft: true,
+      jobStatus: "complete" as const,
+      creatorId: githubAccount.id,
+      headRef: "refactor/color-tokens",
+      baseRef: "main",
+      date: "2026-04-20T14:00:00.000Z",
+      createdAt: "2026-04-20T14:00:00.000Z",
+      updatedAt: "2026-04-20T14:00:00.000Z",
+    },
+    {
+      githubRepositoryId: repository.id,
+      number: 31,
+      title: "Experiment with a denser grid",
+      state: "closed" as const,
+      merged: false,
+      closedAt: "2026-04-19T11:00:00.000Z",
+      draft: false,
+      jobStatus: "complete" as const,
+      creatorId: githubAccount.id,
+      headRef: "experiment/dense-grid",
+      baseRef: "main",
+      date: "2026-04-18T08:00:00.000Z",
+      createdAt: "2026-04-18T08:00:00.000Z",
+      updatedAt: "2026-04-19T11:00:00.000Z",
+    },
+  ]);
+  invariant(
+    openPullRequest &&
+      mergedPullRequest &&
+      draftPullRequest &&
+      closedPullRequest,
+    "pull requests should be created",
+  );
+
+  // Five builds on the open pull request — one per push, the last two on a
+  // second build name — so the row overflows its three chips into a "+2".
+  const openPullRequestBuilds: Build[] = [];
+  for (const [index, build] of [
+    {
+      conclusion: "no-changes" as const,
+      createdAt: "2026-04-22T09:10:00.000Z",
+    },
+    {
+      conclusion: "changes-detected" as const,
+      createdAt: "2026-04-22T10:00:00.000Z",
+    },
+    {
+      conclusion: "changes-detected" as const,
+      createdAt: "2026-04-22T11:00:00.000Z",
+    },
+    {
+      conclusion: "no-changes" as const,
+      createdAt: "2026-04-22T11:05:00.000Z",
+      name: "storybook",
+    },
+    {
+      conclusion: "changes-detected" as const,
+      createdAt: "2026-04-22T12:00:00.000Z",
+      name: "storybook",
+    },
+  ].entries()) {
+    openPullRequestBuilds.unshift(
+      await createPullRequestBuild({
+        projectId,
+        githubPullRequestId: openPullRequest.id,
+        branch: "feat/dark-mode",
+        commit: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa${String(index).padStart(2, "0")}`,
+        ...build,
+      }),
+    );
+  }
+
+  await createPullRequestBuild({
+    projectId,
+    githubPullRequestId: mergedPullRequest.id,
+    conclusion: "changes-detected",
+    branch: "fix/login-button",
+    commit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00",
+    createdAt: "2026-04-21T10:30:00.000Z",
+  });
+  await createPullRequestBuild({
+    projectId,
+    githubPullRequestId: mergedPullRequest.id,
+    conclusion: "no-changes",
+    branch: "fix/login-button",
+    commit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb01",
+    createdAt: "2026-04-21T12:00:00.000Z",
+  });
+  await createPullRequestBuild({
+    projectId,
+    githubPullRequestId: draftPullRequest.id,
+    conclusion: "changes-detected",
+    branch: "refactor/color-tokens",
+    commit: "cccccccccccccccccccccccccccccccccccccc00",
+    createdAt: "2026-04-20T14:30:00.000Z",
+  });
+  await createPullRequestBuild({
+    projectId,
+    githubPullRequestId: closedPullRequest.id,
+    conclusion: "no-changes",
+    branch: "experiment/dense-grid",
+    commit: "dddddddddddddddddddddddddddddddddddddd00",
+    createdAt: "2026-04-18T08:30:00.000Z",
+  });
+
+  // Five media on the open pull request — a before/after pair, a recording and
+  // two lone screenshots — one more than the row's four thumbnails, so the
+  // overflow "+1" shows.
+  const mediaDefinitions = [
+    {
+      name: "checkout.png",
+      state: "before" as const,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      width: 375,
+      height: 720,
+      createdAt: "2026-04-22T09:20:00.000Z",
+    },
+    {
+      name: "checkout.png",
+      state: "after" as const,
+      key: "dummy-375x1024.png",
+      mimeType: "image/png",
+      width: 375,
+      height: 1024,
+      createdAt: "2026-04-22T09:21:00.000Z",
+    },
+    {
+      name: "signup-flow.mp4",
+      state: null,
+      key: "dummy-375x1024.png",
+      mimeType: "video/mp4",
+      width: 375,
+      height: 1024,
+      createdAt: "2026-04-22T09:22:00.000Z",
+    },
+    {
+      name: "dashboard.png",
+      state: null,
+      key: "bear-1440x1024.jpg",
+      mimeType: "image/jpeg",
+      width: 1440,
+      height: 1024,
+      createdAt: "2026-04-22T09:23:00.000Z",
+    },
+    {
+      name: "settings.png",
+      state: null,
+      key: "dummy-375x720.png",
+      mimeType: "image/png",
+      width: 375,
+      height: 720,
+      createdAt: "2026-04-22T09:24:00.000Z",
+    },
+  ];
+  const openPullRequestMedias = await Media.query().insertAndFetch(
+    mediaDefinitions.map((definition, index) => ({
+      projectId,
+      githubPullRequestId: openPullRequest.id,
+      name: definition.name,
+      state: definition.state,
+      description: null,
+      visibility: "team" as const,
+      shareToken: `seed-pr-media-${index}-${projectId}`,
+      createdAt: definition.createdAt,
+      updatedAt: definition.createdAt,
+    })),
+  );
+  await MediaVersion.query().insert(
+    mediaDefinitions.map((definition, index) => {
+      const media = openPullRequestMedias[index];
+      invariant(media, "media should be created");
+      return {
+        mediaId: media.id,
+        number: 1,
+        key: definition.key,
+        mimeType: definition.mimeType,
+        sizeBytes: "131072",
+        width: definition.width,
+        height: definition.height,
+        // Far enough out that nothing expires under whoever is checking.
+        expiresAt: "2027-04-22T09:00:00.000Z",
+        uploadedAt: definition.createdAt,
+        billedUnits: 1,
+        createdAt: definition.createdAt,
+        updatedAt: definition.createdAt,
+      };
+    }),
+  );
+
+  return {
+    openPullRequest,
+    mergedPullRequest,
+    draftPullRequest,
+    closedPullRequest,
+    openPullRequestBuilds,
+    openPullRequestMedias,
+  };
 }
 
 /** A one-paragraph TipTap document, the shape the comment editor produces. */

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\restrict JowQ8UabmQzYjLPdyDDPjQ1sefeJty9vmktlF1mNY1xeuIyHoY6Up0ShhPfuUPN
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -4705,6 +4705,13 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 
 
 --
+-- Name: builds_githubpullrequestid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_githubpullrequestid_index ON public.builds USING btree ("githubPullRequestId") WHERE ("githubPullRequestId" IS NOT NULL);
+
+
+--
 -- Name: builds_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4716,6 +4723,13 @@ CREATE INDEX builds_jobstatus_index ON public.builds USING btree ("jobStatus");
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
+
+
+--
+-- Name: builds_originpullrequestid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_originpullrequestid_index ON public.builds USING btree ("originPullRequestId") WHERE ("originPullRequestId" IS NOT NULL);
 
 
 --
@@ -6527,7 +6541,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\unrestrict JowQ8UabmQzYjLPdyDDPjQ1sefeJty9vmktlF1mNY1xeuIyHoY6Up0ShhPfuUPN
 
 -- Knex migrations
 
@@ -6777,3 +6791,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260817142631_screenshot-buckets-project-created-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818083531_cursor-origin.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822082903_builds-pull-request-index.js', 1, NOW());

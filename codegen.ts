@@ -90,6 +90,8 @@ const config: CodegenConfig = {
           TeamStaffPeriodUsage: "../../database/models/index.js#Account",
           TeamStaffContact: "../../database/models/index.js#StaffTeamContact",
           Project: "../../database/models/index.js#Project",
+          ProjectPullRequest:
+            "../../graphql/definitions/ProjectPullRequest.js#ProjectPullRequestObject",
           Team: "../../database/models/index.js#Account",
           TeamDomain: "../../database/models/index.js#TeamDomain",
           TeamInvite: "../../database/models/index.js#TeamInvite",

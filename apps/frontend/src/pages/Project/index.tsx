@@ -24,6 +24,10 @@ const ProjectQuery = graphql(`
       ignoreConfig {
         enabled
       }
+      repository {
+        __typename
+        id
+      }
       account {
         id
         ...PaymentBanner_Account
@@ -39,12 +43,19 @@ type Account = NonNullable<
 function ProjectTabs(props: {
   deploymentEnabled: boolean;
   ignoreEnabled: boolean;
+  pullRequestsEnabled: boolean;
   permissions: ProjectPermission[];
   account: Account;
   children: React.ReactNode;
 }) {
-  const { account, children, permissions, deploymentEnabled, ignoreEnabled } =
-    props;
+  const {
+    account,
+    children,
+    permissions,
+    deploymentEnabled,
+    ignoreEnabled,
+    pullRequestsEnabled,
+  } = props;
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
@@ -53,6 +64,9 @@ function ProjectTabs(props: {
       <TabLinkList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
+        {pullRequestsEnabled && (
+          <TabLink href="pull-requests">Pull requests</TabLink>
+        )}
         {/* The ignore ledger is only meaningful while the feature is on; the
             page itself still explains itself if reached by a direct link. */}
         {ignoreEnabled && <TabLink href="ignored">Ignored</TabLink>}
@@ -94,6 +108,12 @@ function Project(props: { params: ProjectParams }) {
       permissions={project.permissions}
       deploymentEnabled={project.deploymentEnabled}
       ignoreEnabled={project.ignoreConfig.enabled}
+      // GitLab merge requests are not modeled, so the tab would always be
+      // empty on a GitLab project — same for a project with no repository.
+      pullRequestsEnabled={
+        project.repository?.__typename === "GithubRepository" ||
+        project.repository?.__typename === "OriginRepository"
+      }
     >
       <Suspense fallback={<PageLoader />}>
         <Outlet
