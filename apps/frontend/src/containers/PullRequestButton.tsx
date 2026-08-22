@@ -27,16 +27,19 @@ const PullRequestStatusIcon = (props: {
 }) => {
   const { pullRequest } = props;
 
+  // `colorClassName` rather than `className`: the state color is the icon's
+  // meaning, and a button otherwise steps its icons back to `text-low`, which
+  // would erase it.
   if (pullRequest.merged) {
     return (
-      <ButtonIcon className="text-primary-low">
+      <ButtonIcon colorClassName="text-primary-low">
         <GitMergeIcon />
       </ButtonIcon>
     );
   }
   if (pullRequest.draft) {
     return (
-      <ButtonIcon className="text-low">
+      <ButtonIcon colorClassName="text-low">
         <GitPullRequestDraftIcon />
       </ButtonIcon>
     );
@@ -44,7 +47,7 @@ const PullRequestStatusIcon = (props: {
   switch (pullRequest.state) {
     case PullRequestState.Closed: {
       return (
-        <ButtonIcon className="text-danger-low">
+        <ButtonIcon colorClassName="text-danger-low">
           <GitPullRequestClosedIcon />
         </ButtonIcon>
       );
@@ -52,7 +55,7 @@ const PullRequestStatusIcon = (props: {
     case PullRequestState.Open:
     default:
       return (
-        <ButtonIcon className="text-success-low">
+        <ButtonIcon colorClassName="text-success-low">
           <GitPullRequestIcon />
         </ButtonIcon>
       );
