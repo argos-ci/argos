@@ -343,19 +343,31 @@ function checkIsModifiedPressed(event: KeyboardEvent) {
 }
 
 /**
- * Whether shift counts as pressed for `hotkey`.
+ * Whether typing `key` can require shift, which makes an undeclared
+ * `event.shiftKey` say nothing about the reviewer's intent.
  *
- * Shift is only meaningful for hotkeys written as physical codes (`KeyZ`,
- * `Digit1`, `ArrowUp`…), where the declared `⇧` is the only thing that can
- * demand it. Hotkeys written as literal characters ("?", "[") already carry
- * the answer in `event.key` — "?" *is* shift+/ — so demanding a matching
- * `shiftKey` would make them impossible to type.
+ * Two cases: a literal character carries the answer in `event.key` already —
+ * "?" *is* shift+/ — and a digit is written as a physical code, but the digit
+ * row is shifted on an AZERTY layout, so pressing the "1" the dialog names
+ * sends `Digit1` with shift held.
  */
-function checkIsShiftPressed(hotkey: Hotkey, event: KeyboardEvent): boolean {
-  const isLiteralKey = hotkey.keys.some(
-    (key) => key !== "⌘" && key !== "⌥" && key !== "⇧" && key.length === 1,
-  );
-  return isLiteralKey ? false : event.shiftKey;
+function checkKeyCanNeedShift(key: string): boolean {
+  if (key === "⌘" || key === "⌥" || key === "⇧") {
+    return false;
+  }
+  return key.length === 1 || key.startsWith("Digit");
+}
+
+/**
+ * Whether `event`'s shift state matches what `hotkey` asks for.
+ */
+function checkShiftMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
+  if (hotkey.keys.some((key) => key === "⇧")) {
+    return event.shiftKey;
+  }
+  // Shift is otherwise forbidden — ⌘⇧Z must not read as ⌘Z — except where the
+  // key itself may have needed it.
+  return hotkey.keys.some(checkKeyCanNeedShift) || !event.shiftKey;
 }
 
 type HotkeyOptions = {
@@ -382,7 +394,6 @@ type HotkeyRegistration = {
 function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
   const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
   const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
-  const shiftShouldBePressed = hotkey.keys.some((key) => key === "⇧");
   const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
 
   if (hasDigits && altShouldBePressed !== event.altKey) {
@@ -393,7 +404,7 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
-  if (shiftShouldBePressed !== checkIsShiftPressed(hotkey, event)) {
+  if (!checkShiftMatches(hotkey, event)) {
     return false;
   }
 

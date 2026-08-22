@@ -88,13 +88,20 @@ type ReviewMarkChange = {
 
 /** What an undo or a redo wrote, for the caller to report and navigate to. */
 export type AppliedReviewMarkChange = {
+  /** Statuses it wrote. */
   statuses: Record<Diff["id"], EvaluationStatus>;
+  /** Statuses it replaced, so the caller can tell which way it moved. */
+  replaced: Record<Diff["id"], EvaluationStatus>;
   diffId: Diff["id"];
 };
 
 type BuildReviewHistory = {
-  /** Push a change that has just been applied onto the undo stack. */
-  record: (change: ReviewMarkChange) => void;
+  /**
+   * Mark diffs and push the change onto the undo stack. The only way to write
+   * a review mark: routing every writer through here is what keeps the stack
+   * a true account of what the reviewer did.
+   */
+  markDiffs: (diffIds: Diff["id"][], status: EvaluationStatus) => void;
   /** Revert the last recorded change. Returns what it wrote, or null. */
   undo: () => AppliedReviewMarkChange | null;
   /** Re-apply the last undone change. Returns what it wrote, or null. */
@@ -424,7 +431,6 @@ export function useBuildDiffStatusState(args: {
 }): [EvaluationStatus | null, (status: EvaluationStatus) => void] {
   const { diffId, diffGroup } = args;
   const diffState = useBuildDiffState();
-  const api = use(BuildReviewAPIContext);
   const history = use(BuildReviewHistoryContext);
 
   /**
@@ -451,7 +457,9 @@ export function useBuildDiffStatusState(args: {
   });
 
   const setDiffStatus = useEventCallback((status: EvaluationStatus) => {
-    if (!api) {
+    // A reference build has no review state at all, so there is nothing to
+    // mark.
+    if (!history) {
       return;
     }
 
@@ -460,20 +468,7 @@ export function useBuildDiffStatusState(args: {
       return;
     }
 
-    const currentStatuses = api.getDiffStatuses();
-    const before: Record<string, EvaluationStatus> = {};
-    const after: Record<string, EvaluationStatus> = {};
-    for (const id of diffIds) {
-      before[id] = currentStatuses[id] ?? EvaluationStatus.Pending;
-      after[id] = status;
-    }
-
-    api.setDiffStatuses((diffStatuses) => ({ ...diffStatuses, ...after }));
-
-    const [firstDiffId] = diffIds;
-    if (firstDiffId) {
-      history?.record({ before, after, diffId: firstDiffId });
-    }
+    history.markDiffs(diffIds, status);
   });
 
   const getDiffStatus = useGetDiffStatus();
@@ -577,15 +572,37 @@ function useBuildReviewHistoryValue(args: {
     },
   );
 
-  const record = useEventCallback((change: ReviewMarkChange) => {
-    const stacks = getStacks();
-    stacks.undo.push(change);
-    if (stacks.undo.length > MAX_HISTORY_LENGTH) {
-      stacks.undo.shift();
-    }
-    // A new action forks the timeline: what was undone can no longer be redone.
-    stacks.redo.length = 0;
-  });
+  const markDiffs = useEventCallback(
+    (diffIds: Diff["id"][], status: EvaluationStatus) => {
+      const api = apiRef.current;
+      invariant(api, "Marking review diffs requires the review API");
+      const currentStatuses = api.getDiffStatuses();
+      const before: Record<Diff["id"], EvaluationStatus> = {};
+      const after: Record<Diff["id"], EvaluationStatus> = {};
+      for (const diffId of diffIds) {
+        before[diffId] = currentStatuses[diffId] ?? EvaluationStatus.Pending;
+        after[diffId] = status;
+      }
+
+      // Written even when `diffIds` is empty: a caller that planned an
+      // acknowledgment waits on the statuses changing identity, and would hang
+      // on a write that never happened.
+      applyStatuses(after);
+
+      const [firstDiffId] = diffIds;
+      if (!firstDiffId) {
+        return;
+      }
+      const stacks = getStacks();
+      stacks.undo.push({ before, after, diffId: firstDiffId });
+      if (stacks.undo.length > MAX_HISTORY_LENGTH) {
+        stacks.undo.shift();
+      }
+      // A new action forks the timeline: what was undone can no longer be
+      // redone.
+      stacks.redo.length = 0;
+    },
+  );
 
   const undo = useEventCallback((): AppliedReviewMarkChange | null => {
     const stacks = getStacks();
@@ -595,7 +612,11 @@ function useBuildReviewHistoryValue(args: {
     }
     stacks.redo.push(change);
     applyStatuses(change.before);
-    return { statuses: change.before, diffId: change.diffId };
+    return {
+      statuses: change.before,
+      replaced: change.after,
+      diffId: change.diffId,
+    };
   });
 
   const redo = useEventCallback((): AppliedReviewMarkChange | null => {
@@ -606,7 +627,11 @@ function useBuildReviewHistoryValue(args: {
     }
     stacks.undo.push(change);
     applyStatuses(change.after);
-    return { statuses: change.after, diffId: change.diffId };
+    return {
+      statuses: change.after,
+      replaced: change.before,
+      diffId: change.diffId,
+    };
   });
 
   const clear = useEventCallback(() => {
@@ -616,7 +641,7 @@ function useBuildReviewHistoryValue(args: {
   });
 
   return useMemo(
-    () => (api ? { record, undo, redo, clear } : null),
-    [api, record, undo, redo, clear],
+    () => (api ? { markDiffs, undo, redo, clear } : null),
+    [api, markDiffs, undo, redo, clear],
   );
 }
