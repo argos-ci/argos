@@ -85,6 +85,7 @@ const StaffTeamsQuery = graphql(`
             interval
           }
           periodUsage {
+            currentPeriodScreenshotsCount
             billingPeriods {
               endsAt
               closed
@@ -458,6 +459,12 @@ function PeriodProgress(props: { period: BillingPeriod }) {
  * period, so a lifetime total has nothing to be read against — and this is the
  * figure that says whether the amount in the next invoice is about to move.
  *
+ * Read off the usage rather than off the billing beside it, so a trial reports
+ * what it consumes like everyone else. Stripe never invoices trial usage, so no
+ * billed period is opened for one — but consumption during a trial is the whole
+ * signal for whether it converts, and blanking it was hiding the answer on
+ * exactly the rows the question is asked about.
+ *
  * The quota is named only where it is worth reading. Pro is nearly every row
  * and always includes the same amount, so printing it there would repeat one
  * number down the whole column. What is left is the contracts, where it was
@@ -469,13 +476,16 @@ function ScreenshotsCell(props: {
   billing: TeamBilling | null;
 }) {
   const { team, billing } = props;
+  const { periodUsage } = team.staff;
 
-  // No running period is no consumption to report: a team on a flat plan, on a
-  // granted one, on a trial — whose usage Stripe never bills, so no period is
-  // opened for it — or with no subscription at all.
-  if (!billing?.current) {
+  // Nothing is metered at all: a team on a flat plan, on a granted one, or with
+  // no subscription.
+  if (!periodUsage) {
     return <span className="text-low">—</span>;
   }
+
+  // Usage to read means a usage-based plan was resolved to read it against.
+  invariant(billing, "a team with period usage is billed on a plan");
 
   const { includedScreenshots } = team.staff;
   // Pro includes the same amount on every one of its rows, which is nearly all
@@ -486,10 +496,10 @@ function ScreenshotsCell(props: {
       : includedScreenshots.toLocaleString();
 
   return (
-    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage.">
+    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage — except on a trial, whose usage Stripe never bills.">
       <div>
         <div className="font-medium">
-          {billing.current.period.screenshotsCount.toLocaleString()}
+          {periodUsage.currentPeriodScreenshotsCount.toLocaleString()}
         </div>
         {/* A blank rather than nothing: an empty div collapses, and the count
             would then sit half a line above the amounts beside it. */}

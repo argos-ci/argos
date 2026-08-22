@@ -258,6 +258,14 @@ export const typeDefs = gql`
     """
     billingPeriods: [TeamStaffBillingPeriod!]!
     """
+    Screenshots consumed since the current period opened, billed or not.
+
+    Apart from \`billingPeriods\` because it answers a different question: that
+    list is what Stripe invoices, so it is empty on a trial — and a trial is
+    precisely when what a team consumes is worth watching.
+    """
+    currentPeriodScreenshotsCount: Int!
+    """
     Share of Storybook screenshots in everything the team ever uploaded, between
     0 and 1. Null when it never uploaded a screenshot at all.
     """
@@ -422,6 +430,12 @@ export const resolvers: IResolvers = {
     },
   },
   TeamStaffPeriodUsage: {
+    currentPeriodScreenshotsCount: async (account, _args, ctx) => {
+      const { periodUsage: usage } =
+        await ctx.loaders.AccountBillingByAccountId.load(account.id);
+      invariant(usage, "period usage resolved for a team that has none");
+      return usage.currentPeriodScreenshotsCount;
+    },
     billingPeriods: async (account, _args, ctx) => {
       const { periodUsage: usage } =
         await ctx.loaders.AccountBillingByAccountId.load(account.id);

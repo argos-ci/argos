@@ -45,6 +45,15 @@ type AccountPeriodUsage = {
    * whose usage is never billed.
    */
   billingPeriods: BillingPeriodUsage[];
+  /**
+   * Screenshots consumed since the current period opened, billed or not.
+   *
+   * Kept apart from `billingPeriods` because it answers a different question.
+   * That list is what Stripe invoices, so it is empty on a trial — but a trial
+   * is precisely when what a team is consuming is worth watching, since it is
+   * the thing that says whether it will convert.
+   */
+  currentPeriodScreenshotsCount: number;
 };
 
 /**
@@ -580,11 +589,15 @@ export async function getAccountBillings(
     const includedScreenshots =
       subscription.includedScreenshots ?? plan.includedScreenshots;
 
+    // The period holding now, whether or not Stripe bills it.
+    const runningTotals = totals.get(0) ?? EMPTY_TOTALS;
+
     result.set(accountId, {
       plan,
       flatPrice: subscription.flatPrice,
       includedScreenshots,
       periodUsage: {
+        currentPeriodScreenshotsCount: runningTotals.all,
         billingPeriods: accountPeriods
           .filter((period) => checkIsBilledPeriod(period, subscription))
           .map((period) => {
