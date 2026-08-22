@@ -445,7 +445,20 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   const { baseScreenshotBucket } = build;
   invariant(baseScreenshotBucket, "guarded by BaselineScreenshotHeader");
   return (
-    <ScreenshotHeaderDetails description="The snapshot this build was compared against, kept from the last approved build.">
+    <ScreenshotHeaderDetails
+      description={
+        <>
+          The snapshot this build was compared against, kept from the last
+          approved build.{" "}
+          <Link
+            href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build"
+            target="_blank"
+          >
+            Learn more
+          </Link>
+        </>
+      }
+    >
       {build.baseBuild && (
         <ScreenshotHeaderDetail label="Build">
           <Link
