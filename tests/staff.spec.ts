@@ -127,7 +127,15 @@ async function createBilledTeam(input: {
   planId: string;
   subscriberId: string;
   createdDaysAgo: number;
-  trialEndedDaysAgo: number;
+  /** Days since the trial ended, for a team that converted. */
+  trialEndedDaysAgo?: number;
+  /**
+   * Days until the trial ends, for a team still inside one.
+   *
+   * Stripe never invoices trial usage, so such a team opens no billed period —
+   * which is precisely the row the Screenshots column has to report anyway.
+   */
+  trialEndsInDays?: number;
   /** Where the running period opened, which sets the billing anniversary. */
   periodStartDaysAgo: number;
   /** What the plan costs per month, as Stripe holds it — null when Argos has
@@ -142,6 +150,7 @@ async function createBilledTeam(input: {
    */
   screenshotsInRunningPeriod?: number;
 }): Promise<Account> {
+  const runningTrial = input.trialEndsInDays;
   const { account } = await createTeamAccount({
     slug: input.slug,
     name: input.name,
@@ -164,9 +173,12 @@ async function createBilledTeam(input: {
     createdAt: daysFromNow(-input.createdDaysAgo),
     startDate: daysFromNow(-input.periodStartDaysAgo),
     endDate: null,
-    trialEndDate: daysFromNow(-input.trialEndedDaysAgo),
+    trialEndDate:
+      runningTrial === undefined
+        ? daysFromNow(-(input.trialEndedDaysAgo ?? 0))
+        : daysFromNow(runningTrial),
     paymentMethodFilled: true,
-    status: "active",
+    status: runningTrial === undefined ? "active" : "trialing",
     flatPrice: input.flatPrice,
     includedScreenshots: 35_000,
     additionalScreenshotPrice: 0.005,
@@ -370,6 +382,22 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
       // so the row has to quote the year — dividing it into a month would
       // report a figure that was never charged. Its previous period predates
       // the subscription row, which is why it has none.
+      // Still inside its trial, and building. Stripe invoices no trial usage, so
+      // this team opens no billed period at all — the two amount columns stay
+      // empty — while the Screenshots column has to report what it consumes,
+      // which is the whole signal for whether it converts.
+      createBilledTeam({
+        ...common,
+        planId: proPlan.id,
+        slug: `${prefix}-trialsonic`,
+        name: "Trialsonic",
+        createdDaysAgo: 10,
+        trialEndsInDays: 4,
+        periodStartDaysAgo: 10,
+        flatPrice: 100,
+        screenshotsByClosedPeriod: [],
+        screenshotsInRunningPeriod: 5_625,
+      }),
       createBilledTeam({
         ...common,
         planId: annualPlan.id,
@@ -417,7 +445,7 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await page.goto("/staff/teams");
   await expect(page.getByRole("heading", { name: "All Teams" })).toBeVisible();
   await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-  await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+  await expect(page.getByText("Showing 1-9 of 9 teams")).toBeVisible();
 
   // A yearly subscription states its amounts for a year, so the column has to
   // quote the year. Read as a monthly rate this row is a twelfth of itself.
@@ -444,6 +472,14 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   // what tells a genuine drop from a period that simply opened three days ago.
   await expect(umbrella).toContainText(/\d+ days left/);
 
+  // A trial is invoiced nothing, so it opens no billed period and both amount
+  // columns stay empty — but what it consumes is exactly what says whether it
+  // will convert, so the Screenshots column reports it all the same.
+  const trialsonic = page.getByRole("row", { name: /Trialsonic/ });
+  await expect(trialsonic).toContainText("5,625");
+  await expect(trialsonic).toContainText("trialing");
+  await expect(trialsonic).not.toContainText("$");
+
   await screenshot(page, "staff-all-teams");
 });
 
@@ -452,7 +488,7 @@ staffTest(
   async ({ page, pipelineTeams }) => {
     await page.goto("/staff/teams");
     await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+    await expect(page.getByText("Showing 1-9 of 9 teams")).toBeVisible();
 
     // Narrowing to one interval is what makes the two period columns comparable
     // between rows: a year's amount next to a month's is an order of magnitude.
@@ -465,7 +501,7 @@ staffTest(
     // included: the filter is on how a team is billed, not on whether it pays.
     await page.getByRole("combobox", { name: "Billing interval" }).click();
     await page.getByRole("option", { name: "Monthly" }).click();
-    await expect(page.getByText("Showing 1-7 of 7 teams")).toBeVisible();
+    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
     await expect(page.getByRole("row", { name: /Initrode/ })).toBeHidden();
 
     // Ordering and filtering are applied on the server, on two different code
@@ -478,6 +514,7 @@ staffTest(
         "Northwind",
         "Globex",
         "Initech",
+        "Trialsonic",
         "Hexagon",
         "Vandelay",
         "Umbrella",
@@ -491,7 +528,7 @@ staffTest(
   async ({ page, pipelineTeams }) => {
     await page.goto("/staff/teams");
     await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-    await expect(page.getByText("Showing 1-8 of 8 teams")).toBeVisible();
+    await expect(page.getByText("Showing 1-9 of 9 teams")).toBeVisible();
 
     // Ordering by an amount prices every billed team, which takes long enough
     // on real data to look like the click did nothing. Held here so the state
@@ -542,7 +579,7 @@ staffTest("staff trial pipeline", async ({ page, pipelineTeams }) => {
   // only renders once the search has been applied (it runs through
   // `useDeferredValue`, so it lands a render late), which makes it the signal
   // that the table is down to this test's three teams.
-  await expect(page.getByText(/^Showing 3 of \d+ teams$/)).toBeVisible();
+  await expect(page.getByText(/^Showing 4 of \d+ teams$/)).toBeVisible();
   await expect(page.getByText("2d left")).toBeVisible();
   await expect(page.getByText("11d left")).toBeVisible();
 
@@ -558,7 +595,7 @@ staffTest(
       page.getByRole("heading", { name: "Trial pipeline" }),
     ).toBeVisible();
     await page.getByRole("searchbox").fill(pipelineTeams.prefix);
-    await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
+    await expect(page.getByText(/^Showing 8 of \d+ teams$/)).toBeVisible();
 
     // Soylent uploaded 50k screenshots over its last closed month: 15k past the
     // 35k included, at $0.005, on top of the $100 flat plan. The month still
