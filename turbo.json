@@ -52,7 +52,19 @@
         "S3_PUBLIC_IMAGE_BASE_URL",
         "AWS_SCREENSHOTS_BUCKET",
         "SQIDS_ALPHABET",
-        "LOG_LEVEL"
+        "LOG_LEVEL",
+        "ARGOS_TARGET",
+        "PG_IAM_AUTH",
+        "REDIS_URL",
+        "AMQP_URL"
+      ],
+      "passThroughEnv": [
+        "AWS_PROFILE",
+        "AWS_REGION",
+        "AWS_DEFAULT_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_SESSION_TOKEN"
       ]
     },
     "//#watch-codegen": {

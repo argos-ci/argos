@@ -185,6 +185,63 @@ pnpm run --filter @argos/backend db:migrate:latest
 NODE_ENV=test pnpm run --filter @argos/backend db:reset
 ```
 
+### Running against production data (read-only)
+
+To debug with real data shapes, the app can run locally against the production
+database through the `argos_dev_ro` Postgres role — read-only except for the
+two tables the login flow writes (`user_sessions`, `team_users.lastAuthMethod`).
+
+```sh
+pnpm run dev:prod-ro
+```
+
+The command wraps `pnpm run dev` in `op run --env-file=.env.prod-ro`: no
+secret ever lands on disk or in shell history. It needs three things set up
+once:
+
+- a **1Password item** `argos-prod-ro` in the `argos-dev` vault with the fields
+  referenced by `.env.prod-ro` (`DATABASE_URL` — no password, e.g.
+  `postgresql://argos_dev_ro@<rds-host>:5432/<db>` — and `SQIDS_ALPHABET`);
+- **IAM database authentication enabled on the RDS instance**, which is a
+  separate switch from the `rds_iam` grant on the role. Both are required, and
+  when either is missing RDS answers a perfectly valid token with
+  `password authentication failed for user "argos_dev_ro"`:
+
+  ```sh
+  aws rds describe-db-instances --region us-east-1 \
+    --db-instance-identifier argos-postgres \
+    --query 'DBInstances[0].IAMDatabaseAuthenticationEnabled'
+  ```
+
+- **AWS credentials** for a principal allowed to `rds-db:connect` as
+  `argos_dev_ro` (`arn:aws:rds-db:<region>:<account>:dbuser:<db-resource-id>/argos_dev_ro`).
+  Any principal the SDK can find works — an `aws sso login` session or a
+  configured IAM user. There is no database password at all: `PG_IAM_AUTH=true`
+  signs a short-lived token per connection.
+
+What the mode changes, enforced by the config (`ARGOS_TARGET=prod-ro`):
+
+- your `.env` is **not** loaded, and write-capable third-party credentials
+  (Resend, Stripe, GitHub/GitLab/Google/Slack apps…) must be absent — the
+  database grants make Postgres read-only, these keep everything else
+  side-effect free;
+- the worker refuses to run, and migrations / `knex-scripts` throw;
+- Redis and RabbitMQ must be local (sessions, rate limits and enqueued jobs
+  stay on your machine);
+- conversely, a `DATABASE_URL` pointing at AWS **without** `ARGOS_TARGET=prod-ro`
+  refuses to boot, so the guardrails cannot be forgotten.
+
+**Sign in with an email code** (of an email that exists in production). Resend
+is absent, so the email is never sent — read the code from your local Redis:
+
+```sh
+docker compose exec redis redis-cli -n 1 GET "email_verification:<your-email>"
+```
+
+GitHub/GitLab/Google login would write dev-app OAuth tokens over the
+production rows, and production passkeys are bound to the `argos-ci.com` RP id,
+so neither works here — email code is the only supported method.
+
 ## ✅ Testing your changes
 
 ### Linting
