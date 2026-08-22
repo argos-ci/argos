@@ -110,7 +110,11 @@ buildExamples.forEach((build) => {
       await expect(page).toHaveURL(
         new RegExp(`/builds/${number}/(?!overview)[^/]+$`),
       );
-      await expect(page.getByText("Changes", { exact: true })).toBeVisible();
+      // The pane's own heading, not any of the other places the word appears
+      // (the view-mode button, the sidebar's changes count).
+      await expect(
+        page.getByRole("heading", { name: "Changes", exact: true }),
+      ).toBeVisible();
     }
     await screenshot(page, `build-${build.name}`, {
       replacements: {

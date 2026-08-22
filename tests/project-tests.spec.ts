@@ -109,8 +109,11 @@ loggedTest(
     await expect(badge).toBeVisible();
 
     // Ignored changes are part of the default view, and the filter narrows it
-    // down to them.
-    await expect(page.getByRole("heading", { name: /^Changes/ })).toBeVisible();
+    // down to them. `Changes over` rather than `Changes`, which the snapshot
+    // pane's own heading also answers to.
+    await expect(
+      page.getByRole("heading", { name: /^Changes over/ }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Ignored", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: /^Ignored changes/ }),

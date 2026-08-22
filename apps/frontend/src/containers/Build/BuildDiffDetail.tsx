@@ -377,7 +377,13 @@ function BuildScreenshotHeader(props: {
         disableHoverableContent={false}
         content={props.details}
       >
+        {/* `heading` rather than a bare focusable div: it names the pane, so
+            it is what a screen reader should land on when walking the page —
+            and the level says it sits under the snapshot's name in the bar
+            above, the way `DetailToolbarTitle` states its own. */}
         <div
+          role="heading"
+          aria-level={2}
           tabIndex={0}
           className="underline-emphasis text-xs leading-6 font-medium select-none"
         >
