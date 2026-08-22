@@ -201,7 +201,7 @@ async function getScreenshotTotals(
   // a `VALUES` list, and would refuse to join it against `projects."accountId"`.
   const values = buildPeriodValues(periods);
 
-  const rows = (await knex
+  const bucketTotals = knex
     .select("v.accountId", "v.index")
     .select(
       // `screenshotCount` is null until a bucket completes, and the billing
@@ -229,26 +229,42 @@ async function getScreenshotTotals(
     // Bounded in the join rather than only in the aggregate above: the filters
     // there are applied after the rows are read, so on their own the scan still
     // walks every bucket the project ever produced. Each row carries its own
-    // boundary, so this reads `v."from"` rather than one minimum for the whole
-    // batch — a single yearly subscription in the batch would otherwise push
+    // boundaries, so this reads `v."from"` and `v."to"` rather than one minimum
+    // for the whole batch — a single yearly subscription would otherwise push
     // that minimum two years back and unbound everyone else.
+    //
+    // Both ends, not just the lower one: with the upper bound left to the
+    // aggregate's filter, a closed period still read every bucket from its
+    // start through to today and threw the running period's away — roughly
+    // twice the rows, on the table that dominates this query. The pair is also
+    // exactly what `(projectId, createdAt)` indexes, so it reads as one range.
     .leftJoin("screenshot_buckets as sb", (join) => {
       join
         .on("sb.projectId", "p.id")
-        .andOn(knex.raw(`sb."createdAt" >= v."from"`));
+        .andOn(knex.raw(`sb."createdAt" >= v."from"`))
+        .andOn(knex.raw(`sb."createdAt" < v."to"`));
     })
-    .groupBy("v.accountId", "v.index")) as unknown as {
-    accountId: string | number;
-    index: string | number;
-    periodAll: string | number;
-    periodStorybook: string | number;
-  }[];
+    .groupBy("v.accountId", "v.index") as unknown as Promise<
+    {
+      accountId: string | number;
+      index: string | number;
+      periodAll: string | number;
+      periodStorybook: string | number;
+    }[]
+  >;
 
   // Media hangs off a project, like a bucket does, but it still cannot ride the
   // join above: joining two independent one-to-many tables in a single pass
   // multiplies their rows against each other. It is aggregated separately and
   // added in.
-  const mediaUnits = await getMediaUnits(periods);
+  //
+  // Sent together rather than one after the other: neither reads the other's
+  // result, so awaiting them in turn spent the two scans end to end for no
+  // reason. On a directory page this is the whole of the billing wait.
+  const [rows, mediaUnits] = await Promise.all([
+    bucketTotals,
+    getMediaUnits(periods),
+  ]);
 
   const totalsByAccountId = new Map<string, AccountTotals>();
   for (const row of rows) {
@@ -308,7 +324,8 @@ async function getMediaUnits(
       join
         .on("mv.mediaId", "m.id")
         .onNotNull("mv.uploadedAt")
-        .andOn(knex.raw(`mv."uploadedAt" >= v."from"`));
+        .andOn(knex.raw(`mv."uploadedAt" >= v."from"`))
+        .andOn(knex.raw(`mv."uploadedAt" < v."to"`));
     })
     .groupBy("v.accountId", "v.index")) as unknown as {
     accountId: string | number;
