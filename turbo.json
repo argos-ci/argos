@@ -53,6 +53,7 @@
         "AWS_SCREENSHOTS_BUCKET",
         "SQIDS_ALPHABET",
         "LOG_LEVEL",
+<<<<<<< HEAD
         "ARGOS_TARGET",
         "PG_IAM_AUTH",
         "REDIS_URL",
@@ -65,6 +66,10 @@
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_SESSION_TOKEN"
+=======
+        "STRIPE_API_KEY",
+        "TZ"
+>>>>>>> 860a2c32 (chore: let the Stripe key through, and keep it out of the tests)
       ]
     },
     "//#watch-codegen": {
