@@ -7,8 +7,9 @@ import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
-  useBuildReviewHistory,
+  useBuildReviewAPI,
   type AppliedReviewMarkChange,
+  type BuildReviewAPI,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 
@@ -19,7 +20,7 @@ import { EvaluationStatus } from "./EvaluationStatus";
 function describeAppliedChange(change: AppliedReviewMarkChange): string {
   const statuses = Object.values(change.statuses);
   const [firstStatus] = statuses;
-  invariant(firstStatus, "A recorded change always touches at least one diff");
+  invariant(firstStatus, "A marking always touches at least one diff");
   const count = statuses.length;
   const noun = count === 1 ? "change" : "changes";
   if (statuses.some((status) => status !== firstStatus)) {
@@ -42,9 +43,9 @@ function describeAppliedChange(change: AppliedReviewMarkChange): string {
 /**
  * Rejecting invites the reviewer to write a note, which is a build comment the
  * moment they submit it. Taking the rejection back leaves that note behind —
- * it is on the server, where this stack deliberately does not reach — so the
- * snapshot would otherwise carry a written justification for a rejection that
- * no longer exists, with nothing saying so.
+ * it is on the server, where the undo stack deliberately does not reach — so
+ * the snapshot would otherwise carry a written justification for a rejection
+ * that no longer exists, with nothing saying so.
  */
 function checkTakesBackRejection(change: AppliedReviewMarkChange): boolean {
   return Object.entries(change.replaced).some(
@@ -61,14 +62,18 @@ function checkTakesBackRejection(change: AppliedReviewMarkChange): boolean {
  * mistake is noticed one snapshot too late. Undo puts the mark back as it was
  * *and* brings the snapshot it belongs to back on screen, so the correction is
  * made where it can be seen.
- *
- * Only the local marks are on the stack — everything the reviewer builds up
- * before submitting. Actions that already reached the server (submitting the
- * review, ignoring a change) are not undoable this way; each has its own way
- * back.
  */
-export function BuildReviewHistoryHotkeys() {
-  const history = useBuildReviewHistory();
+export function BuildReviewUndoHotkeys() {
+  const api = useBuildReviewAPI();
+  // A reference build is not reviewed, so it has no marks and nothing to undo.
+  if (!api) {
+    return null;
+  }
+  return <UndoHotkeys api={api} />;
+}
+
+function UndoHotkeys(props: { api: BuildReviewAPI }) {
+  const { api } = props;
   const { diffs, setActiveDiff } = useBuildDiffState();
 
   const apply = useEventCallback((change: AppliedReviewMarkChange | null) => {
@@ -86,13 +91,8 @@ export function BuildReviewHistoryHotkeys() {
     });
   });
 
-  const enabled = Boolean(history);
-  useBuildHotkey("undoReviewMark", () => apply(history?.undo() ?? null), {
-    enabled,
-  });
-  useBuildHotkey("redoReviewMark", () => apply(history?.redo() ?? null), {
-    enabled,
-  });
+  useBuildHotkey("undoReviewMark", () => apply(api.undo()));
+  useBuildHotkey("redoReviewMark", () => apply(api.redo()));
 
   return null;
 }

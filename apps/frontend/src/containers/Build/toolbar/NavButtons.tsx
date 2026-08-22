@@ -1,9 +1,7 @@
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
-import {
-  type HotkeyName,
-  useBuildHotkey,
-} from "@/containers/Build/BuildHotkeys";
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { type HotkeyName } from "@/containers/Build/hotkeys";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 

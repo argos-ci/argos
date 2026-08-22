@@ -17,7 +17,6 @@ import { getReviewableCount, useBuildDiffState } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
   useBuildReviewAPI,
-  useBuildReviewHistory,
   useBuildReviewState,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
@@ -82,7 +81,7 @@ function ReapplyPreviousApprovalsButton(props: {
   branchApprovedDiffs: string[];
 }) {
   const { branchApprovedDiffs } = props;
-  const history = useBuildReviewHistory();
+  const api = useBuildReviewAPI();
   const reviewState = useBuildReviewState();
   // After reapplying, land on the first diff that still needs a review,
   // starting from the top of the list. The next diff has to be resolved after
@@ -104,8 +103,8 @@ function ReapplyPreviousApprovalsButton(props: {
         if (checkIsPending()) {
           return;
         }
-        invariant(history);
-        history.markDiffs(branchApprovedDiffs, EvaluationStatus.Accepted);
+        invariant(api);
+        api.markDiffs(branchApprovedDiffs, EvaluationStatus.Accepted);
         const count = branchApprovedDiffs.length;
         const total = stats
           ? getReviewableCount(stats, { isSubsetBuild })
