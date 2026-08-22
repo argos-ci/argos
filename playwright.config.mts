@@ -107,11 +107,10 @@ const config = defineConfig({
     env: {
       NODE_ENV: "test",
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
-      // The staff revenue band reads Stripe's invoices at request time. Left to
-      // the key in `.env`, the suite would call Stripe on every run of the
-      // staff page — a third party in the way of the tests, and a figure that
-      // changes under the visual baseline. Unset, the band reports itself
-      // unavailable, which is both true here and stable.
+      // The staff revenue page reads Stripe's invoices at request time. Left to
+      // the key in `.env`, the suite would call a third party on every run, and
+      // its figures would move under the visual baseline. Unset, the page
+      // reports itself unavailable, which is both true here and stable.
       STRIPE_API_KEY: "no-api-key",
     },
   },
