@@ -52,7 +52,9 @@
         "S3_PUBLIC_IMAGE_BASE_URL",
         "AWS_SCREENSHOTS_BUCKET",
         "SQIDS_ALPHABET",
-        "LOG_LEVEL"
+        "LOG_LEVEL",
+        "STRIPE_API_KEY",
+        "TZ"
       ]
     },
     "//#watch-codegen": {
