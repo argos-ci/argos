@@ -305,6 +305,18 @@ const hotkeyGroups = [
         description: "Ignore change",
         envs: ["test", "build"],
       },
+      undoReviewMark: {
+        keys: ["⌘", "KeyZ"],
+        displayKeys: ["⌘", "Z"],
+        description: "Undo last review mark",
+        envs: ["build"],
+      },
+      redoReviewMark: {
+        keys: ["⌘", "⇧", "KeyZ"],
+        displayKeys: ["⌘", "⇧", "Z"],
+        description: "Redo last undone review mark",
+        envs: ["build"],
+      },
     },
   },
 ] satisfies HotkeyGroup[];
@@ -323,6 +335,22 @@ function checkIsModifiedPressed(event: KeyboardEvent) {
     return event.metaKey;
   }
   return event.ctrlKey;
+}
+
+/**
+ * Whether shift counts as pressed for `hotkey`.
+ *
+ * Shift is only meaningful for hotkeys written as physical codes (`KeyZ`,
+ * `Digit1`, `ArrowUp`…), where the declared `⇧` is the only thing that can
+ * demand it. Hotkeys written as literal characters ("?", "[") already carry
+ * the answer in `event.key` — "?" *is* shift+/ — so demanding a matching
+ * `shiftKey` would make them impossible to type.
+ */
+function checkIsShiftPressed(hotkey: Hotkey, event: KeyboardEvent): boolean {
+  const isLiteralKey = hotkey.keys.some(
+    (key) => key !== "⌘" && key !== "⌥" && key !== "⇧" && key.length === 1,
+  );
+  return isLiteralKey ? false : event.shiftKey;
 }
 
 type HotkeyOptions = {
@@ -360,9 +388,7 @@ function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
     return false;
   }
 
-  // Only demanded, never forbidden: plenty of existing keys ("?") are typed
-  // *with* shift without declaring it.
-  if (shiftShouldBePressed && !event.shiftKey) {
+  if (shiftShouldBePressed !== checkIsShiftPressed(hotkey, event)) {
     return false;
   }
 

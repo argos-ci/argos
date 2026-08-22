@@ -17,6 +17,7 @@ import { getReviewableCount, useBuildDiffState } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
   useBuildReviewAPI,
+  useBuildReviewHistory,
   useBuildReviewState,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
@@ -82,6 +83,7 @@ function ReapplyPreviousApprovalsButton(props: {
 }) {
   const { branchApprovedDiffs } = props;
   const api = useBuildReviewAPI();
+  const history = useBuildReviewHistory();
   const reviewState = useBuildReviewState();
   // After reapplying, land on the first diff that still needs a review,
   // starting from the top of the list. The next diff has to be resolved after
@@ -104,16 +106,20 @@ function ReapplyPreviousApprovalsButton(props: {
           return;
         }
         invariant(api);
-        api.setDiffStatuses((prev) => ({
-          ...prev,
-          ...branchApprovedDiffs.reduce<Record<string, EvaluationStatus>>(
-            (acc, diffId) => {
-              acc[diffId] = EvaluationStatus.Accepted;
-              return acc;
-            },
-            {},
-          ),
-        }));
+        const currentStatuses = api.getDiffStatuses();
+        const before: Record<string, EvaluationStatus> = {};
+        const after: Record<string, EvaluationStatus> = {};
+        for (const diffId of branchApprovedDiffs) {
+          before[diffId] = currentStatuses[diffId] ?? EvaluationStatus.Pending;
+          after[diffId] = EvaluationStatus.Accepted;
+        }
+        api.setDiffStatuses((prev) => ({ ...prev, ...after }));
+        // Reapplying is the one action that marks dozens of snapshots at once,
+        // which is exactly the one worth being able to take back wholesale.
+        const [firstDiffId] = branchApprovedDiffs;
+        if (firstDiffId) {
+          history?.record({ before, after, diffId: firstDiffId });
+        }
         const count = branchApprovedDiffs.length;
         const total = stats
           ? getReviewableCount(stats, { isSubsetBuild })

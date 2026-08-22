@@ -353,3 +353,52 @@ loggedTest(
     await screenshot(page, "build-agent-review");
   },
 );
+
+loggedTest(
+  "undoes and redoes review marks with the keyboard",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    // A standalone changed snapshot, so the mark lands on it alone: the other
+    // changed ones are bundled under a "3 similar" group, which is marked as
+    // a whole.
+    await page.getByRole("button", { name: "dummy-375x1440.png" }).click();
+
+    // `aria-pressed` narrows it to the toolbar's own accept button: a diff
+    // list header carries the same thumb once its whole group is accepted, and
+    // it comes first in the document.
+    const acceptButton = page.locator(
+      "button[aria-pressed]:has(.lucide-thumbs-up)",
+    );
+
+    // Marking a snapshot takes the reviewer to the next one, which is why a
+    // mistake is always noticed from somewhere else: undo has to put the mark
+    // back *and* bring its snapshot back on screen.
+    const firstDiffURL = page.url();
+    await acceptButton.click();
+    await expect(page).not.toHaveURL(firstDiffURL);
+    const secondDiffURL = page.url();
+    await acceptButton.click();
+    await expect(page).not.toHaveURL(secondDiffURL);
+
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page).toHaveURL(secondDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "false");
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page).toHaveURL(firstDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "false");
+
+    // Shift is the only thing telling redo apart from undo, so a redo that
+    // also read as an undo would walk the reviewer backwards here instead of
+    // forwards.
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(page).toHaveURL(firstDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(page).toHaveURL(secondDiffURL);
+    await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
+  },
+);
