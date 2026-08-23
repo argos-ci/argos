@@ -7,7 +7,11 @@ import {
   getAccountBillings,
   type AccountBilling,
 } from "@/database/services/period-usage";
-import { getStaffRevenue, MAX_MONTHS } from "@/stripe/revenue";
+import {
+  getStaffRevenue,
+  MAX_MONTHS,
+  MirrorCoverageError,
+} from "@/stripe/revenue";
 
 import type {
   IAccountSubscriptionStatus,
@@ -17,7 +21,7 @@ import type {
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
-import { badUserInput, forbidden, unauthenticated } from "../util";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 /** Every staff entry point opens with this — the check lives in one place. */
@@ -407,11 +411,13 @@ export const typeDefs = gql`
     amount: Float!
     "The currency it was raised in — the contract's total converts it."
     currency: String!
+    "True while it is raised but not yet cleared."
+    awaitingPayment: Boolean!
     "When it was raised."
     invoicedAt: DateTime!
-    "The stretch it covers, when it states a real one."
-    coveredFrom: DateTime
-    coveredUntil: DateTime
+    "The stretch its money pays for, after the next bill clipped it."
+    coveredFrom: DateTime!
+    coveredUntil: DateTime!
   }
 
   """
@@ -426,17 +432,20 @@ export const typeDefs = gql`
     slug: String!
     "The team's display name, when it has one."
     name: String
-    "The subscription the database knows the contract by."
-    stripeSubscriptionId: String!
+    "The Stripe customer the contract is billed on."
+    stripeCustomerId: String!
     """
-    The invoices below added up, in euros. Null when none was found, in which
-    case the contract adds nothing to the rate.
+    The invoices below added up, in euros. Null when the team is billed yearly
+    but no invoice of its contract could be found — an anomaly worth seeing
+    rather than hiding.
     """
     amount: Float
+    "What the contract contributes to the running month, in euros."
+    monthlyRevenue: Float!
     "The invoices the contract is worth, newest first."
     invoices: [StaffContractInvoice!]!
     """
-    True when the invoices found are still awaiting payment. Counted all the
+    True when every invoice found is still awaiting payment. Counted all the
     same — a contract invoice raised is money on its way — and flagged, so
     collection can be watched.
     """
@@ -698,7 +707,17 @@ export const resolvers: IResolvers = {
         throw badUserInput(`\`months\` must be between 1 and ${MAX_MONTHS}.`);
       }
 
-      return getStaffRevenue(args.months);
+      try {
+        return await getStaffRevenue(args.months);
+      } catch (error) {
+        // A mirror not backfilled, or one the sweep stopped reconciling, is an
+        // operator state the page is built to report — not a fault to page
+        // the on-call over, which a bare error reaching Sentry would be.
+        if (error instanceof MirrorCoverageError) {
+          throw notFound(error.message);
+        }
+        throw error;
+      }
     },
     staffTrialPipeline: async (_root, args, ctx) => {
       assertStaff(ctx);

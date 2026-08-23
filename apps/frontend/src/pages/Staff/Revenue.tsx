@@ -39,7 +39,7 @@ import { Loader } from "@/ui/Loader";
 import { StatTile } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getStripeCustomerURL, getStripeSubscriptionURL } from "./stripe";
+import { getStripeCustomerURL } from "./stripe";
 
 /**
  * Read from the backend's Stripe invoice mirror — this page is the query's
@@ -73,8 +73,9 @@ const StaffRevenueQuery = graphql(`
       yearlyContracts {
         slug
         name
-        stripeSubscriptionId
+        stripeCustomerId
         amount
+        monthlyRevenue
         awaitingPayment
         invoices {
           amount
@@ -82,6 +83,7 @@ const StaffRevenueQuery = graphql(`
           invoicedAt
           coveredFrom
           coveredUntil
+          awaitingPayment
         }
       }
       githubMarketplaceMonthlyRevenue
@@ -513,6 +515,10 @@ function RevenueChart(props: {
                 return MONTH_YEAR_FORMAT.format(new Date(item.payload.month));
               }}
               valueFormatter={(value) => formatEuros(value)}
+              // No total: the Marketplace band is stacked on top of what
+              // Argos invoiced through Stripe, and adding the three would
+              // contradict the cards, which report the Stripe figures alone.
+              hideTotal
             />
           }
         />
@@ -816,7 +822,7 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
         {contract.amount !== null ? (
-          CONTRACT_PRICE_FORMAT.format(contract.amount / 12)
+          CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue)
         ) : (
           <span className="text-low">—</span>
         )}
@@ -830,7 +836,7 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
       </td>
       <td className="p-4 text-right text-sm">
         <Link
-          href={getStripeSubscriptionURL(contract.stripeSubscriptionId)}
+          href={getStripeCustomerURL(contract.stripeCustomerId)}
           target="_blank"
         >
           Stripe
@@ -854,6 +860,13 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
     (sum, contract) => sum + (contract.amount ?? 0),
     0,
   );
+  // Summed from what each contract contributes rather than divided by twelve:
+  // the months are amortized over the stretch each invoice pays for, and an
+  // upsell sold for five months is not a twelfth of anything.
+  const monthlyTotal = contracts.reduce(
+    (sum, contract) => sum + contract.monthlyRevenue,
+    0,
+  );
 
   return (
     <div className="mt-6">
@@ -870,7 +883,9 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                 <th className="w-[30%] px-4 py-3 text-left">Team</th>
                 <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
                 <th className="w-[16%] px-4 py-3 text-right">
-                  <Hint content="÷ 12, in euros.">Per month</Hint>
+                  <Hint content="What it adds to this month, in euros.">
+                    Per month
+                  </Hint>
                 </th>
                 <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
                 <th className="w-[16%] px-4 py-3 text-right" />
@@ -879,7 +894,7 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
             <tbody>
               {contracts.map((contract, index) => (
                 <ContractRow
-                  key={contract.stripeSubscriptionId}
+                  key={contract.stripeCustomerId}
                   contract={contract}
                   index={index}
                 />
@@ -894,7 +909,7 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                   </Hint>
                 </td>
                 <td className="p-4 text-right tabular-nums">
-                  {CONTRACT_PRICE_FORMAT.format(total / 12)}
+                  {CONTRACT_PRICE_FORMAT.format(monthlyTotal)}
                 </td>
                 <td />
                 <td />

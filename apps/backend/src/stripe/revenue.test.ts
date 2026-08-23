@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { ContractInvoiceCandidate } from "./revenue";
 import {
-  findContractInvoices,
-  getAmortizedCoverage,
+  classifyInvoice,
   getInvoiceRevenue,
-  getYearlyMonthSplits,
   startOfUTCMonth,
   toEuros,
 } from "./revenue";
@@ -97,255 +94,131 @@ describe("toEuros", () => {
   });
 });
 
-describe("findContractInvoices", () => {
-  /** Cases below are the real shapes the yearly book was found to hold. */
-  function candidate(fields: {
+describe("classifyInvoice", () => {
+  /** Cases below are the real shapes the book was found to hold. */
+  function invoice(fields: {
     reason: string | null;
-    total: number;
-    /** The stretch the invoice covers, as the mirror resolved it at ingest. */
-    period: [string, string] | null;
-  }): ContractInvoiceCandidate & { total: number } {
-    return {
-      billingReason: fields.reason,
-      total: fields.total,
-      periodStart: fields.period ? fields.period[0] : null,
-      periodEnd: fields.period ? fields.period[1] : null,
-    };
-  }
-
-  it("picks the year-long conversion invoice over its same-day true-up", () => {
-    // A team converted from monthly to yearly mid-stream: the contract is a
-    // `subscription_update` covering a year, raised alongside a last month of
-    // usage — and behind them, months of cycle invoices from before.
-    const trueUp = candidate({
-      reason: "subscription_update",
-      total: 758_724,
-      period: ["2026-04-23", "2026-05-23"],
-    });
-    const contract = candidate({
-      reason: "subscription_update",
-      total: 6_480_000,
-      period: ["2026-05-23", "2027-05-23"],
-    });
-    const oldCycle = candidate({
-      reason: "subscription_cycle",
-      total: 745_028,
-      period: ["2026-03-23", "2026-04-23"],
-    });
-
-    expect(findContractInvoices([trueUp, contract, oldCycle])).toEqual([
-      contract,
-    ]);
-    expect(findContractInvoices([contract, trueUp, oldCycle])).toEqual([
-      contract,
-    ]);
-  });
-
-  it("adds a partial-period upsell on top of the annual bill", () => {
-    // A contract billed by hand, then upsold mid-year: the upsell covers the
-    // stretch from its sale to the contract's renewal date, and both invoices
-    // are the contract's worth.
-    const upsell = candidate({
-      reason: "manual",
-      total: 3_260_000,
-      period: ["2026-06-08", "2026-10-31"],
-    });
-    const annual = candidate({
-      reason: "manual",
-      total: 4_588_994,
-      period: ["2024-10-30", "2025-10-30"],
-    });
-
-    expect(findContractInvoices([upsell, annual])).toEqual([upsell, annual]);
-  });
-
-  it("drops an upsell older than the annual bill", () => {
-    // A renewal bakes the upsells sold before it into its own amount.
-    const annual = candidate({
-      reason: "subscription_cycle",
-      total: 1_500_000,
-      period: ["2026-01-02", "2027-01-02"],
-    });
-    const bakedIn = candidate({
-      reason: "manual",
-      total: 300_000,
-      period: ["2025-06-01", "2026-01-02"],
-    });
-
-    expect(findContractInvoices([annual, bakedIn])).toEqual([annual]);
-  });
-
-  it("keeps only the newest of two year-spanning bills", () => {
-    // A contract replaced mid-stream — a new subscription, or last year's
-    // renewal behind this year's — counts once.
-    const thisYear = candidate({
-      reason: "subscription_create",
-      total: 1_590_000,
-      period: ["2026-01-02", "2027-01-02"],
-    });
-    const lastYear = candidate({
-      reason: "subscription_cycle",
-      total: 1_773_605,
-      period: ["2025-01-03", "2026-01-03"],
-    });
-
-    expect(findContractInvoices([thisYear, lastYear])).toEqual([thisYear]);
-  });
-
-  it("lets a period-less sales invoice replace the annual bill", () => {
-    // A dashboard invoice often stamps a single day rather than the stretch
-    // the money covers; raised after the annual bill, it re-bills the whole
-    // contract rather than adding to it.
-    const reBilled = candidate({
-      reason: "manual",
-      total: 1_050_000,
-      period: ["2026-02-12", "2026-02-12"],
-    });
-    const previous = candidate({
-      reason: "subscription_cycle",
-      total: 1_000_000,
-      period: ["2025-01-24", "2026-01-24"],
-    });
-
-    expect(findContractInvoices([reBilled, previous])).toEqual([reBilled]);
-  });
-
-  it("skips the zero invoice a sales-opened subscription starts on", () => {
-    const opening = candidate({
-      reason: "subscription_create",
-      total: 0,
-      period: ["2026-06-02", "2026-06-17"],
-    });
-
-    expect(findContractInvoices([opening])).toEqual([]);
-  });
-
-  it("falls back to the newest sales invoice when no bill spans a year", () => {
-    const renewal = candidate({
-      reason: "manual",
-      total: 1_050_000,
-      period: null,
-    });
-
-    expect(findContractInvoices([renewal])).toEqual([renewal]);
-  });
-
-  it("reports nothing when no invoice reads as a contract", () => {
-    const monthlyCycle = candidate({
-      reason: "subscription_cycle",
-      total: 96_000,
-      period: ["2026-02-23", "2026-03-23"],
-    });
-
-    expect(findContractInvoices([monthlyCycle])).toEqual([]);
-  });
-});
-
-describe("getAmortizedCoverage", () => {
-  it("uses the stored period when it reads forward", () => {
-    expect(
-      getAmortizedCoverage({
-        invoicedAt: new Date("2026-05-23"),
-        coveredFrom: new Date("2026-05-23"),
-        coveredUntil: new Date("2027-05-23"),
-      }),
-    ).toEqual({
-      start: Date.parse("2026-05-23"),
-      end: Date.parse("2027-05-23"),
-    });
-  });
-
-  it("spreads an arrears-stamped invoice over the year ahead", () => {
-    // An annual bill whose period ends the day it was raised is collecting
-    // for the year to come, whatever its lines claim.
-    expect(
-      getAmortizedCoverage({
-        invoicedAt: new Date("2025-10-30"),
-        coveredFrom: new Date("2024-10-30"),
-        coveredUntil: new Date("2025-10-30"),
-      }),
-    ).toEqual({
-      start: Date.parse("2025-10-30"),
-      end: Date.parse("2026-10-30"),
-    });
-  });
-
-  it("spreads a period-less invoice over the year from issuance", () => {
-    expect(
-      getAmortizedCoverage({
-        invoicedAt: new Date("2026-02-11"),
-        coveredFrom: null,
-        coveredUntil: null,
-      }),
-    ).toEqual({
-      start: Date.parse("2026-02-11"),
-      end: Date.parse("2027-02-11"),
-    });
-  });
-});
-
-describe("getYearlyMonthSplits", () => {
-  // January through March 2026, the bound closing March.
-  const MONTHS = [
-    new Date("2026-01-01"),
-    new Date("2026-02-01"),
-    new Date("2026-03-01"),
-  ];
-  const END = new Date("2026-04-01");
-
-  function contractInvoice(fields: {
-    amount: number;
-    covered: [string, string];
-    currency?: string;
+    issued: string;
+    period?: [string, string];
   }) {
     return {
-      amount: fields.amount,
-      currency: fields.currency ?? "eur",
-      invoicedAt: new Date(fields.covered[0]),
-      coveredFrom: new Date(fields.covered[0]),
-      coveredUntil: new Date(fields.covered[1]),
+      billingReason: fields.reason,
+      stripeCreatedAt: new Date(fields.issued).toISOString(),
+      periodStart: fields.period
+        ? new Date(fields.period[0]).toISOString()
+        : null,
+      periodEnd: fields.period
+        ? new Date(fields.period[1]).toISOString()
+        : null,
     };
   }
 
-  it("amortizes a renewal day by day over the months it covers", () => {
-    // 365 euros over 365 days: a euro a day, so each month weighs its length.
-    const contract = {
-      invoices: [
-        contractInvoice({ amount: 365, covered: ["2026-01-01", "2027-01-01"] }),
-      ],
-    };
-
-    const splits = getYearlyMonthSplits([contract], MONTHS, END);
-
-    expect(splits.map((split) => split.revenue)).toEqual([31, 28, 31]);
-    expect(splits.map((split) => split.teamsCount)).toEqual([1, 1, 1]);
+  const coverage = (from: string, to: string) => ({
+    kind: "contract" as const,
+    coverage: { start: Date.parse(from), end: Date.parse(to) },
   });
 
-  it("files an upsell only on the stretch it was sold for", () => {
-    const contract = {
-      invoices: [
-        contractInvoice({ amount: 28, covered: ["2026-02-15", "2026-03-15"] }),
-      ],
-    };
-
-    const splits = getYearlyMonthSplits([contract], MONTHS, END);
-
-    expect(splits.map((split) => split.revenue)).toEqual([0, 14, 14]);
-    expect(splits.map((split) => split.teamsCount)).toEqual([0, 1, 1]);
+  it("reads a year-long bill as a contract, whatever Stripe filed it under", () => {
+    // A monthly-to-yearly conversion arrives as a `subscription_update`.
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "subscription_update",
+          issued: "2026-05-23",
+          period: ["2026-05-23", "2027-05-23"],
+        }),
+        { customerHasTerm: true },
+      ),
+    ).toEqual(coverage("2026-05-23", "2027-05-23"));
   });
 
-  it("counts a contract once per month, however many invoices cover it", () => {
-    const contract = {
-      invoices: [
-        contractInvoice({ amount: 365, covered: ["2026-01-01", "2027-01-01"] }),
-        contractInvoice({ amount: 28, covered: ["2026-02-15", "2026-03-15"] }),
-      ],
-    };
+  it("reads a monthly cycle as the month it was raised in", () => {
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "subscription_cycle",
+          issued: "2026-03-23",
+          period: ["2026-02-23", "2026-03-23"],
+        }),
+        { customerHasTerm: true },
+      ),
+    ).toEqual({ kind: "monthly" });
+  });
 
-    const splits = getYearlyMonthSplits([contract], MONTHS, END);
+  it("spreads an arrears-stamped contract over the year ahead", () => {
+    // An annual bill whose period ends the day it was raised is collecting for
+    // the year to come, not paying for one already over.
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "manual",
+          issued: "2025-10-30",
+          period: ["2024-10-30", "2025-10-30"],
+        }),
+        { customerHasTerm: true },
+      ),
+    ).toEqual(coverage("2025-10-30", "2026-10-30"));
+  });
 
-    expect(splits.map((split) => split.teamsCount)).toEqual([1, 1, 1]);
-    expect(splits[1]?.revenue).toBe(42);
+  it("spreads a sales invoice stating no period over the year from issuance", () => {
+    expect(
+      classifyInvoice(invoice({ reason: "manual", issued: "2026-02-11" }), {
+        customerHasTerm: true,
+      }),
+    ).toEqual(coverage("2026-02-11", "2027-02-11"));
+  });
+
+  it("treats a few days stamped on a sales invoice as no period at all", () => {
+    // Dashboard invoices routinely carry the day they were raised; read as
+    // coverage, a year's contract would land in a single week.
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "manual",
+          issued: "2026-02-11",
+          period: ["2026-02-11", "2026-02-13"],
+        }),
+        { customerHasTerm: true },
+      ),
+    ).toEqual(coverage("2026-02-11", "2027-02-11"));
+  });
+
+  it("reads a one-off from a customer with no term as that month's bill", () => {
+    // The same shape from a customer Argos never billed in terms is a bill
+    // raised by hand, not a year's contract stated without its period.
+    expect(
+      classifyInvoice(invoice({ reason: "manual", issued: "2026-02-11" }), {
+        customerHasTerm: false,
+      }),
+    ).toEqual({ kind: "monthly" });
+  });
+
+  it("reads a hand-raised month as the month it covers", () => {
+    // Legacy and partner deals are billed this way, month after month.
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "manual",
+          issued: "2026-03-10",
+          period: ["2026-02-21", "2026-03-21"],
+        }),
+        { customerHasTerm: false },
+      ),
+    ).toEqual({ kind: "monthly" });
+  });
+
+  it("keeps a sales-led upsell on the stretch it was sold for", () => {
+    // Sold mid-term, covering from the sale to the contract's renewal date.
+    expect(
+      classifyInvoice(
+        invoice({
+          reason: "manual",
+          issued: "2026-06-09",
+          period: ["2026-06-08", "2026-10-31"],
+        }),
+        { customerHasTerm: true },
+      ),
+    ).toEqual(coverage("2026-06-08", "2026-10-31"));
   });
 });
 

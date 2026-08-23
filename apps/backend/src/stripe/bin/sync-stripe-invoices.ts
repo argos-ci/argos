@@ -10,9 +10,10 @@ import { syncStripeInvoices } from "../invoice-mirror";
  *
  * The recurring reconciliation runs as the `stripe-invoice-sync` cron in the
  * worker; this hand-run form exists for the one-off backfill and for repairs.
- * The backfill passes a deep window — 760 covers the 24 months the revenue
- * page can be asked for, with a margin — and the recorded sweep is what lets
- * the page report that far back.
+ * The backfill passes a deep window — 1200 covers the 24 months the revenue
+ * page can be asked for plus the year of contracts still paying for its first
+ * months, with a margin — and the recorded sweep is what lets the page report
+ * that far back.
  */
 const days = Number(process.argv[2] ?? 35);
 

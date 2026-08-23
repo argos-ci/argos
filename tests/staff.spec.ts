@@ -635,6 +635,8 @@ type RevenueBook = {
   monthlyTeam: string;
   dollarTeam: string;
   contractTeam: string;
+  /** What a month of the contract comes to, as the page prints it. */
+  contractPerMonth: string;
 };
 
 /**
@@ -822,11 +824,22 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
     // The page refuses a window the mirror was never swept for, so the sweep
     // has to be on record before it will report anything.
     await StripeInvoiceSync.query().insert({
-      sinceDate: startOfUTCMonth(-24).toISOString(),
+      // Deep enough for the window the page asks for, plus the year of
+      // contracts that can still be paying for its first months.
+      sinceDate: startOfUTCMonth(-36).toISOString(),
       completedAt: new Date().toISOString(),
     });
 
-    await use({ monthlyTeam, dollarTeam, contractTeam });
+    // The contract covers twelve months from this month's start, so a month
+    // of it is its amount over that stretch, weighted by this month's length.
+    const termMs = startOfUTCMonth(12).getTime() - startOfUTCMonth(0).getTime();
+    const monthMs = startOfUTCMonth(1).getTime() - startOfUTCMonth(0).getTime();
+    const contractPerMonth = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR",
+    }).format((12_000 * monthMs) / termMs);
+
+    await use({ monthlyTeam, dollarTeam, contractTeam, contractPerMonth });
   },
 });
 
@@ -861,12 +874,15 @@ revenueTest("staff revenue", async ({ page, revenueBook }) => {
   await expect(breakdown.getByText("€855")).toBeVisible();
 
   // The contract is listed on its own, with the invoice its figure is read
-  // from and what that comes to per month.
+  // from and what a month of it comes to — its twelve months are not all the
+  // same length, so the share of this one is what the row reports.
   const contractRow = page
     .getByRole("row")
     .filter({ hasText: revenueBook.contractTeam });
   await expect(contractRow.getByText("€12,000.00")).toBeVisible();
-  await expect(contractRow.getByText("€1,000.00")).toBeVisible();
+  await expect(
+    contractRow.getByText(revenueBook.contractPerMonth),
+  ).toBeVisible();
 
   // Scoped to the monthly table: the contracts table below lists every annual
   // team in the database, which the rest of the suite seeds too.
