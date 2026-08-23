@@ -23,8 +23,7 @@ export class StripeInvoice extends Model {
           "status",
           "currency",
           "total",
-          "prePaymentCreditNotesAmount",
-          "postPaymentCreditNotesAmount",
+          "creditedAmountExcludingTax",
         ],
         properties: {
           stripeInvoiceId: { type: "string" },
@@ -37,8 +36,7 @@ export class StripeInvoice extends Model {
           total: { type: "number" },
           totalExcludingTax: { type: ["number", "null"] },
           totalTaxesAmount: { type: ["number", "null"] },
-          prePaymentCreditNotesAmount: { type: "number" },
-          postPaymentCreditNotesAmount: { type: "number" },
+          creditedAmountExcludingTax: { type: "number" },
           periodStart: { type: ["string", "null"] },
           periodEnd: { type: ["string", "null"] },
         },
@@ -58,8 +56,11 @@ export class StripeInvoice extends Model {
   totalExcludingTax!: number | null;
   /** The listed taxes added up — the fallback when no pre-tax total is stated. */
   totalTaxesAmount!: number | null;
-  prePaymentCreditNotesAmount!: number;
-  postPaymentCreditNotesAmount!: number;
+  /**
+   * The credit notes' ex-tax totals added up — ex-tax like the base they are
+   * taken off, where the invoice's own rollup fields are tax-inclusive.
+   */
+  creditedAmountExcludingTax!: number;
   /**
    * The longest stretch one of the invoice's lines covers, resolved at
    * ingest — what tells an annual bill from a true-up.

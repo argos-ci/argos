@@ -8,9 +8,11 @@ import { syncStripeInvoices } from "../invoice-mirror";
 /**
  * Days swept, from the command line.
  *
- * Defaults shallow, for the recurring reconciliation under the webhooks; the
- * one-off backfill passes a deep window instead — 760 covers the 24 months the
- * revenue page can be asked for, with a margin.
+ * The recurring reconciliation runs as the `stripe-invoice-sync` cron in the
+ * worker; this hand-run form exists for the one-off backfill and for repairs.
+ * The backfill passes a deep window — 760 covers the 24 months the revenue
+ * page can be asked for, with a margin — and the recorded sweep is what lets
+ * the page report that far back.
  */
 const days = Number(process.argv[2] ?? 35);
 

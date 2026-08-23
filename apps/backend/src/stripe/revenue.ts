@@ -1,6 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Account, StripeInvoice, Subscription } from "@/database/models";
+import {
+  Account,
+  StripeInvoice,
+  StripeInvoiceSync,
+  Subscription,
+} from "@/database/models";
 
 /** What the teams on one billing interval contributed to a month. */
 type StaffRevenueSplit = {
@@ -240,7 +245,9 @@ export type InvoiceRevenue = { amount: number; currency: string };
  * Excluding tax, because VAT collected on behalf of a state is not revenue, and
  * net of credit notes, because an invoice refunded after the fact keeps its
  * `amount_paid` intact — reading that field alone would count money that was
- * given back.
+ * given back. Both sides of that subtraction are ex-tax: the credited amount
+ * is resolved at ingest from the credit notes themselves, so a fully refunded
+ * taxed invoice nets to zero rather than to minus its VAT.
  */
 export function getInvoiceRevenue(invoice: {
   currency: string;
@@ -248,8 +255,7 @@ export function getInvoiceRevenue(invoice: {
   totalExcludingTax: number | null;
   /** The listed taxes added up — the fallback when no pre-tax total exists. */
   totalTaxesAmount: number | null;
-  prePaymentCreditNotesAmount: number;
-  postPaymentCreditNotesAmount: number;
+  creditedAmountExcludingTax: number;
 }): InvoiceRevenue {
   // Null on invoices Stripe states no pre-tax total for. The taxes it listed
   // are taken off the total instead, rather than letting the tax through as
@@ -259,12 +265,9 @@ export function getInvoiceRevenue(invoice: {
     invoice.totalExcludingTax ??
     invoice.total - (invoice.totalTaxesAmount ?? 0);
 
-  const credited =
-    invoice.prePaymentCreditNotesAmount + invoice.postPaymentCreditNotesAmount;
-
   return {
     // Stripe states amounts in the currency's minor unit.
-    amount: (excludingTax - credited) / 100,
+    amount: (excludingTax - invoice.creditedAmountExcludingTax) / 100,
     currency: invoice.currency,
   };
 }
@@ -455,17 +458,18 @@ async function getYearlyContracts(
       yearlyTeams.map((team) => team.stripeCustomerId),
     )
     .whereIn("status", ["paid", "open"])
+    // A contract in force renews yearly, so its bills are at most a little
+    // over a year old — two years bounds the scan without ever cutting one
+    // off, where an unbounded read would drag a converted team's whole
+    // monthly history along.
+    .where(
+      "stripeCreatedAt",
+      ">=",
+      startOfUTCMonth(new Date(), -24).toISOString(),
+    )
     .orderBy("stripeCreatedAt", "desc");
 
-  const byCustomer = new Map<string, StripeInvoice[]>();
-  for (const row of rows) {
-    let list = byCustomer.get(row.stripeCustomerId);
-    if (!list) {
-      list = [];
-      byCustomer.set(row.stripeCustomerId, list);
-    }
-    list.push(row);
-  }
+  const byCustomer = Map.groupBy(rows, (row) => row.stripeCustomerId);
 
   const contracts = yearlyTeams.map((team) => {
     const all = byCustomer.get(team.stripeCustomerId) ?? [];
@@ -553,15 +557,26 @@ async function readMonths(options: {
   end: Date;
   /** Customers that are Argos teams — everything else is not this page's. */
   teamCustomers: Map<string, TeamCustomer>;
-  /** Yearly contracts are reported as a rate, so their invoices are skipped. */
-  yearlyCustomerIds: Set<string>;
+  /**
+   * When each current annual contract's coverage began, by customer.
+   *
+   * A contract's invoices are reported as a rate, so from that instant on the
+   * customer's invoices are skipped here — but only from then: a team that
+   * converted mid-window keeps its real monthly history, instead of having it
+   * erased by its present interval.
+   */
+  yearlyContractStarts: Map<string, number>;
 }): Promise<{ split: StaffRevenueSplit; teams: StaffRevenueMonthTeam[] }[]> {
-  const { starts, end, teamCustomers, yearlyCustomerIds } = options;
+  const { starts, end, teamCustomers, yearlyContractStarts } = options;
   const first = starts[0];
   invariant(first, "at least one month is reported");
 
   const rows = await StripeInvoice.query()
     .where("status", "paid")
+    .whereIn("billingReason", [
+      ...SUBSCRIPTION_BILLING_REASONS,
+      ...SALES_LED_BILLING_REASONS,
+    ])
     .where("stripeCreatedAt", ">=", first.toISOString())
     .where("stripeCreatedAt", "<", end.toISOString());
 
@@ -586,14 +601,16 @@ async function readMonths(options: {
     if (!team) {
       continue;
     }
-    if (yearlyCustomerIds.has(row.stripeCustomerId)) {
+    // An annual bill is never a month's revenue, whoever it belongs to now: a
+    // churned yearly team's old renewal must not spike the month it landed in.
+    const period = getCoveredPeriod(row);
+    if (period && period.end - period.start >= ANNUAL_PERIOD_MS) {
       continue;
     }
-    if (
-      row.billingReason === null ||
-      (!SUBSCRIPTION_BILLING_REASONS.has(row.billingReason) &&
-        !SALES_LED_BILLING_REASONS.has(row.billingReason))
-    ) {
+    // From its contract's start, a yearly team's invoices — upsells,
+    // true-ups — are the contract's business, reported through the rate.
+    const contractStart = yearlyContractStarts.get(row.stripeCustomerId);
+    if (contractStart !== undefined && created.getTime() >= contractStart) {
       continue;
     }
 
@@ -670,39 +687,61 @@ export async function getStaffRevenue(
     `monthCount must be between 1 and ${MAX_MONTHS}`,
   );
 
-  // Told apart from a quiet month: an empty mirror reports zeros that read as
-  // real figures, and the fix — running the backfill — is on the operator.
-  const mirrored = await StripeInvoice.query().select("id").first();
-  if (!mirrored) {
+  const now = new Date();
+  // Oldest first, the running month last; `end` closes the last window.
+  const reported = Array.from({ length: monthCount }, (_, index) =>
+    startOfUTCMonth(now, index - monthCount + 1),
+  );
+  const end = startOfUTCMonth(now, 1);
+  const first = reported[0];
+  invariant(first, "at least one month is reported");
+
+  const [teams, teamCustomers, deepestSync] = await Promise.all([
+    getBilledTeams(),
+    getTeamCustomers(),
+    StripeInvoiceSync.query().orderBy("sinceDate", "asc").first(),
+  ]);
+
+  // Told apart from a quiet stretch: months the mirror never swept would
+  // report zeros that read as real figures, and the fix — a deeper
+  // backfill — is on the operator.
+  if (!deepestSync || new Date(deepestSync.sinceDate) > first) {
     throw new Error(
-      "The Stripe invoice mirror is empty — run stripe/bin/sync-stripe-invoices with a deep window to backfill it.",
+      "The Stripe invoice mirror does not cover the requested window — run stripe/bin/sync-stripe-invoices with a deeper window to backfill it.",
     );
   }
 
-  const now = new Date();
-  // Oldest first, the running month last. One bound past the end, which is not
-  // itself a month reported: it closes the last window.
-  const starts = Array.from({ length: monthCount + 1 }, (_, index) =>
-    startOfUTCMonth(now, index - monthCount + 1),
-  );
+  const yearlyContracts = await getYearlyContracts(teams);
 
-  const [teams, teamCustomers] = await Promise.all([
-    getBilledTeams(),
-    getTeamCustomers(),
-  ]);
-  const yearlyCustomerIds = new Set(
-    teams
-      .filter((team) => team.interval === "year")
-      .map((team) => team.stripeCustomerId),
-  );
+  // When each current annual contract began covering, so the months only skip
+  // a yearly customer's invoices from that instant on. A contract found but
+  // undatable skips everything, which is the conservative reading.
+  const yearlyContractStarts = new Map<string, number>();
+  for (const team of teams) {
+    if (team.interval !== "year") {
+      continue;
+    }
+    const contract = yearlyContracts.find(
+      (candidate) =>
+        candidate.stripeSubscriptionId === team.stripeSubscriptionId,
+    );
+    const covered =
+      contract && contract.invoices.length > 0
+        ? Math.min(
+            ...contract.invoices.map((invoice) =>
+              (invoice.coveredFrom ?? invoice.invoicedAt).getTime(),
+            ),
+          )
+        : Number.NEGATIVE_INFINITY;
+    yearlyContractStarts.set(team.stripeCustomerId, covered);
+  }
 
-  const reported = starts.slice(0, monthCount);
-  const end = starts[monthCount];
-  invariant(end, "the extra start closes the last window");
-  const [yearlyContracts, totals] = await Promise.all([
-    getYearlyContracts(teams),
-    readMonths({ starts: reported, end, teamCustomers, yearlyCustomerIds }),
-  ]);
+  const totals = await readMonths({
+    starts: reported,
+    end,
+    teamCustomers,
+    yearlyContractStarts,
+  });
   const yearlyRate = getYearlyRate(yearlyContracts);
 
   const months = reported.map((start, index) => {

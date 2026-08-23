@@ -15,7 +15,7 @@ import {
 import { sendNotification } from "@/notification";
 import { redisLock } from "@/util/redis";
 
-import { deleteStripeInvoice, upsertStripeInvoice } from "./invoice-mirror";
+import { deleteStripeInvoice, refreshStripeInvoice } from "./invoice-mirror";
 
 export type { Stripe };
 
@@ -180,7 +180,8 @@ function getPlanProductIdFromStripeSubscription(
   return product.id;
 }
 
-function timestampToISOString(date: number): string {
+/** Stripe timestamps in whole seconds. */
+export function timestampToISOString(date: number): string {
   return new Date(date * 1000).toISOString();
 }
 
@@ -188,6 +189,16 @@ export const stripe = new Stripe(config.get("stripe.apiKey"), {
   apiVersion: "2026-07-29.dahlia",
   typescript: true,
 });
+
+/**
+ * Whether a real Stripe key is configured, next to the client it guards.
+ *
+ * Compared against the schema's own default rather than a re-spelled literal,
+ * so renaming the placeholder cannot silently turn the check off.
+ */
+export function checkIsStripeConfigured(): boolean {
+  return config.get("stripe.apiKey") !== config.default("stripe.apiKey");
+}
 
 async function createArgosSubscriptionFromCheckoutSession({
   account,
@@ -881,6 +892,44 @@ export async function handleStripeEvent({
   data,
   type,
 }: Pick<Stripe.Event, "data" | "type">): Promise<void> {
+  // Every invoice or credit-note event is only a signal to re-read the
+  // invoice from the API, never a payload to trust: Stripe guarantees no
+  // delivery order and retries for days, so a payload is a snapshot of
+  // unknown age — and it embeds at most ten invoice lines anyway. Handling
+  // the whole families by prefix also keeps an over-ticked event type on the
+  // dashboard endpoint from landing in the throwing default case below.
+  //
+  // The endpoint needs at least: invoice.created, invoice.updated,
+  // invoice.finalized, invoice.paid, invoice.voided,
+  // invoice.marked_uncollectible, invoice.deleted, credit_note.created,
+  // credit_note.updated, credit_note.voided.
+  if (type === "invoice.deleted") {
+    const invoice = data.object as Stripe.Invoice;
+    if (invoice.id) {
+      await deleteStripeInvoice(invoice.id);
+    }
+    return;
+  }
+  if (type.startsWith("invoice.")) {
+    const invoice = data.object as Stripe.Invoice;
+    // An `invoice.upcoming` preview has no id, and nothing to mirror.
+    if (invoice.id) {
+      await refreshStripeInvoice(invoice.id);
+    }
+    return;
+  }
+  if (type.startsWith("credit_note.")) {
+    const creditNote = data.object as Stripe.CreditNote;
+    const invoiceId =
+      typeof creditNote.invoice === "string"
+        ? creditNote.invoice
+        : creditNote.invoice?.id;
+    if (invoiceId) {
+      await refreshStripeInvoice(invoiceId);
+    }
+    return;
+  }
+
   switch (type) {
     case "payment_method.attached": {
       const paymentMethod = data.object as Stripe.PaymentMethod;
@@ -1020,42 +1069,6 @@ export async function handleStripeEvent({
           });
         })(),
       ]);
-      return;
-    }
-
-    case "invoice.created":
-    case "invoice.updated":
-    case "invoice.finalized":
-    case "invoice.paid":
-    case "invoice.voided":
-    case "invoice.marked_uncollectible": {
-      const invoice = data.object as Stripe.Invoice;
-      await upsertStripeInvoice(invoice);
-      return;
-    }
-
-    case "invoice.deleted": {
-      const invoice = data.object as Stripe.Invoice;
-      if (invoice.id) {
-        await deleteStripeInvoice(invoice.id);
-      }
-      return;
-    }
-
-    // A credit note changes its invoice's credited amounts, but Stripe sends
-    // no invoice.updated for it — the invoice has to be re-read.
-    case "credit_note.created":
-    case "credit_note.updated":
-    case "credit_note.voided": {
-      const creditNote = data.object as Stripe.CreditNote;
-      const invoiceId =
-        typeof creditNote.invoice === "string"
-          ? creditNote.invoice
-          : creditNote.invoice?.id;
-      if (invoiceId) {
-        const invoice = await stripe.invoices.retrieve(invoiceId);
-        await upsertStripeInvoice(invoice);
-      }
       return;
     }
 

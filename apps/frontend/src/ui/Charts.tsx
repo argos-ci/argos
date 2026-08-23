@@ -256,7 +256,9 @@ export function ChartTooltipContent({
                         {itemConfig?.label || item.name}
                       </span>
                     </div>
-                    {item.value && (
+                    {/* Present-or-not rather than truthy: a series worth zero
+                        still has to print its figure. */}
+                    {item.value != null && (
                       <span className="text-default font-medium tabular-nums">
                         {valueFormatter && typeof item.value === "number"
                           ? valueFormatter(item.value)

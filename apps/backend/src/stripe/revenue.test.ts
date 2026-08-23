@@ -15,16 +15,14 @@ describe("getInvoiceRevenue", () => {
     totalExcludingTax?: number | null;
     totalTaxesAmount?: number | null;
     currency?: string;
-    pre?: number;
-    post?: number;
+    credited?: number;
   }) {
     return {
       currency: fields.currency ?? "usd",
       total: fields.total,
       totalExcludingTax: fields.totalExcludingTax ?? null,
       totalTaxesAmount: fields.totalTaxesAmount ?? null,
-      prePaymentCreditNotesAmount: fields.pre ?? 0,
-      postPaymentCreditNotesAmount: fields.post ?? 0,
+      creditedAmountExcludingTax: fields.credited ?? 0,
     };
   }
 
@@ -54,7 +52,7 @@ describe("getInvoiceRevenue", () => {
     ).toEqual({ amount: 100, currency: "eur" });
   });
 
-  it("nets out credit notes issued before and after payment", () => {
+  it("nets out what the credit notes gave back", () => {
     // An invoice refunded after the fact keeps its amount intact, so the
     // credited half has to be taken off or the total counts money given back.
     expect(
@@ -62,17 +60,22 @@ describe("getInvoiceRevenue", () => {
         invoice({
           total: 10_000,
           totalExcludingTax: 10_000,
-          pre: 1_500,
-          post: 2_500,
+          credited: 4_000,
         }),
       ).amount,
     ).toBe(60);
   });
 
-  it("reports a fully credited invoice as nothing", () => {
+  it("reports a fully credited taxed invoice as nothing", () => {
+    // Both sides of the subtraction are ex-tax: taking the credit note's
+    // tax-inclusive total off the ex-tax base would report minus the VAT here.
     expect(
       getInvoiceRevenue(
-        invoice({ total: 10_000, totalExcludingTax: 10_000, post: 10_000 }),
+        invoice({
+          total: 12_000,
+          totalExcludingTax: 10_000,
+          credited: 10_000,
+        }),
       ).amount,
     ).toBe(0);
   });

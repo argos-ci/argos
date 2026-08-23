@@ -57,6 +57,7 @@ export * from "./SlackChannel";
 export * from "./SlackInstallation";
 export * from "./StaffTeamContact";
 export * from "./StripeInvoice";
+export * from "./StripeInvoiceSync";
 export * from "./Subscription";
 export * from "./Team";
 export * from "./TeamDomain";

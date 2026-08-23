@@ -152,9 +152,16 @@ export const StripeInvoice = defineFactory(models.StripeInvoice, () => ({
   currency: "usd",
   total: 10_000,
   totalExcludingTax: 10_000,
-  prePaymentCreditNotesAmount: 0,
-  postPaymentCreditNotesAmount: 0,
+  creditedAmountExcludingTax: 0,
 }));
+
+export const StripeInvoiceSync = defineFactory(
+  models.StripeInvoiceSync,
+  () => ({
+    sinceDate: new Date("2024-01-01").toISOString(),
+    completedAt: new Date().toISOString(),
+  }),
+);
 
 export const TeamAccount = defineFactory(models.Account, () => ({
   teamId: Team.associate("id") as unknown as string,

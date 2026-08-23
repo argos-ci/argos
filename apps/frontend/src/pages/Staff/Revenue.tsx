@@ -42,13 +42,8 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getStripeCustomerURL, getStripeSubscriptionURL } from "./stripe";
 
 /**
- * Asked on its own rather than alongside the team directory: it walks Stripe's
- * invoices, so the two load beside each other, each with its own skeleton, and
- * a slow answer never holds a row of the table back.
- *
- * Every month costs a walk of its own, which is why the count is asked for
- * rather than fixed: the band above the directory wants three, the page that
- * charts a year wants twelve, and neither should pay for the other.
+ * Read from the backend's Stripe invoice mirror — this page is the query's
+ * only consumer, asking for a year plus the running month.
  */
 const StaffRevenueQuery = graphql(`
   query StaffRevenue_staffRevenue($months: Int!) {
@@ -186,15 +181,25 @@ const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
   currency: "EUR",
 });
 
-/** An invoice in the currency it was raised in — the audit trail to Stripe. */
+/**
+ * An invoice in the currency it was raised in — the audit trail to Stripe.
+ *
+ * Local formatters rather than util/intl's `formatCurrency`: that one follows
+ * the reader's locale, where every figure on this page is pinned to en-US so
+ * the amounts read the same on every staff screen.
+ */
+const INVOICE_PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
 function formatInvoiceAmount(invoice: {
   amount: number;
   currency: string;
 }): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: invoice.currency.toUpperCase(),
-  }).format(invoice.amount);
+  const currency = invoice.currency.toUpperCase();
+  let format = INVOICE_PRICE_FORMATS.get(currency);
+  if (!format) {
+    format = new Intl.NumberFormat("en-US", { style: "currency", currency });
+    INVOICE_PRICE_FORMATS.set(currency, format);
+  }
+  return format.format(invoice.amount);
 }
 
 /** A renewal's date, read in UTC like every other date on the page. */
@@ -232,6 +237,26 @@ function getGrowth(month: number, before: number): number | null {
   return before === 0 ? null : (month - before) / before;
 }
 
+/** A term with its explanation on hover — the page's one affordance for it. */
+function Hint(props: {
+  content: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip content={props.content}>
+      <span
+        className={clsx(
+          "underline decoration-dotted underline-offset-2",
+          props.className,
+        )}
+      >
+        {props.children}
+      </span>
+    </Tooltip>
+  );
+}
+
 /** One half of the amount, with the tooltip that explains that half alone. */
 function SplitAmount(props: {
   amount: number;
@@ -239,11 +264,9 @@ function SplitAmount(props: {
   tooltip: string;
 }) {
   return (
-    <Tooltip content={props.tooltip}>
-      <span className="underline decoration-dotted underline-offset-2">
-        {formatEuros(props.amount)} {props.label}
-      </span>
-    </Tooltip>
+    <Hint content={props.tooltip}>
+      {formatEuros(props.amount)} {props.label}
+    </Hint>
   );
 }
 
@@ -284,13 +307,7 @@ function MonthSplit(props: {
   );
 }
 
-/**
- * The three headline figures, rendered from whatever window was read.
- *
- * Takes the months rather than fetching them, so the band above the directory
- * and the page that charts a year draw the same cards off one query each rather
- * than asking twice.
- */
+/** The three headline figures, rendered from whatever window was read. */
 function RevenueCards(props: {
   /** Oldest first, the running month last. Null while loading. */
   months: readonly RevenueMonth[] | null;
@@ -310,18 +327,15 @@ function RevenueCards(props: {
 
   // An em dash on all three rather than a band that disappears: the figures
   // failing to load is worth seeing on a page whose whole subject is what they
-  // report, and it must not take the directory down with it.
+  // report.
   //
-  // The reason is carried rather than swallowed. This reads a third party at
-  // request time, so it fails in ways only its message explains — a key missing
-  // a permission, a rate limit, a key in the wrong mode — and this page is
-  // staff-only, so there is nobody here to protect from the detail.
+  // The reason is carried rather than swallowed: the realistic failures — the
+  // invoice mirror not backfilled deep enough for the window, a database
+  // error — are exactly the ones whose message tells the operator what to do,
+  // and this page is staff-only, so there is nobody here to protect from the
+  // detail.
   const unavailable = error ? (
-    <Tooltip content={error.message}>
-      <span className="underline decoration-dotted underline-offset-2">
-        unavailable
-      </span>
-    </Tooltip>
+    <Hint content={error.message}>unavailable</Hint>
   ) : null;
 
   /** `undefined` draws the skeleton, `null` an em dash. */
@@ -387,14 +401,12 @@ function RevenueCards(props: {
         hint={
           unavailable ??
           (currentMonth && lastMonth && growth !== null ? (
-            <Tooltip
+            <Hint
               content={`${formatMonth(currentMonth.month)} (${formatEuros(currentMonth.revenue)}) vs ${formatMonth(lastMonth.month)} (${formatEuros(lastMonth.revenue)}). The running month is still filling.`}
             >
-              <span className="underline decoration-dotted underline-offset-2">
-                {formatMonth(currentMonth.month)} vs{" "}
-                {formatMonth(lastMonth.month)}
-              </span>
-            </Tooltip>
+              {formatMonth(currentMonth.month)} vs{" "}
+              {formatMonth(lastMonth.month)}
+            </Hint>
           ) : months ? (
             "nothing to compare"
           ) : (
@@ -418,11 +430,12 @@ const CHART_SERIES = [
   { key: "github", label: "GitHub Marketplace", color: "var(--grass-9)" },
 ] as const;
 
-const CHART_CONFIG: ChartConfig = {
-  monthly: { label: "Monthly plans", color: "var(--pink-9)" },
-  yearly: { label: "Yearly plans", color: "var(--violet-9)" },
-  github: { label: "GitHub Marketplace", color: "var(--grass-9)" },
-};
+const CHART_CONFIG: ChartConfig = Object.fromEntries(
+  CHART_SERIES.map((series) => [
+    series.key,
+    { label: series.label, color: series.color },
+  ]),
+);
 
 /**
  * The window as stacked areas, one point per month, the running one included.
@@ -691,20 +704,12 @@ function RevenueHistory(props: { months: readonly RevenueMonth[] }) {
             <tr className="text-low border-b text-xs font-semibold">
               <th className="w-[16%] px-4 py-3 text-left">Month</th>
               <th className="w-[18%] px-4 py-3 text-right">
-                <Tooltip content="Ex-tax, net of credit notes.">
-                  <span className="underline decoration-dotted underline-offset-2">
-                    Invoiced
-                  </span>
-                </Tooltip>
+                <Hint content="Ex-tax, net of credit notes.">Invoiced</Hint>
               </th>
               <th className="w-[14%] px-4 py-3 text-right">Change</th>
               <th className="w-[14%] px-4 py-3 text-right">Teams</th>
               <th className="w-[18%] px-4 py-3 text-right">
-                <Tooltip content="Monthly revenue per paying team.">
-                  <span className="underline decoration-dotted underline-offset-2">
-                    ARPU
-                  </span>
-                </Tooltip>
+                <Hint content="Monthly revenue per paying team.">ARPU</Hint>
               </th>
               <th className="w-[20%] px-4 py-3 text-right" />
             </tr>
@@ -738,7 +743,6 @@ function describeInvoice(invoice: YearlyContract["invoices"][number]): string {
   return `${formatInvoiceAmount(invoice)} invoiced ${DATE_FORMAT.format(new Date(invoice.invoicedAt))}${covers}.`;
 }
 
-/** One contract, the invoices it is worth and what it adds per month. */
 /** The contract's invoices in their own currency, when they share one. */
 function getOriginalTotal(
   contract: YearlyContract,
@@ -769,7 +773,7 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
       <td className="p-4 text-right text-sm tabular-nums">
         {contract.amount !== null ? (
           <>
-            <Tooltip
+            <Hint
               content={
                 <div className="flex flex-col gap-1">
                   {contract.invoices.map((invoice, invoiceIndex) => (
@@ -778,28 +782,25 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
                 </div>
               }
             >
-              <span className="underline decoration-dotted underline-offset-2">
-                {originalTotal
-                  ? formatInvoiceAmount(originalTotal)
-                  : CONTRACT_PRICE_FORMAT.format(contract.amount)}
-              </span>
-            </Tooltip>
+              {originalTotal
+                ? formatInvoiceAmount(originalTotal)
+                : CONTRACT_PRICE_FORMAT.format(contract.amount)}
+            </Hint>
             {contract.awaitingPayment ? (
               <div>
-                <Tooltip content="Raised, not yet paid. Counted — expected to clear.">
-                  <span className="text-warning-low underline decoration-dotted underline-offset-2">
-                    Awaiting payment
-                  </span>
-                </Tooltip>
+                <Hint
+                  className="text-warning-low"
+                  content="Raised, not yet paid. Counted — expected to clear."
+                >
+                  Awaiting payment
+                </Hint>
               </div>
             ) : null}
           </>
         ) : (
-          <Tooltip content="Counts nothing.">
-            <span className="text-danger-low underline decoration-dotted underline-offset-2">
-              no invoice found
-            </span>
-          </Tooltip>
+          <Hint className="text-danger-low" content="Counts nothing.">
+            no invoice found
+          </Hint>
         )}
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
@@ -858,11 +859,7 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                 <th className="w-[30%] px-4 py-3 text-left">Team</th>
                 <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
                 <th className="w-[16%] px-4 py-3 text-right">
-                  <Tooltip content="÷ 12, in euros.">
-                    <span className="underline decoration-dotted underline-offset-2">
-                      Per month
-                    </span>
-                  </Tooltip>
+                  <Hint content="÷ 12, in euros.">Per month</Hint>
                 </th>
                 <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
                 <th className="w-[16%] px-4 py-3 text-right" />
@@ -881,11 +878,9 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
               <tr className="text-sm font-medium">
                 <td className="p-4 text-left">Total</td>
                 <td className="p-4 text-right tabular-nums">
-                  <Tooltip content="In euros.">
-                    <span className="underline decoration-dotted underline-offset-2">
-                      {CONTRACT_PRICE_FORMAT.format(total)}
-                    </span>
-                  </Tooltip>
+                  <Hint content="In euros.">
+                    {CONTRACT_PRICE_FORMAT.format(total)}
+                  </Hint>
                 </td>
                 <td className="p-4 text-right tabular-nums">
                   {CONTRACT_PRICE_FORMAT.format(total / 12)}
@@ -956,17 +951,7 @@ function StaffRevenuePage() {
         </>
       ) : error ? null : (
         <ChartCard className="mb-6" title="Invoiced by month">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <Loader className="size-8" delay={0} />
-            {/* Said rather than left to a spinner: this walks a year of Stripe
-                invoices, which is seconds rather than the moment a spinner
-                usually stands for — and knowing why it is slow is the
-                difference between waiting and reloading. */}
-            <div className="text-low max-w-sm text-sm">
-              Reading {PAGE_MONTHS} months of invoices from Stripe. Nothing is
-              stored, so this takes a few seconds the first time each hour.
-            </div>
-          </div>
+          <Loader className="size-8" delay={0} />
         </ChartCard>
       )}
     </PageContainer>

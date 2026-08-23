@@ -376,12 +376,13 @@ export const typeDefs = gql`
     "The teams behind \`monthlyPlans\`, largest first — they sum to it."
     teams: [StaffRevenueMonthTeam!]!
     """
-    What the annual contracts in force are worth per month: their latest invoice
-    over twelve.
+    What the annual contracts in force are worth per month: their contract
+    invoices over twelve.
 
-    The same on every month, being a rate. Amortizing each annual invoice over
-    the twelve months it covers would be exact, but it would mean reading a year
-    of invoices to report one month — which a request cannot afford.
+    The same on every month, being a rate — amortizing each invoice over the
+    exact months it covers would be more precise, and the mirror now makes it
+    affordable, but a flat rate is what the page's readers asked to compare
+    months against.
     """
     yearlyPlans: StaffRevenueSplit!
   }
@@ -492,11 +493,12 @@ export const typeDefs = gql`
     and the running one last, with the annual contracts the yearly rate is
     made of (staff only).
 
-    Read from Stripe when asked, never stored: the invoices change behind us as
-    they are paid, voided and credited. Every month costs a paginated walk of
-    its own, which is what \`months\` is bounded for.
+    Read from the \`stripe_invoices\` mirror, which the Stripe webhooks keep
+    current and a reconciliation sweep backs up — a window the mirror was
+    never backfilled for is refused rather than reported as zeros. The staff
+    revenue page is the only consumer today.
     """
-    staffRevenue(months: Int! = 3): StaffRevenue!
+    staffRevenue(months: Int!): StaffRevenue!
   }
 
   extend type Mutation {

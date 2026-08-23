@@ -10,50 +10,55 @@ import {
   startOfUTCMonth,
 } from "./revenue";
 
+let sequence = 0;
+
+/** A team on a Stripe subscription, as the revenue reader looks for it. */
+async function createTeam(options: {
+  interval: "month" | "year";
+  status?: "active" | "past_due" | "trialing" | "canceled";
+  endDate?: string;
+  /** Set to grant the plan, which bills nothing. */
+  granted?: boolean;
+  /** Teams that never reached Stripe have no customer to match invoices on. */
+  withCustomer?: boolean;
+  stripeCustomerId?: string;
+}) {
+  sequence += 1;
+  const plan = await factory.Plan.create({
+    usageBased: true,
+    interval: options.interval,
+    includedScreenshots: 1000,
+  });
+  const account = await factory.TeamAccount.create({
+    stripeCustomerId:
+      options.withCustomer === false
+        ? null
+        : (options.stripeCustomerId ?? `cus_revenue_${sequence}`),
+    forcedPlanId: options.granted ? plan.id : null,
+  });
+  const user = await factory.User.create();
+  await factory.Subscription.create({
+    accountId: account.id,
+    planId: plan.id,
+    currency: "usd",
+    provider: "stripe",
+    stripeSubscriptionId: `sub_revenue_${sequence}`,
+    subscriberId: user.id,
+    startDate: new Date("2021-01-01").toISOString(),
+    endDate: options.endDate ?? null,
+    status: options.status ?? "active",
+    trialEndDate:
+      options.status === "trialing"
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+  });
+  return account;
+}
+
 describe("getBilledTeams", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
-
-  let sequence = 0;
-
-  /** A team on a Stripe subscription, as the revenue reader looks for it. */
-  async function createTeam(options: {
-    interval: "month" | "year";
-    status?: "active" | "past_due" | "trialing" | "canceled";
-    /** Set to grant the plan, which bills nothing. */
-    granted?: boolean;
-    /** Teams that never reached Stripe have no customer to match invoices on. */
-    withCustomer?: boolean;
-  }) {
-    sequence += 1;
-    const plan = await factory.Plan.create({
-      usageBased: true,
-      interval: options.interval,
-      includedScreenshots: 1000,
-    });
-    const account = await factory.TeamAccount.create({
-      stripeCustomerId:
-        options.withCustomer === false ? null : `cus_revenue_${sequence}`,
-      forcedPlanId: options.granted ? plan.id : null,
-    });
-    const user = await factory.User.create();
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: plan.id,
-      currency: "usd",
-      provider: "stripe",
-      stripeSubscriptionId: `sub_revenue_${sequence}`,
-      subscriberId: user.id,
-      startDate: new Date("2021-01-01").toISOString(),
-      status: options.status ?? "active",
-      trialEndDate:
-        options.status === "trialing"
-          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          : null,
-    });
-    return account;
-  }
 
   it("returns a paying team with the interval it is billed on", async () => {
     const monthly = await createTeam({ interval: "month" });
@@ -128,21 +133,11 @@ describe("getTeamCustomers", () => {
     // Its invoices were still sent, and the month it was invoiced in has to
     // keep them — that departure is exactly what a comparison between two
     // months exists to show.
-    const account = await factory.TeamAccount.create({
-      stripeCustomerId: "cus_churned",
-    });
-    const plan = await factory.Plan.create({ usageBased: true });
-    const user = await factory.User.create();
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: plan.id,
-      currency: "usd",
-      provider: "stripe",
-      stripeSubscriptionId: "sub_churned",
-      subscriberId: user.id,
-      startDate: new Date("2021-01-01").toISOString(),
-      endDate: new Date("2024-01-01").toISOString(),
+    const account = await createTeam({
+      interval: "month",
       status: "canceled",
+      endDate: new Date("2024-01-01").toISOString(),
+      stripeCustomerId: "cus_churned",
     });
 
     await expect(getTeamCustomers()).resolves.toEqual(
@@ -171,39 +166,15 @@ describe("getStaffRevenue", () => {
     await setupDatabase();
   });
 
-  let sequence = 0;
+  it("refuses a window the mirror never covered", async () => {
+    // Months nobody backfilled would report zeros that read as real figures.
+    await expect(getStaffRevenue(2)).rejects.toThrow(/does not cover/);
 
-  /** A team billed through Stripe, with the subscription the reader expects. */
-  async function createBilledTeam(options: {
-    interval: "month" | "year";
-    stripeCustomerId: string;
-  }) {
-    sequence += 1;
-    const plan = await factory.Plan.create({
-      usageBased: true,
-      interval: options.interval,
-      includedScreenshots: 1000,
+    // A sweep exists but is too shallow for the window asked.
+    await factory.StripeInvoiceSync.create({
+      sinceDate: new Date().toISOString(),
     });
-    const account = await factory.TeamAccount.create({
-      stripeCustomerId: options.stripeCustomerId,
-    });
-    const user = await factory.User.create();
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: plan.id,
-      currency: "usd",
-      provider: "stripe",
-      stripeSubscriptionId: `sub_staff_revenue_${sequence}`,
-      subscriberId: user.id,
-      startDate: new Date("2021-01-01").toISOString(),
-      status: "active",
-    });
-    return account;
-  }
-
-  it("refuses to report from an empty mirror", async () => {
-    // Zeros from a mirror nobody backfilled would read as real figures.
-    await expect(getStaffRevenue(2)).rejects.toThrow(/mirror is empty/);
+    await expect(getStaffRevenue(2)).rejects.toThrow(/does not cover/);
   });
 
   it("reports the window from the mirror, split by interval", async () => {
@@ -212,17 +183,22 @@ describe("getStaffRevenue", () => {
       startOfUTCMonth(now, -1).getTime() + 5 * 24 * 3600 * 1000,
     );
 
-    const monthly = await createBilledTeam({
+    await factory.StripeInvoiceSync.create();
+    const monthly = await createTeam({
       interval: "month",
       stripeCustomerId: "cus_staff_monthly",
     });
-    await createBilledTeam({
+    const yearly = await createTeam({
       interval: "year",
       stripeCustomerId: "cus_staff_yearly",
     });
     // A churned team keeps the invoices it was already sent.
     const churned = await factory.TeamAccount.create({
       stripeCustomerId: "cus_staff_churned",
+    });
+    // A churned yearly team: its old annual bill must not spike a month.
+    await factory.TeamAccount.create({
+      stripeCustomerId: "cus_staff_churned_yearly",
     });
 
     await factory.StripeInvoice.create({
@@ -265,16 +241,38 @@ describe("getStaffRevenue", () => {
       total: 99_900,
       totalExcludingTax: 99_900,
     });
-    // The annual contract, covering today.
+    // The annual contract, covering from this month on.
     await factory.StripeInvoice.create({
       stripeCustomerId: "cus_staff_yearly",
-      stripeCreatedAt: startOfUTCMonth(now, -6).toISOString(),
-      billingReason: "subscription_cycle",
+      stripeCreatedAt: startOfUTCMonth(now, 0).toISOString(),
+      billingReason: "subscription_update",
       currency: "eur",
       total: 120_000,
       totalExcludingTax: 120_000,
-      periodStart: startOfUTCMonth(now, -6).toISOString(),
-      periodEnd: startOfUTCMonth(now, 6).toISOString(),
+      periodStart: startOfUTCMonth(now, 0).toISOString(),
+      periodEnd: startOfUTCMonth(now, 12).toISOString(),
+    });
+    // The same team's monthly bill from before its conversion: history the
+    // present interval must not erase.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_yearly",
+      stripeCreatedAt: lastMonth.toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 30_000,
+      totalExcludingTax: 30_000,
+    });
+    // A churned yearly team's old renewal: an annual bill is never a month's
+    // revenue, whoever it belongs to now.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_churned_yearly",
+      stripeCreatedAt: lastMonth.toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 480_000,
+      totalExcludingTax: 480_000,
+      periodStart: startOfUTCMonth(now, -13).toISOString(),
+      periodEnd: startOfUTCMonth(now, -1).toISOString(),
     });
 
     const result = await getStaffRevenue(2);
@@ -284,12 +282,13 @@ describe("getStaffRevenue", () => {
     invariant(last && current);
 
     expect(last.monthlyPlans).toEqual({
-      revenue: 700,
-      teamsCount: 2,
+      revenue: 1000,
+      teamsCount: 3,
       foreignRevenue: 0,
     });
     expect(last.teams.map((team) => [team.slug, team.revenue])).toEqual([
       [monthly.slug, 500],
+      [yearly.slug, 300],
       [churned.slug, 200],
     ]);
     expect(last.yearlyPlans).toEqual({
@@ -297,8 +296,10 @@ describe("getStaffRevenue", () => {
       teamsCount: 1,
       foreignRevenue: 0,
     });
-    expect(last.revenue).toBe(800);
+    expect(last.revenue).toBe(1100);
 
+    // The contract invoice lands in the running month, but an annual bill is
+    // reported as the rate, never as the month's own revenue.
     expect(current.monthlyPlans.revenue).toBe(100);
     expect(current.teams).toHaveLength(1);
 
@@ -312,7 +313,8 @@ describe("getStaffRevenue", () => {
 
   it("reports an open annual invoice as awaiting payment, counted", async () => {
     const now = new Date();
-    await createBilledTeam({
+    await factory.StripeInvoiceSync.create();
+    await createTeam({
       interval: "year",
       stripeCustomerId: "cus_staff_open",
     });

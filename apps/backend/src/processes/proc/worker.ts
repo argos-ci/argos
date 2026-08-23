@@ -15,6 +15,8 @@ import { notificationWorkflowJob } from "@/notification/workflow-job";
 import { originPullRequestJob } from "@/origin-pull-request/job";
 import { originInstallationSyncJob } from "@/origin/synchronize-job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
+import { checkIsStripeConfigured } from "@/stripe";
+import { syncStripeInvoices } from "@/stripe/invoice-mirror";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
 
@@ -38,6 +40,17 @@ scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
 scheduleCron("media-retention", "15 * * * *", (context) =>
   purgeExpiredMedia(context.date),
 );
+
+// The safety net under the invoice webhooks: re-reads a window wide enough to
+// catch anything a missed delivery left behind. Daily, because the webhooks
+// are the live path — the sweep only has to beat an operator noticing.
+scheduleCron("stripe-invoice-sync", "45 4 * * *", async (context) => {
+  if (!checkIsStripeConfigured()) {
+    return;
+  }
+  const since = new Date(context.date.getTime() - 35 * 24 * 3600 * 1000);
+  await syncStripeInvoices({ since });
+});
 
 createJobWorker(
   automationActionRunJob,
