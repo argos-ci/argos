@@ -21,9 +21,17 @@ export function VariantSwitchers(props: { diff: Diff }) {
   const metadata = resolveDiffMetadata(diff);
   return (
     <ChipContext value={CHIP_DEFAULTS}>
-      {/* `empty:hidden` so a snapshot with no dimensions at all — a markdown
+      {/* Named, because out here the chips no longer sit under the sidebar's
+          "Metadata" heading and would otherwise be a bare row of links between
+          the title and the controls.
+
+          `empty:hidden` so a snapshot with no dimensions at all — a markdown
           one — does not leave the toolbar's gap twice over. */}
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+      <div
+        role="group"
+        aria-label="Snapshot variants"
+        className="flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden"
+      >
         <BrowserSwitcher diff={diff} siblingDiffs={siblingDiffs} />
         <ViewportSwitcher diff={diff} siblingDiffs={siblingDiffs} />
         <ColorSchemeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
