@@ -193,9 +193,11 @@ const BuildHotkeysDialogWithState = memo(
             </Button>
             <div className={clsx("gap-12 space-y-6 pb-4 md:columns-2")}>
               {plainHotkeyGroups.map((group, index) => {
-                const entries = Object.entries(group.hotkeys).filter(
-                  ([, hotKey]) =>
-                    hotKey.description && hotKey.envs.includes(env),
+                const entries = Object.entries(group.hotkeys).flatMap(
+                  ([name, hotKey]) =>
+                    hotKey?.description && hotKey.envs.includes(env)
+                      ? [[name, hotKey] as const]
+                      : [],
                 );
                 if (entries.length === 0) {
                   return null;

@@ -5,9 +5,21 @@ import type { HotkeyEvent, HotkeyName } from "./hotkeys";
 /**
  * The platform is read once, when the module evaluates, so each case has to
  * load the module afresh under the platform it is about.
+ *
+ * Only `platform` is overridden. Spreading `navigator` would not do it: its
+ * properties are prototype getters rather than own ones, so the copy comes out
+ * empty and every other read breaks somewhere unrelated.
  */
 async function loadHotkeys(platform: string) {
-  vi.stubGlobal("navigator", { platform });
+  vi.stubGlobal(
+    "navigator",
+    new Proxy(navigator, {
+      get: (target, property, receiver) =>
+        property === "platform"
+          ? platform
+          : Reflect.get(target, property, target ?? receiver),
+    }),
+  );
   vi.resetModules();
   return import("./hotkeys");
 }
@@ -117,6 +129,29 @@ describe("checkHotkeyMatches", () => {
       hotkey: "toggleHotkeysDialog",
       event: { key: "?", code: "Slash", shiftKey: true },
       matches: true,
+    },
+    // Alt changes the character a key prints too: "[" is ⌥⇧( on a French Mac,
+    // so demanding no alt would make "show details" untypeable there.
+    {
+      title: "an option-typed bracket still shows details",
+      platform: "MacIntel",
+      hotkey: "showDetails",
+      event: { key: "[", code: "Digit5", altKey: true, shiftKey: true },
+      matches: true,
+    },
+    {
+      title: "the modifier held with it does not, alt or no alt",
+      platform: "MacIntel",
+      hotkey: "showDetails",
+      event: { key: "[", code: "Digit5", altKey: true, metaKey: true },
+      matches: false,
+    },
+    {
+      title: "alt stays forbidden for a key named by its physical code",
+      platform: "MacIntel",
+      hotkey: "acceptDiff",
+      event: { key: "y", code: "KeyY", altKey: true },
+      matches: false,
     },
     {
       title: "a plain letter accepts",

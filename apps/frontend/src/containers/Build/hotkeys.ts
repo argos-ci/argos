@@ -26,7 +26,11 @@ export type Hotkey = {
 
 export type HotkeyGroup = {
   name: string;
-  hotkeys: Record<string, Hotkey>;
+  /**
+   * Optional per name: read as a group of *all* the hotkeys, only the ones
+   * this group declares are there. `satisfies` still checks each declaration.
+   */
+  hotkeys: Partial<Record<string, Hotkey>>;
 };
 
 const hotkeyGroups = [
@@ -324,12 +328,15 @@ const hotkeyGroups = [
 
 export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
 
-export const plainHotkeyGroups = hotkeyGroups as unknown as HotkeyGroup[];
+export const plainHotkeyGroups: HotkeyGroup[] = hotkeyGroups;
 
 const hotkeys = plainHotkeyGroups.reduce(
   (acc, group) => ({ ...acc, ...group.hotkeys }),
   {} as Record<HotkeyName, Hotkey>,
 );
+
+/** The `KeyboardEvent` fields saying which modifiers are held. */
+type ModifierFlag = "metaKey" | "ctrlKey" | "altKey" | "shiftKey";
 
 /**
  * The event flag each modifier key sets. `MOD` resolves to one of these names
@@ -342,14 +349,16 @@ const MODIFIER_FLAGS = {
   Alt: "altKey",
   "⇧": "shiftKey",
   Shift: "shiftKey",
-} as const satisfies Record<ModifierKey, keyof KeyboardEvent>;
+} as const satisfies Record<ModifierKey, ModifierFlag>;
 
-const MODIFIER_FLAG_NAMES = [
-  "metaKey",
-  "ctrlKey",
-  "altKey",
-  "shiftKey",
-] as const;
+/** Derived, so a modifier added above cannot end up declared but unchecked. */
+const MODIFIER_FLAG_NAMES = [...new Set(Object.values(MODIFIER_FLAGS))];
+
+/**
+ * The modifiers that change which character a key prints, and are therefore
+ * already accounted for by `event.key`.
+ */
+const CHARACTER_MODIFIER_FLAGS = new Set<ModifierFlag>(["shiftKey", "altKey"]);
 
 function checkIsModifier(key: string): key is ModifierKey {
   return key in MODIFIER_FLAGS;
@@ -361,21 +370,31 @@ function checkIsLiteralKey(key: string): boolean {
 }
 
 /**
- * Whether `event` holds exactly the modifiers `hotkey` declares.
+ * Whether `event` holds the modifiers `hotkey` declares, and none it doesn't.
  *
- * Shift is the exception, and only for a hotkey named by the character it
- * prints: `event.key` already answers it there — "?" *is* shift+/, and the
- * digit row is shifted on an AZERTY keyboard — so demanding it a second time
- * would make those impossible to type.
+ * Meta and Control are always exact: they leave the character a key prints
+ * alone, so a hotkey that does not declare one must not fire while it is held.
+ * Shift and Alt do change that character, and a hotkey named by the character
+ * it prints is matched on `event.key` — which has already answered them. "?"
+ * *is* shift+/, "[" *is* ⌥⇧( on a French Mac, and the digit row is shifted on
+ * AZERTY, so demanding either a second time would make those impossible to
+ * type.
  */
 function checkModifiersMatch(hotkey: Hotkey, event: HotkeyEvent): boolean {
-  const declared = new Set<string>(
+  const declared = new Set<ModifierFlag>(
     hotkey.keys.filter(checkIsModifier).map((key) => MODIFIER_FLAGS[key]),
   );
-  const shiftIsImplied =
-    !declared.has("shiftKey") && hotkey.keys.some(checkIsLiteralKey);
+  // The key that decides the match is the one that is not a modifier; a
+  // combination has exactly one, since a single event prints a single
+  // character.
+  const mainKey = hotkey.keys.find((key) => !checkIsModifier(key));
+  const printsACharacter = mainKey !== undefined && checkIsLiteralKey(mainKey);
   return MODIFIER_FLAG_NAMES.every((flag) => {
-    if (flag === "shiftKey" && shiftIsImplied) {
+    if (
+      printsACharacter &&
+      !declared.has(flag) &&
+      CHARACTER_MODIFIER_FLAGS.has(flag)
+    ) {
       return true;
     }
     return declared.has(flag) === event[flag];
