@@ -14,7 +14,11 @@ export function DetailToolbar(props: { children: React.ReactNode }) {
     // A tighter gap between rows than along one: side by side the slots are
     // separate things and read as such, but stacked they are one bar folded
     // over, and a row's worth of air makes it look like two.
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+    //
+    // `justify-end` decides one case only — a slot wrapped onto a line of its
+    // own, which belongs on the right where it came from. Everywhere else the
+    // title's `grow` has already spent the free space.
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
       {props.children}
     </div>
   );
@@ -34,14 +38,11 @@ export function DetailToolbarNav(props: { children: React.ReactNode }) {
  * gives it back, so a long name clamps to two lines rather than pushing
  * anything off.
  *
- * A flex line is broken up on base sizes, which is the whole of how this row
- * behaves. The name is based on itself rather than on the `flex-1` (`basis: 0`)
- * this used to be: at zero it counted for nothing when the row decided what fit,
- * so it never wrapped on its own account and took whatever the rest left —
- * beside a full set of variant chips, two crushed syllables. Asking for its own
- * length instead means the row breaks only when the name really needs the room,
- * and a short one leaves everything else alone. See `crowded` for the other
- * half of it.
+ * Based on its own length rather than the `flex-1` (`basis: 0`) this used to
+ * be: a flex line is broken up on base sizes, and at zero the name counted for
+ * nothing when the row decided what fit — it never wrapped anything on its own
+ * account and took whatever the rest left, which beside a full set of variant
+ * switchers was two crushed syllables.
  *
  * `heading` rather than an `h1` element: the slot is used on pages that already
  * have one, and the level is stated explicitly rather than inferred.
@@ -52,14 +53,15 @@ export function DetailToolbarTitle(props: {
   render?: (title: React.ReactNode) => React.ReactNode;
   className?: string;
   /**
-   * Whether the row carries something besides the name and its controls — the
-   * variant chips, on a build.
+   * Whether the row carries something built to give way — the build's variant
+   * cluster, which folds its switchers under the controls when squeezed.
    *
-   * Then the name's ask is capped: left to ask for its full length, a long one
-   * takes the line to itself and folds *everything* else underneath, chips and
-   * controls together. Capped, it asks for a couple of lines' worth, which
-   * leaves the controls their place on the first row and lets only the chips
-   * drop. It still grows past the cap into whatever the row does not use.
+   * Then the name trades its full ask for a firm floor: it never shrinks below
+   * a couple of lines' worth, and the cluster is what folds first — asking for
+   * everything instead would push the whole cluster down even when the name
+   * fits beside it. It still grows into whatever the cluster does not use.
+   * Without a cluster there is nothing designed to yield, so the name asks for
+   * its own length and shrinks like anything else.
    */
   crowded?: boolean;
 }) {
@@ -76,8 +78,8 @@ export function DetailToolbarTitle(props: {
   return (
     <div
       className={clsx(
-        "flex min-w-0 shrink grow",
-        crowded ? "basis-72" : "basis-auto",
+        "flex grow",
+        crowded ? "shrink-0 basis-72" : "min-w-0 shrink basis-auto",
       )}
     >
       {render ? render(title) : title}

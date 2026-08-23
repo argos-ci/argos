@@ -88,11 +88,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
     showCommentTool || (canComment && checkCanCommentOnTextDiff(diff));
 
   return (
-    // `ml-auto` for the row that wrapped: alone on a line of its own, the
-    // toolbar has nothing to be spaced apart from, so `justify-between` would
-    // leave it at the left edge under the name instead of below the chips it
-    // continues.
-    <div className="ml-auto flex shrink-0 items-center gap-1.5">
+    <div className="flex shrink-0 items-center gap-1.5">
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
       <FitToggle />
       {fitControls}

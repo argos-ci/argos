@@ -64,26 +64,39 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       >
         {diff.name}
       </DetailToolbarTitle>
-      {/* What is about the pane: the view mode, the fit, the overlay's style,
-          comment visibility. Everything that acts on the snapshot itself is in
-          `ScreenshotActionsToolbar`, under it. */}
-      <BuildDiffDetailToolbar
-        diff={diff}
-        snapshotControls={false}
-        fitControls={<AriaSnapshotToggle />}
-      >
-        <RightSidebarToggle />
-      </BuildDiffDetailToolbar>
-      {/* Which variant of the snapshot is on screen, and the siblings to jump
-          to.
+      {/* The variants, then the pane controls — and when there is not room for
+          both, the variants fold *under* the controls, even though they come
+          first. `flex-wrap-reverse` squares that circle: items fill lines in
+          order, so the variants take the first line and the controls the
+          second — and reversed stacking puts that first line at the bottom.
+          The controls keep their spot on every snapshot; the variants are as
+          many as the snapshot happens to have, so they are the ones that move.
 
-          Last in the row, which is what decides the folding: a flex row wraps
-          from the end, so the slot that goes under is whichever one is here.
-          The controls sit in the same place on every snapshot and should keep
-          it; the chips are as many as the snapshot happens to have, so they are
-          the ones that move. The cost is that on one line they read after the
-          controls rather than before them. */}
-      <VariantSwitchers diff={diff} />
+          The cluster asks the outer row only for the controls' worth
+          (`basis-90`) and grows from there, because a wrapping row places
+          items by what they ask, before any shrinking: asking for its full
+          content would send the whole cluster under the title as one block the
+          moment it stopped fitting. Sized this way it holds line one, and
+          whatever width it actually grows to is what decides the fold. It
+          grows ahead of the title (`grow-[99]`) but never past its content
+          (`max-w-fit`): the free space unfolds the switchers first, and only
+          what they leave lengthens the name — the other way round, a long
+          name would fold them with room to spare. */}
+      <div className="flex max-w-fit min-w-0 shrink grow-[99] basis-90 flex-wrap-reverse items-center justify-end gap-x-4 gap-y-2">
+        {/* Which variant of the snapshot is on screen, and the siblings to
+            jump to. */}
+        <VariantSwitchers diff={diff} />
+        {/* What is about the pane: the view mode, the fit, the overlay's
+            style, comment visibility. Everything that acts on the snapshot
+            itself is in `ScreenshotActionsToolbar`, under it. */}
+        <BuildDiffDetailToolbar
+          diff={diff}
+          snapshotControls={false}
+          fitControls={<AriaSnapshotToggle />}
+        >
+          <RightSidebarToggle />
+        </BuildDiffDetailToolbar>
+      </div>
     </DetailToolbar>
   );
 });
