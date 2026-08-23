@@ -84,6 +84,12 @@ async function getGithubMarketplaceMonthlyRevenue(): Promise<number> {
   const rows = (await Subscription.query()
     .select("subscriptions.accountId", "plan.githubMonthlyPriceCents")
     .joinRelated("plan")
+    .join("accounts", "accounts.id", "subscriptions.accountId")
+    // The same book the Stripe figures read: teams, and none Argos granted a
+    // plan to rather than bills.
+    .whereNotNull("accounts.teamId")
+    .whereNull("accounts.userId")
+    .whereNull("accounts.forcedPlanId")
     .where("subscriptions.provider", "github")
     .whereNotNull("plan.githubMonthlyPriceCents")
     .whereRaw("?? < now()", "subscriptions.startDate")
@@ -464,23 +470,23 @@ export function classifyInvoice(
       : { kind: "contract", coverage: yearFrom(issued) };
   }
 
+  // Longer than a month, whatever raised it: an upgrade prorated to the end of
+  // a term arrives as a `subscription_update` covering the months that remain,
+  // and belongs to them rather than to the day it was raised.
+  if (period && period.end - period.start > MONTHLY_PERIOD_MS) {
+    return {
+      kind: "contract",
+      coverage: period.end > issued ? period : yearFrom(issued),
+    };
+  }
+
   const isSalesLed =
     invoice.billingReason !== null &&
     SALES_LED_BILLING_REASONS.has(invoice.billingReason);
-  if (isSalesLed) {
-    if (!period) {
-      return options.customerHasTerm
-        ? { kind: "contract", coverage: yearFrom(issued) }
-        : { kind: "monthly" };
-    }
-    // Sold as a block rather than billed for a month — an upsell covering the
-    // stretch from its sale to the term's renewal date.
-    if (period.end - period.start > MONTHLY_PERIOD_MS) {
-      return {
-        kind: "contract",
-        coverage: period.end > issued ? period : yearFrom(issued),
-      };
-    }
+  if (isSalesLed && !period) {
+    return options.customerHasTerm
+      ? { kind: "contract", coverage: yearFrom(issued) }
+      : { kind: "monthly" };
   }
   return { kind: "monthly" };
 }
@@ -516,6 +522,13 @@ type ContractRead = {
   row: StripeInvoice;
   revenue: InvoiceRevenue;
   coverage: { start: number; end: number };
+  /**
+   * The stretch the invoice was raised for, before the next bill clipped it.
+   *
+   * What the money is spread at: an invoice pays for its own term at its own
+   * rate, so a term cut short delivers less rather than the same amount faster.
+   */
+  termMs: number;
   /** A full term supersedes the one before it; a shorter one adds to it. */
   isFullTerm: boolean;
 };
@@ -674,13 +687,13 @@ export async function getStaffRevenue(
       customerHasTerm: customersWithTerms.has(row.stripeCustomerId),
     });
     if (classified.kind === "contract") {
+      const termMs = classified.coverage.end - classified.coverage.start;
       contractReads.push({
         row,
         revenue,
         coverage: classified.coverage,
-        isFullTerm:
-          classified.coverage.end - classified.coverage.start >=
-          ANNUAL_PERIOD_MS,
+        termMs,
+        isFullTerm: termMs >= ANNUAL_PERIOD_MS,
       });
       continue;
     }
@@ -733,8 +746,8 @@ export async function getStaffRevenue(
   const monthlyByCustomer = new Map<string, number>();
 
   for (const contract of contracts) {
-    const coveredMs = contract.coverage.end - contract.coverage.start;
-    if (coveredMs <= 0) {
+    const coveredMs = contract.termMs;
+    if (coveredMs <= 0 || contract.coverage.end <= contract.coverage.start) {
       continue;
     }
     for (const [index, bound] of amortizeBounds.entries()) {
@@ -867,7 +880,9 @@ function buildYearlyContracts(options: {
       amount: reads.reduce((sum, read) => sum + toEuros(read.revenue), 0),
       monthlyRevenue: monthlyByCustomer.get(customerId) ?? 0,
       invoices,
-      awaitingPayment: invoices.every((invoice) => invoice.awaitingPayment),
+      // Any of them, not all: the unpaid renewal beside a settled upsell is
+      // exactly the one whose collection is worth watching.
+      awaitingPayment: invoices.some((invoice) => invoice.awaitingPayment),
     });
   }
 

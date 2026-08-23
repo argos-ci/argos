@@ -241,6 +241,12 @@ export async function syncStripeInvoices(options: {
     if (!row) {
       continue;
     }
+    // A page Stripe hands over twice — a cursor resumed, a listing drifting
+    // under us — would put one invoice in a batch twice, and Postgres refuses
+    // to update the same row twice in one statement.
+    if (seen.has(row.stripeInvoiceId)) {
+      continue;
+    }
     seen.add(row.stripeInvoiceId);
     batch.push(row);
     if (batch.length >= BATCH_SIZE) {

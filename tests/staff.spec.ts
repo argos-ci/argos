@@ -879,7 +879,9 @@ revenueTest("staff revenue", async ({ page, revenueBook }) => {
   const contractRow = page
     .getByRole("row")
     .filter({ hasText: revenueBook.contractTeam });
-  await expect(contractRow.getByText("€12,000.00")).toBeVisible();
+  // Twice over: what Stripe charged, and what the page counts it as — the
+  // contract is in euros, so both cells read the same.
+  await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
   await expect(
     contractRow.getByText(revenueBook.contractPerMonth),
   ).toBeVisible();

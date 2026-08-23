@@ -17,6 +17,17 @@ export async function syncGithubMarketplacePlanPrices(): Promise<number> {
     per_page: 100,
   });
 
+  // Cleared first: a plan the listing no longer carries has no price any more,
+  // and leaving the last one known would keep pricing its subscribers off a
+  // tariff that does not exist.
+  await Plan.query()
+    .patch({ githubMonthlyPriceCents: null })
+    .whereNotNull("githubPlanId")
+    .whereNotIn(
+      "githubPlanId",
+      plans.map((listingPlan) => listingPlan.id),
+    );
+
   let count = 0;
   for (const listingPlan of plans) {
     count += await Plan.query()

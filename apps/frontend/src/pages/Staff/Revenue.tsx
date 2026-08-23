@@ -223,7 +223,7 @@ function getSplitNote(split: Split): string {
   // the total went through the fixed rate.
   const foreign =
     split.foreignRevenue > 0
-      ? ` ${formatEuros(split.foreignRevenue)} converted from dollars at a fixed rate.`
+      ? ` ${formatEuros(split.foreignRevenue)} of it was invoiced in another currency — dollars at a fixed rate, anything else at parity.`
       : "";
 
   return `${teams}${foreign}`;
@@ -298,7 +298,7 @@ function MonthSplit(props: {
       <SplitAmount
         amount={month.yearlyPlans.revenue}
         label="Yearly"
-        tooltip={YEARLY_HINT}
+        tooltip={`${YEARLY_HINT}${getSplitNote(month.yearlyPlans)}`}
       />
       {github !== null ? (
         <>
@@ -821,6 +821,13 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
         )}
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
+        {contract.amount === null ? (
+          <span className="text-low">—</span>
+        ) : (
+          CONTRACT_PRICE_FORMAT.format(contract.amount)
+        )}
+      </td>
+      <td className="p-4 text-right text-sm tabular-nums">
         {contract.amount !== null ? (
           CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue)
         ) : (
@@ -880,8 +887,13 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
           <table className="w-full min-w-160 table-fixed border-collapse">
             <thead>
               <tr className="text-low border-b text-xs font-semibold">
-                <th className="w-[30%] px-4 py-3 text-left">Team</th>
-                <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
+                <th className="w-[26%] px-4 py-3 text-left">Team</th>
+                <th className="w-[18%] px-4 py-3 text-right">Invoiced</th>
+                <th className="w-[16%] px-4 py-3 text-right">
+                  <Hint content="Dollars converted at a fixed rate.">
+                    In euros
+                  </Hint>
+                </th>
                 <th className="w-[16%] px-4 py-3 text-right">
                   <Hint content="What it adds to this month, in euros.">
                     Per month
@@ -903,10 +915,9 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
             <tfoot>
               <tr className="text-sm font-medium">
                 <td className="p-4 text-left">Total</td>
+                <td />
                 <td className="p-4 text-right tabular-nums">
-                  <Hint content="In euros.">
-                    {CONTRACT_PRICE_FORMAT.format(total)}
-                  </Hint>
+                  {CONTRACT_PRICE_FORMAT.format(total)}
                 </td>
                 <td className="p-4 text-right tabular-nums">
                   {CONTRACT_PRICE_FORMAT.format(monthlyTotal)}

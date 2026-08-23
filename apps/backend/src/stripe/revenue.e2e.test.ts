@@ -408,6 +408,59 @@ describe("getStaffRevenue", () => {
     expect(result.yearlyContracts).toHaveLength(1);
   });
 
+  it("never spreads a contract for more than it was raised for", async () => {
+    // The invariant the arithmetic rests on: an invoice pays for its own term
+    // at its own rate, so what it puts into the months of a window can only
+    // ever be a part of what it was raised for — a term cut short by an early
+    // renewal delivers less, never the same amount faster.
+    const now = new Date();
+    await factory.StripeInvoiceSync.create({
+      sinceDate: new Date("2020-01-01").toISOString(),
+    });
+    await createTeam({
+      interval: "year",
+      stripeCustomerId: "cus_staff_early",
+    });
+    // A year's contract, then a renewal five months in: the first term is cut
+    // short, and five months of it is all it can ever have delivered.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_early",
+      stripeCreatedAt: startOfUTCMonth(now, -11).toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 1_200_000,
+      totalExcludingTax: 1_200_000,
+      periodStart: startOfUTCMonth(now, -11).toISOString(),
+      periodEnd: startOfUTCMonth(now, 1).toISOString(),
+    });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_early",
+      stripeCreatedAt: startOfUTCMonth(now, -6).toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 2_400_000,
+      totalExcludingTax: 2_400_000,
+      periodStart: startOfUTCMonth(now, -6).toISOString(),
+      periodEnd: startOfUTCMonth(now, 6).toISOString(),
+    });
+
+    const result = await getStaffRevenue(12);
+
+    const spread = result.months.reduce(
+      (sum, month) => sum + month.yearlyPlans.revenue,
+      0,
+    );
+    // Both invoices come to €36,000; a window of twelve months can hold only
+    // part of that, and the first term must contribute at its own rate — a
+    // fifth of €12,000 over five months, not the whole of it.
+    expect(spread).toBeLessThan(36_000);
+    const firstTermRate = 12_000 / 12;
+    const monthsOfFirstTerm = result.months.slice(0, 5);
+    for (const month of monthsOfFirstTerm) {
+      expect(month.yearlyPlans.revenue).toBeLessThan(firstTermRate * 1.2);
+    }
+  });
+
   it("reports an open annual invoice as awaiting payment, counted", async () => {
     const now = new Date();
     await factory.StripeInvoiceSync.create();
