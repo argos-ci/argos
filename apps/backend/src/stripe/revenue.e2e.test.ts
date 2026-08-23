@@ -364,6 +364,50 @@ describe("getStaffRevenue", () => {
     );
   });
 
+  it("lists a contract that ran out mid-month, so the table adds up", async () => {
+    // It paid for the days before it ended, so it is in the month's figure —
+    // and a table that left it out would come up short against the card it
+    // exists to explain.
+    const now = new Date();
+    await factory.StripeInvoiceSync.create({
+      sinceDate: new Date("2020-01-01").toISOString(),
+    });
+    await createTeam({
+      interval: "year",
+      stripeCustomerId: "cus_staff_expired",
+    });
+    const endedOn = new Date(
+      startOfUTCMonth(now, 0).getTime() + 10 * 24 * 3600 * 1000,
+    );
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_expired",
+      stripeCreatedAt: startOfUTCMonth(now, -12).toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 120_000,
+      totalExcludingTax: 120_000,
+      periodStart: startOfUTCMonth(now, -12).toISOString(),
+      periodEnd: endedOn.toISOString(),
+    });
+
+    const result = await getStaffRevenue(1);
+
+    const month = result.months[0];
+    invariant(month);
+    const listed = result.yearlyContracts.reduce(
+      (sum, contract) => sum + contract.monthlyRevenue,
+      0,
+    );
+    // The table reports whole months and the month is still running, so the
+    // figure it explains is the smaller of the two — never the other way
+    // round, which would mean a contributor missing from the list.
+    expect(listed).toBeGreaterThanOrEqual(month.yearlyPlans.revenue);
+    expect(
+      result.yearlyContracts.map((contract) => contract.slug),
+    ).toContainEqual(expect.any(String));
+    expect(result.yearlyContracts).toHaveLength(1);
+  });
+
   it("reports an open annual invoice as awaiting payment, counted", async () => {
     const now = new Date();
     await factory.StripeInvoiceSync.create();

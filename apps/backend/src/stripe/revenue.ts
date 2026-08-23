@@ -728,6 +728,8 @@ export async function getStaffRevenue(
   // running month for the table to report.
   const contracts = clipContractTerms(contractReads);
   const runningIndex = reported.length - 1;
+  const runningMonth = monthBounds[runningIndex];
+  invariant(runningMonth, "the running month is one of the reported ones");
   const monthlyByCustomer = new Map<string, number>();
 
   for (const contract of contracts) {
@@ -756,8 +758,6 @@ export async function getStaffRevenue(
     // What the contract is worth over a whole month, which is what the table
     // reports — the running month's own share is partial by design, and a
     // contract's monthly worth is not.
-    const runningMonth = monthBounds[runningIndex];
-    invariant(runningMonth, "the running month is one of the reported ones");
     const monthOverlap =
       Math.min(contract.coverage.end, runningMonth.end) -
       Math.max(contract.coverage.start, runningMonth.start);
@@ -800,36 +800,45 @@ export async function getStaffRevenue(
       teamCustomers,
       billedTeams,
       monthlyByCustomer,
-      now,
+      runningMonth,
     }),
     githubMarketplaceMonthlyRevenue: marketplace,
   };
 }
 
 /**
- * The contracts as the table lists them: the ones paying for today, plus the
- * teams billed yearly whose contract could not be found at all — an anomaly
- * the figures would otherwise hide, since a contract nobody can find simply
- * contributes nothing.
+ * The contracts as the table lists them: the ones paying for any part of the
+ * running month, plus the teams billed yearly whose contract could not be
+ * found at all — an anomaly the figures would otherwise hide, since a contract
+ * nobody can find simply contributes nothing.
+ *
+ * The month rather than today, so the table adds up to the figure it explains:
+ * a contract that ran out on the tenth paid for those ten days, and a row that
+ * only listed contracts still running would come up short against the card.
  */
 function buildYearlyContracts(options: {
   contracts: ContractRead[];
   teamCustomers: Map<string, TeamCustomer>;
   billedTeams: BilledTeam[];
   monthlyByCustomer: Map<string, number>;
-  now: Date;
+  runningMonth: { start: number; end: number };
 }): StaffYearlyContract[] {
-  const { contracts, teamCustomers, billedTeams, monthlyByCustomer, now } =
-    options;
-  const nowMs = now.getTime();
-  const inForce = contracts.filter(
+  const {
+    contracts,
+    teamCustomers,
+    billedTeams,
+    monthlyByCustomer,
+    runningMonth,
+  } = options;
+  const reported = contracts.filter(
     (contract) =>
-      contract.coverage.start <= nowMs && nowMs < contract.coverage.end,
+      contract.coverage.start < runningMonth.end &&
+      contract.coverage.end > runningMonth.start,
   );
 
   const rows: StaffYearlyContract[] = [];
   for (const [customerId, reads] of Map.groupBy(
-    inForce,
+    reported,
     (read) => read.row.stripeCustomerId,
   )) {
     const team = teamCustomers.get(customerId);
