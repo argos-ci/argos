@@ -38,6 +38,7 @@ import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { formatPrice } from "./pricing";
+import { getStripeSubscriptionURL } from "./stripe";
 
 /**
  * Asked on its own rather than alongside the team directory: it walks Stripe's
@@ -51,25 +52,41 @@ import { formatPrice } from "./pricing";
 const StaffRevenueQuery = graphql(`
   query StaffRevenue_staffRevenue($months: Int!) {
     staffRevenue(months: $months) {
-      month
-      revenue
-      monthlyPlans {
+      months {
+        month
         revenue
-        teamsCount
-        foreignRevenue
+        monthlyPlans {
+          revenue
+          teamsCount
+          foreignRevenue
+        }
+        yearlyPlans {
+          revenue
+          teamsCount
+          foreignRevenue
+        }
       }
-      yearlyPlans {
-        revenue
-        teamsCount
-        foreignRevenue
+      yearlyContracts {
+        slug
+        name
+        stripeSubscriptionId
+        amount
+        awaitingPayment
+        invoices {
+          amount
+          currency
+          invoicedAt
+          coveredFrom
+          coveredUntil
+        }
       }
     }
   }
 `);
 
-type RevenueMonth = DocumentType<
-  typeof StaffRevenueQuery
->["staffRevenue"][number];
+type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
+type RevenueMonth = RevenueData["months"][number];
+type YearlyContract = RevenueData["yearlyContracts"][number];
 type Split = RevenueMonth["monthlyPlans"];
 
 /** Months the dedicated page reads — a year, plus the one running. */
@@ -88,7 +105,7 @@ const CURRENT_MONTHLY_HINT =
   "Invoices issued so far this month, excluding tax and net of credit notes. Partial by nature: the month is not over.";
 
 const YEARLY_HINT =
-  "Annual contracts in force: their latest invoice ÷ 12. A rate, so it is the same every month rather than a spike in the renewal month.";
+  "Annual contracts in force: their contract invoices ÷ 12. A rate, so it is the same every month rather than a spike in the renewal month.";
 
 /**
  * Stands in for the hint line while the figures load.
@@ -136,6 +153,24 @@ const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
   currency: "USD",
   notation: "compact",
   maximumFractionDigits: 0,
+});
+
+/**
+ * Amounts in the contracts table, with cents.
+ *
+ * The rest of the page rounds to the dollar, but this table exists to be added
+ * up against the yearly figure, and twelfths carry cents — a rounded list
+ * would not sum to its own total.
+ */
+const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+/** A renewal's date, read in UTC like every other date on the page. */
+const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "UTC",
 });
 
 function formatMonth(month: string): string {
@@ -533,11 +568,186 @@ function RevenueHistory(props: { months: readonly RevenueMonth[] }) {
   );
 }
 
+/** One counted invoice, described for the amount's breakdown tooltip. */
+function describeInvoice(invoice: YearlyContract["invoices"][number]): string {
+  const covers =
+    invoice.coveredFrom && invoice.coveredUntil
+      ? `, covers ${DATE_FORMAT.format(new Date(invoice.coveredFrom))} to ${DATE_FORMAT.format(new Date(invoice.coveredUntil))}`
+      : "";
+  return `${CONTRACT_PRICE_FORMAT.format(invoice.amount)} invoiced ${DATE_FORMAT.format(new Date(invoice.invoicedAt))}${covers}.`;
+}
+
+/** One contract, the invoices it is worth and what it adds per month. */
+function ContractRow(props: { contract: YearlyContract; index: number }) {
+  const { contract, index } = props;
+  const newestInvoice = contract.invoices[0] ?? null;
+  const foreignCurrencies = [
+    ...new Set(
+      contract.invoices
+        .filter((invoice) => invoice.currency !== "usd")
+        .map((invoice) => invoice.currency.toUpperCase()),
+    ),
+  ];
+
+  return (
+    <tr className={clsx(index % 2 === 0 ? "bg-app" : "bg-subtle", "border-b")}>
+      <td className="p-4 text-left text-sm font-medium">
+        <Link href={`/${contract.slug}`}>{contract.name ?? contract.slug}</Link>
+      </td>
+      <td className="p-4 text-right text-sm tabular-nums">
+        {contract.amount !== null ? (
+          <>
+            <Tooltip
+              content={
+                <div className="flex flex-col gap-1">
+                  {contract.invoices.map((invoice, invoiceIndex) => (
+                    <div key={invoiceIndex}>{describeInvoice(invoice)}</div>
+                  ))}
+                </div>
+              }
+            >
+              <span className="underline decoration-dotted underline-offset-2">
+                {CONTRACT_PRICE_FORMAT.format(contract.amount)}
+              </span>
+            </Tooltip>
+            {contract.invoices.length > 1 ? (
+              <span className="text-low">
+                {" "}
+                ({contract.invoices.length} invoices)
+              </span>
+            ) : null}
+            {foreignCurrencies.length > 0 ? (
+              <span className="text-low">
+                {" "}
+                ({foreignCurrencies.join(", ")} at parity)
+              </span>
+            ) : null}
+            {contract.awaitingPayment ? (
+              <Tooltip content="The invoice was raised but has not been paid yet, so it counts nothing until it clears.">
+                <span className="text-warning-low underline decoration-dotted underline-offset-2">
+                  {" "}
+                  awaiting payment
+                </span>
+              </Tooltip>
+            ) : null}
+          </>
+        ) : (
+          <Tooltip content="No invoice reading as this contract was found on the customer, so it adds nothing to the yearly figure. Its invoices are worth a look in Stripe.">
+            <span className="text-danger-low underline decoration-dotted underline-offset-2">
+              no invoice found
+            </span>
+          </Tooltip>
+        )}
+      </td>
+      <td className="p-4 text-right text-sm tabular-nums">
+        {contract.amount !== null && !contract.awaitingPayment ? (
+          CONTRACT_PRICE_FORMAT.format(contract.amount / 12)
+        ) : (
+          <span className="text-low">—</span>
+        )}
+      </td>
+      <td className="p-4 text-right text-sm tabular-nums">
+        {newestInvoice ? (
+          DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))
+        ) : (
+          <span className="text-low">—</span>
+        )}
+      </td>
+      <td className="p-4 text-right text-sm">
+        <Link
+          href={getStripeSubscriptionURL(contract.stripeSubscriptionId)}
+          target="_blank"
+        >
+          Stripe
+        </Link>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * The annual contracts one by one — the makeup of the yearly figure.
+ *
+ * Listed so the figure can be audited: the rate is a sum of twelfths read from
+ * Stripe, and when it looks wrong, the contract at fault can only be found by
+ * seeing each one's renewal — including the contracts that contributed
+ * nothing, which the total alone would hide.
+ */
+function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
+  const { contracts } = props;
+  // Awaiting-payment invoices are listed but not counted, like in the figure.
+  const total = contracts.reduce(
+    (sum, contract) =>
+      sum + (contract.awaitingPayment ? 0 : (contract.amount ?? 0)),
+    0,
+  );
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3">
+        <h3 className="font-semibold">Annual contracts</h3>
+      </div>
+      {contracts.length === 0 ? (
+        <p className="text-low text-sm">No annual contracts in force.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-sm border">
+          <table className="w-full min-w-160 table-fixed border-collapse">
+            <thead>
+              <tr className="text-low border-b text-xs font-semibold">
+                <th className="w-[30%] px-4 py-3 text-left">Team</th>
+                <th className="w-[20%] px-4 py-3 text-right">
+                  <Tooltip content="The contract's invoices added up — its latest annual bill, plus upsells raised on top of it since — excluding tax and net of credit notes.">
+                    <span className="underline decoration-dotted underline-offset-2">
+                      Invoiced
+                    </span>
+                  </Tooltip>
+                </th>
+                <th className="w-[16%] px-4 py-3 text-right">
+                  <Tooltip content="The renewal over twelve — this column adds up to the Yearly plans figure.">
+                    <span className="underline decoration-dotted underline-offset-2">
+                      Per month
+                    </span>
+                  </Tooltip>
+                </th>
+                <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
+                <th className="w-[16%] px-4 py-3 text-right" />
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((contract, index) => (
+                <ContractRow
+                  key={contract.stripeSubscriptionId}
+                  contract={contract}
+                  index={index}
+                />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="text-sm font-medium">
+                <td className="p-4 text-left">Total</td>
+                <td className="p-4 text-right tabular-nums">
+                  {CONTRACT_PRICE_FORMAT.format(total)}
+                </td>
+                <td className="p-4 text-right tabular-nums">
+                  {CONTRACT_PRICE_FORMAT.format(total / 12)}
+                </td>
+                <td />
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StaffRevenuePage() {
   const { data, error } = useQuery(StaffRevenueQuery, {
     variables: { months: PAGE_MONTHS },
   });
-  const months = data?.staffRevenue ?? null;
+  const months = data?.staffRevenue.months ?? null;
+  const contracts = data?.staffRevenue.yearlyContracts ?? null;
 
   // Told rather than reported as a failed figure, as the other staff pages do:
   // a reader without access has no figures to wait for, and three tiles reading
@@ -573,7 +783,7 @@ function StaffRevenuePage() {
         </PageHeaderContent>
       </PageHeader>
       <RevenueCards months={months} error={error ?? null} />
-      {months ? (
+      {months && contracts ? (
         <>
           <ChartCard
             className="mb-6"
@@ -583,6 +793,7 @@ function StaffRevenuePage() {
             <RevenueChart months={months} />
           </ChartCard>
           <RevenueHistory months={months} />
+          <YearlyContracts contracts={contracts} />
         </>
       ) : error ? null : (
         <ChartCard

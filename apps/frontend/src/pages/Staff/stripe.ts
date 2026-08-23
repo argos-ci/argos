@@ -6,3 +6,8 @@
 export function getStripeCustomerURL(stripeCustomerId: string) {
   return `https://dashboard.stripe.com/customers/${stripeCustomerId}`;
 }
+
+/** The subscription page in the dashboard, where its invoices are listed. */
+export function getStripeSubscriptionURL(stripeSubscriptionId: string) {
+  return `https://dashboard.stripe.com/subscriptions/${stripeSubscriptionId}`;
+}

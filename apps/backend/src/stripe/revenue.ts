@@ -24,7 +24,7 @@ type StaffRevenueSplit = {
 };
 
 /** What Argos billed over one calendar month. */
-export type StaffRevenueMonth = {
+type StaffRevenueMonth = {
   /** The first instant of the month, in UTC — what names it on screen. */
   month: Date;
   /** The two splits below, added up. */
@@ -95,16 +95,28 @@ const SUBSCRIPTION_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
 ]);
 
 /**
- * The reasons a renewal is raised under, which is the only invoice worth
- * dividing by twelve.
+ * A line covering at least this long reads as a year's bill.
  *
- * Narrower than the set above on purpose: a mid-year proration is real revenue
- * for the month it lands in, but a twelfth of it is not what the contract is
- * worth per month.
+ * Under a full year on purpose: an annual invoice raised a few weeks into the
+ * period it covers, or prorated at conversion, still has to read as the
+ * contract — where a monthly cycle or a one-month true-up never comes close.
  */
-const RENEWAL_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
-  "subscription_create",
-  "subscription_cycle",
+const ANNUAL_PERIOD_SECONDS = 300 * 24 * 3600;
+
+/** A day, under which a line's period is a bookkeeping point, not coverage. */
+const DAY_SECONDS = 24 * 3600;
+
+/**
+ * The reasons an invoice is raised by a person rather than by a billing cycle.
+ *
+ * Sales-led contracts are billed this way — a dashboard invoice or an accepted
+ * quote, often carried by no subscription at all — and their line periods are
+ * frequently missing or degenerate, so they cannot be recognized by coverage
+ * the way cycle invoices can.
+ */
+const SALES_LED_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
+  "manual",
+  "quote_accept",
 ]);
 
 /** The placeholder the config falls back to when no key is configured. */
@@ -113,6 +125,8 @@ const MISSING_API_KEY = "no-api-key";
 /** A team Argos bills through Stripe, and how it is billed. */
 type BilledTeam = {
   accountId: string;
+  slug: string;
+  name: string | null;
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   interval: "month" | "year";
@@ -135,6 +149,8 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     .select(
       "subscriptions.accountId",
       "subscriptions.stripeSubscriptionId",
+      "accounts.slug",
+      "accounts.name",
       "accounts.stripeCustomerId",
       "plan.interval",
     )
@@ -160,6 +176,8 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     .orderBy("subscriptions.accountId")
     .orderBy("plan.includedScreenshots", "DESC")) as unknown as {
     accountId: string | number;
+    slug: string;
+    name: string | null;
     stripeSubscriptionId: string;
     stripeCustomerId: string;
     interval: "month" | "year";
@@ -167,6 +185,8 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
 
   return rows.map((row) => ({
     accountId: String(row.accountId),
+    slug: row.slug,
+    name: row.name,
     stripeSubscriptionId: row.stripeSubscriptionId,
     stripeCustomerId: row.stripeCustomerId,
     interval: row.interval,
@@ -292,51 +312,232 @@ async function mapWithLimit<Item, Result>(
   return results;
 }
 
-/**
- * What the annual contracts in force are worth per month.
- *
- * One small request per annual team rather than a year of invoices for
- * everyone: an annual subscription renews once a year, so its latest renewal is
- * what it is worth now.
- *
- * Listed by subscription and narrowed to a renewal, not simply the customer's
- * latest paid invoice: an add-on bought mid-year is the most recent invoice a
- * customer paid, and a twelfth of it would replace the contract's own amount
- * with a rounding error.
- *
- * A contract whose first renewal has not been paid yet counts nothing — it has
- * been invoiced nothing, which is what this reports.
- */
-async function getYearlyRate(teams: BilledTeam[]): Promise<StaffRevenueSplit> {
-  const yearlyTeams = teams.filter((team) => team.interval === "year");
-  const split = createSplit();
+/** One invoice a contract's worth is read from. */
+type StaffContractInvoice = {
+  /** Net of tax and credit notes, in the currency's main unit. */
+  amount: number;
+  /** The currency it was raised in, counted at parity when not USD. */
+  currency: string;
+  /** When it was raised. */
+  invoicedAt: Date;
+  /** The stretch it covers, when it states a real one. */
+  coveredFrom: Date | null;
+  coveredUntil: Date | null;
+};
 
-  const invoices = await mapWithLimit(yearlyTeams, async (team) => {
-    // A handful rather than one: the latest invoice on a subscription can be a
-    // proration, and the renewal is the one behind it.
-    const page = await stripe.invoices.list({
-      subscription: team.stripeSubscriptionId,
-      status: "paid",
-      limit: 10,
-    });
+/** One annual contract in force, and the invoices its rate is read from. */
+type StaffYearlyContract = {
+  /** The team's slug, which names its pages. */
+  slug: string;
+  /** The team's display name, when it has one. */
+  name: string | null;
+  /** The subscription the database knows the contract by. */
+  stripeSubscriptionId: string;
+  /**
+   * The invoices below, added up. Null when none was found, in which case the
+   * contract adds nothing to the rate.
+   */
+  amount: number | null;
+  /** The invoices the contract is worth, newest first. */
+  invoices: StaffContractInvoice[];
+  /**
+   * True when the invoices found are still awaiting payment. Shown, so a
+   * contract in collection is visible, but counted nothing until they clear.
+   */
+  awaitingPayment: boolean;
+};
+
+/** The parts of an invoice the contract picker reads. */
+export type ContractInvoiceCandidate = {
+  billing_reason: Stripe.Invoice.BillingReason | null;
+  total: number;
+  lines: { data: { period: { start: number; end: number } }[] };
+};
+
+/** The longest stretch one of the invoice's lines covers, or null. */
+function getCoveredPeriod(
+  invoice: ContractInvoiceCandidate,
+): { start: number; end: number } | null {
+  let longest: { start: number; end: number } | null = null;
+  for (const line of invoice.lines.data) {
+    if (
+      !longest ||
+      line.period.end - line.period.start > longest.end - longest.start
+    ) {
+      longest = line.period;
+    }
+  }
+  // A period under a day is a bookkeeping point, not coverage.
+  return longest && longest.end - longest.start >= DAY_SECONDS ? longest : null;
+}
+
+/** Whether an invoice reads as a contract being billed. */
+function isContractInvoice(invoice: ContractInvoiceCandidate): boolean {
+  if (invoice.total === 0) {
+    // Subscriptions opened by sales to carry a contract start on a zero
+    // invoice; the money is on an invoice of its own.
+    return false;
+  }
+  const period = getCoveredPeriod(invoice);
+  return (
+    (period !== null && period.end - period.start >= ANNUAL_PERIOD_SECONDS) ||
+    (invoice.billing_reason !== null &&
+      SALES_LED_BILLING_REASONS.has(invoice.billing_reason))
+  );
+}
+
+/**
+ * The invoices a contract's worth is read from, among the customer's invoices,
+ * newest first.
+ *
+ * A contract invoice is one that covers about a year — a renewal, a first
+ * year, or a mid-stream conversion, whatever Stripe filed it under — or a
+ * sales-led invoice, whose periods cannot be trusted. Anything else — monthly
+ * cycles from before a conversion, prorations, true-ups — is real revenue but
+ * not what the contract is worth.
+ *
+ * The newest year-spanning bill anchors the contract, and the sales-led
+ * invoices raised on top of it since are read by their period: one covering a
+ * real partial stretch is an upsell, added to the anchor; one with no readable
+ * coverage re-bills the whole contract and replaces it. Upsells older than the
+ * anchor are dropped — a renewal bakes them in. With no year-spanning bill at
+ * all, the newest sales-led invoice is the contract.
+ */
+export function findContractInvoices<Invoice extends ContractInvoiceCandidate>(
+  invoices: Invoice[],
+): Invoice[] {
+  const contracts = invoices.filter(isContractInvoice);
+
+  const annualIndex = contracts.findIndex((invoice) => {
+    const period = getCoveredPeriod(invoice);
     return (
-      page.data.find(
-        (invoice) =>
-          invoice.billing_reason !== null &&
-          RENEWAL_BILLING_REASONS.has(invoice.billing_reason),
-      ) ?? null
+      period !== null && period.end - period.start >= ANNUAL_PERIOD_SECONDS
     );
   });
+  if (annualIndex === -1) {
+    const newest = contracts[0];
+    return newest ? [newest] : [];
+  }
 
-  for (const invoice of invoices) {
-    if (!invoice) {
+  const newerThanAnnual = contracts.slice(0, annualIndex);
+  const replacement = newerThanAnnual.find(
+    (invoice) => getCoveredPeriod(invoice) === null,
+  );
+  if (replacement) {
+    return [replacement];
+  }
+
+  const annual = contracts[annualIndex];
+  invariant(annual, "the index was just found");
+  return [...newerThanAnnual, annual];
+}
+
+/**
+ * One page is all a lookup reads — a hundred invoices of history is years for
+ * any real customer.
+ */
+const INVOICES_PER_CONTRACT_LOOKUP = 100;
+
+/**
+ * The annual contracts in force, each with the invoices it is worth.
+ *
+ * One request per annual team rather than a year of invoices for everyone: an
+ * annual contract is billed a handful of times a year at most, so its latest
+ * contract invoices are what it is worth now.
+ *
+ * Listed by customer, not by subscription: an annual deal is not always billed
+ * through the subscription the database knows. Sales-led contracts arrive as
+ * dashboard or quote invoices carried by no subscription at all, and a team
+ * converted to yearly mid-stream holds its contract on a `subscription_update`
+ * of the old subscription — a subscription lookup misses both.
+ *
+ * A contract with no paid invoice may still have been billed — enterprise
+ * terms run long — so the open invoices are read before concluding nothing,
+ * and reported as awaiting payment. A contract with no invoice at all counts
+ * nothing, which is what this reports — but it is still listed, so a contract
+ * absent from the figure can be seen rather than guessed at.
+ */
+async function getYearlyContracts(
+  teams: BilledTeam[],
+): Promise<StaffYearlyContract[]> {
+  const yearlyTeams = teams.filter((team) => team.interval === "year");
+
+  const contracts = await mapWithLimit(yearlyTeams, async (team) => {
+    const paid = await stripe.invoices.list({
+      customer: team.stripeCustomerId,
+      status: "paid",
+      limit: INVOICES_PER_CONTRACT_LOOKUP,
+    });
+    let awaitingPayment = false;
+    let found = findContractInvoices(paid.data);
+    if (found.length === 0) {
+      const open = await stripe.invoices.list({
+        customer: team.stripeCustomerId,
+        status: "open",
+        limit: INVOICES_PER_CONTRACT_LOOKUP,
+      });
+      found = findContractInvoices(open.data);
+      awaitingPayment = found.length > 0;
+    }
+
+    const invoices = found.map((invoice) => {
+      const revenue = getInvoiceRevenue(invoice);
+      const covered = getCoveredPeriod(invoice);
+      return {
+        amount: revenue.amount,
+        currency: revenue.currency,
+        // Stripe timestamps in whole seconds.
+        invoicedAt: new Date(invoice.created * 1000),
+        coveredFrom: covered ? new Date(covered.start * 1000) : null,
+        coveredUntil: covered ? new Date(covered.end * 1000) : null,
+      };
+    });
+
+    return {
+      slug: team.slug,
+      name: team.name,
+      stripeSubscriptionId: team.stripeSubscriptionId,
+      amount:
+        invoices.length > 0
+          ? invoices.reduce((sum, invoice) => sum + invoice.amount, 0)
+          : null,
+      invoices,
+      awaitingPayment,
+    };
+  });
+
+  // Largest first, the contracts with no invoice found last: the list reads as
+  // the rate's makeup, and a contract adding nothing is the anomaly to end on.
+  return contracts.sort((a, b) => {
+    if (a.amount === null) {
+      return b.amount === null ? 0 : 1;
+    }
+    if (b.amount === null) {
+      return -1;
+    }
+    return b.amount - a.amount;
+  });
+}
+
+/**
+ * What the annual contracts in force are worth per month: each contract's
+ * invoices over twelve, added up.
+ */
+function getYearlyRate(contracts: StaffYearlyContract[]): StaffRevenueSplit {
+  const split = createSplit();
+
+  for (const contract of contracts) {
+    if (contract.invoices.length === 0 || contract.awaitingPayment) {
       continue;
     }
-    const revenue = getInvoiceRevenue(invoice);
-    addToSplit(split, {
-      amount: revenue.amount / MONTHS_PER_YEAR,
-      currency: revenue.currency,
-    });
+    // Invoice by invoice rather than off the summed amount, so a contract
+    // partly billed in another currency keeps that part in the parity caveat.
+    for (const invoice of contract.invoices) {
+      addToSplit(split, {
+        amount: invoice.amount / MONTHS_PER_YEAR,
+        currency: invoice.currency,
+      });
+    }
     split.teamsCount += 1;
   }
 
@@ -406,9 +607,18 @@ async function readMonth(options: {
   return split;
 }
 
+/** What Argos invoiced, and the annual contracts behind the yearly rate. */
+export type StaffRevenue = {
+  /** Oldest first, the running month last. */
+  months: StaffRevenueMonth[];
+  /** The contracts behind every month's `yearlyPlans`, largest first. */
+  yearlyContracts: StaffYearlyContract[];
+};
+
 /**
- * What Argos invoiced over the last `monthCount` calendar months, oldest first
- * and the running one last.
+ * What Argos invoiced over the last `monthCount` calendar months, along with
+ * the annual contracts the yearly rate is made of — one read serving both, so
+ * the list always explains the figure it came with.
  *
  * Asked of Stripe on every call rather than mirrored into a table or held in a
  * cache: the invoices are the answer, they change behind us as they are paid,
@@ -416,7 +626,7 @@ async function readMonth(options: {
  */
 export async function getStaffRevenue(
   monthCount: number,
-): Promise<StaffRevenueMonth[]> {
+): Promise<StaffRevenue> {
   invariant(
     monthCount >= 1 && monthCount <= MAX_MONTHS,
     `monthCount must be between 1 and ${MAX_MONTHS}`,
@@ -446,8 +656,8 @@ export async function getStaffRevenue(
   );
 
   const reported = starts.slice(0, monthCount);
-  const [yearlyRate, totals] = await Promise.all([
-    getYearlyRate(teams),
+  const [yearlyContracts, totals] = await Promise.all([
+    getYearlyContracts(teams),
     mapWithLimit(
       reported.map((from, index) => {
         const to = starts[index + 1];
@@ -457,8 +667,9 @@ export async function getStaffRevenue(
       (window) => readMonth({ ...window, teamCustomerIds, yearlyCustomerIds }),
     ),
   ]);
+  const yearlyRate = getYearlyRate(yearlyContracts);
 
-  return reported.map((start, index) => {
+  const months = reported.map((start, index) => {
     const month = createMonth(start);
     const total = totals[index];
     invariant(total, "every month reported has totals");
@@ -469,4 +680,6 @@ export async function getStaffRevenue(
     month.revenue = total.revenue + yearlyRate.revenue;
     return month;
   });
+
+  return { months, yearlyContracts };
 }
