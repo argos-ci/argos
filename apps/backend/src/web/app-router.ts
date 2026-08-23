@@ -57,14 +57,18 @@ export const installAppRouter = async (app: express.Application) => {
     github: {
       appUrl: config.get("github.appUrl"),
       clientId: config.get("github.clientId"),
-      loginUrl: config.get("github.loginUrl"),
+      // Built here rather than defaulted in the config: a convict default is
+      // evaluated at module load, so reading the client id from `process.env`
+      // there wrote the string "undefined" into the URL whenever the variable
+      // was absent — a self-hosted install, `dev:prod-ro`, the E2E server.
+      loginUrl: `https://github.com/login/oauth/authorize?scope=user:email&client_id=${config.get("github.clientId")}`,
       marketplaceUrl: config.get("github.marketplaceUrl"),
     },
     githubLight: {
       appUrl: config.get("githubLight.appUrl"),
     },
     gitlab: {
-      loginUrl: config.get("gitlab.loginUrl"),
+      loginUrl: `https://gitlab.com/oauth/authorize?scope=read_user&response_type=code&client_id=${config.get("gitlab.appId")}`,
     },
     stripe: {
       pricingTableId: config.get("stripe.pricingTableId"),
