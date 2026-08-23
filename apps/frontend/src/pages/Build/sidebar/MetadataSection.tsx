@@ -16,6 +16,13 @@ import { TestRow } from "./metadata/TestRow";
 import { ThresholdRow } from "./metadata/ThresholdRow";
 import { TraceRow } from "./metadata/TraceRow";
 import { UrlRow } from "./metadata/UrlRow";
+import {
+  BrowserRow,
+  ColorSchemeRow,
+  MediaTypeRow,
+  StoryModeRow,
+  ViewportRow,
+} from "./metadata/VariantRows";
 
 const CHIP_DEFAULTS = { color: "blank", scale: "sm" } as const;
 
@@ -58,6 +65,10 @@ export function MetadataSection(props: MetadataSectionProps) {
           <AutomationLibraryRow
             automationLibrary={metadata?.automationLibrary ?? null}
           />
+          <BrowserRow metadata={metadata} />
+          <ViewportRow metadata={metadata} />
+          <ColorSchemeRow metadata={metadata} />
+          <MediaTypeRow metadata={metadata} />
           <ThresholdRow threshold={diff.threshold ?? null} />
           <BaselineRow diff={diff} />
           <RetryRow test={test} />
@@ -66,6 +77,7 @@ export function MetadataSection(props: MetadataSectionProps) {
             automationLibrary={metadata?.automationLibrary ?? null}
           />
           <StoryRow storyId={metadata?.story?.id ?? null} />
+          <StoryModeRow metadata={metadata} />
           <StoryPlayRow hasPlay={metadata?.story?.play ?? false} />
           <UrlRow
             url={metadata?.url ?? null}

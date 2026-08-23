@@ -426,20 +426,22 @@ loggedTest(
       .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
       .click();
 
-    // Both switchers offer every sibling, whichever one the review opened on,
-    // and the color scheme is stated rather than offered — there is no light
-    // sibling to switch to.
+    // Both switchers offer every sibling, whichever one the review opened on.
     // Scoped to the group: the title beside it is a link to the test, and its
-    // name starts with "chromium/" — unscoped, so would the browser chip.
+    // name starts with "chromium/" — unscoped, so would the browser button.
     const variants = page.getByRole("group", { name: "Snapshot variants" });
     for (const name of ["Chromium", "Firefox", "390", "1280"]) {
       await expect(variants.getByRole("link", { name })).toBeVisible();
     }
-    await expect(variants.getByText("Dark", { exact: true })).toBeVisible();
+    // The color scheme cannot be switched — every sibling is dark — so it is
+    // stated in the Metadata panel rather than offered in the toolbar.
+    await expect(variants.getByText("Dark")).toHaveCount(0);
+    await expect(page.getByText("Dark", { exact: true })).toBeVisible();
 
     // The question this build exists to answer: the name is 70-odd characters
-    // and shares the row with five chips. `line-clamp-2` swallows a third line
-    // without a trace, so overflow is the only thing that tells us it cropped.
+    // and shares the row with the switchers. `line-clamp-2` swallows a third
+    // line without a trace, so overflow is the only thing that tells us it
+    // cropped.
     const title = page.getByRole("heading", {
       name: new RegExp(variantKey.replaceAll("/", "\\/")),
     });
