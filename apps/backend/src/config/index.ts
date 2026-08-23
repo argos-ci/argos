@@ -297,10 +297,6 @@ export function createConfig() {
         default: "https://github.com/apps/argos-ci-dev",
         env: "GITHUB_APP_URL",
       },
-      loginUrl: {
-        format: String,
-        default: `https://github.com/login/oauth/authorize?scope=user:email&client_id=${process.env["GITHUB_CLIENT_ID"]}`,
-      },
       webhookSecret: {
         format: String,
         default: "development",
@@ -402,10 +398,6 @@ export function createConfig() {
         format: String,
         default: "",
         env: "GITLAB_APP_SECRET",
-      },
-      loginUrl: {
-        format: String,
-        default: `https://gitlab.com/oauth/authorize?scope=read_user&response_type=code&client_id=${process.env["GITLAB_APP_ID"]}`,
       },
       argosAuthSecret: {
         format: String,
