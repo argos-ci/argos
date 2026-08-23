@@ -73,7 +73,10 @@ function ViewportLinkButton(props: {
     // The width alone: it is what tells siblings apart, and the height and the
     // unit are the same for all of them — the tooltip carries both.
     <LinkButton {...rest} variant="secondary">
-      {viewport.width}
+      <span className="align-baseline">
+        {viewport.width}
+        <small className="ml-px">px</small>
+      </span>
     </LinkButton>
   );
 

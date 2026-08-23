@@ -72,11 +72,17 @@ export const ScreenshotActionsToolbar = memo(
         <div className="bg-app border-thin pointer-events-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 shadow-xs">
           {showOverlayControls && <ChangesOverlayControls settings={false} />}
           {showOverlayControls && (showCommentTool || showVerdict) && (
-            <Separator orientation="vertical" className="mx-0.5 h-6" />
+            <Separator
+              orientation="vertical"
+              className="w-thin mx-0.5 -my-1.5 h-11"
+            />
           )}
           {showCommentTool && <CommentToolToggle />}
           {showCommentTool && showVerdict && (
-            <Separator orientation="vertical" className="mx-0.5 h-6" />
+            <Separator
+              orientation="vertical"
+              className="w-thin mx-0.5 -my-1.5 h-11"
+            />
           )}
           {showVerdict && (
             <>

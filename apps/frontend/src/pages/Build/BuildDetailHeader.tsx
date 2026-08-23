@@ -82,7 +82,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           (`max-w-fit`): the free space unfolds the switchers first, and only
           what they leave lengthens the name — the other way round, a long
           name would fold them with room to spare. */}
-      <div className="flex max-w-fit min-w-0 shrink grow-[99] basis-90 flex-wrap-reverse items-center justify-end gap-x-4 gap-y-2">
+      <div className="flex max-w-fit min-w-0 shrink grow-99 basis-90 flex-wrap-reverse items-center justify-end gap-x-4 gap-y-2">
         {/* Which variant of the snapshot is on screen, and the siblings to
             jump to. */}
         <VariantSwitchers diff={diff} />
