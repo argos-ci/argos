@@ -4,8 +4,8 @@ import type { ScreenshotMetadataTest } from "@/gql/graphql";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
+import type { AutomationLibrary } from "../../metadata/utils";
 import { MetadataRow } from "./MetadataRow";
-import type { AutomationLibrary } from "./utils";
 
 export function RepeatRow(props: {
   test: ScreenshotMetadataTest | null;

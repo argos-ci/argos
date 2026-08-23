@@ -2,16 +2,13 @@ import { ChipContext } from "@/ui/Chip";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 
 import type { Diff } from "../BuildDiffState";
+import { resolveDiffMetadata } from "../metadata/utils";
 import { AnnotationsRow } from "./metadata/AnnotationsRow";
 import { AutomationLibraryRow } from "./metadata/AutomationLibraryRow";
 import { BaselineRow } from "./metadata/BaselineRow";
-import { BrowserRow } from "./metadata/BrowserRow";
-import { ColorSchemeRow } from "./metadata/ColorSchemeRow";
-import { MediaTypeRow } from "./metadata/MediaTypeRow";
 import { RepeatRow } from "./metadata/RepeatRow";
 import { RetryRow } from "./metadata/RetryRow";
 import { SdkRow } from "./metadata/SdkRow";
-import { StoryModeRow } from "./metadata/StoryModeRow";
 import { StoryPlayRow } from "./metadata/StoryPlayRow";
 import { StoryRow } from "./metadata/StoryRow";
 import { TagsRow } from "./metadata/TagsRow";
@@ -19,8 +16,13 @@ import { TestRow } from "./metadata/TestRow";
 import { ThresholdRow } from "./metadata/ThresholdRow";
 import { TraceRow } from "./metadata/TraceRow";
 import { UrlRow } from "./metadata/UrlRow";
-import { resolveDiffMetadata } from "./metadata/utils";
-import { ViewportRow } from "./metadata/ViewportRow";
+import {
+  BrowserRow,
+  ColorSchemeRow,
+  MediaTypeRow,
+  StoryModeRow,
+  ViewportRow,
+} from "./metadata/VariantRows";
 
 const CHIP_DEFAULTS = { color: "blank", scale: "sm" } as const;
 
@@ -63,10 +65,10 @@ export function MetadataSection(props: MetadataSectionProps) {
           <AutomationLibraryRow
             automationLibrary={metadata?.automationLibrary ?? null}
           />
-          <BrowserRow diff={diff} siblingDiffs={siblingDiffs} />
-          <ViewportRow diff={diff} siblingDiffs={siblingDiffs} />
-          <ColorSchemeRow diff={diff} siblingDiffs={siblingDiffs} />
-          <MediaTypeRow mediaType={metadata?.mediaType ?? null} />
+          <BrowserRow metadata={metadata} />
+          <ViewportRow metadata={metadata} />
+          <ColorSchemeRow metadata={metadata} />
+          <MediaTypeRow metadata={metadata} />
           <ThresholdRow threshold={diff.threshold ?? null} />
           <BaselineRow diff={diff} />
           <RetryRow test={test} />
@@ -75,7 +77,7 @@ export function MetadataSection(props: MetadataSectionProps) {
             automationLibrary={metadata?.automationLibrary ?? null}
           />
           <StoryRow storyId={metadata?.story?.id ?? null} />
-          <StoryModeRow diff={diff} siblingDiffs={siblingDiffs} />
+          <StoryModeRow metadata={metadata} />
           <StoryPlayRow hasPlay={metadata?.story?.play ?? false} />
           <UrlRow
             url={metadata?.url ?? null}

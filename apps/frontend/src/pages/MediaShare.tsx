@@ -74,6 +74,7 @@ import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
+import { formatBytes, formatDimensions } from "@/util/media";
 
 /** What the viewer needs to draw one version of a media. */
 const _ViewerVersionFragment = graphql(`
@@ -363,6 +364,19 @@ function SharePage(props: { media: Media }) {
     media.versions.find((candidate) => candidate.id === versionId) ??
     newestVersion;
   const counterpartVersion = getCounterpartVersion(media, version);
+  const counterpart =
+    media.counterpart && counterpartVersion
+      ? {
+          ...media.counterpart,
+          // The half the selected version was compared against, not simply the
+          // counterpart's newest: the two media have independent histories, and
+          // the pair on screen has to be the pair the mask describes.
+          version: counterpartVersion,
+        }
+      : null;
+  // A video keeps one pane whatever it was paired with, so the second half is
+  // only really up for an image with a counterpart.
+  const pairOnScreen = counterpart !== null && !version.isVideo;
 
   const mentionUsers = useMemo(
     () => media.mentionableUsers.map(getMentionUser),
@@ -452,18 +466,7 @@ function SharePage(props: { media: Media }) {
                   <MediaViewer
                     nav={nav}
                     media={{ ...media, version }}
-                    counterpart={
-                      media.counterpart && counterpartVersion
-                        ? {
-                            ...media.counterpart,
-                            // The half the selected version was compared against,
-                            // not simply the counterpart's newest: the two media
-                            // have independent histories, and the pair on screen
-                            // has to be the pair the mask describes.
-                            version: counterpartVersion,
-                          }
-                        : null
-                    }
+                    counterpart={counterpart}
                     diff={getViewerDiff(version)}
                     comments={{
                       media,
@@ -484,7 +487,17 @@ function SharePage(props: { media: Media }) {
                     is the build sidebar's: without it the scroll container
                     crops the last panel's shadow. */}
                   <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pb-6">
-                    <MediaDescription media={media} />
+                    {/* One block: the numbers are what the prose is about, so
+                        they sit under it rather than a panel apart from it. The
+                        gap collapses on its own when there is no prose. */}
+                    <div className="flex flex-col gap-1.5">
+                      <MediaDescription media={media} />
+                      <MediaFacts
+                        media={media}
+                        version={version}
+                        pairOnScreen={pairOnScreen}
+                      />
+                    </div>
                     <MediaVersions
                       versions={media.versions}
                       selectedId={version.id}
@@ -796,10 +809,9 @@ function PageHeader(props: { media: Media }) {
  * The prose that shipped with the upload, in full — the sidebar has the room
  * for a sentence the old one-line header did not.
  *
- * Deliberately not a panel, and deliberately alone: the version's numbers read
- * beside the file name over the media itself, where the name they describe is,
- * and a titled card around one paragraph is a title saying what the paragraph
- * says. Nothing at all when the upload shipped without a description.
+ * Deliberately not a panel: a titled card around one paragraph is a title
+ * saying what the paragraph says. Nothing at all when the upload shipped
+ * without a description.
  */
 function MediaDescription(props: { media: Media }) {
   const { media } = props;
@@ -807,6 +819,34 @@ function MediaDescription(props: { media: Media }) {
     return null;
   }
   return <p className="text-low px-1 text-sm">{media.description}</p>;
+}
+
+/**
+ * The version's own numbers — which half it is, how large, how heavy. The
+ * version's and not the media's: looking back at an older upload has to say
+ * that upload's numbers.
+ *
+ * Here rather than beside the file name, where they used to be: over the media
+ * they were competing with the name and the controls for one row, and they are
+ * facts to look up rather than read.
+ */
+function MediaFacts(props: {
+  media: Media;
+  version: Media["versions"][number];
+  /** Whether both halves of a pair are up, which names them already. */
+  pairOnScreen: boolean;
+}) {
+  const { media, version, pairOnScreen } = props;
+  const facts: string[] = [];
+  if (media.state && !pairOnScreen) {
+    facts.push(media.state);
+  }
+  const dimensions = formatDimensions(version.width, version.height);
+  if (dimensions) {
+    facts.push(dimensions);
+  }
+  facts.push(formatBytes(version.sizeBytes));
+  return <p className="text-low px-1 font-mono text-xs">{facts.join(" · ")}</p>;
 }
 
 /**

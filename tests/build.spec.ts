@@ -8,6 +8,7 @@ import {
   BuildScenario,
   createFallbackBaselineScenario,
   createSiblingBuildsScenario,
+  createVariantSwitchersScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
@@ -407,5 +408,54 @@ loggedTest(
     await page.keyboard.press("ControlOrMeta+Shift+z");
     await expect(page).toHaveURL(secondDiffURL);
     await expect(acceptButton).toHaveAttribute("aria-pressed", "true");
+  },
+);
+
+loggedTest(
+  "seats the variant switchers and a long name on one toolbar",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build, variantKey } = await createVariantSwitchersScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    // Both switchers offer every sibling, whichever one the review opened on.
+    // Scoped to the group: the title beside it is a link to the test, and its
+    // name starts with "chromium/" — unscoped, so would the browser button.
+    const variants = page.getByRole("group", { name: "Snapshot variants" });
+    for (const name of ["Chromium", "Firefox", "390", "1280"]) {
+      await expect(variants.getByRole("link", { name })).toBeVisible();
+    }
+    // The color scheme cannot be switched — every sibling is dark — so it is
+    // stated in the Metadata panel rather than offered in the toolbar.
+    await expect(variants.getByText("Dark")).toHaveCount(0);
+    await expect(page.getByText("Dark", { exact: true })).toBeVisible();
+
+    // The question this build exists to answer: the name is 70-odd characters
+    // and shares the row with the switchers. `line-clamp-2` swallows a third
+    // line without a trace, so overflow is the only thing that tells us it
+    // cropped.
+    const title = page.getByRole("heading", {
+      name: new RegExp(variantKey.replaceAll("/", "\\/")),
+    });
+    await expect(title).toBeVisible();
+    await expect
+      .poll(() =>
+        title.evaluate((el) => el.scrollHeight - el.clientHeight <= 1),
+      )
+      .toBe(true);
+
+    await screenshot(page, "build-variant-switchers", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
   },
 );

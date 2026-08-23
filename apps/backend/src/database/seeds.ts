@@ -1010,6 +1010,162 @@ export async function createFallbackBaselineScenario(input: {
 }
 
 /**
+ * One snapshot captured across two browsers and two viewports — what a
+ * Playwright matrix produces, and the only shape in which the toolbar's variant
+ * switchers have anywhere to switch to. The four diffs become siblings of one
+ * another because `getVariantKey` strips both the browser prefix and the
+ * ` vw-<width>` suffix from their names, leaving one key.
+ *
+ * The snapshot name is long on purpose: the toolbar has to seat it beside the
+ * switchers without cropping it, and a short name proves nothing.
+ */
+export async function createVariantSwitchersScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build; variantKey: string }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const variantKey = "components/data-table/with-pagination-and-sticky-header";
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 4,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "4f1a9c2d8e5b3a7f6c0d9e8b1a2c3d4e5f6a7b8c" },
+      { ...bucketProps, commit: "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [imageFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  // Every variant reuses the one `dummy-*` image, since those are the only keys
+  // that exist in the test bucket. The recorded viewport is therefore the
+  // browser's, not the file's — which is what the switchers read anyway.
+  const variants = [
+    { browser: CHROMIUM, viewport: { width: 390, height: 844 } },
+    { browser: CHROMIUM, viewport: { width: 1280, height: 800 } },
+    { browser: FIREFOX, viewport: { width: 390, height: 844 } },
+    { browser: FIREFOX, viewport: { width: 1280, height: 800 } },
+  ].map((variant) => ({
+    ...variant,
+    name: `${variant.browser.name}/${variantKey} vw-${variant.viewport.width}.png`,
+  }));
+
+  const tests = await Test.query().insertAndFetch(
+    variants.map((variant) => ({
+      name: variant.name,
+      buildName: "default",
+      projectId,
+    })),
+  );
+
+  const screenshotProps = variants.map((variant, index) => {
+    const test = tests[index];
+    invariant(test);
+    return {
+      testId: test.id,
+      name: variant.name,
+      s3Id: imageFile.key,
+      fileId: imageFile.id,
+      metadata: {
+        url: "https://app.acme-analytics.dev/reports",
+        sdk: { name: "@argos-ci/playwright", version: "5.0.0" },
+        automationLibrary: { name: "playwright", version: "1.49.1" },
+        browser: variant.browser,
+        viewport: variant.viewport,
+        // Dark throughout: with no light sibling the toolbar states the color
+        // scheme rather than offering it, which is the other half of the rule.
+        colorScheme: "dark" as const,
+        test: {
+          title: "renders the paginated data table",
+          titlePath: ["data-table.spec.ts", "renders the paginated data table"],
+          location: { file: "e2e/data-table.spec.ts", line: 42, column: 3 },
+        },
+      },
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    };
+  });
+
+  const baseScreenshots = await Screenshot.query().insertAndFetch(
+    screenshotProps.map((props) => ({
+      ...props,
+      screenshotBucketId: baseBucket.id,
+    })),
+  );
+  const compareScreenshots = await Screenshot.query().insertAndFetch(
+    screenshotProps.map((props) => ({
+      ...props,
+      screenshotBucketId: compareBucket.id,
+    })),
+  );
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "default",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  await ScreenshotDiff.query().insert(
+    variants.map((_variant, index) => {
+      const baseScreenshot = baseScreenshots[index];
+      const compareScreenshot = compareScreenshots[index];
+      const test = tests[index];
+      invariant(baseScreenshot && compareScreenshot && test);
+      return {
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot.id,
+        testId: test.id,
+        score: 0.2,
+        jobStatus: "complete" as const,
+        s3Id: diffFile.key,
+        fileId: diffFile.id,
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      };
+    }),
+  );
+
+  // Computes the build stats and conclusion the build page relies on.
+  await concludeBuild({ build, notify: false });
+
+  return { build, variantKey };
+}
+
+/**
  * Three builds sharing one head commit and branch — the shape a commit gets
  * when it runs several suites, and when a monorepo splits them over several
  * Argos projects. Two live in the given project, told apart by their build

@@ -373,10 +373,12 @@
 /**
  * A control that is currently on.
  *
- * Three attributes for one idea, because each kind of control spells it its own
- * way: a toggle says `aria-pressed`, a tab says `aria-selected`, and a trigger
- * whose popup is showing says `aria-expanded`. The button surface is worn by
- * all of them, so the "on" look has to answer to any of them.
+ * Four attributes for one idea, because each kind of control spells it its own
+ * way: a toggle says `aria-pressed`, a tab says `aria-selected`, a trigger
+ * whose popup is showing says `aria-expanded`, and a link pointing at the page
+ * already on screen says `aria-current="page"` — a variant switcher's active
+ * segment. The button surface is worn by all of them, so the "on" look has to
+ * answer to any of them.
  *
  * Not Base UI's `data-popup-open`, which its triggers set alongside
  * `aria-expanded`: a **tooltip** trigger sets it too, and it sets it exactly
@@ -391,7 +393,12 @@
  * `="true"` matters: `aria-selected="false"` is on every unselected tab.
  */
 @custom-variant on (
-  &:is([aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"])
+  &:is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    [aria-expanded="true"],
+    [aria-current="page"]
+  )
 );
 
 /**

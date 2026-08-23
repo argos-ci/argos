@@ -11,7 +11,14 @@ import { clsx } from "clsx";
  */
 export function DetailToolbar(props: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    // A tighter gap between rows than along one: side by side the slots are
+    // separate things and read as such, but stacked they are one bar folded
+    // over, and a row's worth of air makes it look like two.
+    //
+    // `justify-end` decides one case only — a slot wrapped onto a line of its
+    // own, which belongs on the right where it came from. Everywhere else the
+    // title's `grow` has already spent the free space.
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
       {props.children}
     </div>
   );
@@ -27,8 +34,15 @@ export function DetailToolbarNav(props: { children: React.ReactNode }) {
 }
 
 /**
- * What is on screen, named. Takes the space the controls leave and gives it
- * back — `min-w-0` so a long name truncates instead of pushing them off the row.
+ * What is on screen, named. Takes the space the rest of the row leaves and
+ * gives it back, so a long name clamps to two lines rather than pushing
+ * anything off.
+ *
+ * Based on its own length rather than the `flex-1` (`basis: 0`) this used to
+ * be: a flex line is broken up on base sizes, and at zero the name counted for
+ * nothing when the row decided what fit — it never wrapped anything on its own
+ * account and took whatever the rest left, which beside a full set of variant
+ * switchers was two crushed syllables.
  *
  * `heading` rather than an `h1` element: the slot is used on pages that already
  * have one, and the level is stated explicitly rather than inferred.
@@ -39,12 +53,19 @@ export function DetailToolbarTitle(props: {
   render?: (title: React.ReactNode) => React.ReactNode;
   className?: string;
   /**
-   * Terse facts about what is on screen, set beside its name and reading as an
-   * extension of it — a file listing's second column, not a field.
+   * Whether the row carries something built to give way — the build's variant
+   * cluster, which folds its switchers under the controls when squeezed.
+   *
+   * Then the name trades its full ask for a firm floor: it never shrinks below
+   * a couple of lines' worth, and the cluster is what folds first — asking for
+   * everything instead would push the whole cluster down even when the name
+   * fits beside it. It still grows into whatever the cluster does not use.
+   * Without a cluster there is nothing designed to yield, so the name asks for
+   * its own length and shrinks like anything else.
    */
-  meta?: React.ReactNode;
+  crowded?: boolean;
 }) {
-  const { children, render, className, meta } = props;
+  const { children, render, className, crowded } = props;
   const title = (
     <span
       role="heading"
@@ -56,12 +77,12 @@ export function DetailToolbarTitle(props: {
   );
   return (
     <div
-      className={clsx("flex min-w-0 flex-1", meta && "items-baseline gap-2")}
+      className={clsx(
+        "flex grow",
+        crowded ? "shrink-0 basis-72" : "min-w-0 shrink basis-auto",
+      )}
     >
       {render ? render(title) : title}
-      {meta ? (
-        <span className="text-low shrink-0 font-mono text-xs">{meta}</span>
-      ) : null}
     </div>
   );
 }

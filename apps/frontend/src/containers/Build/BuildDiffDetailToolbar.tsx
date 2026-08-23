@@ -94,7 +94,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       {fitControls}
       {showOverlayControls && (
         <>
-          <Separator orientation="vertical" className="mx-1 h-6" />
+          <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
           {/* Reading the mask happens next to the snapshot; how it is painted
               is a preference, and preferences live up here. */}
           {snapshotControls ? <ChangesOverlayControls /> : <SettingsButton />}
@@ -102,7 +102,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       )}
       {showComments && (
         <>
-          <Separator orientation="vertical" className="mx-1 h-6" />
+          <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
           {showCommentTool && snapshotControls && <CommentToolToggle />}
           <CommentsVisibilityToggle />
         </>
@@ -110,7 +110,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <div className="group contents">
         <Separator
           orientation="vertical"
-          className="mx-1 h-6 group-empty:hidden"
+          className="w-thin mx-0.5 h-8 group-empty:hidden"
         />
         {children}
       </div>

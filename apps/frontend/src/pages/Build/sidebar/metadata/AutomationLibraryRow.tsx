@@ -1,8 +1,8 @@
 import { Chip } from "@/ui/Chip";
 
 import { AutomationLibraryIcon } from "../../metadata/automationLibrary/AutomationLibraryIcon";
+import type { AutomationLibrary } from "../../metadata/utils";
 import { MetadataRow } from "./MetadataRow";
-import type { AutomationLibrary } from "./utils";
 
 export function AutomationLibraryRow(props: {
   automationLibrary: AutomationLibrary | null;

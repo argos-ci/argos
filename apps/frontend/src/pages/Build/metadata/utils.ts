@@ -6,7 +6,8 @@ import {
 } from "@/gql/graphql";
 import { canParseURL } from "@/util/url";
 
-import type { Diff } from "../../BuildDiffState";
+import type { Diff } from "../BuildDiffState";
+import { getBrowserLabel } from "./browser/browserLabels";
 
 export type Metadata = NonNullable<
   NonNullable<Diff["baseScreenshot"]>["metadata"]
@@ -37,6 +38,13 @@ export function hashBrowser(browser: MetadataBrowser): string {
   return `${browser.name} ${browser.version}`.toLowerCase();
 }
 
+/**
+ * The `getUnique*` lists below feed the variant switchers, and each is sorted on
+ * a total order rather than left in the order the siblings arrive in — that one
+ * comes from the diff list, so an unsorted row would deal its chips differently
+ * from one snapshot to the next. Ordered like the filter menu, which lists the
+ * same values.
+ */
 export function getUniqueViewports(
   metadataList: Metadata[],
 ): MetadataViewport[] {
@@ -56,29 +64,39 @@ export function getUniqueViewports(
     },
     [],
   );
-  return viewports.sort((a, b) => a.width - b.width);
+  return viewports.sort((a, b) => a.width - b.width || a.height - b.height);
 }
 
 export function getUniqueBrowsers(metadataList: Metadata[]): MetadataBrowser[] {
   const hashes = new Set<string>();
-  return metadataList.reduce<MetadataBrowser[]>((browsers, metadata) => {
-    if (!metadata.browser) {
+  const browsers = metadataList.reduce<MetadataBrowser[]>(
+    (browsers, metadata) => {
+      if (!metadata.browser) {
+        return browsers;
+      }
+      const hash = hashBrowser(metadata.browser);
+      if (hashes.has(hash)) {
+        return browsers;
+      }
+      hashes.add(hash);
+      browsers.push(metadata.browser);
       return browsers;
-    }
-    const hash = hashBrowser(metadata.browser);
-    if (hashes.has(hash)) {
-      return browsers;
-    }
-    hashes.add(hash);
-    browsers.push(metadata.browser);
-    return browsers;
-  }, []);
+    },
+    [],
+  );
+  return browsers.sort(
+    (a, b) =>
+      // By label, not by name: the label is what the chip shows, and the two
+      // disagree for WebKit.
+      getBrowserLabel(a.name).localeCompare(getBrowserLabel(b.name)) ||
+      a.version.localeCompare(b.version, undefined, { numeric: true }),
+  );
 }
 
 export function getUniqueColorSchemes(
   metadataList: Metadata[],
 ): ScreenshotMetadataColorScheme[] {
-  return Array.from(new Set(metadataList.map(resolveColorScheme)));
+  return Array.from(new Set(metadataList.map(resolveColorScheme))).sort();
 }
 
 export function getUniqueStoryModes(metadataList: Metadata[]): string[] {
