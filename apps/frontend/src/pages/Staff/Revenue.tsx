@@ -109,7 +109,7 @@ const CURRENT_MONTHLY_HINT =
   "This month's invoices so far, ex-tax, net of credit notes.";
 
 const YEARLY_HINT =
-  "Annual contracts ÷ 12. The same rate every month converted in €.";
+  "Annual contracts amortized, day by day, over the months they cover. In €.";
 
 const GITHUB_HINT = "Hard coded amount";
 

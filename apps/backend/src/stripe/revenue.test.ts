@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { ContractInvoiceCandidate } from "./revenue";
 import {
   findContractInvoices,
+  getAmortizedCoverage,
   getInvoiceRevenue,
+  getYearlyMonthSplits,
   startOfUTCMonth,
   toEuros,
 } from "./revenue";
@@ -236,6 +238,114 @@ describe("findContractInvoices", () => {
     });
 
     expect(findContractInvoices([monthlyCycle])).toEqual([]);
+  });
+});
+
+describe("getAmortizedCoverage", () => {
+  it("uses the stored period when it reads forward", () => {
+    expect(
+      getAmortizedCoverage({
+        invoicedAt: new Date("2026-05-23"),
+        coveredFrom: new Date("2026-05-23"),
+        coveredUntil: new Date("2027-05-23"),
+      }),
+    ).toEqual({
+      start: Date.parse("2026-05-23"),
+      end: Date.parse("2027-05-23"),
+    });
+  });
+
+  it("spreads an arrears-stamped invoice over the year ahead", () => {
+    // An annual bill whose period ends the day it was raised is collecting
+    // for the year to come, whatever its lines claim.
+    expect(
+      getAmortizedCoverage({
+        invoicedAt: new Date("2025-10-30"),
+        coveredFrom: new Date("2024-10-30"),
+        coveredUntil: new Date("2025-10-30"),
+      }),
+    ).toEqual({
+      start: Date.parse("2025-10-30"),
+      end: Date.parse("2026-10-30"),
+    });
+  });
+
+  it("spreads a period-less invoice over the year from issuance", () => {
+    expect(
+      getAmortizedCoverage({
+        invoicedAt: new Date("2026-02-11"),
+        coveredFrom: null,
+        coveredUntil: null,
+      }),
+    ).toEqual({
+      start: Date.parse("2026-02-11"),
+      end: Date.parse("2027-02-11"),
+    });
+  });
+});
+
+describe("getYearlyMonthSplits", () => {
+  // January through March 2026, the bound closing March.
+  const MONTHS = [
+    new Date("2026-01-01"),
+    new Date("2026-02-01"),
+    new Date("2026-03-01"),
+  ];
+  const END = new Date("2026-04-01");
+
+  function contractInvoice(fields: {
+    amount: number;
+    covered: [string, string];
+    currency?: string;
+  }) {
+    return {
+      amount: fields.amount,
+      currency: fields.currency ?? "eur",
+      invoicedAt: new Date(fields.covered[0]),
+      coveredFrom: new Date(fields.covered[0]),
+      coveredUntil: new Date(fields.covered[1]),
+    };
+  }
+
+  it("amortizes a renewal day by day over the months it covers", () => {
+    // 365 euros over 365 days: a euro a day, so each month weighs its length.
+    const contract = {
+      invoices: [
+        contractInvoice({ amount: 365, covered: ["2026-01-01", "2027-01-01"] }),
+      ],
+    };
+
+    const splits = getYearlyMonthSplits([contract], MONTHS, END);
+
+    expect(splits.map((split) => split.revenue)).toEqual([31, 28, 31]);
+    expect(splits.map((split) => split.teamsCount)).toEqual([1, 1, 1]);
+  });
+
+  it("files an upsell only on the stretch it was sold for", () => {
+    const contract = {
+      invoices: [
+        contractInvoice({ amount: 28, covered: ["2026-02-15", "2026-03-15"] }),
+      ],
+    };
+
+    const splits = getYearlyMonthSplits([contract], MONTHS, END);
+
+    expect(splits.map((split) => split.revenue)).toEqual([0, 14, 14]);
+    expect(splits.map((split) => split.teamsCount)).toEqual([0, 1, 1]);
+  });
+
+  it("counts a contract once per month, however many invoices cover it", () => {
+    const contract = {
+      invoices: [
+        contractInvoice({ amount: 365, covered: ["2026-01-01", "2027-01-01"] }),
+        contractInvoice({ amount: 28, covered: ["2026-02-15", "2026-03-15"] }),
+      ],
+    };
+
+    const splits = getYearlyMonthSplits([contract], MONTHS, END);
+
+    expect(splits.map((split) => split.teamsCount)).toEqual([1, 1, 1]);
+    expect(splits[1]?.revenue).toBe(42);
   });
 });
 

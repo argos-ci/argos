@@ -49,21 +49,14 @@ type StaffRevenueMonth = {
   /** The teams behind `monthlyPlans`, largest first — they sum to it. */
   teams: StaffRevenueMonthTeam[];
   /**
-   * What the annual contracts in force are worth per month: their latest
-   * renewal over twelve.
-   *
-   * The same on every month, being a rate. Amortizing each annual invoice over
-   * the twelve months it covers would be exact, but it would mean reading a
-   * year of invoices to report one month.
+   * What the annual contracts contributed to the month: their invoices
+   * amortized, day by day, over the stretch each one pays for.
    */
   yearlyPlans: StaffRevenueSplit;
 };
 
 /** Upper bound on the window one call will read. */
 export const MAX_MONTHS = 24;
-
-/** Months a yearly contract is spread over. */
-const MONTHS_PER_YEAR = 12;
 
 /** The currency every amount on this page is stated in. */
 const REPORTING_CURRENCY = "eur";
@@ -521,28 +514,85 @@ async function getYearlyContracts(
 }
 
 /**
- * What the annual contracts in force are worth per month: each contract's
- * invoices over twelve, added up.
+ * The stretch a contract invoice's money pays for, in epoch milliseconds.
+ *
+ * The stored period when it reads forward; a year from issuance otherwise —
+ * either the invoice states no period at all (dashboard invoices often stamp
+ * nothing usable), or it is stamped in arrears, its period ending by the day
+ * it was raised, and an annual bill that claims to cover only the past is
+ * collecting for the year ahead.
  */
-function getYearlyRate(contracts: StaffYearlyContract[]): StaffRevenueSplit {
-  const split = createSplit();
+export function getAmortizedCoverage(invoice: {
+  invoicedAt: Date;
+  coveredFrom: Date | null;
+  coveredUntil: Date | null;
+}): { start: number; end: number } {
+  const issued = invoice.invoicedAt.getTime();
+  if (invoice.coveredFrom && invoice.coveredUntil) {
+    const start = invoice.coveredFrom.getTime();
+    const end = invoice.coveredUntil.getTime();
+    if (end > issued && end > start) {
+      return { start, end };
+    }
+  }
+  const yearAhead = new Date(invoice.invoicedAt);
+  yearAhead.setUTCFullYear(yearAhead.getUTCFullYear() + 1);
+  return { start: issued, end: yearAhead.getTime() };
+}
+
+/**
+ * What the annual contracts contributed to each reported month: every
+ * contract invoice amortized, day by day, over the stretch it pays for.
+ *
+ * The monthly equivalent of the annual book: a renewal weighs on the twelve
+ * months it covers, an upsell on the stretch it was sold for, and a month's
+ * figure never moves once written — where a flat rate repainted history on
+ * every renewal.
+ */
+export function getYearlyMonthSplits(
+  contracts: readonly Pick<StaffYearlyContract, "invoices">[],
+  /** The reported months' first instants, oldest first. */
+  monthStarts: readonly Date[],
+  /** One bound past the last month, closing its window. */
+  end: Date,
+): StaffRevenueSplit[] {
+  const splits = monthStarts.map(() => createSplit());
+  const bounds = monthStarts.map((start, index) => {
+    const next = monthStarts[index + 1] ?? end;
+    return { start: start.getTime(), end: next.getTime() };
+  });
 
   for (const contract of contracts) {
-    if (contract.invoices.length === 0) {
-      continue;
-    }
-    // Invoice by invoice rather than off the summed amount, so a contract
-    // partly billed in another currency keeps that part in the parity caveat.
+    const contributed = bounds.map(() => false);
     for (const invoice of contract.invoices) {
-      addToSplit(split, {
-        amount: invoice.amount / MONTHS_PER_YEAR,
-        currency: invoice.currency,
-      });
+      const coverage = getAmortizedCoverage(invoice);
+      const coveredDays = (coverage.end - coverage.start) / DAY_MS;
+      for (const [index, bound] of bounds.entries()) {
+        const overlap =
+          Math.min(coverage.end, bound.end) -
+          Math.max(coverage.start, bound.start);
+        if (overlap <= 0) {
+          continue;
+        }
+        const split = splits[index];
+        invariant(split, "bounds and splits are built together");
+        addToSplit(split, {
+          amount: (invoice.amount * (overlap / DAY_MS)) / coveredDays,
+          currency: invoice.currency,
+        });
+        contributed[index] = true;
+      }
     }
-    split.teamsCount += 1;
+    for (const [index, wasContributed] of contributed.entries()) {
+      if (wasContributed) {
+        const split = splits[index];
+        invariant(split, "bounds and splits are built together");
+        split.teamsCount += 1;
+      }
+    }
   }
 
-  return split;
+  return splits;
 }
 
 /**
@@ -728,8 +778,8 @@ export async function getStaffRevenue(
     const covered =
       contract && contract.invoices.length > 0
         ? Math.min(
-            ...contract.invoices.map((invoice) =>
-              (invoice.coveredFrom ?? invoice.invoicedAt).getTime(),
+            ...contract.invoices.map(
+              (invoice) => getAmortizedCoverage(invoice).start,
             ),
           )
         : Number.NEGATIVE_INFINITY;
@@ -742,19 +792,18 @@ export async function getStaffRevenue(
     teamCustomers,
     yearlyContractStarts,
   });
-  const yearlyRate = getYearlyRate(yearlyContracts);
+  const yearlySplits = getYearlyMonthSplits(yearlyContracts, reported, end);
 
   const months = reported.map((start, index) => {
     const total = totals[index];
-    invariant(total, "every month reported has totals");
+    const yearly = yearlySplits[index];
+    invariant(total && yearly, "every month reported has totals");
     return {
       month: start,
-      revenue: total.split.revenue + yearlyRate.revenue,
+      revenue: total.split.revenue + yearly.revenue,
       monthlyPlans: total.split,
       teams: total.teams,
-      // Copied rather than shared: one object held by every month is one
-      // object a later change can mutate for all of them at once.
-      yearlyPlans: { ...yearlyRate },
+      yearlyPlans: yearly,
     };
   });
 

@@ -241,7 +241,7 @@ describe("getStaffRevenue", () => {
       total: 99_900,
       totalExcludingTax: 99_900,
     });
-    // The annual contract, covering from this month on.
+    // The annual contract, covering twelve months from this month's start.
     await factory.StripeInvoice.create({
       stripeCustomerId: "cus_staff_yearly",
       stripeCreatedAt: startOfUTCMonth(now, 0).toISOString(),
@@ -291,17 +291,31 @@ describe("getStaffRevenue", () => {
       [yearly.slug, 300],
       [churned.slug, 200],
     ]);
+    // The contract's coverage starts this month, so last month gets none of
+    // it — amortized figures never move once a month is written.
     expect(last.yearlyPlans).toEqual({
-      revenue: 100,
-      teamsCount: 1,
+      revenue: 0,
+      teamsCount: 0,
       foreignRevenue: 0,
     });
-    expect(last.revenue).toBe(1100);
+    expect(last.revenue).toBe(1000);
 
     // The contract invoice lands in the running month, but an annual bill is
-    // reported as the rate, never as the month's own revenue.
+    // amortized over its coverage, never counted as the month's own revenue.
     expect(current.monthlyPlans.revenue).toBe(100);
     expect(current.teams).toHaveLength(1);
+    const DAY = 24 * 3600 * 1000;
+    const coveredDays =
+      (startOfUTCMonth(now, 12).getTime() - startOfUTCMonth(now, 0).getTime()) /
+      DAY;
+    const currentMonthDays =
+      (startOfUTCMonth(now, 1).getTime() - startOfUTCMonth(now, 0).getTime()) /
+      DAY;
+    expect(current.yearlyPlans.revenue).toBeCloseTo(
+      (1200 * currentMonthDays) / coveredDays,
+      8,
+    );
+    expect(current.yearlyPlans.teamsCount).toBe(1);
 
     expect(result.yearlyContracts).toHaveLength(1);
     const contract = result.yearlyContracts[0];
@@ -338,10 +352,17 @@ describe("getStaffRevenue", () => {
     expect(contract.awaitingPayment).toBe(true);
     const month = result.months[0];
     invariant(month);
-    expect(month.yearlyPlans).toEqual({
-      revenue: 100,
-      teamsCount: 1,
-      foreignRevenue: 0,
-    });
+    const DAY = 24 * 3600 * 1000;
+    const coveredDays =
+      (startOfUTCMonth(now, 12).getTime() - startOfUTCMonth(now, 0).getTime()) /
+      DAY;
+    const monthDays =
+      (startOfUTCMonth(now, 1).getTime() - startOfUTCMonth(now, 0).getTime()) /
+      DAY;
+    expect(month.yearlyPlans.revenue).toBeCloseTo(
+      (1200 * monthDays) / coveredDays,
+      8,
+    );
+    expect(month.yearlyPlans.teamsCount).toBe(1);
   });
 });

@@ -376,13 +376,11 @@ export const typeDefs = gql`
     "The teams behind \`monthlyPlans\`, largest first — they sum to it."
     teams: [StaffRevenueMonthTeam!]!
     """
-    What the annual contracts in force are worth per month: their contract
-    invoices over twelve.
-
-    The same on every month, being a rate — amortizing each invoice over the
-    exact months it covers would be more precise, and the mirror now makes it
-    affordable, but a flat rate is what the page's readers asked to compare
-    months against.
+    What the annual contracts contributed to the month: their invoices
+    amortized, day by day, over the stretch each one pays for — the monthly
+    equivalent of the annual book. A renewal weighs on the twelve months it
+    covers, an upsell on the stretch it was sold for, and a month's figure
+    never moves once written.
     """
     yearlyPlans: StaffRevenueSplit!
   }
