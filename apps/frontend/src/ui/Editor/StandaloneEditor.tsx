@@ -3,11 +3,11 @@ import clsx from "clsx";
 import { ArrowUpIcon } from "lucide-react";
 
 import { toast } from "@/ui/Toaster";
+import { MOD } from "@/util/os";
 
 import { Button } from "../Button";
 import { HotkeyTooltip } from "../HotkeyTooltip";
 import { Editor, type EditorValue, type EditorVariant } from "./Editor";
-import { MOD } from "./EditorToolbar.shortcuts";
 import { type MentionUser } from "./mention";
 import { useEditorDraft } from "./useEditorDraft";
 import { hasEditorContent } from "./util";

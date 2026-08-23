@@ -7,323 +7,19 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Kbd } from "@/ui/Kbd";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { isMacOS } from "@/util/os";
 
 import {
   HotkeysDialogState,
   useBuildHotkeysDialogState,
 } from "./BuildHotkeysDialogState";
-
-type HotkeyEnv = "test" | "build" | "media";
-
-export type Hotkey = {
-  keys: string[];
-  displayKeys: string[];
-  description: string;
-  envs: Array<HotkeyEnv>;
-};
-
-type HotkeyGroup = {
-  name: string;
-  hotkeys: Record<string, Hotkey>;
-};
-
-const hotkeyGroups = [
-  {
-    name: "General",
-    hotkeys: {
-      toggleHotkeysDialog: {
-        keys: ["?"],
-        displayKeys: ["?"],
-        description: "Open this dialog",
-        envs: ["test", "build", "media"],
-      },
-      enterSearchMode: {
-        keys: ["⌘", "KeyF"],
-        displayKeys: ["⌘", "F"],
-        description: "Find snapshot",
-        envs: ["build"],
-      },
-      leaveSearchMode: {
-        keys: ["Escape"],
-        displayKeys: ["Esc"],
-        description: "Exit search",
-        envs: ["build"],
-      },
-      toggleFilters: {
-        keys: ["KeyF"],
-        displayKeys: ["F"],
-        description: "Open filters",
-        envs: ["build"],
-      },
-    },
-  },
-  {
-    name: "Navigation",
-    hotkeys: {
-      startReview: {
-        keys: ["Enter"],
-        displayKeys: ["↵"],
-        description: "Review changes",
-        envs: ["build"],
-      },
-      goToPreviousDiff: {
-        keys: ["ArrowUp"],
-        displayKeys: ["↑"],
-        description: "Go to previous snapshot",
-        envs: ["test", "build"],
-      },
-      goToNextDiff: {
-        keys: ["ArrowDown"],
-        displayKeys: ["↓"],
-        description: "Go to next snapshot",
-        envs: ["test", "build"],
-      },
-      // The same keys as the two above, named apart so the `?` dialog can say
-      // "media" where a media page is what the reader is looking at. Only one
-      // pair is ever mounted, so they never contend.
-      goToPreviousMedia: {
-        keys: ["ArrowUp"],
-        displayKeys: ["↑"],
-        description: "Go to previous media",
-        envs: ["media"],
-      },
-      goToNextMedia: {
-        keys: ["ArrowDown"],
-        displayKeys: ["↓"],
-        description: "Go to next media",
-        envs: ["media"],
-      },
-      toggleDiffGroup: {
-        keys: ["KeyG"],
-        displayKeys: ["G"],
-        description: "Toggle group",
-        envs: ["build"],
-      },
-      goToFirstFailure: {
-        keys: ["Digit1"],
-        displayKeys: ["1"],
-        description: "Go to first failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstChanged: {
-        keys: ["Digit2"],
-        displayKeys: ["2"],
-        description: "Go to first changed snapshot",
-        envs: ["build"],
-      },
-      goToFirstAdded: {
-        keys: ["Digit3"],
-        displayKeys: ["3"],
-        description: "Go to first added snapshot",
-        envs: ["build"],
-      },
-      goToFirstRemoved: {
-        keys: ["Digit4"],
-        displayKeys: ["4"],
-        description: "Go to first removed snapshot",
-        envs: ["build"],
-      },
-      goToFirstUnchanged: {
-        keys: ["Digit5"],
-        displayKeys: ["5"],
-        description: "Go to first unchanged snapshot",
-        envs: ["build"],
-      },
-      goToFirstRetryFailure: {
-        keys: ["Digit6"],
-        displayKeys: ["6"],
-        description: "Go to first retried failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstIgnored: {
-        keys: ["Digit7"],
-        displayKeys: ["7"],
-        description: "Go to first ignored snapshot",
-        envs: ["build"],
-      },
-      switchViewport: {
-        keys: ["KeyV"],
-        displayKeys: ["V"],
-        description: "Switch viewport",
-        envs: ["build"],
-      },
-      switchBrowser: {
-        keys: ["KeyB"],
-        displayKeys: ["B"],
-        description: "Switch browser",
-        envs: ["build"],
-      },
-      switchStoryMode: {
-        keys: ["KeyM"],
-        displayKeys: ["M"],
-        description: "Switch story mode",
-        envs: ["build"],
-      },
-    },
-  },
-  {
-    name: "View",
-    hotkeys: {
-      toggleChangesOverlay: {
-        keys: ["KeyD"],
-        displayKeys: ["D"],
-        description: "Toggle changes overlay",
-        envs: ["test", "build", "media"],
-      },
-      highlightChanges: {
-        keys: ["KeyH"],
-        displayKeys: ["H"],
-        description: "Highlight changes",
-        envs: ["test", "build", "media"],
-      },
-      goToNextChanges: {
-        keys: ["KeyK"],
-        displayKeys: ["K"],
-        description: "Go to next changes",
-        envs: ["test", "build", "media"],
-      },
-      goToPreviousChanges: {
-        keys: ["KeyJ"],
-        displayKeys: ["J"],
-        description: "Go to previous changes",
-        envs: ["test", "build", "media"],
-      },
-      // A media pair is compared with the same controls as a build's snapshot,
-      // so it answers to the same keys. The wording is the build's because the
-      // two sides are the same two things: a media's "before" is the baseline
-      // it is compared against, and its "after" is what changed.
-      showBaseline: {
-        keys: ["ArrowLeft"],
-        displayKeys: ["←"],
-        description: "Show only baseline",
-        envs: ["test", "build", "media"],
-      },
-      showChanges: {
-        keys: ["ArrowRight"],
-        displayKeys: ["→"],
-        description: "Show only changes",
-        envs: ["test", "build", "media"],
-      },
-      showOnion: {
-        keys: ["KeyO"],
-        displayKeys: ["O"],
-        description: "Show onion skin view",
-        envs: ["test", "build", "media"],
-      },
-      showSwipe: {
-        keys: ["KeyW"],
-        displayKeys: ["W"],
-        description: "Show swipe view",
-        envs: ["test", "build", "media"],
-      },
-      toggleSplitView: {
-        keys: ["KeyS"],
-        displayKeys: ["S"],
-        description: "Toggle side by side mode",
-        envs: ["test", "build", "media"],
-      },
-      toggleDiffFit: {
-        keys: ["Space"],
-        displayKeys: ["Space"],
-        description: "Toggle fit to screen",
-        envs: ["test", "build"],
-      },
-      fitView: {
-        keys: ["Digit0"],
-        displayKeys: ["0"],
-        description: "Fit view into screen",
-        envs: ["test", "build"],
-      },
-      toggleSnapshotType: {
-        keys: ["KeyL"],
-        displayKeys: ["L"],
-        description: "Switch between screenshot and aria view",
-        envs: ["build"],
-      },
-      toggleCommentTool: {
-        keys: ["KeyC"],
-        displayKeys: ["C"],
-        description: "Toggle comment tool",
-        envs: ["build", "media"],
-      },
-      showDetails: {
-        keys: ["["],
-        displayKeys: ["["],
-        description: "Show details",
-        envs: ["build"],
-      },
-    },
-  },
-  {
-    name: "Share",
-    hotkeys: {
-      copyAsSelectedFormat: {
-        keys: ["⌘", "KeyC"],
-        displayKeys: ["⌘", "C"],
-        description: "Copy as the selected format",
-        envs: ["media"],
-      },
-      copyMediaLink: {
-        keys: ["⌘", "⇧", "Comma"],
-        displayKeys: ["⌘", "⇧", ","],
-        description: "Copy link",
-        envs: ["media"],
-      },
-      downloadMedia: {
-        keys: ["⌘", "⇧", "KeyD"],
-        displayKeys: ["⌘", "⇧", "D"],
-        description: "Download",
-        envs: ["media"],
-      },
-    },
-  },
-  {
-    name: "Actions",
-    hotkeys: {
-      requestReviewers: {
-        keys: ["KeyA"],
-        displayKeys: ["A"],
-        description: "Add reviewer",
-        envs: ["build"],
-      },
-      acceptDiff: {
-        keys: ["KeyY"],
-        displayKeys: ["Y"],
-        description: "Mark individual change as accepted",
-        envs: ["build"],
-      },
-      rejectDiff: {
-        keys: ["KeyN"],
-        displayKeys: ["N"],
-        description: "Mark individual change as rejected",
-        envs: ["build"],
-      },
-      ignoreChange: {
-        keys: ["KeyI"],
-        displayKeys: ["I"],
-        description: "Ignore change",
-        envs: ["test", "build"],
-      },
-    },
-  },
-] satisfies HotkeyGroup[];
-
-export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
-
-const plainHotkeyGroups = hotkeyGroups as unknown as HotkeyGroup[];
-
-const hotkeys = plainHotkeyGroups.reduce(
-  (acc, group) => ({ ...acc, ...group.hotkeys }),
-  {} as Record<HotkeyName, Hotkey>,
-);
-
-function checkIsModifiedPressed(event: KeyboardEvent) {
-  if (isMacOS) {
-    return event.metaKey;
-  }
-  return event.ctrlKey;
-}
+import {
+  checkHotkeyMatches,
+  getHotkey,
+  plainHotkeyGroups,
+  type Hotkey,
+  type HotkeyEnv,
+  type HotkeyName,
+} from "./hotkeys";
 
 type HotkeyOptions = {
   preventDefault: boolean;
@@ -342,42 +38,6 @@ type HotkeyRegistration = {
   /** Pending async dispatch, cleared on unregister. */
   timeout: number;
 };
-
-/**
- * Whether `event` matches `hotkey`'s key combination (modifiers included).
- */
-function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
-  const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
-  const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
-  const shiftShouldBePressed = hotkey.keys.some((key) => key === "⇧");
-  const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
-
-  if (hasDigits && altShouldBePressed !== event.altKey) {
-    return false;
-  }
-
-  if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
-    return false;
-  }
-
-  // Only demanded, never forbidden: plenty of existing keys ("?") are typed
-  // *with* shift without declaring it.
-  if (shiftShouldBePressed && !event.shiftKey) {
-    return false;
-  }
-
-  return hotkey.keys.every((key) => {
-    // Ignore modifier keys
-    if (key === "⌘" || key === "⇧") {
-      return true;
-    }
-    if (key.startsWith("Key")) {
-      const letter = key.slice(3);
-      return letter === event.key || letter.toLowerCase() === event.key;
-    }
-    return key === event.code || key === event.key;
-  });
-}
 
 /**
  * Single source of truth for build hotkeys: every `useBuildHotkey` consumer
@@ -487,7 +147,7 @@ export function useBuildHotkey(
     ignoreInteractiveTarget?: boolean;
   },
 ): Hotkey {
-  const hotkey = hotkeys[name];
+  const hotkey = getHotkey(name);
   const {
     preventDefault = true,
     enabled = true,
@@ -533,9 +193,11 @@ const BuildHotkeysDialogWithState = memo(
             </Button>
             <div className={clsx("gap-12 space-y-6 pb-4 md:columns-2")}>
               {plainHotkeyGroups.map((group, index) => {
-                const entries = Object.entries(group.hotkeys).filter(
-                  ([, hotKey]) =>
-                    hotKey.description && hotKey.envs.includes(env),
+                const entries = Object.entries(group.hotkeys).flatMap(
+                  ([name, hotKey]) =>
+                    hotKey?.description && hotKey.envs.includes(env)
+                      ? [[name, hotKey] as const]
+                      : [],
                 );
                 if (entries.length === 0) {
                   return null;

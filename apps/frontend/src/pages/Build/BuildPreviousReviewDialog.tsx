@@ -104,16 +104,7 @@ function ReapplyPreviousApprovalsButton(props: {
           return;
         }
         invariant(api);
-        api.setDiffStatuses((prev) => ({
-          ...prev,
-          ...branchApprovedDiffs.reduce<Record<string, EvaluationStatus>>(
-            (acc, diffId) => {
-              acc[diffId] = EvaluationStatus.Accepted;
-              return acc;
-            },
-            {},
-          ),
-        }));
+        api.markDiffs(branchApprovedDiffs, EvaluationStatus.Accepted);
         const count = branchApprovedDiffs.length;
         const total = stats
           ? getReviewableCount(stats, { isSubsetBuild })

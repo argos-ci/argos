@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { ALT, MOD, SHIFT } from "@/util/os";
 
 import { Button } from "../Button";
 import { AnimatedBubbleMenu } from "./AnimatedBubbleMenu";
 import { LINK_EDIT_TRIGGER_EVENT } from "./EditorLinkEdit";
-import { ALT, LINK_KEYS, MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 import { EditorToolbarLinkInput } from "./EditorToolbarLinkInput";
 import { HeadingMenu } from "./HeadingMenu";
@@ -32,6 +32,8 @@ export interface EditorToolbarProps {
    */
   editor: Editor | null;
 }
+
+const LINK_KEYS = [MOD, "K"];
 
 const BUBBLE_MENU_ANIMATION_DURATION_MS = 100;
 const BUBBLE_MENU_ANIMATION_CLASS_NAME = clsx(

@@ -19,7 +19,6 @@ import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
-import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { useEditorDraft } from "@/ui/Editor/useEditorDraft";
@@ -31,6 +30,7 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
+import { MOD } from "@/util/os";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
 import {

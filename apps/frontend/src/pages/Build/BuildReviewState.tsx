@@ -52,7 +52,7 @@ export function useBuildReviewState() {
   return use(BuildReviewStateContext);
 }
 
-type BuildReviewAPI = {
+export type BuildReviewAPI = {
   /**
    * Set the evaluation status of the diffs.
    */
@@ -65,9 +65,67 @@ type BuildReviewAPI = {
    * Similar to `state.diffStatuses`, but do not re-render the component.
    */
   getDiffStatuses: () => Record<Diff["id"], EvaluationStatus>;
+
+  /**
+   * Mark diffs, keeping the change on the undo stack. The way to evaluate a
+   * diff: `setDiffStatuses` writes statuses the reviewer cannot take back.
+   */
+  markDiffs: (diffIds: Diff["id"][], status: EvaluationStatus) => void;
+
+  /** Revert the last marking. Returns what it wrote, or null if there is none. */
+  undo: () => AppliedReviewMarkChange | null;
+
+  /** Re-apply the last reverted marking. Returns what it wrote, or null. */
+  redo: () => AppliedReviewMarkChange | null;
+
+  /**
+   * Forget what can be undone, because the marks it describes are no longer
+   * the reviewer's to take back.
+   */
+  clearHistory: () => void;
 };
 
 const BuildReviewAPIContext = createContext<BuildReviewAPI | null>(null);
+
+/**
+ * One step of the undo stack: the statuses a single marking replaced, and the
+ * ones it wrote. Only the diffs it touched are stored, so undoing never
+ * resurrects marks it left alone.
+ */
+type ReviewMarkChange = {
+  /** Statuses to restore when the change is undone, keyed by diff id. */
+  before: Record<Diff["id"], EvaluationStatus>;
+  /** Statuses to restore when the change is redone, keyed by diff id. */
+  after: Record<Diff["id"], EvaluationStatus>;
+  /**
+   * Diff to bring back on screen when the change is undone or redone, so the
+   * reviewer looks at what just moved. For a group, its first diff.
+   */
+  diffId: Diff["id"];
+};
+
+/** What an undo or a redo wrote, for the caller to report and navigate to. */
+export type AppliedReviewMarkChange = {
+  /** Statuses it wrote. */
+  statuses: Record<Diff["id"], EvaluationStatus>;
+  /** Statuses it replaced, so the caller can tell which way it moved. */
+  replaced: Record<Diff["id"], EvaluationStatus>;
+  diffId: Diff["id"];
+};
+
+/** The two stacks, scoped to the build they were recorded on. */
+type ReviewMarkStacks = {
+  buildKey: string;
+  undo: ReviewMarkChange[];
+  redo: ReviewMarkChange[];
+};
+
+/**
+ * How many markings can be walked back. Reviewing is a linear pass over the
+ * changed snapshots, so a mistake is caught within a few keystrokes; the cap
+ * only keeps a very long session from growing the stacks forever.
+ */
+const MAX_HISTORY_LENGTH = 50;
 
 /**
  * Get the current review status of all diffs.
@@ -362,55 +420,42 @@ export function useBuildDiffStatusState(args: {
   const { diffId, diffGroup } = args;
   const diffState = useBuildDiffState();
   const api = use(BuildReviewAPIContext);
-  const setDiffStatuses = api?.setDiffStatuses;
-  const setGroupStatus = useEventCallback((status: EvaluationStatus) => {
-    if (!diffGroup || !setDiffStatuses) {
-      return false;
+
+  /**
+   * The diffs a status change targets: the whole group when the row stands for
+   * a collapsed group, the diff itself otherwise. `null` means there is
+   * nothing to write at all.
+   */
+  const getTargetDiffIds = useEventCallback((): string[] | null => {
+    // An expanded group is reviewed diff by diff, so it falls back to the
+    // single diff below.
+    if (diffGroup && !diffState.expanded.includes(diffGroup)) {
+      return diffState.diffs
+        .filter(
+          (diff) =>
+            diff.group === diffGroup &&
+            checkDiffCanBeReviewed(diff.status, {
+              isSubsetBuild: diffState.isSubsetBuild,
+            }),
+        )
+        .map((diff) => diff.id);
     }
 
-    // If the group is expanded, we don't want to set the status of the group
-    if (diffState.expanded.includes(diffGroup)) {
-      return false;
-    }
-
-    const diffIds = diffState.diffs
-      .filter(
-        (diff) =>
-          diff.group === diffGroup &&
-          checkDiffCanBeReviewed(diff.status, {
-            isSubsetBuild: diffState.isSubsetBuild,
-          }),
-      )
-      .map((diff) => diff.id);
-
-    setDiffStatuses((diffStatuses) => {
-      const nextValue = { ...diffStatuses };
-      diffIds.forEach((diffId) => {
-        nextValue[diffId] = status;
-      });
-      return nextValue;
-    });
-    return true;
+    return diffId ? [diffId] : null;
   });
 
   const setDiffStatus = useEventCallback((status: EvaluationStatus) => {
-    if (!setDiffStatuses) {
+    // A reference build carries no review state, so there is nothing to mark.
+    if (!api) {
       return;
     }
 
-    if (setGroupStatus(status)) {
+    const diffIds = getTargetDiffIds();
+    if (!diffIds) {
       return;
     }
 
-    if (diffId) {
-      setDiffStatuses((diffStatuses) => {
-        const nextValue = {
-          ...diffStatuses,
-          [diffId]: status,
-        };
-        return nextValue;
-      });
-    }
+    api.markDiffs(diffIds, status);
   });
 
   const getDiffStatus = useGetDiffStatus();
@@ -460,17 +505,151 @@ export function BuildReviewStateProvider(props: {
     }
     return { diffStatuses, buildStatus };
   }, [buildType, diffStatuses, buildStatus]);
+  const { markDiffs, undo, redo, clearHistory } = useReviewMarkHistory({
+    getDiffStatuses,
+    setDiffStatuses,
+    // Keyed by build, so walking back never reaches marks that belong to the
+    // build the reviewer came from.
+    buildKey: `${stableParams.accountSlug}/${stableParams.projectName}#${stableParams.buildNumber}`,
+  });
   const api = useMemo<BuildReviewAPI | null>(() => {
     if (buildType === BuildType.Reference) {
       return null;
     }
-    return { getDiffStatuses, setDiffStatuses };
-  }, [buildType, getDiffStatuses, setDiffStatuses]);
+    return {
+      getDiffStatuses,
+      setDiffStatuses,
+      markDiffs,
+      undo,
+      redo,
+      clearHistory,
+    };
+  }, [
+    buildType,
+    getDiffStatuses,
+    setDiffStatuses,
+    markDiffs,
+    undo,
+    redo,
+    clearHistory,
+  ]);
   return (
     <BuildReviewStateContext value={state}>
       <BuildReviewAPIContext value={api}>
         {props.children}
       </BuildReviewAPIContext>
     </BuildReviewStateContext>
+  );
+}
+
+/**
+ * Marking, and the two stacks that let the reviewer walk their markings back.
+ *
+ * Kept in memory only: the marks themselves outlive a reload (they are stored
+ * per build), but a list of steps to walk back does not belong to a page the
+ * reviewer has left.
+ */
+function useReviewMarkHistory(args: {
+  getDiffStatuses: BuildReviewAPI["getDiffStatuses"];
+  setDiffStatuses: BuildReviewAPI["setDiffStatuses"];
+  buildKey: string;
+}): Pick<BuildReviewAPI, "markDiffs" | "undo" | "redo" | "clearHistory"> {
+  const { buildKey } = args;
+  const argsRef = useLiveRef(args);
+  // The stacks live in a ref rather than in state: nothing renders from them,
+  // and pushing a step must not re-render the page the reviewer is working in.
+  const stacksRef = useRef<ReviewMarkStacks>({
+    buildKey,
+    undo: [],
+    redo: [],
+  });
+  // Read through here, never directly: the provider stays mounted when the
+  // reviewer moves from one build to the next, and steps recorded on the build
+  // they came from must not be walked back into the one they are on.
+  const getStacks = useEventCallback((): ReviewMarkStacks => {
+    if (stacksRef.current.buildKey !== buildKey) {
+      stacksRef.current = { buildKey, undo: [], redo: [] };
+    }
+    return stacksRef.current;
+  });
+
+  const applyStatuses = useEventCallback(
+    (statuses: Record<Diff["id"], EvaluationStatus>) => {
+      argsRef.current.setDiffStatuses((diffStatuses) => ({
+        ...diffStatuses,
+        ...statuses,
+      }));
+    },
+  );
+
+  const markDiffs = useEventCallback(
+    (diffIds: Diff["id"][], status: EvaluationStatus) => {
+      const currentStatuses = argsRef.current.getDiffStatuses();
+      const before: Record<Diff["id"], EvaluationStatus> = {};
+      const after: Record<Diff["id"], EvaluationStatus> = {};
+      for (const diffId of diffIds) {
+        before[diffId] = currentStatuses[diffId] ?? EvaluationStatus.Pending;
+        after[diffId] = status;
+      }
+
+      // Written even when `diffIds` is empty: a caller that planned an
+      // acknowledgment waits on the statuses changing identity, and would hang
+      // on a write that never happened.
+      applyStatuses(after);
+
+      const [firstDiffId] = diffIds;
+      if (!firstDiffId) {
+        return;
+      }
+      const stacks = getStacks();
+      stacks.undo.push({ before, after, diffId: firstDiffId });
+      if (stacks.undo.length > MAX_HISTORY_LENGTH) {
+        stacks.undo.shift();
+      }
+      // A new marking forks the timeline: what was undone can no longer be
+      // redone.
+      stacks.redo.length = 0;
+    },
+  );
+
+  const undo = useEventCallback((): AppliedReviewMarkChange | null => {
+    const stacks = getStacks();
+    const change = stacks.undo.pop();
+    if (!change) {
+      return null;
+    }
+    stacks.redo.push(change);
+    applyStatuses(change.before);
+    return {
+      statuses: change.before,
+      replaced: change.after,
+      diffId: change.diffId,
+    };
+  });
+
+  const redo = useEventCallback((): AppliedReviewMarkChange | null => {
+    const stacks = getStacks();
+    const change = stacks.redo.pop();
+    if (!change) {
+      return null;
+    }
+    stacks.undo.push(change);
+    applyStatuses(change.after);
+    return {
+      statuses: change.after,
+      replaced: change.before,
+      diffId: change.diffId,
+    };
+  });
+
+  const clearHistory = useEventCallback(() => {
+    const stacks = getStacks();
+    stacks.undo.length = 0;
+    stacks.redo.length = 0;
+  });
+
+  return useMemo(
+    () => ({ markDiffs, undo, redo, clearHistory }),
+    [markDiffs, undo, redo, clearHistory],
   );
 }

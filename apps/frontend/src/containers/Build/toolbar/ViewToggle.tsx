@@ -13,8 +13,9 @@ import {
 } from "@/ui/Icons";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
+import { useBuildHotkey } from "../BuildHotkeys";
 import { buildViewModeAtom, type ViewMode } from "../BuildViewMode";
+import { Hotkey } from "../hotkeys";
 import { useZoomerSyncContext } from "../Zoomer";
 
 /**

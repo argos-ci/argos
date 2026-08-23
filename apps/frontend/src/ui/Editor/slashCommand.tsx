@@ -24,8 +24,8 @@ import {
 import { getMenuItemClassName, menuListClassName } from "@/ui/menuStyle";
 import { popupSurfaceClassName } from "@/ui/popupSurface";
 import { Shortcut } from "@/ui/Shortcut";
+import { ALT, MOD, SHIFT } from "@/util/os";
 
-import { ALT, MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import { positionSuggestionPopup } from "./suggestionPopup";
 
 /** Range of the document the slash trigger spans (`/query`), to be replaced. */

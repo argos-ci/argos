@@ -10,10 +10,8 @@ import {
   type DiffGroupName,
   type DiffStatusGroupName,
 } from "@/containers/Build/BuildDiffGroup";
-import {
-  useBuildHotkey,
-  type HotkeyName,
-} from "@/containers/Build/BuildHotkeys";
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { type HotkeyName } from "@/containers/Build/hotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";

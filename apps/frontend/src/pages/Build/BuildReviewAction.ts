@@ -94,6 +94,10 @@ export function useCreateBuildReviewMutation(
       });
       options?.onCompleted?.();
       api.setDiffStatuses(diffStatuses);
+      // The marks now live on the server: there is nothing local left to walk
+      // back, and undoing into a pre-review state would only misrepresent what
+      // was submitted.
+      api.clearHistory();
       openReviewSidebar();
       // Approving or rejecting settles this build, so it's the moment to offer
       // the next one. A neutral comment deliberately leaves the build

@@ -14,6 +14,7 @@ import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildReviewDialogProvider } from "./BuildReviewDialog";
 import { BuildReviewStateProvider } from "./BuildReviewState";
+import { BuildReviewUndoHotkeys } from "./BuildReviewUndoHotkeys";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildHeader } from "./header/BuildHeader";
 import { OvercapacityBanner } from "./OvercapacityBanner";
@@ -105,6 +106,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
             <BuildNextReviewDialogProvider>
               <BuildReviewDialogProvider project={data?.project ?? null}>
                 <RejectCommentDialogProvider build={build}>
+                  <BuildReviewUndoHotkeys />
                   <div className="flex h-screen min-h-0 flex-col">
                     {data?.project?.account && (
                       <>
