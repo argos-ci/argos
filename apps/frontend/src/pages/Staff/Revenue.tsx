@@ -69,6 +69,11 @@ const StaffRevenueQuery = graphql(`
           teamsCount
           foreignRevenue
         }
+        githubPlans {
+          revenue
+          teamsCount
+          foreignRevenue
+        }
       }
       yearlyContracts {
         slug
@@ -86,7 +91,6 @@ const StaffRevenueQuery = graphql(`
           awaitingPayment
         }
       }
-      githubMarketplaceMonthlyRevenue
     }
   }
 `);
@@ -114,7 +118,7 @@ const YEARLY_HINT =
   "Annual contracts amortized, day by day, over the months they cover. In €.";
 
 const GITHUB_HINT =
-  "Active Marketplace subscriptions at list price, billed by GitHub. On top of the figure above, not in it.";
+  "The month's Marketplace subscriptions at list price, billed by GitHub. On top of the figure above, not in it.";
 
 /**
  * Stands in for the hint line while the figures load.
@@ -280,12 +284,8 @@ function SplitAmount(props: {
  * computes differently — one reads the month's invoices, the other spreads a
  * year's — so they are what a reader has to be able to take apart.
  */
-function MonthSplit(props: {
-  month: RevenueMonth;
-  monthlyHint: string;
-  github: number | null;
-}) {
-  const { month, monthlyHint, github } = props;
+function MonthSplit(props: { month: RevenueMonth; monthlyHint: string }) {
+  const { month, monthlyHint } = props;
 
   return (
     <>
@@ -300,10 +300,14 @@ function MonthSplit(props: {
         label="Yearly"
         tooltip={`${YEARLY_HINT}${getSplitNote(month.yearlyPlans)}`}
       />
-      {github !== null ? (
+      {month.githubPlans.revenue > 0 ? (
         <>
           {" · "}
-          <SplitAmount amount={github} label="GitHub" tooltip={GITHUB_HINT} />
+          <SplitAmount
+            amount={month.githubPlans.revenue}
+            label="GitHub"
+            tooltip={`${GITHUB_HINT}${getSplitNote(month.githubPlans)}`}
+          />
         </>
       ) : null}
     </>
@@ -314,11 +318,9 @@ function MonthSplit(props: {
 function RevenueCards(props: {
   /** Oldest first, the running month last. Null while loading. */
   months: readonly RevenueMonth[] | null;
-  /** The GitHub Marketplace rate, shown beside each month's split. */
-  github: number | null;
   error: Error | null;
 }) {
-  const { months, github, error } = props;
+  const { months, error } = props;
 
   // The last two are the only ones the cards read, whatever the window.
   const currentMonth = months?.at(-1) ?? null;
@@ -362,11 +364,7 @@ function RevenueCards(props: {
         hint={
           unavailable ??
           (lastMonth ? (
-            <MonthSplit
-              month={lastMonth}
-              monthlyHint={LAST_MONTHLY_HINT}
-              github={github}
-            />
+            <MonthSplit month={lastMonth} monthlyHint={LAST_MONTHLY_HINT} />
           ) : (
             HINT_PLACEHOLDER
           ))
@@ -387,7 +385,6 @@ function RevenueCards(props: {
             <MonthSplit
               month={currentMonth}
               monthlyHint={CURRENT_MONTHLY_HINT}
-              github={github}
             />
           ) : (
             HINT_PLACEHOLDER
@@ -449,15 +446,12 @@ const CHART_CONFIG: ChartConfig = Object.fromEntries(
  * carries a slope where twelve separate bars make the reader measure heights
  * against each other.
  */
-function RevenueChart(props: {
-  months: readonly RevenueMonth[];
-  github: number;
-}) {
+function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   const data = props.months.map((month) => ({
     month: month.month,
     monthly: month.monthlyPlans.revenue,
     yearly: month.yearlyPlans.revenue,
-    github: props.github,
+    github: month.githubPlans.revenue,
   }));
 
   return (
@@ -970,18 +964,11 @@ function StaffRevenuePage() {
           <Heading>Revenue</Heading>
         </PageHeaderContent>
       </PageHeader>
-      <RevenueCards
-        months={months}
-        github={data?.staffRevenue.githubMarketplaceMonthlyRevenue ?? null}
-        error={error ?? null}
-      />
+      <RevenueCards months={months} error={error ?? null} />
       {data && months && contracts ? (
         <>
           <ChartCard className="mb-6" title="Invoiced by month">
-            <RevenueChart
-              months={months}
-              github={data.staffRevenue.githubMarketplaceMonthlyRevenue}
-            />
+            <RevenueChart months={months} />
           </ChartCard>
           <RevenueHistory months={months} />
           <YearlyContracts contracts={contracts} />

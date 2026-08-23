@@ -53,6 +53,11 @@ type StaffRevenueMonth = {
    * amortized, day by day, over the stretch each one pays for.
    */
   yearlyPlans: StaffRevenueSplit;
+  /**
+   * What GitHub Marketplace brought in over the month — beside the two above
+   * rather than inside them, since GitHub bills it and Argos never sees it.
+   */
+  githubPlans: StaffRevenueSplit;
 };
 
 /** Upper bound on the window one call will read. */
@@ -71,42 +76,108 @@ const REPORTING_CURRENCY = "eur";
  */
 const EUR_PER_USD = 0.855;
 
+/** A Marketplace subscription, and the stretch it was billed over. */
+type MarketplaceSubscription = {
+  accountId: string;
+  priceCents: number;
+  startDate: string;
+  endDate: string | null;
+  trialEndDate: string | null;
+};
+
 /**
- * What GitHub Marketplace brings in a month, in euros, gross of the 5% GitHub
- * keeps.
+ * Every team subscription GitHub bills, with the dates that say which months
+ * it was billed over.
  *
- * The active marketplace subscriptions at their plans' list prices — GitHub
- * exposes no seller invoice API, so the listing's prices, copied onto the
- * plans by the `github-marketplace-prices` cron, are the closest thing to the
- * statement. Zero until that cron (or its bin form) has priced the plans.
+ * Read by dates rather than by today's status: what a past month brought in
+ * is what was subscribed *then*, and a subscription cancelled since still
+ * earned the months it ran for. The same book the Stripe figures read —
+ * teams, none of them granted a plan rather than billed.
  */
-async function getGithubMarketplaceMonthlyRevenue(): Promise<number> {
+async function getMarketplaceSubscriptions(): Promise<
+  MarketplaceSubscription[]
+> {
   const rows = (await Subscription.query()
-    .select("subscriptions.accountId", "plan.githubMonthlyPriceCents")
+    .select(
+      "subscriptions.accountId",
+      "subscriptions.startDate",
+      "subscriptions.endDate",
+      "subscriptions.trialEndDate",
+      "plan.githubMonthlyPriceCents",
+    )
     .joinRelated("plan")
     .join("accounts", "accounts.id", "subscriptions.accountId")
-    // The same book the Stripe figures read: teams, and none Argos granted a
-    // plan to rather than bills.
     .whereNotNull("accounts.teamId")
     .whereNull("accounts.userId")
     .whereNull("accounts.forcedPlanId")
     .where("subscriptions.provider", "github")
-    .whereNotNull("plan.githubMonthlyPriceCents")
-    .whereRaw("?? < now()", "subscriptions.startDate")
-    .whereIn("subscriptions.status", ["active", "past_due"])
-    .where((query) =>
-      query
-        .whereNull("subscriptions.endDate")
-        .orWhereRaw("?? >= now()", "subscriptions.endDate"),
-    )
-    .distinctOn("subscriptions.accountId")
-    .orderBy("subscriptions.accountId")
-    .orderBy("plan.githubMonthlyPriceCents", "DESC")) as unknown as {
+    .whereNotNull("plan.githubMonthlyPriceCents")) as unknown as {
+    accountId: string | number;
+    startDate: string;
+    endDate: string | null;
+    trialEndDate: string | null;
     githubMonthlyPriceCents: number;
   }[];
 
-  const cents = rows.reduce((sum, row) => sum + row.githubMonthlyPriceCents, 0);
-  return toEuros({ amount: cents / 100, currency: "usd" });
+  return rows.map((row) => ({
+    accountId: String(row.accountId),
+    priceCents: row.githubMonthlyPriceCents,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    trialEndDate: row.trialEndDate,
+  }));
+}
+
+/**
+ * What GitHub Marketplace brought in over one month, in euros, gross of the
+ * 5% GitHub keeps.
+ *
+ * The subscriptions running that month at their plans' list prices — GitHub
+ * exposes no seller invoice API, only its listing and its subscribers, so
+ * there are no invoices of its to mirror the way Stripe's are. Priced at
+ * today's list, which is the one thing here that has no history: a plan's
+ * price changing would restate the months before it, where the subscribers
+ * that came and went are read from their own dates.
+ */
+function getMarketplaceMonthRevenue(
+  subscriptions: MarketplaceSubscription[],
+  month: { start: number; end: number },
+): StaffRevenueSplit {
+  const split = createSplit();
+  const byAccount = new Map<string, number>();
+
+  for (const subscription of subscriptions) {
+    const started = new Date(subscription.startDate).getTime();
+    const ended = subscription.endDate
+      ? new Date(subscription.endDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    // A trial bills nothing, so a month it was still running through earned
+    // nothing either.
+    const trialEnded = subscription.trialEndDate
+      ? new Date(subscription.trialEndDate).getTime()
+      : Number.NEGATIVE_INFINITY;
+    if (
+      started >= month.end ||
+      ended <= month.start ||
+      trialEnded > month.start
+    ) {
+      continue;
+    }
+    // One subscription per team, the richest, like every other figure here.
+    byAccount.set(
+      subscription.accountId,
+      Math.max(
+        byAccount.get(subscription.accountId) ?? 0,
+        subscription.priceCents,
+      ),
+    );
+  }
+
+  for (const cents of byAccount.values()) {
+    addToSplit(split, { amount: cents / 100, currency: "usd" });
+  }
+  split.teamsCount = byAccount.size;
+  return split;
 }
 
 /**
@@ -573,11 +644,6 @@ export type StaffRevenue = {
   months: StaffRevenueMonth[];
   /** The contracts behind the yearly figures, largest first. */
   yearlyContracts: StaffYearlyContract[];
-  /**
-   * What GitHub Marketplace brings in a month, in euros, gross — the active
-   * marketplace subscriptions at their plans' list prices.
-   */
-  githubMarketplaceMonthlyRevenue: number;
 };
 
 /** Raised by the reader when the mirror cannot answer for the window asked. */
@@ -610,14 +676,19 @@ export async function getStaffRevenue(
   invariant(first, "at least one month is reported");
   const scanStart = new Date(first.getTime() - CONTRACT_SCAN_MS);
 
-  const [teamCustomers, billedTeams, deepestSync, freshestSync, marketplace] =
-    await Promise.all([
-      getTeamCustomers(),
-      getBilledTeams(),
-      StripeInvoiceSync.query().orderBy("sinceDate", "asc").first(),
-      StripeInvoiceSync.query().orderBy("completedAt", "desc").first(),
-      getGithubMarketplaceMonthlyRevenue(),
-    ]);
+  const [
+    teamCustomers,
+    billedTeams,
+    deepestSync,
+    freshestSync,
+    marketplaceSubscriptions,
+  ] = await Promise.all([
+    getTeamCustomers(),
+    getBilledTeams(),
+    StripeInvoiceSync.query().orderBy("sinceDate", "asc").first(),
+    StripeInvoiceSync.query().orderBy("completedAt", "desc").first(),
+    getMarketplaceSubscriptions(),
+  ]);
 
   // Two things have to hold before a figure can be trusted: the mirror was
   // swept deep enough to hold the contracts that pay for the window, and it
@@ -796,6 +867,8 @@ export async function getStaffRevenue(
     const teams = monthTeams[index];
     invariant(monthly && yearly && teams, "every month reported has totals");
     monthly.teamsCount = teams.size;
+    const bound = monthBounds[index];
+    invariant(bound, "every month reported has bounds");
     return {
       month: start,
       revenue: monthly.revenue + yearly.revenue,
@@ -803,6 +876,7 @@ export async function getStaffRevenue(
       // Largest first: the breakdown is read to see who made the month.
       teams: [...teams.values()].sort((a, b) => b.revenue - a.revenue),
       yearlyPlans: yearly,
+      githubPlans: getMarketplaceMonthRevenue(marketplaceSubscriptions, bound),
     };
   });
 
@@ -815,7 +889,6 @@ export async function getStaffRevenue(
       monthlyByCustomer,
       runningMonth,
     }),
-    githubMarketplaceMonthlyRevenue: marketplace,
   };
 }
 

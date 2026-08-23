@@ -387,6 +387,12 @@ export const typeDefs = gql`
     never moves once written.
     """
     yearlyPlans: StaffRevenueSplit!
+    """
+    What GitHub Marketplace brought in over the month: the subscriptions
+    running then, at their plans' list prices. Beside the two above rather
+    than inside them — GitHub bills it, and \`revenue\` never counts it.
+    """
+    githubPlans: StaffRevenueSplit!
   }
 
   "What one team was invoiced over a month, one line of the breakdown."
@@ -458,13 +464,6 @@ export const typeDefs = gql`
     months: [StaffRevenueMonth!]!
     "The contracts behind every month's \`yearlyPlans\`, largest first."
     yearlyContracts: [StaffYearlyContract!]!
-    """
-    What GitHub Marketplace brings in a month, in euros, gross of the 5%
-    GitHub keeps: the active marketplace subscriptions at their plans' list
-    prices, since GitHub exposes no seller invoice API. Not part of the
-    figures above.
-    """
-    githubMarketplaceMonthlyRevenue: Float!
   }
 
   type StaffTeamConnection implements Connection {

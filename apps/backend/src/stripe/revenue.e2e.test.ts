@@ -8,6 +8,7 @@ import {
   getStaffRevenue,
   getTeamCustomers,
   startOfUTCMonth,
+  toEuros,
 } from "./revenue";
 
 let sequence = 0;
@@ -459,6 +460,57 @@ describe("getStaffRevenue", () => {
     for (const month of monthsOfFirstTerm) {
       expect(month.yearlyPlans.revenue).toBeLessThan(firstTermRate * 1.2);
     }
+  });
+
+  it("prices each month's marketplace book from the subscriptions it ran", async () => {
+    const now = new Date();
+    await factory.StripeInvoiceSync.create({
+      sinceDate: new Date("2020-01-01").toISOString(),
+    });
+    const plan = await factory.Plan.create({
+      usageBased: false,
+      githubMonthlyPriceCents: 10_000,
+    });
+    const user = await factory.User.create();
+
+    async function subscribe(options: { endDate?: string; planId?: string }) {
+      const account = await factory.TeamAccount.create({});
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: options.planId ?? plan.id,
+        provider: "github",
+        subscriberId: user.id,
+        startDate: startOfUTCMonth(now, -6).toISOString(),
+        endDate: options.endDate ?? null,
+        status: "active",
+      });
+    }
+
+    // One still running, and one that left when this month opened: the months
+    // it ran through earned what it was subscribed for, whatever it does now.
+    await subscribe({});
+    await subscribe({ endDate: startOfUTCMonth(now, 0).toISOString() });
+    // An unpriced plan is not a marketplace listing, so it counts nothing.
+    const unpriced = await factory.Plan.create({ usageBased: true });
+    await subscribe({ planId: unpriced.id });
+
+    const result = await getStaffRevenue(2);
+    const [last, current] = result.months;
+    invariant(last && current);
+
+    expect(last.githubPlans.teamsCount).toBe(2);
+    expect(last.githubPlans.revenue).toBe(
+      toEuros({ amount: 200, currency: "usd" }),
+    );
+    // The one that left is gone from this month, and only from this one.
+    expect(current.githubPlans.teamsCount).toBe(1);
+    expect(current.githubPlans.revenue).toBe(
+      toEuros({ amount: 100, currency: "usd" }),
+    );
+    // Never inside the figure the cards report.
+    expect(current.revenue).toBe(
+      current.monthlyPlans.revenue + current.yearlyPlans.revenue,
+    );
   });
 
   it("reports an open annual invoice as awaiting payment, counted", async () => {
