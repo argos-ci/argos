@@ -43,6 +43,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         <BuildNavButtons />
       </DetailToolbarNav>
       <DetailToolbarTitle
+        crowded
         render={
           testId
             ? (title) => (
@@ -63,9 +64,6 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       >
         {diff.name}
       </DetailToolbarTitle>
-      {/* Which variant of the snapshot is on screen, and the siblings to jump
-          to. */}
-      <VariantSwitchers diff={diff} />
       {/* What is about the pane: the view mode, the fit, the overlay's style,
           comment visibility. Everything that acts on the snapshot itself is in
           `ScreenshotActionsToolbar`, under it. */}
@@ -76,6 +74,16 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       >
         <RightSidebarToggle />
       </BuildDiffDetailToolbar>
+      {/* Which variant of the snapshot is on screen, and the siblings to jump
+          to.
+
+          Last in the row, which is what decides the folding: a flex row wraps
+          from the end, so the slot that goes under is whichever one is here.
+          The controls sit in the same place on every snapshot and should keep
+          it; the chips are as many as the snapshot happens to have, so they are
+          the ones that move. The cost is that on one line they read after the
+          controls rather than before them. */}
+      <VariantSwitchers diff={diff} />
     </DetailToolbar>
   );
 });

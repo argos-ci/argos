@@ -22,15 +22,18 @@ export function VariantSwitchers(props: { diff: Diff }) {
   return (
     <ChipContext value={CHIP_DEFAULTS}>
       {/* Named, because out here the chips no longer sit under the sidebar's
-          "Metadata" heading and would otherwise be a bare row of links between
-          the title and the controls.
+          "Metadata" heading and would otherwise be a bare row of links at the
+          end of the toolbar.
 
-          `empty:hidden` so a snapshot with no dimensions at all — a markdown
-          one — does not leave the toolbar's gap twice over. */}
+          `ml-auto` for the line of their own they get when the row folds:
+          nothing to be spaced against there, so they would sit under the name
+          instead of under the controls they follow. `empty:hidden` so a
+          snapshot with no dimensions at all — a markdown one — does not leave
+          the toolbar's gap twice over. */}
       <div
         role="group"
         aria-label="Snapshot variants"
-        className="flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden"
+        className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5 empty:hidden"
       >
         <BrowserSwitcher diff={diff} siblingDiffs={siblingDiffs} />
         <ViewportSwitcher diff={diff} siblingDiffs={siblingDiffs} />
