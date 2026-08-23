@@ -191,6 +191,9 @@ To debug with real data shapes, the app can run locally against the production
 database through the `argos_dev_ro` Postgres role — read-only except for the
 two tables the login flow writes (`user_sessions`, `team_users.lastAuthMethod`).
 
+For connecting by hand (TablePlus, `psql`) and for how production authenticates
+at all, see [docs/database-access.md](docs/database-access.md).
+
 ```sh
 pnpm run dev:prod-ro
 ```
