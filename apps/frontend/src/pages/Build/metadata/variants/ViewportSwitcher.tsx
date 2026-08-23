@@ -16,6 +16,7 @@ import {
   useGetDiffPath,
   type MetadataViewport,
 } from "../utils";
+import { findVariantSibling } from "./sibling";
 
 export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
@@ -37,9 +38,11 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
         const isNextActive = (activeIndex + 1) % viewports.length === index;
         const resolvedDiff = isActive
           ? diff
-          : siblingDiffs.find((d) => {
-              const m = resolveDiffMetadata(d);
-              return m?.viewport && hashViewport(m.viewport) === key;
+          : findVariantSibling({
+              diff,
+              siblingDiffs,
+              axis: "viewport",
+              value: key,
             });
         invariant(resolvedDiff, "diff cannot be null");
         return (

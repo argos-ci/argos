@@ -15,6 +15,7 @@ import {
   resolveDiffMetadata,
   useGetDiffPath,
 } from "../utils";
+import { findVariantSibling } from "./sibling";
 
 function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
   switch (colorScheme) {
@@ -51,9 +52,12 @@ export function ColorSchemeSwitcher(props: {
         const isActive = active === colorScheme;
         const resolvedDiff = isActive
           ? diff
-          : siblingDiffs.find(
-              (d) => resolveColorScheme(resolveDiffMetadata(d)) === colorScheme,
-            );
+          : findVariantSibling({
+              diff,
+              siblingDiffs,
+              axis: "colorScheme",
+              value: colorScheme,
+            });
         invariant(resolvedDiff, "diff cannot be null");
         const Icon = colorSchemeIcons[colorScheme];
         const label = getColorSchemeLabel(colorScheme);
