@@ -14,6 +14,7 @@ import {
   resolveDiffMetadata,
   useGetDiffPath,
 } from "../utils";
+import { findVariantSibling } from "./sibling";
 
 export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
@@ -34,9 +35,12 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
         const isNextActive = (activeIndex + 1) % storyModes.length === index;
         const resolvedDiff = isActive
           ? diff
-          : siblingDiffs.find(
-              (d) => resolveDiffMetadata(d)?.story?.mode === mode,
-            );
+          : findVariantSibling({
+              diff,
+              siblingDiffs,
+              axis: "storyMode",
+              value: mode,
+            });
         invariant(resolvedDiff, "diff cannot be null");
         return (
           <StoryModeLinkButton

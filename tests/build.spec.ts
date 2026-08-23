@@ -459,3 +459,49 @@ loggedTest(
     });
   },
 );
+
+loggedTest(
+  "keeps the other variant when switching one",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build, variantKey } = await createVariantSwitchersScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    const variants = page.getByRole("group", { name: "Snapshot variants" });
+    const snapshotName = (browser: string, width: number) =>
+      new RegExp(
+        `^${browser}/${variantKey.replaceAll("/", "\\/")} vw-${width}\\.png$`,
+      );
+
+    // The build is a 2×2: two browsers, two viewports. Walking one dimension
+    // has to leave the other where it was — the reviewer asked for a different
+    // browser, not a different viewport.
+    await expect(
+      page.getByRole("heading", { name: snapshotName("chromium", 1280) }),
+    ).toBeVisible();
+
+    await variants.getByRole("link", { name: "Firefox" }).click();
+    await expect(
+      page.getByRole("heading", { name: snapshotName("firefox", 1280) }),
+    ).toBeVisible();
+
+    await variants.getByRole("link", { name: "390" }).click();
+    await expect(
+      page.getByRole("heading", { name: snapshotName("firefox", 390) }),
+    ).toBeVisible();
+
+    // And back the other way, so this cannot pass on the diff list's order.
+    await variants.getByRole("link", { name: "Chromium" }).click();
+    await expect(
+      page.getByRole("heading", { name: snapshotName("chromium", 390) }),
+    ).toBeVisible();
+  },
+);

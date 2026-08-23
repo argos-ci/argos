@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
 
+import { browser, metadata, story, viewport } from "./testing";
 import {
   getUniqueBrowsers,
   getUniqueColorSchemes,
   getUniqueStoryModes,
   getUniqueViewports,
-  type Metadata,
-  type MetadataBrowser,
-  type MetadataViewport,
 } from "./utils";
 
 /**
@@ -18,50 +16,6 @@ import {
  * wrong order on purpose: what is asserted is that the output does not depend
  * on it.
  */
-function metadata(props: Partial<Metadata>): Metadata {
-  return {
-    __typename: "ScreenshotMetadata",
-    url: null,
-    previewUrl: null,
-    colorScheme: null,
-    mediaType: null,
-    automationLibrary: {
-      __typename: "ScreenshotMetadataAutomationLibrary",
-      name: "playwright",
-      version: "1.49.1",
-    },
-    browser: null,
-    sdk: {
-      __typename: "ScreenshotMetadataSDK",
-      name: "@argos-ci/playwright",
-      version: "2.0.0",
-      latestVersion: null,
-    },
-    story: null,
-    viewport: null,
-    test: null,
-    tags: null,
-    ...props,
-  };
-}
-
-function browser(name: string, version: string): MetadataBrowser {
-  return { __typename: "ScreenshotMetadataBrowser", name, version };
-}
-
-function viewport(width: number, height: number): MetadataViewport {
-  return { __typename: "ScreenshotMetadataViewport", width, height };
-}
-
-function story(mode: string): NonNullable<Metadata["story"]> {
-  return {
-    __typename: "ScreenshotMetadataStory",
-    id: "gallery-hero--default",
-    mode,
-    play: false,
-    tags: null,
-  };
-}
 
 describe("getUniqueBrowsers", () => {
   it("orders by label, then by version", () => {
