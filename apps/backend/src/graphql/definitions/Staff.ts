@@ -385,6 +385,55 @@ export const typeDefs = gql`
     yearlyPlans: StaffRevenueSplit!
   }
 
+  "One invoice a contract's worth is read from."
+  type StaffContractInvoice {
+    "Net of tax and credit notes, in the currency's main unit."
+    amount: Float!
+    "The currency it was raised in, counted at parity when not USD."
+    currency: String!
+    "When it was raised."
+    invoicedAt: DateTime!
+    "The stretch it covers, when it states a real one."
+    coveredFrom: DateTime
+    coveredUntil: DateTime
+  }
+
+  """
+  One annual contract in force, and the invoices its rate is read from: the
+  latest annual bill plus whatever was sold on top of it since.
+
+  Listed so the yearly figure can be audited contract by contract — including
+  the contracts that contributed nothing, which the total alone would hide.
+  """
+  type StaffYearlyContract {
+    "The team's slug, which names its pages."
+    slug: String!
+    "The team's display name, when it has one."
+    name: String
+    "The subscription the database knows the contract by."
+    stripeSubscriptionId: String!
+    """
+    The invoices below, added up. Null when none was found, in which case the
+    contract adds nothing to the rate.
+    """
+    amount: Float
+    "The invoices the contract is worth, newest first."
+    invoices: [StaffContractInvoice!]!
+    """
+    True when the invoices found are still awaiting payment. Shown, so a
+    contract in collection is visible, but counted nothing until they clear.
+    """
+    awaitingPayment: Boolean!
+  }
+
+  "What Argos invoiced, and the annual contracts behind the yearly rate."
+  type StaffRevenue {
+    "The window, oldest first and the running month last."
+    months: [StaffRevenueMonth!]!
+    "The contracts behind every month's \`yearlyPlans\`, largest first."
+    yearlyContracts: [StaffYearlyContract!]!
+  }
+
   type StaffTeamConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Team!]!
@@ -416,13 +465,14 @@ export const typeDefs = gql`
     staffTrialPipeline(days: Int! = 30): [Team!]!
     """
     What Argos invoiced over the last \`months\` calendar months, oldest first
-    and the running one last (staff only).
+    and the running one last, with the annual contracts the yearly rate is
+    made of (staff only).
 
     Read from Stripe when asked, never stored: the invoices change behind us as
     they are paid, voided and credited. Every month costs a paginated walk of
     its own, which is what \`months\` is bounded for.
     """
-    staffRevenue(months: Int! = 3): [StaffRevenueMonth!]!
+    staffRevenue(months: Int! = 3): StaffRevenue!
   }
 
   extend type Mutation {
