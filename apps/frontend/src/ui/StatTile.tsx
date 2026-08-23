@@ -18,8 +18,10 @@ type StatTileProps = ComponentPropsWithRef<"div"> & {
   color: StatTileColor;
   label: string;
   value: number | null | undefined;
-  /** `currency` renders US dollars — the currency Argos reports revenue in. */
+  /** `currency` renders money, US dollars unless `currency` says otherwise. */
   format?: "number" | "percent" | "currency";
+  /** ISO code for `format="currency"` — the staff pages price in USD, the revenue page in EUR. */
+  currency?: string;
   hint?: React.ReactNode;
   visual?: React.ReactNode;
 };
@@ -37,6 +39,7 @@ export function StatTile({
   label,
   value,
   format = "number",
+  currency = "USD",
   hint,
   visual,
   ...rest
@@ -71,7 +74,7 @@ export function StatTile({
               value={value}
               format={{
                 style: "currency",
-                currency: "USD",
+                currency,
                 maximumFractionDigits: 0,
               }}
             />

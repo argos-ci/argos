@@ -11,16 +11,30 @@ type StaffRevenueSplit = {
   revenue: number;
   teamsCount: number;
   /**
-   * The part of `revenue` invoiced in a currency other than US dollars, added
-   * in at parity.
+   * The part of `revenue` invoiced in a currency other than euros, converted
+   * at the page's fixed rate.
    *
-   * Stripe states each invoice in the currency it was raised in, and converting
-   * one into another needs a rate on the day, which nothing here has. So a euro
-   * invoice is counted as though it were dollars — the rule the staff pages
-   * already print amounts under — and this says how much of the figure rests on
-   * that, which is the only honest thing to do short of an exchange rate.
+   * Stripe states each invoice in the currency it was raised in; dollars are
+   * brought into euros at `EUR_PER_USD`, which is fixed rather than the day's
+   * rate — so this says how much of the figure rests on that conversion.
    */
   foreignRevenue: number;
+};
+
+/** What one team was invoiced over a month, one line of the breakdown. */
+type StaffRevenueMonthTeam = {
+  /** The team's slug, which names its pages. */
+  slug: string;
+  /** The team's display name, when it has one. */
+  name: string | null;
+  /** The Stripe customer the invoices were raised on. */
+  stripeCustomerId: string;
+  /** What the invoices add up to, in `currency`. */
+  amount: number;
+  /** The currency the team is invoiced in — null when a month mixes several. */
+  currency: string | null;
+  /** In euros, like the split it sums into. */
+  revenue: number;
 };
 
 /** What Argos billed over one calendar month. */
@@ -31,6 +45,8 @@ type StaffRevenueMonth = {
   revenue: number;
   /** What teams billed by the month were invoiced that month. */
   monthlyPlans: StaffRevenueSplit;
+  /** The teams behind `monthlyPlans`, largest first — they sum to it. */
+  teams: StaffRevenueMonthTeam[];
   /**
    * What the annual contracts in force are worth per month: their latest
    * renewal over twelve.
@@ -75,16 +91,38 @@ const MONTHS_PER_YEAR = 12;
  */
 const MAX_CONCURRENT_REQUESTS = 8;
 
-/** The currency every amount on the staff pages is printed in. */
-const REPORTING_CURRENCY = "usd";
+/** The currency every amount on this page is stated in. */
+const REPORTING_CURRENCY = "eur";
+
+/**
+ * Euros per dollar.
+ *
+ * Fixed rather than fetched: the business is run in euros and this page steers
+ * it, so the figures should move with the book, not with the market — and an
+ * approximate total in the right currency beats an exact one in the wrong one.
+ * ECB said 0.855 on 2026-08-21; update it when the market drifts too far.
+ */
+const EUR_PER_USD = 0.855;
+
+/**
+ * What GitHub Marketplace brings in a month, in dollars, gross of the 5%
+ * GitHub keeps.
+ *
+ * A constant rather than a lookup: the marketplace book is a handful of teams
+ * and barely moves, and GitHub exposes no invoice API to read it from — copy
+ * the statement's total here when it changes. From the 2026-05 statement.
+ */
+const GITHUB_MARKETPLACE_MONTHLY_USD = 1540;
 
 /**
  * Why Stripe raised an invoice, for the ones that are a subscription being
- * billed rather than something invoiced on the side.
+ * billed.
  *
- * A one-off invoice or an accepted quote is revenue, but it is not what a
- * column headed by a billing interval reports — and a customer of the Stripe
- * account that is not an Argos team has no business in this page at all.
+ * Not the whole story for the monthly walk: the odd legacy or partner deal is
+ * billed by hand, month after month, and those invoices carry the sales-led
+ * reasons below instead. The walk takes both; what stays out is `upcoming` —
+ * a preview, not an invoice — and pending-item sweeps, which duplicate what
+ * the cycle will bill.
  */
 const SUBSCRIPTION_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
   "subscription",
@@ -109,10 +147,11 @@ const DAY_SECONDS = 24 * 3600;
 /**
  * The reasons an invoice is raised by a person rather than by a billing cycle.
  *
- * Sales-led contracts are billed this way — a dashboard invoice or an accepted
- * quote, often carried by no subscription at all — and their line periods are
- * frequently missing or degenerate, so they cannot be recognized by coverage
- * the way cycle invoices can.
+ * Sales-led deals are billed this way — a dashboard invoice or an accepted
+ * quote, often carried by no subscription at all — whether the deal is an
+ * annual contract or a legacy team invoiced by hand every month. Their line
+ * periods are frequently missing or degenerate, so they cannot be recognized
+ * by coverage the way cycle invoices can.
  */
 const SALES_LED_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
   "manual",
@@ -193,8 +232,15 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
   }));
 }
 
+/** How a month's breakdown names a team. */
+type TeamCustomer = {
+  slug: string;
+  name: string | null;
+};
+
 /**
- * Every Stripe customer that is an Argos team, whether or not it still pays.
+ * Every Stripe customer that is an Argos team, whether or not it still pays,
+ * with what to call it on screen.
  *
  * Read over all team accounts rather than over the billed ones: a team that has
  * since churned keeps the invoices it was already sent, and a month it was
@@ -202,16 +248,23 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
  * comparison between two months exists to show. Personal accounts are left out,
  * so what they may have been invoiced never reaches a page about teams.
  */
-export async function getTeamCustomerIds(): Promise<Set<string>> {
+export async function getTeamCustomers(): Promise<Map<string, TeamCustomer>> {
   const rows = (await Account.query()
-    .select("stripeCustomerId")
+    .select("stripeCustomerId", "slug", "name")
     .whereNotNull("teamId")
     .whereNull("userId")
     .whereNotNull("stripeCustomerId")) as unknown as {
     stripeCustomerId: string;
+    slug: string;
+    name: string | null;
   }[];
 
-  return new Set(rows.map((row) => row.stripeCustomerId));
+  return new Map(
+    rows.map((row) => [
+      row.stripeCustomerId,
+      { slug: row.slug, name: row.name },
+    ]),
+  );
 }
 
 /** What one invoice contributed, in the currency it was raised in. */
@@ -254,6 +307,17 @@ export function getInvoiceRevenue(invoice: {
   };
 }
 
+/**
+ * An invoice's contribution in euros: dollars at the fixed rate, euros as
+ * they are. A currency this page does not know stays at parity — and lands in
+ * the foreign share, so the caveat covers it either way.
+ */
+export function toEuros(revenue: InvoiceRevenue): number {
+  return revenue.currency === "usd"
+    ? revenue.amount * EUR_PER_USD
+    : revenue.amount;
+}
+
 function createSplit(): StaffRevenueSplit {
   return { revenue: 0, teamsCount: 0, foreignRevenue: 0 };
 }
@@ -263,15 +327,17 @@ function createMonth(month: Date): StaffRevenueMonth {
     month,
     revenue: 0,
     monthlyPlans: createSplit(),
+    teams: [],
     yearlyPlans: createSplit(),
   };
 }
 
-/** Add one invoice to a split, tracking what of it was not in dollars. */
+/** Add one invoice to a split, in euros, tracking what was converted. */
 function addToSplit(split: StaffRevenueSplit, revenue: InvoiceRevenue): void {
-  split.revenue += revenue.amount;
+  const amount = toEuros(revenue);
+  split.revenue += amount;
   if (revenue.currency !== REPORTING_CURRENCY) {
-    split.foreignRevenue += revenue.amount;
+    split.foreignRevenue += amount;
   }
 }
 
@@ -334,15 +400,16 @@ type StaffYearlyContract = {
   /** The subscription the database knows the contract by. */
   stripeSubscriptionId: string;
   /**
-   * The invoices below, added up. Null when none was found, in which case the
-   * contract adds nothing to the rate.
+   * The invoices below added up, in euros. Null when none was found, in which
+   * case the contract adds nothing to the rate.
    */
   amount: number | null;
   /** The invoices the contract is worth, newest first. */
   invoices: StaffContractInvoice[];
   /**
-   * True when the invoices found are still awaiting payment. Shown, so a
-   * contract in collection is visible, but counted nothing until they clear.
+   * True when the invoices found are still awaiting payment. Counted all the
+   * same — a contract invoice raised is money on its way — and flagged, so
+   * collection can be watched.
    */
   awaitingPayment: boolean;
 };
@@ -499,7 +566,7 @@ async function getYearlyContracts(
       stripeSubscriptionId: team.stripeSubscriptionId,
       amount:
         invoices.length > 0
-          ? invoices.reduce((sum, invoice) => sum + invoice.amount, 0)
+          ? invoices.reduce((sum, invoice) => sum + toEuros(invoice), 0)
           : null,
       invoices,
       awaitingPayment,
@@ -527,7 +594,7 @@ function getYearlyRate(contracts: StaffYearlyContract[]): StaffRevenueSplit {
   const split = createSplit();
 
   for (const contract of contracts) {
-    if (contract.invoices.length === 0 || contract.awaitingPayment) {
+    if (contract.invoices.length === 0) {
       continue;
     }
     // Invoice by invoice rather than off the summed amount, so a contract
@@ -557,13 +624,13 @@ async function readMonth(options: {
   from: Date;
   to: Date;
   /** Customers that are Argos teams — everything else is not this page's. */
-  teamCustomerIds: Set<string>;
+  teamCustomers: Map<string, TeamCustomer>;
   /** Yearly contracts are reported as a rate, so their invoices are skipped. */
   yearlyCustomerIds: Set<string>;
-}): Promise<StaffRevenueSplit> {
-  const { from, to, teamCustomerIds, yearlyCustomerIds } = options;
+}): Promise<{ split: StaffRevenueSplit; teams: StaffRevenueMonthTeam[] }> {
+  const { from, to, teamCustomers, yearlyCustomerIds } = options;
   const split = createSplit();
-  const customerIds = new Set<string>();
+  const byCustomer = new Map<string, StaffRevenueMonthTeam>();
   let count = 0;
 
   for await (const invoice of stripe.invoices.list({
@@ -585,7 +652,8 @@ async function readMonth(options: {
       typeof invoice.customer === "string"
         ? invoice.customer
         : invoice.customer?.id;
-    if (!customerId || !teamCustomerIds.has(customerId)) {
+    const team = customerId ? teamCustomers.get(customerId) : undefined;
+    if (!customerId || !team) {
       continue;
     }
     if (yearlyCustomerIds.has(customerId)) {
@@ -593,18 +661,47 @@ async function readMonth(options: {
     }
     if (
       invoice.billing_reason === null ||
-      !SUBSCRIPTION_BILLING_REASONS.has(invoice.billing_reason)
+      (!SUBSCRIPTION_BILLING_REASONS.has(invoice.billing_reason) &&
+        !SALES_LED_BILLING_REASONS.has(invoice.billing_reason))
     ) {
       continue;
     }
 
-    addToSplit(split, getInvoiceRevenue(invoice));
-    // A team invoiced twice in one month is one team.
-    customerIds.add(customerId);
+    const revenue = getInvoiceRevenue(invoice);
+    // A zero invoice — a usage month under the quota, the opening of a
+    // sales-created subscription — is not a team being invoiced: it would fill
+    // the breakdown with empty lines and dilute the per-team average.
+    if (revenue.amount === 0) {
+      continue;
+    }
+    addToSplit(split, revenue);
+
+    // A team invoiced twice in one month is one team, one line deeper.
+    let row = byCustomer.get(customerId);
+    if (!row) {
+      row = {
+        slug: team.slug,
+        name: team.name,
+        stripeCustomerId: customerId,
+        amount: 0,
+        currency: revenue.currency,
+        revenue: 0,
+      };
+      byCustomer.set(customerId, row);
+    }
+    row.amount += revenue.amount;
+    if (row.currency !== revenue.currency) {
+      // Mixed currencies make the original sum meaningless; the euro figure
+      // still holds.
+      row.currency = null;
+    }
+    row.revenue += toEuros(revenue);
   }
 
-  split.teamsCount = customerIds.size;
-  return split;
+  split.teamsCount = byCustomer.size;
+  // Largest first: the breakdown is read to see who made the month.
+  const teams = [...byCustomer.values()].sort((a, b) => b.revenue - a.revenue);
+  return { split, teams };
 }
 
 /** What Argos invoiced, and the annual contracts behind the yearly rate. */
@@ -613,6 +710,11 @@ export type StaffRevenue = {
   months: StaffRevenueMonth[];
   /** The contracts behind every month's `yearlyPlans`, largest first. */
   yearlyContracts: StaffYearlyContract[];
+  /**
+   * What GitHub Marketplace brings in a month, in euros, gross. A stated
+   * constant, not a reading — see `GITHUB_MARKETPLACE_MONTHLY_USD`.
+   */
+  githubMarketplaceMonthlyRevenue: number;
 };
 
 /**
@@ -645,9 +747,9 @@ export async function getStaffRevenue(
     startOfUTCMonth(now, index - monthCount + 1),
   );
 
-  const [teams, teamCustomerIds] = await Promise.all([
+  const [teams, teamCustomers] = await Promise.all([
     getBilledTeams(),
-    getTeamCustomerIds(),
+    getTeamCustomers(),
   ]);
   const yearlyCustomerIds = new Set(
     teams
@@ -664,7 +766,7 @@ export async function getStaffRevenue(
         invariant(to, "every month reported has a bound");
         return { from, to };
       }),
-      (window) => readMonth({ ...window, teamCustomerIds, yearlyCustomerIds }),
+      (window) => readMonth({ ...window, teamCustomers, yearlyCustomerIds }),
     ),
   ]);
   const yearlyRate = getYearlyRate(yearlyContracts);
@@ -673,13 +775,21 @@ export async function getStaffRevenue(
     const month = createMonth(start);
     const total = totals[index];
     invariant(total, "every month reported has totals");
-    month.monthlyPlans = total;
+    month.monthlyPlans = total.split;
+    month.teams = total.teams;
     // Copied rather than shared: one object held by every month is one object
     // a later change can mutate for all of them at once.
     month.yearlyPlans = { ...yearlyRate };
-    month.revenue = total.revenue + yearlyRate.revenue;
+    month.revenue = total.split.revenue + yearlyRate.revenue;
     return month;
   });
 
-  return { months, yearlyContracts };
+  return {
+    months,
+    yearlyContracts,
+    githubMarketplaceMonthlyRevenue: toEuros({
+      amount: GITHUB_MARKETPLACE_MONTHLY_USD,
+      currency: "usd",
+    }),
+  };
 }
