@@ -757,6 +757,22 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
         totalExcludingTax: 100_000,
         creditedAmountExcludingTax: 0,
       },
+      // The month before, so the month after it has something to compare
+      // against — without it every row's change is an em dash and the column
+      // is never rendered at all.
+      {
+        stripeInvoiceId: `in_${prefix}-kruger-before`,
+        stripeCustomerId: `cus_${prefix}-kruger`,
+        stripeCreatedAt: new Date(
+          startOfUTCMonth(-2).getTime() + 5 * 24 * 3600 * 1000,
+        ).toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 100_000,
+        totalExcludingTax: 100_000,
+        creditedAmountExcludingTax: 0,
+      },
       // The running month, so the second card has something partial to report.
       {
         stripeInvoiceId: `in_${prefix}-kruger-running`,
@@ -833,6 +849,9 @@ revenueTest("staff revenue", async ({ page, revenueBook }) => {
   // contract, and not the churned team's renewal, whose only mark of being a
   // year's worth is the period on the invoice itself.
   await expect(lastMonthRow.getByText("€678")).toBeVisible();
+  // €1,000 the month before, so the column reports the climb rather than the
+  // em dash it falls back to with nothing to divide by.
+  await expect(lastMonthRow.getByText("+36%")).toBeVisible();
 
   await lastMonthRow.getByRole("button", { name: "View details" }).click();
   const breakdown = monthlyPlans.locator("tbody tr").nth(2);

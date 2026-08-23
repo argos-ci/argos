@@ -553,6 +553,11 @@ function HistoryRow(props: {
     before && !isCurrent
       ? getGrowth(month.monthlyPlans.revenue, before.monthlyPlans.revenue)
       : null;
+  // Rounded before it is read, so a move too small to print cannot come out
+  // coloured one way and signed another: a fifth of a percent down rounds to
+  // a flat 0%, where the raw figure would have painted that zero red. The
+  // `|| 0` is what turns `Math.round`'s negative zero back into a zero.
+  const percent = growth === null ? null : Math.round(growth * 100) || 0;
 
   return (
     <>
@@ -575,14 +580,14 @@ function HistoryRow(props: {
           {formatEuros(month.monthlyPlans.revenue)}
         </td>
         <td className="p-4 text-right text-sm tabular-nums">
-          {growth === null ? (
+          {percent === null ? (
             <span className="text-low">—</span>
           ) : (
             <span
-              className={growth < 0 ? "text-danger-low" : "text-success-low"}
+              className={percent < 0 ? "text-danger-low" : "text-success-low"}
             >
-              {growth > 0 ? "+" : ""}
-              {Math.round(growth * 100)}%
+              {percent > 0 ? "+" : ""}
+              {percent}%
             </span>
           )}
         </td>
