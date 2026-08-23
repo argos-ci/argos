@@ -27,10 +27,16 @@ export function DetailToolbarNav(props: { children: React.ReactNode }) {
 }
 
 /**
- * What is on screen, named. Takes the space the controls leave and gives it
- * back — a long name truncates rather than pushing them off the row, but only
- * down to `min-w-40`: past that the row wraps instead, because a heading
- * squeezed to two syllables names nothing.
+ * What is on screen, named. Takes the space the rest of the row leaves and
+ * gives it back, so a long name clamps to two lines rather than pushing
+ * anything off.
+ *
+ * It asks for `basis-88` rather than the `flex-1` this used to be, because a
+ * flex line is broken up on base sizes: at `flex-basis: 0` the name counts for
+ * nothing, so the row never wraps on its account and hands it whatever is left
+ * — which, next to a full set of variant chips, was two crushed syllables. A
+ * real basis makes the row wrap the chips down to their own line instead, and
+ * the name still grows into any space they leave.
  *
  * `heading` rather than an `h1` element: the slot is used on pages that already
  * have one, and the level is stated explicitly rather than inferred.
@@ -58,7 +64,10 @@ export function DetailToolbarTitle(props: {
   );
   return (
     <div
-      className={clsx("flex min-w-40 flex-1", meta && "items-baseline gap-2")}
+      className={clsx(
+        "flex min-w-0 shrink grow basis-88",
+        meta && "items-baseline gap-2",
+      )}
     >
       {render ? render(title) : title}
       {meta ? (
