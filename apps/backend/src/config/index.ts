@@ -5,11 +5,16 @@ import {
   resolveFromPackageRoot,
   resolveFromRepositoryRoot,
 } from "../util/paths";
+import { assertSafeDataTarget } from "./data-target";
 import { loadDatabaseConfigFromURL } from "./database-url";
 
 const rootDotEnvPath = resolveFromRepositoryRoot(".env");
 
-if (rootDotEnvPath) {
+// Under ARGOS_TARGET=prod-ro the process reads production data, so the
+// developer's `.env` (dev-app secrets, API keys…) must not bleed into it:
+// everything that mode needs is injected explicitly by
+// `op run --env-file=.env.prod-ro` (see `pnpm run dev:prod-ro`).
+if (rootDotEnvPath && process.env["ARGOS_TARGET"] !== "prod-ro") {
   dotenv.config({
     path: rootDotEnvPath,
     quiet: true,
@@ -56,6 +61,12 @@ export function createConfig() {
       format: ["production", "development", "test"],
       default: "development",
       env: "NODE_ENV",
+    },
+    target: {
+      doc: "Which data the process points at. `prod-ro` runs local development against the production database through the read-only `argos_dev_ro` role and arms the guardrails: worker and migrations refuse to run, queues must be local, write-capable third-party credentials must be absent.",
+      format: ["local", "prod-ro"],
+      default: "local",
+      env: "ARGOS_TARGET",
     },
     logLevel: {
       doc: "Log level",
@@ -555,6 +566,12 @@ export function createConfig() {
           format: Number,
           default: 5432,
         },
+        iamAuth: {
+          doc: "Authenticate with short-lived RDS IAM tokens instead of a password. The Postgres role must have `rds_iam` granted, and the process needs AWS credentials (e.g. `aws sso login`).",
+          format: Boolean,
+          default: false,
+          env: "PG_IAM_AUTH",
+        },
       },
     },
     discord: {
@@ -692,6 +709,36 @@ export function createConfig() {
   }
 
   config.validate();
+
+  // Credentials that write *outside* Postgres, so the read-only role cannot
+  // fence them. "Set" means overridden from the schema default.
+  const writeCapableSecrets = (
+    [
+      ["RESEND_API_KEY", "resend.apiKey"],
+      ["STRIPE_API_KEY", "stripe.apiKey"],
+      ["GITHUB_APP_PRIVATE_KEY", "github.privateKey"],
+      ["GITHUB_CLIENT_SECRET", "github.clientSecret"],
+      ["GITHUB_LIGHT_APP_PRIVATE_KEY", "githubLight.privateKey"],
+      ["ORIGIN_APP_PRIVATE_KEY", "origin.privateKey"],
+      ["GITLAB_APP_SECRET", "gitlab.appSecret"],
+      ["GOOGLE_CLIENT_SECRET", "google.clientSecret"],
+      ["SLACK_CLIENT_SECRET", "slack.clientSecret"],
+      ["SLACK_SIGNING_SECRET", "slack.signingSecret"],
+      ["DISCORD_WEBHOOK_URL", "discord.webhookUrl"],
+    ] as const
+  )
+    .filter(([, path]) => config.get(path) !== config.default(path))
+    .map(([name]) => name);
+
+  assertSafeDataTarget({
+    target: config.get("target"),
+    env: config.get("env"),
+    pgHost: config.get("pg.connection.host"),
+    pgUser: config.get("pg.connection.user"),
+    redisUrl: config.get("redis.url"),
+    amqpUrl: config.get("amqp.url"),
+    writeCapableSecrets,
+  });
 
   return config;
 }

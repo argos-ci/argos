@@ -28,6 +28,12 @@ const createServer = (requestListener: RequestListener): Server => {
   return createHttpServer(requestListener);
 };
 
+if (config.get("target") === "prod-ro") {
+  logger.warn(
+    "⚠ ARGOS_TARGET=prod-ro — this process reads PRODUCTION data. Postgres writes are limited to the login flow; worker, migrations and third-party credentials are disabled.",
+  );
+}
+
 const app = await createApp();
 const server = createServer(app);
 
