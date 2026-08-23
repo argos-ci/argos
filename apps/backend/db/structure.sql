@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\restrict 0KSt2lgqlUkuV5WztXjn0UKwvjseeNWDsiTBs6oXqUIRWNnt2ilIvBUPJI6zJbU
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -498,8 +498,8 @@ CREATE TABLE public.build_shards (
     "updatedAt" timestamp with time zone NOT NULL,
     "buildId" bigint NOT NULL,
     index integer,
-    nonce character varying(255),
-    metadata jsonb
+    metadata jsonb,
+    nonce character varying(255)
 );
 
 
@@ -1059,7 +1059,7 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id bigint NOT NULL,
+    id integer NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
@@ -1465,7 +1465,7 @@ CREATE TABLE public.media (
     visibility character varying(255) DEFAULT 'team'::character varying NOT NULL,
     "shareToken" character varying(255) NOT NULL,
     branch character varying(255),
-    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY (ARRAY[('before'::character varying)::text, ('after'::character varying)::text]))))
+    CONSTRAINT media_state_check CHECK (((state IS NULL) OR ((state)::text = ANY ((ARRAY['before'::character varying, 'after'::character varying])::text[]))))
 );
 
 
@@ -2083,7 +2083,7 @@ CREATE TABLE public.plans (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    "includedScreenshots" integer NOT NULL,
+    "includedScreenshots" integer CONSTRAINT "plans_screenshotsLimitPerMonth_not_null" NOT NULL,
     "githubPlanId" integer,
     "stripeProductId" character varying(255),
     "usageBased" boolean NOT NULL,
@@ -2216,12 +2216,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
+    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
-    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     "buildNumber" integer DEFAULT 0 NOT NULL,
     "originRepositoryId" bigint,
@@ -2538,6 +2538,54 @@ ALTER SEQUENCE public.staff_team_contacts_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.staff_team_contacts_id_seq OWNED BY public.staff_team_contacts.id;
+
+
+--
+-- Name: stripe_invoices; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.stripe_invoices (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "stripeInvoiceId" character varying(255) NOT NULL,
+    "stripeCustomerId" character varying(255) NOT NULL,
+    "stripeSubscriptionId" character varying(255),
+    "stripeCreatedAt" timestamp with time zone NOT NULL,
+    status character varying(255) NOT NULL,
+    "billingReason" character varying(255),
+    currency character varying(255) NOT NULL,
+    total integer NOT NULL,
+    "totalExcludingTax" integer,
+    "totalTaxesAmount" integer,
+    "prePaymentCreditNotesAmount" integer NOT NULL,
+    "postPaymentCreditNotesAmount" integer NOT NULL,
+    "periodStart" timestamp with time zone,
+    "periodEnd" timestamp with time zone
+);
+
+
+ALTER TABLE public.stripe_invoices OWNER TO postgres;
+
+--
+-- Name: stripe_invoices_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.stripe_invoices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.stripe_invoices_id_seq OWNER TO postgres;
+
+--
+-- Name: stripe_invoices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.stripe_invoices_id_seq OWNED BY public.stripe_invoices.id;
 
 
 --
@@ -3490,6 +3538,13 @@ ALTER TABLE ONLY public.staff_team_contacts ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: stripe_invoices id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices ALTER COLUMN id SET DEFAULT nextval('public.stripe_invoices_id_seq'::regclass);
+
+
+--
 -- Name: subscriptions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4350,6 +4405,22 @@ ALTER TABLE ONLY public.staff_team_contacts
 
 
 --
+-- Name: stripe_invoices stripe_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices
+    ADD CONSTRAINT stripe_invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stripe_invoices stripe_invoices_stripeinvoiceid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices
+    ADD CONSTRAINT stripe_invoices_stripeinvoiceid_unique UNIQUE ("stripeInvoiceId");
+
+
+--
 -- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4555,6 +4626,22 @@ ALTER TABLE ONLY public.user_sessions
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT user_sessions_tokenhash_unique UNIQUE ("tokenHash");
+
+
+--
+-- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+
+--
+-- Name: users users_gitlabuserid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_gitlabuserid_unique UNIQUE ("gitlabUserId");
 
 
 --
@@ -5330,6 +5417,20 @@ CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING bt
 --
 
 CREATE INDEX screenshots_testid_index ON public.screenshots USING btree ("testId");
+
+
+--
+-- Name: stripe_invoices_stripecreatedat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX stripe_invoices_stripecreatedat_index ON public.stripe_invoices USING btree ("stripeCreatedAt");
+
+
+--
+-- Name: stripe_invoices_stripecustomerid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX stripe_invoices_stripecustomerid_index ON public.stripe_invoices USING btree ("stripeCustomerId");
 
 
 --
@@ -6528,7 +6629,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\unrestrict 0KSt2lgqlUkuV5WztXjn0UKwvjseeNWDsiTBs6oXqUIRWNnt2ilIvBUPJI6zJbU
 
 -- Knex migrations
 
@@ -6779,3 +6880,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818083531_cursor-origin.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823065836_stripe-invoices.js', 1, NOW());

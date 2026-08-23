@@ -1,8 +1,14 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getBilledTeams, getTeamCustomers } from "./revenue";
+import {
+  getBilledTeams,
+  getStaffRevenue,
+  getTeamCustomers,
+  startOfUTCMonth,
+} from "./revenue";
 
 describe("getBilledTeams", () => {
   beforeEach(async () => {
@@ -157,5 +163,183 @@ describe("getTeamCustomers", () => {
     await factory.TeamAccount.create({ stripeCustomerId: null });
 
     await expect(getTeamCustomers()).resolves.toEqual(new Map());
+  });
+});
+
+describe("getStaffRevenue", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  let sequence = 0;
+
+  /** A team billed through Stripe, with the subscription the reader expects. */
+  async function createBilledTeam(options: {
+    interval: "month" | "year";
+    stripeCustomerId: string;
+  }) {
+    sequence += 1;
+    const plan = await factory.Plan.create({
+      usageBased: true,
+      interval: options.interval,
+      includedScreenshots: 1000,
+    });
+    const account = await factory.TeamAccount.create({
+      stripeCustomerId: options.stripeCustomerId,
+    });
+    const user = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: account.id,
+      planId: plan.id,
+      currency: "usd",
+      provider: "stripe",
+      stripeSubscriptionId: `sub_staff_revenue_${sequence}`,
+      subscriberId: user.id,
+      startDate: new Date("2021-01-01").toISOString(),
+      status: "active",
+    });
+    return account;
+  }
+
+  it("refuses to report from an empty mirror", async () => {
+    // Zeros from a mirror nobody backfilled would read as real figures.
+    await expect(getStaffRevenue(2)).rejects.toThrow(/mirror is empty/);
+  });
+
+  it("reports the window from the mirror, split by interval", async () => {
+    const now = new Date();
+    const lastMonth = new Date(
+      startOfUTCMonth(now, -1).getTime() + 5 * 24 * 3600 * 1000,
+    );
+
+    const monthly = await createBilledTeam({
+      interval: "month",
+      stripeCustomerId: "cus_staff_monthly",
+    });
+    await createBilledTeam({
+      interval: "year",
+      stripeCustomerId: "cus_staff_yearly",
+    });
+    // A churned team keeps the invoices it was already sent.
+    const churned = await factory.TeamAccount.create({
+      stripeCustomerId: "cus_staff_churned",
+    });
+
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_monthly",
+      stripeCreatedAt: lastMonth.toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 50_000,
+      totalExcludingTax: 50_000,
+    });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_monthly",
+      stripeCreatedAt: now.toISOString(),
+      billingReason: "manual",
+      currency: "eur",
+      total: 10_000,
+      totalExcludingTax: 10_000,
+    });
+    // A zero invoice is not a team being invoiced.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_monthly",
+      stripeCreatedAt: lastMonth.toISOString(),
+      currency: "eur",
+      total: 0,
+      totalExcludingTax: 0,
+    });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_churned",
+      stripeCreatedAt: lastMonth.toISOString(),
+      billingReason: "manual",
+      currency: "eur",
+      total: 20_000,
+      totalExcludingTax: 20_000,
+    });
+    // Not an Argos team: not this page's.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_random",
+      stripeCreatedAt: lastMonth.toISOString(),
+      currency: "eur",
+      total: 99_900,
+      totalExcludingTax: 99_900,
+    });
+    // The annual contract, covering today.
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_yearly",
+      stripeCreatedAt: startOfUTCMonth(now, -6).toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 120_000,
+      totalExcludingTax: 120_000,
+      periodStart: startOfUTCMonth(now, -6).toISOString(),
+      periodEnd: startOfUTCMonth(now, 6).toISOString(),
+    });
+
+    const result = await getStaffRevenue(2);
+
+    expect(result.months).toHaveLength(2);
+    const [last, current] = result.months;
+    invariant(last && current);
+
+    expect(last.monthlyPlans).toEqual({
+      revenue: 700,
+      teamsCount: 2,
+      foreignRevenue: 0,
+    });
+    expect(last.teams.map((team) => [team.slug, team.revenue])).toEqual([
+      [monthly.slug, 500],
+      [churned.slug, 200],
+    ]);
+    expect(last.yearlyPlans).toEqual({
+      revenue: 100,
+      teamsCount: 1,
+      foreignRevenue: 0,
+    });
+    expect(last.revenue).toBe(800);
+
+    expect(current.monthlyPlans.revenue).toBe(100);
+    expect(current.teams).toHaveLength(1);
+
+    expect(result.yearlyContracts).toHaveLength(1);
+    const contract = result.yearlyContracts[0];
+    invariant(contract);
+    expect(contract.amount).toBe(1200);
+    expect(contract.awaitingPayment).toBe(false);
+    expect(contract.invoices).toHaveLength(1);
+  });
+
+  it("reports an open annual invoice as awaiting payment, counted", async () => {
+    const now = new Date();
+    await createBilledTeam({
+      interval: "year",
+      stripeCustomerId: "cus_staff_open",
+    });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_open",
+      stripeCreatedAt: now.toISOString(),
+      status: "open",
+      billingReason: "manual",
+      currency: "eur",
+      total: 120_000,
+      totalExcludingTax: 120_000,
+      periodStart: startOfUTCMonth(now, 0).toISOString(),
+      periodEnd: startOfUTCMonth(now, 12).toISOString(),
+    });
+
+    const result = await getStaffRevenue(1);
+
+    const contract = result.yearlyContracts[0];
+    invariant(contract);
+    expect(contract.amount).toBe(1200);
+    expect(contract.awaitingPayment).toBe(true);
+    const month = result.months[0];
+    invariant(month);
+    expect(month.yearlyPlans).toEqual({
+      revenue: 100,
+      teamsCount: 1,
+      foreignRevenue: 0,
+    });
   });
 });

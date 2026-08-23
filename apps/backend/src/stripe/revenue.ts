@@ -1,10 +1,6 @@
 import { invariant } from "@argos/util/invariant";
-import type Stripe from "stripe";
 
-import config from "@/config";
-import { Account, Subscription } from "@/database/models";
-
-import { stripe } from "./index";
+import { Account, StripeInvoice, Subscription } from "@/database/models";
 
 /** What the teams on one billing interval contributed to a month. */
 type StaffRevenueSplit = {
@@ -58,38 +54,11 @@ type StaffRevenueMonth = {
   yearlyPlans: StaffRevenueSplit;
 };
 
-/**
- * Upper bound on the window one call will read.
- *
- * Every month is a walk of its own, so the cost grows with the count asked for.
- */
+/** Upper bound on the window one call will read. */
 export const MAX_MONTHS = 24;
-
-/**
- * Upper bound on the invoices one month's walk will read.
- *
- * Reached means a month holds more than this service can read in the time a
- * page will wait, and the answer is to stop reading Stripe on every request —
- * not to report the total of however many invoices happened to fit, which would
- * read as a complete figure while silently missing the rest.
- */
-const MAX_INVOICES_PER_MONTH = 2000;
-
-/** Page size, which is also Stripe's maximum. */
-const PAGE_SIZE = 100;
 
 /** Months a yearly contract is spread over. */
 const MONTHS_PER_YEAR = 12;
-
-/**
- * Requests in flight at once.
- *
- * The months and the annual contracts are all independent, so nothing here
- * needs to wait — but Stripe rate-limits per account and the client is built
- * without retries, so an unbounded fan-out turns a wide account into a 429 that
- * fails the whole page.
- */
-const MAX_CONCURRENT_REQUESTS = 8;
 
 /** The currency every amount on this page is stated in. */
 const REPORTING_CURRENCY = "eur";
@@ -118,13 +87,13 @@ const GITHUB_MARKETPLACE_MONTHLY_USD = 1540;
  * Why Stripe raised an invoice, for the ones that are a subscription being
  * billed.
  *
- * Not the whole story for the monthly walk: the odd legacy or partner deal is
- * billed by hand, month after month, and those invoices carry the sales-led
- * reasons below instead. The walk takes both; what stays out is `upcoming` —
+ * Not the whole story for the monthly figures: the odd legacy or partner deal
+ * is billed by hand, month after month, and those invoices carry the sales-led
+ * reasons below instead. The reader takes both; what stays out is `upcoming` —
  * a preview, not an invoice — and pending-item sweeps, which duplicate what
  * the cycle will bill.
  */
-const SUBSCRIPTION_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
+const SUBSCRIPTION_BILLING_REASONS = new Set<string>([
   "subscription",
   "subscription_create",
   "subscription_cycle",
@@ -133,33 +102,27 @@ const SUBSCRIPTION_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
 ]);
 
 /**
- * A line covering at least this long reads as a year's bill.
+ * A period covering at least this long reads as a year's bill.
  *
  * Under a full year on purpose: an annual invoice raised a few weeks into the
  * period it covers, or prorated at conversion, still has to read as the
  * contract — where a monthly cycle or a one-month true-up never comes close.
  */
-const ANNUAL_PERIOD_SECONDS = 300 * 24 * 3600;
+const ANNUAL_PERIOD_MS = 300 * 24 * 3600 * 1000;
 
-/** A day, under which a line's period is a bookkeeping point, not coverage. */
-const DAY_SECONDS = 24 * 3600;
+/** A day, under which a period is a bookkeeping point, not coverage. */
+const DAY_MS = 24 * 3600 * 1000;
 
 /**
  * The reasons an invoice is raised by a person rather than by a billing cycle.
  *
  * Sales-led deals are billed this way — a dashboard invoice or an accepted
  * quote, often carried by no subscription at all — whether the deal is an
- * annual contract or a legacy team invoiced by hand every month. Their line
+ * annual contract or a legacy team invoiced by hand every month. Their
  * periods are frequently missing or degenerate, so they cannot be recognized
  * by coverage the way cycle invoices can.
  */
-const SALES_LED_BILLING_REASONS = new Set<Stripe.Invoice.BillingReason>([
-  "manual",
-  "quote_accept",
-]);
-
-/** The placeholder the config falls back to when no key is configured. */
-const MISSING_API_KEY = "no-api-key";
+const SALES_LED_BILLING_REASONS = new Set<string>(["manual", "quote_accept"]);
 
 /** A team Argos bills through Stripe, and how it is billed. */
 type BilledTeam = {
@@ -271,7 +234,8 @@ export async function getTeamCustomers(): Promise<Map<string, TeamCustomer>> {
 export type InvoiceRevenue = { amount: number; currency: string };
 
 /**
- * What one invoice contributed to revenue, in the currency's main unit.
+ * What one mirrored invoice contributed to revenue, in the currency's main
+ * unit.
  *
  * Excluding tax, because VAT collected on behalf of a state is not revenue, and
  * net of credit notes, because an invoice refunded after the fact keeps its
@@ -281,24 +245,22 @@ export type InvoiceRevenue = { amount: number; currency: string };
 export function getInvoiceRevenue(invoice: {
   currency: string;
   total: number;
-  total_excluding_tax: number | null;
-  /** Only the amounts are read, so the rest of Stripe's shape is not asked for. */
-  total_taxes: { amount: number }[] | null;
-  pre_payment_credit_notes_amount: number;
-  post_payment_credit_notes_amount: number;
+  totalExcludingTax: number | null;
+  /** The listed taxes added up — the fallback when no pre-tax total exists. */
+  totalTaxesAmount: number | null;
+  prePaymentCreditNotesAmount: number;
+  postPaymentCreditNotesAmount: number;
 }): InvoiceRevenue {
-  // Null on invoices Stripe states no pre-tax total for. The taxes it lists are
-  // taken off the total instead, rather than letting the tax through as
+  // Null on invoices Stripe states no pre-tax total for. The taxes it listed
+  // are taken off the total instead, rather than letting the tax through as
   // revenue — falling back to `total` alone would overstate every invoice that
   // collected VAT, and say nothing about it.
   const excludingTax =
-    invoice.total_excluding_tax ??
-    invoice.total -
-      (invoice.total_taxes ?? []).reduce((sum, tax) => sum + tax.amount, 0);
+    invoice.totalExcludingTax ??
+    invoice.total - (invoice.totalTaxesAmount ?? 0);
 
   const credited =
-    invoice.pre_payment_credit_notes_amount +
-    invoice.post_payment_credit_notes_amount;
+    invoice.prePaymentCreditNotesAmount + invoice.postPaymentCreditNotesAmount;
 
   return {
     // Stripe states amounts in the currency's minor unit.
@@ -322,16 +284,6 @@ function createSplit(): StaffRevenueSplit {
   return { revenue: 0, teamsCount: 0, foreignRevenue: 0 };
 }
 
-function createMonth(month: Date): StaffRevenueMonth {
-  return {
-    month,
-    revenue: 0,
-    monthlyPlans: createSplit(),
-    teams: [],
-    yearlyPlans: createSplit(),
-  };
-}
-
 /** Add one invoice to a split, in euros, tracking what was converted. */
 function addToSplit(split: StaffRevenueSplit, revenue: InvoiceRevenue): void {
   const amount = toEuros(revenue);
@@ -353,29 +305,6 @@ export function startOfUTCMonth(date: Date, offset: number): Date {
   return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + offset, 1),
   );
-}
-
-/** Run `work` over `items`, never more than `MAX_CONCURRENT_REQUESTS` at once. */
-async function mapWithLimit<Item, Result>(
-  items: Item[],
-  work: (item: Item) => Promise<Result>,
-): Promise<Result[]> {
-  const results: Result[] = Array.from({ length: items.length });
-  let next = 0;
-
-  const runners = Array.from(
-    { length: Math.min(MAX_CONCURRENT_REQUESTS, items.length) },
-    async () => {
-      for (let index = next++; index < items.length; index = next++) {
-        const item = items[index];
-        invariant(item !== undefined, "index is inside the list");
-        results[index] = await work(item);
-      }
-    },
-  );
-
-  await Promise.all(runners);
-  return results;
 }
 
 /** One invoice a contract's worth is read from. */
@@ -414,28 +343,28 @@ type StaffYearlyContract = {
   awaitingPayment: boolean;
 };
 
-/** The parts of an invoice the contract picker reads. */
+/**
+ * The parts of a mirrored invoice the contract picker reads. The period is the
+ * longest stretch one of the invoice's lines covered, resolved at ingest.
+ */
 export type ContractInvoiceCandidate = {
-  billing_reason: Stripe.Invoice.BillingReason | null;
+  billingReason: string | null;
   total: number;
-  lines: { data: { period: { start: number; end: number } }[] };
+  periodStart: string | null;
+  periodEnd: string | null;
 };
 
-/** The longest stretch one of the invoice's lines covers, or null. */
+/** The stretch an invoice covers, in epoch milliseconds, or null. */
 function getCoveredPeriod(
   invoice: ContractInvoiceCandidate,
 ): { start: number; end: number } | null {
-  let longest: { start: number; end: number } | null = null;
-  for (const line of invoice.lines.data) {
-    if (
-      !longest ||
-      line.period.end - line.period.start > longest.end - longest.start
-    ) {
-      longest = line.period;
-    }
+  if (invoice.periodStart === null || invoice.periodEnd === null) {
+    return null;
   }
+  const start = new Date(invoice.periodStart).getTime();
+  const end = new Date(invoice.periodEnd).getTime();
   // A period under a day is a bookkeeping point, not coverage.
-  return longest && longest.end - longest.start >= DAY_SECONDS ? longest : null;
+  return end - start >= DAY_MS ? { start, end } : null;
 }
 
 /** Whether an invoice reads as a contract being billed. */
@@ -447,9 +376,9 @@ function isContractInvoice(invoice: ContractInvoiceCandidate): boolean {
   }
   const period = getCoveredPeriod(invoice);
   return (
-    (period !== null && period.end - period.start >= ANNUAL_PERIOD_SECONDS) ||
-    (invoice.billing_reason !== null &&
-      SALES_LED_BILLING_REASONS.has(invoice.billing_reason))
+    (period !== null && period.end - period.start >= ANNUAL_PERIOD_MS) ||
+    (invoice.billingReason !== null &&
+      SALES_LED_BILLING_REASONS.has(invoice.billingReason))
   );
 }
 
@@ -477,9 +406,7 @@ export function findContractInvoices<Invoice extends ContractInvoiceCandidate>(
 
   const annualIndex = contracts.findIndex((invoice) => {
     const period = getCoveredPeriod(invoice);
-    return (
-      period !== null && period.end - period.start >= ANNUAL_PERIOD_SECONDS
-    );
+    return period !== null && period.end - period.start >= ANNUAL_PERIOD_MS;
   });
   if (annualIndex === -1) {
     const newest = contracts[0];
@@ -500,19 +427,9 @@ export function findContractInvoices<Invoice extends ContractInvoiceCandidate>(
 }
 
 /**
- * One page is all a lookup reads — a hundred invoices of history is years for
- * any real customer.
- */
-const INVOICES_PER_CONTRACT_LOOKUP = 100;
-
-/**
  * The annual contracts in force, each with the invoices it is worth.
  *
- * One request per annual team rather than a year of invoices for everyone: an
- * annual contract is billed a handful of times a year at most, so its latest
- * contract invoices are what it is worth now.
- *
- * Listed by customer, not by subscription: an annual deal is not always billed
+ * Read by customer, not by subscription: an annual deal is not always billed
  * through the subscription the database knows. Sales-led contracts arrive as
  * dashboard or quote invoices carried by no subscription at all, and a team
  * converted to yearly mid-stream holds its contract on a `subscription_update`
@@ -528,35 +445,48 @@ async function getYearlyContracts(
   teams: BilledTeam[],
 ): Promise<StaffYearlyContract[]> {
   const yearlyTeams = teams.filter((team) => team.interval === "year");
+  if (yearlyTeams.length === 0) {
+    return [];
+  }
 
-  const contracts = await mapWithLimit(yearlyTeams, async (team) => {
-    const paid = await stripe.invoices.list({
-      customer: team.stripeCustomerId,
-      status: "paid",
-      limit: INVOICES_PER_CONTRACT_LOOKUP,
-    });
+  const rows = await StripeInvoice.query()
+    .whereIn(
+      "stripeCustomerId",
+      yearlyTeams.map((team) => team.stripeCustomerId),
+    )
+    .whereIn("status", ["paid", "open"])
+    .orderBy("stripeCreatedAt", "desc");
+
+  const byCustomer = new Map<string, StripeInvoice[]>();
+  for (const row of rows) {
+    let list = byCustomer.get(row.stripeCustomerId);
+    if (!list) {
+      list = [];
+      byCustomer.set(row.stripeCustomerId, list);
+    }
+    list.push(row);
+  }
+
+  const contracts = yearlyTeams.map((team) => {
+    const all = byCustomer.get(team.stripeCustomerId) ?? [];
     let awaitingPayment = false;
-    let found = findContractInvoices(paid.data);
+    let found = findContractInvoices(
+      all.filter((row) => row.status === "paid"),
+    );
     if (found.length === 0) {
-      const open = await stripe.invoices.list({
-        customer: team.stripeCustomerId,
-        status: "open",
-        limit: INVOICES_PER_CONTRACT_LOOKUP,
-      });
-      found = findContractInvoices(open.data);
+      found = findContractInvoices(all.filter((row) => row.status === "open"));
       awaitingPayment = found.length > 0;
     }
 
-    const invoices = found.map((invoice) => {
-      const revenue = getInvoiceRevenue(invoice);
-      const covered = getCoveredPeriod(invoice);
+    const invoices = found.map((row) => {
+      const revenue = getInvoiceRevenue(row);
+      const covered = getCoveredPeriod(row);
       return {
         amount: revenue.amount,
         currency: revenue.currency,
-        // Stripe timestamps in whole seconds.
-        invoicedAt: new Date(invoice.created * 1000),
-        coveredFrom: covered ? new Date(covered.start * 1000) : null,
-        coveredUntil: covered ? new Date(covered.end * 1000) : null,
+        invoicedAt: new Date(row.stripeCreatedAt),
+        coveredFrom: covered ? new Date(covered.start) : null,
+        coveredUntil: covered ? new Date(covered.end) : null,
       };
     });
 
@@ -612,96 +542,102 @@ function getYearlyRate(contracts: StaffYearlyContract[]): StaffRevenueSplit {
 }
 
 /**
- * Walk one month's invoices.
- *
- * A chain per month rather than one chain over the whole window, because
- * Stripe's pagination is a cursor: a page cannot be asked for until the one
- * before it has answered, so a single walk over a year is a year of round trips
- * end to end. Split by month they run at once, and each chain knows the bucket
- * its invoices belong to.
+ * Read the whole window's paid invoices from the mirror and file each into its
+ * calendar month — one query where the Stripe-reading version walked one
+ * paginated chain per month.
  */
-async function readMonth(options: {
-  from: Date;
-  to: Date;
+async function readMonths(options: {
+  /** The reported months' first instants, oldest first. */
+  starts: Date[];
+  /** One bound past the last month, closing its window. */
+  end: Date;
   /** Customers that are Argos teams — everything else is not this page's. */
   teamCustomers: Map<string, TeamCustomer>;
   /** Yearly contracts are reported as a rate, so their invoices are skipped. */
   yearlyCustomerIds: Set<string>;
-}): Promise<{ split: StaffRevenueSplit; teams: StaffRevenueMonthTeam[] }> {
-  const { from, to, teamCustomers, yearlyCustomerIds } = options;
-  const split = createSplit();
-  const byCustomer = new Map<string, StaffRevenueMonthTeam>();
-  let count = 0;
+}): Promise<{ split: StaffRevenueSplit; teams: StaffRevenueMonthTeam[] }[]> {
+  const { starts, end, teamCustomers, yearlyCustomerIds } = options;
+  const first = starts[0];
+  invariant(first, "at least one month is reported");
 
-  for await (const invoice of stripe.invoices.list({
-    created: {
-      gte: Math.floor(from.getTime() / 1000),
-      lt: Math.floor(to.getTime() / 1000),
-    },
-    status: "paid",
-    limit: PAGE_SIZE,
-  })) {
-    count += 1;
-    if (count > MAX_INVOICES_PER_MONTH) {
-      throw new Error(
-        `More than ${MAX_INVOICES_PER_MONTH} invoices in one month: reading Stripe per request no longer holds.`,
-      );
-    }
+  const rows = await StripeInvoice.query()
+    .where("status", "paid")
+    .where("stripeCreatedAt", ">=", first.toISOString())
+    .where("stripeCreatedAt", "<", end.toISOString());
 
-    const customerId =
-      typeof invoice.customer === "string"
-        ? invoice.customer
-        : invoice.customer?.id;
-    const team = customerId ? teamCustomers.get(customerId) : undefined;
-    if (!customerId || !team) {
+  const months: {
+    split: StaffRevenueSplit;
+    byCustomer: Map<string, StaffRevenueMonthTeam>;
+  }[] = starts.map(() => ({
+    split: createSplit(),
+    byCustomer: new Map<string, StaffRevenueMonthTeam>(),
+  }));
+
+  for (const row of rows) {
+    const created = new Date(row.stripeCreatedAt);
+    // Months are consecutive, so the index is a plain calendar distance.
+    const index: number =
+      (created.getUTCFullYear() - first.getUTCFullYear()) * 12 +
+      (created.getUTCMonth() - first.getUTCMonth());
+    const month: (typeof months)[number] | undefined = months[index];
+    invariant(month, "the query bounds the rows to the window");
+
+    const team = teamCustomers.get(row.stripeCustomerId);
+    if (!team) {
       continue;
     }
-    if (yearlyCustomerIds.has(customerId)) {
+    if (yearlyCustomerIds.has(row.stripeCustomerId)) {
       continue;
     }
     if (
-      invoice.billing_reason === null ||
-      (!SUBSCRIPTION_BILLING_REASONS.has(invoice.billing_reason) &&
-        !SALES_LED_BILLING_REASONS.has(invoice.billing_reason))
+      row.billingReason === null ||
+      (!SUBSCRIPTION_BILLING_REASONS.has(row.billingReason) &&
+        !SALES_LED_BILLING_REASONS.has(row.billingReason))
     ) {
       continue;
     }
 
-    const revenue = getInvoiceRevenue(invoice);
+    const revenue = getInvoiceRevenue(row);
     // A zero invoice — a usage month under the quota, the opening of a
     // sales-created subscription — is not a team being invoiced: it would fill
     // the breakdown with empty lines and dilute the per-team average.
     if (revenue.amount === 0) {
       continue;
     }
-    addToSplit(split, revenue);
+    addToSplit(month.split, revenue);
 
     // A team invoiced twice in one month is one team, one line deeper.
-    let row = byCustomer.get(customerId);
-    if (!row) {
-      row = {
+    let teamRow = month.byCustomer.get(row.stripeCustomerId);
+    if (!teamRow) {
+      teamRow = {
         slug: team.slug,
         name: team.name,
-        stripeCustomerId: customerId,
+        stripeCustomerId: row.stripeCustomerId,
         amount: 0,
         currency: revenue.currency,
         revenue: 0,
       };
-      byCustomer.set(customerId, row);
+      month.byCustomer.set(row.stripeCustomerId, teamRow);
     }
-    row.amount += revenue.amount;
-    if (row.currency !== revenue.currency) {
+    teamRow.amount += revenue.amount;
+    if (teamRow.currency !== revenue.currency) {
       // Mixed currencies make the original sum meaningless; the euro figure
       // still holds.
-      row.currency = null;
+      teamRow.currency = null;
     }
-    row.revenue += toEuros(revenue);
+    teamRow.revenue += toEuros(revenue);
   }
 
-  split.teamsCount = byCustomer.size;
-  // Largest first: the breakdown is read to see who made the month.
-  const teams = [...byCustomer.values()].sort((a, b) => b.revenue - a.revenue);
-  return { split, teams };
+  return months.map((month) => {
+    month.split.teamsCount = month.byCustomer.size;
+    return {
+      split: month.split,
+      // Largest first: the breakdown is read to see who made the month.
+      teams: [...month.byCustomer.values()].sort(
+        (a, b) => b.revenue - a.revenue,
+      ),
+    };
+  });
 }
 
 /** What Argos invoiced, and the annual contracts behind the yearly rate. */
@@ -722,9 +658,9 @@ export type StaffRevenue = {
  * the annual contracts the yearly rate is made of — one read serving both, so
  * the list always explains the figure it came with.
  *
- * Asked of Stripe on every call rather than mirrored into a table or held in a
- * cache: the invoices are the answer, they change behind us as they are paid,
- * voided and credited, and a copy of them is a second source to keep correct.
+ * Read from the `stripe_invoices` mirror rather than from Stripe: the webhooks
+ * keep it current and the reconciliation sweep backs them up, so a view costs
+ * a few queries instead of a paginated walk of a third party.
  */
 export async function getStaffRevenue(
   monthCount: number,
@@ -734,9 +670,12 @@ export async function getStaffRevenue(
     `monthCount must be between 1 and ${MAX_MONTHS}`,
   );
 
-  if (config.get("stripe.apiKey") === MISSING_API_KEY) {
+  // Told apart from a quiet month: an empty mirror reports zeros that read as
+  // real figures, and the fix — running the backfill — is on the operator.
+  const mirrored = await StripeInvoice.query().select("id").first();
+  if (!mirrored) {
     throw new Error(
-      "Stripe is not configured, so invoiced revenue cannot be read.",
+      "The Stripe invoice mirror is empty — run stripe/bin/sync-stripe-invoices with a deep window to backfill it.",
     );
   }
 
@@ -758,30 +697,26 @@ export async function getStaffRevenue(
   );
 
   const reported = starts.slice(0, monthCount);
+  const end = starts[monthCount];
+  invariant(end, "the extra start closes the last window");
   const [yearlyContracts, totals] = await Promise.all([
     getYearlyContracts(teams),
-    mapWithLimit(
-      reported.map((from, index) => {
-        const to = starts[index + 1];
-        invariant(to, "every month reported has a bound");
-        return { from, to };
-      }),
-      (window) => readMonth({ ...window, teamCustomers, yearlyCustomerIds }),
-    ),
+    readMonths({ starts: reported, end, teamCustomers, yearlyCustomerIds }),
   ]);
   const yearlyRate = getYearlyRate(yearlyContracts);
 
   const months = reported.map((start, index) => {
-    const month = createMonth(start);
     const total = totals[index];
     invariant(total, "every month reported has totals");
-    month.monthlyPlans = total.split;
-    month.teams = total.teams;
-    // Copied rather than shared: one object held by every month is one object
-    // a later change can mutate for all of them at once.
-    month.yearlyPlans = { ...yearlyRate };
-    month.revenue = total.split.revenue + yearlyRate.revenue;
-    return month;
+    return {
+      month: start,
+      revenue: total.split.revenue + yearlyRate.revenue,
+      monthlyPlans: total.split,
+      teams: total.teams,
+      // Copied rather than shared: one object held by every month is one
+      // object a later change can mutate for all of them at once.
+      yearlyPlans: { ...yearlyRate },
+    };
   });
 
   return {

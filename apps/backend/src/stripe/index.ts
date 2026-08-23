@@ -15,6 +15,8 @@ import {
 import { sendNotification } from "@/notification";
 import { redisLock } from "@/util/redis";
 
+import { deleteStripeInvoice, upsertStripeInvoice } from "./invoice-mirror";
+
 export type { Stripe };
 
 async function getPlanFromStripeProductId(stripeProductId: string) {
@@ -1018,6 +1020,42 @@ export async function handleStripeEvent({
           });
         })(),
       ]);
+      return;
+    }
+
+    case "invoice.created":
+    case "invoice.updated":
+    case "invoice.finalized":
+    case "invoice.paid":
+    case "invoice.voided":
+    case "invoice.marked_uncollectible": {
+      const invoice = data.object as Stripe.Invoice;
+      await upsertStripeInvoice(invoice);
+      return;
+    }
+
+    case "invoice.deleted": {
+      const invoice = data.object as Stripe.Invoice;
+      if (invoice.id) {
+        await deleteStripeInvoice(invoice.id);
+      }
+      return;
+    }
+
+    // A credit note changes its invoice's credited amounts, but Stripe sends
+    // no invoice.updated for it — the invoice has to be re-read.
+    case "credit_note.created":
+    case "credit_note.updated":
+    case "credit_note.voided": {
+      const creditNote = data.object as Stripe.CreditNote;
+      const invoiceId =
+        typeof creditNote.invoice === "string"
+          ? creditNote.invoice
+          : creditNote.invoice?.id;
+      if (invoiceId) {
+        const invoice = await stripe.invoices.retrieve(invoiceId);
+        await upsertStripeInvoice(invoice);
+      }
       return;
     }
 

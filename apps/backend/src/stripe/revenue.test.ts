@@ -1,4 +1,3 @@
-import type Stripe from "stripe";
 import { describe, expect, it } from "vitest";
 
 import type { ContractInvoiceCandidate } from "./revenue";
@@ -13,8 +12,8 @@ describe("getInvoiceRevenue", () => {
   /** Stripe states amounts in the currency's minor unit. */
   function invoice(fields: {
     total: number;
-    total_excluding_tax?: number | null;
-    taxes?: number[];
+    totalExcludingTax?: number | null;
+    totalTaxesAmount?: number | null;
     currency?: string;
     pre?: number;
     post?: number;
@@ -22,26 +21,24 @@ describe("getInvoiceRevenue", () => {
     return {
       currency: fields.currency ?? "usd",
       total: fields.total,
-      total_excluding_tax: fields.total_excluding_tax ?? null,
-      total_taxes: fields.taxes?.map((amount) => ({ amount })) ?? null,
-      pre_payment_credit_notes_amount: fields.pre ?? 0,
-      post_payment_credit_notes_amount: fields.post ?? 0,
+      totalExcludingTax: fields.totalExcludingTax ?? null,
+      totalTaxesAmount: fields.totalTaxesAmount ?? null,
+      prePaymentCreditNotesAmount: fields.pre ?? 0,
+      postPaymentCreditNotesAmount: fields.post ?? 0,
     };
   }
 
   it("reads the amount excluding tax, in the currency's main unit", () => {
     // VAT collected for a state is not revenue.
     expect(
-      getInvoiceRevenue(
-        invoice({ total: 12_000, total_excluding_tax: 10_000 }),
-      ),
+      getInvoiceRevenue(invoice({ total: 12_000, totalExcludingTax: 10_000 })),
     ).toEqual({ amount: 100, currency: "usd" });
   });
 
   it("takes the listed taxes off when no pre-tax total is stated", () => {
     // Falling back to the total alone would let the VAT through as revenue.
     expect(
-      getInvoiceRevenue(invoice({ total: 12_000, taxes: [1_500, 500] })),
+      getInvoiceRevenue(invoice({ total: 12_000, totalTaxesAmount: 2_000 })),
     ).toEqual({ amount: 100, currency: "usd" });
   });
 
@@ -50,7 +47,7 @@ describe("getInvoiceRevenue", () => {
       getInvoiceRevenue(
         invoice({
           total: 10_000,
-          total_excluding_tax: 10_000,
+          totalExcludingTax: 10_000,
           currency: "eur",
         }),
       ),
@@ -64,7 +61,7 @@ describe("getInvoiceRevenue", () => {
       getInvoiceRevenue(
         invoice({
           total: 10_000,
-          total_excluding_tax: 10_000,
+          totalExcludingTax: 10_000,
           pre: 1_500,
           post: 2_500,
         }),
@@ -75,7 +72,7 @@ describe("getInvoiceRevenue", () => {
   it("reports a fully credited invoice as nothing", () => {
     expect(
       getInvoiceRevenue(
-        invoice({ total: 10_000, total_excluding_tax: 10_000, post: 10_000 }),
+        invoice({ total: 10_000, totalExcludingTax: 10_000, post: 10_000 }),
       ).amount,
     ).toBe(0);
   });
@@ -96,23 +93,18 @@ describe("toEuros", () => {
 });
 
 describe("findContractInvoices", () => {
-  const seconds = (iso: string) => Date.parse(iso) / 1000;
-
   /** Cases below are the real shapes the yearly book was found to hold. */
   function candidate(fields: {
-    reason: Stripe.Invoice.BillingReason | null;
+    reason: string | null;
     total: number;
-    /** Each entry is one line's covered stretch. */
-    periods: [string, string][];
+    /** The stretch the invoice covers, as the mirror resolved it at ingest. */
+    period: [string, string] | null;
   }): ContractInvoiceCandidate & { total: number } {
     return {
-      billing_reason: fields.reason,
+      billingReason: fields.reason,
       total: fields.total,
-      lines: {
-        data: fields.periods.map(([start, end]) => ({
-          period: { start: seconds(start), end: seconds(end) },
-        })),
-      },
+      periodStart: fields.period ? fields.period[0] : null,
+      periodEnd: fields.period ? fields.period[1] : null,
     };
   }
 
@@ -123,17 +115,17 @@ describe("findContractInvoices", () => {
     const trueUp = candidate({
       reason: "subscription_update",
       total: 758_724,
-      periods: [["2026-04-23", "2026-05-23"]],
+      period: ["2026-04-23", "2026-05-23"],
     });
     const contract = candidate({
       reason: "subscription_update",
       total: 6_480_000,
-      periods: [["2026-05-23", "2027-05-23"]],
+      period: ["2026-05-23", "2027-05-23"],
     });
     const oldCycle = candidate({
       reason: "subscription_cycle",
       total: 745_028,
-      periods: [["2026-03-23", "2026-04-23"]],
+      period: ["2026-03-23", "2026-04-23"],
     });
 
     expect(findContractInvoices([trueUp, contract, oldCycle])).toEqual([
@@ -151,12 +143,12 @@ describe("findContractInvoices", () => {
     const upsell = candidate({
       reason: "manual",
       total: 3_260_000,
-      periods: [["2026-06-08", "2026-10-31"]],
+      period: ["2026-06-08", "2026-10-31"],
     });
     const annual = candidate({
       reason: "manual",
       total: 4_588_994,
-      periods: [["2024-10-30", "2025-10-30"]],
+      period: ["2024-10-30", "2025-10-30"],
     });
 
     expect(findContractInvoices([upsell, annual])).toEqual([upsell, annual]);
@@ -167,12 +159,12 @@ describe("findContractInvoices", () => {
     const annual = candidate({
       reason: "subscription_cycle",
       total: 1_500_000,
-      periods: [["2026-01-02", "2027-01-02"]],
+      period: ["2026-01-02", "2027-01-02"],
     });
     const bakedIn = candidate({
       reason: "manual",
       total: 300_000,
-      periods: [["2025-06-01", "2026-01-02"]],
+      period: ["2025-06-01", "2026-01-02"],
     });
 
     expect(findContractInvoices([annual, bakedIn])).toEqual([annual]);
@@ -184,12 +176,12 @@ describe("findContractInvoices", () => {
     const thisYear = candidate({
       reason: "subscription_create",
       total: 1_590_000,
-      periods: [["2026-01-02", "2027-01-02"]],
+      period: ["2026-01-02", "2027-01-02"],
     });
     const lastYear = candidate({
       reason: "subscription_cycle",
       total: 1_773_605,
-      periods: [["2025-01-03", "2026-01-03"]],
+      period: ["2025-01-03", "2026-01-03"],
     });
 
     expect(findContractInvoices([thisYear, lastYear])).toEqual([thisYear]);
@@ -202,12 +194,12 @@ describe("findContractInvoices", () => {
     const reBilled = candidate({
       reason: "manual",
       total: 1_050_000,
-      periods: [["2026-02-12", "2026-02-12"]],
+      period: ["2026-02-12", "2026-02-12"],
     });
     const previous = candidate({
       reason: "subscription_cycle",
       total: 1_000_000,
-      periods: [["2025-01-24", "2026-01-24"]],
+      period: ["2025-01-24", "2026-01-24"],
     });
 
     expect(findContractInvoices([reBilled, previous])).toEqual([reBilled]);
@@ -217,7 +209,7 @@ describe("findContractInvoices", () => {
     const opening = candidate({
       reason: "subscription_create",
       total: 0,
-      periods: [["2026-06-02", "2026-06-17"]],
+      period: ["2026-06-02", "2026-06-17"],
     });
 
     expect(findContractInvoices([opening])).toEqual([]);
@@ -227,7 +219,7 @@ describe("findContractInvoices", () => {
     const renewal = candidate({
       reason: "manual",
       total: 1_050_000,
-      periods: [["2026-02-12", "2026-02-12"]],
+      period: null,
     });
 
     expect(findContractInvoices([renewal])).toEqual([renewal]);
@@ -237,7 +229,7 @@ describe("findContractInvoices", () => {
     const monthlyCycle = candidate({
       reason: "subscription_cycle",
       total: 96_000,
-      periods: [["2026-02-23", "2026-03-23"]],
+      period: ["2026-02-23", "2026-03-23"],
     });
 
     expect(findContractInvoices([monthlyCycle])).toEqual([]);
