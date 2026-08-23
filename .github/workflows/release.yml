@@ -216,6 +216,7 @@ jobs:
           image: ${{ needs.build.outputs.image }}
           environment-variables: |
             NODE_ENV=production
+            PG_IAM_AUTH=true
           secrets: |
             DATABASE_URL=/production/database_url
             ENCRYPTION_KEY=/production/encryption_key
@@ -329,6 +330,7 @@ jobs:
           image: ${{ needs.build.outputs.image }}
           environment-variables: |
             NODE_ENV=production
+            PG_IAM_AUTH=true
             API_BASE_URL=https://api.argos-ci.com
             MCP_BASE_URL=https://mcp.argos-ci.com
             SERVER_URL=https://app.argos-ci.com
