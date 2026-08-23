@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict o4yY6kzuLNk2D1yhBasUoDQXc8fl7t4BaBXbo3R8dYyaf1tg57N27yueaEx5yhC
+\restrict 8YyqcMJ0I5XNZcsHVmCWOSWmeYiDRSWndBgMnDgf5deA7M7wg7w92yaObvxLpdi
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2091,6 +2091,7 @@ CREATE TABLE public.plans (
     "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL,
     "interval" text DEFAULT 'month'::text NOT NULL,
     "samlIncluded" boolean DEFAULT false NOT NULL,
+    "githubMonthlyPriceCents" integer,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -6629,7 +6630,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict o4yY6kzuLNk2D1yhBasUoDQXc8fl7t4BaBXbo3R8dYyaf1tg57N27yueaEx5yhC
+\unrestrict 8YyqcMJ0I5XNZcsHVmCWOSWmeYiDRSWndBgMnDgf5deA7M7wg7w92yaObvxLpdi
 
 -- Knex migrations
 
@@ -6881,3 +6882,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823065836_stripe-invoices.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823133757_github-plan-prices.js', 1, NOW());

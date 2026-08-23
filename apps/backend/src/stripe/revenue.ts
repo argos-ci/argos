@@ -72,14 +72,36 @@ const REPORTING_CURRENCY = "eur";
 const EUR_PER_USD = 0.855;
 
 /**
- * What GitHub Marketplace brings in a month, in dollars, gross of the 5%
- * GitHub keeps.
+ * What GitHub Marketplace brings in a month, in euros, gross of the 5% GitHub
+ * keeps.
  *
- * A constant rather than a lookup: the marketplace book is a handful of teams
- * and barely moves, and GitHub exposes no invoice API to read it from — copy
- * the statement's total here when it changes. From the 2026-05 statement.
+ * The active marketplace subscriptions at their plans' list prices — GitHub
+ * exposes no seller invoice API, so the listing's prices, copied onto the
+ * plans by the `github-marketplace-prices` cron, are the closest thing to the
+ * statement. Zero until that cron (or its bin form) has priced the plans.
  */
-const GITHUB_MARKETPLACE_MONTHLY_USD = 1540;
+async function getGithubMarketplaceMonthlyRevenue(): Promise<number> {
+  const rows = (await Subscription.query()
+    .select("subscriptions.accountId", "plan.githubMonthlyPriceCents")
+    .joinRelated("plan")
+    .where("subscriptions.provider", "github")
+    .whereNotNull("plan.githubMonthlyPriceCents")
+    .whereRaw("?? < now()", "subscriptions.startDate")
+    .whereIn("subscriptions.status", ["active", "past_due"])
+    .where((query) =>
+      query
+        .whereNull("subscriptions.endDate")
+        .orWhereRaw("?? >= now()", "subscriptions.endDate"),
+    )
+    .distinctOn("subscriptions.accountId")
+    .orderBy("subscriptions.accountId")
+    .orderBy("plan.githubMonthlyPriceCents", "DESC")) as unknown as {
+    githubMonthlyPriceCents: number;
+  }[];
+
+  const cents = rows.reduce((sum, row) => sum + row.githubMonthlyPriceCents, 0);
+  return toEuros({ amount: cents / 100, currency: "usd" });
+}
 
 /**
  * Why Stripe raised an invoice, for the ones that are a subscription being
@@ -714,8 +736,8 @@ export type StaffRevenue = {
   /** The contracts behind every month's `yearlyPlans`, largest first. */
   yearlyContracts: StaffYearlyContract[];
   /**
-   * What GitHub Marketplace brings in a month, in euros, gross. A stated
-   * constant, not a reading — see `GITHUB_MARKETPLACE_MONTHLY_USD`.
+   * What GitHub Marketplace brings in a month, in euros, gross — the active
+   * marketplace subscriptions at their plans' list prices.
    */
   githubMarketplaceMonthlyRevenue: number;
 };
@@ -810,9 +832,6 @@ export async function getStaffRevenue(
   return {
     months,
     yearlyContracts,
-    githubMarketplaceMonthlyRevenue: toEuros({
-      amount: GITHUB_MARKETPLACE_MONTHLY_USD,
-      currency: "usd",
-    }),
+    githubMarketplaceMonthlyRevenue: await getGithubMarketplaceMonthlyRevenue(),
   };
 }

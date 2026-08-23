@@ -451,8 +451,9 @@ export const typeDefs = gql`
     yearlyContracts: [StaffYearlyContract!]!
     """
     What GitHub Marketplace brings in a month, in euros, gross of the 5%
-    GitHub keeps. A stated constant, not a reading — GitHub exposes no invoice
-    API — so it is not part of the figures above.
+    GitHub keeps: the active marketplace subscriptions at their plans' list
+    prices, since GitHub exposes no seller invoice API. Not part of the
+    figures above.
     """
     githubMarketplaceMonthlyRevenue: Float!
   }

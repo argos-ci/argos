@@ -111,7 +111,8 @@ const CURRENT_MONTHLY_HINT =
 const YEARLY_HINT =
   "Annual contracts amortized, day by day, over the months they cover. In €.";
 
-const GITHUB_HINT = "Hard coded amount";
+const GITHUB_HINT =
+  "Active Marketplace subscriptions at list price, billed by GitHub. On top of the figure above, not in it.";
 
 /**
  * Stands in for the hint line while the figures load.

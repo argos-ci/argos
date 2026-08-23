@@ -19,6 +19,7 @@ export class Plan extends Model {
           name: { type: "string" },
           includedScreenshots: { type: "number" },
           githubPlanId: { type: ["number", "null"] },
+          githubMonthlyPriceCents: { type: ["number", "null"] },
           stripeProductId: { type: ["string", "null"] },
           usageBased: { type: "boolean" },
           githubSsoIncluded: { type: "boolean" },
@@ -33,6 +34,13 @@ export class Plan extends Model {
   name!: string;
   includedScreenshots!: number;
   githubPlanId!: number | null;
+  /**
+   * The Marketplace listing's monthly price, copied here by the
+   * `github-marketplace-prices` cron — GitHub exposes no seller invoices, so
+   * the price times the active subscriptions is what the marketplace book is
+   * worth. Null on plans that are not marketplace listings.
+   */
+  githubMonthlyPriceCents!: number | null;
   stripeProductId!: string | null;
   usageBased!: boolean;
   githubSsoIncluded!: boolean;

@@ -8,6 +8,7 @@ import {
   getStaffRevenue,
   getTeamCustomers,
   startOfUTCMonth,
+  toEuros,
 } from "./revenue";
 
 let sequence = 0;
@@ -323,6 +324,41 @@ describe("getStaffRevenue", () => {
     expect(contract.amount).toBe(1200);
     expect(contract.awaitingPayment).toBe(false);
     expect(contract.invoices).toHaveLength(1);
+  });
+
+  it("prices the marketplace book from the active GitHub subscriptions", async () => {
+    await factory.StripeInvoiceSync.create();
+    const plan = await factory.Plan.create({
+      usageBased: false,
+      githubMonthlyPriceCents: 10_000,
+    });
+    const account = await factory.TeamAccount.create({});
+    const user = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: account.id,
+      planId: plan.id,
+      provider: "github",
+      subscriberId: user.id,
+      startDate: new Date("2021-01-01").toISOString(),
+      status: "active",
+    });
+    // An unpriced plan — not a marketplace listing — counts nothing.
+    const unpriced = await factory.Plan.create({ usageBased: true });
+    const other = await factory.TeamAccount.create({});
+    await factory.Subscription.create({
+      accountId: other.id,
+      planId: unpriced.id,
+      provider: "github",
+      subscriberId: user.id,
+      startDate: new Date("2021-01-01").toISOString(),
+      status: "active",
+    });
+
+    const result = await getStaffRevenue(1);
+
+    expect(result.githubMarketplaceMonthlyRevenue).toBe(
+      toEuros({ amount: 100, currency: "usd" }),
+    );
   });
 
   it("reports an open annual invoice as awaiting payment, counted", async () => {

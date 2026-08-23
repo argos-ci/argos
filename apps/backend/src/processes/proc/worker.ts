@@ -6,6 +6,7 @@ import { job as buildNotificationJob } from "@/build-notification";
 import config from "@/config";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { githubPullRequestJob } from "@/github-pull-request/job";
+import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
 import logger from "@/logger";
 import { mediaDiffJob } from "@/media/diff-job";
@@ -50,6 +51,15 @@ scheduleCron("stripe-invoice-sync", "45 4 * * *", async (context) => {
   }
   const since = new Date(context.date.getTime() - 35 * 24 * 3600 * 1000);
   await syncStripeInvoices({ since });
+});
+
+// The Marketplace listing's prices, onto the plans — what the revenue page
+// multiplies the active marketplace subscriptions by.
+scheduleCron("github-marketplace-prices", "35 4 * * *", async () => {
+  if (!config.get("github.appId")) {
+    return;
+  }
+  await syncGithubMarketplacePlanPrices();
 });
 
 createJobWorker(
