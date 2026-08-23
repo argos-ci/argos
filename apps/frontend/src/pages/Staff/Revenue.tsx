@@ -562,7 +562,12 @@ function HistoryRow(props: {
           (!isLast || isOpened) && "border-b",
         )}
       >
-        <td className="p-4 text-left text-sm font-medium">
+        {/* The month names walk forward with the calendar, so a visual
+            baseline of this table would need approving every month. */}
+        <td
+          className="p-4 text-left text-sm font-medium"
+          data-visual-test="transparent"
+        >
           {MONTH_YEAR_FORMAT.format(new Date(month.month))}
           {isCurrent ? <span className="text-low"> (running)</span> : null}
         </td>
