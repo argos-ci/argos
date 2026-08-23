@@ -276,6 +276,43 @@ describe("GraphQL staffTrialPipeline", () => {
     expect(findEntry(res, team.id).staff.screenshotsCount).toBe(42);
   });
 
+  it("leaves out builds that ran before the team was created", async () => {
+    const viewer = await createViewer({ staff: true });
+    const team = await factory.TeamAccount.create();
+    const project = await factory.Project.create({ accountId: team.id });
+
+    const stats = {
+      failure: 0,
+      added: 0,
+      unchanged: 0,
+      changed: 0,
+      removed: 0,
+      retryFailure: 0,
+      ignored: 0,
+    };
+    // What a transferred project leaves behind: builds older than the team that
+    // owns them today. Their screenshots are somebody else's consumption, and
+    // the team's own billing periods never counted them.
+    await factory.Build.create({
+      projectId: project.id,
+      createdAt: addDays(new Date(), -20).toISOString(),
+      stats: { ...stats, total: 5625 },
+    });
+    await factory.Build.create({
+      projectId: project.id,
+      stats: { ...stats, total: 271 },
+    });
+
+    const res = await queryPipeline(viewer, 30);
+
+    expectNoGraphQLError(res);
+    const { staff } = findEntry(res, team.id);
+    expect(staff.screenshotsCount).toBe(271);
+    // Only the screenshots are cut at that boundary: the build count is what
+    // the team owns today, transferred history included.
+    expect(staff.buildsCount).toBe(2);
+  });
+
   it("counts projects once even when they have many builds", async () => {
     const viewer = await createViewer({ staff: true });
     const team = await factory.TeamAccount.create();

@@ -722,12 +722,18 @@ function createAccountActivationByAccountIdLoader() {
     // multiplies project rows.
     const rows = await Project.query()
       .leftJoin("builds", "builds.projectId", "projects.id")
+      .join("accounts", "accounts.id", "projects.accountId")
       .select("projects.accountId")
       .select(
         knex.raw(`count(distinct projects.id) as "projectsCount"`),
         knex.raw(`count(builds.id) as "buildsCount"`),
+        // Only what was built once the account owned the project. A transferred
+        // project brings its whole history along, and those screenshots were
+        // consumed by whoever owned it then — the account's own billing periods
+        // never counted them either, so counting them here is what made the two
+        // staff tabs disagree about the same team.
         knex.raw(
-          `sum(coalesce((builds.stats->>'total')::int, 0)) as "screenshotsCount"`,
+          `sum(coalesce((builds.stats->>'total')::int, 0)) filter (where builds."createdAt" >= accounts."createdAt") as "screenshotsCount"`,
         ),
         knex.raw(
           `min(builds."createdAt") filter (where builds.type = 'check') as "firstComparisonAt"`,
