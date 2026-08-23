@@ -6,6 +6,7 @@ import {
   findContractInvoices,
   getInvoiceRevenue,
   startOfUTCMonth,
+  toEuros,
 } from "./revenue";
 
 describe("getInvoiceRevenue", () => {
@@ -77,6 +78,20 @@ describe("getInvoiceRevenue", () => {
         invoice({ total: 10_000, total_excluding_tax: 10_000, post: 10_000 }),
       ).amount,
     ).toBe(0);
+  });
+});
+
+describe("toEuros", () => {
+  it("brings dollars in at the fixed rate", () => {
+    expect(toEuros({ amount: 1000, currency: "usd" })).toBe(855);
+  });
+
+  it("leaves euros as they are", () => {
+    expect(toEuros({ amount: 1000, currency: "eur" })).toBe(1000);
+  });
+
+  it("keeps an unknown currency at parity, for the foreign caveat to own", () => {
+    expect(toEuros({ amount: 1000, currency: "gbp" })).toBe(1000);
   });
 });
 

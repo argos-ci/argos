@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getBilledTeams, getTeamCustomerIds } from "./revenue";
+import { getBilledTeams, getTeamCustomers } from "./revenue";
 
 describe("getBilledTeams", () => {
   beforeEach(async () => {
@@ -113,12 +113,12 @@ describe("getBilledTeams", () => {
   });
 });
 
-describe("getTeamCustomerIds", () => {
+describe("getTeamCustomers", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
 
-  it("keeps a team whose subscription has ended", async () => {
+  it("keeps a team whose subscription has ended, with its names", async () => {
     // Its invoices were still sent, and the month it was invoiced in has to
     // keep them — that departure is exactly what a comparison between two
     // months exists to show.
@@ -139,8 +139,10 @@ describe("getTeamCustomerIds", () => {
       status: "canceled",
     });
 
-    await expect(getTeamCustomerIds()).resolves.toEqual(
-      new Set(["cus_churned"]),
+    await expect(getTeamCustomers()).resolves.toEqual(
+      new Map([
+        ["cus_churned", { slug: account.slug, name: account.name ?? null }],
+      ]),
     );
   });
 
@@ -148,12 +150,12 @@ describe("getTeamCustomerIds", () => {
     // Whatever a personal account was invoiced is not this page's subject.
     await factory.UserAccount.create({ stripeCustomerId: "cus_personal" });
 
-    await expect(getTeamCustomerIds()).resolves.toEqual(new Set());
+    await expect(getTeamCustomers()).resolves.toEqual(new Map());
   });
 
   it("leaves out a team that never reached Stripe", async () => {
     await factory.TeamAccount.create({ stripeCustomerId: null });
 
-    await expect(getTeamCustomerIds()).resolves.toEqual(new Set());
+    await expect(getTeamCustomers()).resolves.toEqual(new Map());
   });
 });

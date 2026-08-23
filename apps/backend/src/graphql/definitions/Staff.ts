@@ -347,13 +347,12 @@ export const typeDefs = gql`
     "How many teams contributed."
     teamsCount: Int!
     """
-    The part of \`revenue\` invoiced in a currency other than US dollars, added
-    in at parity.
+    The part of \`revenue\` invoiced in a currency other than euros, converted
+    at the page's fixed rate.
 
-    Stripe states each invoice in the currency it was raised in, and converting
-    one into another needs a rate on the day, which nothing here has. So a euro
-    invoice is counted as though it were dollars, and this says how much of the
-    figure rests on that.
+    Stripe states each invoice in the currency it was raised in; dollars are
+    brought into euros at a fixed rate rather than the day's, and this says how
+    much of the figure rests on that conversion.
     """
     foreignRevenue: Float!
   }
@@ -364,8 +363,8 @@ export const typeDefs = gql`
   Read from the Stripe invoices themselves rather than recomputed from usage, so
   the amounts carry what Stripe actually charged — negotiated prices, coupons,
   credit notes — instead of a second pricing engine of ours that would have to
-  agree with the first. Amounts exclude tax, are net of credit notes, and
-  currencies are added at parity.
+  agree with the first. Amounts exclude tax, are net of credit notes, and are
+  stated in euros, dollars converted at a fixed rate.
   """
   type StaffRevenueMonth {
     "The first instant of the month, in UTC — what names it on screen."
@@ -374,6 +373,8 @@ export const typeDefs = gql`
     revenue: Float!
     "What teams billed by the month were invoiced that month."
     monthlyPlans: StaffRevenueSplit!
+    "The teams behind \`monthlyPlans\`, largest first — they sum to it."
+    teams: [StaffRevenueMonthTeam!]!
     """
     What the annual contracts in force are worth per month: their latest invoice
     over twelve.
@@ -385,11 +386,27 @@ export const typeDefs = gql`
     yearlyPlans: StaffRevenueSplit!
   }
 
+  "What one team was invoiced over a month, one line of the breakdown."
+  type StaffRevenueMonthTeam {
+    "The team's slug, which names its pages."
+    slug: String!
+    "The team's display name, when it has one."
+    name: String
+    "The Stripe customer the invoices were raised on."
+    stripeCustomerId: String!
+    "What the invoices add up to, in \`currency\`."
+    amount: Float!
+    "The currency the team is invoiced in — null when a month mixes several."
+    currency: String
+    "In euros, like the split it sums into."
+    revenue: Float!
+  }
+
   "One invoice a contract's worth is read from."
   type StaffContractInvoice {
-    "Net of tax and credit notes, in the currency's main unit."
+    "Net of tax and credit notes, in the currency it was raised in."
     amount: Float!
-    "The currency it was raised in, counted at parity when not USD."
+    "The currency it was raised in — the contract's total converts it."
     currency: String!
     "When it was raised."
     invoicedAt: DateTime!
@@ -413,15 +430,16 @@ export const typeDefs = gql`
     "The subscription the database knows the contract by."
     stripeSubscriptionId: String!
     """
-    The invoices below, added up. Null when none was found, in which case the
-    contract adds nothing to the rate.
+    The invoices below added up, in euros. Null when none was found, in which
+    case the contract adds nothing to the rate.
     """
     amount: Float
     "The invoices the contract is worth, newest first."
     invoices: [StaffContractInvoice!]!
     """
-    True when the invoices found are still awaiting payment. Shown, so a
-    contract in collection is visible, but counted nothing until they clear.
+    True when the invoices found are still awaiting payment. Counted all the
+    same — a contract invoice raised is money on its way — and flagged, so
+    collection can be watched.
     """
     awaitingPayment: Boolean!
   }
@@ -432,6 +450,12 @@ export const typeDefs = gql`
     months: [StaffRevenueMonth!]!
     "The contracts behind every month's \`yearlyPlans\`, largest first."
     yearlyContracts: [StaffYearlyContract!]!
+    """
+    What GitHub Marketplace brings in a month, in euros, gross of the 5%
+    GitHub keeps. A stated constant, not a reading — GitHub exposes no invoice
+    API — so it is not part of the figures above.
+    """
+    githubMarketplaceMonthlyRevenue: Float!
   }
 
   type StaffTeamConnection implements Connection {

@@ -125,6 +125,7 @@ export function ChartTooltipContent({
   labelFormatter,
   labelClassName,
   formatter,
+  valueFormatter,
   color,
   nameKey,
   labelKey,
@@ -137,6 +138,11 @@ export function ChartTooltipContent({
     payload?: any[] | undefined;
     nameKey?: string;
     labelKey?: string;
+    /**
+     * Formats each row's value (and the Total), keeping the indicator and
+     * series label — where `formatter` replaces the whole row.
+     */
+    valueFormatter?: (value: number) => React.ReactNode;
   }) {
   const { config } = useChart();
 
@@ -252,7 +258,9 @@ export function ChartTooltipContent({
                     </div>
                     {item.value && (
                       <span className="text-default font-medium tabular-nums">
-                        {item.value.toLocaleString()}
+                        {valueFormatter && typeof item.value === "number"
+                          ? valueFormatter(item.value)
+                          : item.value.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -264,7 +272,9 @@ export function ChartTooltipContent({
         {payload.length > 1 && (
           <div className="mt-1 flex w-full justify-between border-t pt-1 font-bold">
             <span>Total</span>
-            <span>{sum.toLocaleString()}</span>
+            <span>
+              {valueFormatter ? valueFormatter(sum) : sum.toLocaleString()}
+            </span>
           </div>
         )}
       </div>
