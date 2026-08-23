@@ -843,53 +843,65 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
   },
 });
 
-revenueTest("staff revenue", async ({ page, revenueBook }) => {
-  test.slow();
-  await page.goto("/staff/revenue");
-  await expect(page.getByRole("heading", { name: "Revenue" })).toBeVisible();
+revenueTest.describe("staff revenue", () => {
+  // One browser project, not both: the page has no filter, so every figure on
+  // it is a sum over all the teams in the database — and the projects share
+  // one, truncated once. Seeded twice, the totals double and the assertions
+  // below describe neither run. The skip is declared here so the fixture never
+  // seeds for the project that does not run it.
+  revenueTest.skip(
+    ({ browserName }) => browserName !== "chromium",
+    "the page sums every team, so it can only be seeded once",
+  );
 
-  // €500 from one team and $1,000 from the other, the dollars converted at the
-  // page's fixed rate: €500 + €855.
-  await expect(page.getByText("€1,355 monthly").first()).toBeVisible();
+  revenueTest("staff revenue", async ({ page, revenueBook }) => {
+    test.slow();
+    await page.goto("/staff/revenue");
+    await expect(page.getByRole("heading", { name: "Revenue" })).toBeVisible();
 
-  const monthlyPlans = page
-    .locator("table")
-    .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
-  const lastMonthRow = monthlyPlans.locator("tbody tr").nth(1);
-  await expect(lastMonthRow.getByText("€1,355")).toBeVisible();
-  // Two teams invoiced, so the average is half the month. Neither of the two
-  // annual bills raised that same month is in either figure — not the current
-  // contract, and not the churned team's renewal, whose only mark of being a
-  // year's worth is the period on the invoice itself.
-  await expect(lastMonthRow.getByText("€678")).toBeVisible();
-  // €1,000 the month before, so the column reports the climb rather than the
-  // em dash it falls back to with nothing to divide by.
-  await expect(lastMonthRow.getByText("+36%")).toBeVisible();
+    // €500 from one team and $1,000 from the other, the dollars converted at the
+    // page's fixed rate: €500 + €855.
+    await expect(page.getByText("€1,355 monthly").first()).toBeVisible();
 
-  await lastMonthRow.getByRole("button", { name: "View details" }).click();
-  const breakdown = monthlyPlans.locator("tbody tr").nth(2);
-  await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
-  // What Stripe charged, beside what the page counts it as.
-  await expect(breakdown.getByText("$1,000.00")).toBeVisible();
-  await expect(breakdown.getByText("€855")).toBeVisible();
+    const monthlyPlans = page
+      .locator("table")
+      .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
+    const lastMonthRow = monthlyPlans.locator("tbody tr").nth(1);
+    await expect(lastMonthRow.getByText("€1,355")).toBeVisible();
+    // Two teams invoiced, so the average is half the month. Neither of the two
+    // annual bills raised that same month is in either figure — not the current
+    // contract, and not the churned team's renewal, whose only mark of being a
+    // year's worth is the period on the invoice itself.
+    await expect(lastMonthRow.getByText("€678")).toBeVisible();
+    // €1,000 the month before, so the column reports the climb rather than the
+    // em dash it falls back to with nothing to divide by.
+    await expect(lastMonthRow.getByText("+36%")).toBeVisible();
 
-  // The contract is listed on its own, with the invoice its figure is read
-  // from and what a month of it comes to — its twelve months are not all the
-  // same length, so the share of this one is what the row reports.
-  const contractRow = page
-    .getByRole("row")
-    .filter({ hasText: revenueBook.contractTeam });
-  // Twice over: what Stripe charged, and what the page counts it as — the
-  // contract is in euros, so both cells read the same.
-  await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
-  await expect(
-    contractRow.getByText(revenueBook.contractPerMonth),
-  ).toBeVisible();
+    await lastMonthRow.getByRole("button", { name: "View details" }).click();
+    const breakdown = monthlyPlans.locator("tbody tr").nth(2);
+    await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
+    // What Stripe charged, beside what the page counts it as.
+    await expect(breakdown.getByText("$1,000.00")).toBeVisible();
+    await expect(breakdown.getByText("€855")).toBeVisible();
 
-  // Scoped to the monthly table: the contracts table below lists every annual
-  // team in the database, which the rest of the suite seeds too.
-  await screenshot(page, "staff-revenue-monthly-plans", {
-    element: monthlyPlans,
+    // The contract is listed on its own, with the invoice its figure is read
+    // from and what a month of it comes to — its twelve months are not all the
+    // same length, so the share of this one is what the row reports.
+    const contractRow = page
+      .getByRole("row")
+      .filter({ hasText: revenueBook.contractTeam });
+    // Twice over: what Stripe charged, and what the page counts it as — the
+    // contract is in euros, so both cells read the same.
+    await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
+    await expect(
+      contractRow.getByText(revenueBook.contractPerMonth),
+    ).toBeVisible();
+
+    // Scoped to the monthly table: the contracts table below lists every annual
+    // team in the database, which the rest of the suite seeds too.
+    await screenshot(page, "staff-revenue-monthly-plans", {
+      element: monthlyPlans,
+    });
   });
 });
 

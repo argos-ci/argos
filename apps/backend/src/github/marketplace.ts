@@ -17,6 +17,13 @@ export async function syncGithubMarketplacePlanPrices(): Promise<number> {
     per_page: 100,
   });
 
+  // An empty listing is a listing that could not be read, not one that lost
+  // every plan: `whereNotIn` over an empty set matches everything, so clearing
+  // on it would wipe the prices the figures are built from.
+  if (plans.length === 0) {
+    return 0;
+  }
+
   // Cleared first: a plan the listing no longer carries has no price any more,
   // and leaving the last one known would keep pricing its subscribers off a
   // tariff that does not exist.

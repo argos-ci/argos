@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 
 import { StripeInvoice, StripeInvoiceSync } from "@/database/models";
+import { redisLock } from "@/util/redis";
 
 import { stripe, timestampToISOString } from "./index";
 
@@ -27,6 +28,15 @@ const MERGE_COLUMNS = [
 
 /** How many rows a sweep writes per statement. */
 const BATCH_SIZE = 100;
+
+/**
+ * How far before its window a sweep re-reads the invoices left unsettled.
+ *
+ * A year covers any collection worth chasing; past that an invoice still open
+ * is one nobody expects to clear, and re-reading it nightly for ever buys
+ * nothing.
+ */
+const UNSETTLED_LOOKBACK_MS = 365 * 24 * 3600 * 1000;
 
 /**
  * The longest stretch one of the invoice's lines covers.
@@ -170,10 +180,22 @@ async function upsertStripeInvoiceRows(
  *
  * Always a fresh retrieve, never the webhook's payload: Stripe guarantees no
  * event ordering and retries deliveries for days, so a payload is a snapshot
- * of unknown age — writing it could regress a paid row to open. The current
- * state, re-read on every signal, cannot.
+ * of unknown age — writing it could regress a paid row to open.
+ *
+ * Under a lock on the invoice, because reading current state is only enough
+ * while one reader runs at a time: two events delivered together would
+ * otherwise read in one order and write in the other, and the older read
+ * landing second would put the row back where it had already left.
  */
 export async function refreshStripeInvoice(
+  stripeInvoiceId: string,
+): Promise<void> {
+  await redisLock.acquire(["stripe-invoice", stripeInvoiceId], () =>
+    readStripeInvoiceIntoMirror(stripeInvoiceId),
+  );
+}
+
+async function readStripeInvoiceIntoMirror(
   stripeInvoiceId: string,
 ): Promise<void> {
   let invoice: Stripe.Invoice;
@@ -271,9 +293,17 @@ export async function syncStripeInvoices(options: {
     count += 1;
   }
 
+  // Bounded below as well as above: an invoice written off in practice but
+  // never voided in Stripe stays non-terminal for ever, and re-reading every
+  // one of them would add a round trip a night forever, none of which can
+  // change anything.
+  const unsettledFrom = new Date(
+    options.since.getTime() - UNSETTLED_LOOKBACK_MS,
+  );
   const unsettled = await StripeInvoice.query()
     .select("stripeInvoiceId")
     .whereIn("status", ["open", "uncollectible"])
+    .where("stripeCreatedAt", ">=", unsettledFrom.toISOString())
     .where("stripeCreatedAt", "<", options.since.toISOString());
   for (const row of unsettled) {
     if (seen.has(row.stripeInvoiceId)) {

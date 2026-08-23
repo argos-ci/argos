@@ -451,9 +451,9 @@ export const typeDefs = gql`
     "The invoices the contract is worth, newest first."
     invoices: [StaffContractInvoice!]!
     """
-    True when every invoice found is still awaiting payment. Counted all the
-    same — a contract invoice raised is money on its way — and flagged, so
-    collection can be watched.
+    True when any invoice found is still awaiting payment — the unpaid
+    renewal beside a settled upsell is exactly the one worth watching.
+    Counted all the same: a contract invoice raised is money on its way.
     """
     awaitingPayment: Boolean!
   }

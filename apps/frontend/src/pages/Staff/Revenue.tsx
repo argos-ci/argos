@@ -227,7 +227,7 @@ function getSplitNote(split: Split): string {
   // the total went through the fixed rate.
   const foreign =
     split.foreignRevenue > 0
-      ? ` ${formatEuros(split.foreignRevenue)} of it was invoiced in another currency — dollars at a fixed rate, anything else at parity.`
+      ? ` ${formatEuros(split.foreignRevenue)} of it was invoiced in dollars, converted at a fixed rate.`
       : "";
 
   return `${teams}${foreign}`;
@@ -747,11 +747,7 @@ function RevenueHistory(props: { months: readonly RevenueMonth[] }) {
 
 /** One counted invoice, described for the amount's breakdown tooltip. */
 function describeInvoice(invoice: YearlyContract["invoices"][number]): string {
-  const covers =
-    invoice.coveredFrom && invoice.coveredUntil
-      ? `, covers ${DATE_FORMAT.format(new Date(invoice.coveredFrom))} to ${DATE_FORMAT.format(new Date(invoice.coveredUntil))}`
-      : "";
-  return `${formatInvoiceAmount(invoice)} invoiced ${DATE_FORMAT.format(new Date(invoice.invoicedAt))}${covers}.`;
+  return `${formatInvoiceAmount(invoice)} invoiced ${DATE_FORMAT.format(new Date(invoice.invoicedAt))}, covers ${DATE_FORMAT.format(new Date(invoice.coveredFrom))} to ${DATE_FORMAT.format(new Date(invoice.coveredUntil))}.`;
 }
 
 /** The contract's invoices in their own currency, when they share one. */
@@ -793,9 +789,13 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
                 </div>
               }
             >
-              {originalTotal
-                ? formatInvoiceAmount(originalTotal)
-                : CONTRACT_PRICE_FORMAT.format(contract.amount)}
+              {originalTotal ? (
+                formatInvoiceAmount(originalTotal)
+              ) : (
+                // Invoices in more than one currency have no single original
+                // amount; the euro column beside this one still holds.
+                <span className="text-low">—</span>
+              )}
             </Hint>
             {contract.awaitingPayment ? (
               <div>
@@ -965,7 +965,7 @@ function StaffRevenuePage() {
         </PageHeaderContent>
       </PageHeader>
       <RevenueCards months={months} error={error ?? null} />
-      {data && months && contracts ? (
+      {months && contracts ? (
         <>
           <ChartCard className="mb-6" title="Invoiced by month">
             <RevenueChart months={months} />

@@ -142,6 +142,7 @@ async function getMarketplaceSubscriptions(): Promise<
 function getMarketplaceMonthRevenue(
   subscriptions: MarketplaceSubscription[],
   month: { start: number; end: number },
+  elapsed: { start: number; end: number },
 ): StaffRevenueSplit {
   const split = createSplit();
   const byAccount = new Map<string, number>();
@@ -173,8 +174,11 @@ function getMarketplaceMonthRevenue(
     );
   }
 
+  // A month bills its subscriptions once, so what a month still running has
+  // earned is the share of it that has gone by.
+  const share = (elapsed.end - elapsed.start) / (month.end - month.start) || 0;
   for (const cents of byAccount.values()) {
-    addToSplit(split, { amount: cents / 100, currency: "usd" });
+    addToSplit(split, { amount: (cents / 100) * share, currency: "usd" });
   }
   split.teamsCount = byAccount.size;
   return split;
@@ -388,9 +392,10 @@ export function getInvoiceRevenue(invoice: {
 }
 
 /**
- * An invoice's contribution in euros: dollars at the fixed rate, euros as
- * they are. A currency this page does not know stays at parity — and lands in
- * the foreign share, so the caveat covers it either way.
+ * An invoice's contribution in euros: dollars at the fixed rate, euros as they
+ * are. Stripe raises them in one or the other and never anything else; a third
+ * currency would land at parity and in the foreign share, where the caveat on
+ * screen would at least point at it.
  */
 export function toEuros(revenue: InvoiceRevenue): number {
   return revenue.currency === "usd"
@@ -457,7 +462,7 @@ type StaffYearlyContract = {
   monthlyRevenue: number;
   /** The invoices it is worth, newest first. */
   invoices: StaffContractInvoice[];
-  /** True when every invoice found is still awaiting payment. */
+  /** True when any invoice found is still awaiting payment. */
   awaitingPayment: boolean;
 };
 
@@ -547,7 +552,12 @@ export function classifyInvoice(
   if (period && period.end - period.start > MONTHLY_PERIOD_MS) {
     return {
       kind: "contract",
-      coverage: period.end > issued ? period : yearFrom(issued),
+      // Stamped in arrears — its period ends by the day it was raised — reads
+      // as collecting for the stretch ahead rather than paying for one over.
+      // The same stretch, not a year: a quarter billed late is a quarter, and
+      // stretching it to a year would let it supersede the contract it sits
+      // inside.
+      coverage: period.end > issued ? period : shiftForward(period, issued),
     };
   }
 
@@ -579,6 +589,14 @@ function getCustomersWithTerms(
     }
   }
   return customers;
+}
+
+/** The same stretch, starting when the invoice was raised. */
+function shiftForward(
+  period: { start: number; end: number },
+  issued: number,
+): { start: number; end: number } {
+  return { start: issued, end: issued + (period.end - period.start) };
 }
 
 /** A year from `issued`, for a contract invoice that states no usable one. */
@@ -748,12 +766,6 @@ export async function getStaffRevenue(
       continue;
     }
     const revenue = getInvoiceRevenue(row);
-    // A zero invoice — a usage month under the quota, the opening of a
-    // sales-created subscription — is not a team being invoiced.
-    if (revenue.amount === 0) {
-      continue;
-    }
-
     const classified = classifyInvoice(row, {
       customerHasTerm: customersWithTerms.has(row.stripeCustomerId),
     });
@@ -769,6 +781,15 @@ export async function getStaffRevenue(
       continue;
     }
 
+    // A zero invoice — a usage month under the quota, the opening of a
+    // sales-created subscription — is not a team being invoiced. Only the
+    // monthly side drops it: a contract fully discounted or fully credited is
+    // worth nothing, which is a figure, where dropping it would report the
+    // team as having no contract anyone could find.
+    if (revenue.amount === 0) {
+      continue;
+    }
+
     // A monthly bill belongs to the month it was raised in, and only the
     // reported window holds months to raise it in.
     const created = new Date(row.stripeCreatedAt).getTime();
@@ -780,9 +801,7 @@ export async function getStaffRevenue(
     );
     const split = monthSplits[index];
     const teams = monthTeams[index];
-    if (!split || !teams) {
-      continue;
-    }
+    invariant(split && teams, "the query bounds every row to a reported month");
     addToSplit(split, revenue);
 
     // A team invoiced twice in one month is one team, one line deeper.
@@ -858,7 +877,9 @@ export async function getStaffRevenue(
   }
 
   for (const [index, split] of yearlySplits.entries()) {
-    split.teamsCount = yearlyMonthCustomers[index]?.size ?? 0;
+    const customers = yearlyMonthCustomers[index];
+    invariant(customers, "splits and customers are built together");
+    split.teamsCount = customers.size;
   }
 
   const months = reported.map((start, index) => {
@@ -876,7 +897,13 @@ export async function getStaffRevenue(
       // Largest first: the breakdown is read to see who made the month.
       teams: [...teams.values()].sort((a, b) => b.revenue - a.revenue),
       yearlyPlans: yearly,
-      githubPlans: getMarketplaceMonthRevenue(marketplaceSubscriptions, bound),
+      githubPlans: getMarketplaceMonthRevenue(
+        marketplaceSubscriptions,
+        bound,
+        // As much of the month as has gone by, so the running month's
+        // marketplace band is as partial as the two beside it.
+        amortizeBounds[index] ?? bound,
+      ),
     };
   });
 

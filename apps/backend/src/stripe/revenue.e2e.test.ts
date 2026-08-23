@@ -502,10 +502,16 @@ describe("getStaffRevenue", () => {
     expect(last.githubPlans.revenue).toBe(
       toEuros({ amount: 200, currency: "usd" }),
     );
-    // The one that left is gone from this month, and only from this one.
+    // The one that left is gone from this month, and only from this one —
+    // and what the month has earned so far is the share of it gone by, like
+    // the two figures beside it.
     expect(current.githubPlans.teamsCount).toBe(1);
-    expect(current.githubPlans.revenue).toBe(
-      toEuros({ amount: 100, currency: "usd" }),
+    const monthMs =
+      startOfUTCMonth(now, 1).getTime() - startOfUTCMonth(now, 0).getTime();
+    const elapsed = now.getTime() - startOfUTCMonth(now, 0).getTime();
+    expect(current.githubPlans.revenue).toBeCloseTo(
+      toEuros({ amount: 100 * (elapsed / monthMs), currency: "usd" }),
+      3,
     );
     // Never inside the figure the cards report.
     expect(current.revenue).toBe(
