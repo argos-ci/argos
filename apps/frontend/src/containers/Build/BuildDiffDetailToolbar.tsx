@@ -4,7 +4,6 @@ import { invariant } from "@argos/util/invariant";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission, ScreenshotDiffStatus } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
-import { Separator } from "@/ui/Separator";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
@@ -88,32 +87,46 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
     showCommentTool || (canComment && checkCanCommentOnTextDiff(diff));
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5">
-      <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
-      <FitToggle />
-      {fitControls}
+    // Space tells the groups apart, no rule between them — and the same space
+    // that sets the variant switchers apart from this whole bar, so the row has
+    // one distance meaning "a different kind of thing" at every level of it.
+    // Within a group the controls sit close, which is what makes them a group.
+    <div className="flex shrink-0 items-center gap-4">
+      <ToolGroup>
+        <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
+        <FitToggle />
+        {fitControls}
+      </ToolGroup>
       {showOverlayControls && (
-        <>
-          <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
+        <ToolGroup>
           {/* Reading the mask happens next to the snapshot; how it is painted
               is a preference, and preferences live up here. */}
           {snapshotControls ? <ChangesOverlayControls /> : <SettingsButton />}
-        </>
+        </ToolGroup>
       )}
       {showComments && (
-        <>
-          <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
+        <ToolGroup>
           {showCommentTool && snapshotControls && <CommentToolToggle />}
           <CommentsVisibilityToggle />
-        </>
+        </ToolGroup>
       )}
-      <div className="group contents">
-        <Separator
-          orientation="vertical"
-          className="w-thin mx-0.5 h-8 group-empty:hidden"
-        />
-        {children}
-      </div>
+      <ToolGroup>{children}</ToolGroup>
+    </div>
+  );
+}
+
+/**
+ * Controls that answer the same question, kept together — and a group is why
+ * the bar can be read at all, now that nothing is ruled off.
+ *
+ * `empty:hidden` because an empty group would otherwise leave its space
+ * behind: the page decides what `children` is, and on some pages it is
+ * nothing.
+ */
+function ToolGroup(props: { children?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 empty:hidden">
+      {props.children}
     </div>
   );
 }
