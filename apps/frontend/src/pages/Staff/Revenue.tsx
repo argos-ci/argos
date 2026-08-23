@@ -471,7 +471,12 @@ function HistoryRow(props: {
   isLast: boolean;
 }) {
   const { month, before, index, isLast } = props;
-  const growth = before ? getGrowth(month.revenue, before.revenue) : null;
+  // On the monthly figure, like every column here: the yearly rate lives in
+  // its own table, and a change diluted by a flat rate would understate every
+  // move.
+  const growth = before
+    ? getGrowth(month.monthlyPlans.revenue, before.monthlyPlans.revenue)
+    : null;
 
   return (
     <tr
@@ -487,12 +492,6 @@ function HistoryRow(props: {
         {formatPrice(month.monthlyPlans.revenue)}
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
-        {formatPrice(month.yearlyPlans.revenue)}
-      </td>
-      <td className="p-4 text-right text-sm font-medium tabular-nums">
-        {formatPrice(month.revenue)}
-      </td>
-      <td className="p-4 text-right text-sm tabular-nums">
         {growth === null ? (
           <span className="text-low">—</span>
         ) : (
@@ -504,6 +503,15 @@ function HistoryRow(props: {
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
         {month.monthlyPlans.teamsCount}
+      </td>
+      <td className="p-4 text-right text-sm tabular-nums">
+        {month.monthlyPlans.teamsCount > 0 ? (
+          formatPrice(
+            month.monthlyPlans.revenue / month.monthlyPlans.teamsCount,
+          )
+        ) : (
+          <span className="text-low">—</span>
+        )}
       </td>
     </tr>
   );
@@ -527,43 +535,59 @@ function RevenueHistory(props: { months: readonly RevenueMonth[] }) {
   const rows = [...complete].reverse();
 
   return (
-    <div className="overflow-x-auto rounded-sm border">
-      <table className="w-full min-w-160 table-fixed border-collapse">
-        <thead>
-          <tr className="text-low border-b text-xs font-semibold">
-            <th className="w-[18%] px-4 py-3 text-left">Month</th>
-            <th className="w-[18%] px-4 py-3 text-right">Monthly plans</th>
-            <th className="w-[18%] px-4 py-3 text-right">Yearly plans</th>
-            <th className="w-[16%] px-4 py-3 text-right">Total</th>
-            <th className="w-[15%] px-4 py-3 text-right">
-              <Tooltip content="Against the month before it. The running month is not listed: being partial, it would read as a drop that is only the calendar.">
-                <span className="underline decoration-dotted underline-offset-2">
-                  Change
-                </span>
-              </Tooltip>
-            </th>
-            <th className="w-[15%] px-4 py-3 text-right">
-              <Tooltip content="Teams invoiced on a monthly plan that month. Annual contracts are a rate rather than a month's invoices, so they are not counted here.">
-                <span className="underline decoration-dotted underline-offset-2">
-                  Teams
-                </span>
-              </Tooltip>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((month, index) => (
-            <HistoryRow
-              key={month.month}
-              month={month}
-              // `rows` runs newest first, so the month before is the next one.
-              before={rows[index + 1] ?? null}
-              index={index}
-              isLast={index === rows.length - 1}
-            />
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <div className="mb-3">
+        <h3 className="font-semibold">Monthly plans</h3>
+      </div>
+      <div className="overflow-x-auto rounded-sm border">
+        <table className="w-full min-w-160 table-fixed border-collapse">
+          <thead>
+            <tr className="text-low border-b text-xs font-semibold">
+              <th className="w-[22%] px-4 py-3 text-left">Month</th>
+              <th className="w-[21%] px-4 py-3 text-right">
+                <Tooltip content="Invoices issued that month, excluding tax and net of credit notes — what Stripe charged, discounts included.">
+                  <span className="underline decoration-dotted underline-offset-2">
+                    Invoiced
+                  </span>
+                </Tooltip>
+              </th>
+              <th className="w-[18%] px-4 py-3 text-right">
+                <Tooltip content="Against the month before it.">
+                  <span className="underline decoration-dotted underline-offset-2">
+                    Change
+                  </span>
+                </Tooltip>
+              </th>
+              <th className="w-[18%] px-4 py-3 text-right">
+                <Tooltip content="Teams invoiced that month.">
+                  <span className="underline decoration-dotted underline-offset-2">
+                    Teams
+                  </span>
+                </Tooltip>
+              </th>
+              <th className="w-[21%] px-4 py-3 text-right">
+                <Tooltip content="The month's invoices over its teams — what the average team was billed.">
+                  <span className="underline decoration-dotted underline-offset-2">
+                    Per team
+                  </span>
+                </Tooltip>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((month, index) => (
+              <HistoryRow
+                key={month.month}
+                month={month}
+                // `rows` runs newest first, so the month before is the next one.
+                before={rows[index + 1] ?? null}
+                index={index}
+                isLast={index === rows.length - 1}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
