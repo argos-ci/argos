@@ -1,11 +1,10 @@
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { SlidersHorizontalIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -23,18 +22,8 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const storyModes = getUniqueStoryModes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
   );
-  if (storyModes.length === 0) {
+  if (storyModes.length < 2) {
     return null;
-  }
-  if (storyModes.length === 1) {
-    const mode = storyModes[0]!;
-    return (
-      <Tooltip content={`Story mode: ${mode}`}>
-        <Chip icon={SlidersHorizontalIcon} color="storybook">
-          {mode}
-        </Chip>
-      </Tooltip>
-    );
   }
   const activeMode = metadata?.story?.mode ?? null;
   const activeIndex = storyModes.findIndex((m) => m === activeMode);
@@ -50,7 +39,7 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             );
         invariant(resolvedDiff, "diff cannot be null");
         return (
-          <StoryModeChipLink
+          <StoryModeLinkButton
             key={mode}
             mode={mode}
             aria-current={isActive ? "page" : undefined}
@@ -63,7 +52,7 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   );
 }
 
-function StoryModeChipLink(props: {
+function StoryModeLinkButton(props: {
   mode: string;
   href: string;
   shortcutEnabled: boolean;
@@ -76,19 +65,21 @@ function StoryModeChipLink(props: {
   });
   const content = `Story mode: ${mode}`;
 
-  const chipLink = (
-    <ChipLink {...rest} icon={SlidersHorizontalIcon} color="storybook">
+  // No icon: a mode is named by whoever wrote the story, so the name is the
+  // only thing that tells one from another.
+  const button = (
+    <LinkButton {...rest} variant="secondary">
       {mode}
-    </ChipLink>
+    </LinkButton>
   );
 
   if (!shortcutEnabled) {
-    return <Tooltip content={content}>{chipLink}</Tooltip>;
+    return <Tooltip content={content}>{button}</Tooltip>;
   }
 
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={content}>
-      {chipLink}
+      {button}
     </HotkeyTooltip>
   );
 }

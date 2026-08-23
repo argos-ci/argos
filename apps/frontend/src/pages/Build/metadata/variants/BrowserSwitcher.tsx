@@ -3,8 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -26,17 +26,8 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const browsers = getUniqueBrowsers(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
   );
-  if (browsers.length === 0) {
+  if (browsers.length < 2) {
     return null;
-  }
-  if (browsers.length === 1) {
-    const browser = browsers[0]!;
-    return (
-      <Chip icon={<BrowserIcon browser={browser} />}>
-        {getBrowserLabel(browser.name)}
-        <span className="text-low ml-1">v{browser.version}</span>
-      </Chip>
-    );
   }
   const activeKey = metadata?.browser ? hashBrowser(metadata.browser) : null;
   const activeIndex = browsers.findIndex((b) => hashBrowser(b) === activeKey);
@@ -54,7 +45,7 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             });
         invariant(resolvedDiff, "diff cannot be null");
         return (
-          <BrowserChipLink
+          <BrowserLinkButton
             key={key}
             browser={browser}
             aria-current={isActive ? "page" : undefined}
@@ -67,7 +58,7 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   );
 }
 
-function BrowserChipLink(props: {
+function BrowserLinkButton(props: {
   browser: MetadataBrowser;
   href: string;
   shortcutEnabled: boolean;
@@ -75,28 +66,28 @@ function BrowserChipLink(props: {
 }) {
   const { browser, shortcutEnabled, ...rest } = props;
   const navigate = useNavigate();
-  const tooltipContent = `${browser.name} v${browser.version}`;
+  const label = getBrowserLabel(browser.name);
+  const tooltipContent = `${label} v${browser.version}`;
   const hotkey = useBuildHotkey("switchBrowser", () => navigate(props.href), {
     enabled: shortcutEnabled,
   });
 
-  const chipLink = (
-    <ChipLink
-      {...rest}
-      className="shrink-0 cursor-default"
-      icon={<BrowserIcon browser={browser} />}
-    >
-      {getBrowserLabel(browser.name)}
-    </ChipLink>
+  const button = (
+    // The logo is the label: browsers are the one dimension whose icons anyone
+    // reviewing snapshots can already tell apart. The name stays for a screen
+    // reader, and the version for the tooltip.
+    <LinkButton {...rest} variant="secondary" iconOnly aria-label={label}>
+      <BrowserIcon browser={browser} />
+    </LinkButton>
   );
 
   if (!shortcutEnabled) {
-    return <Tooltip content={tooltipContent}>{chipLink}</Tooltip>;
+    return <Tooltip content={tooltipContent}>{button}</Tooltip>;
   }
 
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={tooltipContent}>
-      {chipLink}
+      {button}
     </HotkeyTooltip>
   );
 }

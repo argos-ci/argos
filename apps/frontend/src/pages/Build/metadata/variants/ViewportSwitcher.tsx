@@ -3,13 +3,12 @@ import { invariant } from "@argos/util/invariant";
 import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
-import { getViewportIconKind, viewportIcons } from "../metadataIcons";
 import {
   getUniqueViewports,
   hashViewport,
@@ -25,16 +24,8 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const viewports = getUniqueViewports(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
   );
-  if (viewports.length === 0) {
+  if (viewports.length < 2) {
     return null;
-  }
-  if (viewports.length === 1) {
-    const viewport = viewports[0]!;
-    return (
-      <Chip icon={viewportIcons[getViewportIconKind(viewport.width)]}>
-        {viewport.width}×{viewport.height}px
-      </Chip>
-    );
   }
   const activeKey = metadata?.viewport ? hashViewport(metadata.viewport) : null;
   const activeIndex = viewports.findIndex((v) => hashViewport(v) === activeKey);
@@ -52,7 +43,7 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             });
         invariant(resolvedDiff, "diff cannot be null");
         return (
-          <ViewportChipLink
+          <ViewportLinkButton
             key={key}
             viewport={viewport}
             aria-current={isActive ? "page" : undefined}
@@ -65,7 +56,7 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   );
 }
 
-function ViewportChipLink(props: {
+function ViewportLinkButton(props: {
   viewport: MetadataViewport;
   href: string;
   shortcutEnabled: boolean;
@@ -78,23 +69,21 @@ function ViewportChipLink(props: {
   });
   const content = tooltipContent(viewport);
 
-  const chipLink = (
-    <ChipLink
-      {...rest}
-      icon={viewportIcons[getViewportIconKind(viewport.width)]}
-      className="cursor-default"
-    >
+  const button = (
+    // The width alone: it is what tells siblings apart, and the height and the
+    // unit are the same for all of them — the tooltip carries both.
+    <LinkButton {...rest} variant="secondary">
       {viewport.width}
-    </ChipLink>
+    </LinkButton>
   );
 
   if (!shortcutEnabled) {
-    return <Tooltip content={content}>{chipLink}</Tooltip>;
+    return <Tooltip content={content}>{button}</Tooltip>;
   }
 
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={content}>
-      {chipLink}
+      {button}
     </HotkeyTooltip>
   );
 }

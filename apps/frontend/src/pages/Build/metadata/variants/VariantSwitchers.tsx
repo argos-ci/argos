@@ -1,46 +1,39 @@
-import { ChipContext } from "@/ui/Chip";
-
 import { useBuildDiffState, type Diff } from "../../BuildDiffState";
-import { resolveDiffMetadata } from "../utils";
 import { BrowserSwitcher } from "./BrowserSwitcher";
 import { ColorSchemeSwitcher } from "./ColorSchemeSwitcher";
-import { MediaTypeChip } from "./MediaTypeChip";
 import { StoryModeSwitcher } from "./StoryModeSwitcher";
 import { ViewportSwitcher } from "./ViewportSwitcher";
 
-const CHIP_DEFAULTS = { color: "blank", scale: "sm" } as const;
-
 /**
- * The dimensions the snapshot on screen varies along, and the siblings to jump
- * to along each. Lives in the toolbar rather than the sidebar so the switch
+ * The dimensions along which the snapshot on screen has siblings to jump to.
+ * Only those: a dimension with a single value is a fact, not a choice, and the
+ * facts live in the sidebar's Metadata panel — a toolbar earns its place by
+ * doing something. Lives up here rather than in the sidebar so the switch
  * hotkeys stay bound when the sidebar is closed.
  */
 export function VariantSwitchers(props: { diff: Diff }) {
   const { diff } = props;
   const { siblingDiffs } = useBuildDiffState();
-  const metadata = resolveDiffMetadata(diff);
   return (
-    <ChipContext value={CHIP_DEFAULTS}>
-      {/* Named, because out here the chips no longer sit under the sidebar's
-          "Metadata" heading and would otherwise be a bare row of links at the
-          end of the toolbar.
-
-          `ml-auto` for the line of their own they get when the row folds:
-          nothing to be spaced against there, so they would sit under the name
-          instead of under the controls they follow. `empty:hidden` so a
-          snapshot with no dimensions at all — a markdown one — does not leave
-          the toolbar's gap twice over. */}
-      <div
-        role="group"
-        aria-label="Snapshot variants"
-        className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5 empty:hidden"
-      >
-        <BrowserSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-        <ViewportSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-        <ColorSchemeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-        <MediaTypeChip mediaType={metadata?.mediaType ?? null} />
-        <StoryModeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-      </div>
-    </ChipContext>
+    // Named, because the switchers would otherwise be a bare run of buttons in
+    // the middle of the toolbar, indistinguishable from the pane controls.
+    //
+    // `min-w-[min(100%,fit-content)]`: the group refuses to be squeezed — that
+    // is what makes the toolbar's cluster fold it under the controls whole —
+    // except once it has a line to itself, where `100%` wins and the internal
+    // `flex-wrap` takes over if even a full line is not enough.
+    //
+    // `empty:hidden` so a snapshot with nothing to switch — most of them — does
+    // not leave the cluster's gap twice over.
+    <div
+      role="group"
+      aria-label="Snapshot variants"
+      className="flex min-w-[min(100%,fit-content)] flex-wrap items-center justify-end gap-1.5 empty:hidden"
+    >
+      <BrowserSwitcher diff={diff} siblingDiffs={siblingDiffs} />
+      <ViewportSwitcher diff={diff} siblingDiffs={siblingDiffs} />
+      <ColorSchemeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
+      <StoryModeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
+    </div>
   );
 }

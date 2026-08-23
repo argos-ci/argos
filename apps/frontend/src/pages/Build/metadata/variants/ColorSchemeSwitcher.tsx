@@ -3,8 +3,8 @@ import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 
 import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
+import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Chip, ChipLink } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
@@ -16,7 +16,6 @@ import {
   useGetDiffPath,
 } from "../utils";
 
-/** Chip label. Short: the chip shares the toolbar with everything else. */
 function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
   switch (colorScheme) {
     case ScreenshotMetadataColorScheme.Light:
@@ -42,20 +41,8 @@ export function ColorSchemeSwitcher(props: {
   const colorSchemes = getUniqueColorSchemes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
   );
-  if (!colorSchemes.includes(ScreenshotMetadataColorScheme.Dark)) {
+  if (colorSchemes.length < 2) {
     return null;
-  }
-  if (colorSchemes.length === 1) {
-    const colorScheme = colorSchemes[0]!;
-    return (
-      // Named, not just an icon: with nothing to switch to, a lone moon is a
-      // symbol the reader has to decode.
-      <Tooltip content={getColorSchemeLabel(colorScheme)}>
-        <Chip icon={colorSchemeIcons[colorScheme]} className="cursor-default">
-          {getColorSchemeName(colorScheme)}
-        </Chip>
-      </Tooltip>
-    );
   }
   const active = resolveColorScheme(metadata);
   return (
@@ -68,16 +55,21 @@ export function ColorSchemeSwitcher(props: {
               (d) => resolveColorScheme(resolveDiffMetadata(d)) === colorScheme,
             );
         invariant(resolvedDiff, "diff cannot be null");
+        const Icon = colorSchemeIcons[colorScheme];
+        const label = getColorSchemeLabel(colorScheme);
         return (
-          <Tooltip key={colorScheme} content={getColorSchemeLabel(colorScheme)}>
-            <ChipLink
-              icon={colorSchemeIcons[colorScheme]}
-              className="cursor-default"
+          // A sun against a moon: with the two side by side, each names the
+          // other — the trap of a lone undecodable moon needs a lone moon.
+          <Tooltip key={colorScheme} content={label}>
+            <LinkButton
+              variant="secondary"
+              iconOnly
+              aria-label={label}
               aria-current={isActive ? "page" : undefined}
               href={getDiffPath(resolvedDiff.id) ?? ""}
             >
-              {getColorSchemeName(colorScheme)}
-            </ChipLink>
+              <Icon />
+            </LinkButton>
           </Tooltip>
         );
       })}
