@@ -55,7 +55,6 @@ import { MediaVideo, MediaWell } from "@/ui/MediaFrame";
 import { MenuItem } from "@/ui/menu-kit";
 import { Separator } from "@/ui/Separator";
 import { useResizeObserver } from "@/ui/useResizeObserver";
-import { formatBytes, formatDimensions } from "@/util/media";
 
 import { MediaCommentLayer } from "./MediaCommentLayer";
 
@@ -126,30 +125,6 @@ export type MediaViewerNav = {
   onNext: () => void;
 };
 
-/**
- * The shape and weight of what is on screen, for the line beside its name.
- *
- * The version's, not the media's: looking back at an older upload has to say
- * that upload's numbers.
- */
-function getMediaFacts(media: ViewerMedia, hasCounterpart: boolean): string[] {
-  const facts: string[] = [];
-  if (media.state && !hasCounterpart) {
-    // Which half of a pair this is. With both halves on screen the panes label
-    // themselves; alone, the fact lives here.
-    facts.push(media.state);
-  }
-  const dimensions = formatDimensions(
-    media.version.width,
-    media.version.height,
-  );
-  if (dimensions) {
-    facts.push(dimensions);
-  }
-  facts.push(formatBytes(media.version.sizeBytes));
-  return facts;
-}
-
 /** Everything a blended (onion/swipe) pane needs beyond its base media. */
 type BlendState = {
   mode: "onion" | "swipe";
@@ -208,12 +183,7 @@ export function MediaViewer(props: {
       <div className="flex h-full min-h-0 flex-col">
         {/* A recording gets the same bar as a screenshot — nothing to compare,
             but the same name in the same place and the same way out of it. */}
-        <MediaViewToolbar
-          title={media.name}
-          facts={getMediaFacts(media, false)}
-          nav={nav}
-          compare={null}
-        />
+        <MediaViewToolbar title={media.name} nav={nav} compare={null} />
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5">
           <MediaWell
             aspectRatio={
@@ -347,7 +317,6 @@ export function MediaViewer(props: {
         <div className="flex h-full min-h-0 flex-col gap-2">
           <MediaViewToolbar
             title={media.name}
-            facts={getMediaFacts(media, counterpart !== null)}
             nav={nav}
             compare={
               counterpart ? { blendEnabled, hasChanges: diff !== null } : null
@@ -442,8 +411,6 @@ function DisarmCommentTool(props: {
  */
 function MediaViewToolbar(props: {
   title: string;
-  /** The version's plain facts, beside the name. */
-  facts: string[];
   /** Moving through the pull request's media, when there is more than one. */
   nav: MediaViewerNav | null;
   /** The pair's controls, absent when the media stands alone or is a video. */
@@ -454,7 +421,7 @@ function MediaViewToolbar(props: {
     hasChanges: boolean;
   } | null;
 }) {
-  const { title, facts, nav, compare } = props;
+  const { title, nav, compare } = props;
   return (
     // `mb-4` + the viewer column's `gap-2` puts 24px between the toolbar and
     // the panes, level with the sidebar's action strip.
@@ -475,12 +442,7 @@ function MediaViewToolbar(props: {
           </DetailToolbarNav>
         ) : null}
         {/* Monospace, unlike a snapshot's name: this one is a file name. */}
-        <DetailToolbarTitle
-          className="font-mono"
-          meta={facts.length > 0 ? facts.join(" · ") : null}
-        >
-          {title}
-        </DetailToolbarTitle>
+        <DetailToolbarTitle className="font-mono">{title}</DetailToolbarTitle>
         {/* `ml-auto` so the controls stay on the right even when the row is too
             narrow to hold them and they wrap under the title. */}
         <div className="ml-auto flex flex-wrap items-center gap-3">

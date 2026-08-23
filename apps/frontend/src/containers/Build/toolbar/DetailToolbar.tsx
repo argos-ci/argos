@@ -46,13 +46,8 @@ export function DetailToolbarTitle(props: {
   /** Wraps the title — a link to wherever the subject came from. */
   render?: (title: React.ReactNode) => React.ReactNode;
   className?: string;
-  /**
-   * Terse facts about what is on screen, set beside its name and reading as an
-   * extension of it — a file listing's second column, not a field.
-   */
-  meta?: React.ReactNode;
 }) {
-  const { children, render, className, meta } = props;
+  const { children, render, className } = props;
   const title = (
     <span
       role="heading"
@@ -63,16 +58,8 @@ export function DetailToolbarTitle(props: {
     </span>
   );
   return (
-    <div
-      className={clsx(
-        "flex min-w-0 shrink grow basis-88",
-        meta && "items-baseline gap-2",
-      )}
-    >
+    <div className="flex min-w-0 shrink grow basis-88">
       {render ? render(title) : title}
-      {meta ? (
-        <span className="text-low shrink-0 font-mono text-xs">{meta}</span>
-      ) : null}
     </div>
   );
 }
