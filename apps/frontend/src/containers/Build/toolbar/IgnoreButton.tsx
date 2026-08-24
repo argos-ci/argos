@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { useApolloClient } from "@apollo/client/react";
+import { useApolloClient, useFragment } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 
@@ -34,6 +34,21 @@ const IgnoreChangeMutation = graphql(`
   }
 `);
 
+/**
+ * What the toolbar reads the flag from. The build page fetches its diffs with
+ * `no-cache` (see `useDataState`), so the snapshot it hands down is not a
+ * normalized entity and never hears about the mutation's cache write — the
+ * change would be ignored on the server while the button stayed as it was
+ * until a reload. Both mutations write the change to the cache, so the flag
+ * follows that entity and falls back to the snapshot until it is there.
+ */
+const TestChangeFragment = graphql(`
+  fragment IgnoreButton_TestChange on TestChange {
+    id
+    ignored
+  }
+`);
+
 const UnignoreChangeMutation = graphql(`
   mutation IgnoreButton_unignoreChange($accountSlug: String!, $changeId: ID!) {
     unignoreChange(input: { accountSlug: $accountSlug, changeId: $changeId }) {
@@ -61,11 +76,18 @@ function EnabledIgnoreButton(props: {
   const params = useProjectParams();
   invariant(params, "IgnoreButton requires project params");
   invariant(diff.change, "IgnoreButton requires a change in the diff");
-  const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
   const auth = useAuth();
   const client = useApolloClient();
   const changeId = diff.change.id;
+  const cachedChange = useFragment({
+    fragment: TestChangeFragment,
+    fragmentName: "IgnoreButton_TestChange",
+    from: { __typename: "TestChange", id: changeId },
+  });
+  const isIgnored = cachedChange.complete
+    ? cachedChange.data.ignored
+    : diff.change.ignored;
 
   const ignoreChange = () => {
     const auditTrailId =
@@ -169,6 +191,7 @@ function EnabledIgnoreButton(props: {
         keys={hotkey.displayKeys}
       >
         <BaseIgnoreButton
+          aria-label={isIgnored ? "Unignore change" : "Ignore change"}
           aria-pressed={isIgnored}
           onClick={toggle}
           variant={isIgnored ? "danger" : "secondary"}
