@@ -445,6 +445,10 @@ const CHART_CONFIG: ChartConfig = Object.fromEntries(
  * because what is being read here is a trend over a year, and a filled band
  * carries a slope where twelve separate bars make the reader measure heights
  * against each other.
+ *
+ * The tooltip totals the three bands, the stack's own height. It therefore
+ * reads above the cards, which report what Stripe invoiced alone — the
+ * Marketplace band is billed by GitHub and sits on top of them.
  */
 function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   const data = props.months.map((month) => ({
@@ -509,10 +513,6 @@ function RevenueChart(props: { months: readonly RevenueMonth[] }) {
                 return MONTH_YEAR_FORMAT.format(new Date(item.payload.month));
               }}
               valueFormatter={(value) => formatEuros(value)}
-              // No total: the Marketplace band is stacked on top of what
-              // Argos invoiced through Stripe, and adding the three would
-              // contradict the cards, which report the Stripe figures alone.
-              hideTotal
             />
           }
         />
