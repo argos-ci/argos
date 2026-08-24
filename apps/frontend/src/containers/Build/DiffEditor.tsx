@@ -104,11 +104,27 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   modified: string;
   originalLanguage: BundledLanguage;
   modifiedLanguage: BundledLanguage;
+  /**
+   * Identity of each side, used as the viewer's render/highlight cache key. It
+   * must be unique per snapshot: when it is omitted the viewer falls back to the
+   * file *name*, which is the constant `"snapshot"` below, so every text diff in
+   * the app would share one key. Selecting another snapshot then hits the cache
+   * and keeps painting the previous diff until a full reload drops it.
+   */
+  originalCacheKey: string;
+  modifiedCacheKey: string;
   renderSideBySide: boolean;
   comments?: DiffEditorComments<LAnnotation>;
 }) {
-  const { original, modified, originalLanguage, modifiedLanguage, comments } =
-    props;
+  const {
+    original,
+    modified,
+    originalLanguage,
+    modifiedLanguage,
+    originalCacheKey,
+    modifiedCacheKey,
+    comments,
+  } = props;
   const themeType = useThemeType();
   const options = {
     ...BASE_OPTIONS,
@@ -139,11 +155,13 @@ export function DiffEditor<LAnnotation = undefined>(props: {
           name: "snapshot",
           contents: original,
           lang: originalLanguage,
+          cacheKey: originalCacheKey,
         }}
         newFile={{
           name: "snapshot",
           contents: modified,
           lang: modifiedLanguage,
+          cacheKey: modifiedCacheKey,
         }}
         options={options}
         lineAnnotations={comments?.lineAnnotations}
@@ -154,12 +172,22 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   );
 }
 
-export function Editor(props: { value: string; language: BundledLanguage }) {
+export function Editor(props: {
+  value: string;
+  language: BundledLanguage;
+  /** See {@link DiffEditor}'s `originalCacheKey`. */
+  cacheKey: string;
+}) {
   const themeType = useThemeType();
   return (
     <Suspense fallback={<SnapshotLoader />}>
       <File
-        file={{ name: "snapshot", contents: props.value, lang: props.language }}
+        file={{
+          name: "snapshot",
+          contents: props.value,
+          lang: props.language,
+          cacheKey: props.cacheKey,
+        }}
         options={{ ...BASE_OPTIONS, themeType }}
       />
     </Suspense>

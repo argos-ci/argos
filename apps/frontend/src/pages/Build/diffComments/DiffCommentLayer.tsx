@@ -95,6 +95,8 @@ export function DiffCommentLayer(props: {
   modified: string;
   originalLanguage: BundledLanguage;
   modifiedLanguage: BundledLanguage;
+  originalCacheKey: string;
+  modifiedCacheKey: string;
   renderSideBySide: boolean;
 }) {
   const {
@@ -104,6 +106,8 @@ export function DiffCommentLayer(props: {
     modified,
     originalLanguage,
     modifiedLanguage,
+    originalCacheKey,
+    modifiedCacheKey,
     renderSideBySide,
   } = props;
   const commentsEnabled = use(CommentsEnabledContext);
@@ -362,6 +366,8 @@ export function DiffCommentLayer(props: {
         modified={modified}
         originalLanguage={originalLanguage}
         modifiedLanguage={modifiedLanguage}
+        originalCacheKey={originalCacheKey}
+        modifiedCacheKey={modifiedCacheKey}
         renderSideBySide={renderSideBySide}
         comments={comments}
       />
