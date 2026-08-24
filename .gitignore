@@ -6,6 +6,8 @@ node_modules/
 *.pem
 # Env
 .env
+# Local overrides
+*.local
 # Examples
 /examples/*/package-lock.json
 /examples/*/pnpm-lock.yaml
