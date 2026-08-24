@@ -19,6 +19,7 @@ export function Component() {
       <TabLinkList className="px-4" aria-label="Staff navigation">
         <TabLink href="teams">All teams</TabLink>
         <TabLink href="trials">Trials</TabLink>
+        <TabLink href="revenue">Revenue</TabLink>
       </TabLinkList>
       <hr className="border-t" />
       <TabLinkPanel className="flex flex-1 flex-col">

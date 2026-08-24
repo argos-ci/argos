@@ -140,6 +140,29 @@ export const Subscription = defineFactory(models.Subscription, () => ({
   status: "active" as const,
 }));
 
+export const StripeInvoice = defineFactory(models.StripeInvoice, () => ({
+  stripeInvoiceId: FactoryGirl.sequence("stripeInvoice.id", (n) => `in_${n}`),
+  stripeCustomerId: FactoryGirl.sequence(
+    "stripeInvoice.customer",
+    (n) => `cus_invoice_${n}`,
+  ),
+  stripeCreatedAt: new Date("2026-01-15").toISOString(),
+  status: "paid",
+  billingReason: "subscription_cycle",
+  currency: "usd",
+  total: 10_000,
+  totalExcludingTax: 10_000,
+  creditedAmountExcludingTax: 0,
+}));
+
+export const StripeInvoiceSync = defineFactory(
+  models.StripeInvoiceSync,
+  () => ({
+    sinceDate: new Date("2024-01-01").toISOString(),
+    completedAt: new Date().toISOString(),
+  }),
+);
+
 export const TeamAccount = defineFactory(models.Account, () => ({
   teamId: Team.associate("id") as unknown as string,
   name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),

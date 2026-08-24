@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\restrict 4zZG6Hoe1K3ZBDrHabFPUGq365Inj9r7dt9THx8frPwftlzfV3Wfyai1eXJJuqm
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2091,6 +2091,7 @@ CREATE TABLE public.plans (
     "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL,
     "interval" text DEFAULT 'month'::text NOT NULL,
     "samlIncluded" boolean DEFAULT false NOT NULL,
+    "githubMonthlyPriceCents" integer,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -2538,6 +2539,89 @@ ALTER SEQUENCE public.staff_team_contacts_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.staff_team_contacts_id_seq OWNED BY public.staff_team_contacts.id;
+
+
+--
+-- Name: stripe_invoice_syncs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.stripe_invoice_syncs (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "sinceDate" timestamp with time zone NOT NULL,
+    "completedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE public.stripe_invoice_syncs OWNER TO postgres;
+
+--
+-- Name: stripe_invoice_syncs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.stripe_invoice_syncs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.stripe_invoice_syncs_id_seq OWNER TO postgres;
+
+--
+-- Name: stripe_invoice_syncs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.stripe_invoice_syncs_id_seq OWNED BY public.stripe_invoice_syncs.id;
+
+
+--
+-- Name: stripe_invoices; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.stripe_invoices (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "stripeInvoiceId" character varying(255) NOT NULL,
+    "stripeCustomerId" character varying(255) NOT NULL,
+    "stripeSubscriptionId" character varying(255),
+    "stripeCreatedAt" timestamp with time zone NOT NULL,
+    status character varying(255) NOT NULL,
+    "billingReason" character varying(255),
+    currency character varying(255) NOT NULL,
+    total integer NOT NULL,
+    "totalExcludingTax" integer,
+    "totalTaxesAmount" integer,
+    "creditedAmountExcludingTax" integer NOT NULL,
+    "periodStart" timestamp with time zone,
+    "periodEnd" timestamp with time zone
+);
+
+
+ALTER TABLE public.stripe_invoices OWNER TO postgres;
+
+--
+-- Name: stripe_invoices_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.stripe_invoices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.stripe_invoices_id_seq OWNER TO postgres;
+
+--
+-- Name: stripe_invoices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.stripe_invoices_id_seq OWNED BY public.stripe_invoices.id;
 
 
 --
@@ -3490,6 +3574,20 @@ ALTER TABLE ONLY public.staff_team_contacts ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: stripe_invoice_syncs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoice_syncs ALTER COLUMN id SET DEFAULT nextval('public.stripe_invoice_syncs_id_seq'::regclass);
+
+
+--
+-- Name: stripe_invoices id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices ALTER COLUMN id SET DEFAULT nextval('public.stripe_invoices_id_seq'::regclass);
+
+
+--
 -- Name: subscriptions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4347,6 +4445,30 @@ ALTER TABLE ONLY public.staff_team_contacts
 
 ALTER TABLE ONLY public.staff_team_contacts
     ADD CONSTRAINT staff_team_contacts_teamid_unique UNIQUE ("teamId");
+
+
+--
+-- Name: stripe_invoice_syncs stripe_invoice_syncs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoice_syncs
+    ADD CONSTRAINT stripe_invoice_syncs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stripe_invoices stripe_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices
+    ADD CONSTRAINT stripe_invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stripe_invoices stripe_invoices_stripeinvoiceid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stripe_invoices
+    ADD CONSTRAINT stripe_invoices_stripeinvoiceid_unique UNIQUE ("stripeInvoiceId");
 
 
 --
@@ -5330,6 +5452,20 @@ CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING bt
 --
 
 CREATE INDEX screenshots_testid_index ON public.screenshots USING btree ("testId");
+
+
+--
+-- Name: stripe_invoices_stripecreatedat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX stripe_invoices_stripecreatedat_index ON public.stripe_invoices USING btree ("stripeCreatedAt");
+
+
+--
+-- Name: stripe_invoices_stripecustomerid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX stripe_invoices_stripecustomerid_index ON public.stripe_invoices USING btree ("stripeCustomerId");
 
 
 --
@@ -6528,7 +6664,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TecscV4OH9SRouor5Q7L4FIpo5MhEM4uJOqgz5ASGa8paVh5IRkikkvzMULtmGW
+\unrestrict 4zZG6Hoe1K3ZBDrHabFPUGq365Inj9r7dt9THx8frPwftlzfV3Wfyai1eXJJuqm
 
 -- Knex migrations
 
@@ -6779,3 +6915,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818083531_cursor-origin.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260818120000_builds-prheadcommit-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823065836_stripe-invoices.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823133757_github-plan-prices.js', 1, NOW());

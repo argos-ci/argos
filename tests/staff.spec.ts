@@ -7,6 +7,8 @@ import {
   Build,
   Plan as PlanModel,
   ScreenshotBucket,
+  StripeInvoice,
+  StripeInvoiceSync,
   Subscription,
 } from "../apps/backend/src/database/models";
 import {
@@ -620,7 +622,295 @@ staffTest(
   },
 );
 
+/** The first instant of the month `offset` months from now, in UTC. */
+function startOfUTCMonth(offset: number) {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1),
+  );
+}
+
+type RevenueBook = {
+  /** The teams the mirror was seeded for, by the name the page shows. */
+  monthlyTeam: string;
+  dollarTeam: string;
+  contractTeam: string;
+  /** What a month of the contract comes to, as the page prints it. */
+  contractPerMonth: string;
+};
+
+/**
+ * A mirror of invoices to read a revenue page from.
+ *
+ * Dated against the running month rather than fixed, because the page reports
+ * the last thirteen calendar months: a fixed date would fall out of the window
+ * a month after it was written.
+ */
+const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
+  revenueBook: async ({ user }, use, testInfo) => {
+    const prefix = `revenue-${getUniqueTestIdentifier(testInfo)}`;
+    const [monthlyPlan, annualPlan] = await Promise.all([
+      PlanModel.query().insertAndFetch({
+        name: "pro",
+        includedScreenshots: 35_000,
+        usageBased: true,
+        githubSsoIncluded: true,
+        fineGrainedAccessControlIncluded: true,
+        samlIncluded: true,
+        interval: "month",
+      }),
+      PlanModel.query().insertAndFetch({
+        name: "enterprise annual",
+        includedScreenshots: 1_000_000,
+        usageBased: true,
+        githubSsoIncluded: true,
+        fineGrainedAccessControlIncluded: true,
+        samlIncluded: true,
+        interval: "year",
+      }),
+    ]);
+
+    async function createTeam(input: {
+      slug: string;
+      name: string;
+      planId: string;
+    }) {
+      const { account } = await createTeamAccount({
+        slug: `${prefix}-${input.slug}`,
+        name: input.name,
+      });
+      await account
+        .$query()
+        .patch({ stripeCustomerId: `cus_${prefix}-${input.slug}` });
+      await Subscription.query().insert({
+        planId: input.planId,
+        accountId: account.id,
+        provider: "stripe",
+        stripeSubscriptionId: `sub_${prefix}-${input.slug}`,
+        subscriberId: user.user.id,
+        startDate: daysFromNow(-400),
+        endDate: null,
+        paymentMethodFilled: true,
+        status: "active",
+      });
+      return account;
+    }
+
+    /** A team that was invoiced, then left: no subscription, invoices kept. */
+    async function createChurnedTeam(input: { slug: string; name: string }) {
+      const { account } = await createTeamAccount({
+        slug: `${prefix}-${input.slug}`,
+        name: input.name,
+      });
+      await account
+        .$query()
+        .patch({ stripeCustomerId: `cus_${prefix}-${input.slug}` });
+      return account;
+    }
+
+    const monthlyTeam = "Kruger Industrial";
+    const dollarTeam = "Wernham Hogg";
+    const contractTeam = "Bluth Company";
+    await Promise.all([
+      createTeam({
+        slug: "kruger",
+        name: monthlyTeam,
+        planId: monthlyPlan.id,
+      }),
+      createTeam({
+        slug: "wernham",
+        name: dollarTeam,
+        planId: monthlyPlan.id,
+      }),
+      createTeam({
+        slug: "bluth",
+        name: contractTeam,
+        planId: annualPlan.id,
+      }),
+      createChurnedTeam({ slug: "sterling", name: "Sterling Cooper" }),
+    ]);
+
+    const lastMonth = new Date(
+      startOfUTCMonth(-1).getTime() + 5 * 24 * 3600 * 1000,
+    );
+    await StripeInvoice.query().insert([
+      // Two teams billed last month, one of them in dollars: the page states
+      // euros, so the row has to show both what Stripe charged and what it
+      // converts to.
+      {
+        stripeInvoiceId: `in_${prefix}-kruger-last`,
+        stripeCustomerId: `cus_${prefix}-kruger`,
+        stripeCreatedAt: lastMonth.toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 50_000,
+        totalExcludingTax: 50_000,
+        creditedAmountExcludingTax: 0,
+      },
+      {
+        stripeInvoiceId: `in_${prefix}-wernham-last`,
+        stripeCustomerId: `cus_${prefix}-wernham`,
+        stripeCreatedAt: lastMonth.toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "usd",
+        total: 100_000,
+        totalExcludingTax: 100_000,
+        creditedAmountExcludingTax: 0,
+      },
+      // The month before, so the month after it has something to compare
+      // against — without it every row's change is an em dash and the column
+      // is never rendered at all.
+      {
+        stripeInvoiceId: `in_${prefix}-kruger-before`,
+        stripeCustomerId: `cus_${prefix}-kruger`,
+        stripeCreatedAt: new Date(
+          startOfUTCMonth(-2).getTime() + 5 * 24 * 3600 * 1000,
+        ).toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 100_000,
+        totalExcludingTax: 100_000,
+        creditedAmountExcludingTax: 0,
+      },
+      // The running month, so the second card has something partial to report.
+      {
+        stripeInvoiceId: `in_${prefix}-kruger-running`,
+        stripeCustomerId: `cus_${prefix}-kruger`,
+        stripeCreatedAt: new Date().toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 10_000,
+        totalExcludingTax: 10_000,
+        creditedAmountExcludingTax: 0,
+      },
+      // A team that has since churned off a yearly contract keeps the renewal
+      // it was sent. Nothing about its subscription says "annual" any more —
+      // only the invoice's own period does — so this is what stands between a
+      // year's contract and a twelvefold spike in the month it was raised.
+      {
+        stripeInvoiceId: `in_${prefix}-sterling-renewal`,
+        stripeCustomerId: `cus_${prefix}-sterling`,
+        stripeCreatedAt: lastMonth.toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 4_800_000,
+        totalExcludingTax: 4_800_000,
+        creditedAmountExcludingTax: 0,
+        periodStart: startOfUTCMonth(-13).toISOString(),
+        periodEnd: startOfUTCMonth(-1).toISOString(),
+      },
+      // An annual contract raised last month: it must stay out of that month's
+      // monthly figures and be amortized over the year it covers instead.
+      {
+        stripeInvoiceId: `in_${prefix}-bluth-contract`,
+        stripeCustomerId: `cus_${prefix}-bluth`,
+        stripeCreatedAt: lastMonth.toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 1_200_000,
+        totalExcludingTax: 1_200_000,
+        creditedAmountExcludingTax: 0,
+        periodStart: startOfUTCMonth(-1).toISOString(),
+        periodEnd: startOfUTCMonth(11).toISOString(),
+      },
+    ]);
+
+    // The page refuses a window the mirror was never swept for, so the sweep
+    // has to be on record before it will report anything.
+    await StripeInvoiceSync.query().insert({
+      // Deep enough for the window the page asks for, plus the year of
+      // contracts that can still be paying for its first months.
+      sinceDate: startOfUTCMonth(-36).toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+
+    // The contract covers twelve months from this month's start, so a month
+    // of it is its amount over that stretch, weighted by this month's length.
+    const termMs = startOfUTCMonth(12).getTime() - startOfUTCMonth(0).getTime();
+    const monthMs = startOfUTCMonth(1).getTime() - startOfUTCMonth(0).getTime();
+    const contractPerMonth = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR",
+    }).format((12_000 * monthMs) / termMs);
+
+    await use({ monthlyTeam, dollarTeam, contractTeam, contractPerMonth });
+  },
+});
+
+revenueTest.describe("staff revenue", () => {
+  // One browser project, not both: the page has no filter, so every figure on
+  // it is a sum over all the teams in the database — and the projects share
+  // one, truncated once. Seeded twice, the totals double and the assertions
+  // below describe neither run. The skip is declared here so the fixture never
+  // seeds for the project that does not run it.
+  revenueTest.skip(
+    ({ browserName }) => browserName !== "chromium",
+    "the page sums every team, so it can only be seeded once",
+  );
+
+  revenueTest("staff revenue", async ({ page, revenueBook }) => {
+    test.slow();
+    await page.goto("/staff/revenue");
+    await expect(page.getByRole("heading", { name: "Revenue" })).toBeVisible();
+
+    // €500 from one team and $1,000 from the other, the dollars converted at the
+    // page's fixed rate: €500 + €855.
+    await expect(page.getByText("€1,355 monthly").first()).toBeVisible();
+
+    const monthlyPlans = page
+      .locator("table")
+      .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
+    const lastMonthRow = monthlyPlans.locator("tbody tr").nth(1);
+    await expect(lastMonthRow.getByText("€1,355")).toBeVisible();
+    // Two teams invoiced, so the average is half the month. Neither of the two
+    // annual bills raised that same month is in either figure — not the current
+    // contract, and not the churned team's renewal, whose only mark of being a
+    // year's worth is the period on the invoice itself.
+    await expect(lastMonthRow.getByText("€678")).toBeVisible();
+    // €1,000 the month before, so the column reports the climb rather than the
+    // em dash it falls back to with nothing to divide by.
+    await expect(lastMonthRow.getByText("+36%")).toBeVisible();
+
+    await lastMonthRow.getByRole("button", { name: "View details" }).click();
+    const breakdown = monthlyPlans.locator("tbody tr").nth(2);
+    await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
+    // What Stripe charged, beside what the page counts it as.
+    await expect(breakdown.getByText("$1,000.00")).toBeVisible();
+    await expect(breakdown.getByText("€855")).toBeVisible();
+
+    // The contract is listed on its own, with the invoice its figure is read
+    // from and what a month of it comes to — its twelve months are not all the
+    // same length, so the share of this one is what the row reports.
+    const contractRow = page
+      .getByRole("row")
+      .filter({ hasText: revenueBook.contractTeam });
+    // Twice over: what Stripe charged, and what the page counts it as — the
+    // contract is in euros, so both cells read the same.
+    await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
+    await expect(
+      contractRow.getByText(revenueBook.contractPerMonth),
+    ).toBeVisible();
+
+    // Scoped to the monthly table: the contracts table below lists every annual
+    // team in the database, which the rest of the suite seeds too.
+    await screenshot(page, "staff-revenue-monthly-plans", {
+      element: monthlyPlans,
+    });
+  });
+});
+
 loggedTest("staff pages are refused to regular users", async ({ page }) => {
-  await page.goto("/staff/trials");
-  await expect(page.getByText("Access restricted")).toBeVisible();
+  // Every staff page, not just one: each owns its own query, so each has to
+  // turn the refusal into something a reader can act on rather than into a
+  // figure that failed to load.
+  for (const path of ["/staff/teams", "/staff/trials", "/staff/revenue"]) {
+    await page.goto(path);
+    await expect(page.getByText("Access restricted")).toBeVisible();
+  }
 });

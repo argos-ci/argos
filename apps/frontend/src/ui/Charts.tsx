@@ -125,6 +125,8 @@ export function ChartTooltipContent({
   labelFormatter,
   labelClassName,
   formatter,
+  valueFormatter,
+  hideTotal = false,
   color,
   nameKey,
   labelKey,
@@ -137,6 +139,16 @@ export function ChartTooltipContent({
     payload?: any[] | undefined;
     nameKey?: string;
     labelKey?: string;
+    /**
+     * Formats each row's value (and the Total), keeping the indicator and
+     * series label — where `formatter` replaces the whole row.
+     */
+    valueFormatter?: (value: number) => React.ReactNode;
+    /**
+     * Drops the Total row, for a chart whose series do not add up to one
+     * figure the page reports.
+     */
+    hideTotal?: boolean;
   }) {
   const { config } = useChart();
 
@@ -250,9 +262,13 @@ export function ChartTooltipContent({
                         {itemConfig?.label || item.name}
                       </span>
                     </div>
-                    {item.value && (
+                    {/* Present-or-not rather than truthy: a series worth zero
+                        still has to print its figure. */}
+                    {item.value != null && (
                       <span className="text-default font-medium tabular-nums">
-                        {item.value.toLocaleString()}
+                        {valueFormatter && typeof item.value === "number"
+                          ? valueFormatter(item.value)
+                          : item.value.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -261,10 +277,12 @@ export function ChartTooltipContent({
             </div>
           );
         })}
-        {payload.length > 1 && (
+        {payload.length > 1 && !hideTotal && (
           <div className="mt-1 flex w-full justify-between border-t pt-1 font-bold">
             <span>Total</span>
-            <span>{sum.toLocaleString()}</span>
+            <span>
+              {valueFormatter ? valueFormatter(sum) : sum.toLocaleString()}
+            </span>
           </div>
         )}
       </div>

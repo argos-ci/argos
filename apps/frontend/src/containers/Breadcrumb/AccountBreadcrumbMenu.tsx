@@ -1,4 +1,9 @@
-import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
+import {
+  BanknoteIcon,
+  Building2Icon,
+  HourglassIcon,
+  PlusCircleIcon,
+} from "lucide-react";
 import { matchPath, useLocation } from "react-router";
 
 import type { AuthAccount } from "@/containers/Auth";
@@ -62,11 +67,17 @@ export function AccountBreadcrumbMenu(props: { account: AuthAccount }) {
       {account.staff ? (
         <MenuSection>
           <MenuHeading>Staff</MenuHeading>
-          <MenuItem icon={<ShieldUserIcon />} href="/staff/teams">
+          {/* One icon each rather than the same staff badge three times: the
+              heading already says these are staff pages, so the icons are free
+              to say which page. */}
+          <MenuItem icon={<Building2Icon />} href="/staff/teams">
             All teams
           </MenuItem>
-          <MenuItem icon={<ShieldUserIcon />} href="/staff/trials">
+          <MenuItem icon={<HourglassIcon />} href="/staff/trials">
             Trials
+          </MenuItem>
+          <MenuItem icon={<BanknoteIcon />} href="/staff/revenue">
+            Revenue
           </MenuItem>
         </MenuSection>
       ) : null}

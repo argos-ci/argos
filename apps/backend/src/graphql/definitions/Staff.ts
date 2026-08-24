@@ -7,6 +7,11 @@ import {
   getAccountBillings,
   type AccountBilling,
 } from "@/database/services/period-usage";
+import {
+  getStaffRevenue,
+  MAX_MONTHS,
+  MirrorCoverageError,
+} from "@/stripe/revenue";
 
 import type {
   IAccountSubscriptionStatus,
@@ -16,7 +21,7 @@ import type {
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
-import { badUserInput, forbidden, unauthenticated } from "../util";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 /** Every staff entry point opens with this — the check lives in one place. */
@@ -340,6 +345,127 @@ export const typeDefs = gql`
     CURRENT_PERIOD_DESC
   }
 
+  "What the teams on one billing interval contributed to a month."
+  type StaffRevenueSplit {
+    revenue: Float!
+    "How many teams contributed."
+    teamsCount: Int!
+    """
+    The part of \`revenue\` invoiced in a currency other than euros, converted
+    at the page's fixed rate.
+
+    Stripe states each invoice in the currency it was raised in; dollars are
+    brought into euros at a fixed rate rather than the day's, and this says how
+    much of the figure rests on that conversion.
+    """
+    foreignRevenue: Float!
+  }
+
+  """
+  What Argos invoiced over one calendar month.
+
+  Read from the Stripe invoices themselves rather than recomputed from usage, so
+  the amounts carry what Stripe actually charged — negotiated prices, coupons,
+  credit notes — instead of a second pricing engine of ours that would have to
+  agree with the first. Amounts exclude tax, are net of credit notes, and are
+  stated in euros, dollars converted at a fixed rate.
+  """
+  type StaffRevenueMonth {
+    "The first instant of the month, in UTC — what names it on screen."
+    month: DateTime!
+    "The two splits below, added up."
+    revenue: Float!
+    "What teams billed by the month were invoiced that month."
+    monthlyPlans: StaffRevenueSplit!
+    "The teams behind \`monthlyPlans\`, largest first — they sum to it."
+    teams: [StaffRevenueMonthTeam!]!
+    """
+    What the annual contracts contributed to the month: their invoices
+    amortized, day by day, over the stretch each one pays for — the monthly
+    equivalent of the annual book. A renewal weighs on the twelve months it
+    covers, an upsell on the stretch it was sold for, and a month's figure
+    never moves once written.
+    """
+    yearlyPlans: StaffRevenueSplit!
+    """
+    What GitHub Marketplace brought in over the month: the subscriptions
+    running then, at their plans' list prices. Beside the two above rather
+    than inside them — GitHub bills it, and \`revenue\` never counts it.
+    """
+    githubPlans: StaffRevenueSplit!
+  }
+
+  "What one team was invoiced over a month, one line of the breakdown."
+  type StaffRevenueMonthTeam {
+    "The team's slug, which names its pages."
+    slug: String!
+    "The team's display name, when it has one."
+    name: String
+    "The Stripe customer the invoices were raised on."
+    stripeCustomerId: String!
+    "What the invoices add up to, in \`currency\`."
+    amount: Float!
+    "The currency the team is invoiced in — null when a month mixes several."
+    currency: String
+    "In euros, like the split it sums into."
+    revenue: Float!
+  }
+
+  "One invoice a contract's worth is read from."
+  type StaffContractInvoice {
+    "Net of tax and credit notes, in the currency it was raised in."
+    amount: Float!
+    "The currency it was raised in — the contract's total converts it."
+    currency: String!
+    "True while it is raised but not yet cleared."
+    awaitingPayment: Boolean!
+    "When it was raised."
+    invoicedAt: DateTime!
+    "The stretch its money pays for, after the next bill clipped it."
+    coveredFrom: DateTime!
+    coveredUntil: DateTime!
+  }
+
+  """
+  One annual contract in force, and the invoices its rate is read from: the
+  latest annual bill plus whatever was sold on top of it since.
+
+  Listed so the yearly figure can be audited contract by contract — including
+  the contracts that contributed nothing, which the total alone would hide.
+  """
+  type StaffYearlyContract {
+    "The team's slug, which names its pages."
+    slug: String!
+    "The team's display name, when it has one."
+    name: String
+    "The Stripe customer the contract is billed on."
+    stripeCustomerId: String!
+    """
+    The invoices below added up, in euros. Null when the team is billed yearly
+    but no invoice of its contract could be found — an anomaly worth seeing
+    rather than hiding.
+    """
+    amount: Float
+    "What the contract contributes to the running month, in euros."
+    monthlyRevenue: Float!
+    "The invoices the contract is worth, newest first."
+    invoices: [StaffContractInvoice!]!
+    """
+    True when any invoice found is still awaiting payment — the unpaid
+    renewal beside a settled upsell is exactly the one worth watching.
+    Counted all the same: a contract invoice raised is money on its way.
+    """
+    awaitingPayment: Boolean!
+  }
+
+  "What Argos invoiced, and the annual contracts behind the yearly rate."
+  type StaffRevenue {
+    "The window, oldest first and the running month last."
+    months: [StaffRevenueMonth!]!
+    "The contracts behind every month's \`yearlyPlans\`, largest first."
+    yearlyContracts: [StaffYearlyContract!]!
+  }
+
   type StaffTeamConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Team!]!
@@ -369,6 +495,17 @@ export const typeDefs = gql`
     ): StaffTeamConnection!
     "List teams created within the last \`days\` days, newest first (staff only)"
     staffTrialPipeline(days: Int! = 30): [Team!]!
+    """
+    What Argos invoiced over the last \`months\` calendar months, oldest first
+    and the running one last, with the annual contracts the yearly rate is
+    made of (staff only).
+
+    Read from the \`stripe_invoices\` mirror, which the Stripe webhooks keep
+    current and a reconciliation sweep backs up — a window the mirror was
+    never backfilled for is refused rather than reported as zeros. The staff
+    revenue page is the only consumer today.
+    """
+    staffRevenue(months: Int!): StaffRevenue!
   }
 
   extend type Mutation {
@@ -558,6 +695,28 @@ export const resolvers: IResolvers = {
       ]);
 
       return paginateResult({ result: { total, results }, after, first });
+    },
+    staffRevenue: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      // Guarded here as well as in the service: this one answers a bad request
+      // with a bad-request error rather than an invariant the client cannot
+      // read.
+      if (args.months < 1 || args.months > MAX_MONTHS) {
+        throw badUserInput(`\`months\` must be between 1 and ${MAX_MONTHS}.`);
+      }
+
+      try {
+        return await getStaffRevenue(args.months);
+      } catch (error) {
+        // A mirror not backfilled, or one the sweep stopped reconciling, is an
+        // operator state the page is built to report — not a fault to page
+        // the on-call over, which a bare error reaching Sentry would be.
+        if (error instanceof MirrorCoverageError) {
+          throw notFound(error.message);
+        }
+        throw error;
+      }
     },
     staffTrialPipeline: async (_root, args, ctx) => {
       assertStaff(ctx);
