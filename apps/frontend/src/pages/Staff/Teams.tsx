@@ -501,11 +501,7 @@ function ScreenshotsCell(props: {
         <div className="font-medium">
           {periodUsage.currentPeriodScreenshotsCount.toLocaleString()}
         </div>
-        {/* A blank rather than nothing: an empty div collapses, and the count
-            would then sit half a line above the amounts beside it. */}
-        <div className="text-low text-xs">
-          {quota === null ? <>&nbsp;</> : `/ ${quota}`}
-        </div>
+        {quota !== null && <div className="text-low text-xs">/ {quota}</div>}
       </div>
     </Tooltip>
   );
