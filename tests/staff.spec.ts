@@ -884,6 +884,14 @@ revenueTest.describe("staff revenue", () => {
     await expect(breakdown.getByText("$1,000.00")).toBeVisible();
     await expect(breakdown.getByText("€855")).toBeVisible();
 
+    // Heaviest first to open, so the dollar team leads and the ranks number
+    // that order.
+    const breakdownRows = breakdown.locator("tbody tr");
+    await expect(breakdownRows.nth(0)).toContainText(revenueBook.dollarTeam);
+    await expect(breakdownRows.nth(0).locator("td").first()).toHaveText("1");
+    await expect(breakdownRows.nth(1)).toContainText(revenueBook.monthlyTeam);
+    await expect(breakdownRows.nth(1).locator("td").first()).toHaveText("2");
+
     // The contract is listed on its own, with the invoice its figure is read
     // from and what a month of it comes to — its twelve months are not all the
     // same length, so the share of this one is what the row reports.
@@ -902,6 +910,14 @@ revenueTest.describe("staff revenue", () => {
     await screenshot(page, "staff-revenue-monthly-plans", {
       element: monthlyPlans,
     });
+
+    // After the screenshot: the baseline is worth having in the order the
+    // breakdown opens in.
+    // Sorting by name reverses the two, and the ranks follow the rows rather
+    // than travelling with them.
+    await breakdown.getByRole("button", { name: "Team" }).click();
+    await expect(breakdownRows.nth(0)).toContainText(revenueBook.monthlyTeam);
+    await expect(breakdownRows.nth(0).locator("td").first()).toHaveText("1");
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
@@ -36,6 +36,7 @@ import {
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
+import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -99,6 +100,7 @@ type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
 type RevenueMonth = RevenueData["months"][number];
 type YearlyContract = RevenueData["yearlyContracts"][number];
 type Split = RevenueMonth["monthlyPlans"];
+type MonthTeam = RevenueMonth["teams"][number];
 
 /** Months the dedicated page reads — a year, plus the one running. */
 const PAGE_MONTHS = 13;
@@ -535,6 +537,155 @@ function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   );
 }
 
+type MonthTeamSortKey = "team" | "amount" | "revenue";
+
+/**
+ * Sortable value per column of a month's breakdown.
+ *
+ * `amount` orders on the figure the column prints rather than on its euro
+ * equivalent: the two only diverge across currencies, and a reader comparing
+ * the numbers in front of them is comparing those. The euro column is what
+ * orders the month by weight. A team invoiced in several currencies has no
+ * printable figure at all, so it sorts below every one that has.
+ */
+function getMonthTeamSortValue(
+  team: MonthTeam,
+  key: MonthTeamSortKey,
+): string | number {
+  switch (key) {
+    case "team":
+      return (team.name ?? team.slug).toLowerCase();
+    case "amount":
+      return team.currency === null ? -1 : team.amount;
+    case "revenue":
+      return team.revenue;
+  }
+}
+
+function sortMonthTeams(
+  teams: readonly MonthTeam[],
+  key: MonthTeamSortKey,
+  direction: SortDirection,
+): MonthTeam[] {
+  const factor = direction === "asc" ? 1 : -1;
+
+  return [...teams].sort((a, b) => {
+    const left = getMonthTeamSortValue(a, key);
+    const right = getMonthTeamSortValue(b, key);
+
+    if (typeof left === "string" && typeof right === "string") {
+      return left.localeCompare(right) * factor;
+    }
+
+    return (Number(left) - Number(right)) * factor;
+  });
+}
+
+/**
+ * The teams behind a month's monthly plans, one line each.
+ *
+ * Sorted heaviest first to open, which is the order the backend already sends
+ * and the question the breakdown is opened to answer. The rank column numbers
+ * the rows as they are displayed, so it re-reads as a line number under any
+ * other sort rather than pinning a position the sort has moved.
+ */
+function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
+  const [sortKey, setSortKey] = useState<MonthTeamSortKey>("revenue");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const onSort = (key: MonthTeamSortKey) => {
+    if (sortKey === key) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    // Names read best A→Z; the money columns are read biggest-first.
+    setSortDirection(key === "team" ? "asc" : "desc");
+  };
+
+  const teams = useMemo(
+    () => sortMonthTeams(props.teams, sortKey, sortDirection),
+    [props.teams, sortKey, sortDirection],
+  );
+
+  return (
+    <div className="bg-app overflow-x-auto rounded-sm border">
+      <table className="w-full table-fixed border-collapse">
+        <thead>
+          <tr className="text-low border-b text-xs font-semibold">
+            <th className="w-[7%] px-4 py-3 text-right">#</th>
+            <SortHeader
+              label="Team"
+              sortKey="team"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[35%] text-left"
+            />
+            <SortHeader
+              label="Invoiced"
+              sortKey="amount"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[21%] text-right"
+            />
+            <SortHeader
+              label="In euros"
+              sortKey="revenue"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[21%] text-right"
+            />
+            <th className="w-[16%] px-4 py-3 text-right" />
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((team, teamIndex) => (
+            <tr
+              key={team.stripeCustomerId}
+              className={clsx(
+                "text-sm",
+                teamIndex !== teams.length - 1 && "border-b",
+              )}
+            >
+              <td className="text-low px-4 py-2.5 text-right tabular-nums">
+                {teamIndex + 1}
+              </td>
+              <td className="px-4 py-2.5 text-left">
+                <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+              </td>
+              <td className="px-4 py-2.5 text-right tabular-nums">
+                {team.currency !== null ? (
+                  formatInvoiceAmount({
+                    amount: team.amount,
+                    currency: team.currency,
+                  })
+                ) : (
+                  <span className="text-low">—</span>
+                )}
+              </td>
+              <td className="px-4 py-2.5 text-right tabular-nums">
+                {formatEuros(team.revenue)}
+              </td>
+              <td className="px-4 py-2.5 text-right">
+                <Link
+                  href={getStripeCustomerURL(team.stripeCustomerId)}
+                  target="_blank"
+                >
+                  Stripe
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /** Month over month down the history, so a trend can be read off the column. */
 function HistoryRow(props: {
   month: RevenueMonth;
@@ -633,56 +784,7 @@ function HistoryRow(props: {
           )}
         >
           <td colSpan={6} className="p-4">
-            <div className="bg-app overflow-x-auto rounded-sm border">
-              <table className="w-full table-fixed border-collapse">
-                <thead>
-                  <tr className="text-low border-b text-xs font-semibold">
-                    <th className="w-[40%] px-4 py-2.5 text-left">Team</th>
-                    <th className="w-[22%] px-4 py-2.5 text-right">Invoiced</th>
-                    <th className="w-[22%] px-4 py-2.5 text-right">In euros</th>
-                    <th className="w-[16%] px-4 py-2.5 text-right" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {month.teams.map((team, teamIndex) => (
-                    <tr
-                      key={team.stripeCustomerId}
-                      className={clsx(
-                        "text-sm",
-                        teamIndex !== month.teams.length - 1 && "border-b",
-                      )}
-                    >
-                      <td className="px-4 py-2.5 text-left">
-                        <Link href={`/${team.slug}`}>
-                          {team.name ?? team.slug}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">
-                        {team.currency !== null ? (
-                          formatInvoiceAmount({
-                            amount: team.amount,
-                            currency: team.currency,
-                          })
-                        ) : (
-                          <span className="text-low">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">
-                        {formatEuros(team.revenue)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <Link
-                          href={getStripeCustomerURL(team.stripeCustomerId)}
-                          target="_blank"
-                        >
-                          Stripe
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <MonthTeamsTable teams={month.teams} />
           </td>
         </tr>
       ) : null}
