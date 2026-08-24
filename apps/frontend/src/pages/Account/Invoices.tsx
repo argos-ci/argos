@@ -37,7 +37,6 @@ const InvoicesQuery = graphql(`
       invoices(after: $after, first: $first) {
         pageInfo {
           hasNextPage
-          totalCount
         }
         edges {
           id
@@ -59,14 +58,12 @@ const UpcomingInvoiceQuery = graphql(`
     account(slug: $slug) {
       id
       upcomingInvoice {
-        subtotal
         discountAmount
         taxAmount
         total
         currency
         periodStart
         periodEnd
-        date
         lines {
           id
           description
@@ -142,7 +139,7 @@ function InvoiceList(props: { accountSlug: string }) {
         {invoices.edges.map((invoice) => (
           <InvoiceRow key={invoice.id} invoice={invoice} />
         ))}
-        {invoices.pageInfo.totalCount === 0 ? (
+        {invoices.edges.length === 0 ? (
           <ListRow className="text-low p-4 text-sm">
             No invoice has been raised on this account yet.
           </ListRow>
@@ -295,11 +292,6 @@ function UpcomingInvoiceRow(props: { accountSlug: string }) {
         </Tooltip>
       }
       amount={formatCurrency(upcomingInvoice.total, currency)}
-      meta={
-        upcomingInvoice.date
-          ? `Bills on ${formatDate(new Date(upcomingInvoice.date), "date")}`
-          : null
-      }
     >
       {lines.length > 0 ? (
         <Details className="mt-3 text-sm">

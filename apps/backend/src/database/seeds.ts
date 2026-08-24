@@ -2620,7 +2620,10 @@ function commentDoc(text: string) {
  *
  * Fixed dates and amounts, since the invoices page is under visual test and a
  * moving figure would fail it every run. The three statuses cover the shapes a
- * row can take — settled, still due, and one raised in error and canceled.
+ * row can take — settled, still due, and one raised in error and canceled. Only
+ * the columns that page reads are filled: the tax split and the covered period
+ * belong to the revenue arithmetic, and inventing them here would be fixture
+ * noise pretending to be data.
  */
 export async function createInvoicesScenario(input: {
   accountId: string;
@@ -2658,14 +2661,8 @@ export async function createInvoicesScenario(input: {
     invoices.map((invoice) => ({
       ...invoice,
       stripeCustomerId,
-      stripeSubscriptionId: `sub_seed_${accountId}`,
-      billingReason: "subscription_cycle",
       currency: "eur",
-      totalExcludingTax: Math.round(invoice.total / 1.2),
-      totalTaxesAmount: invoice.total - Math.round(invoice.total / 1.2),
       creditedAmountExcludingTax: 0,
-      periodStart: invoice.stripeCreatedAt,
-      periodEnd: invoice.stripeCreatedAt,
       hostedInvoiceUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}`,
       invoicePdfUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}/pdf`,
     })),

@@ -25,21 +25,20 @@ type UpcomingInvoiceLine = {
  * Stripe states, so the reader gets the figure it will actually be charged.
  */
 export type UpcomingInvoice = {
-  /** The lines added up, before discounts and tax. */
-  subtotal: number;
   /** What coupons take off, as a positive amount. */
   discountAmount: number;
   taxAmount: number;
   /** Everything above, resolved — what the customer will owe. */
   total: number;
   currency: string;
-  /** The stretch of service it will pay for. */
+  /**
+   * The stretch of service it will pay for. Its end is also when Stripe raises
+   * it, which is why there is no separate date.
+   */
   periodStart: string;
   periodEnd: string;
-  /** When Stripe expects to raise it, when it says. */
-  date: string | null;
   /**
-   * The lines behind `subtotal` — empty when Stripe did not embed them all,
+   * What the total is made of — empty when Stripe did not embed every line,
    * since a breakdown that does not add up to its own total is worse than none.
    */
   lines: UpcomingInvoiceLine[];
@@ -108,16 +107,12 @@ export async function getUpcomingInvoice(
   }
 
   return {
-    subtotal: toMajorUnit(invoice.subtotal),
     discountAmount: toMajorUnit(sumAmounts(invoice.total_discount_amounts)),
     taxAmount: toMajorUnit(sumAmounts(invoice.total_taxes)),
     total: toMajorUnit(invoice.total),
     currency: invoice.currency,
     periodStart: timestampToISOString(invoice.period_start),
     periodEnd: timestampToISOString(invoice.period_end),
-    date: invoice.next_payment_attempt
-      ? timestampToISOString(invoice.next_payment_attempt)
-      : null,
     lines: readLines(invoice),
   };
 }

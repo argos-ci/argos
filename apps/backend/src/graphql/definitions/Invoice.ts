@@ -60,21 +60,20 @@ export const typeDefs = gql`
   until the period closes.
   """
   type UpcomingInvoice {
-    "The lines added up, before discounts and tax."
-    subtotal: Float!
     "What coupons take off, as a positive amount."
     discountAmount: Float!
     taxAmount: Float!
     "Everything above, resolved — what the account will owe."
     total: Float!
     currency: String!
-    "The stretch of service it will pay for."
+    """
+    The stretch of service it will pay for. Its end is also when Stripe raises
+    it, which is why there is no separate date.
+    """
     periodStart: DateTime!
     periodEnd: DateTime!
-    "When Stripe expects to raise it, when it says."
-    date: DateTime
     """
-    The lines behind \`subtotal\`, empty when Stripe did not state them all —
+    What the total is made of, empty when Stripe did not state every line —
     a breakdown that does not add up to its own total is worse than none.
     """
     lines: [UpcomingInvoiceLine!]!
