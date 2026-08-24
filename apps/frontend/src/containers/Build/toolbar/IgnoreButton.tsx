@@ -10,7 +10,6 @@ import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
-import { DialogTrigger } from "@/ui/Dialog";
 import {
   Dialog,
   DialogBody,
@@ -157,6 +156,11 @@ function EnabledIgnoreButton(props: {
   const hotkey = useBuildHotkey("ignoreChange", toggle, {
     preventDefault: true,
   });
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setDialog(null);
+    }
+  };
 
   return (
     <>
@@ -170,82 +174,64 @@ function EnabledIgnoreButton(props: {
           variant={isIgnored ? "danger" : "secondary"}
         />
       </HotkeyTooltip>
-      <DialogTrigger
-        open={dialog === "ignore"}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDialog(null);
-          }
-        }}
-      >
-        <Modal>
-          <Dialog size="medium">
-            <DialogBody>
-              <DialogTitle>Ignore Change</DialogTitle>
-              <DialogText>
-                If you ignore this diff, Argos will skip it in future builds.
-                <br />
-                Only ignore it if it’s{" "}
-                <strong>flaky and you’ve seen it happen multiple times</strong>.
-                <br />
-                Argos will ignore{" "}
-                <strong>future diffs that exactly match this one</strong>.
-              </DialogText>
-            </DialogBody>
-            <DialogFooter>
-              <div className="flex flex-1">
-                <Checkbox
-                  onCheckedChange={(value) => {
-                    if (value) {
-                      sessionStorage.setItem(dontShowAgainKey, "true");
-                    } else {
-                      sessionStorage.removeItem(dontShowAgainKey);
-                    }
-                  }}
-                >
-                  Don’t show this again for this session
-                </Checkbox>
-              </div>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onClick={ignoreChange}>
-                Ignore Change
-              </Button>
-            </DialogFooter>
-          </Dialog>
-        </Modal>
-      </DialogTrigger>
-      <DialogTrigger
-        open={dialog === "unignore"}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDialog(null);
-          }
-        }}
-      >
-        <Modal>
-          <Dialog size="medium">
-            <DialogBody>
-              <DialogTitle>Unignore Change</DialogTitle>
-              <DialogText>
-                Re-enable this diff so Argos will treat it as a change in future
-                builds.
-                <br />
-                <strong>
-                  Only unignore if you’re sure the flake is resolved.
-                </strong>
-                <br />
-                Argos will now track any exact match of this overlay again.
-              </DialogText>
-            </DialogBody>
-            <DialogFooter>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onClick={unignoreChange}>
-                Unignore Change
-              </Button>
-            </DialogFooter>
-          </Dialog>
-        </Modal>
-      </DialogTrigger>
+      <Modal open={dialog === "ignore"} onOpenChange={handleOpenChange}>
+        <Dialog size="medium">
+          <DialogBody>
+            <DialogTitle>Ignore Change</DialogTitle>
+            <DialogText>
+              If you ignore this diff, Argos will skip it in future builds.
+              <br />
+              Only ignore it if it’s{" "}
+              <strong>flaky and you’ve seen it happen multiple times</strong>.
+              <br />
+              Argos will ignore{" "}
+              <strong>future diffs that exactly match this one</strong>.
+            </DialogText>
+          </DialogBody>
+          <DialogFooter>
+            <div className="flex flex-1">
+              <Checkbox
+                onCheckedChange={(value) => {
+                  if (value) {
+                    sessionStorage.setItem(dontShowAgainKey, "true");
+                  } else {
+                    sessionStorage.removeItem(dontShowAgainKey);
+                  }
+                }}
+              >
+                Don’t show this again for this session
+              </Checkbox>
+            </div>
+            <DialogDismiss>Cancel</DialogDismiss>
+            <Button variant="destructive" onClick={ignoreChange}>
+              Ignore Change
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
+      <Modal open={dialog === "unignore"} onOpenChange={handleOpenChange}>
+        <Dialog size="medium">
+          <DialogBody>
+            <DialogTitle>Unignore Change</DialogTitle>
+            <DialogText>
+              Re-enable this diff so Argos will treat it as a change in future
+              builds.
+              <br />
+              <strong>
+                Only unignore if you’re sure the flake is resolved.
+              </strong>
+              <br />
+              Argos will now track any exact match of this overlay again.
+            </DialogText>
+          </DialogBody>
+          <DialogFooter>
+            <DialogDismiss>Cancel</DialogDismiss>
+            <Button variant="destructive" onClick={unignoreChange}>
+              Unignore Change
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
     </>
   );
 }
