@@ -204,7 +204,9 @@ once:
 
 - a **1Password item** `argos-prod-ro` in the `argos-dev` vault with the fields
   referenced by `.env.prod-ro` (`DATABASE_URL` — no password, e.g.
-  `postgresql://argos_dev_ro@<rds-host>:5432/<db>` — and `SQIDS_ALPHABET`);
+  `postgresql://argos_dev_ro@<rds-host>:5432/<db>` — `SQIDS_ALPHABET`, and
+  `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`, which are the dev GitHub OAuth
+  app's, the same pair as in your `.env`);
 - **IAM database authentication enabled on the RDS instance**, which is a
   separate switch from the `rds_iam` grant on the role. Both are required, and
   when either is missing RDS answers a perfectly valid token with
@@ -241,9 +243,14 @@ is absent, so the email is never sent — read the code from your local Redis:
 docker compose exec redis redis-cli -n 1 GET "email_verification:<your-email>"
 ```
 
-GitHub/GitLab/Google login would write dev-app OAuth tokens over the
-production rows, and production passkeys are bound to the `argos-ci.com` RP id,
-so neither works here — email code is the only supported method.
+**Or sign in with GitHub**, which works here but is read-only: the callback
+matches your GitHub profile against an account that already exists and opens a
+session, and writes nothing else. A GitHub account attached to no Argos user
+is refused rather than created, and attaching a provider to a signed-in account
+is refused too — both are writes this mode does not have.
+
+GitLab and Google still write on the way in, and production passkeys are bound
+to the `argos-ci.com` RP id, so neither works here.
 
 ## ✅ Testing your changes
 

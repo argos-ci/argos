@@ -54,6 +54,8 @@
         "SQIDS_ALPHABET",
         "LOG_LEVEL",
         "ARGOS_TARGET",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
         "PG_IAM_AUTH",
         "REDIS_URL",
         "AMQP_URL"

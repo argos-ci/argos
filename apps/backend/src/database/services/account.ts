@@ -229,6 +229,36 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
   });
 }
 
+/**
+ * Resolve the account a GitHub profile already belongs to, writing nothing.
+ *
+ * `ARGOS_TARGET=prod-ro` reads the production database through a role that may
+ * only write `user_sessions` and `team_users.lastAuthMethod`. The normal path
+ * does three things Postgres would refuse there — refresh the stored OAuth
+ * token, create the account when it is missing, join SSO teams — and the first
+ * of them would replace a production token with one minted by a local OAuth
+ * app. Recognising an account that already exists is all this mode can do.
+ */
+export async function getUserAccountFromGithubId(input: {
+  githubId: number;
+}): Promise<AccountAuthResult> {
+  const account = await Account.query()
+    .joinRelated("githubAccount")
+    // A team can carry a GitHub organization on the same column; only a user
+    // account is something to log in as.
+    .whereNotNull("accounts.userId")
+    .findOne("githubAccount.githubId", input.githubId);
+
+  if (!account) {
+    throw boom(
+      403,
+      "This GitHub account is not attached to an Argos user. Read-only mode cannot create one — sign in with an email code instead.",
+    );
+  }
+
+  return { account, creation: false };
+}
+
 export async function getOrCreateUserAccountFromGitlabUser(input: {
   gitlabUser: GitlabUser;
   attachToAccount: Account | null;

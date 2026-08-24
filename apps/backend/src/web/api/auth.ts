@@ -14,6 +14,7 @@ import {
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
+  getUserAccountFromGithubId,
   joinSSOTeams,
 } from "@/database/services/account";
 import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
@@ -28,6 +29,7 @@ import {
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
+import { boom } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -110,6 +112,24 @@ router.use(
       token: result.access_token,
       proxy: false,
     });
+
+    // Read-only login. Everything the normal path does beyond opening the
+    // session is a write the prod-ro role does not have, so the profile can
+    // only be matched against an account that already exists.
+    if (config.get("target") === "prod-ro") {
+      const { data: profile } = await octokit.users.getAuthenticated();
+      const resolved = await getUserAccountFromGithubId({
+        githubId: profile.id,
+      });
+      if (auth && auth.account.userId !== resolved.account.userId) {
+        throw boom(
+          400,
+          "Read-only mode cannot attach a GitHub account to the signed-in account. Sign out first to log in as its owner.",
+        );
+      }
+      return resolved;
+    }
+
     const [profile, emails] = await Promise.all([
       octokit.users.getAuthenticated(),
       octokit.users.listEmailsForAuthenticatedUser(),

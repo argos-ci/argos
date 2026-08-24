@@ -704,12 +704,16 @@ export function createConfig() {
 
   // Credentials that write *outside* Postgres, so the read-only role cannot
   // fence them. "Set" means overridden from the schema default.
+  //
+  // `GITHUB_CLIENT_SECRET` is deliberately absent: it only exchanges an
+  // authorization code for a user token scoped to `user:email`, which reads a
+  // profile and can write nothing. The app private key — the credential that
+  // posts comments and statuses — stays listed.
   const writeCapableSecrets = (
     [
       ["RESEND_API_KEY", "resend.apiKey"],
       ["STRIPE_API_KEY", "stripe.apiKey"],
       ["GITHUB_APP_PRIVATE_KEY", "github.privateKey"],
-      ["GITHUB_CLIENT_SECRET", "github.clientSecret"],
       ["GITHUB_LIGHT_APP_PRIVATE_KEY", "githubLight.privateKey"],
       ["ORIGIN_APP_PRIVATE_KEY", "origin.privateKey"],
       ["GITLAB_APP_SECRET", "gitlab.appSecret"],
