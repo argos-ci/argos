@@ -4,9 +4,9 @@ import { useMutation } from "@apollo/client/react";
 
 import { UserListRow } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
-import { Button } from "@/ui/Button";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -44,7 +44,7 @@ export type RemovedUser = DocumentType<
 export const RemoveFromTeamDialog = memo(
   (props: { teamName: string; teamAccountId: string; user: RemovedUser }) => {
     const state = useOverlayTriggerState();
-    const [removeFromTeam, { loading, error }] = useMutation(
+    const [removeFromTeam, { error }] = useMutation(
       RemoveUserFromTeamMutation,
       {
         onCompleted() {
@@ -99,15 +99,14 @@ export const RemoveFromTeamDialog = memo(
             <ErrorMessage>Something went wrong. Please try again.</ErrorMessage>
           )}
           <DialogDismiss>Cancel</DialogDismiss>
-          <Button
-            disabled={loading}
+          <DialogActionButton
             variant="destructive"
-            onClick={() => {
-              removeFromTeam().catch(() => {});
+            onAsyncAction={async () => {
+              await removeFromTeam().catch(() => {});
             }}
           >
             Remove from Team
-          </Button>
+          </DialogActionButton>
         </DialogFooter>
       </Dialog>
     );
