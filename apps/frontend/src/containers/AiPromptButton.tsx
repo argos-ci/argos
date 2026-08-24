@@ -53,8 +53,8 @@ export function useAiPromptTarget() {
 /** One thing Argos can ask a coding agent to do. */
 export interface AiPrompt {
   /**
-   * What the prompt asks for, as the menu says it ("Review build"). Only shown
-   * when the button carries more than one.
+   * What the prompt asks for ("Review build"). Names the button that performs
+   * it, and the menu row that reaches it.
    */
   label: string;
   /**
@@ -182,8 +182,10 @@ export function AiPromptButton(props: {
             }
             href={agent.getURL(primary.prompt)}
           >
+            {/* Named by what it does, not by where it goes: the agent's mark
+                already says that, and the tooltip spells it out. */}
             <PrimaryContent iconOnly={iconOnly} icon={<agent.Icon />}>
-              Open in {agent.name}
+              {primary.label}
             </PrimaryContent>
           </LinkButton>
         </Tooltip>

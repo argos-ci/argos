@@ -227,18 +227,17 @@ loggedTest(
     }
 
     // The test is flaky, so the section opens itself: the actions are reachable
-    // without expanding anything. Claude is the agent offered by default.
+    // without expanding anything. The button is named after what it does, and
+    // Claude is the agent offered by default.
     await expect(
       page.getByRole("heading", { name: "Fix with AI" }),
     ).toBeVisible();
-    const openInClaude = page.getByRole("link", {
-      name: "Open in Claude",
-    });
-    await expect(openInClaude).toBeVisible();
+    const fixButton = page.getByRole("link", { name: "Fix flakiness" });
+    await expect(fixButton).toBeVisible();
 
     // The agent is opened through its own deep link, which carries the prompt:
     // it names the test and the API endpoints the agent has to call.
-    const href = (await openInClaude.getAttribute("href")) ?? "";
+    const href = (await fixButton.getAttribute("href")) ?? "";
     expect(href).toMatch(/^claude:\/\/code\/new\?q=/);
     const prompt = new URLSearchParams(href.split("?")[1]).get("q") ?? "";
     expect(prompt).toContain("Fix the flaky Argos visual test");
@@ -285,15 +284,18 @@ loggedTest(
       page.getByRole("button", { name: "Copy prompt" }),
     ).toBeVisible();
 
-    // Picking an agent moves the button back to it. Only Chromium ignores the
-    // unknown scheme the click navigates to; the others would stop on a dialog.
+    // Picking an agent moves the button back to it — the label stays the action,
+    // so the deep link's scheme is what says where it now goes. Only Chromium
+    // ignores the unknown scheme the click navigates to; the others would stop
+    // on a dialog.
     if (browserName === "chromium") {
       await openMenu();
       await page.getByRole("option", { name: "Open in Cursor" }).click();
       await page.reload();
-      await expect(
-        page.getByRole("link", { name: "Open in Cursor" }),
-      ).toBeVisible();
+      await expect(fixButton).toHaveAttribute(
+        "href",
+        /^cursor:\/\/anysphere\.cursor-deeplink\/prompt\?text=/,
+      );
     }
   },
 );
@@ -310,14 +312,12 @@ loggedTest(
     // there, but not competing with the metrics saying the test is fine.
     const heading = page.getByRole("heading", { name: "Fix with AI" });
     await expect(heading).toBeVisible();
-    const openInClaude = page.getByRole("link", {
-      name: "Open in Claude",
-    });
-    await expect(openInClaude).toBeHidden();
+    const fixButton = page.getByRole("link", { name: "Fix flakiness" });
+    await expect(fixButton).toBeHidden();
 
     // And opening it hands out the same prompt.
     await heading.click();
-    await expect(openInClaude).toBeVisible();
+    await expect(fixButton).toBeVisible();
   },
 );
 
