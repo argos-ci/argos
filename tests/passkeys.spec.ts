@@ -33,6 +33,11 @@ loggedTest(
     await screenshot(page, "settings/passkeys-edit", { element: editDialog });
     await editDialog.getByRole("button", { name: "Save" }).click();
     await expect(card.getByText("Work laptop")).toBeVisible();
+    // Opening the next dialog while this one is still leaving scrolls the row
+    // into view over a page that has not settled, and it lands at one of two
+    // offsets. Nothing of that shows except through the delete dialog's rounded
+    // corners — which is exactly what kept its screenshot flaky.
+    await expect(editDialog).toBeHidden();
 
     await card.getByRole("button", { name: "Delete Work laptop" }).click();
     const deleteDialog = page.getByRole("alertdialog");
