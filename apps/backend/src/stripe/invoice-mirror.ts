@@ -24,6 +24,9 @@ const MERGE_COLUMNS = [
   "creditedAmountExcludingTax",
   "periodStart",
   "periodEnd",
+  "number",
+  "hostedInvoiceUrl",
+  "invoicePdfUrl",
 ];
 
 /** How many rows a sweep writes per statement. */
@@ -152,6 +155,11 @@ async function buildStripeInvoiceRow(invoice: Stripe.Invoice) {
     creditedAmountExcludingTax,
     periodStart: period ? timestampToISOString(period.start) : null,
     periodEnd: period ? timestampToISOString(period.end) : null,
+    number: invoice.number,
+    // Absent rather than null on an invoice Stripe has not finalized: the
+    // hosted page and the PDF only exist once it is a document.
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+    invoicePdfUrl: invoice.invoice_pdf ?? null,
   };
 }
 

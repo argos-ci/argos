@@ -18,6 +18,8 @@ export type DateFormat =
   | "monthDay"
   /** `Sep` */
   | "month"
+  /** `September 2026` */
+  | "monthYear"
   /** `Sep 4, 2026` */
   | "date"
   /** `September 4, 2026` */
@@ -34,6 +36,7 @@ export type DateFormat =
 const DATE_FORMAT_OPTIONS: Record<DateFormat, Intl.DateTimeFormatOptions> = {
   monthDay: { month: "short", day: "numeric" },
   month: { month: "short" },
+  monthYear: { month: "long", year: "numeric" },
   date: { dateStyle: "medium" },
   longDate: { dateStyle: "long" },
   dateTime: { dateStyle: "long", timeStyle: "short" },

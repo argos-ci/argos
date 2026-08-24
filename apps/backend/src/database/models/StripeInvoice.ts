@@ -39,6 +39,9 @@ export class StripeInvoice extends Model {
           creditedAmountExcludingTax: { type: "number" },
           periodStart: { type: ["string", "null"] },
           periodEnd: { type: ["string", "null"] },
+          number: { type: ["string", "null"] },
+          hostedInvoiceUrl: { type: ["string", "null"] },
+          invoicePdfUrl: { type: ["string", "null"] },
         },
       },
     ],
@@ -67,4 +70,13 @@ export class StripeInvoice extends Model {
    */
   periodStart!: string | null;
   periodEnd!: string | null;
+  /**
+   * The number that reads on the document, which is how a customer refers to
+   * an invoice. Null on the rare invoice Stripe never numbered — a draft
+   * voided before finalization.
+   */
+  number!: string | null;
+  /** Stripe's hosted copy, where the invoice can be read and paid. */
+  hostedInvoiceUrl!: string | null;
+  invoicePdfUrl!: string | null;
 }

@@ -28,6 +28,7 @@ import { ProjectDomain } from "./models/ProjectDomain";
 import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
+import { StripeInvoice } from "./models/StripeInvoice";
 import { Team } from "./models/Team";
 import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
@@ -2611,4 +2612,62 @@ function commentDoc(text: string) {
     type: "doc",
     content: [{ type: "paragraph", content: [{ type: "text", text }] }],
   };
+}
+
+/**
+ * A billing history: the account's Stripe customer, and the invoices raised on
+ * it.
+ *
+ * Fixed dates and amounts, since the invoices page is under visual test and a
+ * moving figure would fail it every run. The three statuses cover the shapes a
+ * row can take — settled, still due, and one raised in error and canceled.
+ */
+export async function createInvoicesScenario(input: {
+  accountId: string;
+}): Promise<void> {
+  const { accountId } = input;
+  const stripeCustomerId = `cus_seed_${accountId}`;
+  const account = await Account.query().findById(accountId).throwIfNotFound();
+  await account.$query().patch({ stripeCustomerId });
+
+  const invoices = [
+    {
+      stripeInvoiceId: `in_seed_${accountId}_3`,
+      number: "ARGOS-0003",
+      stripeCreatedAt: "2026-08-01T06:00:00.000Z",
+      status: "open",
+      total: 24_900,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_2`,
+      number: "ARGOS-0002",
+      stripeCreatedAt: "2026-07-01T06:00:00.000Z",
+      status: "paid",
+      total: 21_500,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_1`,
+      number: "ARGOS-0001",
+      stripeCreatedAt: "2026-06-01T06:00:00.000Z",
+      status: "void",
+      total: 19_900,
+    },
+  ];
+
+  await StripeInvoice.query().insert(
+    invoices.map((invoice) => ({
+      ...invoice,
+      stripeCustomerId,
+      stripeSubscriptionId: `sub_seed_${accountId}`,
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      totalExcludingTax: Math.round(invoice.total / 1.2),
+      totalTaxesAmount: invoice.total - Math.round(invoice.total / 1.2),
+      creditedAmountExcludingTax: 0,
+      periodStart: invoice.stripeCreatedAt,
+      periodEnd: invoice.stripeCreatedAt,
+      hostedInvoiceUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}`,
+      invoicePdfUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}/pdf`,
+    })),
+  );
 }

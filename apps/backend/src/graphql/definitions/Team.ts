@@ -135,6 +135,8 @@ export const typeDefs = gql`
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
     blockWhenSpendLimitIsReached: Boolean!
+    invoices(after: Int = 0, first: Int = 20): InvoiceConnection!
+    upcomingInvoice: UpcomingInvoice
 
     me: TeamMember
     members(
