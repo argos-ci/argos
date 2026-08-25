@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { matchRoutes, type RouteObject } from "react-router";
 
 import { router } from "@/router";
+import { cancelIdle, requestIdle } from "@/util/idle";
 
 /**
  * Every page is behind `lazy: () => import(...)`, so clicking a link starts a
@@ -28,36 +29,6 @@ const started = new WeakSet<RouteObject>();
  * before the click.
  */
 const HOVER_INTENT_DELAY = 65;
-
-/**
- * How long a visible link waits before being preloaded anyway, idle or not.
- */
-const IDLE_TIMEOUT = 2000;
-
-/**
- * Safari still doesn't ship `requestIdleCallback` — it exists only behind a
- * preference in Technology Preview — so it can't be called unguarded. Without
- * it, fall back to waiting out the same deadline the idle version is given:
- * there is no idle signal to time against, and this is the opportunistic half
- * of the preloader anyway — the intent signals below still fire immediately and
- * cover the click that matters.
- */
-const supportsIdleCallback = typeof window.requestIdleCallback === "function";
-
-function requestIdle(callback: () => void): number {
-  return supportsIdleCallback
-    ? window.requestIdleCallback(callback, { timeout: IDLE_TIMEOUT })
-    : window.setTimeout(callback, IDLE_TIMEOUT);
-}
-
-/** Cancels a handle returned by {@link requestIdle}. */
-function cancelIdle(handle: number): void {
-  if (supportsIdleCallback) {
-    window.cancelIdleCallback(handle);
-  } else {
-    window.clearTimeout(handle);
-  }
-}
 
 /**
  * Preloading spends bandwidth on a guess, which is the wrong trade on a metered
