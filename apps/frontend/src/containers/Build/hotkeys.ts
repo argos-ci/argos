@@ -22,6 +22,12 @@ export type Hotkey = {
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
+  /**
+   * Listed in a sub-list of its group, headed by this name. For a set of
+   * alternatives one control already presents as a set — a set the reader is
+   * looking for as a whole, rather than a line at a time.
+   */
+  section?: string;
 };
 
 export type HotkeyGroup = {
@@ -128,42 +134,49 @@ const hotkeyGroups = [
         displayKeys: ["1"],
         description: "Go to first failure screenshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstChanged: {
         keys: ["2"],
         displayKeys: ["2"],
         description: "Go to first changed snapshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstAdded: {
         keys: ["3"],
         displayKeys: ["3"],
         description: "Go to first added snapshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstRemoved: {
         keys: ["4"],
         displayKeys: ["4"],
         description: "Go to first removed snapshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstUnchanged: {
         keys: ["5"],
         displayKeys: ["5"],
         description: "Go to first unchanged snapshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstRetryFailure: {
         keys: ["6"],
         displayKeys: ["6"],
         description: "Go to first retried failure screenshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
       goToFirstIgnored: {
         keys: ["7"],
         displayKeys: ["7"],
         description: "Go to first ignored snapshot",
         envs: ["build"],
+        section: "Jump to first…",
       },
     },
   },
@@ -182,30 +195,35 @@ const hotkeyGroups = [
         displayKeys: ["\u2190"],
         description: "Show only baseline",
         envs: ["test", "build", "media"],
+        section: "View mode",
       },
       toggleSplitView: {
         keys: ["KeyS"],
         displayKeys: ["S"],
         description: "Toggle side by side mode",
         envs: ["test", "build", "media"],
+        section: "View mode",
       },
       showChanges: {
         keys: ["ArrowRight"],
         displayKeys: ["\u2192"],
         description: "Show only changes",
         envs: ["test", "build", "media"],
+        section: "View mode",
       },
       showOnion: {
         keys: ["KeyO"],
         displayKeys: ["O"],
         description: "Show onion skin view",
         envs: ["test", "build", "media"],
+        section: "View mode",
       },
       showSwipe: {
         keys: ["KeyW"],
         displayKeys: ["W"],
         description: "Show swipe view",
         envs: ["test", "build", "media"],
+        section: "View mode",
       },
       toggleChangesOverlay: {
         keys: ["KeyD"],

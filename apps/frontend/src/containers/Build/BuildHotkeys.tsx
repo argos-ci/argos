@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { SearchIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/ui/Button";
-import { Dialog, DialogTitle } from "@/ui/Dialog";
+import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Modal } from "@/ui/Modal";
 import { Shortcut } from "@/ui/Shortcut";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
@@ -18,6 +18,7 @@ import {
   plainHotkeyGroups,
   type Hotkey,
   type HotkeyEnv,
+  type HotkeyGroup,
   type HotkeyName,
 } from "./hotkeys";
 
@@ -171,21 +172,68 @@ export function BuildHotkeysDialog(props: { env: HotkeyEnv }) {
   ) : null;
 }
 
-function checkMatchesQuery(hotkey: Hotkey, query: string): boolean {
+type ListedHotkey = { id: string; hotkey: Hotkey };
+
+type ListedItem =
+  | ({ kind: "hotkey" } & ListedHotkey)
+  | { kind: "section"; id: string; name: string; hotkeys: ListedHotkey[] };
+
+/**
+ * A group's hotkeys in declaration order, with the ones naming a `section`
+ * gathered into it. The first of a section decides where it sits.
+ */
+function listGroup(
+  group: HotkeyGroup,
+  env: HotkeyEnv,
+  query: string,
+): ListedItem[] {
+  const items: ListedItem[] = [];
+  const sections = new Map<string, Extract<ListedItem, { kind: "section" }>>();
+  for (const [id, hotkey] of Object.entries(group.hotkeys)) {
+    if (!hotkey || !hotkey.envs.includes(env)) {
+      continue;
+    }
+    if (
+      query &&
+      !hotkey.description.toLowerCase().includes(query) &&
+      !hotkey.displayKeys.join(" ").toLowerCase().includes(query)
+    ) {
+      continue;
+    }
+    if (hotkey.section === undefined) {
+      items.push({ kind: "hotkey", id, hotkey });
+      continue;
+    }
+    const open = sections.get(hotkey.section);
+    if (open) {
+      open.hotkeys.push({ id, hotkey });
+      continue;
+    }
+    const section = {
+      kind: "section" as const,
+      id: hotkey.section,
+      name: hotkey.section,
+      hotkeys: [{ id, hotkey }],
+    };
+    sections.set(hotkey.section, section);
+    items.push(section);
+  }
+  return items;
+}
+
+function HotkeyRow(props: { hotkey: Hotkey }) {
   return (
-    hotkey.description.toLowerCase().includes(query) ||
-    hotkey.displayKeys.join(" ").toLowerCase().includes(query)
+    <div className="flex items-center justify-between gap-4">
+      <span>{props.hotkey.description}</span>
+      <Shortcut
+        keys={props.hotkey.displayKeys}
+        variant="boxed"
+        className="gap-1"
+      />
+    </div>
   );
 }
 
-/**
- * Every shortcut, listed one per line and searched rather than read. Nobody
- * reads a list of forty-five bindings top to bottom; the dialog is opened to
- * find one thing, so each line says the whole of what it does — a line that
- * has been shortened, or folded together with its opposite, is a line that
- * cannot be found by the words someone would search for, or that leaves them
- * guessing which of two keys they wanted.
- */
 const BuildHotkeysDialogWithState = memo(
   (props: { state: HotkeysDialogState; env: HotkeyEnv }) => {
     const { env, state } = props;
@@ -196,13 +244,8 @@ const BuildHotkeysDialogWithState = memo(
     const groups = useMemo(() => {
       const search = query.trim().toLowerCase();
       return plainHotkeyGroups.flatMap((group) => {
-        const hotkeys = Object.entries(group.hotkeys).filter(
-          ([, hotkey]) =>
-            hotkey &&
-            hotkey.envs.includes(env) &&
-            (!search || checkMatchesQuery(hotkey, search)),
-        );
-        return hotkeys.length > 0 ? [{ name: group.name, hotkeys }] : [];
+        const items = listGroup(group, env, search);
+        return items.length > 0 ? [{ name: group.name, items }] : [];
       });
     }, [env, query]);
     return (
@@ -216,10 +259,8 @@ const BuildHotkeysDialogWithState = memo(
         }}
         dismissible
       >
-        {/* The list scrolls under a header that does not, so the box being
-            typed into stays put while its results move. */}
-        <Dialog scrollable={false} className="flex w-md flex-col">
-          <div className="shrink-0 p-4 pb-0">
+        <Dialog className="w-3xl">
+          <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
             <Button
               variant="secondary"
@@ -230,7 +271,7 @@ const BuildHotkeysDialogWithState = memo(
             >
               <XIcon />
             </Button>
-            <TextInputGroup>
+            <TextInputGroup className="mb-4">
               <TextInputIcon>
                 <SearchIcon />
               </TextInputIcon>
@@ -248,41 +289,52 @@ const BuildHotkeysDialogWithState = memo(
                 onChange={(event) => setQuery(event.target.value)}
               />
             </TextInputGroup>
-          </div>
-          {groups.length === 0 ? (
-            <div className="text-low px-4 pb-8 text-center text-sm">
-              No shortcut matches “{query.trim()}”.
-            </div>
-          ) : (
-            <div className="min-h-0 flex-1 overflow-auto pb-3">
-              {groups.map((group) => (
-                <div key={group.name}>
-                  {/* Padded per row rather than on the scroller, and above
-                      itself rather than below the group before it, so the
-                      heading's background covers every pixel it sticks
-                      across and no row shows through around it. */}
-                  <h3 className="bg-app text-low sticky top-0 px-4 pt-4 pb-1.5 text-xs font-medium">
-                    {group.name}
-                  </h3>
-                  {group.hotkeys.map(([name, hotkey]) =>
-                    hotkey ? (
-                      <div
-                        key={name}
-                        className="flex items-center justify-between gap-4 px-4 py-1.5 text-sm"
-                      >
-                        <span>{hotkey.description}</span>
-                        <Shortcut
-                          keys={hotkey.displayKeys}
-                          variant="boxed"
-                          className="gap-1"
-                        />
-                      </div>
-                    ) : null,
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            {groups.length === 0 ? (
+              <div className="text-low py-8 text-center text-sm">
+                No shortcut matches “{query.trim()}”.
+              </div>
+            ) : (
+              <div className="gap-8 text-sm md:columns-2">
+                {groups.map((group) => (
+                  <div
+                    key={group.name}
+                    className="mb-6 break-inside-avoid-column last:mb-0"
+                  >
+                    <h3 className="text-low mb-2 text-xs font-medium">
+                      {group.name}
+                    </h3>
+                    <div className="flex flex-col gap-1">
+                      {group.items.map((item) =>
+                        item.kind === "section" ? (
+                          // The negative margin cancels the tint's own
+                          // padding, so its rows stay on the columns the
+                          // plain rows sit on.
+                          <div
+                            key={item.id}
+                            className="bg-subtle -mx-2.5 my-1 break-inside-avoid rounded-lg px-2.5 py-2"
+                          >
+                            <div className="text-low mb-1 text-xs">
+                              {item.name}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {item.hotkeys.map((listed) => (
+                                <HotkeyRow
+                                  key={listed.id}
+                                  hotkey={listed.hotkey}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <HotkeyRow key={item.id} hotkey={item.hotkey} />
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DialogBody>
         </Dialog>
       </Modal>
     );
