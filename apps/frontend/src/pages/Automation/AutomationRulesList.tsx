@@ -198,7 +198,7 @@ export function DeleteAutomation(props: {
   }
 
   return (
-    <Modal
+    <DialogTrigger
       open={Boolean(deletedId)}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
@@ -206,14 +206,16 @@ export function DeleteAutomation(props: {
         }
       }}
     >
-      <DeleteAutomationDialog
-        projectId={projectId}
-        automationRuleId={latestDeletedId}
-        onCompleted={() => {
-          setDeletedId(null);
-        }}
-      />
-    </Modal>
+      <Modal>
+        <DeleteAutomationDialog
+          projectId={projectId}
+          automationRuleId={latestDeletedId}
+          onCompleted={() => {
+            setDeletedId(null);
+          }}
+        />
+      </Modal>
+    </DialogTrigger>
   );
 }
 

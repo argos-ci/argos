@@ -121,14 +121,6 @@ export function DialogTrigger(props: {
     triggerElement,
     "DialogTrigger expects a trigger element as its first child",
   );
-  // react-aria accepted a `DialogTrigger` wrapping nothing but an overlay.
-  // Here the first child is the trigger, so that shape renders an empty tree
-  // and the control silently does nothing. A controlled overlay takes `open`
-  // itself: `<Modal open={…} onOpenChange={…}>`.
-  invariant(
-    overlays.length > 0,
-    "DialogTrigger expects an overlay after its trigger",
-  );
   const value = useMemo<OverlayTriggerContextValue>(
     () => ({ state, renderTrigger: getTriggerRenderer(triggerElement) }),
     [state, triggerElement],

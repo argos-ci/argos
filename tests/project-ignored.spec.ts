@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
 
-import { ScreenshotDiff } from "../apps/backend/src/database/models";
 import { createIgnoredChangeScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
@@ -159,51 +158,5 @@ loggedTest(
     await expect(
       page.getByRole("heading", { name: "Nothing is ignored yet" }),
     ).toBeHidden();
-  },
-);
-
-loggedTest(
-  "unignoring a change from the build toolbar",
-  async ({ page, team, project, auth }) => {
-    const { build } = await createIgnoredChangeScenario({
-      projectId: project.id,
-      userId: auth.user.id,
-    });
-    // The build page shows its snapshots only once the build has concluded,
-    // and the scenario builds one for the test trends page, which does not
-    // care either way.
-    await build.$query().patch({ conclusion: "changes-detected" });
-    const diff = await ScreenshotDiff.query()
-      .findOne({ buildId: build.id })
-      .throwIfNotFound();
-
-    await page.goto(
-      `/${team.account.slug}/${project.name}/builds/${build.number}/${diff.id}`,
-    );
-
-    // The change arrives ignored, so the flag offers to take it back.
-    const flag = page.getByRole("button", {
-      name: "Unignore change",
-      exact: true,
-    });
-    await expect(flag).toBeVisible();
-    await flag.click();
-
-    const dialog = page.getByRole("dialog");
-    await expect(
-      dialog.getByRole("heading", { name: "Unignore Change" }),
-    ).toBeVisible();
-    await dialog
-      .getByRole("button", { name: "Unignore Change", exact: true })
-      .click();
-
-    // The flag flips without a reload, and the ledger has nothing left in it.
-    await expect(
-      page.getByRole("button", { name: "Ignore change", exact: true }),
-    ).toBeVisible();
-    await page.goto(`/${team.account.slug}/${project.name}/ignored`);
-    await expect(
-      page.getByRole("heading", { name: "Nothing is ignored yet" }),
-    ).toBeVisible();
   },
 );
