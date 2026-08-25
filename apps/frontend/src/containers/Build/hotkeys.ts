@@ -22,11 +22,7 @@ export type Hotkey = {
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
-  /**
-   * Listed in a sub-list of its group, headed by this name. For a set of
-   * alternatives one control already presents as a set — a set the reader is
-   * looking for as a whole, rather than a line at a time.
-   */
+  /** Listed in a sub-list of its group, headed by this name. */
   section?: string;
 };
 
@@ -183,8 +179,7 @@ const hotkeyGroups = [
   {
     name: "Comparison",
     hotkeys: {
-      // In the order `ViewToggle` puts them in, which is the order a reader
-      // who reaches for one of these keys has seen them in.
+      // In the order `ViewToggle` puts them in.
       //
       // A media pair is compared with the same controls as a build's snapshot,
       // so it answers to the same keys. The wording is the build's because the
@@ -357,7 +352,6 @@ export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
 
 export const plainHotkeyGroups: HotkeyGroup[] = hotkeyGroups;
 
-/** How a modifier reads when it is named rather than drawn. */
 const MODIFIER_LABELS = {
   "⌘": "Command",
   Ctrl: "Control",
@@ -372,9 +366,8 @@ export function getModifierLabel(modifier: ModifierKey): string {
 }
 
 /**
- * The modifiers a shortcut on this platform actually uses, in the order a
- * combination writes them. Derived rather than listed: offering one that no
- * shortcut takes would be a filter that can only ever empty the list.
+ * Derived rather than listed: offering a modifier no shortcut takes would be a
+ * filter that can only ever empty the list.
  */
 export const SEARCHABLE_MODIFIERS: ModifierKey[] = [MOD, SHIFT, ALT].filter(
   (modifier) =>
@@ -385,7 +378,6 @@ export const SEARCHABLE_MODIFIERS: ModifierKey[] = [MOD, SHIFT, ALT].filter(
     ),
 );
 
-/** Whether `hotkey` is held down with every one of `modifiers`. */
 export function checkHotkeyUsesModifiers(
   hotkey: Hotkey,
   modifiers: ModifierKey[],
@@ -398,10 +390,6 @@ const hotkeys = plainHotkeyGroups.reduce(
   {} as Record<HotkeyName, Hotkey>,
 );
 
-/**
- * What someone types to mean a modifier, which on macOS is drawn as a symbol
- * that is not on the keyboard they are typing from.
- */
 const MODIFIER_SEARCH_TERMS = {
   "⌘": ["cmd", "command", "meta"],
   Ctrl: ["ctrl", "control"],
@@ -412,9 +400,9 @@ const MODIFIER_SEARCH_TERMS = {
 } as const satisfies Record<ModifierKey, string[]>;
 
 /**
- * The same for every other key a search cannot spell. Everything left out —
- * the letters, the digits, `Esc`, `Space`, `?`, `[` — is already the character
- * it is searched by.
+ * What someone types to mean a key they cannot type. Everything left out — the
+ * letters, the digits, `Esc`, `Space`, `?`, `[` — is already the character it
+ * is searched by.
  */
 const KEY_SEARCH_TERMS: Record<string, readonly string[]> = {
   ...MODIFIER_SEARCH_TERMS,
@@ -428,17 +416,9 @@ const KEY_SEARCH_TERMS: Record<string, readonly string[]> = {
 };
 
 /**
- * Whether `hotkey` answers `query`.
- *
- * The query is read as whitespace-separated terms that must all match, so
- * "cmd z" finds ⌘Z without either half having to be the whole of what was
- * typed, and "first ignored" finds a description those two words are spread
- * across.
- *
- * A term matches a description anywhere inside it — a description is searched
- * for a word it contains — and a key from its start, since "com" is someone
- * part-way through typing "command" rather than someone after a key with
- * "com" in the middle.
+ * Whether `hotkey` answers `query`, read as terms that must all match: "cmd z"
+ * finds ⌘Z. A term matches a description anywhere inside it, and a key from
+ * its start, so "com" is someone part-way through "command".
  */
 export function checkHotkeyMatchesSearch(
   hotkey: Hotkey,

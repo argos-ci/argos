@@ -182,10 +182,6 @@ type ListedItem =
   | ({ kind: "hotkey" } & ListedHotkey)
   | { kind: "section"; id: string; name: string; hotkeys: ListedHotkey[] };
 
-/**
- * A group's hotkeys in declaration order, with the ones naming a `section`
- * gathered into it. The first of a section decides where it sits.
- */
 function listGroup(
   group: HotkeyGroup,
   env: HotkeyEnv,
@@ -239,13 +235,8 @@ function HotkeyRow(props: { hotkey: Hotkey }) {
 }
 
 /**
- * The search field: free text, plus the modifiers held down alongside it.
- *
- * A modifier is the one part of a shortcut that cannot be typed into a search
- * box — ⌘ is not a character on the keyboard it is being typed from — so it is
- * pressed rather than spelled. Sitting in the open rather than behind a menu is
- * most of the point: nothing else on screen says the shortcuts have modifiers
- * at all, let alone which ones.
+ * A modifier cannot be typed into a search box — ⌘ is not a character on the
+ * keyboard it is being typed from — so it is pressed rather than spelled.
  */
 function ShortcutSearchField(props: {
   query: string;
@@ -259,8 +250,6 @@ function ShortcutSearchField(props: {
       <SearchIcon className="text-placeholder size-4 shrink-0" />
       <input
         type="search"
-        // The dialog is opened to look something up, so the caret starts
-        // where the looking up happens.
         autoFocus
         autoComplete="off"
         spellCheck={false}
@@ -335,12 +324,7 @@ const BuildHotkeysDialogWithState = memo(
                 setModifiers((current) =>
                   current.includes(modifier)
                     ? current.filter((value) => value !== modifier)
-                    : // Written in the order a combination writes them, so the
-                      // chips read as the start of a shortcut.
-                      SEARCHABLE_MODIFIERS.filter(
-                        (value) =>
-                          value === modifier || current.includes(value),
-                      ),
+                    : [...current, modifier],
                 )
               }
             />
