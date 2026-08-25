@@ -105,11 +105,15 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   originalLanguage: BundledLanguage;
   modifiedLanguage: BundledLanguage;
   /**
-   * Identity of each side, used as the viewer's render/highlight cache key. It
-   * must be unique per snapshot: when it is omitted the viewer falls back to the
-   * file *name*, which is the constant `"snapshot"` below, so every text diff in
-   * the app would share one key. Selecting another snapshot then hits the cache
-   * and keeps painting the previous diff until a full reload drops it.
+   * Identity of each side of the diff. The `key` below is built from these, so
+   * they are what makes the viewer repaint when another snapshot is selected.
+   *
+   * They also reach the library as `cacheKey`, which falls back to the file
+   * *name* — the constant `"snapshot"` below — when unset. That fallback is
+   * harmless while the render cache is per instance and the `key` hands each
+   * snapshot a fresh one, but the worker pool's caches are global and keyed on
+   * it alone. Nothing provides a pool today; the day something does, one shared
+   * key would serve every text diff in the app the same highlight.
    */
   originalCacheKey: string;
   modifiedCacheKey: string;
