@@ -1,4 +1,4 @@
-import { MOD, SHIFT, type ModifierKey } from "@/util/os";
+import { ALT, MOD, SHIFT, type ModifierKey } from "@/util/os";
 
 /**
  * The parts of a keyboard event a hotkey is matched against.
@@ -22,6 +22,8 @@ export type Hotkey = {
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
+  /** Listed in a sub-list of its group, headed by this name. */
+  section?: string;
 };
 
 export type HotkeyGroup = {
@@ -105,48 +107,6 @@ const hotkeyGroups = [
         description: "Toggle group",
         envs: ["build"],
       },
-      goToFirstFailure: {
-        keys: ["1"],
-        displayKeys: ["1"],
-        description: "Go to first failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstChanged: {
-        keys: ["2"],
-        displayKeys: ["2"],
-        description: "Go to first changed snapshot",
-        envs: ["build"],
-      },
-      goToFirstAdded: {
-        keys: ["3"],
-        displayKeys: ["3"],
-        description: "Go to first added snapshot",
-        envs: ["build"],
-      },
-      goToFirstRemoved: {
-        keys: ["4"],
-        displayKeys: ["4"],
-        description: "Go to first removed snapshot",
-        envs: ["build"],
-      },
-      goToFirstUnchanged: {
-        keys: ["5"],
-        displayKeys: ["5"],
-        description: "Go to first unchanged snapshot",
-        envs: ["build"],
-      },
-      goToFirstRetryFailure: {
-        keys: ["6"],
-        displayKeys: ["6"],
-        description: "Go to first retried failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstIgnored: {
-        keys: ["7"],
-        displayKeys: ["7"],
-        description: "Go to first ignored snapshot",
-        envs: ["build"],
-      },
       switchViewport: {
         keys: ["KeyV"],
         displayKeys: ["V"],
@@ -165,11 +125,101 @@ const hotkeyGroups = [
         description: "Switch story mode",
         envs: ["build"],
       },
+      goToFirstFailure: {
+        keys: ["1"],
+        displayKeys: ["1"],
+        description: "Go to first failure screenshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstChanged: {
+        keys: ["2"],
+        displayKeys: ["2"],
+        description: "Go to first changed snapshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstAdded: {
+        keys: ["3"],
+        displayKeys: ["3"],
+        description: "Go to first added snapshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstRemoved: {
+        keys: ["4"],
+        displayKeys: ["4"],
+        description: "Go to first removed snapshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstUnchanged: {
+        keys: ["5"],
+        displayKeys: ["5"],
+        description: "Go to first unchanged snapshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstRetryFailure: {
+        keys: ["6"],
+        displayKeys: ["6"],
+        description: "Go to first retried failure screenshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
+      goToFirstIgnored: {
+        keys: ["7"],
+        displayKeys: ["7"],
+        description: "Go to first ignored snapshot",
+        envs: ["build"],
+        section: "Jump to first…",
+      },
     },
   },
   {
-    name: "View",
+    name: "Comparison",
     hotkeys: {
+      // In the order `ViewToggle` puts them in.
+      //
+      // A media pair is compared with the same controls as a build's snapshot,
+      // so it answers to the same keys. The wording is the build's because the
+      // two sides are the same two things: a media's "before" is the baseline
+      // it is compared against, and its "after" is what changed.
+      showBaseline: {
+        keys: ["ArrowLeft"],
+        displayKeys: ["←"],
+        description: "Show only baseline",
+        envs: ["test", "build", "media"],
+        section: "View mode",
+      },
+      toggleSplitView: {
+        keys: ["KeyS"],
+        displayKeys: ["S"],
+        description: "Toggle side by side mode",
+        envs: ["test", "build", "media"],
+        section: "View mode",
+      },
+      showChanges: {
+        keys: ["ArrowRight"],
+        displayKeys: ["→"],
+        description: "Show only changes",
+        envs: ["test", "build", "media"],
+        section: "View mode",
+      },
+      showOnion: {
+        keys: ["KeyO"],
+        displayKeys: ["O"],
+        description: "Show onion skin view",
+        envs: ["test", "build", "media"],
+        section: "View mode",
+      },
+      showSwipe: {
+        keys: ["KeyW"],
+        displayKeys: ["W"],
+        description: "Show swipe view",
+        envs: ["test", "build", "media"],
+        section: "View mode",
+      },
       toggleChangesOverlay: {
         keys: ["KeyD"],
         displayKeys: ["D"],
@@ -182,52 +232,24 @@ const hotkeyGroups = [
         description: "Highlight changes",
         envs: ["test", "build", "media"],
       },
-      goToNextChanges: {
-        keys: ["KeyK"],
-        displayKeys: ["K"],
-        description: "Go to next changes",
-        envs: ["test", "build", "media"],
-      },
+      // J before K, as the keys sit and as vim reads them.
       goToPreviousChanges: {
         keys: ["KeyJ"],
         displayKeys: ["J"],
         description: "Go to previous changes",
         envs: ["test", "build", "media"],
       },
-      // A media pair is compared with the same controls as a build's snapshot,
-      // so it answers to the same keys. The wording is the build's because the
-      // two sides are the same two things: a media's "before" is the baseline
-      // it is compared against, and its "after" is what changed.
-      showBaseline: {
-        keys: ["ArrowLeft"],
-        displayKeys: ["←"],
-        description: "Show only baseline",
+      goToNextChanges: {
+        keys: ["KeyK"],
+        displayKeys: ["K"],
+        description: "Go to next changes",
         envs: ["test", "build", "media"],
       },
-      showChanges: {
-        keys: ["ArrowRight"],
-        displayKeys: ["→"],
-        description: "Show only changes",
-        envs: ["test", "build", "media"],
-      },
-      showOnion: {
-        keys: ["KeyO"],
-        displayKeys: ["O"],
-        description: "Show onion skin view",
-        envs: ["test", "build", "media"],
-      },
-      showSwipe: {
-        keys: ["KeyW"],
-        displayKeys: ["W"],
-        description: "Show swipe view",
-        envs: ["test", "build", "media"],
-      },
-      toggleSplitView: {
-        keys: ["KeyS"],
-        displayKeys: ["S"],
-        description: "Toggle side by side mode",
-        envs: ["test", "build", "media"],
-      },
+    },
+  },
+  {
+    name: "View",
+    hotkeys: {
       toggleDiffFit: {
         keys: ["Space"],
         displayKeys: ["Space"],
@@ -330,10 +352,93 @@ export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
 
 export const plainHotkeyGroups: HotkeyGroup[] = hotkeyGroups;
 
+const MODIFIER_LABELS = {
+  "⌘": "Command",
+  Ctrl: "Control",
+  "⌥": "Option",
+  Alt: "Alt",
+  "⇧": "Shift",
+  Shift: "Shift",
+} as const satisfies Record<ModifierKey, string>;
+
+export function getModifierLabel(modifier: ModifierKey): string {
+  return MODIFIER_LABELS[modifier];
+}
+
+/**
+ * Derived rather than listed: offering a modifier no shortcut takes would be a
+ * filter that can only ever empty the list.
+ */
+export const SEARCHABLE_MODIFIERS: ModifierKey[] = [MOD, SHIFT, ALT].filter(
+  (modifier) =>
+    plainHotkeyGroups.some((group) =>
+      Object.values(group.hotkeys).some((hotkey) =>
+        hotkey?.displayKeys.includes(modifier),
+      ),
+    ),
+);
+
+export function checkHotkeyUsesModifiers(
+  hotkey: Hotkey,
+  modifiers: ModifierKey[],
+): boolean {
+  return modifiers.every((modifier) => hotkey.displayKeys.includes(modifier));
+}
+
 const hotkeys = plainHotkeyGroups.reduce(
   (acc, group) => ({ ...acc, ...group.hotkeys }),
   {} as Record<HotkeyName, Hotkey>,
 );
+
+const MODIFIER_SEARCH_TERMS = {
+  "⌘": ["cmd", "command", "meta"],
+  Ctrl: ["ctrl", "control"],
+  "⌥": ["alt", "option"],
+  Alt: ["alt", "option"],
+  "⇧": ["shift"],
+  Shift: ["shift"],
+} as const satisfies Record<ModifierKey, string[]>;
+
+/**
+ * What someone types to mean a key they cannot type. Everything left out — the
+ * letters, the digits, `Esc`, `Space`, `?`, `[` — is already the character it
+ * is searched by.
+ */
+const KEY_SEARCH_TERMS: Record<string, readonly string[]> = {
+  ...MODIFIER_SEARCH_TERMS,
+  "↑": ["up", "arrow"],
+  "↓": ["down", "arrow"],
+  "←": ["left", "arrow"],
+  "→": ["right", "arrow"],
+  "↵": ["enter", "return"],
+  Esc: ["escape"],
+  Space: ["spacebar"],
+};
+
+/**
+ * Whether `hotkey` answers `query`, read as terms that must all match: "cmd z"
+ * finds ⌘Z. A term matches a description anywhere inside it, and a key from
+ * its start, so "com" is someone part-way through "command".
+ */
+export function checkHotkeyMatchesSearch(
+  hotkey: Hotkey,
+  query: string,
+): boolean {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) {
+    return true;
+  }
+  const description = hotkey.description.toLowerCase();
+  const keyTerms = hotkey.displayKeys.flatMap((key) => [
+    key.toLowerCase(),
+    ...(KEY_SEARCH_TERMS[key] ?? []),
+  ]);
+  return terms.every(
+    (term) =>
+      description.includes(term) ||
+      keyTerms.some((keyTerm) => keyTerm.startsWith(term)),
+  );
+}
 
 /** The `KeyboardEvent` fields saying which modifiers are held. */
 type ModifierFlag = "metaKey" | "ctrlKey" | "altKey" | "shiftKey";
