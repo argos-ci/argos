@@ -346,7 +346,6 @@ function useAwaitPendingDiff(props: {
 
 function SharePage(props: { media: Media }) {
   const { media } = props;
-  const [placing, setPlacing] = useState(false);
   const [versionId, setVersionId] = useState(media.latestVersion.id);
   // A thread the sidebar asked to open as a marker popover on the image.
   const [requestedThreadId, setRequestedThreadId] = useState<string | null>(
@@ -471,8 +470,6 @@ function SharePage(props: { media: Media }) {
                     comments={{
                       media,
                       viewedVersionId: version.id,
-                      placing,
-                      onPlacingChange: setPlacing,
                       requestedThreadId,
                       onRequestedThreadConsumed: () =>
                         setRequestedThreadId(null),
@@ -506,8 +503,6 @@ function SharePage(props: { media: Media }) {
                     <MediaComments
                       media={media}
                       viewedVersionId={version.id}
-                      placing={placing}
-                      onPlacingChange={setPlacing}
                       onOpenPinned={(comment) => {
                         // The marker only exists on the version the pin was dropped
                         // on, so showing the thread may mean switching to it first.

@@ -179,7 +179,7 @@ loggedTest(
 
     await page.goto(`/m/${media.after.shareToken}`);
 
-    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await page.getByRole("button", { name: "Comment tool" }).click();
     await expect(
       page.getByText("Click the spot on the image you want to comment on."),
     ).toBeVisible();
@@ -276,7 +276,7 @@ loggedTest(
 
     await page.goto(`/m/${media.solo.shareToken}`);
 
-    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await page.getByRole("button", { name: "Comment tool" }).click();
     await page
       .getByRole("button", { name: "Pick the spot to comment on" })
       .click({ position: { x: 200, y: 150 } });
@@ -410,7 +410,7 @@ loggedTest(
     // is nowhere for a pin to land — the tool puts itself away rather than
     // leaving the reviewer clicking at an image that cannot take one.
     await after.click();
-    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await page.getByRole("button", { name: "Comment tool" }).click();
     await expect(
       page.getByText("Click the spot on the image you want to comment on."),
     ).toBeVisible();
@@ -443,7 +443,7 @@ loggedTest(
       page.locator("[data-media-pane][data-pin-target]"),
     ).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Pin a comment" }).click();
+    await page.getByRole("button", { name: "Comment tool" }).click();
 
     const target = page.locator("[data-media-pane][data-pin-target]");
     await expect(target).toHaveCount(1);
@@ -454,6 +454,45 @@ loggedTest(
     ).toBeVisible();
 
     await screenshot(page, "media-share-pin-target");
+  },
+);
+
+loggedTest(
+  "puts the comment tool away when a recording comes on screen",
+  async ({ page, auth, project }) => {
+    // A recording has no pane a pin can land on, so it offers no comment tool —
+    // which means an armed tool arriving from the image beside it would have
+    // nothing left on the page able to put it away.
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+      withPullRequest: true,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    // Armed with the key rather than the button: the shortcut is registered by
+    // the toolbar control now, so this is what says it is still reachable.
+    // Waiting for the control first — the key goes nowhere until the thing that
+    // listens for it is on the page.
+    const tool = page.getByRole("button", { name: "Comment tool" });
+    await expect(tool).toBeVisible();
+    const instruction = page.getByText(
+      "Click the spot on the image you want to comment on.",
+    );
+    await page.keyboard.press("KeyC");
+    await expect(instruction).toBeVisible();
+
+    // Down to the recording, in the app rather than by URL: the page stays
+    // mounted across the two, which is what carries the armed tool over.
+    await page.keyboard.press("ArrowDown");
+    await expect(page).toHaveURL(`/m/${media.video.shareToken}`);
+    await expect(
+      page.getByRole("heading", { name: "checkout-flow.mp4" }),
+    ).toBeVisible();
+
+    await expect(instruction).toBeHidden();
+    await expect(tool).toBeHidden();
   },
 );
 

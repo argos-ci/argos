@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useApolloClient } from "@apollo/client/react";
 
 import { useAuth } from "@/containers/Auth";
+import { useCommentTool } from "@/containers/Build/CommentTool";
 import { type NormalizedPoint } from "@/containers/Build/projection";
 import { type PaneSize } from "@/containers/Build/Zoomer";
 import { CommentCard } from "@/containers/Comment/CommentCard";
@@ -13,12 +14,12 @@ import {
 import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { DocumentType, graphql } from "@/gql";
-import { MediaPermission } from "@/gql/graphql";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { createHandleMediaCommentsPrompt } from "./MediaCommentsPrompt";
+import { checkCanCommentOnMedia } from "./permissions";
 
 const _MediaFragment = graphql(`
   fragment MediaCommentLayer_Media on Media {
@@ -89,8 +90,6 @@ export function MediaCommentLayer(props: {
   viewedVersionId: string;
   paneSize: PaneSize | null;
   imgSize: { width: number; height: number };
-  placing: boolean;
-  onPlacingChange: (placing: boolean) => void;
   /** A thread the sidebar asks to open on the image (see PointCommentLayer). */
   requestedThreadId?: string | null;
   onRequestedThreadConsumed?: () => void;
@@ -100,18 +99,19 @@ export function MediaCommentLayer(props: {
     viewedVersionId,
     paneSize,
     imgSize,
-    placing,
-    onPlacingChange,
     requestedThreadId,
     onRequestedThreadConsumed,
   } = props;
+  // The build's tool, on the build's atom: a reviewer who picks the crosshair
+  // on a snapshot finds it picked here, the same way the view mode carries over.
+  const { mode, activateHand } = useCommentTool();
   const client = useApolloClient();
   const roleScope = useCommentRoleScope();
   const auth = useAuth();
   const accountId =
     auth.status === "authenticated" ? auth.account?.id : undefined;
 
-  const canComment = media.permissions.includes(MediaPermission.Comment);
+  const canComment = checkCanCommentOnMedia(media);
 
   // A resolved thread's pin drops off the image until the reviewer expands the
   // thread again; the panel keeps the thread either way.
@@ -179,7 +179,7 @@ export function MediaCommentLayer(props: {
         });
         // The pin the button armed has been dropped; the next comment starts
         // from a resting toolbar.
-        onPlacingChange(false);
+        activateHand();
         const created = result.data?.addMediaComment.comments.find(
           (comment) => !priorIds.has(comment.id) && !comment.threadId,
         );
@@ -190,7 +190,7 @@ export function MediaCommentLayer(props: {
         throw error;
       }
     },
-    [media.comments, postComment, onPlacingChange],
+    [media.comments, postComment, activateHand],
   );
 
   return (
@@ -200,14 +200,14 @@ export function MediaCommentLayer(props: {
       // The media image is centered in its pane; the build's snapshots are not.
       verticalAlign="center"
       threads={threads}
-      placing={placing && canComment}
+      placing={mode === "comment" && canComment}
       draftAvatar={currentAvatar}
       canAddToReview={false}
       onCreate={handleCreate}
       requestedThreadId={requestedThreadId}
       onRequestedThreadConsumed={onRequestedThreadConsumed}
       // Escape puts the pin tool away once there is nothing left to close.
-      onPlacingDismiss={() => onPlacingChange(false)}
+      onPlacingDismiss={activateHand}
       renderThreadCard={(thread) => (
         <CommentCard
           comment={thread.root}
