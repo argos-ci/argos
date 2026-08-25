@@ -188,8 +188,9 @@ NODE_ENV=test pnpm run --filter @argos/backend db:reset
 ### Running against production data (read-only)
 
 To debug with real data shapes, the app can run locally against the production
-database through the `argos_dev_ro` Postgres role — read-only except for the
-two tables the login flow writes (`user_sessions`, `team_users.lastAuthMethod`).
+database through the `argos_dev_ro` Postgres role — read-only except for what
+the login flow writes (`user_sessions`, `team_users.lastAuthMethod`, and
+`github_accounts` when signing in with GitHub).
 
 For connecting by hand (TablePlus, `psql`) and for how production authenticates
 at all, see [docs/database-access.md](docs/database-access.md).
@@ -204,7 +205,8 @@ once:
 
 - a **1Password item** `argos-prod-ro` in the `argos-dev` vault with the fields
   referenced by `.env.prod-ro` (`DATABASE_URL` — no password, e.g.
-  `postgresql://argos_dev_ro@<rds-host>:5432/<db>` — and `SQIDS_ALPHABET`);
+  `postgresql://argos_dev_ro@<rds-host>:5432/<db>`), `SQIDS_ALPHABET`, and the
+  production app's `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`;
 - **IAM database authentication enabled on the RDS instance**, which is a
   separate switch from the `rds_iam` grant on the role. Both are required, and
   when either is missing RDS answers a perfectly valid token with
