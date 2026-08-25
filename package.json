@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
-    "dev:prod-ro": "op run --env-file=.env.prod-ro -- pnpm run dev",
+    "dev:prod-ro": "op run --env-file=.env.prod-ro $([ -f .env.prod-ro.local ] && echo --env-file=.env.prod-ro.local) -- pnpm run dev",
     "build": "turbo run build",
     "test": "vitest",
     "test:unit": "pnpm run test -c vitest/vitest.unit.config.mts",

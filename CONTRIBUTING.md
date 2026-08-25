@@ -224,6 +224,11 @@ once:
   configured IAM user. There is no database password at all: `PG_IAM_AUTH=true`
   signs a short-lived token per connection.
 
+If your secrets live somewhere else — another vault, another item name — put
+the `op://` references that differ in a gitignored `.env.prod-ro.local`. The
+command loads it after `.env.prod-ro` and the last file wins, so it only needs
+the variables you are overriding, not a copy of the whole file.
+
 What the mode changes, enforced by the config (`ARGOS_TARGET=prod-ro`):
 
 - your `.env` is **not** loaded, and write-capable third-party credentials
