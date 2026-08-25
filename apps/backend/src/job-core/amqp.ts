@@ -15,7 +15,7 @@ export function connect(): Promise<ChannelModel> {
     return connectionPromise;
   }
 
-  connectionPromise = pRetry(connectOnce, {
+  const promise = pRetry(connectOnce, {
     onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
       logger.info(
         { error, attemptNumber, retriesLeft },
@@ -24,7 +24,19 @@ export function connect(): Promise<ChannelModel> {
     },
   });
 
-  return connectionPromise;
+  connectionPromise = promise;
+
+  // Only `handleClose` clears the promise otherwise, and it never runs when no
+  // connection was ever established: a broker outage outliving the retries
+  // would leave the rejection cached and every later caller — consumers and
+  // publishers alike — would get it back instantly, forever.
+  promise.catch(() => {
+    if (connectionPromise === promise) {
+      connectionPromise = null;
+    }
+  });
+
+  return promise;
 }
 
 async function connectOnce(): Promise<ChannelModel> {
