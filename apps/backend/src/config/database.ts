@@ -2,7 +2,47 @@ import { invariant } from "@argos/util/invariant";
 import { Signer } from "@aws-sdk/rds-signer";
 import { Knex } from "knex";
 
+import logger from "@/logger";
+
 import type { Config } from ".";
+
+/**
+ * Say what a failed RDS IAM signature means, because nothing downstream can.
+ *
+ * The signer runs inside the pool's connection factory, so its error surfaces
+ * on whatever request happened to need a new connection — and the app renders
+ * it verbatim on the login screen. The AWS SDK's own wording for an expired
+ * session is "Your session has expired. Please reauthenticate.", which on that
+ * screen reads as if the *Argos* session had expired, with nothing naming AWS,
+ * the database, or the command that fixes it.
+ */
+export function explainRdsTokenFailure(input: {
+  error: unknown;
+  target: string;
+  user: string;
+}): string {
+  const cause =
+    input.error instanceof Error ? input.error.message : String(input.error);
+  const hint =
+    input.target === "prod-ro"
+      ? "your AWS session has most likely expired — sign in again (`aws login`, or `aws sso login` on an SSO profile) and retry, the pool signs a new token on the next connection so there is nothing to restart"
+      : `the process needs AWS credentials allowed to \`rds-db:connect\` as "${input.user}"`;
+  return `Could not sign an RDS IAM token to reach the database: ${hint}. (${cause})`;
+}
+
+/**
+ * The connection factory retries every 200ms until the acquire timeout, so an
+ * expired session would otherwise print hundreds of identical lines.
+ */
+let lastReportedAt = 0;
+function reportThrottled(message: string, error: unknown): void {
+  const now = Date.now();
+  if (now - lastReportedAt < 60_000) {
+    return;
+  }
+  lastReportedAt = now;
+  logger.error({ error }, message);
+}
 
 /**
  * Resolve the connection password. With `pg.connection.iamAuth` there is no
@@ -28,7 +68,19 @@ function getPassword(config: Config): string | (() => Promise<string>) {
     port: config.get("pg.connection.port"),
     username: config.get("pg.connection.user"),
   });
-  return () => signer.getAuthToken();
+  return async () => {
+    try {
+      return await signer.getAuthToken();
+    } catch (error) {
+      const message = explainRdsTokenFailure({
+        error,
+        target: config.get("target"),
+        user: config.get("pg.connection.user"),
+      });
+      reportThrottled(message, error);
+      throw new Error(message, { cause: error });
+    }
+  };
 }
 
 /**
