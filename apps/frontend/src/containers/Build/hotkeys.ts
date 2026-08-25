@@ -74,19 +74,19 @@ const hotkeyGroups = [
     hotkeys: {
       startReview: {
         keys: ["Enter"],
-        displayKeys: ["\u21b5"],
+        displayKeys: ["↵"],
         description: "Review changes",
         envs: ["build"],
       },
       goToPreviousDiff: {
         keys: ["ArrowUp"],
-        displayKeys: ["\u2191"],
+        displayKeys: ["↑"],
         description: "Go to previous snapshot",
         envs: ["test", "build"],
       },
       goToNextDiff: {
         keys: ["ArrowDown"],
-        displayKeys: ["\u2193"],
+        displayKeys: ["↓"],
         description: "Go to next snapshot",
         envs: ["test", "build"],
       },
@@ -95,13 +95,13 @@ const hotkeyGroups = [
       // pair is ever mounted, so they never contend.
       goToPreviousMedia: {
         keys: ["ArrowUp"],
-        displayKeys: ["\u2191"],
+        displayKeys: ["↑"],
         description: "Go to previous media",
         envs: ["media"],
       },
       goToNextMedia: {
         keys: ["ArrowDown"],
-        displayKeys: ["\u2193"],
+        displayKeys: ["↓"],
         description: "Go to next media",
         envs: ["media"],
       },
@@ -192,7 +192,7 @@ const hotkeyGroups = [
       // it is compared against, and its "after" is what changed.
       showBaseline: {
         keys: ["ArrowLeft"],
-        displayKeys: ["\u2190"],
+        displayKeys: ["←"],
         description: "Show only baseline",
         envs: ["test", "build", "media"],
         section: "View mode",
@@ -206,7 +206,7 @@ const hotkeyGroups = [
       },
       showChanges: {
         keys: ["ArrowRight"],
-        displayKeys: ["\u2192"],
+        displayKeys: ["→"],
         description: "Show only changes",
         envs: ["test", "build", "media"],
         section: "View mode",
