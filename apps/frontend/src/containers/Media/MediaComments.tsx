@@ -1,17 +1,11 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
-import {
-  FileUpIcon,
-  MapPinPenIcon,
-  MapPinPlusInsideIcon,
-  UploadIcon,
-  XIcon,
-} from "lucide-react";
+import { FileUpIcon, MapPinPenIcon, UploadIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
-import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { useCommentTool } from "@/containers/Build/CommentTool";
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import {
   getCommentThreads,
@@ -20,12 +14,9 @@ import {
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { DocumentType, graphql } from "@/gql";
-import { MediaPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
-import { Button } from "@/ui/Button";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Link } from "@/ui/Link";
 import { MediaWell } from "@/ui/MediaFrame";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
@@ -34,6 +25,7 @@ import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { createHandleMediaCommentsPrompt } from "./MediaCommentsPrompt";
+import { checkCanCommentOnMedia } from "./permissions";
 
 const _MediaCommentsFragment = graphql(`
   fragment MediaComments_Media on Media {
@@ -144,21 +136,20 @@ export function MediaComments(props: {
   media: Media;
   /** The version on screen — what a new comment will be recorded against. */
   viewedVersionId: string;
-  placing: boolean;
-  onPlacingChange: (placing: boolean) => void;
   /** Open a pinned thread on the image, switching to its version if needed. */
   onOpenPinned: (comment: {
     id: string;
     mediaVersionId: string | null;
   }) => void;
 }) {
-  const { media, viewedVersionId, placing, onPlacingChange, onOpenPinned } =
-    props;
+  const { media, viewedVersionId, onOpenPinned } = props;
+  // The instruction below is the armed tool's, so it reads the tool itself.
+  const { mode } = useCommentTool();
   const client = useApolloClient();
   const roleScope = useCommentRoleScope();
   const [replyPending, setReplyPending] = useState(false);
 
-  const canComment = media.permissions.includes(MediaPermission.Comment);
+  const canComment = checkCanCommentOnMedia(media);
   const entries = getActivityEntries(media);
   const highlightedCommentId = useHighlightedCommentId(
     media.comments.map((comment) => comment.id),
@@ -191,18 +182,13 @@ export function MediaComments(props: {
     <Panel>
       <PanelHeader>
         <PanelTitle>Activity</PanelTitle>
-        {canComment ? (
-          <PinCommentToggle
-            placing={placing}
-            onPlacingChange={onPlacingChange}
-          />
-        ) : null}
       </PanelHeader>
 
       <div className="px-3">
-        {placing ? (
+        {mode === "comment" && canComment ? (
           <p className="text-low bg-ui mb-3 rounded-md px-3 py-2 text-xs">
-            Click the spot on the image you want to comment on.
+            Click the spot on the image you want to comment on. Press Esc to
+            cancel.
           </p>
         ) : null}
 
@@ -251,48 +237,6 @@ export function MediaComments(props: {
         )}
       </div>
     </Panel>
-  );
-}
-
-/**
- * Arm or put away the pin tool — an icon so the panel header stays one line,
- * with the shortcut on its tooltip. Escape also puts the tool away, which is
- * what the cancel state advertises.
- */
-function PinCommentToggle(props: {
-  placing: boolean;
-  onPlacingChange: (placing: boolean) => void;
-}) {
-  const { placing, onPlacingChange } = props;
-  const hotkey = useBuildHotkey(
-    "toggleCommentTool",
-    () => onPlacingChange(!placing),
-    { preventDefault: true },
-  );
-  return placing ? (
-    <HotkeyTooltip description="Cancel" keys={["Esc"]}>
-      <Button
-        variant="primary"
-        size="small"
-        iconOnly
-        aria-label="Cancel"
-        onClick={() => onPlacingChange(false)}
-      >
-        <XIcon />
-      </Button>
-    </HotkeyTooltip>
-  ) : (
-    <HotkeyTooltip description="Pin a comment" keys={hotkey.displayKeys}>
-      <Button
-        variant="secondary"
-        size="small"
-        iconOnly
-        aria-label="Pin a comment"
-        onClick={() => onPlacingChange(true)}
-      >
-        <MapPinPlusInsideIcon />
-      </Button>
-    </HotkeyTooltip>
   );
 }
 
