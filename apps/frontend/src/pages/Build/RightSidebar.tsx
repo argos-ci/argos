@@ -97,7 +97,7 @@ export function RightSidebar(
                   occurrences={activeDiff.last7daysOccurrences}
                 />
               ) : null}
-              <TestInsightsSection test={activeDiff.test} />
+              <TestInsightsSection test={activeDiff.test} diff={activeDiff} />
               <TestActivitySection
                 test={activeDiff.test}
                 change={activeDiff.change ?? null}
