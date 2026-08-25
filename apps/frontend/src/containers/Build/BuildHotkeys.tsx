@@ -14,6 +14,7 @@ import {
 } from "./BuildHotkeysDialogState";
 import {
   checkHotkeyMatches,
+  checkHotkeyMatchesSearch,
   getHotkey,
   plainHotkeyGroups,
   type Hotkey,
@@ -193,11 +194,7 @@ function listGroup(
     if (!hotkey || !hotkey.envs.includes(env)) {
       continue;
     }
-    if (
-      query &&
-      !hotkey.description.toLowerCase().includes(query) &&
-      !hotkey.displayKeys.join(" ").toLowerCase().includes(query)
-    ) {
+    if (!checkHotkeyMatchesSearch(hotkey, query)) {
       continue;
     }
     if (hotkey.section === undefined) {
@@ -242,7 +239,7 @@ const BuildHotkeysDialogWithState = memo(
       state.setIsOpen((value) => !value),
     );
     const groups = useMemo(() => {
-      const search = query.trim().toLowerCase();
+      const search = query.trim();
       return plainHotkeyGroups.flatMap((group) => {
         const items = listGroup(group, env, search);
         return items.length > 0 ? [{ name: group.name, items }] : [];

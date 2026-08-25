@@ -362,6 +362,68 @@ const hotkeys = plainHotkeyGroups.reduce(
   {} as Record<HotkeyName, Hotkey>,
 );
 
+/**
+ * What someone types to mean a modifier, which on macOS is drawn as a symbol
+ * that is not on the keyboard they are typing from.
+ */
+const MODIFIER_SEARCH_TERMS = {
+  "⌘": ["cmd", "command", "meta"],
+  Ctrl: ["ctrl", "control"],
+  "⌥": ["alt", "option"],
+  Alt: ["alt", "option"],
+  "⇧": ["shift"],
+  Shift: ["shift"],
+} as const satisfies Record<ModifierKey, string[]>;
+
+/**
+ * The same for every other key a search cannot spell. Everything left out —
+ * the letters, the digits, `Esc`, `Space`, `?`, `[` — is already the character
+ * it is searched by.
+ */
+const KEY_SEARCH_TERMS: Record<string, readonly string[]> = {
+  ...MODIFIER_SEARCH_TERMS,
+  "↑": ["up", "arrow"],
+  "↓": ["down", "arrow"],
+  "←": ["left", "arrow"],
+  "→": ["right", "arrow"],
+  "↵": ["enter", "return"],
+  Esc: ["escape"],
+  Space: ["spacebar"],
+};
+
+/**
+ * Whether `hotkey` answers `query`.
+ *
+ * The query is read as whitespace-separated terms that must all match, so
+ * "cmd z" finds ⌘Z without either half having to be the whole of what was
+ * typed, and "first ignored" finds a description those two words are spread
+ * across.
+ *
+ * A term matches a description anywhere inside it — a description is searched
+ * for a word it contains — and a key from its start, since "com" is someone
+ * part-way through typing "command" rather than someone after a key with
+ * "com" in the middle.
+ */
+export function checkHotkeyMatchesSearch(
+  hotkey: Hotkey,
+  query: string,
+): boolean {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) {
+    return true;
+  }
+  const description = hotkey.description.toLowerCase();
+  const keyTerms = hotkey.displayKeys.flatMap((key) => [
+    key.toLowerCase(),
+    ...(KEY_SEARCH_TERMS[key] ?? []),
+  ]);
+  return terms.every(
+    (term) =>
+      description.includes(term) ||
+      keyTerms.some((keyTerm) => keyTerm.startsWith(term)),
+  );
+}
+
 /** The `KeyboardEvent` fields saying which modifiers are held. */
 type ModifierFlag = "metaKey" | "ctrlKey" | "altKey" | "shiftKey";
 
