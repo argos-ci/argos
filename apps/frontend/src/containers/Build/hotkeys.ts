@@ -10,6 +10,28 @@ export type HotkeyEvent = Pick<
 
 export type HotkeyEnv = "test" | "build" | "media";
 
+/**
+ * How the `?` dialog lists a hotkey, when a line of its own under its full
+ * `description` is not what reads best. `description` is left alone either
+ * way: the toolbar tooltips still say the whole sentence.
+ */
+export type HotkeyListing =
+  /**
+   * Listed on one line with every hotkey of the group sharing this label,
+   * which the line then carries. The two directions of one command — previous
+   * and next, undo and redo — are a single thing to learn, and a reader who
+   * has found one has found the other.
+   */
+  | { row: string }
+  /**
+   * Listed in a sub-list of the group headed by `section`, under `label`. For
+   * a set of alternatives that one control already presents as a set, where
+   * spelling the whole set out per line repeats the heading five times over.
+   */
+  | { section: string; label: string }
+  /** Listed on its own line, under `label` rather than `description`. */
+  | { label: string };
+
 export type Hotkey = {
   /**
    * The combination to match. A modifier is named by {@link ModifierKey}; the
@@ -22,6 +44,7 @@ export type Hotkey = {
   displayKeys: string[];
   description: string;
   envs: Array<HotkeyEnv>;
+  listing?: HotkeyListing;
 };
 
 export type HotkeyGroup = {
@@ -68,83 +91,45 @@ const hotkeyGroups = [
     hotkeys: {
       startReview: {
         keys: ["Enter"],
-        displayKeys: ["↵"],
+        displayKeys: ["\u21b5"],
         description: "Review changes",
         envs: ["build"],
       },
       goToPreviousDiff: {
         keys: ["ArrowUp"],
-        displayKeys: ["↑"],
+        displayKeys: ["\u2191"],
         description: "Go to previous snapshot",
         envs: ["test", "build"],
+        listing: { row: "Previous / next snapshot" },
       },
       goToNextDiff: {
         keys: ["ArrowDown"],
-        displayKeys: ["↓"],
+        displayKeys: ["\u2193"],
         description: "Go to next snapshot",
         envs: ["test", "build"],
+        listing: { row: "Previous / next snapshot" },
       },
       // The same keys as the two above, named apart so the `?` dialog can say
       // "media" where a media page is what the reader is looking at. Only one
       // pair is ever mounted, so they never contend.
       goToPreviousMedia: {
         keys: ["ArrowUp"],
-        displayKeys: ["↑"],
+        displayKeys: ["\u2191"],
         description: "Go to previous media",
         envs: ["media"],
+        listing: { row: "Previous / next media" },
       },
       goToNextMedia: {
         keys: ["ArrowDown"],
-        displayKeys: ["↓"],
+        displayKeys: ["\u2193"],
         description: "Go to next media",
         envs: ["media"],
+        listing: { row: "Previous / next media" },
       },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],
         description: "Toggle group",
-        envs: ["build"],
-      },
-      goToFirstFailure: {
-        keys: ["1"],
-        displayKeys: ["1"],
-        description: "Go to first failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstChanged: {
-        keys: ["2"],
-        displayKeys: ["2"],
-        description: "Go to first changed snapshot",
-        envs: ["build"],
-      },
-      goToFirstAdded: {
-        keys: ["3"],
-        displayKeys: ["3"],
-        description: "Go to first added snapshot",
-        envs: ["build"],
-      },
-      goToFirstRemoved: {
-        keys: ["4"],
-        displayKeys: ["4"],
-        description: "Go to first removed snapshot",
-        envs: ["build"],
-      },
-      goToFirstUnchanged: {
-        keys: ["5"],
-        displayKeys: ["5"],
-        description: "Go to first unchanged snapshot",
-        envs: ["build"],
-      },
-      goToFirstRetryFailure: {
-        keys: ["6"],
-        displayKeys: ["6"],
-        description: "Go to first retried failure screenshot",
-        envs: ["build"],
-      },
-      goToFirstIgnored: {
-        keys: ["7"],
-        displayKeys: ["7"],
-        description: "Go to first ignored snapshot",
         envs: ["build"],
       },
       switchViewport: {
@@ -165,11 +150,105 @@ const hotkeyGroups = [
         description: "Switch story mode",
         envs: ["build"],
       },
+      // The digit row, in the order the digits run. Spelled out one line each,
+      // the seven repeat "Go to first" before the word that tells them apart.
+      goToFirstFailure: {
+        keys: ["1"],
+        displayKeys: ["1"],
+        description: "Go to first failure screenshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Failure" },
+      },
+      goToFirstChanged: {
+        keys: ["2"],
+        displayKeys: ["2"],
+        description: "Go to first changed snapshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Changed" },
+      },
+      goToFirstAdded: {
+        keys: ["3"],
+        displayKeys: ["3"],
+        description: "Go to first added snapshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Added" },
+      },
+      goToFirstRemoved: {
+        keys: ["4"],
+        displayKeys: ["4"],
+        description: "Go to first removed snapshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Removed" },
+      },
+      goToFirstUnchanged: {
+        keys: ["5"],
+        displayKeys: ["5"],
+        description: "Go to first unchanged snapshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Unchanged" },
+      },
+      goToFirstRetryFailure: {
+        keys: ["6"],
+        displayKeys: ["6"],
+        description: "Go to first retried failure screenshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Retried failure" },
+      },
+      goToFirstIgnored: {
+        keys: ["7"],
+        displayKeys: ["7"],
+        description: "Go to first ignored snapshot",
+        envs: ["build"],
+        listing: { section: "Jump to first\u2026", label: "Ignored" },
+      },
     },
   },
   {
-    name: "View",
+    name: "Comparison",
     hotkeys: {
+      // `ViewToggle` puts these five in one button group, in this order, and
+      // the dialog says the same thing about them: one control, five ways to
+      // look at the pair.
+      //
+      // A media pair is compared with the same controls as a build's snapshot,
+      // so it answers to the same keys. The wording is the build's because the
+      // two sides are the same two things: a media's "before" is the baseline
+      // it is compared against, and its "after" is what changed.
+      showBaseline: {
+        keys: ["ArrowLeft"],
+        displayKeys: ["\u2190"],
+        description: "Show only baseline",
+        envs: ["test", "build", "media"],
+        listing: { section: "View mode", label: "Baseline" },
+      },
+      toggleSplitView: {
+        keys: ["KeyS"],
+        displayKeys: ["S"],
+        description: "Toggle side by side mode",
+        envs: ["test", "build", "media"],
+        listing: { section: "View mode", label: "Side by side" },
+      },
+      showChanges: {
+        keys: ["ArrowRight"],
+        displayKeys: ["\u2192"],
+        description: "Show only changes",
+        envs: ["test", "build", "media"],
+        listing: { section: "View mode", label: "Changes" },
+      },
+      showOnion: {
+        keys: ["KeyO"],
+        displayKeys: ["O"],
+        description: "Show onion skin view",
+        envs: ["test", "build", "media"],
+        listing: { section: "View mode", label: "Onion skin" },
+      },
+      showSwipe: {
+        keys: ["KeyW"],
+        displayKeys: ["W"],
+        description: "Show swipe view",
+        envs: ["test", "build", "media"],
+        listing: { section: "View mode", label: "Swipe" },
+      },
       toggleChangesOverlay: {
         keys: ["KeyD"],
         displayKeys: ["D"],
@@ -182,52 +261,26 @@ const hotkeyGroups = [
         description: "Highlight changes",
         envs: ["test", "build", "media"],
       },
-      goToNextChanges: {
-        keys: ["KeyK"],
-        displayKeys: ["K"],
-        description: "Go to next changes",
-        envs: ["test", "build", "media"],
-      },
+      // J before K, as the keys sit and as vim reads them.
       goToPreviousChanges: {
         keys: ["KeyJ"],
         displayKeys: ["J"],
         description: "Go to previous changes",
         envs: ["test", "build", "media"],
+        listing: { row: "Previous / next change" },
       },
-      // A media pair is compared with the same controls as a build's snapshot,
-      // so it answers to the same keys. The wording is the build's because the
-      // two sides are the same two things: a media's "before" is the baseline
-      // it is compared against, and its "after" is what changed.
-      showBaseline: {
-        keys: ["ArrowLeft"],
-        displayKeys: ["←"],
-        description: "Show only baseline",
+      goToNextChanges: {
+        keys: ["KeyK"],
+        displayKeys: ["K"],
+        description: "Go to next changes",
         envs: ["test", "build", "media"],
+        listing: { row: "Previous / next change" },
       },
-      showChanges: {
-        keys: ["ArrowRight"],
-        displayKeys: ["→"],
-        description: "Show only changes",
-        envs: ["test", "build", "media"],
-      },
-      showOnion: {
-        keys: ["KeyO"],
-        displayKeys: ["O"],
-        description: "Show onion skin view",
-        envs: ["test", "build", "media"],
-      },
-      showSwipe: {
-        keys: ["KeyW"],
-        displayKeys: ["W"],
-        description: "Show swipe view",
-        envs: ["test", "build", "media"],
-      },
-      toggleSplitView: {
-        keys: ["KeyS"],
-        displayKeys: ["S"],
-        description: "Toggle side by side mode",
-        envs: ["test", "build", "media"],
-      },
+    },
+  },
+  {
+    name: "View",
+    hotkeys: {
       toggleDiffFit: {
         keys: ["Space"],
         displayKeys: ["Space"],
@@ -245,6 +298,7 @@ const hotkeyGroups = [
         displayKeys: ["L"],
         description: "Switch between screenshot and aria view",
         envs: ["build"],
+        listing: { label: "Screenshot / aria view" },
       },
       toggleCommentTool: {
         keys: ["KeyC"],
@@ -297,12 +351,14 @@ const hotkeyGroups = [
         displayKeys: ["Y"],
         description: "Mark individual change as accepted",
         envs: ["build"],
+        listing: { row: "Accept / reject change" },
       },
       rejectDiff: {
         keys: ["KeyN"],
         displayKeys: ["N"],
         description: "Mark individual change as rejected",
         envs: ["build"],
+        listing: { row: "Accept / reject change" },
       },
       ignoreChange: {
         keys: ["KeyI"],
@@ -315,12 +371,14 @@ const hotkeyGroups = [
         displayKeys: [MOD, "Z"],
         description: "Undo last review mark",
         envs: ["build"],
+        listing: { row: "Undo / redo mark" },
       },
       redoReviewMark: {
         keys: [MOD, SHIFT, "KeyZ"],
         displayKeys: [MOD, SHIFT, "Z"],
         description: "Redo last undone review mark",
         envs: ["build"],
+        listing: { row: "Undo / redo mark" },
       },
     },
   },
