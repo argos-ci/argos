@@ -303,7 +303,7 @@ const BuildHotkeysDialogWithState = memo(
                     <h3 className="text-low mb-2 text-xs font-medium">
                       {group.name}
                     </h3>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       {group.items.map((item) =>
                         item.kind === "section" ? (
                           // The negative margin cancels the tint's own
@@ -316,7 +316,7 @@ const BuildHotkeysDialogWithState = memo(
                             <div className="text-low mb-1 text-xs">
                               {item.name}
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-2">
                               {item.hotkeys.map((listed) => (
                                 <HotkeyRow
                                   key={listed.id}
