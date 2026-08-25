@@ -151,6 +151,15 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   return (
     <Suspense fallback={<SnapshotLoader />}>
       <MultiFileDiff<LAnnotation>
+        // A fresh element per snapshot, and not an optimization to drop. The
+        // viewer hydrates onto whatever DOM its container already holds and
+        // skips its first render when it finds a `<pre>` in there, assuming the
+        // markup is its own; `disableFileHeader` removes the header that would
+        // otherwise force that render. React reuses this element across
+        // snapshots — the subtree suspends on the new text and resumes onto the
+        // same node — so without a key the incoming snapshot inherits the
+        // previous one's markup and never repaints.
+        key={`${originalCacheKey}:${modifiedCacheKey}`}
         oldFile={{
           name: "snapshot",
           contents: original,
@@ -182,6 +191,8 @@ export function Editor(props: {
   return (
     <Suspense fallback={<SnapshotLoader />}>
       <File
+        // See {@link DiffEditor}: same hydrate-onto-stale-DOM trap.
+        key={props.cacheKey}
         file={{
           name: "snapshot",
           contents: props.value,
