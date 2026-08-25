@@ -1,4 +1,4 @@
-import { MOD, SHIFT, type ModifierKey } from "@/util/os";
+import { ALT, MOD, SHIFT, type ModifierKey } from "@/util/os";
 
 /**
  * The parts of a keyboard event a hotkey is matched against.
@@ -356,6 +356,42 @@ const hotkeyGroups = [
 export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
 
 export const plainHotkeyGroups: HotkeyGroup[] = hotkeyGroups;
+
+/** How a modifier reads when it is named rather than drawn. */
+const MODIFIER_LABELS = {
+  "⌘": "Command",
+  Ctrl: "Control",
+  "⌥": "Option",
+  Alt: "Alt",
+  "⇧": "Shift",
+  Shift: "Shift",
+} as const satisfies Record<ModifierKey, string>;
+
+export function getModifierLabel(modifier: ModifierKey): string {
+  return MODIFIER_LABELS[modifier];
+}
+
+/**
+ * The modifiers a shortcut on this platform actually uses, in the order a
+ * combination writes them. Derived rather than listed: offering one that no
+ * shortcut takes would be a filter that can only ever empty the list.
+ */
+export const SEARCHABLE_MODIFIERS: ModifierKey[] = [MOD, SHIFT, ALT].filter(
+  (modifier) =>
+    plainHotkeyGroups.some((group) =>
+      Object.values(group.hotkeys).some((hotkey) =>
+        hotkey?.displayKeys.includes(modifier),
+      ),
+    ),
+);
+
+/** Whether `hotkey` is held down with every one of `modifiers`. */
+export function checkHotkeyUsesModifiers(
+  hotkey: Hotkey,
+  modifiers: ModifierKey[],
+): boolean {
+  return modifiers.every((modifier) => hotkey.displayKeys.includes(modifier));
+}
 
 const hotkeys = plainHotkeyGroups.reduce(
   (acc, group) => ({ ...acc, ...group.hotkeys }),

@@ -5,8 +5,8 @@ import { Button } from "@/ui/Button";
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Modal } from "@/ui/Modal";
 import { Shortcut } from "@/ui/Shortcut";
-import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { type ModifierKey } from "@/util/os";
 
 import {
   HotkeysDialogState,
@@ -15,8 +15,11 @@ import {
 import {
   checkHotkeyMatches,
   checkHotkeyMatchesSearch,
+  checkHotkeyUsesModifiers,
   getHotkey,
+  getModifierLabel,
   plainHotkeyGroups,
+  SEARCHABLE_MODIFIERS,
   type Hotkey,
   type HotkeyEnv,
   type HotkeyGroup,
@@ -187,6 +190,7 @@ function listGroup(
   group: HotkeyGroup,
   env: HotkeyEnv,
   query: string,
+  modifiers: ModifierKey[],
 ): ListedItem[] {
   const items: ListedItem[] = [];
   const sections = new Map<string, Extract<ListedItem, { kind: "section" }>>();
@@ -194,7 +198,10 @@ function listGroup(
     if (!hotkey || !hotkey.envs.includes(env)) {
       continue;
     }
-    if (!checkHotkeyMatchesSearch(hotkey, query)) {
+    if (
+      !checkHotkeyUsesModifiers(hotkey, modifiers) ||
+      !checkHotkeyMatchesSearch(hotkey, query)
+    ) {
       continue;
     }
     if (hotkey.section === undefined) {
@@ -231,20 +238,71 @@ function HotkeyRow(props: { hotkey: Hotkey }) {
   );
 }
 
+/**
+ * The search field: free text, plus the modifiers held down alongside it.
+ *
+ * A modifier is the one part of a shortcut that cannot be typed into a search
+ * box — ⌘ is not a character on the keyboard it is being typed from — so it is
+ * pressed rather than spelled. Sitting in the open rather than behind a menu is
+ * most of the point: nothing else on screen says the shortcuts have modifiers
+ * at all, let alone which ones.
+ */
+function ShortcutSearchField(props: {
+  query: string;
+  onQueryChange: (query: string) => void;
+  modifiers: ModifierKey[];
+  onToggleModifier: (modifier: ModifierKey) => void;
+}) {
+  const { query, onQueryChange, modifiers, onToggleModifier } = props;
+  return (
+    <div className="border-thin bg-app focus-within:border-active mb-4 flex items-center gap-2 rounded-lg py-1.5 pr-1.5 pl-3">
+      <SearchIcon className="text-placeholder size-4 shrink-0" />
+      <input
+        type="search"
+        // The dialog is opened to look something up, so the caret starts
+        // where the looking up happens.
+        autoFocus
+        autoComplete="off"
+        spellCheck={false}
+        aria-label="Search shortcuts"
+        placeholder="Search shortcuts"
+        value={query}
+        onChange={(event) => onQueryChange(event.target.value)}
+        className="text-default placeholder:text-placeholder search-cancel:hidden min-w-0 flex-1 bg-transparent text-sm outline-none"
+      />
+      <div className="flex shrink-0 items-center gap-1">
+        {SEARCHABLE_MODIFIERS.map((modifier) => (
+          <Button
+            key={modifier}
+            variant="secondary"
+            size="small"
+            aria-pressed={modifiers.includes(modifier)}
+            aria-label={getModifierLabel(modifier)}
+            onClick={() => onToggleModifier(modifier)}
+          >
+            {modifier}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const BuildHotkeysDialogWithState = memo(
   (props: { state: HotkeysDialogState; env: HotkeyEnv }) => {
     const { env, state } = props;
     const [query, setQuery] = useState("");
+    const [modifiers, setModifiers] = useState<ModifierKey[]>([]);
     useBuildHotkey("toggleHotkeysDialog", () =>
       state.setIsOpen((value) => !value),
     );
     const groups = useMemo(() => {
       const search = query.trim();
       return plainHotkeyGroups.flatMap((group) => {
-        const items = listGroup(group, env, search);
+        const items = listGroup(group, env, search, modifiers);
         return items.length > 0 ? [{ name: group.name, items }] : [];
       });
-    }, [env, query]);
+    }, [env, query, modifiers]);
     return (
       <Modal
         open={state.isOpen}
@@ -252,6 +310,7 @@ const BuildHotkeysDialogWithState = memo(
           state.setIsOpen(open);
           if (!open) {
             setQuery("");
+            setModifiers([]);
           }
         }}
         dismissible
@@ -268,27 +327,26 @@ const BuildHotkeysDialogWithState = memo(
             >
               <XIcon />
             </Button>
-            <TextInputGroup className="mb-4">
-              <TextInputIcon>
-                <SearchIcon />
-              </TextInputIcon>
-              <TextInput
-                scale="sm"
-                type="search"
-                // The dialog is opened to look something up, so the caret
-                // starts where the looking up happens.
-                autoFocus
-                autoComplete="off"
-                spellCheck={false}
-                aria-label="Search shortcuts"
-                placeholder="Search shortcuts"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </TextInputGroup>
+            <ShortcutSearchField
+              query={query}
+              onQueryChange={setQuery}
+              modifiers={modifiers}
+              onToggleModifier={(modifier) =>
+                setModifiers((current) =>
+                  current.includes(modifier)
+                    ? current.filter((value) => value !== modifier)
+                    : // Written in the order a combination writes them, so the
+                      // chips read as the start of a shortcut.
+                      SEARCHABLE_MODIFIERS.filter(
+                        (value) =>
+                          value === modifier || current.includes(value),
+                      ),
+                )
+              }
+            />
             {groups.length === 0 ? (
               <div className="text-low py-8 text-center text-sm">
-                No shortcut matches “{query.trim()}”.
+                No shortcut matches.
               </div>
             ) : (
               <div className="gap-8 text-sm md:columns-2">
