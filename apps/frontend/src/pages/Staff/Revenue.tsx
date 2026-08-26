@@ -595,13 +595,14 @@ function sortMonthTeams(
 /**
  * The teams behind a month's monthly plans, one line each.
  *
- * Sorted heaviest first to open, which is the order the backend already sends
- * and the question the breakdown is opened to answer. The rank column numbers
- * the rows as they are displayed, so it re-reads as a line number under any
- * other sort rather than pinning a position the sort has moved.
+ * Sorted newest invoice first to open, so the month reads as a ledger; teams
+ * invoiced the same day keep the heaviest-first order the backend sends, the
+ * sort being stable. The rank column numbers the rows as they are displayed,
+ * so it re-reads as a line number under any other sort rather than pinning a
+ * position the sort has moved.
  */
 function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
-  const [sortKey, setSortKey] = useState<MonthTeamSortKey>("revenue");
+  const [sortKey, setSortKey] = useState<MonthTeamSortKey>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const onSort = (key: MonthTeamSortKey) => {

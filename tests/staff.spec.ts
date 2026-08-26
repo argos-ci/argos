@@ -637,8 +637,9 @@ type RevenueBook = {
   contractTeam: string;
   /** What a month of the contract comes to, as the page prints it. */
   contractPerMonth: string;
-  /** The day last month's invoices were raised, as the page prints it. */
-  invoiceDate: string;
+  /** The days last month's two invoices were raised, as the page prints them. */
+  monthlyInvoiceDate: string;
+  dollarInvoiceDate: string;
 };
 
 /**
@@ -735,6 +736,12 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
     const lastMonth = new Date(
       startOfUTCMonth(-1).getTime() + 5 * 24 * 3600 * 1000,
     );
+    // A week after the dollar team's bill, on the lighter team: the breakdown
+    // opens newest invoice first, and only a date order that disagrees with
+    // the heaviest-first order the backend sends can show which one won.
+    const lastMonthLater = new Date(
+      startOfUTCMonth(-1).getTime() + 12 * 24 * 3600 * 1000,
+    );
     await StripeInvoice.query().insert([
       // Two teams billed last month, one of them in dollars: the page states
       // euros, so the row has to show both what Stripe charged and what it
@@ -742,7 +749,7 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
       {
         stripeInvoiceId: `in_${prefix}-kruger-last`,
         stripeCustomerId: `cus_${prefix}-kruger`,
-        stripeCreatedAt: lastMonth.toISOString(),
+        stripeCreatedAt: lastMonthLater.toISOString(),
         status: "paid",
         billingReason: "subscription_cycle",
         currency: "eur",
@@ -841,17 +848,18 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
       currency: "EUR",
     }).format((12_000 * monthMs) / termMs);
 
-    const invoiceDate = new Intl.DateTimeFormat("en-US", {
+    const dateFormat = new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
       timeZone: "UTC",
-    }).format(lastMonth);
+    });
 
     await use({
       monthlyTeam,
       dollarTeam,
       contractTeam,
       contractPerMonth,
-      invoiceDate,
+      monthlyInvoiceDate: dateFormat.format(lastMonthLater),
+      dollarInvoiceDate: dateFormat.format(lastMonth),
     });
   },
 });
@@ -896,15 +904,21 @@ revenueTest.describe("staff revenue", () => {
     // What Stripe charged, beside what the page counts it as.
     await expect(breakdown.getByText("$1,000.00")).toBeVisible();
     await expect(breakdown.getByText("€855")).toBeVisible();
-    // Both lines carry the day their invoice was raised.
-    await expect(breakdown.getByText(revenueBook.invoiceDate)).toHaveCount(2);
+    // Each line carries the day its invoice was raised.
+    await expect(
+      breakdown.getByText(revenueBook.monthlyInvoiceDate),
+    ).toBeVisible();
+    await expect(
+      breakdown.getByText(revenueBook.dollarInvoiceDate),
+    ).toBeVisible();
 
-    // Heaviest first to open, so the dollar team leads and the ranks number
-    // that order.
+    // Newest invoice first to open: the monthly team was billed a week after
+    // the dollar team, so it leads even though it weighs less — the date
+    // orders the breakdown, not the heaviest-first payload the backend sends.
     const breakdownRows = breakdown.locator("tbody tr");
-    await expect(breakdownRows.nth(0)).toContainText(revenueBook.dollarTeam);
+    await expect(breakdownRows.nth(0)).toContainText(revenueBook.monthlyTeam);
     await expect(breakdownRows.nth(0).locator("td").first()).toHaveText("1");
-    await expect(breakdownRows.nth(1)).toContainText(revenueBook.monthlyTeam);
+    await expect(breakdownRows.nth(1)).toContainText(revenueBook.dollarTeam);
     await expect(breakdownRows.nth(1).locator("td").first()).toHaveText("2");
 
     // The contract is listed on its own, with the invoice its figure is read
@@ -928,10 +942,10 @@ revenueTest.describe("staff revenue", () => {
 
     // After the screenshot: the baseline is worth having in the order the
     // breakdown opens in.
-    // Sorting by name reverses the two, and the ranks follow the rows rather
+    // Sorting by weight reverses the two, and the ranks follow the rows rather
     // than travelling with them.
-    await breakdown.getByRole("button", { name: "Team" }).click();
-    await expect(breakdownRows.nth(0)).toContainText(revenueBook.monthlyTeam);
+    await breakdown.getByRole("button", { name: "In euros" }).click();
+    await expect(breakdownRows.nth(0)).toContainText(revenueBook.dollarTeam);
     await expect(breakdownRows.nth(0).locator("td").first()).toHaveText("1");
   });
 });
