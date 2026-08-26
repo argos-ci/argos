@@ -320,13 +320,6 @@ loggedTest(
     });
     await expect(docsItem).toBeVisible();
 
-    // The click left the pointer on the trigger, so its tooltip is counting
-    // down 900ms behind the open popover. Whether it lands before the capture
-    // depends on how long the assertions above took — on a slow run it arrives
-    // and covers the popover's "Builds on this commit" header, which is a diff
-    // no baseline can pin. Stepping off the trigger stops the timer.
-    await page.mouse.move(0, 0);
-
     await screenshot(page, "build-switcher", {
       replacements: {
         [team.account.slug]: "acme",
