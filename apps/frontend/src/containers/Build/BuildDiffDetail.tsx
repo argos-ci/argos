@@ -58,12 +58,12 @@ import {
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
 import {
-  buildViewModeAtom,
   checkDiffCanBeBlended,
   checkIsBlendViewMode,
   onionOpacityAtom,
   swipeHandleYAtom,
   swipePositionAtom,
+  useEffectiveBuildViewMode,
   type BlendViewMode,
 } from "./BuildViewMode";
 import {
@@ -1365,7 +1365,7 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { diff, build } = props;
-    const viewMode = useAtomValue(buildViewModeAtom);
+    const viewMode = useEffectiveBuildViewMode();
     const canBlend = checkDiffCanBeBlended(diff);
     const blendMode =
       checkIsBlendViewMode(viewMode) && canBlend ? viewMode : null;
@@ -1527,7 +1527,7 @@ function BuildSnapshotsDiff(props: {
 }) {
   const { base, head, build, screenshotDiffId } = props;
   const isDiffOverlayVisible = useAtomValue(overlayVisibleAtom);
-  const viewMode = useAtomValue(buildViewModeAtom);
+  const viewMode = useEffectiveBuildViewMode();
   // const [headText, baseText] = useTextContent([props.base, props.head]);
   switch (viewMode) {
     case "baseline": {

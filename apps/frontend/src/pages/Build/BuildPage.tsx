@@ -7,6 +7,7 @@ import { ProjectPermissionsContext } from "@/containers/Project/PermissionsConte
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { Loader } from "@/ui/Loader";
+import { useIsMobile } from "@/ui/useIsMobile";
 
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildNextReviewDialogProvider } from "./BuildNextReviewDialog";
@@ -53,6 +54,7 @@ const ProjectQuery = graphql(`
 `);
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
+  const isMobile = useIsMobile();
   const { data, refetch, error } = useQuery(ProjectQuery, {
     variables: {
       accountSlug: params.accountSlug,
@@ -117,13 +119,18 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                         />
                       </>
                     )}
-                    <BuildHeader
-                      buildNumber={params.buildNumber}
-                      accountSlug={params.accountSlug}
-                      projectName={params.projectName}
-                      build={build}
-                      project={data?.project ?? null}
-                    />
+                    {/* The mobile diff view brings its own slim header; the
+                        desktop one stays on the overview, where the review
+                        summary and submit button still live. */}
+                    {isMobile && params.diffId ? null : (
+                      <BuildHeader
+                        buildNumber={params.buildNumber}
+                        accountSlug={params.accountSlug}
+                        projectName={params.projectName}
+                        build={build}
+                        project={data?.project ?? null}
+                      />
+                    )}
                     {project && build ? (
                       <BuildWorkspace
                         params={params}
