@@ -121,12 +121,13 @@ export function DialogTrigger(props: {
     triggerElement,
     "DialogTrigger expects a trigger element as its first child",
   );
-  // react-aria accepted a `DialogTrigger` wrapping nothing but an overlay.
-  // Here the first child is the trigger, so that shape renders an empty tree
-  // and the control silently does nothing. A controlled overlay takes `open`
-  // itself: `<Modal open={…} onOpenChange={…}>`.
+  // react-aria accepted a `DialogTrigger` wrapping nothing but an overlay;
+  // here that renders an empty tree and the control silently does nothing.
+  // Counted on the child slots rather than on `overlays`, which has already
+  // dropped the falsy ones: `{canDelete && <Modal />}` is an overlay the author
+  // wrote and this render happens not to want, not a missing one.
   invariant(
-    overlays.length > 0,
+    Children.count(children) > 1,
     "DialogTrigger expects an overlay after its trigger",
   );
   const value = useMemo<OverlayTriggerContextValue>(

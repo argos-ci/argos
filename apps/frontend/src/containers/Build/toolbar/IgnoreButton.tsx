@@ -12,6 +12,7 @@ import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -20,6 +21,8 @@ import {
 } from "@/ui/Dialog";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Modal } from "@/ui/Modal";
+import { toast } from "@/ui/Toaster";
+import { getErrorMessage } from "@/util/error";
 import * as sessionStorage from "@/util/session-storage";
 
 import type { BuildDiffDetailDocument } from "../BuildDiffDetail";
@@ -35,12 +38,10 @@ const IgnoreChangeMutation = graphql(`
 `);
 
 /**
- * What the toolbar reads the flag from. The build page fetches its diffs with
- * `no-cache` (see `useDataState`), so the snapshot it hands down is not a
- * normalized entity and never hears about the mutation's cache write — the
- * change would be ignored on the server while the button stayed as it was
- * until a reload. Both mutations write the change to the cache, so the flag
- * follows that entity and falls back to the snapshot until it is there.
+ * The build page fetches its diffs with `no-cache` (see `useDataState`), so the
+ * snapshot handed down keeps the flag it was fetched with. Both mutations write
+ * the change to the cache, so the flag follows that entity and falls back to
+ * the snapshot until it is there.
  */
 const TestChangeFragment = graphql(`
   fragment IgnoreButton_TestChange on TestChange {
@@ -89,60 +90,48 @@ function EnabledIgnoreButton(props: {
     ? cachedChange.data.ignored
     : diff.change.ignored;
 
-  const ignoreChange = () => {
-    const auditTrailId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `local-audit-trail-${Date.now()}`;
-    client
-      .mutate({
-        mutation: IgnoreChangeMutation,
-        variables: {
-          accountSlug: params.accountSlug,
-          changeId,
-        },
-        optimisticResponse: {
-          ignoreChange: {
-            __typename: "TestChange",
-            id: changeId,
-            ignored: true,
-          },
-        },
-        update: (cache) => {
-          if (diff.test) {
-            const account =
-              auth.status === "authenticated" ? auth.account : null;
-            invariant(account, "User should be logged in");
-            addAuditTrailEntry({
-              cache,
-              action: "files.ignored",
-              account,
-              testId: diff.test.id,
-              accountSlug: params.accountSlug,
-              projectName: params.projectName,
-            });
-          }
-        },
-        context: { auditTrailId },
-      })
-      .catch(() => {
-        // Optimistic response will handle this
+  const nextAuditTrailId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `local-audit-trail-${Date.now()}`;
+
+  const recordTrail = (action: "files.ignored" | "files.unignored") => {
+    return (cache: Parameters<typeof addAuditTrailEntry>[0]["cache"]) => {
+      if (!diff.test) {
+        return;
+      }
+      const account = auth.status === "authenticated" ? auth.account : null;
+      invariant(account, "User should be logged in");
+      addAuditTrailEntry({
+        cache,
+        action,
+        account,
+        testId: diff.test.id,
+        accountSlug: params.accountSlug,
+        projectName: params.projectName,
       });
-    onIgnoreChange?.();
-    setDialog(null);
+    };
   };
 
-  const unignoreChange = () => {
-    const auditTrailId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `local-audit-trail-${Date.now()}`;
-    client.mutate({
-      mutation: UnignoreChangeMutation,
-      variables: {
-        accountSlug: params.accountSlug,
-        changeId,
+  const ignoreChange = async () => {
+    await client.mutate({
+      mutation: IgnoreChangeMutation,
+      variables: { accountSlug: params.accountSlug, changeId },
+      optimisticResponse: {
+        ignoreChange: { __typename: "TestChange", id: changeId, ignored: true },
       },
+      update: recordTrail("files.ignored"),
+      context: { auditTrailId: nextAuditTrailId() },
+    });
+    onIgnoreChange?.();
+    setDialog(null);
+    toast.success("Change ignored");
+  };
+
+  const unignoreChange = async () => {
+    await client.mutate({
+      mutation: UnignoreChangeMutation,
+      variables: { accountSlug: params.accountSlug, changeId },
       optimisticResponse: {
         unignoreChange: {
           __typename: "TestChange",
@@ -150,30 +139,21 @@ function EnabledIgnoreButton(props: {
           ignored: false,
         },
       },
-      update: (cache) => {
-        if (diff.test) {
-          const account = auth.status === "authenticated" ? auth.account : null;
-          invariant(account, "User should be logged in");
-          addAuditTrailEntry({
-            cache,
-            action: "files.unignored",
-            account,
-            testId: diff.test.id,
-            accountSlug: params.accountSlug,
-            projectName: params.projectName,
-          });
-        }
-      },
-      context: { auditTrailId },
+      update: recordTrail("files.unignored"),
+      context: { auditTrailId: nextAuditTrailId() },
     });
     setDialog(null);
+    toast.success("Change unignored");
   };
+
   const toggle = () => {
     if (!isIgnored && sessionStorage.getItem(dontShowAgainKey) === "true") {
-      ignoreChange();
-    } else {
-      setDialog(isIgnored ? "unignore" : "ignore");
+      ignoreChange().catch((error: unknown) => {
+        toast.error(getErrorMessage(error));
+      });
+      return;
     }
+    setDialog(isIgnored ? "unignore" : "ignore");
   };
   const hotkey = useBuildHotkey("ignoreChange", toggle, {
     preventDefault: true,
@@ -191,7 +171,7 @@ function EnabledIgnoreButton(props: {
         keys={hotkey.displayKeys}
       >
         <BaseIgnoreButton
-          aria-label={isIgnored ? "Unignore change" : "Ignore change"}
+          aria-label={hotkey.description}
           aria-pressed={isIgnored}
           onClick={toggle}
           variant={isIgnored ? "danger" : "secondary"}
@@ -226,9 +206,12 @@ function EnabledIgnoreButton(props: {
               </Checkbox>
             </div>
             <DialogDismiss>Cancel</DialogDismiss>
-            <Button variant="destructive" onClick={ignoreChange}>
+            <DialogActionButton
+              variant="destructive"
+              onAsyncAction={ignoreChange}
+            >
               Ignore Change
-            </Button>
+            </DialogActionButton>
           </DialogFooter>
         </Dialog>
       </Modal>
@@ -249,9 +232,12 @@ function EnabledIgnoreButton(props: {
           </DialogBody>
           <DialogFooter>
             <DialogDismiss>Cancel</DialogDismiss>
-            <Button variant="destructive" onClick={unignoreChange}>
+            <DialogActionButton
+              variant="destructive"
+              onAsyncAction={unignoreChange}
+            >
               Unignore Change
-            </Button>
+            </DialogActionButton>
           </DialogFooter>
         </Dialog>
       </Modal>

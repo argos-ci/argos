@@ -1,7 +1,13 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
-import { ScreenshotDiff } from "../apps/backend/src/database/models";
-import { createIgnoredChangeScenario } from "../apps/backend/src/database/seeds";
+import {
+  IgnoredChange,
+  ScreenshotDiff,
+} from "../apps/backend/src/database/models";
+import {
+  createIgnoredChangeScenario,
+  createReviewableChangeScenario,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -163,15 +169,13 @@ loggedTest(
 );
 
 loggedTest(
-  "unignoring a change from the build toolbar",
+  "ignoring and unignoring a change from the build toolbar",
   async ({ page, team, project, auth }) => {
     const { build } = await createIgnoredChangeScenario({
       projectId: project.id,
       userId: auth.user.id,
     });
-    // The build page shows its snapshots only once the build has concluded,
-    // and the scenario builds one for the test trends page, which does not
-    // care either way.
+    // The build page shows its snapshots only once the build has concluded.
     await build.$query().patch({ conclusion: "changes-detected" });
     const diff = await ScreenshotDiff.query()
       .findOne({ buildId: build.id })
@@ -181,29 +185,158 @@ loggedTest(
       `/${team.account.slug}/${project.name}/builds/${build.number}/${diff.id}`,
     );
 
-    // The change arrives ignored, so the flag offers to take it back.
-    const flag = page.getByRole("button", {
-      name: "Unignore change",
-      exact: true,
-    });
-    await expect(flag).toBeVisible();
-    await flag.click();
-
+    const flag = page
+      .getByRole("button", { name: "Ignore change" })
+      .and(page.locator("[aria-pressed]"));
     const dialog = page.getByRole("dialog");
+
+    await expect(flag).toHaveAttribute("aria-pressed", "true");
+    await flag.click();
     await expect(
       dialog.getByRole("heading", { name: "Unignore Change" }),
     ).toBeVisible();
-    await dialog
-      .getByRole("button", { name: "Unignore Change", exact: true })
-      .click();
+    await dialog.getByRole("button", { name: "Unignore Change" }).click();
 
-    // The flag flips without a reload, and the ledger has nothing left in it.
+    await expect(flag).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText("Change unignored")).toBeVisible();
+
+    await flag.click();
     await expect(
-      page.getByRole("button", { name: "Ignore change", exact: true }),
+      dialog.getByRole("heading", { name: "Ignore Change" }),
     ).toBeVisible();
+    await dialog.getByRole("button", { name: "Ignore Change" }).click();
+    await expect(flag).toHaveAttribute("aria-pressed", "true");
+
     await page.goto(`/${team.account.slug}/${project.name}/ignored`);
     await expect(
-      page.getByRole("heading", { name: "Nothing is ignored yet" }),
+      page.getByRole("row").filter({ hasText: "penelope-argos.jpg" }),
     ).toBeVisible();
   },
 );
+
+loggedTest(
+  "ignoring a change skips the dialog once it is dismissed for the session",
+  async ({ page, team, project, auth }) => {
+    const { build } = await createIgnoredChangeScenario({
+      projectId: project.id,
+      userId: auth.user.id,
+    });
+    await build.$query().patch({ conclusion: "changes-detected" });
+    // Drop the ignore so the flag starts on the side this test presses from.
+    await IgnoredChange.query().where("projectId", project.id).delete();
+    const diff = await ScreenshotDiff.query()
+      .findOne({ buildId: build.id })
+      .throwIfNotFound();
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/${diff.id}`,
+    );
+    const flag = page
+      .getByRole("button", { name: "Ignore change" })
+      .and(page.locator("[aria-pressed]"));
+    await expect(flag).toHaveAttribute("aria-pressed", "false");
+
+    await page.evaluate(() => {
+      window.sessionStorage.setItem("ignoreChangeDontShowAgain", "true");
+    });
+    await flag.click();
+
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(flag).toHaveAttribute("aria-pressed", "true");
+    await page.goto(`/${team.account.slug}/${project.name}/ignored`);
+    await expect(
+      page.getByRole("row").filter({ hasText: "penelope-argos.jpg" }),
+    ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "ignoring a snapshot still to review keeps the flag when it comes back",
+  async ({ page, team, project }) => {
+    const { build, tests } = await createReviewableChangeScenario({
+      projectId: project.id,
+    });
+    const [ignored] = tests;
+    const diff = await ScreenshotDiff.query()
+      .findOne({ buildId: build.id, testId: ignored.id })
+      .throwIfNotFound();
+
+    const diffURL = `/${team.account.slug}/${project.name}/builds/${build.number}/${diff.id}`;
+    await page.goto(diffURL);
+    const flag = page
+      .getByRole("button", { name: "Ignore change" })
+      .and(page.locator("[aria-pressed]"));
+    await expect(flag).toHaveAttribute("aria-pressed", "false");
+
+    await flag.click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Ignore Change" })
+      .click();
+
+    // Ignoring a snapshot still to review also marks it accepted, which moves
+    // to the next one and takes this toolbar with it.
+    await expect(page).not.toHaveURL(diffURL);
+
+    await openSnapshot(page, ignored.name, "Accepted");
+    await expect(page).toHaveURL(diffURL);
+    await expect(flag).toHaveAttribute("aria-pressed", "true");
+  },
+);
+
+loggedTest(
+  "ignoring an approved snapshot leaves it selected",
+  async ({ page, team, project }) => {
+    const { build, tests } = await createReviewableChangeScenario({
+      projectId: project.id,
+    });
+    const [approved] = tests;
+    const diff = await ScreenshotDiff.query()
+      .findOne({ buildId: build.id, testId: approved.id })
+      .throwIfNotFound();
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/${diff.id}`,
+    );
+    await page.locator("button:has(.lucide-thumbs-up)").click();
+    const card = await openSnapshot(page, approved.name, "Accepted");
+
+    // The thick ring says which snapshot is being looked at. Asserted on the
+    // class because nothing else carries it.
+    const selected = card.locator("[class~='ring-3']");
+    await expect(selected).toBeVisible();
+
+    await page
+      .getByRole("button", { name: "Ignore change" })
+      .and(page.locator("[aria-pressed]"))
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Ignore Change" })
+      .click();
+
+    await expect(
+      page
+        .getByRole("button", { name: "Ignore change" })
+        .and(page.locator("[aria-pressed]")),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(selected).toBeVisible();
+  },
+);
+
+/**
+ * Click a snapshot in the sidebar, opening its group when collapsed — where a
+ * reviewed one lands — and the list itself, which a deep link leaves on Info.
+ */
+async function openSnapshot(page: Page, name: string, group: string) {
+  await page.getByRole("tab", { name: "Snapshots" }).click();
+  const card = page.getByRole("button", { name });
+  await expect(async () => {
+    if (!(await card.isVisible())) {
+      await page.getByRole("button", { name: group }).click();
+    }
+    await expect(card).toBeVisible({ timeout: 1_000 });
+  }).toPass();
+  await card.click();
+  return card;
+}
