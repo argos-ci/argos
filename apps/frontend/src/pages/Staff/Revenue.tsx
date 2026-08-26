@@ -64,6 +64,11 @@ const StaffRevenueQuery = graphql(`
           amount
           currency
           revenue
+          invoices {
+            amount
+            currency
+            invoicedAt
+          }
         }
         yearlyPlans {
           revenue
@@ -537,7 +542,7 @@ function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   );
 }
 
-type MonthTeamSortKey = "team" | "amount" | "revenue";
+type MonthTeamSortKey = "team" | "amount" | "revenue" | "date";
 
 /**
  * Sortable value per column of a month's breakdown.
@@ -559,6 +564,12 @@ function getMonthTeamSortValue(
       return team.currency === null ? -1 : team.amount;
     case "revenue":
       return team.revenue;
+    case "date": {
+      // On the date the column prints — the newest, invoices being sent
+      // newest first.
+      const newest = team.invoices[0];
+      return newest ? new Date(newest.invoicedAt).getTime() : -1;
+    }
   }
 }
 
@@ -614,14 +625,14 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
       <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
-            <th className="w-[7%] px-4 py-3 text-right">#</th>
+            <th className="w-[6%] px-4 py-3 text-right">#</th>
             <SortHeader
               label="Team"
               sortKey="team"
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[35%] text-left"
+              className="w-[28%] text-left"
             />
             <SortHeader
               label="Invoiced"
@@ -629,7 +640,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[21%] text-right"
+              className="w-[18%] text-right"
             />
             <SortHeader
               label="In euros"
@@ -637,49 +648,91 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[21%] text-right"
+              className="w-[18%] text-right"
             />
-            <th className="w-[16%] px-4 py-3 text-right" />
+            <SortHeader
+              label="Date"
+              sortKey="date"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[18%] text-right"
+            />
+            <th className="w-[12%] px-4 py-3 text-right" />
           </tr>
         </thead>
         <tbody>
-          {teams.map((team, teamIndex) => (
-            <tr
-              key={team.stripeCustomerId}
-              className={clsx(
-                "text-sm",
-                teamIndex !== teams.length - 1 && "border-b",
-              )}
-            >
-              <td className="text-low px-4 py-2.5 text-right tabular-nums">
-                {teamIndex + 1}
-              </td>
-              <td className="px-4 py-2.5 text-left">
-                <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
-              </td>
-              <td className="px-4 py-2.5 text-right tabular-nums">
-                {team.currency !== null ? (
-                  formatInvoiceAmount({
-                    amount: team.amount,
-                    currency: team.currency,
-                  })
-                ) : (
-                  <span className="text-low">—</span>
+          {teams.map((team, teamIndex) => {
+            const newestInvoice = team.invoices[0] ?? null;
+
+            return (
+              <tr
+                key={team.stripeCustomerId}
+                className={clsx(
+                  "text-sm",
+                  teamIndex !== teams.length - 1 && "border-b",
                 )}
-              </td>
-              <td className="px-4 py-2.5 text-right tabular-nums">
-                {formatEuros(team.revenue)}
-              </td>
-              <td className="px-4 py-2.5 text-right">
-                <Link
-                  href={getStripeCustomerURL(team.stripeCustomerId)}
-                  target="_blank"
+              >
+                <td className="text-low px-4 py-2.5 text-right tabular-nums">
+                  {teamIndex + 1}
+                </td>
+                <td className="px-4 py-2.5 text-left">
+                  <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {team.currency !== null ? (
+                    formatInvoiceAmount({
+                      amount: team.amount,
+                      currency: team.currency,
+                    })
+                  ) : (
+                    <span className="text-low">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {formatEuros(team.revenue)}
+                </td>
+                {/* The dates walk forward with the calendar, like the month
+                    names above. */}
+                <td
+                  className="px-4 py-2.5 text-right tabular-nums"
+                  data-visual-test="transparent"
                 >
-                  Stripe
-                </Link>
-              </td>
-            </tr>
-          ))}
+                  {newestInvoice === null ? (
+                    <span className="text-low">—</span>
+                  ) : team.invoices.length === 1 ? (
+                    DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))
+                  ) : (
+                    // A team invoiced twice in one month is one line, so the
+                    // column carries the newest date and the tooltip the rest.
+                    <Hint
+                      content={
+                        <div className="flex flex-col gap-1">
+                          {team.invoices.map((invoice, invoiceIndex) => (
+                            <div key={invoiceIndex}>
+                              {formatInvoiceAmount(invoice)} invoiced{" "}
+                              {DATE_FORMAT.format(new Date(invoice.invoicedAt))}
+                              .
+                            </div>
+                          ))}
+                        </div>
+                      }
+                    >
+                      {DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))}
+                    </Hint>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-right">
+                  <Link
+                    href={getStripeCustomerURL(team.stripeCustomerId)}
+                    target="_blank"
+                  >
+                    Stripe
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

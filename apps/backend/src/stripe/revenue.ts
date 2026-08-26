@@ -22,6 +22,15 @@ type StaffRevenueSplit = {
   foreignRevenue: number;
 };
 
+/** One invoice behind a team's month line. */
+type StaffRevenueMonthTeamInvoice = {
+  /** Net of tax and credit notes, in the currency it was raised in. */
+  amount: number;
+  currency: string;
+  /** When it was raised. */
+  invoicedAt: Date;
+};
+
 /** What one team was invoiced over a month, one line of the breakdown. */
 type StaffRevenueMonthTeam = {
   /** The team's slug, which names its pages. */
@@ -36,6 +45,8 @@ type StaffRevenueMonthTeam = {
   currency: string | null;
   /** In euros, like the split it sums into. */
   revenue: number;
+  /** The invoices the line adds up, newest first. */
+  invoices: StaffRevenueMonthTeamInvoice[];
 };
 
 /** What Argos billed over one calendar month. */
@@ -814,6 +825,7 @@ export async function getStaffRevenue(
         amount: 0,
         currency: revenue.currency,
         revenue: 0,
+        invoices: [],
       };
       teams.set(row.stripeCustomerId, teamRow);
     }
@@ -824,6 +836,11 @@ export async function getStaffRevenue(
       teamRow.currency = null;
     }
     teamRow.revenue += toEuros(revenue);
+    teamRow.invoices.push({
+      amount: revenue.amount,
+      currency: revenue.currency,
+      invoicedAt: new Date(row.stripeCreatedAt),
+    });
   }
 
   // Contracts, once their terms no longer overlap: spread each one over the
@@ -888,6 +905,12 @@ export async function getStaffRevenue(
     const teams = monthTeams[index];
     invariant(monthly && yearly && teams, "every month reported has totals");
     monthly.teamsCount = teams.size;
+    // The query reads the mirror in no particular order.
+    for (const team of teams.values()) {
+      team.invoices.sort(
+        (a, b) => b.invoicedAt.getTime() - a.invoicedAt.getTime(),
+      );
+    }
     const bound = monthBounds[index];
     invariant(bound, "every month reported has bounds");
     return {

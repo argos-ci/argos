@@ -395,6 +395,16 @@ export const typeDefs = gql`
     githubPlans: StaffRevenueSplit!
   }
 
+  "One invoice behind a team's month line."
+  type StaffRevenueMonthTeamInvoice {
+    "Net of tax and credit notes, in the currency it was raised in."
+    amount: Float!
+    "The currency it was raised in."
+    currency: String!
+    "When it was raised."
+    invoicedAt: DateTime!
+  }
+
   "What one team was invoiced over a month, one line of the breakdown."
   type StaffRevenueMonthTeam {
     "The team's slug, which names its pages."
@@ -409,6 +419,8 @@ export const typeDefs = gql`
     currency: String
     "In euros, like the split it sums into."
     revenue: Float!
+    "The invoices the line adds up, newest first."
+    invoices: [StaffRevenueMonthTeamInvoice!]!
   }
 
   "One invoice a contract's worth is read from."

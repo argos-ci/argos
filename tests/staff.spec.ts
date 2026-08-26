@@ -637,6 +637,8 @@ type RevenueBook = {
   contractTeam: string;
   /** What a month of the contract comes to, as the page prints it. */
   contractPerMonth: string;
+  /** The day last month's invoices were raised, as the page prints it. */
+  invoiceDate: string;
 };
 
 /**
@@ -839,7 +841,18 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
       currency: "EUR",
     }).format((12_000 * monthMs) / termMs);
 
-    await use({ monthlyTeam, dollarTeam, contractTeam, contractPerMonth });
+    const invoiceDate = new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeZone: "UTC",
+    }).format(lastMonth);
+
+    await use({
+      monthlyTeam,
+      dollarTeam,
+      contractTeam,
+      contractPerMonth,
+      invoiceDate,
+    });
   },
 });
 
@@ -883,6 +896,8 @@ revenueTest.describe("staff revenue", () => {
     // What Stripe charged, beside what the page counts it as.
     await expect(breakdown.getByText("$1,000.00")).toBeVisible();
     await expect(breakdown.getByText("€855")).toBeVisible();
+    // Both lines carry the day their invoice was raised.
+    await expect(breakdown.getByText(revenueBook.invoiceDate)).toHaveCount(2);
 
     // Heaviest first to open, so the dollar team leads and the ranks number
     // that order.
