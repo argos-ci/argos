@@ -851,6 +851,124 @@ export async function createFlakyTestScenario(input: {
 }
 
 /**
+ * A build with two changed snapshots, both still to review and both carrying a
+ * fingerprint and a test, which is what makes a diff ignorable.
+ *
+ * Two of them on purpose: ignoring one also marks it accepted, which sends the
+ * reviewer to the other and unmounts the toolbar the flag was pressed from.
+ */
+export async function createReviewableChangeScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build; tests: [Test, Test] }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const names = ["home.png", "settings.png"];
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: names.length,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "8f1b0a1d9c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a" },
+      { ...bucketProps, commit: "1a3c5e7f9b0d2f4a6c8e0b2d4f6a8c0e2b4d6f8a" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [firstTest, secondTest] = await Test.query().insertAndFetch(
+    names.map((name) => ({ name, buildName: "default", projectId })),
+  );
+  invariant(firstTest && secondTest);
+  const tests: [Test, Test] = [firstTest, secondTest];
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "main",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      conclusion: "changes-detected" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  await Promise.all(
+    tests.map(async (test, index) => {
+      const [baseScreenshot, compareScreenshot] =
+        await Screenshot.query().insertAndFetch([
+          {
+            screenshotBucketId: baseBucket.id,
+            testId: test.id,
+            name: test.name,
+            s3Id: baseFile.key,
+            fileId: baseFile.id,
+          },
+          {
+            screenshotBucketId: compareBucket.id,
+            testId: test.id,
+            name: test.name,
+            s3Id: compareFile.key,
+            fileId: compareFile.id,
+          },
+        ]);
+      invariant(baseScreenshot && compareScreenshot);
+      await ScreenshotDiff.query().insert({
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot.id,
+        testId: test.id,
+        score: 0.3,
+        jobStatus: "complete" as const,
+        s3Id: diffFile.key,
+        fileId: diffFile.id,
+        // Dash-free: change ids embed the fingerprint and split on `-`.
+        fingerprint: decodeFingerprint(`v1${index}a2b4c6d8e0f2a4b6`),
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      });
+    }),
+  );
+
+  return { build, tests };
+}
+
+/**
  * A change that has been ignored and kept reappearing afterwards, so the ignore
  * ledger has a row with an author, a date and a non-zero occurrence count.
  */

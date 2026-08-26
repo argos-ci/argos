@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { useApolloClient } from "@apollo/client/react";
+import { useApolloClient, useFragment } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 
@@ -10,9 +10,9 @@ import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
-import { DialogTrigger } from "@/ui/Dialog";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -21,6 +21,8 @@ import {
 } from "@/ui/Dialog";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Modal } from "@/ui/Modal";
+import { toast } from "@/ui/Toaster";
+import { getErrorMessage } from "@/util/error";
 import * as sessionStorage from "@/util/session-storage";
 
 import type { BuildDiffDetailDocument } from "../BuildDiffDetail";
@@ -32,6 +34,19 @@ const IgnoreChangeMutation = graphql(`
       id
       ignored
     }
+  }
+`);
+
+/**
+ * The build page fetches its diffs with `no-cache` (see `useDataState`), so the
+ * snapshot handed down keeps the flag it was fetched with. Both mutations write
+ * the change to the cache, so the flag follows that entity and falls back to
+ * the snapshot until it is there.
+ */
+const TestChangeFragment = graphql(`
+  fragment IgnoreButton_TestChange on TestChange {
+    id
+    ignored
   }
 `);
 
@@ -62,66 +77,61 @@ function EnabledIgnoreButton(props: {
   const params = useProjectParams();
   invariant(params, "IgnoreButton requires project params");
   invariant(diff.change, "IgnoreButton requires a change in the diff");
-  const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
   const auth = useAuth();
   const client = useApolloClient();
   const changeId = diff.change.id;
+  const cachedChange = useFragment({
+    fragment: TestChangeFragment,
+    fragmentName: "IgnoreButton_TestChange",
+    from: { __typename: "TestChange", id: changeId },
+  });
+  const isIgnored = cachedChange.complete
+    ? cachedChange.data.ignored
+    : diff.change.ignored;
 
-  const ignoreChange = () => {
-    const auditTrailId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `local-audit-trail-${Date.now()}`;
-    client
-      .mutate({
-        mutation: IgnoreChangeMutation,
-        variables: {
-          accountSlug: params.accountSlug,
-          changeId,
-        },
-        optimisticResponse: {
-          ignoreChange: {
-            __typename: "TestChange",
-            id: changeId,
-            ignored: true,
-          },
-        },
-        update: (cache) => {
-          if (diff.test) {
-            const account =
-              auth.status === "authenticated" ? auth.account : null;
-            invariant(account, "User should be logged in");
-            addAuditTrailEntry({
-              cache,
-              action: "files.ignored",
-              account,
-              testId: diff.test.id,
-              accountSlug: params.accountSlug,
-              projectName: params.projectName,
-            });
-          }
-        },
-        context: { auditTrailId },
-      })
-      .catch(() => {
-        // Optimistic response will handle this
+  const nextAuditTrailId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `local-audit-trail-${Date.now()}`;
+
+  const recordTrail = (action: "files.ignored" | "files.unignored") => {
+    return (cache: Parameters<typeof addAuditTrailEntry>[0]["cache"]) => {
+      if (!diff.test) {
+        return;
+      }
+      const account = auth.status === "authenticated" ? auth.account : null;
+      invariant(account, "User should be logged in");
+      addAuditTrailEntry({
+        cache,
+        action,
+        account,
+        testId: diff.test.id,
+        accountSlug: params.accountSlug,
+        projectName: params.projectName,
       });
-    onIgnoreChange?.();
-    setDialog(null);
+    };
   };
 
-  const unignoreChange = () => {
-    const auditTrailId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `local-audit-trail-${Date.now()}`;
-    client.mutate({
-      mutation: UnignoreChangeMutation,
-      variables: {
-        accountSlug: params.accountSlug,
-        changeId,
+  const ignoreChange = async () => {
+    await client.mutate({
+      mutation: IgnoreChangeMutation,
+      variables: { accountSlug: params.accountSlug, changeId },
+      optimisticResponse: {
+        ignoreChange: { __typename: "TestChange", id: changeId, ignored: true },
       },
+      update: recordTrail("files.ignored"),
+      context: { auditTrailId: nextAuditTrailId() },
+    });
+    onIgnoreChange?.();
+    setDialog(null);
+    toast.success("Change ignored");
+  };
+
+  const unignoreChange = async () => {
+    await client.mutate({
+      mutation: UnignoreChangeMutation,
+      variables: { accountSlug: params.accountSlug, changeId },
       optimisticResponse: {
         unignoreChange: {
           __typename: "TestChange",
@@ -129,34 +139,30 @@ function EnabledIgnoreButton(props: {
           ignored: false,
         },
       },
-      update: (cache) => {
-        if (diff.test) {
-          const account = auth.status === "authenticated" ? auth.account : null;
-          invariant(account, "User should be logged in");
-          addAuditTrailEntry({
-            cache,
-            action: "files.unignored",
-            account,
-            testId: diff.test.id,
-            accountSlug: params.accountSlug,
-            projectName: params.projectName,
-          });
-        }
-      },
-      context: { auditTrailId },
+      update: recordTrail("files.unignored"),
+      context: { auditTrailId: nextAuditTrailId() },
     });
     setDialog(null);
+    toast.success("Change unignored");
   };
+
   const toggle = () => {
     if (!isIgnored && sessionStorage.getItem(dontShowAgainKey) === "true") {
-      ignoreChange();
-    } else {
-      setDialog(isIgnored ? "unignore" : "ignore");
+      ignoreChange().catch((error: unknown) => {
+        toast.error(getErrorMessage(error));
+      });
+      return;
     }
+    setDialog(isIgnored ? "unignore" : "ignore");
   };
   const hotkey = useBuildHotkey("ignoreChange", toggle, {
     preventDefault: true,
   });
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setDialog(null);
+    }
+  };
 
   return (
     <>
@@ -165,87 +171,76 @@ function EnabledIgnoreButton(props: {
         keys={hotkey.displayKeys}
       >
         <BaseIgnoreButton
+          aria-label={hotkey.description}
           aria-pressed={isIgnored}
           onClick={toggle}
           variant={isIgnored ? "danger" : "secondary"}
         />
       </HotkeyTooltip>
-      <DialogTrigger
-        open={dialog === "ignore"}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDialog(null);
-          }
-        }}
-      >
-        <Modal>
-          <Dialog size="medium">
-            <DialogBody>
-              <DialogTitle>Ignore Change</DialogTitle>
-              <DialogText>
-                If you ignore this diff, Argos will skip it in future builds.
-                <br />
-                Only ignore it if it’s{" "}
-                <strong>flaky and you’ve seen it happen multiple times</strong>.
-                <br />
-                Argos will ignore{" "}
-                <strong>future diffs that exactly match this one</strong>.
-              </DialogText>
-            </DialogBody>
-            <DialogFooter>
-              <div className="flex flex-1">
-                <Checkbox
-                  onCheckedChange={(value) => {
-                    if (value) {
-                      sessionStorage.setItem(dontShowAgainKey, "true");
-                    } else {
-                      sessionStorage.removeItem(dontShowAgainKey);
-                    }
-                  }}
-                >
-                  Don’t show this again for this session
-                </Checkbox>
-              </div>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onClick={ignoreChange}>
-                Ignore Change
-              </Button>
-            </DialogFooter>
-          </Dialog>
-        </Modal>
-      </DialogTrigger>
-      <DialogTrigger
-        open={dialog === "unignore"}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDialog(null);
-          }
-        }}
-      >
-        <Modal>
-          <Dialog size="medium">
-            <DialogBody>
-              <DialogTitle>Unignore Change</DialogTitle>
-              <DialogText>
-                Re-enable this diff so Argos will treat it as a change in future
-                builds.
-                <br />
-                <strong>
-                  Only unignore if you’re sure the flake is resolved.
-                </strong>
-                <br />
-                Argos will now track any exact match of this overlay again.
-              </DialogText>
-            </DialogBody>
-            <DialogFooter>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <Button variant="destructive" onClick={unignoreChange}>
-                Unignore Change
-              </Button>
-            </DialogFooter>
-          </Dialog>
-        </Modal>
-      </DialogTrigger>
+      <Modal open={dialog === "ignore"} onOpenChange={handleOpenChange}>
+        <Dialog size="medium">
+          <DialogBody>
+            <DialogTitle>Ignore Change</DialogTitle>
+            <DialogText>
+              If you ignore this diff, Argos will skip it in future builds.
+              <br />
+              Only ignore it if it’s{" "}
+              <strong>flaky and you’ve seen it happen multiple times</strong>.
+              <br />
+              Argos will ignore{" "}
+              <strong>future diffs that exactly match this one</strong>.
+            </DialogText>
+          </DialogBody>
+          <DialogFooter>
+            <div className="flex flex-1">
+              <Checkbox
+                onCheckedChange={(value) => {
+                  if (value) {
+                    sessionStorage.setItem(dontShowAgainKey, "true");
+                  } else {
+                    sessionStorage.removeItem(dontShowAgainKey);
+                  }
+                }}
+              >
+                Don’t show this again for this session
+              </Checkbox>
+            </div>
+            <DialogDismiss>Cancel</DialogDismiss>
+            <DialogActionButton
+              variant="destructive"
+              onAsyncAction={ignoreChange}
+            >
+              Ignore Change
+            </DialogActionButton>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
+      <Modal open={dialog === "unignore"} onOpenChange={handleOpenChange}>
+        <Dialog size="medium">
+          <DialogBody>
+            <DialogTitle>Unignore Change</DialogTitle>
+            <DialogText>
+              Re-enable this diff so Argos will treat it as a change in future
+              builds.
+              <br />
+              <strong>
+                Only unignore if you’re sure the flake is resolved.
+              </strong>
+              <br />
+              Argos will now track any exact match of this overlay again.
+            </DialogText>
+          </DialogBody>
+          <DialogFooter>
+            <DialogDismiss>Cancel</DialogDismiss>
+            <DialogActionButton
+              variant="destructive"
+              onAsyncAction={unignoreChange}
+            >
+              Unignore Change
+            </DialogActionButton>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
     </>
   );
 }
