@@ -60,9 +60,9 @@ loggedTest.describe("mobile build review", () => {
       await screenshot(page, "build-mobile-tools");
       await page.getByRole("button", { name: "Tools" }).click();
 
-      // The snapshots grid opens from the header title and closes by picking
-      // another snapshot.
-      await page.getByRole("button", { name: "Open snapshots list" }).click();
+      // The snapshots grid opens from the dock and closes by picking another
+      // snapshot.
+      await page.getByRole("button", { name: "Snapshots list" }).click();
       const snapshotsSheet = page.getByRole("dialog", { name: "Snapshots" });
       await expect(snapshotsSheet).toBeVisible();
       await screenshot(page, "build-mobile-snapshots-sheet");

@@ -131,11 +131,8 @@ export function MobileBuildReview(props: {
 
   return (
     <>
-      <MobileHeader
-        project={project}
-        onOpenSnapshots={() => setSheet("snapshots")}
-      />
-      <div className="bg-subtle relative flex min-h-0 min-w-0 flex-1 flex-col pb-20">
+      <MobileHeader project={project} onOpenPanels={() => setSheet("panels")} />
+      <div className="bg-subtle flex min-h-0 min-w-0 flex-1 flex-col">
         <BuildDiffDetail build={build} diff={activeDiff} />
         {activeDiff ? (
           <MobileDock
@@ -179,7 +176,7 @@ export function MobileBuildReview(props: {
 
 function MobileHeader(props: {
   project: DocumentType<typeof _ProjectFragment>;
-  onOpenSnapshots: () => void;
+  onOpenPanels: () => void;
 }) {
   const { activeDiff } = useBuildDiffState();
   const goToBuildOverview = useGoToBuildOverview();
@@ -197,12 +194,11 @@ function MobileHeader(props: {
       </Tooltip>
       <button
         type="button"
-        aria-label="Open snapshots list"
-        className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-sm"
-        onClick={props.onOpenSnapshots}
+        aria-label="Snapshot details"
+        className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center rounded-lg px-2 py-1.5 text-sm"
+        onClick={props.onOpenPanels}
       >
         <span className="text-default truncate">{activeDiff?.name}</span>
-        <ChevronDownIcon className="text-low size-3.5 shrink-0" />
       </button>
       <BuildReviewButton project={props.project} />
     </div>
@@ -226,8 +222,10 @@ function MobileDock(props: {
   const showOverlayControls = checkDiffHasChangesOverlay(diff);
   const { showCommentTool, showComments } = useDiffCommentControlsState(diff);
   return (
-    <div className="pointer-events-none absolute inset-x-2 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex justify-center">
-      <div className="bg-app border-thin pointer-events-auto flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
+    // In the layout flow, not floating: opening the tools row grows the dock
+    // and shrinks the snapshot instead of covering it.
+    <div className="flex shrink-0 justify-center px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
         <button
           type="button"
           // The full row stays tappable; the pill look keeps "Tools" from
