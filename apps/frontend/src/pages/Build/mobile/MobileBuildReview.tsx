@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAtom, useSetAtom } from "jotai";
+import { invariant } from "@argos/util/invariant";
+import { clsx } from "clsx";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeftRightIcon,
   ChevronDownIcon,
@@ -16,16 +18,22 @@ import {
   checkDiffHasChangesOverlay,
 } from "@/containers/Build/BuildDiffDetailToolbar";
 import {
+  getDiffGroupDefinition,
+  type DiffGroupColor,
+} from "@/containers/Build/BuildDiffGroup";
+import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
   holdBaselineAtom,
+  onionOpacityAtom,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { DocumentType, graphql } from "@/gql";
-import { BuildType } from "@/gql/graphql";
+import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
 import { Separator } from "@/ui/Separator";
+import { Slider } from "@/ui/Slider";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -162,6 +170,13 @@ export function MobileBuildReview(props: {
   );
 }
 
+const diffGroupTextClassNames: Record<DiffGroupColor, string> = {
+  danger: "text-danger-low",
+  warning: "text-warning-low",
+  success: "text-success-low",
+  neutral: "text-low",
+};
+
 function MobileHeader(props: {
   project: DocumentType<typeof _ProjectFragment>;
   onOpenSnapshots: () => void;
@@ -169,6 +184,11 @@ function MobileHeader(props: {
   const { activeDiff, diffs } = useBuildDiffState();
   const goToBuildOverview = useGoToBuildOverview();
   const activeIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
+  // `pending` diffs never render a pane, and have no group to name.
+  const group =
+    activeDiff && activeDiff.status !== ScreenshotDiffStatus.Pending
+      ? getDiffGroupDefinition(activeDiff.status)
+      : null;
   return (
     <div className="border-b-thin bg-app flex shrink-0 items-center gap-1 p-2">
       <Tooltip content="Build overview">
@@ -184,16 +204,28 @@ function MobileHeader(props: {
       <button
         type="button"
         aria-label="Open snapshots list"
-        className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-sm"
+        className="hover:bg-hover flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-sm"
         onClick={props.onOpenSnapshots}
       >
-        {activeIndex >= 0 && (
-          <span className="font-medium tabular-nums">
-            {activeIndex + 1}/{diffs.length}
+        <span className="flex max-w-full min-w-0 items-center gap-1.5">
+          {activeIndex >= 0 && (
+            <span className="font-medium tabular-nums">
+              {activeIndex + 1}/{diffs.length}
+            </span>
+          )}
+          <span className="text-low truncate">{activeDiff?.name}</span>
+          <ChevronDownIcon className="text-low size-3.5 shrink-0" />
+        </span>
+        {group ? (
+          <span
+            className={clsx(
+              "text-[10px] font-semibold tracking-wider uppercase",
+              diffGroupTextClassNames[group.color],
+            )}
+          >
+            {group.label}
           </span>
-        )}
-        <span className="text-low truncate">{activeDiff?.name}</span>
-        <ChevronDownIcon className="text-low size-3.5 shrink-0" />
+        ) : null}
       </button>
       <BuildReviewButton project={props.project} />
     </div>
@@ -208,11 +240,12 @@ function MobileDock(props: {
 }) {
   const { diff, buildType, isSubsetBuild } = props;
   const [toolsOpen, setToolsOpen] = useState(false);
+  const viewMode = useAtomValue(buildViewModeAtom);
   const canBeReviewed =
     buildType !== BuildType.Reference &&
     checkDiffCanBeReviewed(diff.status, { isSubsetBuild });
-  const hasTools =
-    checkDiffHasChangesOverlay(diff) || checkDiffCanBeBlended(diff);
+  const canBlend = checkDiffCanBeBlended(diff);
+  const hasTools = checkDiffHasChangesOverlay(diff) || canBlend;
   return (
     <div className="pointer-events-none absolute inset-x-2 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex justify-center">
       <div className="bg-app border-thin pointer-events-auto flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
@@ -234,12 +267,15 @@ function MobileDock(props: {
           <div className="h-2" />
         )}
         {toolsOpen && hasTools ? (
-          <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
-            <ChangesOverlayControls settings={false} />
-            <Separator orientation="vertical" className="w-thin h-8" />
-            <BuildDiffDetailToolbar diff={diff} snapshotControls={false} />
-            <Separator orientation="vertical" className="w-thin h-8" />
-            <ScreenshotIgnoreButton diff={diff} />
+          <div className="flex flex-col gap-1.5 pb-2">
+            {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
+            <div className="flex items-center gap-1.5 overflow-x-auto px-1">
+              <ChangesOverlayControls settings={false} />
+              <Separator orientation="vertical" className="w-thin h-8" />
+              <BuildDiffDetailToolbar diff={diff} snapshotControls={false} />
+              <Separator orientation="vertical" className="w-thin h-8" />
+              <ScreenshotIgnoreButton diff={diff} />
+            </div>
           </div>
         ) : null}
         <div className="flex items-center justify-between gap-1 px-1">
@@ -261,6 +297,34 @@ function MobileDock(props: {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The onion-skin slider, in the dock. The pane's own floating control sits
+ * exactly where the dock floats at phone width, so it is hidden below `md`
+ * and this one takes over — both drive the same atom.
+ */
+function DockOnionSlider() {
+  const [opacity, setOpacity] = useAtom(onionOpacityAtom);
+  return (
+    // Arrow keys adjust the slider and are also view hotkeys: disable
+    // hotkeys while the focus is inside the control.
+    <div data-hotkeys-disabled="" className="flex items-center gap-3 px-2 pt-1">
+      <span className="text-low text-xs select-none">Baseline</span>
+      <Slider
+        aria-label="Onion skin opacity"
+        className="flex-1"
+        min={0}
+        max={100}
+        value={opacity * 100}
+        onValueChange={(next) => {
+          invariant(typeof next === "number", "Opacity must be a number");
+          setOpacity(next / 100);
+        }}
+      />
+      <span className="text-low text-xs select-none">Changes</span>
     </div>
   );
 }

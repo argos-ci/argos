@@ -1181,7 +1181,13 @@ function CompareScreenshotChanged(props: {
             />
           </div>
         )}
-        {blendMode === "onion" && <BuildOnionOpacityControl />}
+        {/* Floats over the bottom of the pane — right under the mobile dock,
+            which hosts its own copy of the control below `md`. */}
+        {blendMode === "onion" && (
+          <div className="contents max-md:hidden">
+            <BuildOnionOpacityControl />
+          </div>
+        )}
       </div>
       {dimensions && paneSize && (
         <DiffIndicator url={jpgUrl} imgSize={dimensions} />
