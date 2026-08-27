@@ -26,6 +26,7 @@ import {
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { CommentsVisibilityToggle } from "@/containers/Build/toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "@/containers/Build/toolbar/CommentToolToggle";
+import { FitToggle } from "@/containers/Build/toolbar/FitToggle";
 import {
   NextButton,
   PreviousButton,
@@ -248,23 +249,25 @@ function MobileDock(props: {
           <div className="flex flex-col gap-1.5 pb-2">
             {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
             <div className="relative">
-              {/* Commenting and ignoring rank above the view modes: they are
-                  review decisions, the rest is display preference. */}
+              {/* The diff-reading controls lead — the layer and its zones are
+                  what you work the snapshot with; the rest follows. */}
               <div className="flex items-center gap-1.5 overflow-x-auto px-1">
-                {showCommentTool ? <CommentToolToggle /> : null}
-                {showComments ? <CommentsVisibilityToggle /> : null}
-                <ScreenshotIgnoreButton diff={diff} />
-                <Separator orientation="vertical" className="w-thin h-8" />
                 {showOverlayControls ? (
                   <>
                     <ChangesOverlayControls settings={false} />
                     <Separator orientation="vertical" className="w-thin h-8" />
                   </>
                 ) : null}
+                {showCommentTool ? <CommentToolToggle /> : null}
+                {showComments ? <CommentsVisibilityToggle /> : null}
+                <ScreenshotIgnoreButton diff={diff} />
+                <Separator orientation="vertical" className="w-thin h-8" />
+                <FitToggle />
                 <BuildDiffDetailToolbar
                   diff={diff}
                   snapshotControls={false}
                   commentControls={false}
+                  fitToggle={false}
                 />
               </div>
               {/* Says "there is more to the right" — the row scrolls, and a

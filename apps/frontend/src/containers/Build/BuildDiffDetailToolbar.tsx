@@ -29,6 +29,8 @@ interface BuildDiffDetailToolbarProps {
   snapshotControls?: boolean;
   /** Render the comment controls; the mobile dock hosts its own copy. */
   commentControls?: boolean;
+  /** Render the fit toggle; the mobile dock hosts it ahead of the view modes. */
+  fitToggle?: boolean;
   children?: React.ReactNode;
 }
 
@@ -97,6 +99,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
     fitControls,
     snapshotControls = true,
     commentControls = true,
+    fitToggle = true,
   } = props;
   const showOverlayControls = checkDiffHasChangesOverlay(diff);
 
@@ -108,7 +111,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
-      <FitToggle />
+      {fitToggle ? <FitToggle /> : null}
       {fitControls}
       {showOverlayControls && (
         <>
