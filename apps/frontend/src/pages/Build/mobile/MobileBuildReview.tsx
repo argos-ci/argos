@@ -10,7 +10,11 @@ import {
   XIcon,
 } from "lucide-react";
 
-import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
+import {
+  BaselineScreenshotHeader,
+  BuildDiffDetail,
+  ChangesScreenshotHeader,
+} from "@/containers/Build/BuildDiffDetail";
 import {
   BuildDiffDetailToolbar,
   checkDiffHasChangesOverlay,
@@ -20,8 +24,10 @@ import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
+  checkIsBlendViewMode,
   holdBaselineAtom,
   onionOpacityAtom,
+  useEffectiveBuildViewMode,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { CommentsVisibilityToggle } from "@/containers/Build/toolbar/CommentsVisibilityToggle";
@@ -133,7 +139,14 @@ export function MobileBuildReview(props: {
 
   return (
     <>
-      <MobileHeader project={project} onOpenPanels={() => setSheet("panels")} />
+      <div className="border-b-thin bg-app shrink-0">
+        <MobileHeader build={build} project={project} />
+        <SnapshotContextBar
+          build={build}
+          onOpenSnapshots={() => setSheet("snapshots")}
+          onOpenPanels={() => setSheet("panels")}
+        />
+      </div>
       <div className="bg-subtle flex min-h-0 min-w-0 flex-1 flex-col">
         <BuildDiffDetail build={build} diff={activeDiff} />
         {activeDiff ? (
@@ -142,7 +155,6 @@ export function MobileBuildReview(props: {
             buildType={build.type ?? null}
             isSubsetBuild={build.subset}
             onOpenPanels={() => setSheet("panels")}
-            onOpenSnapshots={() => setSheet("snapshots")}
           />
         ) : null}
       </div>
@@ -177,32 +189,83 @@ export function MobileBuildReview(props: {
 }
 
 function MobileHeader(props: {
+  build: DocumentType<typeof _BuildFragment>;
   project: DocumentType<typeof _ProjectFragment>;
+}) {
+  const goToBuildOverview = useGoToBuildOverview();
+  return (
+    <div className="flex items-center gap-1 p-2 pb-1">
+      <div className="flex flex-1 justify-start">
+        <Tooltip content="Build overview">
+          <Button
+            variant="ghost"
+            iconOnly
+            aria-label="Build overview"
+            onClick={goToBuildOverview}
+          >
+            <XIcon />
+          </Button>
+        </Tooltip>
+      </div>
+      <BuildStatusChip build={props.build} scale="sm" />
+      <div className="flex flex-1 justify-end">
+        <BuildReviewButton project={props.project} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The line under the header naming what is on screen: the list opener, the
+ * snapshot's name (tap for its details), and which side of the comparison
+ * the pane shows — hoisted from the pane so the image keeps its height, and
+ * live feedback while holding the baseline button.
+ */
+function SnapshotContextBar(props: {
+  build: DocumentType<typeof _BuildFragment>;
+  onOpenSnapshots: () => void;
   onOpenPanels: () => void;
 }) {
   const { activeDiff } = useBuildDiffState();
-  const goToBuildOverview = useGoToBuildOverview();
+  const viewMode = useEffectiveBuildViewMode();
+  const canBlend = activeDiff ? checkDiffCanBeBlended(activeDiff) : false;
+  // Mirrors the panes: a blend view that cannot blend falls back to split,
+  // and blend views compare both sides.
+  const blendMode = checkIsBlendViewMode(viewMode) && canBlend;
+  const effectiveViewMode =
+    checkIsBlendViewMode(viewMode) && !canBlend ? "split" : viewMode;
+  const showBaseline =
+    blendMode ||
+    effectiveViewMode === "split" ||
+    effectiveViewMode === "baseline";
+  const showChanges =
+    blendMode ||
+    effectiveViewMode === "split" ||
+    effectiveViewMode === "changes";
   return (
-    <div className="border-b-thin bg-app flex shrink-0 items-center gap-1 p-2">
-      <Tooltip content="Build overview">
+    <div className="flex items-center gap-1 px-2 pb-1.5">
+      <Tooltip content="Snapshots list">
         <Button
           variant="ghost"
           iconOnly
-          aria-label="Build overview"
-          onClick={goToBuildOverview}
+          aria-label="Snapshots list"
+          onClick={props.onOpenSnapshots}
         >
-          <XIcon />
+          <ImagesIcon />
         </Button>
       </Tooltip>
       <button
         type="button"
         aria-label="Snapshot details"
-        className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center rounded-lg px-2 py-1.5 text-sm"
+        className="hover:bg-hover flex min-w-0 flex-1 items-center rounded-lg px-2 py-1.5 text-sm"
         onClick={props.onOpenPanels}
       >
         <span className="text-default truncate">{activeDiff?.name}</span>
       </button>
-      <BuildReviewButton project={props.project} />
+      <div className="flex shrink-0 items-center gap-4 pr-1">
+        {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
+        {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
+      </div>
     </div>
   );
 }
@@ -212,7 +275,6 @@ function MobileDock(props: {
   buildType: BuildType | null;
   isSubsetBuild: boolean;
   onOpenPanels: () => void;
-  onOpenSnapshots: () => void;
 }) {
   const { diff, buildType, isSubsetBuild } = props;
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -276,26 +338,13 @@ function MobileDock(props: {
             </div>
           </div>
         ) : null}
-        {/* Seven circles: 44px each is what fits a 375px phone. */}
-        <div className="flex items-center justify-between gap-0.5 px-1">
-          <Tooltip content="Snapshots list">
-            <Button
-              variant="secondary"
-              iconOnly
-              size="large"
-              className="size-11"
-              aria-label="Snapshots list"
-              onClick={props.onOpenSnapshots}
-            >
-              <ImagesIcon />
-            </Button>
-          </Tooltip>
+        <div className="flex items-center justify-between gap-1 px-1">
           <Tooltip content="Build, snapshot and activity panels">
             <Button
               variant="secondary"
               iconOnly
               size="large"
-              className="size-11"
+              className="size-12"
               aria-label="Build details"
               onClick={props.onOpenPanels}
             >
@@ -304,7 +353,7 @@ function MobileDock(props: {
           </Tooltip>
           <MobileNavButtons />
           <HoldBaselineButton disabled={!checkDiffCanBeBlended(diff)} />
-          <div className="[&_button]:size-11">
+          <div className="[&_button]:size-12">
             <TrackButtons diff={diff} disabled={!canBeReviewed} />
           </div>
         </div>
@@ -349,7 +398,7 @@ function MobileNavButtons() {
   const goToBuildOverview = useGoToBuildOverview();
   return (
     // The desktop buttons, at touch size.
-    <div className="flex gap-0.5 **:data-[size=medium]:size-11 [&_svg]:size-5!">
+    <div className="flex gap-1 **:data-[size=medium]:size-12 [&_svg]:size-5!">
       <PreviousButton
         variant="secondary"
         toOverview={!hasPreviousDiff}
@@ -383,7 +432,7 @@ function HoldBaselineButton(props: { disabled: boolean }) {
         variant="primary"
         iconOnly
         size="large"
-        className="size-11 touch-none select-none"
+        className="size-12 touch-none select-none"
         aria-label="Hold to show baseline"
         disabled={props.disabled}
         onPointerDown={(event) => {

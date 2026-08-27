@@ -40,7 +40,6 @@ import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { BranchLink, CommitLink } from "@/pages/Build/GitLink";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
-import { Chip } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { MenuItem, MenuSeparator } from "@/ui/menu-kit";
@@ -429,7 +428,7 @@ function ScreenshotHeaderDetail(props: {
   );
 }
 
-const BaselineScreenshotHeader = memo(
+export const BaselineScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => {
     const { build } = props;
     if (!build.baseScreenshotBucket) {
@@ -492,7 +491,7 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   );
 }
 
-const ChangesScreenshotHeader = memo(
+export const ChangesScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => (
     <BuildScreenshotHeader
       label="Changes"
@@ -1422,9 +1421,7 @@ const BuildScreenshots = memo(
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
         <div className={columnClassName} hidden={!showBaseline}>
-          <PaneHeaderRow
-            status={showChanges ? null : <PaneDiffGroupLabel diff={diff} />}
-          >
+          <PaneHeaderRow>
             <BaselineScreenshotHeader build={build} />
           </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
@@ -1434,7 +1431,7 @@ const BuildScreenshots = memo(
           </div>
         </div>
         <div className={columnClassName} hidden={!showChanges}>
-          <PaneHeaderRow status={<PaneDiffGroupLabel diff={diff} />}>
+          <PaneHeaderRow>
             {blendMode ? (
               <>
                 <BaselineScreenshotHeader build={build} />
@@ -1460,35 +1457,17 @@ const BuildScreenshots = memo(
 );
 
 /**
- * The Baseline / Changes labels above a pane. `status` shares the line at
- * phone width, where the list and its badges are behind a sheet — the pane
- * itself has to say what kind of change is on screen.
+ * The Baseline / Changes labels above a pane. The mobile workspace hoists
+ * them into its context bar instead, and the pane keeps the full height.
  */
-function PaneHeaderRow(props: {
-  children: React.ReactNode;
-  status?: React.ReactNode;
-}) {
-  return (
-    <div className="relative flex shrink-0 items-center justify-center">
-      {props.status}
-      <div className="flex items-center gap-6">{props.children}</div>
-    </div>
-  );
-}
-
-function PaneDiffGroupLabel(props: { diff: BuildDiffDetailDocument }) {
-  const { diff } = props;
+function PaneHeaderRow(props: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
-  // `pending` diffs never render a pane, and have no group to name.
-  if (!isMobile || diff.status === ScreenshotDiffStatus.Pending) {
+  if (isMobile) {
     return null;
   }
-  const group = getDiffGroupDefinition(diff.status);
   return (
-    <div className="absolute inset-y-0 left-0 flex items-center">
-      <Chip icon={group.icon} color={group.color} scale="xs">
-        {group.label}
-      </Chip>
+    <div className="flex shrink-0 items-center justify-center">
+      <div className="flex items-center gap-6">{props.children}</div>
     </div>
   );
 }
