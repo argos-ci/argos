@@ -5,6 +5,7 @@ import {
   ArrowLeftRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ImagesIcon,
   PanelBottomOpenIcon,
   XIcon,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import {
   checkDiffHasChangesOverlay,
   useDiffCommentControlsState,
 } from "@/containers/Build/BuildDiffDetailToolbar";
+import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
@@ -30,9 +32,10 @@ import {
 } from "@/containers/Build/toolbar/NavButtons";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
-import { BuildType } from "@/gql/graphql";
+import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import { Separator } from "@/ui/Separator";
 import { Slider } from "@/ui/Slider";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
@@ -54,6 +57,7 @@ import type { BuildParams } from "../BuildParams";
 import { BuildReviewButton } from "../BuildReviewButton";
 import { FilterChips } from "../metadata/filters/FilterChips";
 import { ScreenshotIgnoreButton } from "../ScreenshotActionsToolbar";
+import { MetadataRow } from "../sidebar/metadata/MetadataRow";
 import { MetadataSection } from "../sidebar/MetadataSection";
 import { ReviewActivitySection } from "../sidebar/ReviewActivitySection";
 import { ReviewersSection } from "../sidebar/ReviewersSection";
@@ -139,6 +143,7 @@ export function MobileBuildReview(props: {
             buildType={build.type ?? null}
             isSubsetBuild={build.subset}
             onOpenPanels={() => setSheet("panels")}
+            onOpenSnapshots={() => setSheet("snapshots")}
           />
         ) : null}
       </div>
@@ -176,9 +181,8 @@ function MobileHeader(props: {
   project: DocumentType<typeof _ProjectFragment>;
   onOpenSnapshots: () => void;
 }) {
-  const { activeDiff, diffs } = useBuildDiffState();
+  const { activeDiff } = useBuildDiffState();
   const goToBuildOverview = useGoToBuildOverview();
-  const activeIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
   return (
     <div className="border-b-thin bg-app flex shrink-0 items-center gap-1 p-2">
       <Tooltip content="Build overview">
@@ -197,12 +201,7 @@ function MobileHeader(props: {
         className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-sm"
         onClick={props.onOpenSnapshots}
       >
-        {activeIndex >= 0 && (
-          <span className="font-medium tabular-nums">
-            {activeIndex + 1}/{diffs.length}
-          </span>
-        )}
-        <span className="text-low truncate">{activeDiff?.name}</span>
+        <span className="text-default truncate">{activeDiff?.name}</span>
         <ChevronDownIcon className="text-low size-3.5 shrink-0" />
       </button>
       <BuildReviewButton project={props.project} />
@@ -215,6 +214,7 @@ function MobileDock(props: {
   buildType: BuildType | null;
   isSubsetBuild: boolean;
   onOpenPanels: () => void;
+  onOpenSnapshots: () => void;
 }) {
   const { diff, buildType, isSubsetBuild } = props;
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -274,12 +274,26 @@ function MobileDock(props: {
             </div>
           </div>
         ) : null}
-        <div className="flex items-center justify-between gap-1 px-1">
-          <Tooltip content="Info, snapshot and review panels">
+        {/* Seven circles: 44px each is what fits a 375px phone. */}
+        <div className="flex items-center justify-between gap-0.5 px-1">
+          <Tooltip content="Snapshots list">
             <Button
               variant="secondary"
               iconOnly
               size="large"
+              className="size-11"
+              aria-label="Snapshots list"
+              onClick={props.onOpenSnapshots}
+            >
+              <ImagesIcon />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Build, snapshot and activity panels">
+            <Button
+              variant="secondary"
+              iconOnly
+              size="large"
+              className="size-11"
               aria-label="Build details"
               onClick={props.onOpenPanels}
             >
@@ -288,7 +302,7 @@ function MobileDock(props: {
           </Tooltip>
           <MobileNavButtons />
           <HoldBaselineButton disabled={!checkDiffCanBeBlended(diff)} />
-          <div className="[&_button]:size-12">
+          <div className="[&_button]:size-11">
             <TrackButtons diff={diff} disabled={!canBeReviewed} />
           </div>
         </div>
@@ -333,7 +347,7 @@ function MobileNavButtons() {
   const goToBuildOverview = useGoToBuildOverview();
   return (
     // The desktop buttons, at touch size.
-    <div className="flex gap-1 **:data-[size=medium]:size-12 [&_svg]:size-5!">
+    <div className="flex gap-0.5 **:data-[size=medium]:size-11 [&_svg]:size-5!">
       <PreviousButton
         variant="secondary"
         toOverview={!hasPreviousDiff}
@@ -367,7 +381,7 @@ function HoldBaselineButton(props: { disabled: boolean }) {
         variant="primary"
         iconOnly
         size="large"
-        className="size-12 touch-none select-none"
+        className="size-11 touch-none select-none"
         aria-label="Hold to show baseline"
         disabled={props.disabled}
         onPointerDown={(event) => {
@@ -411,16 +425,11 @@ function PanelsSheetContent(props: {
       }}
       className="flex min-h-0 flex-1 flex-col px-3"
     >
-      {/* The header truncates the snapshot name: this is where it lives in
-          full. */}
-      <div className="shrink-0 pt-3 text-sm font-medium break-words">
-        {diff.name}
-      </div>
       {/* The desktop pills are mouse-sized; here each tab takes a third of
           the row at touch height. */}
       <TabList aria-label="Build details" className="flex shrink-0 gap-2 py-2">
-        <PillTab value="info" className="flex-1 justify-center py-2! text-sm!">
-          Info
+        <PillTab value="build" className="flex-1 justify-center py-2! text-sm!">
+          Build
         </PillTab>
         <PillTab
           value="snapshot"
@@ -429,14 +438,14 @@ function PanelsSheetContent(props: {
           Snapshot
         </PillTab>
         <PillTab
-          value="review"
+          value="activity"
           className="flex-1 justify-center py-2! text-sm!"
         >
-          Review
+          Activity
         </PillTab>
       </TabList>
       <TabPanel
-        value="info"
+        value="build"
         className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-3"
       >
         {/* The slim header dropped the build status chip; a labeled row keeps
@@ -459,6 +468,7 @@ function PanelsSheetContent(props: {
           compareBranch={build.branch}
           deploymentUrl={build.deployment?.url ?? null}
           prMerged={build.pullRequest?.merged ?? false}
+          leadingRows={<SnapshotIdentityRows diff={diff} />}
         />
         {diff.test ? (
           <>
@@ -478,12 +488,40 @@ function PanelsSheetContent(props: {
         ) : null}
       </TabPanel>
       <TabPanel
-        value="review"
+        value="activity"
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain py-3"
       >
         <ReviewersSection build={build} />
         <ReviewActivitySection build={build} />
       </TabPanel>
     </Tabs>
+  );
+}
+
+/**
+ * The sheet's slim header truncates the snapshot name and the pane line only
+ * chips its status: the metadata panel restates both in full.
+ */
+function SnapshotIdentityRows(props: { diff: Diff }) {
+  const { diff } = props;
+  const group =
+    diff.status === ScreenshotDiffStatus.Pending
+      ? null
+      : getDiffGroupDefinition(diff.status);
+  return (
+    <>
+      <MetadataRow>
+        <div className="text-default min-w-0 text-sm font-medium break-words">
+          {diff.name}
+        </div>
+      </MetadataRow>
+      {group ? (
+        <MetadataRow>
+          <Chip icon={group.icon} color={group.color}>
+            {group.label}
+          </Chip>
+        </MetadataRow>
+      ) : null}
+    </>
   );
 }

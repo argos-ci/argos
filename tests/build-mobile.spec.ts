@@ -79,7 +79,7 @@ loggedTest.describe("mobile build review", () => {
         panelsSheet.getByRole("tab", { name: "Snapshot" }),
       ).toBeVisible();
       await screenshot(page, "build-mobile-panels-sheet");
-      await panelsSheet.getByRole("tab", { name: "Info" }).click();
+      await panelsSheet.getByRole("tab", { name: "Build" }).click();
       await expect(panelsSheet.getByText("Baseline build")).toBeVisible();
 
       // A slow pull settles the sheet on its half snap; pulling again from
