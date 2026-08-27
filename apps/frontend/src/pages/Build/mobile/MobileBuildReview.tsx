@@ -429,12 +429,15 @@ function PanelsSheetContent(props: {
         <PillTab value="snapshot">Snapshot</PillTab>
         <PillTab value="review">Review</PillTab>
       </TabList>
-      <TabPanel value="info" className="min-h-0 flex-1 overflow-y-auto py-3">
+      <TabPanel
+        value="info"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-3"
+      >
         <BuildInfos build={build} repoUrl={repoUrl} params={params} />
       </TabPanel>
       <TabPanel
         value="snapshot"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-3"
+        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain py-3"
       >
         <MetadataSection
           diff={diff}
@@ -464,7 +467,7 @@ function PanelsSheetContent(props: {
       </TabPanel>
       <TabPanel
         value="review"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-3"
+        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain py-3"
       >
         <ReviewersSection build={build} />
         <ReviewActivitySection build={build} />

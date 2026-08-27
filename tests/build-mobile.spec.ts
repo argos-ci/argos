@@ -82,21 +82,38 @@ loggedTest.describe("mobile build review", () => {
       await panelsSheet.getByRole("tab", { name: "Info" }).click();
       await expect(panelsSheet.getByText("Baseline build")).toBeVisible();
 
-      // Dragging the handle down past the threshold dismisses the sheet.
+      // A slow pull settles the sheet on its half snap; pulling again from
+      // there closes it. Slow on purpose: a fast drag projects its velocity
+      // and would close in one go.
       const handle = panelsSheet.getByRole("button", { name: "Close" });
-      const handleBox = await handle.boundingBox();
-      if (!handleBox) {
+      const dragHandleDown = async (distance: number) => {
+        const box = await handle.boundingBox();
+        if (!box) {
+          throw new Error("sheet handle has no box");
+        }
+        const x = box.x + box.width / 2;
+        const y = box.y + box.height / 2;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        for (let step = 1; step <= 10; step++) {
+          await page.mouse.move(x, y + (distance * step) / 10);
+          await page.waitForTimeout(25);
+        }
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+      };
+      const fullBox = await handle.boundingBox();
+      if (!fullBox) {
         throw new Error("sheet handle has no box");
       }
-      await page.mouse.move(
-        handleBox.x + handleBox.width / 2,
-        handleBox.y + handleBox.height / 2,
-      );
-      await page.mouse.down();
-      await page.mouse.move(handleBox.x + handleBox.width / 2, 800, {
-        steps: 8,
-      });
-      await page.mouse.up();
+      await dragHandleDown(300);
+      await expect(panelsSheet).toBeVisible();
+      const halfBox = await handle.boundingBox();
+      if (!halfBox) {
+        throw new Error("sheet handle has no box");
+      }
+      expect(halfBox.y).toBeGreaterThan(fullBox.y + 150);
+      await dragHandleDown(300);
       await expect(panelsSheet).toBeHidden();
     },
   );
