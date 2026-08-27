@@ -20,3 +20,21 @@ function getSnapshot() {
 export function useIsMobile() {
   return useSyncExternalStore(subscribe, getSnapshot, () => false);
 }
+
+// A phone held in landscape: the mobile workspace applies, but stacking its
+// chrome would leave the snapshot a sliver, so the layout goes to rails.
+const SHORT_QUERY = "(max-height: 500px)";
+
+function subscribeShort(callback: () => void) {
+  const mediaQuery = window.matchMedia(SHORT_QUERY);
+  mediaQuery.addEventListener("change", callback);
+  return () => mediaQuery.removeEventListener("change", callback);
+}
+
+function getShortSnapshot() {
+  return window.matchMedia(SHORT_QUERY).matches;
+}
+
+export function useIsShortViewport() {
+  return useSyncExternalStore(subscribeShort, getShortSnapshot, () => false);
+}

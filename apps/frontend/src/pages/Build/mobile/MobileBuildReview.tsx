@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useRef, useState } from "react";
 import { invariant } from "@argos/util/invariant";
+import { clsx } from "clsx";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeftRightIcon,
@@ -46,6 +47,7 @@ import { Separator } from "@/ui/Separator";
 import { Slider } from "@/ui/Slider";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
+import { useIsShortViewport } from "@/ui/useIsMobile";
 
 import { BuildDiffList } from "../BuildDiffList";
 import {
@@ -119,6 +121,10 @@ export function MobileBuildReview(props: {
   const { build, project, params, repoUrl } = props;
   const { activeDiff } = useBuildDiffState();
   const [sheet, setSheet] = useState<Sheet>(null);
+  // Landscape phones: the portrait chrome stacked would leave the snapshot a
+  // sliver, so the context moves into the header, the tools become a strip
+  // and the dock a right-hand rail.
+  const isShort = useIsShortViewport();
 
   // The stored preference likely says "split" (the desktop default), which
   // wastes a phone screen on two half-width panes. Downgrade it once on
@@ -142,21 +148,48 @@ export function MobileBuildReview(props: {
   return (
     <>
       <div className="border-b-thin bg-app shrink-0">
-        <MobileHeader build={build} project={project} params={params} />
-        <SnapshotContextBar
-          onOpenSnapshots={() => setSheet("snapshots")}
-          onOpenPanels={() => setSheet("panels")}
+        <MobileHeader
+          build={build}
+          project={project}
+          params={params}
+          center={
+            isShort ? (
+              <LandscapeSnapshotContext
+                onOpenSnapshots={() => setSheet("snapshots")}
+                onOpenPanels={() => setSheet("panels")}
+              />
+            ) : null
+          }
         />
+        {!isShort && (
+          <SnapshotContextBar
+            onOpenSnapshots={() => setSheet("snapshots")}
+            onOpenPanels={() => setSheet("panels")}
+          />
+        )}
       </div>
-      <div className="bg-subtle flex min-h-0 min-w-0 flex-1 flex-col">
-        <PaneLabelLine build={build} />
-        <BuildDiffDetail build={build} diff={activeDiff} />
+      {isShort && activeDiff ? (
+        <div className="border-b-thin bg-app shrink-0 px-2 pt-1">
+          <DockTools diff={activeDiff} />
+        </div>
+      ) : null}
+      <div
+        className={clsx(
+          "bg-subtle flex min-h-0 min-w-0 flex-1",
+          isShort ? "flex-row" : "flex-col",
+        )}
+      >
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <PaneLabelLine build={build} floating={isShort} />
+          <BuildDiffDetail build={build} diff={activeDiff} />
+        </div>
         {activeDiff ? (
           <MobileDock
             diff={activeDiff}
             buildType={build.type ?? null}
             isSubsetBuild={build.subset}
             onOpenPanels={() => setSheet("panels")}
+            vertical={isShort}
           />
         ) : null}
       </div>
@@ -191,6 +224,8 @@ function MobileHeader(props: {
   build: DocumentType<typeof _BuildFragment>;
   project: DocumentType<typeof _ProjectFragment>;
   params: BuildParams;
+  /** Landscape: the snapshot context, folded into this row. */
+  center?: React.ReactNode;
 }) {
   return (
     // Symmetric padding on purpose: an odd row height lands the status
@@ -198,11 +233,44 @@ function MobileHeader(props: {
     <div className="border-b-thin flex items-center gap-2 p-2">
       <MobileBuildIdentity params={props.params} />
       <BuildStatusChip build={props.build} scale="sm" />
-      <div className="min-w-0 flex-1" />
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
+        {props.center}
+      </div>
       {/* The short label: "Submit review" crowds the identity and the chip
           out of a 390px header. */}
       <BuildReviewButton project={props.project}>Submit</BuildReviewButton>
     </div>
+  );
+}
+
+/** The context bar's occupants at header size, for landscape. */
+function LandscapeSnapshotContext(props: {
+  onOpenSnapshots: () => void;
+  onOpenPanels: () => void;
+}) {
+  const { activeDiff } = useBuildDiffState();
+  return (
+    <>
+      <Tooltip content="Snapshots list">
+        <Button
+          variant="secondary"
+          iconOnly
+          size="small"
+          aria-label="Snapshots list"
+          onClick={props.onOpenSnapshots}
+        >
+          <ImagesIcon />
+        </Button>
+      </Tooltip>
+      <button
+        type="button"
+        aria-label="Snapshot details"
+        className="hover:bg-hover min-w-0 truncate rounded-lg px-2 py-1 text-sm"
+        onClick={props.onOpenPanels}
+      >
+        {activeDiff?.name}
+      </button>
+    </>
   );
 }
 
@@ -294,7 +362,11 @@ function SnapshotsSheetContent() {
  * both — flipping live while the baseline button is held. The desktop pane
  * headers, with their build details on press.
  */
-function PaneLabelLine(props: { build: DocumentType<typeof _BuildFragment> }) {
+function PaneLabelLine(props: {
+  build: DocumentType<typeof _BuildFragment>;
+  /** Landscape: float over the snapshot instead of taking a line. */
+  floating?: boolean;
+}) {
   const { activeDiff } = useBuildDiffState();
   const viewMode = useEffectiveBuildViewMode();
   const canBlend = activeDiff ? checkDiffCanBeBlended(activeDiff) : false;
@@ -307,11 +379,68 @@ function PaneLabelLine(props: { build: DocumentType<typeof _BuildFragment> }) {
     blend || effectiveViewMode === "split" || effectiveViewMode === "baseline";
   const showChanges =
     blend || effectiveViewMode === "split" || effectiveViewMode === "changes";
+  const labels = (
+    <>
+      {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
+      {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
+    </>
+  );
+  if (props.floating) {
+    return (
+      <div className="pointer-events-none absolute top-1 right-2 z-10">
+        <div className="bg-app/85 pointer-events-auto flex items-center gap-4 rounded-full px-3 py-0.5 shadow-xs">
+          {labels}
+        </div>
+      </div>
+    );
+  }
   return (
     // In the snapshot's gray zone, where desktop keeps these labels.
     <div className="flex shrink-0 items-center justify-center gap-6 pt-2">
-      {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
-      {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
+      {labels}
+    </div>
+  );
+}
+
+/**
+ * The tools strip: the diff-reading controls lead — the layer and its zones
+ * are what you work the snapshot with; the rest follows.
+ */
+function DockTools(props: { diff: Diff }) {
+  const { diff } = props;
+  const viewMode = useAtomValue(buildViewModeAtom);
+  const canBlend = checkDiffCanBeBlended(diff);
+  const showOverlayControls = checkDiffHasChangesOverlay(diff);
+  const { showCommentTool, showComments } = useDiffCommentControlsState(diff);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
+      <div className="relative">
+        {/* `pb-2` inside the scroller: a visible horizontal scrollbar gets
+            its own lane instead of covering the buttons. */}
+        <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
+          {showOverlayControls ? (
+            <>
+              <ChangesOverlayControls settings={false} />
+              <Separator orientation="vertical" className="w-thin h-8" />
+            </>
+          ) : null}
+          {showCommentTool ? <CommentToolToggle /> : null}
+          {showComments ? <CommentsVisibilityToggle /> : null}
+          <ScreenshotIgnoreButton diff={diff} />
+          <Separator orientation="vertical" className="w-thin h-8" />
+          <FitToggle />
+          <BuildDiffDetailToolbar
+            diff={diff}
+            snapshotControls={false}
+            commentControls={false}
+            fitToggle={false}
+          />
+        </div>
+        {/* Says "there is more to the right" — the row scrolls, and a bare
+            cut icon was not enough of a hint. */}
+        <div className="bg-app pointer-events-none absolute inset-y-0 right-0 w-10 [mask-image:linear-gradient(to_left,black,transparent)]" />
+      </div>
     </div>
   );
 }
@@ -321,51 +450,46 @@ function MobileDock(props: {
   buildType: BuildType | null;
   isSubsetBuild: boolean;
   onOpenPanels: () => void;
+  /** Landscape: a right-hand rail instead of a bottom bar. */
+  vertical?: boolean;
 }) {
-  const { diff, buildType, isSubsetBuild } = props;
-  const viewMode = useAtomValue(buildViewModeAtom);
+  const { diff, buildType, isSubsetBuild, vertical } = props;
   const canBeReviewed =
     buildType !== BuildType.Reference &&
     checkDiffCanBeReviewed(diff.status, { isSubsetBuild });
   const canBlend = checkDiffCanBeBlended(diff);
-  const showOverlayControls = checkDiffHasChangesOverlay(diff);
-  const { showCommentTool, showComments } = useDiffCommentControlsState(diff);
-  return (
-    // In the layout flow, not floating: opening the tools row grows the dock
-    // and shrinks the snapshot instead of covering it.
-    <div className="flex shrink-0 justify-center px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pt-2 pb-1.5 shadow-lg">
-        <div className="flex flex-col gap-1.5">
-          {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
-          <div className="relative">
-            {/* The diff-reading controls lead — the layer and its zones are
-                  what you work the snapshot with; the rest follows. */}
-            {/* `pb-2` inside the scroller: a visible horizontal scrollbar
-                  gets its own lane instead of covering the buttons. */}
-            <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
-              {showOverlayControls ? (
-                <>
-                  <ChangesOverlayControls settings={false} />
-                  <Separator orientation="vertical" className="w-thin h-8" />
-                </>
-              ) : null}
-              {showCommentTool ? <CommentToolToggle /> : null}
-              {showComments ? <CommentsVisibilityToggle /> : null}
-              <ScreenshotIgnoreButton diff={diff} />
-              <Separator orientation="vertical" className="w-thin h-8" />
-              <FitToggle />
-              <BuildDiffDetailToolbar
-                diff={diff}
-                snapshotControls={false}
-                commentControls={false}
-                fitToggle={false}
-              />
-            </div>
-            {/* Says "there is more to the right" — the row scrolls, and a
-                  bare cut icon was not enough of a hint. */}
-            <div className="bg-app pointer-events-none absolute inset-y-0 right-0 w-10 [mask-image:linear-gradient(to_left,black,transparent)]" />
+  if (vertical) {
+    return (
+      // 40px circles: six of them plus gaps have to clear a 390px-tall
+      // landscape viewport minus the header and the tools strip.
+      <div className="flex shrink-0 items-center py-2 pr-[max(0.5rem,env(safe-area-inset-right))] pl-1">
+        <div className="bg-app border-thin flex flex-col items-center gap-1 rounded-3xl p-1 shadow-lg">
+          <Tooltip content="Build, snapshot and activity panels">
+            <Button
+              variant="secondary"
+              iconOnly
+              size="large"
+              className="size-10"
+              aria-label="Build details"
+              onClick={props.onOpenPanels}
+            >
+              <InfoIcon />
+            </Button>
+          </Tooltip>
+          <MobileNavButtons vertical />
+          <HoldBaselineButton disabled={!canBlend} compact />
+          <div className="[&_button]:size-10 [&>div]:flex-col">
+            <TrackButtons diff={diff} disabled={!canBeReviewed} />
           </div>
         </div>
+      </div>
+    );
+  }
+  return (
+    // In the layout flow, not floating: the dock never covers the snapshot.
+    <div className="flex shrink-0 justify-center px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pt-2 pb-1.5 shadow-lg">
+        <DockTools diff={diff} />
         <div className="flex items-center justify-between gap-1 px-1">
           <Tooltip content="Build, snapshot and activity panels">
             <Button
@@ -418,7 +542,7 @@ function DockOnionSlider() {
   );
 }
 
-function MobileNavButtons() {
+function MobileNavButtons(props: { vertical?: boolean }) {
   const goToNextDiff = useGoToNextDiff();
   const hasNextDiff = useHasNextDiff();
   const goToPreviousDiff = useGoToPreviousDiff();
@@ -426,7 +550,14 @@ function MobileNavButtons() {
   const goToBuildOverview = useGoToBuildOverview();
   return (
     // The desktop buttons, at touch size.
-    <div className="flex gap-1 **:data-[size=medium]:size-12 [&_svg]:size-5!">
+    <div
+      className={clsx(
+        "flex gap-1 [&_svg]:size-5!",
+        props.vertical
+          ? "flex-col **:data-[size=medium]:size-10"
+          : "**:data-[size=medium]:size-12",
+      )}
+    >
       <PreviousButton
         variant="secondary"
         toOverview={!hasPreviousDiff}
@@ -447,7 +578,7 @@ function MobileNavButtons() {
  * Press and hold to look at the baseline, release to come back — the touch
  * translation of flipping with ← / → on desktop.
  */
-function HoldBaselineButton(props: { disabled: boolean }) {
+function HoldBaselineButton(props: { disabled: boolean; compact?: boolean }) {
   const setHoldBaseline = useSetAtom(holdBaselineAtom);
   // A hold interrupted by anything else (navigation, unmount, a system
   // gesture) must not leave the pane stuck on the baseline.
@@ -460,7 +591,10 @@ function HoldBaselineButton(props: { disabled: boolean }) {
         variant="primary"
         iconOnly
         size="large"
-        className="size-12 touch-none select-none"
+        className={clsx(
+          props.compact ? "size-10" : "size-12",
+          "touch-none select-none",
+        )}
         aria-label="Hold to show baseline"
         disabled={props.disabled}
         onPointerDown={(event) => {
