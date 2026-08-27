@@ -79,6 +79,23 @@ loggedTest.describe("mobile build review", () => {
       await screenshot(page, "build-mobile-panels-sheet");
       await panelsSheet.getByRole("tab", { name: "Info" }).click();
       await expect(panelsSheet.getByText("Baseline build")).toBeVisible();
+
+      // Dragging the handle down past the threshold dismisses the sheet.
+      const handle = panelsSheet.getByRole("button", { name: "Close" });
+      const handleBox = await handle.boundingBox();
+      if (!handleBox) {
+        throw new Error("sheet handle has no box");
+      }
+      await page.mouse.move(
+        handleBox.x + handleBox.width / 2,
+        handleBox.y + handleBox.height / 2,
+      );
+      await page.mouse.down();
+      await page.mouse.move(handleBox.x + handleBox.width / 2, 800, {
+        steps: 8,
+      });
+      await page.mouse.up();
+      await expect(panelsSheet).toBeHidden();
     },
   );
 });
