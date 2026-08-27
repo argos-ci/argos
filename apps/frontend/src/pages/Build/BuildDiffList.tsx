@@ -49,6 +49,7 @@ import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
 import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { useIsMobile } from "@/ui/useIsMobile";
 import { useLiveRef } from "@/ui/useLiveRef";
 
 import {
@@ -929,6 +930,7 @@ export function BuildDiffList() {
  */
 function OverviewButton() {
   const params = useBuildParams();
+  const isMobile = useIsMobile();
   if (!params) {
     return null;
   }
@@ -938,7 +940,7 @@ function OverviewButton() {
       <LinkButton
         href={getBuildOverviewURL(params)}
         variant="ghost"
-        size="small"
+        size={isMobile ? "medium" : "small"}
         iconOnly
         aria-label="Overview"
         aria-current={selected ? "page" : undefined}

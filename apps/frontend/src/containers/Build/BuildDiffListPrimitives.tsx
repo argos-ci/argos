@@ -9,6 +9,7 @@ import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
+import { useIsMobile } from "@/ui/useIsMobile";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import { RemoteMinimap } from "./RemoteMinimap";
@@ -261,12 +262,15 @@ interface DiffCardFooterProps extends ComponentPropsWithRef<"div"> {
 
 export function DiffCardFooter(props: DiffCardFooterProps) {
   const { alwaysVisible, ...rest } = props;
+  // Hover reveals the footer on desktop; touch has no hover, so without this
+  // the thumbnails are anonymous on a phone.
+  const isMobile = useIsMobile();
   return (
     <div
       {...rest}
       className={clsx(
         "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-1.5 truncate px-2",
-        alwaysVisible
+        alwaysVisible || isMobile
           ? null
           : "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100",
         rest.className,
