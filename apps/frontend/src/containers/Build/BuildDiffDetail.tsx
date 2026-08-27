@@ -428,7 +428,7 @@ function ScreenshotHeaderDetail(props: {
   );
 }
 
-const BaselineScreenshotHeader = memo(
+export const BaselineScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => {
     const { build } = props;
     if (!build.baseScreenshotBucket) {
@@ -491,7 +491,7 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   );
 }
 
-const ChangesScreenshotHeader = memo(
+export const ChangesScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => (
     <BuildScreenshotHeader
       label="Changes"
@@ -1366,6 +1366,7 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { diff, build } = props;
+    const isMobile = useIsMobile();
     const viewMode = useEffectiveBuildViewMode();
     const canBlend = checkDiffCanBeBlended(diff);
     const blendMode =
@@ -1419,7 +1420,14 @@ const BuildScreenshots = memo(
     return (
       // `pt-2`, not `p-4`: the header row tops out level with the right
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
-      <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
+      // On mobile the dock sits right below — the pane gives up most of its
+      // bottom padding to it.
+      <div
+        className={clsx(
+          "flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2",
+          isMobile ? "pb-1" : "pb-4",
+        )}
+      >
         <div className={columnClassName} hidden={!showBaseline}>
           <PaneHeaderRow>
             <BaselineScreenshotHeader build={build} />
@@ -1457,20 +1465,14 @@ const BuildScreenshots = memo(
 );
 
 /**
- * The Baseline / Changes labels above a pane. At phone width they float over
- * the snapshot's top-right corner in a translucent pill — the pane keeps the
- * full height, and the label still flips while holding the baseline button.
+ * The Baseline / Changes labels above a pane. The mobile workspace shows
+ * them on its own label line under the header instead, and the pane keeps
+ * the full height.
  */
 function PaneHeaderRow(props: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   if (isMobile) {
-    return (
-      <div className="pointer-events-none absolute top-1 right-2 z-10 flex justify-end">
-        <div className="bg-app/85 pointer-events-auto flex items-center gap-4 rounded-full px-3 py-0.5 shadow-xs">
-          {props.children}
-        </div>
-      </div>
-    );
+    return null;
   }
   return (
     <div className="flex shrink-0 items-center justify-center">

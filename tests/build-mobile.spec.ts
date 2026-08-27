@@ -117,7 +117,7 @@ loggedTest.describe("mobile build review", () => {
       await expect(panelsSheet).toBeHidden();
 
       // The review form is a bottom sheet on mobile, not the header popover.
-      await page.getByRole("button", { name: "Submit review" }).click();
+      await page.getByRole("button", { name: "Submit" }).click();
       const reviewSheet = page.getByRole("dialog", { name: "Submit review" });
       await expect(reviewSheet).toBeVisible();
       // The summary field is a TipTap editor: the placeholder is a rendered

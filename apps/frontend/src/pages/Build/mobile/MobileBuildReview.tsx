@@ -5,11 +5,15 @@ import {
   ArrowLeftRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ImagesIcon,
   PanelBottomOpenIcon,
-  PanelLeftOpenIcon,
 } from "lucide-react";
 
-import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
+import {
+  BaselineScreenshotHeader,
+  BuildDiffDetail,
+  ChangesScreenshotHeader,
+} from "@/containers/Build/BuildDiffDetail";
 import {
   BuildDiffDetailToolbar,
   checkDiffHasChangesOverlay,
@@ -19,8 +23,10 @@ import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
+  checkIsBlendViewMode,
   holdBaselineAtom,
   onionOpacityAtom,
+  useEffectiveBuildViewMode,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { CommentsVisibilityToggle } from "@/containers/Build/toolbar/CommentsVisibilityToggle";
@@ -37,7 +43,6 @@ import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Separator } from "@/ui/Separator";
-import { SideSheet } from "@/ui/SideSheet";
 import { Slider } from "@/ui/Slider";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
@@ -139,6 +144,7 @@ export function MobileBuildReview(props: {
           onOpenSnapshots={() => setSheet("snapshots")}
           onOpenPanels={() => setSheet("panels")}
         />
+        <PaneLabelLine build={build} />
       </div>
       <div className="bg-subtle flex min-h-0 min-w-0 flex-1 flex-col">
         <BuildDiffDetail build={build} diff={activeDiff} />
@@ -151,17 +157,17 @@ export function MobileBuildReview(props: {
           />
         ) : null}
       </div>
-      {/* From the left, like the desktop sidebar it stands in for. */}
-      <SideSheet
+      <BottomSheet
         open={sheet === "snapshots"}
         onOpenChange={(open) => setSheet(open ? "snapshots" : null)}
         aria-label="Snapshots"
+        className="h-[85dvh]"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <FilterChips />
           <BuildDiffList />
         </div>
-      </SideSheet>
+      </BottomSheet>
       <BottomSheet
         open={sheet === "panels"}
         onOpenChange={(open) => setSheet(open ? "panels" : null)}
@@ -191,7 +197,9 @@ function MobileHeader(props: {
       <MobileBuildIdentity params={props.params} />
       <BuildStatusChip build={props.build} scale="sm" />
       <div className="min-w-0 flex-1" />
-      <BuildReviewButton project={props.project} />
+      {/* The short label: "Submit review" crowds the identity and the chip
+          out of a 390px header. */}
+      <BuildReviewButton project={props.project}>Submit</BuildReviewButton>
     </div>
   );
 }
@@ -215,7 +223,7 @@ function SnapshotContextBar(props: {
           aria-label="Snapshots list"
           onClick={props.onOpenSnapshots}
         >
-          <PanelLeftOpenIcon />
+          <ImagesIcon />
         </Button>
       </Tooltip>
       <button
@@ -228,6 +236,32 @@ function SnapshotContextBar(props: {
           {activeDiff?.name}
         </span>
       </button>
+    </div>
+  );
+}
+
+/**
+ * Which side of the comparison the pane below shows — Baseline, Changes or
+ * both — flipping live while the baseline button is held. The desktop pane
+ * headers, with their build details on press.
+ */
+function PaneLabelLine(props: { build: DocumentType<typeof _BuildFragment> }) {
+  const { activeDiff } = useBuildDiffState();
+  const viewMode = useEffectiveBuildViewMode();
+  const canBlend = activeDiff ? checkDiffCanBeBlended(activeDiff) : false;
+  // Mirrors the panes: a blend view that cannot blend falls back to split,
+  // and blend views compare both sides.
+  const blend = checkIsBlendViewMode(viewMode) && canBlend;
+  const effectiveViewMode =
+    checkIsBlendViewMode(viewMode) && !canBlend ? "split" : viewMode;
+  const showBaseline =
+    blend || effectiveViewMode === "split" || effectiveViewMode === "baseline";
+  const showChanges =
+    blend || effectiveViewMode === "split" || effectiveViewMode === "changes";
+  return (
+    <div className="flex items-center justify-center gap-6 pb-1.5">
+      {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
+      {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
     </div>
   );
 }
