@@ -1426,7 +1426,9 @@ const BuildScreenshots = memo(
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
         <div className={columnClassName} hidden={!showBaseline}>
-          <BaselineScreenshotHeader build={build} />
+          <PaneHeaderRow>
+            <BaselineScreenshotHeader build={build} />
+          </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <BaseScreenshot diff={diff} buildId={build.id} />
@@ -1434,14 +1436,16 @@ const BuildScreenshots = memo(
           </div>
         </div>
         <div className={columnClassName} hidden={!showChanges}>
-          {blendMode ? (
-            <div className="flex shrink-0 justify-center gap-6">
-              <BaselineScreenshotHeader build={build} />
+          <PaneHeaderRow>
+            {blendMode ? (
+              <>
+                <BaselineScreenshotHeader build={build} />
+                <ChangesScreenshotHeader build={build} />
+              </>
+            ) : (
               <ChangesScreenshotHeader build={build} />
-            </div>
-          ) : (
-            <ChangesScreenshotHeader build={build} />
-          )}
+            )}
+          </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <CompareScreenshot
@@ -1456,6 +1460,21 @@ const BuildScreenshots = memo(
     );
   },
 );
+
+/**
+ * The Baseline / Changes labels above a pane. At phone width the row floats
+ * over the snapshot instead of costing it a line of height, in a translucent
+ * pill so it stays readable over any capture.
+ */
+function PaneHeaderRow(props: { children: React.ReactNode }) {
+  return (
+    <div className="flex shrink-0 justify-center max-md:pointer-events-none max-md:absolute max-md:inset-x-0 max-md:top-1 max-md:z-10">
+      <div className="max-md:bg-app/85 flex items-center gap-6 max-md:pointer-events-auto max-md:rounded-full max-md:px-3 max-md:py-0.5 max-md:shadow-xs">
+        {props.children}
+      </div>
+    </div>
+  );
+}
 
 function Snapshot(props: SnapshotProps) {
   return (

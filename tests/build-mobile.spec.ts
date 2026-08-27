@@ -40,8 +40,10 @@ loggedTest.describe("mobile build review", () => {
         name: "Hold to show baseline",
       });
       await expect(holdButton).toBeEnabled();
+      // The desktop nav buttons carry no accessible name (tooltip only);
+      // locate them by their lucide icon, as the desktop specs do.
       await expect(
-        page.getByRole("button", { name: "Next snapshot" }),
+        page.locator("button:has(.lucide-arrow-down)"),
       ).toBeVisible();
       await screenshot(page, "build-mobile-diff");
 

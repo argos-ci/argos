@@ -5,10 +5,8 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeftRightIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ChevronUpIcon,
-  InfoIcon,
+  PanelBottomOpenIcon,
   XIcon,
 } from "lucide-react";
 
@@ -28,6 +26,10 @@ import {
   onionOpacityAtom,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
+import {
+  NextButton,
+  PreviousButton,
+} from "@/containers/Build/toolbar/NavButtons";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BottomSheet } from "@/ui/BottomSheet";
@@ -131,6 +133,7 @@ export function MobileBuildReview(props: {
       />
       <div className="bg-subtle relative flex min-h-0 min-w-0 flex-1 flex-col pb-20">
         <BuildDiffDetail build={build} diff={activeDiff} />
+        <DiffStatusPill diff={activeDiff} />
         {activeDiff ? (
           <MobileDock
             diff={activeDiff}
@@ -177,6 +180,29 @@ const diffGroupTextClassNames: Record<DiffGroupColor, string> = {
   neutral: "text-low",
 };
 
+/**
+ * Names the group of the snapshot in front of you (changed, added…), sharing
+ * the line the Baseline / Changes labels float on.
+ */
+function DiffStatusPill(props: { diff: Diff | null }) {
+  const { diff } = props;
+  // `pending` diffs never render a pane, and have no group to name.
+  if (!diff || diff.status === ScreenshotDiffStatus.Pending) {
+    return null;
+  }
+  const group = getDiffGroupDefinition(diff.status);
+  return (
+    <div
+      className={clsx(
+        "bg-app/85 shadow-xs pointer-events-none absolute top-3 left-3 z-10 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase",
+        diffGroupTextClassNames[group.color],
+      )}
+    >
+      {group.label}
+    </div>
+  );
+}
+
 function MobileHeader(props: {
   project: DocumentType<typeof _ProjectFragment>;
   onOpenSnapshots: () => void;
@@ -184,11 +210,6 @@ function MobileHeader(props: {
   const { activeDiff, diffs } = useBuildDiffState();
   const goToBuildOverview = useGoToBuildOverview();
   const activeIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
-  // `pending` diffs never render a pane, and have no group to name.
-  const group =
-    activeDiff && activeDiff.status !== ScreenshotDiffStatus.Pending
-      ? getDiffGroupDefinition(activeDiff.status)
-      : null;
   return (
     <div className="border-b-thin bg-app flex shrink-0 items-center gap-1 p-2">
       <Tooltip content="Build overview">
@@ -204,28 +225,16 @@ function MobileHeader(props: {
       <button
         type="button"
         aria-label="Open snapshots list"
-        className="hover:bg-hover flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-sm"
+        className="hover:bg-hover flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-sm"
         onClick={props.onOpenSnapshots}
       >
-        <span className="flex max-w-full min-w-0 items-center gap-1.5">
-          {activeIndex >= 0 && (
-            <span className="font-medium tabular-nums">
-              {activeIndex + 1}/{diffs.length}
-            </span>
-          )}
-          <span className="text-low truncate">{activeDiff?.name}</span>
-          <ChevronDownIcon className="text-low size-3.5 shrink-0" />
-        </span>
-        {group ? (
-          <span
-            className={clsx(
-              "text-[10px] font-semibold tracking-wider uppercase",
-              diffGroupTextClassNames[group.color],
-            )}
-          >
-            {group.label}
+        {activeIndex >= 0 && (
+          <span className="font-medium tabular-nums">
+            {activeIndex + 1}/{diffs.length}
           </span>
-        ) : null}
+        )}
+        <span className="text-low truncate">{activeDiff?.name}</span>
+        <ChevronDownIcon className="text-low size-3.5 shrink-0" />
       </button>
       <BuildReviewButton project={props.project} />
     </div>
@@ -269,12 +278,17 @@ function MobileDock(props: {
         {toolsOpen && hasTools ? (
           <div className="flex flex-col gap-1.5 pb-2">
             {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
-            <div className="flex items-center gap-1.5 overflow-x-auto px-1">
-              <ChangesOverlayControls settings={false} />
-              <Separator orientation="vertical" className="w-thin h-8" />
-              <BuildDiffDetailToolbar diff={diff} snapshotControls={false} />
-              <Separator orientation="vertical" className="w-thin h-8" />
-              <ScreenshotIgnoreButton diff={diff} />
+            <div className="relative">
+              <div className="flex items-center gap-1.5 overflow-x-auto px-1">
+                <ChangesOverlayControls settings={false} />
+                <Separator orientation="vertical" className="w-thin h-8" />
+                <BuildDiffDetailToolbar diff={diff} snapshotControls={false} />
+                <Separator orientation="vertical" className="w-thin h-8" />
+                <ScreenshotIgnoreButton diff={diff} />
+              </div>
+              {/* Says "there is more to the right" — the row scrolls, and a
+                  bare cut icon was not enough of a hint. */}
+              <div className="bg-app pointer-events-none absolute inset-y-0 right-0 w-10 [mask-image:linear-gradient(to_left,black,transparent)]" />
             </div>
           </div>
         ) : null}
@@ -287,7 +301,7 @@ function MobileDock(props: {
               aria-label="Build details"
               onClick={props.onOpenPanels}
             >
-              <InfoIcon />
+              <PanelBottomOpenIcon />
             </Button>
           </Tooltip>
           <MobileNavButtons />
@@ -334,29 +348,18 @@ function MobileNavButtons() {
   const hasNextDiff = useHasNextDiff();
   const goToPreviousDiff = useGoToPreviousDiff();
   const hasPreviousDiff = useHasPreviousDiff();
+  const goToBuildOverview = useGoToBuildOverview();
   return (
-    <>
-      <Button
-        variant="ghost"
-        iconOnly
-        size="large"
-        aria-label="Previous snapshot"
-        disabled={!hasPreviousDiff}
-        onClick={goToPreviousDiff}
-      >
-        <ChevronLeftIcon />
-      </Button>
-      <Button
-        variant="ghost"
-        iconOnly
-        size="large"
-        aria-label="Next snapshot"
-        disabled={!hasNextDiff}
-        onClick={goToNextDiff}
-      >
-        <ChevronRightIcon />
-      </Button>
-    </>
+    // The desktop buttons, at touch size.
+    <div className="flex gap-1 **:data-[size=medium]:size-12 [&_svg]:size-5!">
+      <PreviousButton
+        toOverview={!hasPreviousDiff}
+        onClick={() =>
+          hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
+        }
+      />
+      <NextButton onClick={goToNextDiff} disabled={!hasNextDiff} />
+    </div>
   );
 }
 
