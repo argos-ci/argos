@@ -1,7 +1,8 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { clsx } from "clsx";
 
+import { OverlayContentProvider } from "./Overlay";
 import { useEventCallback } from "./useEventCallback";
 
 const backdropClassName = clsx(
@@ -37,6 +38,16 @@ export function BottomSheet(props: {
   const { open, onOpenChange } = props;
   const popupRef = useRef<HTMLDivElement>(null);
   const drag = useSheetDrag({ popupRef, open, onOpenChange });
+  // The same overlay contract as `Modal` / `Popover`, so content written for
+  // a dialog (`useOverlayTriggerState().close()`) works unchanged in a sheet.
+  const overlayState = useMemo(
+    () => ({
+      isOpen: open,
+      close: () => onOpenChange(false),
+      setOpen: onOpenChange,
+    }),
+    [open, onOpenChange],
+  );
   return (
     <BaseDialog.Root open={open} onOpenChange={onOpenChange} modal>
       <BaseDialog.Portal>
@@ -71,7 +82,9 @@ export function BottomSheet(props: {
             >
               <span aria-hidden className="bg-hover h-1 w-10 rounded-full" />
             </button>
-            {props.children}
+            <OverlayContentProvider state={overlayState}>
+              {props.children}
+            </OverlayContentProvider>
           </BaseDialog.Popup>
         </BaseDialog.Viewport>
       </BaseDialog.Portal>

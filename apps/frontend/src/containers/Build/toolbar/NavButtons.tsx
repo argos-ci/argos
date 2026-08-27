@@ -2,7 +2,7 @@ import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { type HotkeyName } from "@/containers/Build/hotkeys";
-import { Button } from "@/ui/Button";
+import { Button, type ButtonVariant } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 export function NextButton(props: {
@@ -13,8 +13,14 @@ export function NextButton(props: {
    * how the `?` dialog words it, which depends on what is being navigated.
    */
   hotkeyName?: HotkeyName;
+  variant?: ButtonVariant;
 }) {
-  const { onClick, disabled, hotkeyName = "goToNextDiff" } = props;
+  const {
+    onClick,
+    disabled,
+    hotkeyName = "goToNextDiff",
+    variant = "ghost",
+  } = props;
   const hotkey = useBuildHotkey(hotkeyName, onClick, {
     preventDefault: true,
     enabled: !disabled,
@@ -22,7 +28,7 @@ export function NextButton(props: {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <Button variant="ghost" iconOnly disabled={disabled} onClick={onClick}>
+      <Button variant={variant} iconOnly disabled={disabled} onClick={onClick}>
         <ArrowDownIcon />
       </Button>
     </HotkeyTooltip>
@@ -40,12 +46,14 @@ export function PreviousButton(props: {
   toOverview?: boolean;
   /** See {@link NextButton}. */
   hotkeyName?: HotkeyName;
+  variant?: ButtonVariant;
 }) {
   const {
     onClick,
     disabled = false,
     toOverview = false,
     hotkeyName = "goToPreviousDiff",
+    variant = "ghost",
   } = props;
   const hotkey = useBuildHotkey(hotkeyName, onClick, {
     preventDefault: true,
@@ -57,7 +65,7 @@ export function PreviousButton(props: {
       description={toOverview ? "Go to overview" : hotkey.description}
       keys={hotkey.displayKeys}
     >
-      <Button variant="ghost" iconOnly disabled={disabled} onClick={onClick}>
+      <Button variant={variant} iconOnly disabled={disabled} onClick={onClick}>
         <ArrowUpIcon />
       </Button>
     </HotkeyTooltip>

@@ -13,6 +13,7 @@ import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import {
   BuildDiffDetailToolbar,
   checkDiffHasChangesOverlay,
+  useDiffCommentControlsState,
 } from "@/containers/Build/BuildDiffDetailToolbar";
 import {
   buildViewModeAtom,
@@ -21,6 +22,8 @@ import {
   onionOpacityAtom,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
+import { CommentsVisibilityToggle } from "@/containers/Build/toolbar/CommentsVisibilityToggle";
+import { CommentToolToggle } from "@/containers/Build/toolbar/CommentToolToggle";
 import {
   NextButton,
   PreviousButton,
@@ -220,41 +223,50 @@ function MobileDock(props: {
     buildType !== BuildType.Reference &&
     checkDiffCanBeReviewed(diff.status, { isSubsetBuild });
   const canBlend = checkDiffCanBeBlended(diff);
-  const hasTools = checkDiffHasChangesOverlay(diff) || canBlend;
+  const showOverlayControls = checkDiffHasChangesOverlay(diff);
+  const { showCommentTool, showComments } = useDiffCommentControlsState(diff);
   return (
     <div className="pointer-events-none absolute inset-x-2 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex justify-center">
       <div className="bg-app border-thin pointer-events-auto flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
-        {hasTools ? (
-          <button
-            type="button"
-            // The full row stays tappable; the pill look keeps "Tools" from
-            // reading as a caption for the buttons below it.
-            className="flex h-9 items-center justify-center py-1"
-            aria-expanded={toolsOpen}
-            onClick={() => setToolsOpen((open) => !open)}
-          >
-            <span className="bg-subtle border-thin text-low flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
-              {toolsOpen ? (
-                <ChevronDownIcon className="size-3.5" />
-              ) : (
-                <ChevronUpIcon className="size-3.5" />
-              )}
-              Tools
-            </span>
-          </button>
-        ) : (
-          <div className="h-2" />
-        )}
-        {toolsOpen && hasTools ? (
+        <button
+          type="button"
+          // The full row stays tappable; the pill look keeps "Tools" from
+          // reading as a caption for the buttons below it.
+          className="flex h-9 items-center justify-center py-1"
+          aria-expanded={toolsOpen}
+          onClick={() => setToolsOpen((open) => !open)}
+        >
+          <span className="bg-subtle border-thin text-low flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
+            {toolsOpen ? (
+              <ChevronDownIcon className="size-3.5" />
+            ) : (
+              <ChevronUpIcon className="size-3.5" />
+            )}
+            Tools
+          </span>
+        </button>
+        {toolsOpen ? (
           <div className="flex flex-col gap-1.5 pb-2">
             {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
             <div className="relative">
+              {/* Commenting and ignoring rank above the view modes: they are
+                  review decisions, the rest is display preference. */}
               <div className="flex items-center gap-1.5 overflow-x-auto px-1">
-                <ChangesOverlayControls settings={false} />
-                <Separator orientation="vertical" className="w-thin h-8" />
-                <BuildDiffDetailToolbar diff={diff} snapshotControls={false} />
-                <Separator orientation="vertical" className="w-thin h-8" />
+                {showCommentTool ? <CommentToolToggle /> : null}
+                {showComments ? <CommentsVisibilityToggle /> : null}
                 <ScreenshotIgnoreButton diff={diff} />
+                <Separator orientation="vertical" className="w-thin h-8" />
+                {showOverlayControls ? (
+                  <>
+                    <ChangesOverlayControls settings={false} />
+                    <Separator orientation="vertical" className="w-thin h-8" />
+                  </>
+                ) : null}
+                <BuildDiffDetailToolbar
+                  diff={diff}
+                  snapshotControls={false}
+                  commentControls={false}
+                />
               </div>
               {/* Says "there is more to the right" — the row scrolls, and a
                   bare cut icon was not enough of a hint. */}
@@ -265,7 +277,7 @@ function MobileDock(props: {
         <div className="flex items-center justify-between gap-1 px-1">
           <Tooltip content="Info, snapshot and review panels">
             <Button
-              variant="ghost"
+              variant="secondary"
               iconOnly
               size="large"
               aria-label="Build details"
@@ -323,12 +335,17 @@ function MobileNavButtons() {
     // The desktop buttons, at touch size.
     <div className="flex gap-1 **:data-[size=medium]:size-12 [&_svg]:size-5!">
       <PreviousButton
+        variant="secondary"
         toOverview={!hasPreviousDiff}
         onClick={() =>
           hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
         }
       />
-      <NextButton onClick={goToNextDiff} disabled={!hasNextDiff} />
+      <NextButton
+        variant="secondary"
+        onClick={goToNextDiff}
+        disabled={!hasNextDiff}
+      />
     </div>
   );
 }
@@ -394,13 +411,10 @@ function PanelsSheetContent(props: {
       }}
       className="flex min-h-0 flex-1 flex-col px-3"
     >
-      {/* The header truncates the snapshot name and dropped the status chip:
-          this line is where both live in full. */}
-      <div className="flex shrink-0 items-start justify-between gap-3 pt-3">
-        <div className="min-w-0 text-sm font-medium break-words">
-          {diff.name}
-        </div>
-        <BuildStatusChip build={build} scale="sm" />
+      {/* The header truncates the snapshot name: this is where it lives in
+          full. */}
+      <div className="shrink-0 pt-3 text-sm font-medium break-words">
+        {diff.name}
       </div>
       {/* The desktop pills are mouse-sized; here each tab takes a third of
           the row at touch height. */}
@@ -425,6 +439,12 @@ function PanelsSheetContent(props: {
         value="info"
         className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-3"
       >
+        {/* The slim header dropped the build status chip; a labeled row keeps
+            it apart from the snapshot's own status on the pane line. */}
+        <div className="text-low mb-1 text-xs font-[450]">Status</div>
+        <div className="mb-6">
+          <BuildStatusChip build={build} scale="sm" />
+        </div>
         <BuildInfos build={build} repoUrl={repoUrl} params={params} />
       </TabPanel>
       <TabPanel

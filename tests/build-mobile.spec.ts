@@ -115,6 +115,18 @@ loggedTest.describe("mobile build review", () => {
       expect(halfBox.y).toBeGreaterThan(fullBox.y + 150);
       await dragHandleDown(300);
       await expect(panelsSheet).toBeHidden();
+
+      // The review form is a bottom sheet on mobile, not the header popover.
+      await page.getByRole("button", { name: "Submit review" }).click();
+      const reviewSheet = page.getByRole("dialog", { name: "Submit review" });
+      await expect(reviewSheet).toBeVisible();
+      // The summary field is a TipTap editor: the placeholder is a rendered
+      // paragraph, not a `placeholder` attribute.
+      await expect(reviewSheet.getByText("Add review summary…")).toBeVisible();
+      await screenshot(page, "build-mobile-review-sheet");
+      // Two Close buttons coexist here: the sheet handle and the form's own.
+      await reviewSheet.locator("[data-sheet-handle]").click();
+      await expect(reviewSheet).toBeHidden();
     },
   );
 });
