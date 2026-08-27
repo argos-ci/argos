@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { invariant } from "@argos/util/invariant";
-import { clsx } from "clsx";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeftRightIcon,
@@ -16,10 +15,6 @@ import {
   checkDiffHasChangesOverlay,
 } from "@/containers/Build/BuildDiffDetailToolbar";
 import {
-  getDiffGroupDefinition,
-  type DiffGroupColor,
-} from "@/containers/Build/BuildDiffGroup";
-import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
   holdBaselineAtom,
@@ -31,7 +26,7 @@ import {
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
 import { DocumentType, graphql } from "@/gql";
-import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
+import { BuildType } from "@/gql/graphql";
 import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
 import { Separator } from "@/ui/Separator";
@@ -133,7 +128,6 @@ export function MobileBuildReview(props: {
       />
       <div className="bg-subtle relative flex min-h-0 min-w-0 flex-1 flex-col pb-20">
         <BuildDiffDetail build={build} diff={activeDiff} />
-        <DiffStatusPill diff={activeDiff} />
         {activeDiff ? (
           <MobileDock
             diff={activeDiff}
@@ -170,36 +164,6 @@ export function MobileBuildReview(props: {
         ) : null}
       </BottomSheet>
     </>
-  );
-}
-
-const diffGroupTextClassNames: Record<DiffGroupColor, string> = {
-  danger: "text-danger-low",
-  warning: "text-warning-low",
-  success: "text-success-low",
-  neutral: "text-low",
-};
-
-/**
- * Names the group of the snapshot in front of you (changed, added…), sharing
- * the line the Baseline / Changes labels float on.
- */
-function DiffStatusPill(props: { diff: Diff | null }) {
-  const { diff } = props;
-  // `pending` diffs never render a pane, and have no group to name.
-  if (!diff || diff.status === ScreenshotDiffStatus.Pending) {
-    return null;
-  }
-  const group = getDiffGroupDefinition(diff.status);
-  return (
-    <div
-      className={clsx(
-        "bg-app/85 shadow-xs pointer-events-none absolute top-3 left-3 z-10 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase",
-        diffGroupTextClassNames[group.color],
-      )}
-    >
-      {group.label}
-    </div>
   );
 }
 

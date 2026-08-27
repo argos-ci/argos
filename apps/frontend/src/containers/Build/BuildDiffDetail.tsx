@@ -52,7 +52,7 @@ import { useTextContent } from "@/util/text";
 
 import { OnionOpacityControl, SwipeDivider } from "./BlendControls";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
-import { getDiffGroupDefinition } from "./BuildDiffGroup";
+import { getDiffGroupDefinition, type DiffGroupColor } from "./BuildDiffGroup";
 import {
   NoScreenshotsBuildEmptyState,
   SkippedBuildEmptyState,
@@ -1426,7 +1426,9 @@ const BuildScreenshots = memo(
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
         <div className={columnClassName} hidden={!showBaseline}>
-          <PaneHeaderRow>
+          <PaneHeaderRow
+            status={showChanges ? null : <PaneDiffGroupLabel diff={diff} />}
+          >
             <BaselineScreenshotHeader build={build} />
           </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
@@ -1436,7 +1438,7 @@ const BuildScreenshots = memo(
           </div>
         </div>
         <div className={columnClassName} hidden={!showChanges}>
-          <PaneHeaderRow>
+          <PaneHeaderRow status={<PaneDiffGroupLabel diff={diff} />}>
             {blendMode ? (
               <>
                 <BaselineScreenshotHeader build={build} />
@@ -1462,16 +1464,44 @@ const BuildScreenshots = memo(
 );
 
 /**
- * The Baseline / Changes labels above a pane. At phone width the row floats
- * over the snapshot instead of costing it a line of height, in a translucent
- * pill so it stays readable over any capture.
+ * The Baseline / Changes labels above a pane. `status` shares the line at
+ * phone width, where the list and its badges are behind a sheet — the pane
+ * itself has to say what kind of change is on screen.
  */
-function PaneHeaderRow(props: { children: React.ReactNode }) {
+function PaneHeaderRow(props: {
+  children: React.ReactNode;
+  status?: React.ReactNode;
+}) {
   return (
-    <div className="flex shrink-0 justify-center max-md:pointer-events-none max-md:absolute max-md:inset-x-0 max-md:top-1 max-md:z-10">
-      <div className="max-md:bg-app/85 flex items-center gap-6 max-md:pointer-events-auto max-md:rounded-full max-md:px-3 max-md:py-0.5 max-md:shadow-xs">
-        {props.children}
-      </div>
+    <div className="relative flex shrink-0 items-center justify-center">
+      {props.status}
+      <div className="flex items-center gap-6">{props.children}</div>
+    </div>
+  );
+}
+
+const diffGroupTextClassNames: Record<DiffGroupColor, string> = {
+  danger: "text-danger-low",
+  warning: "text-warning-low",
+  success: "text-success-low",
+  neutral: "text-low",
+};
+
+function PaneDiffGroupLabel(props: { diff: BuildDiffDetailDocument }) {
+  const { diff } = props;
+  // `pending` diffs never render a pane, and have no group to name.
+  if (diff.status === ScreenshotDiffStatus.Pending) {
+    return null;
+  }
+  const group = getDiffGroupDefinition(diff.status);
+  return (
+    <div
+      className={clsx(
+        "absolute inset-y-0 left-0 hidden items-center text-[10px] font-semibold tracking-wider uppercase select-none max-md:flex",
+        diffGroupTextClassNames[group.color],
+      )}
+    >
+      {group.label}
     </div>
   );
 }
