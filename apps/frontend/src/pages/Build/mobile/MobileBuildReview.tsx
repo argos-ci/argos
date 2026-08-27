@@ -424,10 +424,24 @@ function PanelsSheetContent(props: {
       }}
       className="flex min-h-0 flex-1 flex-col px-3"
     >
-      <TabList aria-label="Build details" className="flex shrink-0 gap-2 py-1">
-        <PillTab value="info">Info</PillTab>
-        <PillTab value="snapshot">Snapshot</PillTab>
-        <PillTab value="review">Review</PillTab>
+      {/* The desktop pills are mouse-sized; here each tab takes a third of
+          the row at touch height. */}
+      <TabList aria-label="Build details" className="flex shrink-0 gap-2 py-2">
+        <PillTab value="info" className="flex-1 justify-center py-2! text-sm!">
+          Info
+        </PillTab>
+        <PillTab
+          value="snapshot"
+          className="flex-1 justify-center py-2! text-sm!"
+        >
+          Snapshot
+        </PillTab>
+        <PillTab
+          value="review"
+          className="flex-1 justify-center py-2! text-sm!"
+        >
+          Review
+        </PillTab>
       </TabList>
       <TabPanel
         value="info"
