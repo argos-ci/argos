@@ -5,6 +5,7 @@ import { BuildType } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { ShortcutHint } from "@/ui/ShortcutHint";
+import { useIsMobile } from "@/ui/useIsMobile";
 
 import {
   getReviewableCount,
@@ -40,6 +41,7 @@ type Build = DocumentType<typeof _BuildFragment>;
 function BrowseSnapshotSection(props: { build: Build }) {
   const { build } = props;
   const { stats } = useBuildDiffState();
+  const isMobile = useIsMobile();
   const hasFailures = Boolean(stats?.failure);
   const canReview = useCanReviewBuild(build);
   // Offer to start a review only when the viewer can review the build, hasn't
@@ -63,7 +65,9 @@ function BrowseSnapshotSection(props: { build: Build }) {
           control, and it is the same hint the row beside it already gives. */}
       <HotkeyTooltip description={label} keys={["↵"]}>
         <Button
-          autoFocus
+          // Desktop only: the autofocus is what lets Enter start the review,
+          // and on a phone it just pops the shortcut tooltip over the page.
+          autoFocus={!isMobile}
           variant={canStartReview ? "primary" : "secondary"}
           onClick={browse}
         >
