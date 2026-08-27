@@ -343,7 +343,9 @@ function CardStack(props: {
   return (
     <div
       className={clsx(
-        "absolute right-2 -z-10 block w-[262px] rounded-lg border",
+        // The card's own bounds (the row's px-4) nudged 8px right: the deck
+        // peeking out behind, whatever width the list renders at.
+        "absolute right-2 left-6 -z-10 block rounded-lg border",
         isFirst ? "top-6" : "top-4",
         isLast ? "bottom-2" : "bottom-0",
         status === EvaluationStatus.Accepted && "bg-success-hover",
