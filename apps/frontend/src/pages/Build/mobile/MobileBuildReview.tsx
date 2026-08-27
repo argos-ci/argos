@@ -25,6 +25,7 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
+import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
 import { BottomSheet } from "@/ui/BottomSheet";
@@ -63,6 +64,7 @@ const _BuildFragment = graphql(`
     ...BuildDiffDetail_Build
     ...BuildInfos_Build
     ...RightSidebar_Build
+    ...BuildStatusChip_Build
     type
     subset
     baseBranch
@@ -225,16 +227,20 @@ function MobileDock(props: {
         {hasTools ? (
           <button
             type="button"
-            className="text-low flex h-7 items-center justify-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase"
+            // The full row stays tappable; the pill look keeps "Tools" from
+            // reading as a caption for the buttons below it.
+            className="flex h-9 items-center justify-center py-1"
             aria-expanded={toolsOpen}
             onClick={() => setToolsOpen((open) => !open)}
           >
-            {toolsOpen ? (
-              <ChevronDownIcon className="size-3.5" />
-            ) : (
-              <ChevronUpIcon className="size-3.5" />
-            )}
-            Tools
+            <span className="bg-subtle border-thin text-low flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
+              {toolsOpen ? (
+                <ChevronDownIcon className="size-3.5" />
+              ) : (
+                <ChevronUpIcon className="size-3.5" />
+              )}
+              Tools
+            </span>
           </button>
         ) : (
           <div className="h-2" />
@@ -344,7 +350,7 @@ function HoldBaselineButton(props: { disabled: boolean }) {
         variant="primary"
         iconOnly
         size="large"
-        className="size-14 touch-none select-none"
+        className="size-12 touch-none select-none"
         aria-label="Hold to show baseline"
         disabled={props.disabled}
         onPointerDown={(event) => {
@@ -388,6 +394,14 @@ function PanelsSheetContent(props: {
       }}
       className="flex min-h-0 flex-1 flex-col px-3"
     >
+      {/* The header truncates the snapshot name and dropped the status chip:
+          this line is where both live in full. */}
+      <div className="flex shrink-0 items-start justify-between gap-3 pt-3">
+        <div className="min-w-0 text-sm font-medium break-words">
+          {diff.name}
+        </div>
+        <BuildStatusChip build={build} scale="sm" />
+      </div>
       {/* The desktop pills are mouse-sized; here each tab takes a third of
           the row at touch height. */}
       <TabList aria-label="Build details" className="flex shrink-0 gap-2 py-2">

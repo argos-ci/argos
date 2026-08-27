@@ -144,7 +144,12 @@ export function BuildReviewForm(props: {
     <Form
       form={form}
       onSubmit={() => submitReview(defaultEvent)}
-      className={clsx("flex flex-col", size === "large" ? "w-lg" : "w-md")}
+      className={clsx(
+        // `max-w-full` lets the popover clamp the form on phone-sized
+        // viewports, where the fixed width overflows the screen.
+        "flex max-w-full flex-col",
+        size === "large" ? "w-lg" : "w-md",
+      )}
       onKeyDown={(event) => {
         if (event.key === "Escape" && !isSubmitting) {
           state.close();

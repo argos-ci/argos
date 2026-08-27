@@ -40,10 +40,12 @@ import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { BranchLink, CommitLink } from "@/pages/Build/GitLink";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { Chip } from "@/ui/Chip";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { MenuItem, MenuSeparator } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
+import { useIsMobile } from "@/ui/useIsMobile";
 import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
@@ -52,7 +54,7 @@ import { useTextContent } from "@/util/text";
 
 import { OnionOpacityControl, SwipeDivider } from "./BlendControls";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
-import { getDiffGroupDefinition, type DiffGroupColor } from "./BuildDiffGroup";
+import { getDiffGroupDefinition } from "./BuildDiffGroup";
 import {
   NoScreenshotsBuildEmptyState,
   SkippedBuildEmptyState,
@@ -1181,13 +1183,7 @@ function CompareScreenshotChanged(props: {
             />
           </div>
         )}
-        {/* Floats over the bottom of the pane — right under the mobile dock,
-            which hosts its own copy of the control below `md`. */}
-        {blendMode === "onion" && (
-          <div className="contents max-md:hidden">
-            <BuildOnionOpacityControl />
-          </div>
-        )}
+        {blendMode === "onion" && <FloatingOnionControl />}
       </div>
       {dimensions && paneSize && (
         <DiffIndicator url={jpgUrl} imgSize={dimensions} />
@@ -1480,30 +1476,30 @@ function PaneHeaderRow(props: {
   );
 }
 
-const diffGroupTextClassNames: Record<DiffGroupColor, string> = {
-  danger: "text-danger-low",
-  warning: "text-warning-low",
-  success: "text-success-low",
-  neutral: "text-low",
-};
-
 function PaneDiffGroupLabel(props: { diff: BuildDiffDetailDocument }) {
   const { diff } = props;
+  const isMobile = useIsMobile();
   // `pending` diffs never render a pane, and have no group to name.
-  if (diff.status === ScreenshotDiffStatus.Pending) {
+  if (!isMobile || diff.status === ScreenshotDiffStatus.Pending) {
     return null;
   }
   const group = getDiffGroupDefinition(diff.status);
   return (
-    <div
-      className={clsx(
-        "absolute inset-y-0 left-0 hidden items-center text-[10px] font-semibold tracking-wider uppercase select-none max-md:flex",
-        diffGroupTextClassNames[group.color],
-      )}
-    >
-      {group.label}
+    <div className="absolute inset-y-0 left-0 flex items-center">
+      <Chip icon={group.icon} color={group.color} scale="xs">
+        {group.label}
+      </Chip>
     </div>
   );
+}
+
+/**
+ * The floating onion-skin control skips the mobile workspace: the dock sits
+ * exactly where it floats and hosts its own copy.
+ */
+function FloatingOnionControl() {
+  const isMobile = useIsMobile();
+  return isMobile ? null : <BuildOnionOpacityControl />;
 }
 
 function Snapshot(props: SnapshotProps) {
