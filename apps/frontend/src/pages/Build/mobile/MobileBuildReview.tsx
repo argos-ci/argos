@@ -37,6 +37,7 @@ import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Separator } from "@/ui/Separator";
+import { SideSheet } from "@/ui/SideSheet";
 import { Slider } from "@/ui/Slider";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";
 import { Tooltip } from "@/ui/Tooltip";
@@ -144,17 +145,17 @@ export function MobileBuildReview(props: {
           />
         ) : null}
       </div>
-      <BottomSheet
+      {/* From the left, like the desktop sidebar it stands in for. */}
+      <SideSheet
         open={sheet === "snapshots"}
         onOpenChange={(open) => setSheet(open ? "snapshots" : null)}
         aria-label="Snapshots"
-        className="h-[85dvh]"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <FilterChips />
           <BuildDiffList />
         </div>
-      </BottomSheet>
+      </SideSheet>
       <BottomSheet
         open={sheet === "panels"}
         onOpenChange={(open) => setSheet(open ? "panels" : null)}
@@ -426,14 +427,14 @@ function PanelsSheetContent(props: {
       {/* The desktop pills are mouse-sized; here each tab takes a third of
           the row at touch height. */}
       <TabList aria-label="Build details" className="flex shrink-0 gap-2 py-2">
-        <PillTab value="build" className="flex-1 justify-center py-2! text-sm!">
-          Build
-        </PillTab>
         <PillTab
           value="snapshot"
           className="flex-1 justify-center py-2! text-sm!"
         >
           Snapshot
+        </PillTab>
+        <PillTab value="build" className="flex-1 justify-center py-2! text-sm!">
+          Build
         </PillTab>
         <PillTab
           value="activity"
