@@ -5,16 +5,11 @@ import {
   ArrowLeftRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ImagesIcon,
   PanelBottomOpenIcon,
-  XIcon,
+  PanelLeftOpenIcon,
 } from "lucide-react";
 
-import {
-  BaselineScreenshotHeader,
-  BuildDiffDetail,
-  ChangesScreenshotHeader,
-} from "@/containers/Build/BuildDiffDetail";
+import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import {
   BuildDiffDetailToolbar,
   checkDiffHasChangesOverlay,
@@ -24,10 +19,8 @@ import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
-  checkIsBlendViewMode,
   holdBaselineAtom,
   onionOpacityAtom,
-  useEffectiveBuildViewMode,
 } from "@/containers/Build/BuildViewMode";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { CommentsVisibilityToggle } from "@/containers/Build/toolbar/CommentsVisibilityToggle";
@@ -73,6 +66,7 @@ import { TestActivitySection } from "../sidebar/TestActivitySection";
 import { TestChangeSection } from "../sidebar/TestChangeSection";
 import { TestInsightsSection } from "../sidebar/TestInsightsSection";
 import { TrackButtons } from "../TrackButtons";
+import { MobileBuildIdentity } from "./MobileBuildHeader";
 
 const _BuildFragment = graphql(`
   fragment MobileBuildReview_Build on Build {
@@ -140,9 +134,8 @@ export function MobileBuildReview(props: {
   return (
     <>
       <div className="border-b-thin bg-app shrink-0">
-        <MobileHeader build={build} project={project} />
+        <MobileHeader build={build} project={project} params={params} />
         <SnapshotContextBar
-          build={build}
           onOpenSnapshots={() => setSheet("snapshots")}
           onOpenPanels={() => setSheet("panels")}
         />
@@ -191,57 +184,28 @@ export function MobileBuildReview(props: {
 function MobileHeader(props: {
   build: DocumentType<typeof _BuildFragment>;
   project: DocumentType<typeof _ProjectFragment>;
+  params: BuildParams;
 }) {
-  const goToBuildOverview = useGoToBuildOverview();
   return (
-    <div className="flex items-center gap-1 p-2 pb-1">
-      <div className="flex flex-1 justify-start">
-        <Tooltip content="Build overview">
-          <Button
-            variant="ghost"
-            iconOnly
-            aria-label="Build overview"
-            onClick={goToBuildOverview}
-          >
-            <XIcon />
-          </Button>
-        </Tooltip>
-      </div>
+    <div className="flex items-center gap-2 p-2 pb-1">
+      <MobileBuildIdentity params={props.params} />
       <BuildStatusChip build={props.build} scale="sm" />
-      <div className="flex flex-1 justify-end">
-        <BuildReviewButton project={props.project} />
-      </div>
+      <div className="min-w-0 flex-1" />
+      <BuildReviewButton project={props.project} />
     </div>
   );
 }
 
 /**
- * The line under the header naming what is on screen: the list opener, the
- * snapshot's name (tap for its details), and which side of the comparison
- * the pane shows — hoisted from the pane so the image keeps its height, and
- * live feedback while holding the baseline button.
+ * The line under the header naming what is on screen: the list opener and
+ * the snapshot's name — up to two lines before it gives up, tap for its
+ * details.
  */
 function SnapshotContextBar(props: {
-  build: DocumentType<typeof _BuildFragment>;
   onOpenSnapshots: () => void;
   onOpenPanels: () => void;
 }) {
   const { activeDiff } = useBuildDiffState();
-  const viewMode = useEffectiveBuildViewMode();
-  const canBlend = activeDiff ? checkDiffCanBeBlended(activeDiff) : false;
-  // Mirrors the panes: a blend view that cannot blend falls back to split,
-  // and blend views compare both sides.
-  const blendMode = checkIsBlendViewMode(viewMode) && canBlend;
-  const effectiveViewMode =
-    checkIsBlendViewMode(viewMode) && !canBlend ? "split" : viewMode;
-  const showBaseline =
-    blendMode ||
-    effectiveViewMode === "split" ||
-    effectiveViewMode === "baseline";
-  const showChanges =
-    blendMode ||
-    effectiveViewMode === "split" ||
-    effectiveViewMode === "changes";
   return (
     <div className="flex items-center gap-1 px-2 pb-1.5">
       <Tooltip content="Snapshots list">
@@ -251,21 +215,19 @@ function SnapshotContextBar(props: {
           aria-label="Snapshots list"
           onClick={props.onOpenSnapshots}
         >
-          <ImagesIcon />
+          <PanelLeftOpenIcon />
         </Button>
       </Tooltip>
       <button
         type="button"
         aria-label="Snapshot details"
-        className="hover:bg-hover flex min-w-0 flex-1 items-center rounded-lg px-2 py-1.5 text-sm"
+        className="hover:bg-hover flex min-w-0 flex-1 items-center rounded-lg px-2 py-1 text-sm"
         onClick={props.onOpenPanels}
       >
-        <span className="text-default truncate">{activeDiff?.name}</span>
+        <span className="text-default line-clamp-2 text-left break-all">
+          {activeDiff?.name}
+        </span>
       </button>
-      <div className="flex shrink-0 items-center gap-4 pr-1">
-        {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
-        {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
-      </div>
     </div>
   );
 }
@@ -288,7 +250,7 @@ function MobileDock(props: {
   return (
     // In the layout flow, not floating: opening the tools row grows the dock
     // and shrinks the snapshot instead of covering it.
-    <div className="flex shrink-0 justify-center px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="flex shrink-0 justify-center px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
         <button
           type="button"
@@ -308,12 +270,14 @@ function MobileDock(props: {
           </span>
         </button>
         {toolsOpen ? (
-          <div className="flex flex-col gap-1.5 pb-2">
+          <div className="flex flex-col gap-1.5 pb-1">
             {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
             <div className="relative">
               {/* The diff-reading controls lead — the layer and its zones are
                   what you work the snapshot with; the rest follows. */}
-              <div className="flex items-center gap-1.5 overflow-x-auto px-1">
+              {/* `pb-2` inside the scroller: a visible horizontal scrollbar
+                  gets its own lane instead of covering the buttons. */}
+              <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
                 {showOverlayControls ? (
                   <>
                     <ChangesOverlayControls settings={false} />

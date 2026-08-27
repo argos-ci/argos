@@ -26,6 +26,20 @@ export function MobileBuildHeader(props: {
   const { build, params } = props;
   return (
     <div className="border-b-thin flex shrink-0 items-center gap-2 p-2">
+      <MobileBuildIdentity params={params} />
+      {build ? <BuildStatusChip build={build} scale="sm" /> : null}
+      <div className="min-w-0 flex-1" />
+      <NavUserControl />
+    </div>
+  );
+}
+
+/** Logo, build number and the way back to the builds list — the header
+ * identity shared by the overview and the diff view. */
+export function MobileBuildIdentity(props: { params: BuildParams }) {
+  const { params } = props;
+  return (
+    <>
       <Tooltip content="See all builds">
         <Link
           to={`/${params.accountSlug}/${params.projectName}/builds`}
@@ -41,9 +55,6 @@ export function MobileBuildHeader(props: {
           {params.accountSlug}/{params.projectName}
         </div>
       </div>
-      {build ? <BuildStatusChip build={build} scale="sm" /> : null}
-      <div className="min-w-0 flex-1" />
-      <NavUserControl />
-    </div>
+    </>
   );
 }

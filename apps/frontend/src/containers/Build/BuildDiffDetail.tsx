@@ -428,7 +428,7 @@ function ScreenshotHeaderDetail(props: {
   );
 }
 
-export const BaselineScreenshotHeader = memo(
+const BaselineScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => {
     const { build } = props;
     if (!build.baseScreenshotBucket) {
@@ -491,7 +491,7 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   );
 }
 
-export const ChangesScreenshotHeader = memo(
+const ChangesScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => (
     <BuildScreenshotHeader
       label="Changes"
@@ -1457,13 +1457,20 @@ const BuildScreenshots = memo(
 );
 
 /**
- * The Baseline / Changes labels above a pane. The mobile workspace hoists
- * them into its context bar instead, and the pane keeps the full height.
+ * The Baseline / Changes labels above a pane. At phone width they float over
+ * the snapshot's top-right corner in a translucent pill — the pane keeps the
+ * full height, and the label still flips while holding the baseline button.
  */
 function PaneHeaderRow(props: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   if (isMobile) {
-    return null;
+    return (
+      <div className="pointer-events-none absolute top-1 right-2 z-10 flex justify-end">
+        <div className="bg-app/85 pointer-events-auto flex items-center gap-4 rounded-full px-3 py-0.5 shadow-xs">
+          {props.children}
+        </div>
+      </div>
+    );
   }
   return (
     <div className="flex shrink-0 items-center justify-center">
