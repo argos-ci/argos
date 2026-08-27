@@ -3,10 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeftRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   ImagesIcon,
-  PanelBottomOpenIcon,
+  InfoIcon,
   SearchIcon,
   XIcon,
 } from "lucide-react";
@@ -149,9 +147,9 @@ export function MobileBuildReview(props: {
           onOpenSnapshots={() => setSheet("snapshots")}
           onOpenPanels={() => setSheet("panels")}
         />
-        <PaneLabelLine build={build} />
       </div>
       <div className="bg-subtle flex min-h-0 min-w-0 flex-1 flex-col">
+        <PaneLabelLine build={build} />
         <BuildDiffDetail build={build} diff={activeDiff} />
         {activeDiff ? (
           <MobileDock
@@ -195,7 +193,9 @@ function MobileHeader(props: {
   params: BuildParams;
 }) {
   return (
-    <div className="flex items-center gap-2 p-2 pb-1">
+    // Symmetric padding on purpose: an odd row height lands the status
+    // chip's hairline on a half-pixel, and iOS drops its bottom edge.
+    <div className="border-b-thin flex items-center gap-2 p-2">
       <MobileBuildIdentity params={props.params} />
       <BuildStatusChip build={props.build} scale="sm" />
       <div className="min-w-0 flex-1" />
@@ -217,10 +217,10 @@ function SnapshotContextBar(props: {
 }) {
   const { activeDiff } = useBuildDiffState();
   return (
-    <div className="flex items-center gap-1 px-2 pb-1.5">
+    <div className="flex items-center gap-1 px-2 py-1.5">
       <Tooltip content="Snapshots list">
         <Button
-          variant="ghost"
+          variant="secondary"
           iconOnly
           aria-label="Snapshots list"
           onClick={props.onOpenSnapshots}
@@ -308,7 +308,8 @@ function PaneLabelLine(props: { build: DocumentType<typeof _BuildFragment> }) {
   const showChanges =
     blend || effectiveViewMode === "split" || effectiveViewMode === "changes";
   return (
-    <div className="flex items-center justify-center gap-6 pb-1.5">
+    // In the snapshot's gray zone, where desktop keeps these labels.
+    <div className="flex shrink-0 items-center justify-center gap-6 pt-2">
       {showBaseline ? <BaselineScreenshotHeader build={props.build} /> : null}
       {showChanges ? <ChangesScreenshotHeader build={props.build} /> : null}
     </div>
@@ -322,7 +323,6 @@ function MobileDock(props: {
   onOpenPanels: () => void;
 }) {
   const { diff, buildType, isSubsetBuild } = props;
-  const [toolsOpen, setToolsOpen] = useState(false);
   const viewMode = useAtomValue(buildViewModeAtom);
   const canBeReviewed =
     buildType !== BuildType.Reference &&
@@ -334,57 +334,38 @@ function MobileDock(props: {
     // In the layout flow, not floating: opening the tools row grows the dock
     // and shrinks the snapshot instead of covering it.
     <div className="flex shrink-0 justify-center px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pb-1.5 shadow-lg">
-        <button
-          type="button"
-          // The full row stays tappable; the pill look keeps "Tools" from
-          // reading as a caption for the buttons below it.
-          className="flex h-9 items-center justify-center py-1"
-          aria-expanded={toolsOpen}
-          onClick={() => setToolsOpen((open) => !open)}
-        >
-          <span className="bg-subtle border-thin text-low flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
-            {toolsOpen ? (
-              <ChevronDownIcon className="size-3.5" />
-            ) : (
-              <ChevronUpIcon className="size-3.5" />
-            )}
-            Tools
-          </span>
-        </button>
-        {toolsOpen ? (
-          <div className="flex flex-col gap-1.5 pb-1">
-            {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
-            <div className="relative">
-              {/* The diff-reading controls lead — the layer and its zones are
+      <div className="bg-app border-thin flex w-full max-w-md flex-col rounded-3xl px-2 pt-2 pb-1.5 shadow-lg">
+        <div className="flex flex-col gap-1.5">
+          {viewMode === "onion" && canBlend ? <DockOnionSlider /> : null}
+          <div className="relative">
+            {/* The diff-reading controls lead — the layer and its zones are
                   what you work the snapshot with; the rest follows. */}
-              {/* `pb-2` inside the scroller: a visible horizontal scrollbar
+            {/* `pb-2` inside the scroller: a visible horizontal scrollbar
                   gets its own lane instead of covering the buttons. */}
-              <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
-                {showOverlayControls ? (
-                  <>
-                    <ChangesOverlayControls settings={false} />
-                    <Separator orientation="vertical" className="w-thin h-8" />
-                  </>
-                ) : null}
-                {showCommentTool ? <CommentToolToggle /> : null}
-                {showComments ? <CommentsVisibilityToggle /> : null}
-                <ScreenshotIgnoreButton diff={diff} />
-                <Separator orientation="vertical" className="w-thin h-8" />
-                <FitToggle />
-                <BuildDiffDetailToolbar
-                  diff={diff}
-                  snapshotControls={false}
-                  commentControls={false}
-                  fitToggle={false}
-                />
-              </div>
-              {/* Says "there is more to the right" — the row scrolls, and a
-                  bare cut icon was not enough of a hint. */}
-              <div className="bg-app pointer-events-none absolute inset-y-0 right-0 w-10 [mask-image:linear-gradient(to_left,black,transparent)]" />
+            <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-2">
+              {showOverlayControls ? (
+                <>
+                  <ChangesOverlayControls settings={false} />
+                  <Separator orientation="vertical" className="w-thin h-8" />
+                </>
+              ) : null}
+              {showCommentTool ? <CommentToolToggle /> : null}
+              {showComments ? <CommentsVisibilityToggle /> : null}
+              <ScreenshotIgnoreButton diff={diff} />
+              <Separator orientation="vertical" className="w-thin h-8" />
+              <FitToggle />
+              <BuildDiffDetailToolbar
+                diff={diff}
+                snapshotControls={false}
+                commentControls={false}
+                fitToggle={false}
+              />
             </div>
+            {/* Says "there is more to the right" — the row scrolls, and a
+                  bare cut icon was not enough of a hint. */}
+            <div className="bg-app pointer-events-none absolute inset-y-0 right-0 w-10 [mask-image:linear-gradient(to_left,black,transparent)]" />
           </div>
-        ) : null}
+        </div>
         <div className="flex items-center justify-between gap-1 px-1">
           <Tooltip content="Build, snapshot and activity panels">
             <Button
@@ -395,7 +376,7 @@ function MobileDock(props: {
               aria-label="Build details"
               onClick={props.onOpenPanels}
             >
-              <PanelBottomOpenIcon />
+              <InfoIcon />
             </Button>
           </Tooltip>
           <MobileNavButtons />

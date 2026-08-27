@@ -55,10 +55,9 @@ loggedTest.describe("mobile build review", () => {
       await expect(page.getByText("Baseline", { exact: true })).toBeHidden();
 
       // The comparison tools unfold inside the dock.
-      await page.getByRole("button", { name: "Tools" }).click();
+      // The tools row is always on — no fold to open.
       await expect(page.locator("button:has(.lucide-eye)")).toBeVisible();
       await screenshot(page, "build-mobile-tools");
-      await page.getByRole("button", { name: "Tools" }).click();
 
       // The snapshots grid opens from the dock and closes by picking another
       // snapshot.
