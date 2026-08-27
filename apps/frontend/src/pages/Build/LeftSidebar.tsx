@@ -25,7 +25,7 @@ const _BuildFragment = graphql(`
   }
 `);
 
-function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
+export function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   const { search, setSearch } = useSearchState();
   return (
     // `pl-1` keeps the magnifier off the sidebar's edge, in line with the icons

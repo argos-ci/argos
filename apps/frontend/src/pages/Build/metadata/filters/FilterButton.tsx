@@ -36,7 +36,12 @@ function InnerFilterButton(props: { state: FilterState }) {
         description={filterHotKey.description}
       >
         <MenuTrigger>
-          <Button variant="ghost" iconOnly size="small">
+          <Button
+            variant="ghost"
+            iconOnly
+            size="small"
+            aria-label="Filter snapshots"
+          >
             <FilterIcon />
           </Button>
         </MenuTrigger>

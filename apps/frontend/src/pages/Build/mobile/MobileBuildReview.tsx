@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
@@ -7,6 +7,8 @@ import {
   ChevronUpIcon,
   ImagesIcon,
   PanelBottomOpenIcon,
+  SearchIcon,
+  XIcon,
 } from "lucide-react";
 
 import {
@@ -51,6 +53,7 @@ import { BuildDiffList } from "../BuildDiffList";
 import {
   checkDiffCanBeReviewed,
   useBuildDiffState,
+  useSearchModeState,
   useGoToBuildOverview,
   useGoToNextDiff,
   useGoToPreviousDiff,
@@ -61,6 +64,8 @@ import {
 import { BuildInfos } from "../BuildInfos";
 import type { BuildParams } from "../BuildParams";
 import { BuildReviewButton } from "../BuildReviewButton";
+import { SearchInput } from "../LeftSidebar";
+import { FilterButton } from "../metadata/filters/FilterButton";
 import { FilterChips } from "../metadata/filters/FilterChips";
 import { ScreenshotIgnoreButton } from "../ScreenshotActionsToolbar";
 import { MetadataRow } from "../sidebar/metadata/MetadataRow";
@@ -163,10 +168,7 @@ export function MobileBuildReview(props: {
         aria-label="Snapshots"
         className="h-[85dvh]"
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <FilterChips />
-          <BuildDiffList />
-        </div>
+        <SnapshotsSheetContent />
       </BottomSheet>
       <BottomSheet
         open={sheet === "panels"}
@@ -236,6 +238,53 @@ function SnapshotContextBar(props: {
           {activeDiff?.name}
         </span>
       </button>
+    </div>
+  );
+}
+
+/**
+ * The snapshots list with the desktop sidebar's search and filter on top —
+ * the tabs are the only part of that header without a mobile life.
+ */
+function SnapshotsSheetContent() {
+  const { searchMode, setSearchMode } = useSearchModeState();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center gap-1 px-2 pb-1">
+        {searchMode ? (
+          <>
+            <SearchInput ref={searchInputRef} />
+            <Button
+              variant="ghost"
+              iconOnly
+              aria-label="Exit search"
+              onClick={() => setSearchMode(false)}
+            >
+              <XIcon />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              iconOnly
+              aria-label="Find a snapshot"
+              onClick={() => {
+                // The input autofocuses on mount, which is what pops the
+                // keyboard.
+                startTransition(() => setSearchMode(true));
+              }}
+            >
+              <SearchIcon />
+            </Button>
+            <div className="flex-1" />
+          </>
+        )}
+        <FilterButton />
+      </div>
+      <FilterChips />
+      <BuildDiffList />
     </div>
   );
 }

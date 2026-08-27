@@ -66,6 +66,21 @@ loggedTest.describe("mobile build review", () => {
       const snapshotsSheet = page.getByRole("dialog", { name: "Snapshots" });
       await expect(snapshotsSheet).toBeVisible();
       await screenshot(page, "build-mobile-snapshots-sheet");
+
+      // Search narrows the list; the filter button sits beside it like on
+      // desktop.
+      await expect(
+        snapshotsSheet.getByRole("button", { name: "Filter snapshots" }),
+      ).toBeVisible();
+      await snapshotsSheet
+        .getByRole("button", { name: "Find a snapshot" })
+        .click();
+      await snapshotsSheet.getByPlaceholder("Find...").fill("1440");
+      await expect(
+        snapshotsSheet.getByRole("button", { name: "dummy-375x1440.png" }),
+      ).toBeVisible();
+      await snapshotsSheet.getByRole("button", { name: "Exit search" }).click();
+
       await snapshotsSheet
         .getByRole("button", { name: "dummy-375x1440.png" })
         .click();
