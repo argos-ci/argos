@@ -64,6 +64,8 @@ const StaffRevenueQuery = graphql(`
           amount
           currency
           revenue
+          screenshotsCount
+          estimatedAt
           invoices {
             amount
             currency
@@ -215,6 +217,9 @@ function formatInvoiceAmount(invoice: {
   }
   return format.format(invoice.amount);
 }
+
+/** Screenshot counts, grouped like the team directory prints them. */
+const SCREENSHOTS_FORMAT = new Intl.NumberFormat("en-US");
 
 /** A renewal's date, read in UTC like every other date on the page. */
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
@@ -542,7 +547,7 @@ function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   );
 }
 
-type MonthTeamSortKey = "team" | "amount" | "revenue" | "date";
+type MonthTeamSortKey = "team" | "amount" | "revenue" | "screenshots" | "date";
 
 /**
  * Sortable value per column of a month's breakdown.
@@ -564,13 +569,27 @@ function getMonthTeamSortValue(
       return team.currency === null ? -1 : team.amount;
     case "revenue":
       return team.revenue;
+    case "screenshots":
+      return team.screenshotsCount;
     case "date": {
-      // On the date the column prints — the newest, invoices being sent
-      // newest first.
-      const newest = team.invoices[0];
-      return newest ? new Date(newest.invoicedAt).getTime() : -1;
+      // On the date the column prints: the newest invoice, or the day the bill
+      // is expected on a line that has none yet.
+      const date = getMonthTeamDate(team);
+      return date ? date.getTime() : -1;
     }
   }
+}
+
+/**
+ * The day a line is filed under: when its newest invoice was raised, or when
+ * the bill it is still waiting on is expected.
+ */
+function getMonthTeamDate(team: MonthTeam): Date | null {
+  const newest = team.invoices[0];
+  if (newest) {
+    return new Date(newest.invoicedAt);
+  }
+  return team.estimatedAt ? new Date(team.estimatedAt) : null;
 }
 
 function sortMonthTeams(
@@ -600,6 +619,11 @@ function sortMonthTeams(
  * sort being stable. The rank column numbers the rows as they are displayed,
  * so it re-reads as a line number under any other sort rather than pinning a
  * position the sort has moved.
+ *
+ * The running month also carries the bills it is still waiting on — a cycle
+ * that falls later in the month has raised nothing yet — as estimated lines.
+ * Their date is the day the bill is expected, so that order puts them at the
+ * top: they are the only lines of the month that have not happened.
  */
 function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
   const [sortKey, setSortKey] = useState<MonthTeamSortKey>("date");
@@ -633,7 +657,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[28%] text-left"
+              className="w-[24%] text-left"
             />
             <SortHeader
               label="Invoiced"
@@ -641,7 +665,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[16%] text-right"
             />
             <SortHeader
               label="In euros"
@@ -649,7 +673,15 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[14%] text-right"
+            />
+            <SortHeader
+              label="Screenshots"
+              sortKey="screenshots"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[14%] text-right"
             />
             <SortHeader
               label="Date"
@@ -657,14 +689,17 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[16%] text-right"
             />
-            <th className="w-[12%] px-4 py-3 text-right" />
+            <th className="w-[10%] px-4 py-3 text-right" />
           </tr>
         </thead>
         <tbody>
           {teams.map((team, teamIndex) => {
             const newestInvoice = team.invoices[0] ?? null;
+            const expectedAt = team.estimatedAt
+              ? new Date(team.estimatedAt)
+              : null;
 
             return (
               <tr
@@ -672,6 +707,10 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                 className={clsx(
                   "text-sm",
                   teamIndex !== teams.length - 1 && "border-b",
+                  // A bill that has not been raised is written in grey, so a
+                  // ledger of facts is not read off the same colour as one
+                  // line that is a projection.
+                  expectedAt && "text-low",
                 )}
               >
                 <td className="text-low px-4 py-2.5 text-right tabular-nums">
@@ -681,17 +720,38 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
-                  {team.currency !== null ? (
+                  {team.currency === null ? (
+                    <span className="text-low">—</span>
+                  ) : expectedAt ? (
+                    // The grey the row is written in says the amount was not
+                    // invoiced; what it is made of takes a sentence, so it is
+                    // the tooltip that carries it.
+                    <Hint content="Not yet invoiced or included above">
+                      {formatInvoiceAmount({
+                        amount: team.amount,
+                        currency: team.currency,
+                      })}
+                    </Hint>
+                  ) : (
                     formatInvoiceAmount({
                       amount: team.amount,
                       currency: team.currency,
                     })
-                  ) : (
-                    <span className="text-low">—</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {formatEuros(team.revenue)}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {expectedAt ? (
+                    // The period's, not the month's: it is the count the
+                    // estimate beside it was computed on.
+                    <Hint content="To date">
+                      {SCREENSHOTS_FORMAT.format(team.screenshotsCount)}
+                    </Hint>
+                  ) : (
+                    SCREENSHOTS_FORMAT.format(team.screenshotsCount)
+                  )}
                 </td>
                 {/* The dates walk forward with the calendar, like the month
                     names above. */}
@@ -699,7 +759,9 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   className="px-4 py-2.5 text-right tabular-nums"
                   data-visual-test="transparent"
                 >
-                  {newestInvoice === null ? (
+                  {expectedAt ? (
+                    DATE_FORMAT.format(expectedAt)
+                  ) : newestInvoice === null ? (
                     <span className="text-low">—</span>
                   ) : team.invoices.length === 1 ? (
                     DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))

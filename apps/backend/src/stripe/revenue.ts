@@ -1,11 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 
+import { knex } from "@/database";
 import {
   Account,
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
 } from "@/database/models";
+import { getAccountBillings } from "@/database/services/period-usage";
 
 /** What the teams on one billing interval contributed to a month. */
 type StaffRevenueSplit = {
@@ -45,8 +47,24 @@ type StaffRevenueMonthTeam = {
   currency: string | null;
   /** In euros, like the split it sums into. */
   revenue: number;
-  /** The invoices the line adds up, newest first. */
+  /**
+   * Screenshots the line's amount was raised on: what the team consumed over
+   * the month for a bill that exists, and what the running period has
+   * accumulated for one still to come — which is the count its estimate was
+   * computed from.
+   */
+  screenshotsCount: number;
+  /** The invoices the line adds up, newest first. Empty on an estimate. */
   invoices: StaffRevenueMonthTeamInvoice[];
+  /**
+   * When the cycle is expected to raise the bill, on a line Stripe has not
+   * billed yet — and null on every line read from a real invoice.
+   *
+   * Such a line is an estimate, so it stays out of the month's own figures:
+   * they report what was invoiced, and a projection summed into them would be
+   * indistinguishable from money that came in.
+   */
+  estimatedAt: Date | null;
 };
 
 /** What Argos billed over one calendar month. */
@@ -267,6 +285,8 @@ type BilledTeam = {
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   interval: "month" | "year";
+  /** What Stripe bills it in, or null on a subscription never synced for it. */
+  currency: string | null;
 };
 
 /**
@@ -286,6 +306,7 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     .select(
       "subscriptions.accountId",
       "subscriptions.stripeSubscriptionId",
+      "subscriptions.currency",
       "accounts.slug",
       "accounts.name",
       "accounts.stripeCustomerId",
@@ -318,6 +339,7 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     stripeSubscriptionId: string;
     stripeCustomerId: string;
     interval: "month" | "year";
+    currency: string | null;
   }[];
 
   return rows.map((row) => ({
@@ -327,11 +349,13 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     stripeSubscriptionId: row.stripeSubscriptionId,
     stripeCustomerId: row.stripeCustomerId,
     interval: row.interval,
+    currency: row.currency,
   }));
 }
 
-/** How a month's breakdown names a team. */
+/** How a month's breakdown names a team, and what it reads its usage off. */
 type TeamCustomer = {
+  accountId: string;
   slug: string;
   name: string | null;
 };
@@ -348,10 +372,11 @@ type TeamCustomer = {
  */
 export async function getTeamCustomers(): Promise<Map<string, TeamCustomer>> {
   const rows = (await Account.query()
-    .select("stripeCustomerId", "slug", "name")
+    .select("id", "stripeCustomerId", "slug", "name")
     .whereNotNull("teamId")
     .whereNull("userId")
     .whereNotNull("stripeCustomerId")) as unknown as {
+    id: string | number;
     stripeCustomerId: string;
     slug: string;
     name: string | null;
@@ -360,9 +385,53 @@ export async function getTeamCustomers(): Promise<Map<string, TeamCustomer>> {
   return new Map(
     rows.map((row) => [
       row.stripeCustomerId,
-      { slug: row.slug, name: row.name },
+      { accountId: String(row.id), slug: row.slug, name: row.name },
     ]),
   );
+}
+
+/** The key a calendar month is filed under in the usage read below. */
+function getMonthKey(month: Date): string {
+  return month.toISOString().slice(0, 7);
+}
+
+/**
+ * Screenshots consumed per team and per calendar month over the window.
+ *
+ * Cut in UTC like the months themselves, and keyed by the year and month
+ * Postgres prints rather than by a timestamp: a truncated date read back
+ * through the process's own timezone would file a bucket in the month next
+ * door for every server not running on UTC.
+ */
+async function getMonthlyScreenshots(window: {
+  from: Date;
+  to: Date;
+}): Promise<Map<string, Map<string, number>>> {
+  const monthKey = `to_char(sb."createdAt" at time zone 'UTC', 'YYYY-MM')`;
+  const rows = (await knex
+    .select("p.accountId")
+    .select(knex.raw(`${monthKey} as "month"`))
+    // Null until a bucket completes, and summed as-is by the billing figures
+    // this sits beside.
+    .select(knex.raw(`coalesce(sum(sb."screenshotCount"), 0) as "count"`))
+    .from("screenshot_buckets as sb")
+    .join("projects as p", "p.id", "sb.projectId")
+    .where("sb.createdAt", ">=", window.from.toISOString())
+    .where("sb.createdAt", "<", window.to.toISOString())
+    .groupBy("p.accountId", knex.raw(monthKey))) as unknown as {
+    accountId: string | number;
+    month: string;
+    count: string | number;
+  }[];
+
+  const result = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    const accountId = String(row.accountId);
+    const months = result.get(accountId) ?? new Map<string, number>();
+    months.set(row.month, Number(row.count));
+    result.set(accountId, months);
+  }
+  return result;
 }
 
 /** What one invoice contributed, in the currency it was raised in. */
@@ -675,6 +744,83 @@ export type StaffRevenue = {
   yearlyContracts: StaffYearlyContract[];
 };
 
+/**
+ * The bills the running month is still waiting on, priced off the usage so far.
+ *
+ * A team whose cycle falls on the 30th has been invoiced nothing on the 12th,
+ * and the month reads as if it had left. These are the lines that say
+ * otherwise: one per team billed by the month that Stripe has not billed yet,
+ * carrying what the subscription is on course to be invoiced — the plan's own
+ * amount plus the overage the running period has accumulated, which is the
+ * same reading the team directory prices that period at.
+ *
+ * They are estimates, so they are kept out of every figure the month reports.
+ * What they are worth is what the cycle has not decided yet: usage still to
+ * come, a credit note, a plan changed mid-month.
+ */
+async function getEstimatedBills(options: {
+  billedTeams: BilledTeam[];
+  teamCustomers: Map<string, TeamCustomer>;
+  /** The customers a bill was already raised on this month. */
+  invoicedCustomerIds: Set<string>;
+}): Promise<StaffRevenueMonthTeam[]> {
+  const pending = options.billedTeams.filter(
+    (team) =>
+      // Monthly cycles alone: a yearly contract is not owed a bill every month,
+      // and it has a table of its own that says what it is worth.
+      team.interval === "month" &&
+      !options.invoicedCustomerIds.has(team.stripeCustomerId),
+  );
+
+  if (pending.length === 0) {
+    return [];
+  }
+
+  const accounts = await Account.query().findByIds(
+    pending.map((team) => team.accountId),
+  );
+  const billings = await getAccountBillings(accounts);
+  const bills: StaffRevenueMonthTeam[] = [];
+
+  for (const team of pending) {
+    const billing = billings.get(team.accountId);
+    const period = billing?.periodUsage?.billingPeriods.find(
+      (billingPeriod) => !billingPeriod.closed,
+    );
+    // No amount on file means no estimate worth printing: the plan's own price
+    // is most of a bill, and quoting the overage alone would report a team
+    // about to be invoiced as owing next to nothing. A guess in its place would
+    // read exactly like the figures beside it, which are read off Stripe.
+    if (!billing || !period || billing.flatPrice === null) {
+      continue;
+    }
+
+    const customer = options.teamCustomers.get(team.stripeCustomerId);
+    if (!customer) {
+      continue;
+    }
+
+    const revenue = {
+      amount: billing.flatPrice + period.additionalScreenshotCost,
+      currency: team.currency ?? REPORTING_CURRENCY,
+    };
+    bills.push({
+      slug: customer.slug,
+      name: customer.name,
+      stripeCustomerId: team.stripeCustomerId,
+      amount: revenue.amount,
+      currency: revenue.currency,
+      revenue: toEuros(revenue),
+      screenshotsCount: period.screenshotsCount,
+      invoices: [],
+      // The anniversary the period closes on, which is the day the cycle bills.
+      estimatedAt: period.endsAt,
+    });
+  }
+
+  return bills;
+}
+
 /** Raised by the reader when the mirror cannot answer for the window asked. */
 export class MirrorCoverageError extends Error {}
 
@@ -711,12 +857,17 @@ export async function getStaffRevenue(
     deepestSync,
     freshestSync,
     marketplaceSubscriptions,
+    monthlyScreenshots,
   ] = await Promise.all([
     getTeamCustomers(),
     getBilledTeams(),
     StripeInvoiceSync.query().orderBy("sinceDate", "asc").first(),
     StripeInvoiceSync.query().orderBy("completedAt", "desc").first(),
     getMarketplaceSubscriptions(),
+    // Over the reported months alone, not the contract scan: usage is read
+    // beside the bills of the months on screen, and the year of contracts
+    // behind them has no line to carry a count.
+    getMonthlyScreenshots({ from: first, to: end }),
   ]);
 
   // Two things have to hold before a figure can be trusted: the mirror was
@@ -812,7 +963,11 @@ export async function getStaffRevenue(
     );
     const split = monthSplits[index];
     const teams = monthTeams[index];
-    invariant(split && teams, "the query bounds every row to a reported month");
+    const reportedMonth = reported[index];
+    invariant(
+      split && teams && reportedMonth,
+      "the query bounds every row to a reported month",
+    );
     addToSplit(split, revenue);
 
     // A team invoiced twice in one month is one team, one line deeper.
@@ -825,7 +980,12 @@ export async function getStaffRevenue(
         amount: 0,
         currency: revenue.currency,
         revenue: 0,
+        screenshotsCount:
+          monthlyScreenshots
+            .get(team.accountId)
+            ?.get(getMonthKey(reportedMonth)) ?? 0,
         invoices: [],
+        estimatedAt: null,
       };
       teams.set(row.stripeCustomerId, teamRow);
     }
@@ -899,12 +1059,23 @@ export async function getStaffRevenue(
     split.teamsCount = customers.size;
   }
 
+  const runningTeams = monthTeams[runningIndex];
+  invariant(runningTeams, "the running month is one of the reported ones");
+  const estimatedBills = await getEstimatedBills({
+    billedTeams,
+    teamCustomers,
+    invoicedCustomerIds: new Set(runningTeams.keys()),
+  });
+
   const months = reported.map((start, index) => {
     const monthly = monthSplits[index];
     const yearly = yearlySplits[index];
     const teams = monthTeams[index];
     invariant(monthly && yearly && teams, "every month reported has totals");
     monthly.teamsCount = teams.size;
+    // Beside the month's own lines rather than inside its totals: an estimate
+    // is not revenue, and `monthlyPlans` above is what was invoiced.
+    const estimates = index === runningIndex ? estimatedBills : [];
     // The query reads the mirror in no particular order.
     for (const team of teams.values()) {
       team.invoices.sort(
@@ -918,7 +1089,9 @@ export async function getStaffRevenue(
       revenue: monthly.revenue + yearly.revenue,
       monthlyPlans: monthly,
       // Largest first: the breakdown is read to see who made the month.
-      teams: [...teams.values()].sort((a, b) => b.revenue - a.revenue),
+      teams: [...teams.values(), ...estimates].sort(
+        (a, b) => b.revenue - a.revenue,
+      ),
       yearlyPlans: yearly,
       githubPlans: getMarketplaceMonthRevenue(
         marketplaceSubscriptions,

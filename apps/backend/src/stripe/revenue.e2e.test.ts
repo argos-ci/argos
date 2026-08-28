@@ -143,7 +143,14 @@ describe("getTeamCustomers", () => {
 
     await expect(getTeamCustomers()).resolves.toEqual(
       new Map([
-        ["cus_churned", { slug: account.slug, name: account.name ?? null }],
+        [
+          "cus_churned",
+          {
+            accountId: account.id,
+            slug: account.slug,
+            name: account.name ?? null,
+          },
+        ],
       ]),
     );
   });
@@ -363,6 +370,94 @@ describe("getStaffRevenue", () => {
       (1200 * runningMonth) / currentTerm,
       3,
     );
+  });
+
+  it("estimates the running month's bills that have not been raised", async () => {
+    // A cycle that falls later in the month has invoiced nothing yet, and the
+    // month would read as if the team had left. This is the line that says
+    // otherwise, priced off the usage the period has accumulated — the same
+    // reading the team directory prices it at.
+    const now = new Date();
+    await factory.StripeInvoiceSync.create();
+
+    const plan = await factory.Plan.create({
+      usageBased: true,
+      interval: "month",
+      includedScreenshots: 1000,
+    });
+    const account = await factory.TeamAccount.create({
+      stripeCustomerId: "cus_staff_pending",
+    });
+    const user = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: account.id,
+      planId: plan.id,
+      currency: "eur",
+      provider: "stripe",
+      stripeSubscriptionId: "sub_staff_pending",
+      subscriberId: user.id,
+      // Opened a fortnight ago, so the period it anchors is still running and
+      // the day it bills on is still to come.
+      startDate: new Date(now.getTime() - 14 * 24 * 3600 * 1000).toISOString(),
+      createdAt: new Date(now.getTime() - 14 * 24 * 3600 * 1000).toISOString(),
+      status: "active",
+      flatPrice: 100,
+      additionalScreenshotPrice: 0.01,
+    });
+    const project = await factory.Project.create({ accountId: account.id });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      screenshotCount: 3000,
+      createdAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
+    });
+
+    const result = await getStaffRevenue(1);
+    const current = result.months[0];
+    invariant(current);
+    const line = current.teams[0];
+    invariant(line);
+
+    // The plan's own amount, plus the two thousand screenshots past the quota.
+    expect(line.amount).toBe(120);
+    expect(line.revenue).toBe(120);
+    expect(line.screenshotsCount).toBe(3000);
+    expect(line.invoices).toEqual([]);
+    expect(line.estimatedAt).toBeInstanceOf(Date);
+    // An estimate is not revenue: the month reports what was invoiced, which
+    // here is nothing at all.
+    expect(current.monthlyPlans).toEqual({
+      revenue: 0,
+      teamsCount: 0,
+      foreignRevenue: 0,
+    });
+  });
+
+  it("leaves the team alone once its bill has been raised", async () => {
+    // The invoice is the fact; the estimate beside it would count the month
+    // twice over.
+    const now = new Date();
+    await factory.StripeInvoiceSync.create();
+
+    const account = await createTeam({
+      interval: "month",
+      stripeCustomerId: "cus_staff_billed",
+    });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_staff_billed",
+      stripeCreatedAt: now.toISOString(),
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 50_000,
+      totalExcludingTax: 50_000,
+    });
+
+    const result = await getStaffRevenue(1);
+    const current = result.months[0];
+    invariant(current);
+
+    expect(current.teams.map((team) => [team.slug, team.estimatedAt])).toEqual([
+      [account.slug, null],
+    ]);
   });
 
   it("lists a contract that ran out mid-month, so the table adds up", async () => {

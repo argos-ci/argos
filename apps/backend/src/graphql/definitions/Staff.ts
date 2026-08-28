@@ -419,8 +419,22 @@ export const typeDefs = gql`
     currency: String
     "In euros, like the split it sums into."
     revenue: Float!
-    "The invoices the line adds up, newest first."
+    """
+    Screenshots the line's amount was raised on: what the team consumed over
+    the month for a bill that exists, and what the running period has
+    accumulated for one still to come.
+    """
+    screenshotsCount: Int!
+    "The invoices the line adds up, newest first. Empty on an estimate."
     invoices: [StaffRevenueMonthTeamInvoice!]!
+    """
+    When the cycle is expected to raise a bill Stripe has not billed yet, and
+    null on every line read from a real invoice.
+
+    Such a line is an estimate read off the usage so far, and it is left out of
+    the month's own figures — they report what was invoiced.
+    """
+    estimatedAt: DateTime
   }
 
   "One invoice a contract's worth is read from."

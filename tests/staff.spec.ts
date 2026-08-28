@@ -864,6 +864,107 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
   },
 });
 
+/**
+ * A team billed by the month whose cycle has not come round yet, with the usage
+ * its bill will be raised on.
+ *
+ * Seeded on its own rather than into the book above: the running month is the
+ * only month that can hold a bill still to come, and the book's assertions are
+ * all about months that have closed.
+ */
+const pendingBillTest = staffTest.extend<{
+  pendingBill: { team: string; amount: string; screenshots: string };
+}>({
+  pendingBill: async ({ user }, use, testInfo) => {
+    const prefix = `pending-${getUniqueTestIdentifier(testInfo)}`;
+    const plan = await PlanModel.query().insertAndFetch({
+      name: "pro",
+      includedScreenshots: 35_000,
+      usageBased: true,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      samlIncluded: true,
+      interval: "month",
+    });
+    await createBilledTeam({
+      planId: plan.id,
+      subscriberId: user.user.id,
+      slug: `${prefix}-dunder`,
+      name: "Dunder Mifflin",
+      createdDaysAgo: 60,
+      trialEndedDaysAgo: 57,
+      // The period opened a fortnight ago, so the day it bills on is still
+      // ahead — which is what leaves the month with nothing invoiced to report.
+      periodStartDaysAgo: 14,
+      flatPrice: 100,
+      screenshotsByClosedPeriod: [],
+      screenshotsInRunningPeriod: 45_000,
+    });
+
+    // The page refuses a window the mirror was never swept for, so the sweep
+    // has to be on record even though this test reads no invoice at all.
+    await StripeInvoiceSync.query().insert({
+      sinceDate: startOfUTCMonth(-36).toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+
+    // The plan's own amount, plus the ten thousand screenshots past the quota
+    // at the half-cent the helper prices them at.
+    await use({
+      team: "Dunder Mifflin",
+      amount: "$150.00",
+      screenshots: "45,000",
+    });
+  },
+});
+
+pendingBillTest.describe("staff revenue estimates", () => {
+  // One browser project, like the book above: the page has no filter, so the
+  // second run would read the first one's teams as well as its own.
+  pendingBillTest.skip(
+    ({ browserName }) => browserName !== "chromium",
+    "the page sums every team, so it can only be seeded once",
+  );
+
+  pendingBillTest(
+    "the running month lists the bills still to come",
+    async ({ page, pendingBill }) => {
+      await page.goto("/staff/revenue");
+
+      const monthlyPlans = page
+        .locator("table")
+        .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
+      await monthlyPlans
+        .locator("tbody tr")
+        .first()
+        .getByRole("button", { name: "View details" })
+        .click();
+
+      // Scoped to the breakdown's own rows: the month row wrapping them
+      // carries the same text, and every other team seeded by the suite has a
+      // line in there too.
+      const line = monthlyPlans
+        .locator("tbody tr")
+        .nth(1)
+        .locator("tbody tr")
+        .filter({ hasText: pendingBill.team });
+      // Priced off the usage the period has accumulated: the cycle has raised
+      // nothing to read.
+      await expect(line.getByText(pendingBill.amount)).toBeVisible();
+      await expect(line.getByText(pendingBill.screenshots)).toBeVisible();
+      // The amount carries what makes it an estimate, the line itself saying
+      // it only in the grey it is written in.
+      await expect(async () => {
+        await page.mouse.move(0, 0);
+        await line.getByText(pendingBill.amount).hover();
+        await expect(
+          page.getByText("Not yet invoiced or included above"),
+        ).toBeVisible({ timeout: 2_000 });
+      }).toPass();
+    },
+  );
+});
+
 revenueTest.describe("staff revenue", () => {
   // One browser project, not both: the page has no filter, so every figure on
   // it is a sum over all the teams in the database — and the projects share
