@@ -1029,9 +1029,6 @@ function HistoryRow(props: {
                 <AlertText>{error.message}</AlertText>
               </Alert>
             ) : (
-              // Sized like the one the lists use, and on the default delay: a
-              // month that answers in a blink shows nothing rather than a
-              // spinner that flashes.
               <div className="flex justify-center py-4">
                 <Loader className="text-low size-6" />
               </div>

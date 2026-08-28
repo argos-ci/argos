@@ -2614,9 +2614,10 @@ async function createRevenueScenario(input: {
       from: 89_000,
       growth: 1.06,
       members: ["Wile Coyote", "Road Runner", "Marvin Martian"],
-      // A commitment sized to what it was billing when it signed, a year ago:
-      // everything it has grown by since reads as overage, which is what a
-      // team due a renegotiated contract looks like.
+      // The deals differ from one team to the next so the overage column has
+      // a spread to show: this one is a commitment sized to what it was
+      // billing when it signed, so everything it has grown by since reads as
+      // overage — a team due a renegotiated contract.
       deal: {
         planId: scalePlan.id,
         flatPrice: 890,
@@ -2662,8 +2663,6 @@ async function createRevenueScenario(input: {
       vatRate: 0.2,
       credited: 4_000,
       members: ["Thorn Detective", "Sol Roth"],
-      // A commitment it has only just grown past: a couple of percent, which
-      // is the reading that is neither a problem nor a zero.
       deal: {
         planId: scalePlan.id,
         flatPrice: 399,
@@ -2682,8 +2681,6 @@ async function createRevenueScenario(input: {
       from: 129_000,
       growth: 1.05,
       members: ["Gavin Belson", "Denpok Singh", "Richard Hendricks"],
-      // Well past the quota it signed for, and paying most of its bill in
-      // overage: the row the column exists to surface.
       deal: {
         planId: scalePlan.id,
         flatPrice: 490,
@@ -2810,7 +2807,6 @@ async function createRevenueScenario(input: {
       periodStart: billedOn(-13, 15).toISOString(),
       periodEnd: billedOn(-1, 15).toISOString(),
     },
-    // Raised but not yet cleared: the row worth watching in the table.
     {
       stripeInvoiceId: "in_seed_vandelay_renewal",
       stripeCustomerId: customerOf("vandelay"),

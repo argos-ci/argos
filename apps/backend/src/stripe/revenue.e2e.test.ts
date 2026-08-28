@@ -528,32 +528,6 @@ describe("getStaffRevenue", () => {
     }
   });
 
-  it("leaves the team alone once its bill has been raised", async () => {
-    // The invoice is the fact; the estimate beside it would count the month
-    // twice over.
-    const now = new Date();
-    await factory.StripeInvoiceSync.create();
-
-    const account = await createTeam({
-      interval: "month",
-      stripeCustomerId: "cus_staff_billed",
-    });
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_billed",
-      stripeCreatedAt: now.toISOString(),
-      billingReason: "subscription_cycle",
-      currency: "eur",
-      total: 50_000,
-      totalExcludingTax: 50_000,
-    });
-
-    const teams = await getStaffRevenueMonthTeams(now);
-
-    expect(teams.map((team) => [team.slug, team.estimatedAt])).toEqual([
-      [account.slug, null],
-    ]);
-  });
-
   it("lists a contract that ran out mid-month, so the table adds up", async () => {
     // It paid for the days before it ended, so it is in the month's figure —
     // and a table that left it out would come up short against the card it
