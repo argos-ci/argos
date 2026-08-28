@@ -2208,6 +2208,16 @@ async function createRevenueScenario(input: {
     getPlan("standard"),
   ]);
 
+  const scalePlan = await Plan.query().insertAndFetch({
+    name: "scale",
+    includedScreenshots: 250_000,
+    usageBased: true,
+    githubSsoIncluded: true,
+    fineGrainedAccessControlIncluded: true,
+    samlIncluded: true,
+    interval: "month",
+  });
+
   const yearlyPlan = await Plan.query().insertAndFetch({
     name: "enterprise",
     includedScreenshots: 2_000_000,
@@ -2357,6 +2367,8 @@ async function createRevenueScenario(input: {
     slug: string;
     name: string;
     planId: string;
+    /** Negotiated on the subscription, where Stripe states one of its own. */
+    includedScreenshots?: number;
     currency: "eur" | "usd";
     /** The day of the month its cycle bills on, which anchors its periods. */
     dayOfMonth: number;
@@ -2404,6 +2416,9 @@ async function createRevenueScenario(input: {
       currency: team.currency,
       flatPrice: team.flatPrice,
       additionalScreenshotPrice: team.additionalScreenshotPrice,
+      ...(team.includedScreenshots !== undefined && {
+        includedScreenshots: team.includedScreenshots,
+      }),
     });
     await addMembers({
       teamId: teamRow.id,
@@ -2433,6 +2448,21 @@ async function createRevenueScenario(input: {
     from: number;
     growth: number;
     members: string[];
+    /**
+     * The deal it was signed on, where it is not the self-serve one — a
+     * commitment negotiated up from the list plan, with the quota and the unit
+     * price that came with it.
+     *
+     * What decides how far past its quota the team reads: the same bill on the
+     * list plan is a team to call about a contract, and on a commitment three
+     * times the size it is a team well inside the one it already signed.
+     */
+    deal?: {
+      planId: string;
+      flatPrice: number;
+      includedScreenshots: number;
+      screenshotPrice: number;
+    };
     /** Months back the subscription ended, for a team that has churned. */
     endedMonth?: number;
     /**
@@ -2443,16 +2473,23 @@ async function createRevenueScenario(input: {
     /** Cents credited back on the newest bill, as a credit note would. */
     credited?: number;
   }): Promise<void> {
+    const deal = team.deal ?? {
+      planId: monthlyPlan.id,
+      flatPrice: MONTHLY_FLAT_PRICE,
+      includedScreenshots: monthlyPlan.includedScreenshots,
+      screenshotPrice: MONTHLY_SCREENSHOT_PRICE,
+    };
     const accountId = await createBilledTeam({
       slug: team.slug,
       name: team.name,
-      planId: monthlyPlan.id,
+      planId: deal.planId,
+      includedScreenshots: deal.includedScreenshots,
       currency: team.currency,
       dayOfMonth: team.dayOfMonth,
       startedMonth: team.firstMonth - 1,
       ...(team.endedMonth !== undefined && { endedMonth: team.endedMonth }),
-      flatPrice: MONTHLY_FLAT_PRICE,
-      additionalScreenshotPrice: MONTHLY_SCREENSHOT_PRICE,
+      flatPrice: deal.flatPrice,
+      additionalScreenshotPrice: deal.screenshotPrice,
       members: team.members,
     });
 
@@ -2492,10 +2529,8 @@ async function createRevenueScenario(input: {
         from: billedOn(month - 1, team.dayOfMonth),
         to: invoicedAt,
         screenshots:
-          monthlyPlan.includedScreenshots +
-          Math.round(
-            (amount / 100 - MONTHLY_FLAT_PRICE) / MONTHLY_SCREENSHOT_PRICE,
-          ),
+          deal.includedScreenshots +
+          Math.round((amount / 100 - deal.flatPrice) / deal.screenshotPrice),
       });
     }
 
@@ -2574,6 +2609,15 @@ async function createRevenueScenario(input: {
       from: 89_000,
       growth: 1.06,
       members: ["Wile Coyote", "Road Runner", "Marvin Martian"],
+      // A commitment sized to what it was billing when it signed, a year ago:
+      // everything it has grown by since reads as overage, which is what a
+      // team due a renegotiated contract looks like.
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 890,
+        includedScreenshots: 250_000,
+        screenshotPrice: 0.004,
+      },
     }),
     // In dollars, so the euro figures rest on the page's fixed rate and say so.
     createMonthlyTeam({
@@ -2613,6 +2657,14 @@ async function createRevenueScenario(input: {
       vatRate: 0.2,
       credited: 4_000,
       members: ["Thorn Detective", "Sol Roth"],
+      // A commitment it has only just grown past: a couple of percent, which
+      // is the reading that is neither a problem nor a zero.
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 399,
+        includedScreenshots: 150_000,
+        screenshotPrice: 0.005,
+      },
     }),
     // Signed six months ago: the month it arrives in is the one that jumps.
     createMonthlyTeam({
@@ -2625,6 +2677,14 @@ async function createRevenueScenario(input: {
       from: 129_000,
       growth: 1.05,
       members: ["Gavin Belson", "Denpok Singh", "Richard Hendricks"],
+      // Well past the quota it signed for, and paying most of its bill in
+      // overage: the row the column exists to surface.
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 490,
+        includedScreenshots: 250_000,
+        screenshotPrice: 0.005,
+      },
     }),
     createMonthlyTeam({
       slug: "massive-dynamic",
