@@ -1,5 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -387,64 +387,117 @@ describe("getStaffRevenue", () => {
     // month would read as if the team had left. This is the line that says
     // otherwise, priced off the usage the period has accumulated — the same
     // reading the team directory prices it at.
-    const now = new Date();
-    await factory.StripeInvoiceSync.create();
+    //
+    // The clock is pinned to the middle of the month because that is the whole
+    // subject: which side of the month's end a cycle falls on decides whether
+    // it is this month's bill, and a suite run on the 31st would have no day
+    // left to place one in. Only `Date` is faked — the pool's timers have to
+    // keep running, and Postgres keeps its own clock either way.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const realNow = new Date();
+    vi.setSystemTime(
+      new Date(
+        Date.UTC(realNow.getUTCFullYear(), realNow.getUTCMonth(), 15, 12),
+      ),
+    );
 
-    const plan = await factory.Plan.create({
-      usageBased: true,
-      interval: "month",
-      includedScreenshots: 1000,
-    });
-    const account = await factory.TeamAccount.create({
-      stripeCustomerId: "cus_staff_pending",
-    });
-    const user = await factory.User.create();
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: plan.id,
-      currency: "eur",
-      provider: "stripe",
-      stripeSubscriptionId: "sub_staff_pending",
-      subscriberId: user.id,
-      // Opened a fortnight ago, so the period it anchors is still running and
-      // the day it bills on is still to come.
-      startDate: new Date(now.getTime() - 14 * 24 * 3600 * 1000).toISOString(),
-      createdAt: new Date(now.getTime() - 14 * 24 * 3600 * 1000).toISOString(),
-      status: "active",
-      flatPrice: 100,
-      additionalScreenshotPrice: 0.01,
-    });
-    const project = await factory.Project.create({ accountId: account.id });
-    await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      screenshotCount: 3000,
-      createdAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
-    });
+    try {
+      const now = new Date();
+      await factory.StripeInvoiceSync.create();
 
-    const result = await getStaffRevenue(1);
-    const current = result.months[0];
-    invariant(current);
-    const line = current.teams[0];
-    invariant(line);
+      const plan = await factory.Plan.create({
+        usageBased: true,
+        interval: "month",
+        includedScreenshots: 1000,
+      });
+      const user = await factory.User.create();
 
-    // The plan's own amount, plus the two thousand screenshots past the quota.
-    expect(line.amount).toBe(120);
-    expect(line.revenue).toBe(120);
-    expect(line.screenshotsCount).toBe(3000);
-    expect(line.invoices).toEqual([]);
-    expect(line.estimatedAt).toBeInstanceOf(Date);
-    // An estimate is not revenue: the month reports what was invoiced, which
-    // here is nothing at all.
-    expect(current.monthlyPlans).toEqual({
-      revenue: 0,
-      teamsCount: 0,
-      foreignRevenue: 0,
-    });
-    // Where the month is heading is the other question, and the estimate is
-    // the whole of the answer here.
-    expect(result.projection.monthlyPlans).toBe(120);
-    expect(result.projection.estimated).toBe(120);
-    expect(result.projection.revenue).toBe(120);
+      /** A team billed on `dayOfMonth`, with the usage its bill will read. */
+      const createPendingTeam = async (team: {
+        slug: string;
+        dayOfMonth: number;
+        screenshotCount: number;
+      }) => {
+        const account = await factory.TeamAccount.create({
+          stripeCustomerId: `cus_${team.slug}`,
+        });
+        // A month back, so the period the anniversary anchors is the one
+        // running now.
+        const startDate = new Date(
+          Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth() - 1,
+            team.dayOfMonth,
+            9,
+          ),
+        ).toISOString();
+        await factory.Subscription.create({
+          accountId: account.id,
+          planId: plan.id,
+          currency: "eur",
+          provider: "stripe",
+          stripeSubscriptionId: `sub_${team.slug}`,
+          subscriberId: user.id,
+          startDate,
+          createdAt: startDate,
+          status: "active",
+          flatPrice: 100,
+          additionalScreenshotPrice: 0.01,
+        });
+        const project = await factory.Project.create({ accountId: account.id });
+        await factory.ScreenshotBucket.create({
+          projectId: project.id,
+          screenshotCount: team.screenshotCount,
+          createdAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
+        });
+        return account;
+      };
+
+      const pending = await createPendingTeam({
+        slug: "staff_pending",
+        // The 20th, so its period closes inside this month and after today.
+        dayOfMonth: 20,
+        screenshotCount: 3000,
+      });
+      // The 10th: its cycle already came round this month, and the next one
+      // falls in the month after. Whatever it was billed on the 10th is a fact
+      // of this month that the mirror carries — or does not, when a sweep is
+      // behind or the invoice is still a draft — but the bill this period ends
+      // on belongs to next month either way.
+      await createPendingTeam({
+        slug: "staff_billed_already",
+        dayOfMonth: 10,
+        screenshotCount: 9000,
+      });
+
+      const result = await getStaffRevenue(1);
+      const current = result.months[0];
+      invariant(current);
+      expect(current.teams.map((team) => team.slug)).toEqual([pending.slug]);
+      const line = current.teams[0];
+      invariant(line);
+
+      // The plan's own amount, plus the two thousand screenshots past the quota.
+      expect(line.amount).toBe(120);
+      expect(line.revenue).toBe(120);
+      expect(line.screenshotsCount).toBe(3000);
+      expect(line.invoices).toEqual([]);
+      expect(line.estimatedAt).toBeInstanceOf(Date);
+      // An estimate is not revenue: the month reports what was invoiced, which
+      // here is nothing at all.
+      expect(current.monthlyPlans).toEqual({
+        revenue: 0,
+        teamsCount: 0,
+        foreignRevenue: 0,
+      });
+      // Where the month is heading is the other question, and the estimate is
+      // the whole of the answer here.
+      expect(result.projection.monthlyPlans).toBe(120);
+      expect(result.projection.estimated).toBe(120);
+      expect(result.projection.revenue).toBe(120);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("leaves the team alone once its bill has been raised", async () => {
@@ -623,9 +676,12 @@ describe("getStaffRevenue", () => {
       toEuros({ amount: 100 * (elapsed / monthMs), currency: "usd" }),
       3,
     );
-    // Never inside the figure the cards report.
+    // Inside the figure the cards report, like the two beside it: the card
+    // states one amount and prints the three under it.
     expect(current.revenue).toBe(
-      current.monthlyPlans.revenue + current.yearlyPlans.revenue,
+      current.monthlyPlans.revenue +
+        current.yearlyPlans.revenue +
+        current.githubPlans.revenue,
     );
   });
 

@@ -138,8 +138,11 @@ async function createBilledTeam(input: {
    * which is precisely the row the Screenshots column has to report anyway.
    */
   trialEndsInDays?: number;
-  /** Where the running period opened, which sets the billing anniversary. */
-  periodStartDaysAgo: number;
+  /**
+   * Where the running period opened, which sets the billing anniversary — the
+   * offset into the month it falls at is the day the cycle bills on.
+   */
+  periodStart: string;
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
@@ -173,7 +176,7 @@ async function createBilledTeam(input: {
     subscriberId: input.subscriberId,
     // The row is as old as the team: periods that predate it are not billed.
     createdAt: daysFromNow(-input.createdDaysAgo),
-    startDate: daysFromNow(-input.periodStartDaysAgo),
+    startDate: input.periodStart,
     endDate: null,
     trialEndDate:
       runningTrial === undefined
@@ -344,7 +347,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Soylent",
         createdDaysAgo: 88,
         trialEndedDaysAgo: 85,
-        periodStartDaysAgo: 14,
+        periodStart: daysFromNow(-14),
         flatPrice: 100,
         screenshotsByClosedPeriod: [50_000, 40_000],
         // Well inside the 35k quota with half the period still to run: the
@@ -360,7 +363,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Vandelay",
         createdDaysAgo: 70,
         trialEndedDaysAgo: 67,
-        periodStartDaysAgo: 6,
+        periodStart: daysFromNow(-6),
         flatPrice: null,
         screenshotsByClosedPeriod: [20_000],
       }),
@@ -374,7 +377,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
         flatPrice: 750,
-        periodStartDaysAgo: 9,
+        periodStart: daysFromNow(-9),
         screenshotsByClosedPeriod: [60_000],
         // Already 6k past the quota, which is the whole point of the column:
         // the running amount has started moving with days still left on it.
@@ -395,7 +398,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Trialsonic",
         createdDaysAgo: 10,
         trialEndsInDays: 4,
-        periodStartDaysAgo: 10,
+        periodStart: daysFromNow(-10),
         flatPrice: 100,
         screenshotsByClosedPeriod: [],
         screenshotsInRunningPeriod: 5_625,
@@ -407,7 +410,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Initrode",
         createdDaysAgo: 400,
         trialEndedDaysAgo: 397,
-        periodStartDaysAgo: 216,
+        periodStart: daysFromNow(-216),
         flatPrice: 12_000,
         screenshotsByClosedPeriod: [],
       }),
@@ -865,6 +868,30 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
 });
 
 /**
+ * Where a subscription must have started for its period to close later today.
+ *
+ * The anniversary is the offset into the month `startDate` falls at, so the
+ * offset is taken from the moment the period should close and applied to an
+ * earlier month long enough to hold it — February cannot carry a thirtieth.
+ */
+function anchorClosingToday(): string {
+  const monthEnd = startOfUTCMonth(1).getTime();
+  // An hour from now, or the last minute of the month when that hour would
+  // fall outside it: the anniversary has to stay in the month it closes.
+  const closesAt = Math.min(Date.now() + 3_600_000, monthEnd - 60_000);
+  const offset = closesAt - startOfUTCMonth(0).getTime();
+
+  for (let monthsBack = 1; monthsBack <= 12; monthsBack += 1) {
+    const start = startOfUTCMonth(-monthsBack).getTime();
+    if (start + offset < startOfUTCMonth(-monthsBack + 1).getTime()) {
+      return new Date(start + offset).toISOString();
+    }
+  }
+
+  throw new Error("no month in the last year long enough to hold the anchor");
+}
+
+/**
  * A team billed by the month whose cycle has not come round yet, with the usage
  * its bill will be raised on.
  *
@@ -893,9 +920,13 @@ const pendingBillTest = staffTest.extend<{
       name: "Dunder Mifflin",
       createdDaysAgo: 60,
       trialEndedDaysAgo: 57,
-      // The period opened a fortnight ago, so the day it bills on is still
-      // ahead — which is what leaves the month with nothing invoiced to report.
-      periodStartDaysAgo: 14,
+      // Placed so the period closes later today: still ahead of now, and
+      // inside the running month, which is the pair of conditions a bill this
+      // month's projection is waiting on has to meet. Read off the calendar
+      // rather than counted in days — a fortnight from the end of a month
+      // lands the anniversary in the next one, where the bill would not be
+      // this month's at all.
+      periodStart: anchorClosingToday(),
       flatPrice: 100,
       screenshotsByClosedPeriod: [],
       screenshotsInRunningPeriod: 45_000,

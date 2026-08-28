@@ -141,7 +141,7 @@ const YEARLY_HINT =
   "Annual contracts amortized, day by day, over the months they cover. In €.";
 
 const GITHUB_HINT =
-  "The month's Marketplace subscriptions at list price, billed by GitHub. On top of the figure above, not in it.";
+  "The month's Marketplace subscriptions at list price, billed by GitHub rather than invoiced by Argos.";
 
 /**
  * Stands in for the hint line while the figures load.
@@ -354,7 +354,7 @@ function ProjectionSplit(props: { projection: RevenueProjection }) {
           <SplitAmount
             amount={projection.githubPlans}
             label="GitHub"
-            tooltip="A whole month of the Marketplace subscriptions, at list price. On top of the figures above, not inside them."
+            tooltip="A whole month of the Marketplace subscriptions, at list price, billed by GitHub rather than invoiced by Argos."
           />
         </>
       ) : null}
@@ -693,7 +693,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[20%] text-left"
+              className="w-[21%] text-left"
             />
             <SortHeader
               label="Plan"

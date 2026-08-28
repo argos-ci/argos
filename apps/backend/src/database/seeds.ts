@@ -2,6 +2,7 @@ import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
 import { concludeBuild } from "@/build/concludeBuild";
+import { startOfUTCMonth } from "@/stripe/revenue";
 import { decodeFingerprint } from "@/util/fingerprint";
 
 import { knex } from "./knex";
@@ -2146,12 +2147,16 @@ export async function seed() {
  */
 const OLDEST_REVENUE_MONTH = -12;
 
-/** The first instant of the month `offset` months from the running one, UTC. */
+/**
+ * The first instant of the month `offset` months from the running one, UTC.
+ *
+ * Cut by the reader's own helper rather than by a copy of it: the revenue page
+ * files an invoice by the month Postgres and Stripe agree it was raised in, so
+ * a seed that cut months anywhere else would land its bills either side of a
+ * boundary the page reads differently.
+ */
 function startOfRelativeMonth(offset: number): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1),
-  );
+  return startOfUTCMonth(new Date(), offset);
 }
 
 /**
