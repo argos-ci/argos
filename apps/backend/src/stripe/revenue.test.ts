@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  classifyInvoice,
-  getInvoiceRevenue,
-  startOfUTCMonth,
-  toEuros,
-} from "./revenue";
+import { startOfUTCMonth } from "@/util/utc-month";
+
+import { classifyInvoice, getInvoiceRevenue, toEuros } from "./revenue";
 
 describe("getInvoiceRevenue", () => {
   /** Stripe states amounts in the currency's minor unit. */

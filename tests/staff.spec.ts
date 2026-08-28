@@ -138,8 +138,11 @@ async function createBilledTeam(input: {
    * which is precisely the row the Screenshots column has to report anyway.
    */
   trialEndsInDays?: number;
-  /** Where the running period opened, which sets the billing anniversary. */
-  periodStartDaysAgo: number;
+  /**
+   * Where the running period opened, which sets the billing anniversary — the
+   * offset into the month it falls at is the day the cycle bills on.
+   */
+  periodStart: string;
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
@@ -173,7 +176,7 @@ async function createBilledTeam(input: {
     subscriberId: input.subscriberId,
     // The row is as old as the team: periods that predate it are not billed.
     createdAt: daysFromNow(-input.createdDaysAgo),
-    startDate: daysFromNow(-input.periodStartDaysAgo),
+    startDate: input.periodStart,
     endDate: null,
     trialEndDate:
       runningTrial === undefined
@@ -344,7 +347,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Soylent",
         createdDaysAgo: 88,
         trialEndedDaysAgo: 85,
-        periodStartDaysAgo: 14,
+        periodStart: daysFromNow(-14),
         flatPrice: 100,
         screenshotsByClosedPeriod: [50_000, 40_000],
         // Well inside the 35k quota with half the period still to run: the
@@ -360,7 +363,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Vandelay",
         createdDaysAgo: 70,
         trialEndedDaysAgo: 67,
-        periodStartDaysAgo: 6,
+        periodStart: daysFromNow(-6),
         flatPrice: null,
         screenshotsByClosedPeriod: [20_000],
       }),
@@ -374,7 +377,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
         flatPrice: 750,
-        periodStartDaysAgo: 9,
+        periodStart: daysFromNow(-9),
         screenshotsByClosedPeriod: [60_000],
         // Already 6k past the quota, which is the whole point of the column:
         // the running amount has started moving with days still left on it.
@@ -395,7 +398,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Trialsonic",
         createdDaysAgo: 10,
         trialEndsInDays: 4,
-        periodStartDaysAgo: 10,
+        periodStart: daysFromNow(-10),
         flatPrice: 100,
         screenshotsByClosedPeriod: [],
         screenshotsInRunningPeriod: 5_625,
@@ -407,7 +410,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         name: "Initrode",
         createdDaysAgo: 400,
         trialEndedDaysAgo: 397,
-        periodStartDaysAgo: 216,
+        periodStart: daysFromNow(-216),
         flatPrice: 12_000,
         screenshotsByClosedPeriod: [],
       }),
@@ -621,6 +624,22 @@ staffTest(
     await screenshot(page, "staff-trial-pipeline-90-days");
   },
 );
+
+/**
+ * The revenue page's own notation, which its assertions have to be written in.
+ *
+ * Built rather than typed out: French groups its thousands with a narrow
+ * no-break space, and a literal one in a spec is a character nobody can see
+ * when the assertion stops matching.
+ */
+function revenueAmount(amount: number, currency: "EUR" | "USD"): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 /** The first instant of the month `offset` months from now, in UTC. */
 function startOfUTCMonth(offset: number) {
@@ -843,10 +862,7 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
     // of it is its amount over that stretch, weighted by this month's length.
     const termMs = startOfUTCMonth(12).getTime() - startOfUTCMonth(0).getTime();
     const monthMs = startOfUTCMonth(1).getTime() - startOfUTCMonth(0).getTime();
-    const contractPerMonth = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "EUR",
-    }).format((12_000 * monthMs) / termMs);
+    const contractPerMonth = revenueAmount((12_000 * monthMs) / termMs, "EUR");
 
     const dateFormat = new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
@@ -862,6 +878,135 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
       dollarInvoiceDate: dateFormat.format(lastMonth),
     });
   },
+});
+
+/**
+ * Where a subscription must have started for its period to close later today.
+ *
+ * The anniversary is the offset into the month `startDate` falls at, so the
+ * offset is taken from the moment the period should close and applied to an
+ * earlier month long enough to hold it — February cannot carry a thirtieth.
+ */
+function anchorClosingToday(): string {
+  const monthEnd = startOfUTCMonth(1).getTime();
+  // An hour from now, or the last minute of the month when that hour would
+  // fall outside it: the anniversary has to stay in the month it closes.
+  const closesAt = Math.min(Date.now() + 3_600_000, monthEnd - 60_000);
+  const offset = closesAt - startOfUTCMonth(0).getTime();
+
+  for (let monthsBack = 1; monthsBack <= 12; monthsBack += 1) {
+    const start = startOfUTCMonth(-monthsBack).getTime();
+    if (start + offset < startOfUTCMonth(-monthsBack + 1).getTime()) {
+      return new Date(start + offset).toISOString();
+    }
+  }
+
+  throw new Error("no month in the last year long enough to hold the anchor");
+}
+
+/**
+ * A team billed by the month whose cycle has not come round yet, with the usage
+ * its bill will be raised on.
+ *
+ * Seeded on its own rather than into the book above: the running month is the
+ * only month that can hold a bill still to come, and the book's assertions are
+ * all about months that have closed.
+ */
+const pendingBillTest = staffTest.extend<{
+  pendingBill: { team: string; amount: string; screenshots: string };
+}>({
+  pendingBill: async ({ user }, use, testInfo) => {
+    const prefix = `pending-${getUniqueTestIdentifier(testInfo)}`;
+    const plan = await PlanModel.query().insertAndFetch({
+      name: "pro",
+      includedScreenshots: 35_000,
+      usageBased: true,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      samlIncluded: true,
+      interval: "month",
+    });
+    await createBilledTeam({
+      planId: plan.id,
+      subscriberId: user.user.id,
+      slug: `${prefix}-dunder`,
+      name: "Dunder Mifflin",
+      createdDaysAgo: 60,
+      trialEndedDaysAgo: 57,
+      // Placed so the period closes later today: still ahead of now, and
+      // inside the running month, which is the pair of conditions a bill this
+      // month's projection is waiting on has to meet. Read off the calendar
+      // rather than counted in days — a fortnight from the end of a month
+      // lands the anniversary in the next one, where the bill would not be
+      // this month's at all.
+      periodStart: anchorClosingToday(),
+      flatPrice: 100,
+      screenshotsByClosedPeriod: [],
+      screenshotsInRunningPeriod: 45_000,
+    });
+
+    // The page refuses a window the mirror was never swept for, so the sweep
+    // has to be on record even though this test reads no invoice at all.
+    await StripeInvoiceSync.query().insert({
+      sinceDate: startOfUTCMonth(-36).toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+
+    // The plan's own amount, plus the ten thousand screenshots past the quota
+    // at the half-cent the helper prices them at.
+    await use({
+      team: "Dunder Mifflin",
+      amount: revenueAmount(150, "USD"),
+      screenshots: new Intl.NumberFormat("fr-FR").format(45_000),
+    });
+  },
+});
+
+pendingBillTest.describe("staff revenue estimates", () => {
+  // One browser project, like the book above: the page has no filter, so the
+  // second run would read the first one's teams as well as its own.
+  pendingBillTest.skip(
+    ({ browserName }) => browserName !== "chromium",
+    "the page sums every team, so it can only be seeded once",
+  );
+
+  pendingBillTest(
+    "the running month lists the bills still to come",
+    async ({ page, pendingBill }) => {
+      await page.goto("/staff/revenue");
+
+      const monthlyPlans = page
+        .locator("table")
+        .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
+      await monthlyPlans
+        .locator("tbody tr")
+        .first()
+        .getByRole("button", { name: "View details" })
+        .click();
+
+      // Scoped to the breakdown's own rows: the month row wrapping them
+      // carries the same text, and every other team seeded by the suite has a
+      // line in there too.
+      const line = monthlyPlans
+        .locator("tbody tr")
+        .nth(1)
+        .locator("tbody tr")
+        .filter({ hasText: pendingBill.team });
+      // Priced off the usage the period has accumulated: the cycle has raised
+      // nothing to read.
+      await expect(line.getByText(pendingBill.amount)).toBeVisible();
+      await expect(line.getByText(pendingBill.screenshots)).toBeVisible();
+      // The amount carries what makes it an estimate, the line itself saying
+      // it only in the grey it is written in.
+      await expect(async () => {
+        await page.mouse.move(0, 0);
+        await line.getByText(pendingBill.amount).hover();
+        await expect(
+          page.getByText("Not yet invoiced or included above"),
+        ).toBeVisible({ timeout: 2_000 });
+      }).toPass();
+    },
+  );
 });
 
 revenueTest.describe("staff revenue", () => {
@@ -882,28 +1027,42 @@ revenueTest.describe("staff revenue", () => {
 
     // €500 from one team and $1,000 from the other, the dollars converted at the
     // page's fixed rate: €500 + €855.
-    await expect(page.getByText("€1,355 monthly").first()).toBeVisible();
+    await expect(
+      page.getByText(`${revenueAmount(1355, "EUR")} Monthly`).first(),
+    ).toBeVisible();
 
     const monthlyPlans = page
       .locator("table")
       .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
     const lastMonthRow = monthlyPlans.locator("tbody tr").nth(1);
-    await expect(lastMonthRow.getByText("€1,355")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(revenueAmount(1355, "EUR")),
+    ).toBeVisible();
     // Two teams invoiced, so the average is half the month. Neither of the two
     // annual bills raised that same month is in either figure — not the current
     // contract, and not the churned team's renewal, whose only mark of being a
     // year's worth is the period on the invoice itself.
-    await expect(lastMonthRow.getByText("€678")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(revenueAmount(678, "EUR")),
+    ).toBeVisible();
     // €1,000 the month before, so the column reports the climb rather than the
     // em dash it falls back to with nothing to divide by.
-    await expect(lastMonthRow.getByText("+36%")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(
+        new Intl.NumberFormat("fr-FR", {
+          style: "percent",
+          maximumFractionDigits: 0,
+          signDisplay: "exceptZero",
+        }).format(0.36),
+      ),
+    ).toBeVisible();
 
     await lastMonthRow.getByRole("button", { name: "View details" }).click();
     const breakdown = monthlyPlans.locator("tbody tr").nth(2);
     await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
     // What Stripe charged, beside what the page counts it as.
-    await expect(breakdown.getByText("$1,000.00")).toBeVisible();
-    await expect(breakdown.getByText("€855")).toBeVisible();
+    await expect(breakdown.getByText(revenueAmount(1000, "USD"))).toBeVisible();
+    await expect(breakdown.getByText(revenueAmount(855, "EUR"))).toBeVisible();
     // Each line carries the day its invoice was raised.
     await expect(
       breakdown.getByText(revenueBook.monthlyInvoiceDate),
@@ -929,7 +1088,9 @@ revenueTest.describe("staff revenue", () => {
       .filter({ hasText: revenueBook.contractTeam });
     // Twice over: what Stripe charged, and what the page counts it as — the
     // contract is in euros, so both cells read the same.
-    await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
+    await expect(
+      contractRow.getByText(revenueAmount(12_000, "EUR")),
+    ).toHaveCount(2);
     await expect(
       contractRow.getByText(revenueBook.contractPerMonth),
     ).toBeVisible();

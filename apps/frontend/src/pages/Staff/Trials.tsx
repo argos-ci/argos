@@ -38,7 +38,7 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { HeadlessLink, Link } from "@/ui/Link";
+import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
@@ -58,8 +58,7 @@ import {
   PRO_PLAN_NAME,
   toMonthlyAmount,
 } from "./pricing";
-import { getStripeCustomerURL } from "./stripe";
-import stripeLogo from "./stripe.svg";
+import { StripeCustomerLink } from "./stripe";
 import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
 const TrialPipelineQuery = graphql(`
@@ -652,41 +651,6 @@ function ContactCell(props: { team: PipelineTeam }) {
         />
       </span>
     </div>
-  );
-}
-
-/**
- * Jumps straight to the customer in Stripe.
- *
- * Nothing is rendered without a customer id: a team that never reached checkout
- * has no Stripe page, and a link to `/customers/null` would only look broken.
- */
-function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
-  const { stripeCustomerId } = props;
-
-  if (!stripeCustomerId) {
-    return null;
-  }
-
-  return (
-    <Tooltip content="Open customer in Stripe">
-      <HeadlessLink
-        href={getStripeCustomerURL(stripeCustomerId)}
-        target="_blank"
-        // The generic external arrow would compete with the logo that already
-        // says "this leaves Argos for Stripe".
-        external={false}
-        aria-label="Open customer in Stripe"
-        // Pushed to the cell edge: next to the name the tile reads as a tag on
-        // the team rather than as a way out to Stripe, and following a
-        // variable-width name it lands somewhere different on every row. The
-        // logo carries its own brand color, so hover dims the whole tile rather
-        // than re-tinting it the way a monochrome icon would.
-        className="ml-auto shrink-0 opacity-75 transition hover:opacity-100"
-      >
-        <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
-      </HeadlessLink>
-    </Tooltip>
   );
 }
 

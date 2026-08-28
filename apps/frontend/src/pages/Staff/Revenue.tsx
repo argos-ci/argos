@@ -7,7 +7,6 @@ import {
   CalendarCheckIcon,
   CalendarClockIcon,
   ChevronDownIcon,
-  TrendingDownIcon,
   TrendingUpIcon,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
@@ -40,7 +39,8 @@ import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getStripeCustomerURL } from "./stripe";
+import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
+import { StripeCustomerLink } from "./stripe";
 
 /**
  * Read from the backend's Stripe invoice mirror — this page is the query's
@@ -57,19 +57,6 @@ const StaffRevenueQuery = graphql(`
           teamsCount
           foreignRevenue
         }
-        teams {
-          slug
-          name
-          stripeCustomerId
-          amount
-          currency
-          revenue
-          invoices {
-            amount
-            currency
-            invoicedAt
-          }
-        }
         yearlyPlans {
           revenue
           teamsCount
@@ -80,6 +67,13 @@ const StaffRevenueQuery = graphql(`
           teamsCount
           foreignRevenue
         }
+      }
+      projection {
+        revenue
+        monthlyPlans
+        yearlyPlans
+        githubPlans
+        estimated
       }
       yearlyContracts {
         slug
@@ -101,11 +95,46 @@ const StaffRevenueQuery = graphql(`
   }
 `);
 
+/**
+ * The teams behind one month, read when a reader opens that month rather than
+ * beside the figures: a line carries the usage its team got through, and a
+ * year of that is the page's whole cost. Closed months never change, so the
+ * Apollo cache holds each one for the session after its first opening.
+ */
+const StaffRevenueMonthTeamsQuery = graphql(`
+  query StaffRevenue_staffRevenueMonthTeams($month: DateTime!) {
+    staffRevenueMonthTeams(month: $month) {
+      slug
+      name
+      stripeCustomerId
+      amount
+      currency
+      revenue
+      screenshotsCount
+      estimatedAt
+      planPrice {
+        amount
+        currency
+      }
+      includedScreenshots
+      planName
+      invoices {
+        amount
+        currency
+        invoicedAt
+      }
+    }
+  }
+`);
+
 type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
 type RevenueMonth = RevenueData["months"][number];
+type RevenueProjection = RevenueData["projection"];
 type YearlyContract = RevenueData["yearlyContracts"][number];
 type Split = RevenueMonth["monthlyPlans"];
-type MonthTeam = RevenueMonth["teams"][number];
+type MonthTeam = DocumentType<
+  typeof StaffRevenueMonthTeamsQuery
+>["staffRevenueMonthTeams"][number];
 
 /** Months the dedicated page reads — a year, plus the one running. */
 const PAGE_MONTHS = 13;
@@ -125,7 +154,7 @@ const YEARLY_HINT =
   "Annual contracts amortized, day by day, over the months they cover. In €.";
 
 const GITHUB_HINT =
-  "The month's Marketplace subscriptions at list price, billed by GitHub. On top of the figure above, not in it.";
+  "The month's Marketplace subscriptions at list price, billed by GitHub rather than invoiced by Argos.";
 
 /**
  * Stands in for the hint line while the figures load.
@@ -136,18 +165,6 @@ const GITHUB_HINT =
  * moment it arrives.
  */
 const HINT_PLACEHOLDER = " ";
-
-/**
- * The month an amount covers, named.
- *
- * Read in UTC, which is where the server cut the month — formatting in the
- * reader's own zone would name the month before it for anyone west of
- * Greenwich.
- */
-const MONTH_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  timeZone: "UTC",
-});
 
 const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -161,11 +178,21 @@ const MONTH_SHORT_FORMAT = new Intl.DateTimeFormat("en-US", {
 });
 
 /**
+ * The locale every figure on this page is written in.
+ *
+ * Pinned rather than left to the reader, like the currency below and for the
+ * same reason: the book is kept in euros by a team that reads them in French,
+ * and a page whose numbers changed shape from one staff screen to the next
+ * would be quoted back and forth in two notations.
+ */
+const PAGE_LOCALE = "fr-FR";
+
+/**
  * Every amount on this page is in euros — the currency the business is run
  * in — where the other staff pages price plans in dollars. Dollar invoices are
  * converted server-side at a fixed rate, which the foreign-share caveats own.
  */
-const EUR_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const EUR_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
   maximumFractionDigits: 0,
@@ -176,7 +203,7 @@ function formatEuros(amount: number): string {
 }
 
 /** Amounts on the axis, shortened, in the page's euros. */
-const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const AXIS_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
   notation: "compact",
@@ -184,23 +211,27 @@ const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
 });
 
 /**
- * Amounts in the contracts table, with cents.
+ * Amounts in the contracts table.
  *
- * The rest of the page rounds to the euro, but this table exists to be added
- * up against the yearly figure, and twelfths carry cents — a rounded list
- * would not sum to its own total.
+ * Rounded to the euro like the rest of the page, so the table's own total can
+ * come out a euro or two off the rows above it: a twelfth of a contract falls
+ * between two of them, and the cents that would make the column add up exactly
+ * are noise on every figure that carries them.
  */
-const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
+  maximumFractionDigits: 0,
 });
 
 /**
  * An invoice in the currency it was raised in — the audit trail to Stripe.
  *
  * Local formatters rather than util/intl's `formatCurrency`: that one follows
- * the reader's locale, where every figure on this page is pinned to en-US so
- * the amounts read the same on every staff screen.
+ * the reader's locale, where every figure on this page is pinned to one so the
+ * amounts read the same on every staff screen. Rounded to the unit like
+ * every other amount here: this page is read for what a month came to, and
+ * the cents belong to the invoice in Stripe, one click away.
  */
 const INVOICE_PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
 function formatInvoiceAmount(invoice: {
@@ -210,21 +241,35 @@ function formatInvoiceAmount(invoice: {
   const currency = invoice.currency.toUpperCase();
   let format = INVOICE_PRICE_FORMATS.get(currency);
   if (!format) {
-    format = new Intl.NumberFormat("en-US", { style: "currency", currency });
+    format = new Intl.NumberFormat(PAGE_LOCALE, {
+      style: "currency",
+      currency,
+      // `$` rather than `$US`: the column is read for the currency an invoice
+      // was raised in, and the two this page ever sees are told apart by their
+      // symbols alone.
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0,
+    });
     INVOICE_PRICE_FORMATS.set(currency, format);
   }
   return format.format(invoice.amount);
 }
+
+/** Screenshot counts, grouped like the team directory prints them. */
+const SCREENSHOTS_FORMAT = new Intl.NumberFormat(PAGE_LOCALE);
+
+/** A month's move against the one before it, signed. */
+const GROWTH_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "percent",
+  maximumFractionDigits: 0,
+  signDisplay: "exceptZero",
+});
 
 /** A renewal's date, read in UTC like every other date on the page. */
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeZone: "UTC",
 });
-
-function formatMonth(month: string): string {
-  return MONTH_FORMAT.format(new Date(month));
-}
 
 /** The figures behind a half, appended to its tooltip. */
 function getSplitNote(split: Split): string {
@@ -321,21 +366,57 @@ function MonthSplit(props: { month: RevenueMonth; monthlyHint: string }) {
   );
 }
 
+/**
+ * Where the running month's projection comes from, under the amount.
+ *
+ * The same three parts the months above are split into, so the card can be
+ * read against the one beside it — and the part of the monthly figure no
+ * invoice exists for, which is the only one of the three that is not a
+ * reading of something already raised.
+ */
+function ProjectionSplit(props: { projection: RevenueProjection }) {
+  const { projection } = props;
+
+  return (
+    <>
+      <SplitAmount
+        amount={projection.monthlyPlans}
+        label="Monthly"
+        tooltip={`This month's invoices, plus ${formatEuros(projection.estimated)} the cycles have not raised yet — what the subscriptions still to be billed have run up so far. A floor: their usage keeps accruing until the cycle closes.`}
+      />
+      {" · "}
+      <SplitAmount
+        amount={projection.yearlyPlans}
+        label="Yearly"
+        tooltip="A whole month of the annual contracts, where the card beside this one counts only the days that have gone by."
+      />
+      {projection.githubPlans > 0 ? (
+        <>
+          {" · "}
+          <SplitAmount
+            amount={projection.githubPlans}
+            label="GitHub"
+            tooltip="A whole month of the Marketplace subscriptions, at list price, billed by GitHub rather than invoiced by Argos."
+          />
+        </>
+      ) : null}
+    </>
+  );
+}
+
 /** The three headline figures, rendered from whatever window was read. */
 function RevenueCards(props: {
   /** Oldest first, the running month last. Null while loading. */
   months: readonly RevenueMonth[] | null;
+  /** Where the running month is heading. Null while loading. */
+  projection: RevenueProjection | null;
   error: Error | null;
 }) {
-  const { months, error } = props;
+  const { months, projection, error } = props;
 
   // The last two are the only ones the cards read, whatever the window.
   const currentMonth = months?.at(-1) ?? null;
   const lastMonth = months?.at(-2) ?? null;
-  const growth =
-    currentMonth && lastMonth
-      ? getGrowth(currentMonth.revenue, lastMonth.revenue)
-      : null;
 
   // An em dash on all three rather than a band that disappears: the figures
   // failing to load is worth seeing on a page whose whole subject is what they
@@ -364,10 +445,11 @@ function RevenueCards(props: {
         data-visual-test="transparent"
         icon={CalendarCheckIcon}
         color="primary"
-        label="Last month"
+        label="Last month revenue"
         value={readValue(lastMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
           (lastMonth ? (
@@ -382,10 +464,11 @@ function RevenueCards(props: {
         icon={CalendarClockIcon}
         // The storybook token is the design system's pink.
         color="storybook"
-        label="Current month"
+        label="Invoiced this month"
         value={readValue(currentMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
           (currentMonth ? (
@@ -400,22 +483,17 @@ function RevenueCards(props: {
       />
       <StatTile
         data-visual-test="transparent"
-        icon={growth !== null && growth < 0 ? TrendingDownIcon : TrendingUpIcon}
-        color={growth !== null && growth < 0 ? "warning" : "success"}
-        label="Month over month"
-        value={readValue(growth)}
-        format="percent"
+        icon={TrendingUpIcon}
+        color="success"
+        label="Projected this month"
+        value={readValue(projection?.revenue ?? null)}
+        format="currency"
+        currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
-          (currentMonth && lastMonth && growth !== null ? (
-            <Hint
-              content={`${formatMonth(currentMonth.month)} (${formatEuros(currentMonth.revenue)}) vs ${formatMonth(lastMonth.month)} (${formatEuros(lastMonth.revenue)}). The running month is still filling.`}
-            >
-              {formatMonth(currentMonth.month)} vs{" "}
-              {formatMonth(lastMonth.month)}
-            </Hint>
-          ) : months ? (
-            "nothing to compare"
+          (projection ? (
+            <ProjectionSplit projection={projection} />
           ) : (
             HINT_PLACEHOLDER
           ))
@@ -453,9 +531,9 @@ const CHART_CONFIG: ChartConfig = Object.fromEntries(
  * carries a slope where twelve separate bars make the reader measure heights
  * against each other.
  *
- * The tooltip totals the three bands, the stack's own height. It therefore
- * reads above the cards, which report what Stripe invoiced alone — the
- * Marketplace band is billed by GitHub and sits on top of them.
+ * The tooltip totals the three bands, the stack's own height — the same figure
+ * the cards state, Marketplace included: what a month was worth is what it was
+ * worth, whoever raised the bill.
  */
 function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   const data = props.months.map((month) => ({
@@ -542,7 +620,13 @@ function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   );
 }
 
-type MonthTeamSortKey = "team" | "amount" | "revenue" | "date";
+type MonthTeamSortKey =
+  | "team"
+  | "usage"
+  | "plan"
+  | "amount"
+  | "revenue"
+  | "date";
 
 /**
  * Sortable value per column of a month's breakdown.
@@ -564,13 +648,29 @@ function getMonthTeamSortValue(
       return team.currency === null ? -1 : team.amount;
     case "revenue":
       return team.revenue;
+    case "plan":
+      return team.planPrice?.amount ?? -1;
+    case "usage":
+      return team.screenshotsCount;
     case "date": {
-      // On the date the column prints — the newest, invoices being sent
-      // newest first.
-      const newest = team.invoices[0];
-      return newest ? new Date(newest.invoicedAt).getTime() : -1;
+      // On the date the column prints: the newest invoice, or the day the bill
+      // is expected on a line that has none yet.
+      const date = getMonthTeamDate(team);
+      return date ? date.getTime() : -1;
     }
   }
+}
+
+/**
+ * The day a line is filed under: when its newest invoice was raised, or when
+ * the bill it is still waiting on is expected.
+ */
+function getMonthTeamDate(team: MonthTeam): Date | null {
+  const newest = team.invoices[0];
+  if (newest) {
+    return new Date(newest.invoicedAt);
+  }
+  return team.estimatedAt ? new Date(team.estimatedAt) : null;
 }
 
 function sortMonthTeams(
@@ -600,6 +700,11 @@ function sortMonthTeams(
  * sort being stable. The rank column numbers the rows as they are displayed,
  * so it re-reads as a line number under any other sort rather than pinning a
  * position the sort has moved.
+ *
+ * The running month also carries the bills it is still waiting on — a cycle
+ * that falls later in the month has raised nothing yet — as estimated lines.
+ * Their date is the day the bill is expected, so that order puts them at the
+ * top: they are the only lines of the month that have not happened.
  */
 function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
   const [sortKey, setSortKey] = useState<MonthTeamSortKey>("date");
@@ -626,14 +731,22 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
       <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
-            <th className="w-[6%] px-4 py-3 text-right">#</th>
+            <th className="w-[5%] px-4 py-3 text-right">#</th>
             <SortHeader
               label="Team"
               sortKey="team"
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[28%] text-left"
+              className="w-[20%] text-left"
+            />
+            <SortHeader
+              label="Plan"
+              sortKey="plan"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[14%] text-right"
             />
             <SortHeader
               label="Invoiced"
@@ -641,7 +754,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[16%] text-right"
             />
             <SortHeader
               label="In euros"
@@ -649,7 +762,15 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[14%] text-right"
+            />
+            <SortHeader
+              label="Usage"
+              sortKey="usage"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[16%] text-right"
             />
             <SortHeader
               label="Date"
@@ -657,41 +778,100 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[18%] text-right"
+              className="w-[15%] text-right"
             />
-            <th className="w-[12%] px-4 py-3 text-right" />
           </tr>
         </thead>
         <tbody>
           {teams.map((team, teamIndex) => {
             const newestInvoice = team.invoices[0] ?? null;
+            const expectedAt = team.estimatedAt
+              ? new Date(team.estimatedAt)
+              : null;
+            // Pro at list is what nearly every line is billed, so printing it
+            // would repeat one figure down the column. An amount that is not
+            // it — a commitment, or a price negotiated off the list — is the
+            // only one worth reading.
+            const planPrice =
+              team.planPrice &&
+              team.planName === PRO_PLAN_NAME &&
+              team.planPrice.amount === PRO_MONTHLY_PRICE
+                ? null
+                : team.planPrice;
+            // Under the count it is read against, and left out on Pro, whose
+            // quota is the same figure down nearly every line — the team
+            // directory prints it on the same terms.
+            const quota =
+              team.includedScreenshots !== null &&
+              team.planName !== PRO_PLAN_NAME
+                ? SCREENSHOTS_FORMAT.format(team.includedScreenshots)
+                : null;
 
             return (
               <tr
-                key={team.stripeCustomerId}
+                // The customer alone is not unique: a team sent a bill this
+                // month can still have its cycle's own bill to come, which is
+                // a second line — one invoiced, one estimated.
+                key={`${team.stripeCustomerId}-${team.estimatedAt ? "estimate" : "invoiced"}`}
                 className={clsx(
                   "text-sm",
                   teamIndex !== teams.length - 1 && "border-b",
+                  // A bill that has not been raised is written in grey, so a
+                  // ledger of facts is not read off the same colour as one
+                  // line that is a projection.
+                  expectedAt && "text-low",
                 )}
               >
                 <td className="text-low px-4 py-2.5 text-right tabular-nums">
                   {teamIndex + 1}
                 </td>
                 <td className="px-4 py-2.5 text-left">
-                  <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+                    <StripeCustomerLink
+                      stripeCustomerId={team.stripeCustomerId}
+                    />
+                  </div>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
-                  {team.currency !== null ? (
+                  {planPrice ? formatInvoiceAmount(planPrice) : null}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {team.currency === null ? (
+                    <span className="text-low">—</span>
+                  ) : expectedAt ? (
+                    // The grey the row is written in says the amount was not
+                    // invoiced; what it is made of takes a sentence, so it is
+                    // the tooltip that carries it.
+                    <Hint content="Not yet invoiced or included above">
+                      {formatInvoiceAmount({
+                        amount: team.amount,
+                        currency: team.currency,
+                      })}
+                    </Hint>
+                  ) : (
                     formatInvoiceAmount({
                       amount: team.amount,
                       currency: team.currency,
                     })
-                  ) : (
-                    <span className="text-low">—</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {formatEuros(team.revenue)}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {expectedAt ? (
+                    // The period's, not the month's: it is the count the
+                    // estimate beside it was computed on.
+                    <Hint content="To date">
+                      {SCREENSHOTS_FORMAT.format(team.screenshotsCount)}
+                    </Hint>
+                  ) : (
+                    SCREENSHOTS_FORMAT.format(team.screenshotsCount)
+                  )}
+                  {quota !== null && (
+                    <div className="text-low text-xs">/ {quota}</div>
+                  )}
                 </td>
                 {/* The dates walk forward with the calendar, like the month
                     names above. */}
@@ -699,7 +879,9 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   className="px-4 py-2.5 text-right tabular-nums"
                   data-visual-test="transparent"
                 >
-                  {newestInvoice === null ? (
+                  {expectedAt ? (
+                    DATE_FORMAT.format(expectedAt)
+                  ) : newestInvoice === null ? (
                     <span className="text-low">—</span>
                   ) : team.invoices.length === 1 ? (
                     DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))
@@ -723,14 +905,6 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                     </Hint>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-right">
-                  <Link
-                    href={getStripeCustomerURL(team.stripeCustomerId)}
-                    target="_blank"
-                  >
-                    Stripe
-                  </Link>
-                </td>
               </tr>
             );
           })}
@@ -751,6 +925,17 @@ function HistoryRow(props: {
 }) {
   const { month, before, isCurrent, index, isLast } = props;
   const [isOpened, setIsOpened] = useState(false);
+  // A month nobody invoiced has nothing to open, and the running month can
+  // still be owed a bill nothing has counted — so it opens whatever its
+  // figures say.
+  const hasTeams = isCurrent || month.monthlyPlans.teamsCount > 0;
+  // Fired on the first opening and never again: a closed month's breakdown is
+  // a fact, and Apollo holds it for the session.
+  const { data, error } = useQuery(StaffRevenueMonthTeamsQuery, {
+    variables: { month: month.month },
+    skip: !isOpened,
+  });
+  const teams = data?.staffRevenueMonthTeams ?? null;
   // On the monthly figure, like every column here: the yearly rate lives in
   // its own table, and a change diluted by a flat rate would understate every
   // move.
@@ -791,8 +976,7 @@ function HistoryRow(props: {
             <span
               className={percent < 0 ? "text-danger-low" : "text-success-low"}
             >
-              {percent > 0 ? "+" : ""}
-              {percent}%
+              {GROWTH_FORMAT.format(percent / 100)}
             </span>
           )}
         </td>
@@ -809,7 +993,7 @@ function HistoryRow(props: {
           )}
         </td>
         <td className="p-4 text-right text-sm">
-          {month.teams.length > 0 ? (
+          {hasTeams ? (
             <Button
               variant="secondary"
               size="small"
@@ -838,7 +1022,17 @@ function HistoryRow(props: {
           )}
         >
           <td colSpan={6} className="p-4">
-            <MonthTeamsTable teams={month.teams} />
+            {teams ? (
+              <MonthTeamsTable teams={teams} />
+            ) : error ? (
+              <Alert>
+                <AlertText>{error.message}</AlertText>
+              </Alert>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Loader className="text-low size-6" />
+              </div>
+            )}
           </td>
         </tr>
       ) : null}
@@ -931,7 +1125,12 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
   return (
     <tr className={clsx(index % 2 === 0 ? "bg-app" : "bg-subtle", "border-b")}>
       <td className="p-4 text-left text-sm font-medium">
-        <Link href={`/${contract.slug}`}>{contract.name ?? contract.slug}</Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/${contract.slug}`}>
+            {contract.name ?? contract.slug}
+          </Link>
+          <StripeCustomerLink stripeCustomerId={contract.stripeCustomerId} />
+        </div>
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
         {contract.amount !== null ? (
@@ -991,14 +1190,6 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
           <span className="text-low">—</span>
         )}
       </td>
-      <td className="p-4 text-right text-sm">
-        <Link
-          href={getStripeCustomerURL(contract.stripeCustomerId)}
-          target="_blank"
-        >
-          Stripe
-        </Link>
-      </td>
     </tr>
   );
 }
@@ -1038,19 +1229,18 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
             <thead>
               <tr className="text-low border-b text-xs font-semibold">
                 <th className="w-[26%] px-4 py-3 text-left">Team</th>
-                <th className="w-[18%] px-4 py-3 text-right">Invoiced</th>
-                <th className="w-[16%] px-4 py-3 text-right">
+                <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
+                <th className="w-[18%] px-4 py-3 text-right">
                   <Hint content="Dollars converted at a fixed rate.">
                     In euros
                   </Hint>
                 </th>
-                <th className="w-[16%] px-4 py-3 text-right">
+                <th className="w-[18%] px-4 py-3 text-right">
                   <Hint content="What it adds to this month, in euros.">
                     Per month
                   </Hint>
                 </th>
                 <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
-                <th className="w-[16%] px-4 py-3 text-right" />
               </tr>
             </thead>
             <tbody>
@@ -1073,7 +1263,6 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                   {CONTRACT_PRICE_FORMAT.format(monthlyTotal)}
                 </td>
                 <td />
-                <td />
               </tr>
             </tfoot>
           </table>
@@ -1089,6 +1278,7 @@ function StaffRevenuePage() {
   });
   const months = data?.staffRevenue.months ?? null;
   const contracts = data?.staffRevenue.yearlyContracts ?? null;
+  const projection = data?.staffRevenue.projection ?? null;
 
   // Told rather than reported as a failed figure, as the other staff pages do:
   // a reader without access has no figures to wait for, and three tiles reading
@@ -1120,7 +1310,11 @@ function StaffRevenuePage() {
           <Heading>Revenue</Heading>
         </PageHeaderContent>
       </PageHeader>
-      <RevenueCards months={months} error={error ?? null} />
+      <RevenueCards
+        months={months}
+        projection={projection}
+        error={error ?? null}
+      />
       {months && contracts ? (
         <>
           <ChartCard className="mb-6" title="Invoiced by month">
