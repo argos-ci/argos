@@ -596,31 +596,6 @@ function getMonthTeamSortValue(
 }
 
 /**
- * What the usage past the plan cost: the bill, less the plan's own price.
- *
- * In money rather than in screenshots, which is what makes it worth reading
- * beside the count. A negotiated plan sells its committed volume far below the
- * rate everything past it is billed at — six or seven times below is ordinary —
- * so a team a modest 46% over its quota can be paying thousands more than it
- * signed for, and the volume alone never says so.
- *
- * Null where there is nothing to read: no price on file, a month mixing
- * currencies — which leaves the invoice with no single figure to subtract from
- * — or a bill still inside the plan it was raised on.
- */
-function getOverage(team: MonthTeam): {
-  amount: number;
-  currency: string;
-} | null {
-  const { planPrice } = team;
-  if (!planPrice || planPrice.amount <= 0 || team.currency === null) {
-    return null;
-  }
-  const amount = team.amount - planPrice.amount;
-  return amount > 0 ? { amount, currency: planPrice.currency } : null;
-}
-
-/**
  * The day a line is filed under: when its newest invoice was raised, or when
  * the bill it is still waiting on is expected.
  */
@@ -700,20 +675,12 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               className="w-[20%] text-left"
             />
             <SortHeader
-              label="Usage"
-              sortKey="usage"
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-              className="w-[14%] text-right"
-            />
-            <SortHeader
               label="Plan"
               sortKey="plan"
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[14%] text-right"
+              className="w-[13%] text-right"
             />
             <SortHeader
               label="Invoiced"
@@ -732,6 +699,14 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               className="w-[12%] text-right"
             />
             <SortHeader
+              label="Usage"
+              sortKey="usage"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[14%] text-right"
+            />
+            <SortHeader
               label="Date"
               sortKey="date"
               activeSortKey={sortKey}
@@ -748,7 +723,6 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
             const expectedAt = team.estimatedAt
               ? new Date(team.estimatedAt)
               : null;
-            const overage = getOverage(team);
             // Pro at list is what nearly every line is billed, so printing it
             // would repeat one figure down the column. An amount that is not
             // it — a commitment, or a price negotiated off the list — is the
@@ -759,12 +733,12 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               team.planPrice.amount === PRO_MONTHLY_PRICE
                 ? null
                 : team.planPrice;
-            // Under the price rather than under the usage: it is what that
-            // price buys, and the pair reads against the one beside it. Printed
-            // only where the price is, for the same reason it is — Pro's quota
-            // is the same figure down nearly every line.
+            // Under the count it is read against, and left out on Pro, whose
+            // quota is the same figure down nearly every line — the team
+            // directory prints it on the same terms.
             const quota =
-              planPrice && team.includedScreenshots !== null
+              team.includedScreenshots !== null &&
+              team.planName !== PRO_PLAN_NAME
                 ? SCREENSHOTS_FORMAT.format(team.includedScreenshots)
                 : null;
 
@@ -787,29 +761,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
-                  {expectedAt ? (
-                    // The period's, not the month's: it is the count the
-                    // estimate beside it was computed on.
-                    <Hint content="To date">
-                      {SCREENSHOTS_FORMAT.format(team.screenshotsCount)}
-                    </Hint>
-                  ) : (
-                    SCREENSHOTS_FORMAT.format(team.screenshotsCount)
-                  )}
-                  {overage && (
-                    // What the screenshots past the plan's own came to, under
-                    // the count they were consumed as: the volume and what it
-                    // cost are one reading.
-                    <div className="text-low text-xs">
-                      +{formatInvoiceAmount(overage)}
-                    </div>
-                  )}
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums">
                   {planPrice ? formatInvoiceAmount(planPrice) : null}
-                  {quota !== null && (
-                    <div className="text-low text-xs">{quota}</div>
-                  )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {team.currency === null ? (
@@ -833,6 +785,20 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {formatEuros(team.revenue)}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  {expectedAt ? (
+                    // The period's, not the month's: it is the count the
+                    // estimate beside it was computed on.
+                    <Hint content="To date">
+                      {SCREENSHOTS_FORMAT.format(team.screenshotsCount)}
+                    </Hint>
+                  ) : (
+                    SCREENSHOTS_FORMAT.format(team.screenshotsCount)
+                  )}
+                  {quota !== null && (
+                    <div className="text-low text-xs">/ {quota}</div>
+                  )}
                 </td>
                 {/* The dates walk forward with the calendar, like the month
                     names above. */}
