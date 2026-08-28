@@ -2234,8 +2234,8 @@ async function createRevenueScenario(input: {
   /** The Stripe subscription they are raised against. */
   const subscriptionOf = (slug: string) => `sub_seed_${slug}`;
 
-  /** What the monthly plan charges before any usage, per month. */
-  const MONTHLY_FLAT_PRICE = 99;
+  /** What the monthly plan charges before any usage, per month, at list. */
+  const MONTHLY_FLAT_PRICE = 100;
 
   /** What a screenshot past the quota costs on the monthly plan. */
   const MONTHLY_SCREENSHOT_PRICE = 0.005;
