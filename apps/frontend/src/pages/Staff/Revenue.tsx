@@ -165,11 +165,21 @@ const MONTH_SHORT_FORMAT = new Intl.DateTimeFormat("en-US", {
 });
 
 /**
+ * The locale every figure on this page is written in.
+ *
+ * Pinned rather than left to the reader, like the currency below and for the
+ * same reason: the book is kept in euros by a team that reads them in French,
+ * and a page whose numbers changed shape from one staff screen to the next
+ * would be quoted back and forth in two notations.
+ */
+const PAGE_LOCALE = "fr-FR";
+
+/**
  * Every amount on this page is in euros — the currency the business is run
  * in — where the other staff pages price plans in dollars. Dollar invoices are
  * converted server-side at a fixed rate, which the foreign-share caveats own.
  */
-const EUR_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const EUR_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
   maximumFractionDigits: 0,
@@ -180,7 +190,7 @@ function formatEuros(amount: number): string {
 }
 
 /** Amounts on the axis, shortened, in the page's euros. */
-const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const AXIS_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
   notation: "compact",
@@ -195,7 +205,7 @@ const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
  * between two of them, and the cents that would make the column add up exactly
  * are noise on every figure that carries them.
  */
-const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
+const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "currency",
   currency: "EUR",
   maximumFractionDigits: 0,
@@ -205,8 +215,8 @@ const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
  * An invoice in the currency it was raised in — the audit trail to Stripe.
  *
  * Local formatters rather than util/intl's `formatCurrency`: that one follows
- * the reader's locale, where every figure on this page is pinned to en-US so
- * the amounts read the same on every staff screen. Rounded to the unit like
+ * the reader's locale, where every figure on this page is pinned to one so the
+ * amounts read the same on every staff screen. Rounded to the unit like
  * every other amount here: this page is read for what a month came to, and
  * the cents belong to the invoice in Stripe, one click away.
  */
@@ -218,9 +228,13 @@ function formatInvoiceAmount(invoice: {
   const currency = invoice.currency.toUpperCase();
   let format = INVOICE_PRICE_FORMATS.get(currency);
   if (!format) {
-    format = new Intl.NumberFormat("en-US", {
+    format = new Intl.NumberFormat(PAGE_LOCALE, {
       style: "currency",
       currency,
+      // `$` rather than `$US`: the column is read for the currency an invoice
+      // was raised in, and the two this page ever sees are told apart by their
+      // symbols alone.
+      currencyDisplay: "narrowSymbol",
       maximumFractionDigits: 0,
     });
     INVOICE_PRICE_FORMATS.set(currency, format);
@@ -229,7 +243,14 @@ function formatInvoiceAmount(invoice: {
 }
 
 /** Screenshot counts, grouped like the team directory prints them. */
-const SCREENSHOTS_FORMAT = new Intl.NumberFormat("en-US");
+const SCREENSHOTS_FORMAT = new Intl.NumberFormat(PAGE_LOCALE);
+
+/** A month's move against the one before it, signed. */
+const GROWTH_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "percent",
+  maximumFractionDigits: 0,
+  signDisplay: "exceptZero",
+});
 
 /** A renewal's date, read in UTC like every other date on the page. */
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
@@ -415,6 +436,7 @@ function RevenueCards(props: {
         value={readValue(lastMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
           (lastMonth ? (
@@ -433,6 +455,7 @@ function RevenueCards(props: {
         value={readValue(currentMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
           (currentMonth ? (
@@ -453,6 +476,7 @@ function RevenueCards(props: {
         value={readValue(projection?.revenue ?? null)}
         format="currency"
         currency="EUR"
+        locales={PAGE_LOCALE}
         hint={
           unavailable ??
           (projection ? (
@@ -929,8 +953,7 @@ function HistoryRow(props: {
             <span
               className={percent < 0 ? "text-danger-low" : "text-success-low"}
             >
-              {percent > 0 ? "+" : ""}
-              {percent}%
+              {GROWTH_FORMAT.format(percent / 100)}
             </span>
           )}
         </td>

@@ -625,6 +625,22 @@ staffTest(
   },
 );
 
+/**
+ * The revenue page's own notation, which its assertions have to be written in.
+ *
+ * Built rather than typed out: French groups its thousands with a narrow
+ * no-break space, and a literal one in a spec is a character nobody can see
+ * when the assertion stops matching.
+ */
+function revenueAmount(amount: number, currency: "EUR" | "USD"): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 /** The first instant of the month `offset` months from now, in UTC. */
 function startOfUTCMonth(offset: number) {
   const now = new Date();
@@ -846,12 +862,7 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
     // of it is its amount over that stretch, weighted by this month's length.
     const termMs = startOfUTCMonth(12).getTime() - startOfUTCMonth(0).getTime();
     const monthMs = startOfUTCMonth(1).getTime() - startOfUTCMonth(0).getTime();
-    // Rounded to the euro, like every amount the page prints.
-    const contractPerMonth = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 0,
-    }).format((12_000 * monthMs) / termMs);
+    const contractPerMonth = revenueAmount((12_000 * monthMs) / termMs, "EUR");
 
     const dateFormat = new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
@@ -945,8 +956,8 @@ const pendingBillTest = staffTest.extend<{
     // at the half-cent the helper prices them at.
     await use({
       team: "Dunder Mifflin",
-      amount: "$150",
-      screenshots: "45,000",
+      amount: revenueAmount(150, "USD"),
+      screenshots: new Intl.NumberFormat("fr-FR").format(45_000),
     });
   },
 });
@@ -1016,28 +1027,42 @@ revenueTest.describe("staff revenue", () => {
 
     // €500 from one team and $1,000 from the other, the dollars converted at the
     // page's fixed rate: €500 + €855.
-    await expect(page.getByText("€1,355 monthly").first()).toBeVisible();
+    await expect(
+      page.getByText(`${revenueAmount(1355, "EUR")} Monthly`).first(),
+    ).toBeVisible();
 
     const monthlyPlans = page
       .locator("table")
       .filter({ has: page.getByRole("columnheader", { name: "ARPU" }) });
     const lastMonthRow = monthlyPlans.locator("tbody tr").nth(1);
-    await expect(lastMonthRow.getByText("€1,355")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(revenueAmount(1355, "EUR")),
+    ).toBeVisible();
     // Two teams invoiced, so the average is half the month. Neither of the two
     // annual bills raised that same month is in either figure — not the current
     // contract, and not the churned team's renewal, whose only mark of being a
     // year's worth is the period on the invoice itself.
-    await expect(lastMonthRow.getByText("€678")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(revenueAmount(678, "EUR")),
+    ).toBeVisible();
     // €1,000 the month before, so the column reports the climb rather than the
     // em dash it falls back to with nothing to divide by.
-    await expect(lastMonthRow.getByText("+36%")).toBeVisible();
+    await expect(
+      lastMonthRow.getByText(
+        new Intl.NumberFormat("fr-FR", {
+          style: "percent",
+          maximumFractionDigits: 0,
+          signDisplay: "exceptZero",
+        }).format(0.36),
+      ),
+    ).toBeVisible();
 
     await lastMonthRow.getByRole("button", { name: "View details" }).click();
     const breakdown = monthlyPlans.locator("tbody tr").nth(2);
     await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
     // What Stripe charged, beside what the page counts it as.
-    await expect(breakdown.getByText("$1,000")).toBeVisible();
-    await expect(breakdown.getByText("€855")).toBeVisible();
+    await expect(breakdown.getByText(revenueAmount(1000, "USD"))).toBeVisible();
+    await expect(breakdown.getByText(revenueAmount(855, "EUR"))).toBeVisible();
     // Each line carries the day its invoice was raised.
     await expect(
       breakdown.getByText(revenueBook.monthlyInvoiceDate),
@@ -1063,7 +1088,9 @@ revenueTest.describe("staff revenue", () => {
       .filter({ hasText: revenueBook.contractTeam });
     // Twice over: what Stripe charged, and what the page counts it as — the
     // contract is in euros, so both cells read the same.
-    await expect(contractRow.getByText("€12,000")).toHaveCount(2);
+    await expect(
+      contractRow.getByText(revenueAmount(12_000, "EUR")),
+    ).toHaveCount(2);
     await expect(
       contractRow.getByText(revenueBook.contractPerMonth),
     ).toBeVisible();
