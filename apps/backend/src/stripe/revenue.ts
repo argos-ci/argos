@@ -33,6 +33,12 @@ type StaffRevenueMonthTeamInvoice = {
   invoicedAt: Date;
 };
 
+/** An amount in the currency it is stated in. */
+type StaffRevenuePrice = {
+  amount: number;
+  currency: string;
+};
+
 /** What one team was invoiced over a month, one line of the breakdown. */
 type StaffRevenueMonthTeam = {
   /** The team's slug, which names its pages. */
@@ -54,6 +60,20 @@ type StaffRevenueMonthTeam = {
    * computed from.
    */
   screenshotsCount: number;
+  /**
+   * What the plan itself costs over a period, before any usage — null when the
+   * subscription carries no amount, or when the team is no longer billed.
+   *
+   * This and the two below describe the subscription **as it stands today**,
+   * not as it stood in the month: they are read to decide what to offer a team
+   * next, which is a question about the present. Every other figure on the line
+   * is read off the invoice and cannot be rewritten by a plan change.
+   */
+  planPrice: StaffRevenuePrice | null;
+  /** What a period includes before overage is billed, on that same plan. */
+  includedScreenshots: number | null;
+  /** That plan's name, which says whether its quota is worth printing. */
+  planName: string | null;
   /** The invoices the line adds up, newest first. Empty on an estimate. */
   invoices: StaffRevenueMonthTeamInvoice[];
   /**
@@ -287,6 +307,19 @@ type BilledTeam = {
   interval: "month" | "year";
   /** What Stripe bills it in, or null on a subscription never synced for it. */
   currency: string | null;
+  /**
+   * What the plan itself costs over a period, as Stripe holds it — null on a
+   * subscription Argos has not read the amount off yet, or one priced by tiers.
+   */
+  flatPrice: number | null;
+  /**
+   * What a period includes before anything is billed as overage: the
+   * subscription's own quota when Stripe states one, the plan's otherwise —
+   * the same order the usage is metered against.
+   */
+  includedScreenshots: number;
+  /** The plan's name, which is what says whether its quota is worth printing. */
+  planName: string;
 };
 
 /**
@@ -310,7 +343,11 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
       "accounts.slug",
       "accounts.name",
       "accounts.stripeCustomerId",
+      "subscriptions.flatPrice",
+      "subscriptions.includedScreenshots",
       "plan.interval",
+      "plan.name as planName",
+      "plan.includedScreenshots as planIncludedScreenshots",
     )
     .joinRelated("plan")
     .join("accounts", "accounts.id", "subscriptions.accountId")
@@ -340,6 +377,10 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     stripeCustomerId: string;
     interval: "month" | "year";
     currency: string | null;
+    flatPrice: number | null;
+    includedScreenshots: number | null;
+    planName: string;
+    planIncludedScreenshots: number;
   }[];
 
   return rows.map((row) => ({
@@ -350,6 +391,9 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     stripeCustomerId: row.stripeCustomerId,
     interval: row.interval,
     currency: row.currency,
+    flatPrice: row.flatPrice,
+    includedScreenshots: row.includedScreenshots ?? row.planIncludedScreenshots,
+    planName: row.planName,
   }));
 }
 
@@ -745,6 +789,35 @@ export type StaffRevenue = {
 };
 
 /**
+ * What the team is on today, for the columns that describe the plan rather
+ * than the bill: its price, its quota, and the name that says whether the
+ * quota is worth printing beside a count.
+ *
+ * Null throughout for a team no longer billed — a churned one keeps its
+ * invoices, but there is no plan of its left to describe.
+ */
+function getPlanColumns(team: BilledTeam | undefined): {
+  planPrice: StaffRevenuePrice | null;
+  includedScreenshots: number | null;
+  planName: string | null;
+} {
+  if (!team) {
+    return { planPrice: null, includedScreenshots: null, planName: null };
+  }
+  return {
+    planPrice:
+      team.flatPrice === null
+        ? null
+        : {
+            amount: team.flatPrice,
+            currency: team.currency ?? REPORTING_CURRENCY,
+          },
+    includedScreenshots: team.includedScreenshots,
+    planName: team.planName,
+  };
+}
+
+/**
  * The bills the running month is still waiting on, priced off the usage so far.
  *
  * A team whose cycle falls on the 30th has been invoiced nothing on the 12th,
@@ -812,6 +885,7 @@ async function getEstimatedBills(options: {
       currency: revenue.currency,
       revenue: toEuros(revenue),
       screenshotsCount: period.screenshotsCount,
+      ...getPlanColumns(team),
       invoices: [],
       // The anniversary the period closes on, which is the day the cycle bills.
       estimatedAt: period.endsAt,
@@ -899,6 +973,9 @@ export async function getStaffRevenue(
     .where("stripeCreatedAt", "<", end.toISOString());
 
   const customersWithTerms = getCustomersWithTerms(rows);
+  const billedTeamsByCustomer = new Map(
+    billedTeams.map((team) => [team.stripeCustomerId, team]),
+  );
 
   // The months, and the contracts, from the same read.
   const monthSplits = reported.map(() => createSplit());
@@ -984,6 +1061,7 @@ export async function getStaffRevenue(
           monthlyScreenshots
             .get(team.accountId)
             ?.get(getMonthKey(reportedMonth)) ?? 0,
+        ...getPlanColumns(billedTeamsByCustomer.get(row.stripeCustomerId)),
         invoices: [],
         estimatedAt: null,
       };

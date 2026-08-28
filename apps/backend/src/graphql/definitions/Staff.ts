@@ -405,6 +405,12 @@ export const typeDefs = gql`
     invoicedAt: DateTime!
   }
 
+  "An amount in the currency it is stated in."
+  type StaffRevenuePrice {
+    amount: Float!
+    currency: String!
+  }
+
   "What one team was invoiced over a month, one line of the breakdown."
   type StaffRevenueMonthTeam {
     "The team's slug, which names its pages."
@@ -425,6 +431,20 @@ export const typeDefs = gql`
     accumulated for one still to come.
     """
     screenshotsCount: Int!
+    """
+    What the plan itself costs over a period, before any usage — null when the
+    subscription carries no amount, or when the team is no longer billed.
+
+    This and the two below describe the subscription as it stands today, not as
+    it stood in the month: they are read to decide what to offer a team next.
+    Every other figure on the line is read off the invoice instead, and a plan
+    change cannot rewrite it.
+    """
+    planPrice: StaffRevenuePrice
+    "What a period includes before overage is billed, on that same plan."
+    includedScreenshots: Int
+    "That plan's name, which says whether its quota is worth printing."
+    planName: String
     "The invoices the line adds up, newest first. Empty on an estimate."
     invoices: [StaffRevenueMonthTeamInvoice!]!
     """
