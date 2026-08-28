@@ -81,12 +81,9 @@ export function BuildReviewForm(props: {
     },
   });
 
-  // Block submission until every reviewable diff (changed/added/removed) has
-  // been fetched. The server sorts those ahead of unchanged/retryFailure/
-  // ignored, so once a diff from that trailing block is loaded, the review
-  // payload — built from the loaded diffs — is already complete. On subset
-  // builds removed diffs are not reviewable either, so they count as trailing
-  // there too.
+  // The review payload is built from the loaded diffs. The server sorts
+  // reviewable diffs (changed/added/removed) first, so once a trailing-status
+  // diff is loaded the payload is complete and submission can unlock.
   const { isLoading, allDiffs, isSubsetBuild } = useBuildDiffState();
   const waitingForDiffs =
     isLoading &&
