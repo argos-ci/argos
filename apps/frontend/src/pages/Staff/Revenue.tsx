@@ -725,7 +725,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[21%] text-left"
+              className="w-[19%] text-left"
             />
             <SortHeader
               label="Plan"
@@ -767,7 +767,10 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               onSort={onSort}
               className="w-[14%] text-right"
             />
-            <th className="w-[6%] px-4 py-3 text-right" />
+            {/* Wide enough for the link it holds: under `table-fixed` a
+                column narrower than its content does not grow, it spills over
+                its own padding and into the table's edge. */}
+            <th className="w-[8%] px-4 py-3 text-right" />
           </tr>
         </thead>
         <tbody>
