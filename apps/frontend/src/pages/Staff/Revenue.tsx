@@ -188,15 +188,17 @@ const AXIS_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
 });
 
 /**
- * Amounts in the contracts table, with cents.
+ * Amounts in the contracts table.
  *
- * The rest of the page rounds to the euro, but this table exists to be added
- * up against the yearly figure, and twelfths carry cents — a rounded list
- * would not sum to its own total.
+ * Rounded to the euro like the rest of the page, so the table's own total can
+ * come out a euro or two off the rows above it: a twelfth of a contract falls
+ * between two of them, and the cents that would make the column add up exactly
+ * are noise on every figure that carries them.
  */
 const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "EUR",
+  maximumFractionDigits: 0,
 });
 
 /**
@@ -204,7 +206,9 @@ const CONTRACT_PRICE_FORMAT = new Intl.NumberFormat("en-US", {
  *
  * Local formatters rather than util/intl's `formatCurrency`: that one follows
  * the reader's locale, where every figure on this page is pinned to en-US so
- * the amounts read the same on every staff screen.
+ * the amounts read the same on every staff screen. Rounded to the unit like
+ * every other amount here: this page is read for what a month came to, and
+ * the cents belong to the invoice in Stripe, one click away.
  */
 const INVOICE_PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
 function formatInvoiceAmount(invoice: {
@@ -214,7 +218,11 @@ function formatInvoiceAmount(invoice: {
   const currency = invoice.currency.toUpperCase();
   let format = INVOICE_PRICE_FORMATS.get(currency);
   if (!format) {
-    format = new Intl.NumberFormat("en-US", { style: "currency", currency });
+    format = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
     INVOICE_PRICE_FORMATS.set(currency, format);
   }
   return format.format(invoice.amount);

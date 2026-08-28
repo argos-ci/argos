@@ -846,9 +846,11 @@ const revenueTest = staffTest.extend<{ revenueBook: RevenueBook }>({
     // of it is its amount over that stretch, weighted by this month's length.
     const termMs = startOfUTCMonth(12).getTime() - startOfUTCMonth(0).getTime();
     const monthMs = startOfUTCMonth(1).getTime() - startOfUTCMonth(0).getTime();
+    // Rounded to the euro, like every amount the page prints.
     const contractPerMonth = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "EUR",
+      maximumFractionDigits: 0,
     }).format((12_000 * monthMs) / termMs);
 
     const dateFormat = new Intl.DateTimeFormat("en-US", {
@@ -943,7 +945,7 @@ const pendingBillTest = staffTest.extend<{
     // at the half-cent the helper prices them at.
     await use({
       team: "Dunder Mifflin",
-      amount: "$150.00",
+      amount: "$150",
       screenshots: "45,000",
     });
   },
@@ -1034,7 +1036,7 @@ revenueTest.describe("staff revenue", () => {
     const breakdown = monthlyPlans.locator("tbody tr").nth(2);
     await expect(breakdown.getByText(revenueBook.monthlyTeam)).toBeVisible();
     // What Stripe charged, beside what the page counts it as.
-    await expect(breakdown.getByText("$1,000.00")).toBeVisible();
+    await expect(breakdown.getByText("$1,000")).toBeVisible();
     await expect(breakdown.getByText("€855")).toBeVisible();
     // Each line carries the day its invoice was raised.
     await expect(
@@ -1061,7 +1063,7 @@ revenueTest.describe("staff revenue", () => {
       .filter({ hasText: revenueBook.contractTeam });
     // Twice over: what Stripe charged, and what the page counts it as — the
     // contract is in euros, so both cells read the same.
-    await expect(contractRow.getByText("€12,000.00")).toHaveCount(2);
+    await expect(contractRow.getByText("€12,000")).toHaveCount(2);
     await expect(
       contractRow.getByText(revenueBook.contractPerMonth),
     ).toBeVisible();

@@ -83,7 +83,11 @@ export function StatTile({
           )}
         </div>
         {hint ? (
-          <p className="text-low mt-0.5 h-4 text-sm">
+          // A floor rather than a height: the line is reserved while the
+          // figures load, so the card does not grow under the reader when they
+          // land — but a hint that wraps at a narrow width has to take the
+          // room it needs instead of spilling out of the card's padding.
+          <p className="text-low mt-0.5 min-h-5 text-sm">
             {isLoading ? null : hint}
           </p>
         ) : null}
