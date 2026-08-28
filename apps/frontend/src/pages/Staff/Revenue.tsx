@@ -40,7 +40,7 @@ import { StatTile } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
-import { getStripeCustomerURL } from "./stripe";
+import { StripeCustomerLink } from "./stripe";
 
 /**
  * Read from the backend's Stripe invoice mirror — this page is the query's
@@ -472,7 +472,7 @@ function RevenueCards(props: {
         data-visual-test="transparent"
         icon={TrendingUpIcon}
         color="success"
-        label="Projected"
+        label="Projected this month"
         value={readValue(projection?.revenue ?? null)}
         format="currency"
         currency="EUR"
@@ -725,7 +725,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[19%] text-left"
+              className="w-[20%] text-left"
             />
             <SortHeader
               label="Plan"
@@ -733,7 +733,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[13%] text-right"
+              className="w-[14%] text-right"
             />
             <SortHeader
               label="Invoiced"
@@ -741,7 +741,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[15%] text-right"
+              className="w-[16%] text-right"
             />
             <SortHeader
               label="In euros"
@@ -749,7 +749,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[12%] text-right"
+              className="w-[14%] text-right"
             />
             <SortHeader
               label="Usage"
@@ -757,7 +757,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[14%] text-right"
+              className="w-[16%] text-right"
             />
             <SortHeader
               label="Date"
@@ -765,12 +765,8 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="w-[14%] text-right"
+              className="w-[15%] text-right"
             />
-            {/* Wide enough for the link it holds: under `table-fixed` a
-                column narrower than its content does not grow, it spills over
-                its own padding and into the table's edge. */}
-            <th className="w-[8%] px-4 py-3 text-right" />
           </tr>
         </thead>
         <tbody>
@@ -814,7 +810,12 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   {teamIndex + 1}
                 </td>
                 <td className="px-4 py-2.5 text-left">
-                  <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
+                    <StripeCustomerLink
+                      stripeCustomerId={team.stripeCustomerId}
+                    />
+                  </div>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {planPrice ? formatInvoiceAmount(planPrice) : null}
@@ -887,14 +888,6 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                       {DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))}
                     </Hint>
                   )}
-                </td>
-                <td className="px-4 py-2.5 text-right">
-                  <Link
-                    href={getStripeCustomerURL(team.stripeCustomerId)}
-                    target="_blank"
-                  >
-                    Stripe
-                  </Link>
                 </td>
               </tr>
             );
@@ -1095,7 +1088,12 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
   return (
     <tr className={clsx(index % 2 === 0 ? "bg-app" : "bg-subtle", "border-b")}>
       <td className="p-4 text-left text-sm font-medium">
-        <Link href={`/${contract.slug}`}>{contract.name ?? contract.slug}</Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/${contract.slug}`}>
+            {contract.name ?? contract.slug}
+          </Link>
+          <StripeCustomerLink stripeCustomerId={contract.stripeCustomerId} />
+        </div>
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
         {contract.amount !== null ? (
@@ -1155,14 +1153,6 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
           <span className="text-low">—</span>
         )}
       </td>
-      <td className="p-4 text-right text-sm">
-        <Link
-          href={getStripeCustomerURL(contract.stripeCustomerId)}
-          target="_blank"
-        >
-          Stripe
-        </Link>
-      </td>
     </tr>
   );
 }
@@ -1202,19 +1192,18 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
             <thead>
               <tr className="text-low border-b text-xs font-semibold">
                 <th className="w-[26%] px-4 py-3 text-left">Team</th>
-                <th className="w-[18%] px-4 py-3 text-right">Invoiced</th>
-                <th className="w-[16%] px-4 py-3 text-right">
+                <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
+                <th className="w-[18%] px-4 py-3 text-right">
                   <Hint content="Dollars converted at a fixed rate.">
                     In euros
                   </Hint>
                 </th>
-                <th className="w-[16%] px-4 py-3 text-right">
+                <th className="w-[18%] px-4 py-3 text-right">
                   <Hint content="What it adds to this month, in euros.">
                     Per month
                   </Hint>
                 </th>
                 <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
-                <th className="w-[16%] px-4 py-3 text-right" />
               </tr>
             </thead>
             <tbody>
@@ -1236,7 +1225,6 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                 <td className="p-4 text-right tabular-nums">
                   {CONTRACT_PRICE_FORMAT.format(monthlyTotal)}
                 </td>
-                <td />
                 <td />
               </tr>
             </tfoot>
