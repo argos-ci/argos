@@ -7,6 +7,7 @@ import { startOfUTCMonth } from "@/util/utc-month";
 import {
   getBilledTeams,
   getStaffRevenue,
+  getStaffRevenueMonthTeams,
   getTeamCustomers,
   toEuros,
 } from "./revenue";
@@ -320,7 +321,11 @@ describe("getStaffRevenue", () => {
       teamsCount: 3,
       foreignRevenue: 0,
     });
-    expect(last.teams.map((team) => [team.slug, team.revenue])).toEqual([
+    // The teams behind the month are read on their own, a month at a time.
+    const lastMonthTeams = await getStaffRevenueMonthTeams(
+      startOfUTCMonth(now, -1),
+    );
+    expect(lastMonthTeams.map((team) => [team.slug, team.revenue])).toEqual([
       [monthly.slug, 500],
       [yearly.slug, 300],
       [churned.slug, 200],
@@ -336,7 +341,10 @@ describe("getStaffRevenue", () => {
     // The running month is only as long as it has been, so a contract's share
     // of it is as partial as the invoices beside it.
     expect(current.monthlyPlans.revenue).toBe(100);
-    expect(current.teams).toHaveLength(1);
+    expect(current.monthlyPlans.teamsCount).toBe(1);
+    await expect(
+      getStaffRevenueMonthTeams(startOfUTCMonth(now, 0)),
+    ).resolves.toHaveLength(1);
     const elapsed = now.getTime() - startOfUTCMonth(now, 0).getTime();
     const currentTerm =
       startOfUTCMonth(now, 12).getTime() - startOfUTCMonth(now, 0).getTime();
@@ -489,11 +497,12 @@ describe("getStaffRevenue", () => {
       // The team billed on the 10th is nowhere: its cycle has come round, and
       // the next one belongs to the month after. The pending team is there
       // twice — the proration it was sent, and the bill it is still owed.
-      expect(current.teams.map((team) => team.slug)).toEqual([
+      const teams = await getStaffRevenueMonthTeams(now);
+      expect(teams.map((team) => team.slug)).toEqual([
         pending.account.slug,
         pending.account.slug,
       ]);
-      const line = current.teams.find((team) => team.estimatedAt !== null);
+      const line = teams.find((team) => team.estimatedAt !== null);
       invariant(line);
 
       // The plan's own amount, plus the two thousand screenshots past the quota.
@@ -538,11 +547,9 @@ describe("getStaffRevenue", () => {
       totalExcludingTax: 50_000,
     });
 
-    const result = await getStaffRevenue(1);
-    const current = result.months[0];
-    invariant(current);
+    const teams = await getStaffRevenueMonthTeams(now);
 
-    expect(current.teams.map((team) => [team.slug, team.estimatedAt])).toEqual([
+    expect(teams.map((team) => [team.slug, team.estimatedAt])).toEqual([
       [account.slug, null],
     ]);
   });

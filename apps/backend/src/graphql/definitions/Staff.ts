@@ -9,6 +9,7 @@ import {
 } from "@/database/services/period-usage";
 import {
   getStaffRevenue,
+  getStaffRevenueMonthTeams,
   MAX_MONTHS,
   MirrorCoverageError,
 } from "@/stripe/revenue";
@@ -373,12 +374,13 @@ export const typeDefs = gql`
   type StaffRevenueMonth {
     "The first instant of the month, in UTC — what names it on screen."
     month: DateTime!
-    "The two splits below, added up."
+    "The three splits below, added up."
     revenue: Float!
-    "What teams billed by the month were invoiced that month."
+    """
+    What teams billed by the month were invoiced that month. The teams behind
+    it are read one month at a time, by \`staffRevenueMonthTeams\`.
+    """
     monthlyPlans: StaffRevenueSplit!
-    "The teams behind \`monthlyPlans\`, largest first — they sum to it."
-    teams: [StaffRevenueMonthTeam!]!
     """
     What the annual contracts contributed to the month: their invoices
     amortized, day by day, over the stretch each one pays for — the monthly
@@ -547,6 +549,24 @@ export const typeDefs = gql`
   }
 
   extend type Query {
+    """
+    The teams behind one month of \`staffRevenue\`'s monthly plans, largest
+    first (staff only).
+
+    Read a month at a time rather than beside the figures: a line carries the
+    usage its team got through, and pricing a year of that to draw one month
+    is the difference between reading a handful of rows and walking every
+    screenshot the year produced.
+
+    They sum to that month's \`monthlyPlans\`, except on the running month,
+    which also carries the bills its cycles have not raised yet — marked by
+    \`estimatedAt\`, and in no figure the month reports.
+    """
+    staffRevenueMonthTeams(
+      "Any instant of the month; the month it falls in is what is read."
+      month: DateTime!
+    ): [StaffRevenueMonthTeam!]!
+
     """
     List all teams (staff only).
 
@@ -770,6 +790,20 @@ export const resolvers: IResolvers = {
       ]);
 
       return paginateResult({ result: { total, results }, after, first });
+    },
+    staffRevenueMonthTeams: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      try {
+        return await getStaffRevenueMonthTeams(args.month);
+      } catch (error) {
+        // Read by the same page as `staffRevenue`, and answered the same way:
+        // a mirror not backfilled is an operator state, not a fault.
+        if (error instanceof MirrorCoverageError) {
+          throw notFound(error.message);
+        }
+        throw error;
+      }
     },
     staffRevenue: async (_root, args, ctx) => {
       assertStaff(ctx);

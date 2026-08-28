@@ -57,27 +57,6 @@ const StaffRevenueQuery = graphql(`
           teamsCount
           foreignRevenue
         }
-        teams {
-          slug
-          name
-          stripeCustomerId
-          amount
-          currency
-          revenue
-          screenshotsCount
-          estimatedAt
-          planPrice {
-            amount
-            currency
-          }
-          includedScreenshots
-          planName
-          invoices {
-            amount
-            currency
-            invoicedAt
-          }
-        }
         yearlyPlans {
           revenue
           teamsCount
@@ -116,12 +95,46 @@ const StaffRevenueQuery = graphql(`
   }
 `);
 
+/**
+ * The teams behind one month, read when a reader opens that month rather than
+ * beside the figures: a line carries the usage its team got through, and a
+ * year of that is the page's whole cost. Closed months never change, so the
+ * Apollo cache holds each one for the session after its first opening.
+ */
+const StaffRevenueMonthTeamsQuery = graphql(`
+  query StaffRevenue_staffRevenueMonthTeams($month: DateTime!) {
+    staffRevenueMonthTeams(month: $month) {
+      slug
+      name
+      stripeCustomerId
+      amount
+      currency
+      revenue
+      screenshotsCount
+      estimatedAt
+      planPrice {
+        amount
+        currency
+      }
+      includedScreenshots
+      planName
+      invoices {
+        amount
+        currency
+        invoicedAt
+      }
+    }
+  }
+`);
+
 type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
 type RevenueMonth = RevenueData["months"][number];
 type RevenueProjection = RevenueData["projection"];
 type YearlyContract = RevenueData["yearlyContracts"][number];
 type Split = RevenueMonth["monthlyPlans"];
-type MonthTeam = RevenueMonth["teams"][number];
+type MonthTeam = DocumentType<
+  typeof StaffRevenueMonthTeamsQuery
+>["staffRevenueMonthTeams"][number];
 
 /** Months the dedicated page reads — a year, plus the one running. */
 const PAGE_MONTHS = 13;
@@ -912,6 +925,17 @@ function HistoryRow(props: {
 }) {
   const { month, before, isCurrent, index, isLast } = props;
   const [isOpened, setIsOpened] = useState(false);
+  // A month nobody invoiced has nothing to open, and the running month can
+  // still be owed a bill nothing has counted — so it opens whatever its
+  // figures say.
+  const hasTeams = isCurrent || month.monthlyPlans.teamsCount > 0;
+  // Fired on the first opening and never again: a closed month's breakdown is
+  // a fact, and Apollo holds it for the session.
+  const { data, error } = useQuery(StaffRevenueMonthTeamsQuery, {
+    variables: { month: month.month },
+    skip: !isOpened,
+  });
+  const teams = data?.staffRevenueMonthTeams ?? null;
   // On the monthly figure, like every column here: the yearly rate lives in
   // its own table, and a change diluted by a flat rate would understate every
   // move.
@@ -969,7 +993,7 @@ function HistoryRow(props: {
           )}
         </td>
         <td className="p-4 text-right text-sm">
-          {month.teams.length > 0 ? (
+          {hasTeams ? (
             <Button
               variant="secondary"
               size="small"
@@ -998,7 +1022,20 @@ function HistoryRow(props: {
           )}
         >
           <td colSpan={6} className="p-4">
-            <MonthTeamsTable teams={month.teams} />
+            {teams ? (
+              <MonthTeamsTable teams={teams} />
+            ) : error ? (
+              <Alert>
+                <AlertText>{error.message}</AlertText>
+              </Alert>
+            ) : (
+              // Sized like the one the lists use, and on the default delay: a
+              // month that answers in a blink shows nothing rather than a
+              // spinner that flashes.
+              <div className="flex justify-center py-4">
+                <Loader className="text-low size-6" />
+              </div>
+            )}
           </td>
         </tr>
       ) : null}
