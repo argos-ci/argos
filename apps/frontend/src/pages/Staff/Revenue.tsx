@@ -40,7 +40,7 @@ import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { PRO_PLAN_NAME } from "./pricing";
+import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
 import { getStripeCustomerURL } from "./stripe";
 
 /**
@@ -228,11 +228,10 @@ function formatInvoiceAmount(invoice: {
 /** Screenshot counts, grouped like the team directory prints them. */
 const SCREENSHOTS_FORMAT = new Intl.NumberFormat("en-US");
 
-/** How far past a quota a team is running. */
-const OVERAGE_FORMAT = new Intl.NumberFormat("en-US", {
-  style: "percent",
-  maximumFractionDigits: 0,
-  signDisplay: "always",
+/** What a bill came to, in multiples of the plan it was raised on. */
+const MULTIPLE_FORMAT = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
 });
 
 /** A renewal's date, read in UTC like every other date on the page. */
@@ -595,9 +594,12 @@ function getMonthTeamSortValue(
     case "screenshots":
       return team.screenshotsCount;
     case "overage":
-      // Below every team that has one, rather than mixed in among them: a line
-      // inside its quota is not a small overage, it is no overage at all.
-      return getOverage(team) ?? -1;
+      // On what the overage is worth rather than on the multiple: the column
+      // is read to pick a team to negotiate with, and a small plan billed ten
+      // times over is not the conversation a large one billed twice is. Below
+      // every team that has one, rather than mixed in among them — a bill
+      // inside its plan is not a small overage, it is no overage at all.
+      return getOverage(team)?.revenue ?? -1;
     case "date": {
       // On the date the column prints: the newest invoice, or the day the bill
       // is expected on a line that has none yet.
@@ -608,24 +610,46 @@ function getMonthTeamSortValue(
 }
 
 /**
- * How far past its quota a line is running, as a share of that quota — 0.6 for
- * a team consuming 8M against the 5M its plan includes.
+ * How far past its plan a line's bill went: the multiple of the plan's own
+ * price the invoice came to, and what the part above that price is worth.
  *
- * Null where nothing is over: under the quota there is no overage to report,
- * and a team whose plan is unknown has nothing to be over.
+ * In money rather than in screenshots, which is the whole point of the column.
+ * A negotiated plan sells its committed volume far below the rate everything
+ * past it is billed at — six or seven times below is ordinary — so a team a
+ * modest 46% over its quota can be paying four times what it signed for. Read
+ * in volume, the teams whose contract has drifted furthest from their usage
+ * are the ones that stand out least; the volume is a column of its own anyway,
+ * beside the quota it is read against.
  *
- * This is the column a negotiated plan is decided from, so it is read against
- * the quota rather than against the bill: what an invoice came to already
- * mixes the plan's own price in, and two teams equally far past their quotas
- * do not read the same once it is.
+ * Null where there is nothing to read: no price on file, a month mixing
+ * currencies — which leaves the invoice with no single figure to compare — or
+ * a bill still inside the plan it was raised on.
  */
-function getOverage(team: MonthTeam): number | null {
-  const { includedScreenshots } = team;
-  if (includedScreenshots === null || includedScreenshots === 0) {
+function getOverage(team: MonthTeam): {
+  /** What the bill came to, over the plan's own price. */
+  multiple: number;
+  amount: number;
+  currency: string;
+  /** The same amount in euros, which is what orders the column. */
+  revenue: number;
+} | null {
+  const { planPrice } = team;
+  if (!planPrice || planPrice.amount <= 0 || team.currency === null) {
     return null;
   }
-  const over = team.screenshotsCount - includedScreenshots;
-  return over > 0 ? over / includedScreenshots : null;
+  const amount = team.amount - planPrice.amount;
+  if (amount <= 0) {
+    return null;
+  }
+  return {
+    multiple: team.amount / planPrice.amount,
+    amount,
+    currency: planPrice.currency,
+    // Converted at the line's own rate rather than at a rate of this page's:
+    // the two figures beside it are one bill stated twice, so what one euro of
+    // it was worth is already there to be read off.
+    revenue: (amount * team.revenue) / team.amount,
+  };
 }
 
 /**
@@ -765,6 +789,16 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
               ? new Date(team.estimatedAt)
               : null;
             const overage = getOverage(team);
+            // Pro at list is what nearly every line is billed, so printing it
+            // would repeat one figure down the column. An amount that is not
+            // it — a commitment, or a price negotiated off the list — is the
+            // only one worth reading.
+            const planPrice =
+              team.planPrice &&
+              team.planName === PRO_PLAN_NAME &&
+              team.planPrice.amount === PRO_MONTHLY_PRICE
+                ? null
+                : team.planPrice;
             // Pro includes the same quota on nearly every line, so printing it
             // there would repeat one number down the column. What is left is
             // the contracts, where it was negotiated — and where it is the
@@ -794,11 +828,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
-                  {team.planPrice ? (
-                    formatInvoiceAmount(team.planPrice)
-                  ) : (
-                    <span className="text-low">—</span>
-                  )}
+                  {planPrice ? formatInvoiceAmount(planPrice) : null}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {team.currency === null ? (
@@ -841,7 +871,12 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   {overage === null ? (
                     <span className="text-low">—</span>
                   ) : (
-                    OVERAGE_FORMAT.format(overage)
+                    <>
+                      <div>×{MULTIPLE_FORMAT.format(overage.multiple)}</div>
+                      <div className="text-low text-xs">
+                        +{formatInvoiceAmount(overage)}
+                      </div>
+                    </>
                   )}
                 </td>
                 {/* The dates walk forward with the calendar, like the month
