@@ -370,6 +370,16 @@ describe("getStaffRevenue", () => {
       (1200 * runningMonth) / currentTerm,
       3,
     );
+
+    // The projection carries the same contracts to the end of the month, where
+    // the month itself stops at today — that difference is what it exists for.
+    expect(result.projection.yearlyPlans).toBeCloseTo(
+      (1200 * runningMonth) / currentTerm + (4800 * runningMonth) / churnedTerm,
+      3,
+    );
+    expect(result.projection.yearlyPlans).toBeGreaterThan(
+      current.yearlyPlans.revenue,
+    );
   });
 
   it("estimates the running month's bills that have not been raised", async () => {
@@ -430,6 +440,11 @@ describe("getStaffRevenue", () => {
       teamsCount: 0,
       foreignRevenue: 0,
     });
+    // Where the month is heading is the other question, and the estimate is
+    // the whole of the answer here.
+    expect(result.projection.monthlyPlans).toBe(120);
+    expect(result.projection.estimated).toBe(120);
+    expect(result.projection.revenue).toBe(120);
   });
 
   it("leaves the team alone once its bill has been raised", async () => {

@@ -7,7 +7,6 @@ import {
   CalendarCheckIcon,
   CalendarClockIcon,
   ChevronDownIcon,
-  TrendingDownIcon,
   TrendingUpIcon,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
@@ -90,6 +89,13 @@ const StaffRevenueQuery = graphql(`
           foreignRevenue
         }
       }
+      projection {
+        revenue
+        monthlyPlans
+        yearlyPlans
+        githubPlans
+        estimated
+      }
       yearlyContracts {
         slug
         name
@@ -112,6 +118,7 @@ const StaffRevenueQuery = graphql(`
 
 type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
 type RevenueMonth = RevenueData["months"][number];
+type RevenueProjection = RevenueData["projection"];
 type YearlyContract = RevenueData["yearlyContracts"][number];
 type Split = RevenueMonth["monthlyPlans"];
 type MonthTeam = RevenueMonth["teams"][number];
@@ -145,18 +152,6 @@ const GITHUB_HINT =
  * moment it arrives.
  */
 const HINT_PLACEHOLDER = " ";
-
-/**
- * The month an amount covers, named.
- *
- * Read in UTC, which is where the server cut the month — formatting in the
- * reader's own zone would name the month before it for anyone west of
- * Greenwich.
- */
-const MONTH_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  timeZone: "UTC",
-});
 
 const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -233,10 +228,6 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeZone: "UTC",
 });
-
-function formatMonth(month: string): string {
-  return MONTH_FORMAT.format(new Date(month));
-}
 
 /** The figures behind a half, appended to its tooltip. */
 function getSplitNote(split: Split): string {
@@ -333,21 +324,57 @@ function MonthSplit(props: { month: RevenueMonth; monthlyHint: string }) {
   );
 }
 
+/**
+ * Where the running month's projection comes from, under the amount.
+ *
+ * The same three parts the months above are split into, so the card can be
+ * read against the one beside it — and the part of the monthly figure no
+ * invoice exists for, which is the only one of the three that is not a
+ * reading of something already raised.
+ */
+function ProjectionSplit(props: { projection: RevenueProjection }) {
+  const { projection } = props;
+
+  return (
+    <>
+      <SplitAmount
+        amount={projection.monthlyPlans}
+        label="Monthly"
+        tooltip={`This month's invoices, plus ${formatEuros(projection.estimated)} the cycles have not raised yet — what the subscriptions still to be billed have run up so far. A floor: their usage keeps accruing until the cycle closes.`}
+      />
+      {" · "}
+      <SplitAmount
+        amount={projection.yearlyPlans}
+        label="Yearly"
+        tooltip="A whole month of the annual contracts, where the card beside this one counts only the days that have gone by."
+      />
+      {projection.githubPlans > 0 ? (
+        <>
+          {" · "}
+          <SplitAmount
+            amount={projection.githubPlans}
+            label="GitHub"
+            tooltip="A whole month of the Marketplace subscriptions, at list price. On top of the figures above, not inside them."
+          />
+        </>
+      ) : null}
+    </>
+  );
+}
+
 /** The three headline figures, rendered from whatever window was read. */
 function RevenueCards(props: {
   /** Oldest first, the running month last. Null while loading. */
   months: readonly RevenueMonth[] | null;
+  /** Where the running month is heading. Null while loading. */
+  projection: RevenueProjection | null;
   error: Error | null;
 }) {
-  const { months, error } = props;
+  const { months, projection, error } = props;
 
   // The last two are the only ones the cards read, whatever the window.
   const currentMonth = months?.at(-1) ?? null;
   const lastMonth = months?.at(-2) ?? null;
-  const growth =
-    currentMonth && lastMonth
-      ? getGrowth(currentMonth.revenue, lastMonth.revenue)
-      : null;
 
   // An em dash on all three rather than a band that disappears: the figures
   // failing to load is worth seeing on a page whose whole subject is what they
@@ -412,22 +439,16 @@ function RevenueCards(props: {
       />
       <StatTile
         data-visual-test="transparent"
-        icon={growth !== null && growth < 0 ? TrendingDownIcon : TrendingUpIcon}
-        color={growth !== null && growth < 0 ? "warning" : "success"}
-        label="Month over month"
-        value={readValue(growth)}
-        format="percent"
+        icon={TrendingUpIcon}
+        color="success"
+        label="Projected"
+        value={readValue(projection?.revenue ?? null)}
+        format="currency"
+        currency="EUR"
         hint={
           unavailable ??
-          (currentMonth && lastMonth && growth !== null ? (
-            <Hint
-              content={`${formatMonth(currentMonth.month)} (${formatEuros(currentMonth.revenue)}) vs ${formatMonth(lastMonth.month)} (${formatEuros(lastMonth.revenue)}). The running month is still filling.`}
-            >
-              {formatMonth(currentMonth.month)} vs{" "}
-              {formatMonth(lastMonth.month)}
-            </Hint>
-          ) : months ? (
-            "nothing to compare"
+          (projection ? (
+            <ProjectionSplit projection={projection} />
           ) : (
             HINT_PLACEHOLDER
           ))
@@ -1198,6 +1219,7 @@ function StaffRevenuePage() {
   });
   const months = data?.staffRevenue.months ?? null;
   const contracts = data?.staffRevenue.yearlyContracts ?? null;
+  const projection = data?.staffRevenue.projection ?? null;
 
   // Told rather than reported as a failed figure, as the other staff pages do:
   // a reader without access has no figures to wait for, and three tiles reading
@@ -1229,7 +1251,11 @@ function StaffRevenuePage() {
           <Heading>Revenue</Heading>
         </PageHeaderContent>
       </PageHeader>
-      <RevenueCards months={months} error={error ?? null} />
+      <RevenueCards
+        months={months}
+        projection={projection}
+        error={error ?? null}
+      />
       {months && contracts ? (
         <>
           <ChartCard className="mb-6" title="Invoiced by month">

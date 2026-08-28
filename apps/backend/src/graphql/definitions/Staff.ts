@@ -504,12 +504,39 @@ export const typeDefs = gql`
     awaitingPayment: Boolean!
   }
 
+  """
+  Where the running month is heading, once everything it has not billed yet is
+  counted.
+
+  The month itself reports what was invoiced, which is why it reads low all
+  month and only catches up on its last cycle. These are the same three
+  figures, each carried to the end of the month rather than stopped at today.
+  """
+  type StaffRevenueProjection {
+    "The three below, added up."
+    revenue: Float!
+    "Invoiced so far, plus the bills the cycles have not raised yet."
+    monthlyPlans: Float!
+    "A whole month of the contracts, not the share of it that has gone by."
+    yearlyPlans: Float!
+    "A whole month of Marketplace, on the same basis."
+    githubPlans: Float!
+    """
+    The part of \`monthlyPlans\` no invoice exists for: what the subscriptions
+    still to be billed have run up so far, which is a floor rather than a
+    forecast — their usage keeps accruing until the cycle closes.
+    """
+    estimated: Float!
+  }
+
   "What Argos invoiced, and the annual contracts behind the yearly rate."
   type StaffRevenue {
     "The window, oldest first and the running month last."
     months: [StaffRevenueMonth!]!
     "The contracts behind every month's \`yearlyPlans\`, largest first."
     yearlyContracts: [StaffYearlyContract!]!
+    "Where the running month is heading, beside what it has billed."
+    projection: StaffRevenueProjection!
   }
 
   type StaffTeamConnection implements Connection {

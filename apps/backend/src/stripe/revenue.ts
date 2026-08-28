@@ -780,12 +780,41 @@ function clipContractTerms(reads: ContractRead[]): ContractRead[] {
   return clipped;
 }
 
+/**
+ * What the running month is on course to come to, once everything it has not
+ * billed yet is counted.
+ *
+ * The month itself reports what was invoiced, which is why it reads low all
+ * month and only catches up on the last cycle of it. This is the other
+ * question — what the month will be worth — and the three figures below are
+ * the same three, each carried to the end of the month rather than stopped at
+ * today.
+ */
+type StaffRevenueProjection = {
+  /** The three below, added up. */
+  revenue: number;
+  /** Invoiced so far, plus the bills the cycles have not raised yet. */
+  monthlyPlans: number;
+  /** A whole month of the contracts, not the share of it that has gone by. */
+  yearlyPlans: number;
+  /** A whole month of Marketplace, on the same basis. */
+  githubPlans: number;
+  /**
+   * The part of `monthlyPlans` no invoice exists for: what the subscriptions
+   * still to be billed have run up so far, which is a floor rather than a
+   * forecast — their usage keeps accruing until the cycle closes.
+   */
+  estimated: number;
+};
+
 /** What Argos invoiced, and the annual contracts behind the yearly figures. */
 export type StaffRevenue = {
   /** Oldest first, the running month last. */
   months: StaffRevenueMonth[];
   /** The contracts behind the yearly figures, largest first. */
   yearlyContracts: StaffYearlyContract[];
+  /** Where the running month is heading, beside what it has billed. */
+  projection: StaffRevenueProjection;
 };
 
 /**
@@ -1089,6 +1118,8 @@ export async function getStaffRevenue(
   const runningMonth = monthBounds[runningIndex];
   invariant(runningMonth, "the running month is one of the reported ones");
   const monthlyByCustomer = new Map<string, number>();
+  /** The contracts over the whole running month, for the projection. */
+  const projectedYearly = createSplit();
 
   for (const contract of contracts) {
     const coveredMs = contract.termMs;
@@ -1120,6 +1151,10 @@ export async function getStaffRevenue(
       Math.min(contract.coverage.end, runningMonth.end) -
       Math.max(contract.coverage.start, runningMonth.start);
     if (monthOverlap > 0) {
+      addToSplit(projectedYearly, {
+        amount: (contract.revenue.amount * monthOverlap) / coveredMs,
+        currency: contract.revenue.currency,
+      });
       monthlyByCustomer.set(
         contract.row.stripeCustomerId,
         (monthlyByCustomer.get(contract.row.stripeCustomerId) ?? 0) +
@@ -1144,6 +1179,19 @@ export async function getStaffRevenue(
     teamCustomers,
     invoicedCustomerIds: new Set(runningTeams.keys()),
   });
+
+  // What the running month is heading for, rather than what it has billed: the
+  // bills its cycles have not raised yet, and the two rates carried to the end
+  // of the month instead of stopped at today.
+  const runningSplit = monthSplits[runningIndex];
+  invariant(runningSplit, "the running month has a split of its own");
+  const estimated = estimatedBills.reduce((sum, bill) => sum + bill.revenue, 0);
+  const projectedMonthly = runningSplit.revenue + estimated;
+  const projectedGithub = getMarketplaceMonthRevenue(
+    marketplaceSubscriptions,
+    runningMonth,
+    runningMonth,
+  );
 
   const months = reported.map((start, index) => {
     const monthly = monthSplits[index];
@@ -1190,6 +1238,14 @@ export async function getStaffRevenue(
       monthlyByCustomer,
       runningMonth,
     }),
+    projection: {
+      revenue:
+        projectedMonthly + projectedYearly.revenue + projectedGithub.revenue,
+      monthlyPlans: projectedMonthly,
+      yearlyPlans: projectedYearly.revenue,
+      githubPlans: projectedGithub.revenue,
+      estimated,
+    },
   };
 }
 
