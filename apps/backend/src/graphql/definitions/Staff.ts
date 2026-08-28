@@ -389,8 +389,10 @@ export const typeDefs = gql`
     yearlyPlans: StaffRevenueSplit!
     """
     What GitHub Marketplace brought in over the month: the subscriptions
-    running then, at their plans' list prices. Beside the two above rather
-    than inside them — GitHub bills it, and \`revenue\` never counts it.
+    running then, at their plans' list prices, each earning the share of the
+    month it was subscribed for. Billed by GitHub rather than invoiced by
+    Argos, and counted in \`revenue\` like the two above it — the figure states
+    what the month was worth, whoever raised the bill.
     """
     githubPlans: StaffRevenueSplit!
   }

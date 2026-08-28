@@ -432,7 +432,7 @@ function RevenueCards(props: {
         data-visual-test="transparent"
         icon={CalendarCheckIcon}
         color="primary"
-        label="Last month"
+        label="Last month revenue"
         value={readValue(lastMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
@@ -451,7 +451,7 @@ function RevenueCards(props: {
         icon={CalendarClockIcon}
         // The storybook token is the design system's pink.
         color="storybook"
-        label="Current month"
+        label="Invoiced this month"
         value={readValue(currentMonth?.revenue ?? null)}
         format="currency"
         currency="EUR"
@@ -518,9 +518,9 @@ const CHART_CONFIG: ChartConfig = Object.fromEntries(
  * carries a slope where twelve separate bars make the reader measure heights
  * against each other.
  *
- * The tooltip totals the three bands, the stack's own height. It therefore
- * reads above the cards, which report what Stripe invoiced alone — the
- * Marketplace band is billed by GitHub and sits on top of them.
+ * The tooltip totals the three bands, the stack's own height — the same figure
+ * the cards state, Marketplace included: what a month was worth is what it was
+ * worth, whoever raised the bill.
  */
 function RevenueChart(props: { months: readonly RevenueMonth[] }) {
   const data = props.months.map((month) => ({
@@ -796,7 +796,10 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
 
             return (
               <tr
-                key={team.stripeCustomerId}
+                // The customer alone is not unique: a team sent a bill this
+                // month can still have its cycle's own bill to come, which is
+                // a second line — one invoiced, one estimated.
+                key={`${team.stripeCustomerId}-${team.estimatedAt ? "estimate" : "invoiced"}`}
                 className={clsx(
                   "text-sm",
                   teamIndex !== teams.length - 1 && "border-b",

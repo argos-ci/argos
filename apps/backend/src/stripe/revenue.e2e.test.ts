@@ -2,12 +2,12 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
+import { startOfUTCMonth } from "@/util/utc-month";
 
 import {
   getBilledTeams,
   getStaffRevenue,
   getTeamCustomers,
-  startOfUTCMonth,
   toEuros,
 } from "./revenue";
 
@@ -450,7 +450,7 @@ describe("getStaffRevenue", () => {
           screenshotCount: team.screenshotCount,
           createdAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
         });
-        return account;
+        return { account, stripeCustomerId: `cus_${team.slug}` };
       };
 
       const pending = await createPendingTeam({
@@ -470,11 +470,30 @@ describe("getStaffRevenue", () => {
         screenshotCount: 9000,
       });
 
+      // Raised mid-month on the pending team, and not by its cycle: an upgrade
+      // prorated on the spot. Its own bill is still due on the 20th, so the
+      // month has both to report — the proration as invoiced, the cycle as
+      // estimated.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: pending.stripeCustomerId,
+        stripeCreatedAt: now.toISOString(),
+        billingReason: "subscription_update",
+        currency: "eur",
+        total: 1_200,
+        totalExcludingTax: 1_200,
+      });
+
       const result = await getStaffRevenue(1);
       const current = result.months[0];
       invariant(current);
-      expect(current.teams.map((team) => team.slug)).toEqual([pending.slug]);
-      const line = current.teams[0];
+      // The team billed on the 10th is nowhere: its cycle has come round, and
+      // the next one belongs to the month after. The pending team is there
+      // twice — the proration it was sent, and the bill it is still owed.
+      expect(current.teams.map((team) => team.slug)).toEqual([
+        pending.account.slug,
+        pending.account.slug,
+      ]);
+      const line = current.teams.find((team) => team.estimatedAt !== null);
       invariant(line);
 
       // The plan's own amount, plus the two thousand screenshots past the quota.
@@ -484,17 +503,17 @@ describe("getStaffRevenue", () => {
       expect(line.invoices).toEqual([]);
       expect(line.estimatedAt).toBeInstanceOf(Date);
       // An estimate is not revenue: the month reports what was invoiced, which
-      // here is nothing at all.
+      // here is the proration alone.
       expect(current.monthlyPlans).toEqual({
-        revenue: 0,
-        teamsCount: 0,
+        revenue: 12,
+        teamsCount: 1,
         foreignRevenue: 0,
       });
-      // Where the month is heading is the other question, and the estimate is
-      // the whole of the answer here.
-      expect(result.projection.monthlyPlans).toBe(120);
+      // Where the month is heading is the other question: the proration it has
+      // been sent, and the cycle bill it has not.
+      expect(result.projection.monthlyPlans).toBe(132);
       expect(result.projection.estimated).toBe(120);
-      expect(result.projection.revenue).toBe(120);
+      expect(result.projection.revenue).toBe(132);
     } finally {
       vi.useRealTimers();
     }

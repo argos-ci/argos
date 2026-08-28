@@ -8,6 +8,7 @@ import {
   Subscription,
 } from "@/database/models";
 import { getAccountBillings } from "@/database/services/period-usage";
+import { startOfUTCMonth } from "@/util/utc-month";
 
 /** What the teams on one billing interval contributed to a month. */
 type StaffRevenueSplit = {
@@ -54,10 +55,13 @@ type StaffRevenueMonthTeam = {
   /** In euros, like the split it sums into. */
   revenue: number;
   /**
-   * Screenshots the line's amount was raised on: what the team consumed over
-   * the month for a bill that exists, and what the running period has
-   * accumulated for one still to come — which is the count its estimate was
-   * computed from.
+   * Screenshots the team consumed over the month — and, on a line still to be
+   * billed, over the period its estimate was computed on.
+   *
+   * Beside the bill rather than behind it: a cycle bills the period it just
+   * closed, which straddles two calendar months, so this is what the team got
+   * through in the month the line is filed under, not what that invoice was
+   * raised on.
    */
   screenshotsCount: number;
   /**
@@ -195,6 +199,7 @@ function getMarketplaceMonthRevenue(
 ): StaffRevenueSplit {
   const split = createSplit();
   const byAccount = new Map<string, number>();
+  const monthMs = month.end - month.start;
 
   for (const subscription of subscriptions) {
     const started = new Date(subscription.startDate).getTime();
@@ -213,21 +218,26 @@ function getMarketplaceMonthRevenue(
     ) {
       continue;
     }
+    // A month bills its subscriptions once, so what one has earned is the
+    // share of the month it was subscribed for — as much of it as has gone by,
+    // and no more than the part it was there for. Read per subscription rather
+    // than once for the batch: a projection carries the whole month, and a
+    // team that cancelled on the third has not earned the rest of it.
+    const covered =
+      Math.min(ended, elapsed.end) - Math.max(started, elapsed.start);
+    const share = monthMs > 0 ? Math.max(0, covered) / monthMs : 0;
     // One subscription per team, the richest, like every other figure here.
     byAccount.set(
       subscription.accountId,
       Math.max(
         byAccount.get(subscription.accountId) ?? 0,
-        subscription.priceCents,
+        (subscription.priceCents / 100) * share,
       ),
     );
   }
 
-  // A month bills its subscriptions once, so what a month still running has
-  // earned is the share of it that has gone by.
-  const share = (elapsed.end - elapsed.start) / (month.end - month.start) || 0;
-  for (const cents of byAccount.values()) {
-    addToSplit(split, { amount: (cents / 100) * share, currency: "usd" });
+  for (const amount of byAccount.values()) {
+    addToSplit(split, { amount, currency: "usd" });
   }
   split.teamsCount = byAccount.size;
   return split;
@@ -579,20 +589,6 @@ function addToSplit(split: StaffRevenueSplit, revenue: InvoiceRevenue): void {
   }
 }
 
-/**
- * The first instant of the month `offset` months back, in UTC.
- *
- * Deliberately not the calendar helpers, which work in the process's own
- * timezone: Stripe timestamps every invoice in UTC, so a server running on
- * anything else would cut its months hours away from where Stripe cuts them and
- * file the invoices either side of a boundary in the wrong one.
- */
-export function startOfUTCMonth(date: Date, offset: number): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + offset, 1),
-  );
-}
-
 /** One invoice a contract's worth is read from. */
 type StaffContractInvoice = {
   /** Net of tax and credit notes, in the currency it was raised in. */
@@ -909,17 +905,13 @@ function getPlanColumns(team: BilledTeam | undefined): {
  */
 async function getEstimatedBills(options: {
   billedTeams: BilledTeam[];
-  /** The customers a bill was already raised on this month. */
-  invoicedCustomerIds: Set<string>;
   /** The month the estimates are reported in, which bounds when they fall. */
   runningMonth: { start: number; end: number };
 }): Promise<StaffRevenueMonthTeam[]> {
   const pending = options.billedTeams.filter(
-    (team) =>
-      // Monthly cycles alone: a yearly contract is not owed a bill every month,
-      // and it has a table of its own that says what it is worth.
-      team.interval === "month" &&
-      !options.invoicedCustomerIds.has(team.stripeCustomerId),
+    // Monthly cycles alone: a yearly contract is not owed a bill every month,
+    // and it has a table of its own that says what it is worth.
+    (team) => team.interval === "month",
   );
 
   if (pending.length === 0) {
@@ -938,11 +930,11 @@ async function getEstimatedBills(options: {
       (billingPeriod) => !billingPeriod.closed,
     );
     // A cycle that closes after this month bills in the next one, not in this
-    // one. Reached when a bill was raised but the mirror has not caught it —
-    // a sweep a few hours behind, an invoice still in draft, one that netted
-    // nothing — where the customer looks unbilled while its period has already
-    // rolled over. Estimating it here would put a whole extra bill in the
-    // month's projection.
+    // one — which is the whole test, and the only one worth making. It covers
+    // the team whose cycle already came round, whether or not the mirror has
+    // its invoice yet: the period has rolled over either way. Reading the
+    // month's invoices instead would suppress the cycle bill of a team that
+    // was sent a mid-month proration, whose own bill is still to come.
     if (period && period.endsAt.getTime() >= options.runningMonth.end) {
       continue;
     }
@@ -955,6 +947,16 @@ async function getEstimatedBills(options: {
     // cycle bills, and a flat bill left out of the month beats one dated by
     // guesswork.
     if (!billing || !period || billing.flatPrice === null) {
+      continue;
+    }
+
+    // The amount and the period are read off the subscription the billing
+    // resolved, the currency and the plan off the one the team read resolved,
+    // and the two queries do not pick from the same shortlist — a trial counts
+    // for one and not the other. Where they disagree on the interval they have
+    // disagreed on the subscription, and the price would be a year's stamped
+    // into a month.
+    if (billing.plan?.interval !== "month") {
       continue;
     }
 
@@ -1024,9 +1026,11 @@ export async function getStaffRevenue(
     StripeInvoiceSync.query().orderBy("sinceDate", "asc").first(),
     StripeInvoiceSync.query().orderBy("completedAt", "desc").first(),
     getMarketplaceSubscriptions(),
-    // Chained off the customers rather than read beside them: the usage is
-    // wanted for the teams this page has lines for, and unbounded it would
-    // sweep every bucket every project ever produced over the window.
+    // Chained off the customers rather than read beside them: unbounded, this
+    // sweeps every bucket every project in the database ever produced over the
+    // window. It is still wider than the lines the page draws — which of these
+    // teams has an invoice is not known until the read below returns — but the
+    // accounts that never reached Stripe are the bulk of them.
     teamCustomersPromise.then((customers) =>
       // Over the reported months alone, not the contract scan: usage is read
       // beside the bills of the months on screen, and the year of contracts
@@ -1236,13 +1240,7 @@ export async function getStaffRevenue(
     split.teamsCount = customers.size;
   }
 
-  const runningTeams = monthTeams[runningIndex];
-  invariant(runningTeams, "the running month is one of the reported ones");
-  const estimatedBills = await getEstimatedBills({
-    billedTeams,
-    invoicedCustomerIds: new Set(runningTeams.keys()),
-    runningMonth,
-  });
+  const estimatedBills = await getEstimatedBills({ billedTeams, runningMonth });
 
   // What the running month is heading for, rather than what it has billed: the
   // bills its cycles have not raised yet, and the two rates carried to the end
