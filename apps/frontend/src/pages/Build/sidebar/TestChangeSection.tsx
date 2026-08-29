@@ -1,3 +1,4 @@
+import { useFragment } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { CircleCheckIcon, FlagOffIcon, WavesIcon } from "lucide-react";
@@ -34,12 +35,33 @@ const _TestChangeFragment = graphql(`
   }
 `);
 
+/**
+ * Same staleness as the toolbar flag (see `IgnoreButton_TestChange`): the
+ * build page fetches its diffs with `no-cache`, so the snapshot handed down
+ * keeps the flag it was fetched with. The mutations write the change to the
+ * cache; follow that entity and fall back to the snapshot until it is there.
+ */
+const IgnoredFragment = graphql(`
+  fragment TestChangeSectionIgnored_TestChange on TestChange {
+    id
+    ignored
+  }
+`);
+
 export function TestChangeSection(props: {
   test: DocumentType<typeof _TestFragment>;
   change: DocumentType<typeof _TestChangeFragment>;
   occurrences: number;
 }) {
   const { test, change, occurrences } = props;
+  const cachedChange = useFragment({
+    fragment: IgnoredFragment,
+    fragmentName: "TestChangeSectionIgnored_TestChange",
+    from: { __typename: "TestChange", id: change.id },
+  });
+  const ignored = cachedChange.complete
+    ? cachedChange.data.ignored
+    : change.ignored;
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
   const lastTrail = change.trails.at(-1) ?? null;
@@ -82,7 +104,7 @@ export function TestChangeSection(props: {
       </div>
       <div className="mt-4 flex items-center gap-1.5 px-4 text-xs">
         {occurrences > 1 ? (
-          change.ignored ? (
+          ignored ? (
             <>
               <FlagOffIcon className="text-low size-3" />
               Change ignored{" "}
