@@ -4,7 +4,7 @@ import { XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildReviewEvent } from "@/gql/graphql";
+import { BuildReviewEvent, ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { useOverlayTriggerState } from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";
@@ -81,10 +81,19 @@ export function BuildReviewForm(props: {
     },
   });
 
-  // Block submission until every diff has been fetched: the review progression
-  // and the accept/reject counts are computed from the loaded diffs, so
-  // submitting mid-load could approve or reject an incomplete set of changes.
-  const { isLoading } = useBuildDiffState();
+  // The review payload is built from the loaded diffs. The server sorts
+  // reviewable diffs (changed/added/removed) first, so once a trailing-status
+  // diff is loaded the payload is complete and submission can unlock.
+  const { isLoading, allDiffs, isSubsetBuild } = useBuildDiffState();
+  const waitingForDiffs =
+    isLoading &&
+    !allDiffs.some(
+      (diff) =>
+        diff.status === ScreenshotDiffStatus.Unchanged ||
+        diff.status === ScreenshotDiffStatus.RetryFailure ||
+        diff.status === ScreenshotDiffStatus.Ignored ||
+        (isSubsetBuild && diff.status === ScreenshotDiffStatus.Removed),
+    );
 
   // Tracks the action currently being submitted: drives the per-button spinner
   // and disables the rest of the form while the review is in flight.
@@ -109,7 +118,7 @@ export function BuildReviewForm(props: {
     : BuildReviewEvent.Approve;
 
   const submitReview = async (event: BuildReviewEvent) => {
-    if (isLoading) {
+    if (waitingForDiffs) {
       return;
     }
     const { body } = form.getValues();
@@ -198,7 +207,7 @@ export function BuildReviewForm(props: {
         <FormRootError control={form.control} />
         <Tooltip
           content={
-            isLoading
+            waitingForDiffs
               ? "Waiting for all changes to load before you can submit a review…"
               : null
           }
@@ -216,7 +225,7 @@ export function BuildReviewForm(props: {
                   className="shrink-0"
                   pending={pendingEvent === event}
                   disabled={
-                    isLoading || (isSubmitting && pendingEvent !== event)
+                    waitingForDiffs || (isSubmitting && pendingEvent !== event)
                   }
                   autoFocus={isDefault}
                   // Keep the ring on the focused button (not only keyboard focus)
