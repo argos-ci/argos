@@ -40,6 +40,7 @@ import { isValidPgBigInt } from "@/database/util/biginteger";
 import {
   addCustomDomain,
   checkHasAccessToCustomDomains,
+  getAccountCustomDomainsAvailability,
   reconcileCustomDomain,
   removeCustomDomain,
 } from "@/deployment/custom-domain";
@@ -53,6 +54,7 @@ import { safeParseTestId } from "@/util/test-id";
 
 import {
   IBuildStatus,
+  ICustomDomainsAvailability,
   IDeploymentAuth,
   IProjectCustomDomainPendingReason,
   IProjectPermission,
@@ -245,8 +247,19 @@ export const typeDefs = gql`
     domain: String
     "Custom domains serving the project's production deployments"
     customDomains: [ProjectCustomDomain!]!
-    "Whether the account's plan includes custom domains"
-    customDomainsEnabled: Boolean!
+    "Whether custom domains are available, and if not, what would unlock them"
+    customDomainsAvailability: CustomDomainsAvailability!
+  }
+
+  enum CustomDomainsAvailability {
+    "Usable now"
+    available
+    "The team has no active subscription — subscribing unlocks it"
+    requires_subscription
+    "The plan does not include it and cannot be changed without us"
+    requires_contact
+    "Personal accounts cannot use custom domains"
+    requires_team
   }
 
   enum ProjectCustomDomainStatus {
@@ -869,10 +882,11 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.CustomProjectDomainsByProject.load(project.id);
     },
-    customDomainsEnabled: async (project, _args, ctx) => {
+    customDomainsAvailability: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
-      return checkHasAccessToCustomDomains(account);
+      const availability = await getAccountCustomDomainsAvailability(account);
+      return availability as ICustomDomainsAvailability;
     },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);

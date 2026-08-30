@@ -1,13 +1,17 @@
 import { useApolloClient, useMutation } from "@apollo/client/react";
-import { PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { assertNever } from "@argos/util/assertNever";
+import { PlusIcon, RefreshCwIcon, Trash2Icon, UsersIcon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
+import { config } from "@/config";
+import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
 import {
+  CustomDomainsAvailability,
   ProjectCustomDomainPendingReason,
   ProjectCustomDomainStatus,
 } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -41,7 +45,10 @@ import { toast } from "@/ui/Toaster";
 const _ProjectFragment = graphql(`
   fragment CustomDomains_Project on Project {
     id
-    customDomainsEnabled
+    customDomainsAvailability
+    account {
+      id
+    }
     customDomains {
       id
       domain
@@ -112,8 +119,15 @@ export function CustomDomains(props: { project: Project }) {
     form.reset({ domain: "" });
   };
 
-  if (!project.customDomainsEnabled) {
-    return <CustomDomainsUpgradeCard />;
+  if (
+    project.customDomainsAvailability !== CustomDomainsAvailability.Available
+  ) {
+    return (
+      <CustomDomainsUnavailableCard
+        availability={project.customDomainsAvailability}
+        accountId={project.account.id}
+      />
+    );
   }
 
   return (
@@ -178,25 +192,87 @@ export function CustomDomains(props: { project: Project }) {
   );
 }
 
-function CustomDomainsUpgradeCard() {
+/**
+ * The card when custom domains are closed to this project.
+ *
+ * Each state names the one thing that would open them, because "upgrade your
+ * plan" is wrong advice for two of the three: a personal account has no plan to
+ * upgrade, and a team we put on a plan by hand cannot change it itself.
+ */
+function CustomDomainsUnavailableCard(props: {
+  availability: CustomDomainsAvailability;
+  accountId: string;
+}) {
+  const { availability, accountId } = props;
+
+  const content = (() => {
+    switch (availability) {
+      case CustomDomainsAvailability.RequiresTeam:
+        return {
+          paragraph:
+            "Custom domains are a team feature. Create a team and transfer this project to it to serve deployments from your own domain.",
+          action: (
+            <LinkButton href="/teams/new">
+              <ButtonIcon>
+                <UsersIcon />
+              </ButtonIcon>
+              Create team
+            </LinkButton>
+          ),
+        };
+      case CustomDomainsAvailability.RequiresSubscription:
+        return {
+          paragraph:
+            "Custom domains are included in paid plans. Subscribe to serve this project's deployments from your own domain.",
+          action: (
+            <TeamSubscribeDialog initialAccountId={accountId}>
+              Subscribe
+            </TeamSubscribeDialog>
+          ),
+        };
+      case CustomDomainsAvailability.RequiresContact:
+        return {
+          paragraph:
+            "Your plan does not include custom domains. Get in touch and we will sort it out with you.",
+          action: (
+            <LinkButton
+              variant="secondary"
+              href={`mailto:${config.contactEmail}`}
+            >
+              Contact us
+            </LinkButton>
+          ),
+        };
+      case CustomDomainsAvailability.Available:
+        // Handled by the caller, which renders the real card instead.
+        return null;
+      default:
+        assertNever(availability);
+    }
+  })();
+
+  if (!content) {
+    return null;
+  }
+
   return (
     <Card>
       <CardBody>
         <CardTitle>Custom domains</CardTitle>
-        <CardParagraph>
-          Serve this project's production deployments from your own domain.
-          Custom domains are available on paid plans.
-        </CardParagraph>
+        <CardParagraph>{content.paragraph}</CardParagraph>
       </CardBody>
-      <CardFooter>
-        Learn more about{" "}
-        <Link
-          href="https://argos-ci.com/docs/learn/deployments/urls-and-domains"
-          target="_blank"
-        >
-          deployment URLs and domains
-        </Link>
-        .
+      <CardFooter className="flex items-center justify-between gap-4">
+        <div>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/learn/deployments/urls-and-domains"
+            target="_blank"
+          >
+            deployment URLs and domains
+          </Link>
+          .
+        </div>
+        {content.action}
       </CardFooter>
     </Card>
   );

@@ -2,6 +2,10 @@ import config from "@/config";
 import { isUniqueViolationError } from "@/database/error";
 import { Account, ProjectDomain } from "@/database/models";
 import {
+  checkIsActiveSubscriptionStatus,
+  type AccountSubscriptionStatus,
+} from "@/database/models/Account";
+import {
   attachProductionDomainAlias,
   detachDomainAlias,
 } from "@/database/services/project-domain";
@@ -24,15 +28,78 @@ import { invalidateDeploymentCache } from "./invalidate";
 const DOMAIN_REGEX =
   /^(?=.{1,255}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
+export type CustomDomainsAvailability =
+  | "available"
+  | "requires_subscription"
+  | "requires_contact"
+  | "requires_team";
+
 /**
- * Custom domains are a paid feature. Read from the plan so that changing which
- * plans include it is a data change, matching `samlIncluded` and friends.
+ * Whether an account may use custom domains, and when it may not, what would
+ * change that.
+ *
+ * One function rather than a boolean plus a second guess in the UI: the answer
+ * decides both whether the mutation is honoured and which call to action the
+ * settings card offers, and those two must never disagree about why the feature
+ * is closed.
+ *
+ * `getPlan()` is not sufficient on its own. It resolves the plan of any
+ * subscription that is merely `trialing` or `past_due`, so reading
+ * `customDomainsIncluded` off it would hand the feature to a team that has
+ * never paid.
+ */
+export function getCustomDomainsAvailability(input: {
+  accountType: "user" | "team";
+  hasForcedPlan: boolean;
+  subscriptionStatus: AccountSubscriptionStatus | null;
+  planIncludesCustomDomains: boolean;
+}): CustomDomainsAvailability {
+  if (input.accountType !== "team") {
+    return "requires_team";
+  }
+
+  // A forced plan is one we set by hand, so there is no self-service path off
+  // it — subscribing is not the answer, talking to us is.
+  if (input.hasForcedPlan) {
+    return input.planIncludesCustomDomains ? "available" : "requires_contact";
+  }
+
+  if (!checkIsActiveSubscriptionStatus(input.subscriptionStatus)) {
+    return "requires_subscription";
+  }
+
+  // Paying, but on a plan without the feature. A plan change is not something
+  // the team can do to itself either.
+  return input.planIncludesCustomDomains ? "available" : "requires_contact";
+}
+
+/**
+ * Resolve `getCustomDomainsAvailability` for an account.
+ */
+export async function getAccountCustomDomainsAvailability(
+  account: Account,
+): Promise<CustomDomainsAvailability> {
+  const manager = account.$getSubscriptionManager();
+  const [plan, subscriptionStatus] = await Promise.all([
+    manager.getPlan(),
+    manager.getSubscriptionStatus(),
+  ]);
+
+  return getCustomDomainsAvailability({
+    accountType: account.type,
+    hasForcedPlan: account.forcedPlanId !== null,
+    subscriptionStatus,
+    planIncludesCustomDomains: Boolean(plan?.customDomainsIncluded),
+  });
+}
+
+/**
+ * The guard behind every custom-domain mutation.
  */
 export async function checkHasAccessToCustomDomains(
   account: Account,
 ): Promise<boolean> {
-  const plan = await account.$getSubscriptionManager().getPlan();
-  return Boolean(plan?.customDomainsIncluded);
+  return (await getAccountCustomDomainsAvailability(account)) === "available";
 }
 
 function getReservedSuffixes(): string[] {

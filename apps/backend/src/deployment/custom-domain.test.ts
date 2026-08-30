@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { validateCustomDomain } from "./custom-domain";
+import type { AccountSubscriptionStatus } from "@/database/models/Account";
+
+import {
+  getCustomDomainsAvailability,
+  validateCustomDomain,
+  type CustomDomainsAvailability,
+} from "./custom-domain";
 
 describe("validateCustomDomain", () => {
   it.each([
@@ -46,5 +52,92 @@ describe("validateCustomDomain", () => {
     expect(validateCustomDomain("dev.argos-ci.live.example.com")).toBe(
       "dev.argos-ci.live.example.com",
     );
+  });
+});
+
+describe("getCustomDomainsAvailability", () => {
+  function availability(input: {
+    accountType?: "user" | "team";
+    hasForcedPlan?: boolean;
+    subscriptionStatus?: AccountSubscriptionStatus | null;
+    planIncludesCustomDomains?: boolean;
+  }): CustomDomainsAvailability {
+    return getCustomDomainsAvailability({
+      accountType: input.accountType ?? "team",
+      hasForcedPlan: input.hasForcedPlan ?? false,
+      subscriptionStatus: input.subscriptionStatus ?? null,
+      planIncludesCustomDomains: input.planIncludesCustomDomains ?? true,
+    });
+  }
+
+  // A personal account has no plan to upgrade, so no amount of paying changes
+  // the answer — the project has to move to a team.
+  it.each([
+    { hasForcedPlan: false, subscriptionStatus: null },
+    { hasForcedPlan: true, subscriptionStatus: "active" as const },
+    { hasForcedPlan: false, subscriptionStatus: "active" as const },
+  ])("sends a personal account to a team (%o)", (input) => {
+    expect(availability({ ...input, accountType: "user" })).toBe(
+      "requires_team",
+    );
+  });
+
+  it("unlocks a paying team on a plan that includes it", () => {
+    expect(availability({ subscriptionStatus: "active" })).toBe("available");
+  });
+
+  it("unlocks a trial with a payment method on file", () => {
+    expect(
+      availability({ subscriptionStatus: "trialing_with_payment_method" }),
+    ).toBe("available");
+  });
+
+  // These all resolve a plan through `getPlan()`, which is exactly why the
+  // plan flag alone cannot be the gate.
+  it.each([
+    "trialing",
+    "past_due",
+    "unpaid",
+    "canceled",
+    "trial_expired",
+  ] as const)("asks a team on %s to subscribe", (subscriptionStatus) => {
+    expect(availability({ subscriptionStatus })).toBe("requires_subscription");
+  });
+
+  it("asks a team with no subscription at all to subscribe", () => {
+    expect(
+      availability({
+        subscriptionStatus: null,
+        planIncludesCustomDomains: false,
+      }),
+    ).toBe("requires_subscription");
+  });
+
+  // A forced plan is set by hand, so there is no checkout that would change it.
+  it("unlocks a forced plan that includes it, without any subscription", () => {
+    expect(
+      availability({ hasForcedPlan: true, subscriptionStatus: null }),
+    ).toBe("available");
+  });
+
+  it("sends a forced plan without it to contact us", () => {
+    expect(
+      availability({
+        hasForcedPlan: true,
+        subscriptionStatus: null,
+        planIncludesCustomDomains: false,
+      }),
+    ).toBe("requires_contact");
+  });
+
+  // Paying, but on a plan that does not carry the feature: subscribing again is
+  // not the fix either.
+  it("sends a paying team on a plan without it to contact us", () => {
+    expect(
+      availability({
+        subscriptionStatus: "active",
+        planIncludesCustomDomains: false,
+      }),
+    ).toBe("requires_contact");
   });
 });
