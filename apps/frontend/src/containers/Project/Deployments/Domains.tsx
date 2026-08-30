@@ -1,6 +1,13 @@
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
-import { PlusIcon, RefreshCwIcon, Trash2Icon, UsersIcon } from "lucide-react";
+import { SLUG_REGEX } from "@argos/util/slug";
+import {
+  PencilIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  Trash2Icon,
+  UsersIcon,
+} from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { config } from "@/config";
@@ -42,9 +49,12 @@ import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { toast } from "@/ui/Toaster";
 
+const INTERNAL_DOMAIN_SUFFIX = config.deployments.baseDomain;
+
 const _ProjectFragment = graphql(`
-  fragment CustomDomains_Project on Project {
+  fragment Domains_Project on Project {
     id
+    domain
     customDomainsAvailability
     account {
       id
@@ -60,21 +70,28 @@ const _ProjectFragment = graphql(`
   }
 `);
 
+const UpdateInternalDomainMutation = graphql(`
+  mutation Domains_updateProjectDomain($input: UpdateProjectDomainInput!) {
+    updateProjectDomain(input: $input) {
+      id
+      domain
+    }
+  }
+`);
+
 const AddCustomDomainMutation = graphql(`
-  mutation CustomDomains_addProjectCustomDomain(
+  mutation Domains_addProjectCustomDomain(
     $input: AddProjectCustomDomainInput!
   ) {
     addProjectCustomDomain(input: $input) {
       id
-      ...CustomDomains_Project
+      ...Domains_Project
     }
   }
 `);
 
 const CheckCustomDomainMutation = graphql(`
-  mutation CustomDomains_checkProjectCustomDomain(
-    $input: ProjectCustomDomainInput!
-  ) {
+  mutation Domains_checkProjectCustomDomain($input: ProjectCustomDomainInput!) {
     checkProjectCustomDomain(input: $input) {
       id
       domain
@@ -87,12 +104,12 @@ const CheckCustomDomainMutation = graphql(`
 `);
 
 const RemoveCustomDomainMutation = graphql(`
-  mutation CustomDomains_removeProjectCustomDomain(
+  mutation Domains_removeProjectCustomDomain(
     $input: ProjectCustomDomainInput!
   ) {
     removeProjectCustomDomain(input: $input) {
       id
-      ...CustomDomains_Project
+      ...Domains_Project
     }
   }
 `);
@@ -100,56 +117,274 @@ const RemoveCustomDomainMutation = graphql(`
 type Project = DocumentType<typeof _ProjectFragment>;
 type CustomDomain = Project["customDomains"][number];
 
-type Inputs = {
-  domain: string;
-};
-
-export function CustomDomains(props: { project: Project }) {
+export function Domains(props: { project: Project }) {
   const { project } = props;
-  const client = useApolloClient();
-  const form = useForm<Inputs>({ defaultValues: { domain: "" } });
-
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    await client.mutate({
-      mutation: AddCustomDomainMutation,
-      variables: {
-        input: { projectId: project.id, domain: data.domain.trim() },
-      },
-    });
-    form.reset({ domain: "" });
-  };
-
-  if (
-    project.customDomainsAvailability !== CustomDomainsAvailability.Available
-  ) {
-    return (
-      <CustomDomainsUnavailableCard
-        availability={project.customDomainsAvailability}
-        accountId={project.account.id}
-      />
-    );
-  }
 
   return (
     <Card>
+      <CardBody>
+        <CardTitle>Domains</CardTitle>
+        <CardParagraph>
+          The domains this project's production deployment is served from. They
+          always point at the latest production deployment — preview deployments
+          keep their own per-deployment URLs.
+        </CardParagraph>
+        <List>
+          <InternalDomainRow project={project} />
+          {project.customDomains.map((customDomain) => (
+            <CustomDomainRow
+              key={customDomain.id}
+              customDomain={customDomain}
+            />
+          ))}
+        </List>
+      </CardBody>
+      <DomainsCardFooter project={project} />
+    </Card>
+  );
+}
+
+/**
+ * The footer carries the one action the viewer can take next: add a domain
+ * when custom domains are open to them, or the single thing that would open
+ * them when they are not. "Upgrade your plan" is wrong advice for two of the
+ * three closed states — a personal account has no plan to upgrade, and a team
+ * we put on a plan by hand cannot change it itself — so each state names its
+ * own way out.
+ */
+function DomainsCardFooter(props: { project: Project }) {
+  const { project } = props;
+
+  // Installs without a multi-tenant distribution (development, self-hosted)
+  // cannot provision custom domains at all — no call to action would help.
+  if (!config.deployments.customDomains) {
+    return (
+      <CardFooter>
+        <LearnMore />
+      </CardFooter>
+    );
+  }
+
+  const content = (() => {
+    switch (project.customDomainsAvailability) {
+      case CustomDomainsAvailability.Available:
+        return {
+          text: <LearnMore />,
+          action: (
+            <DialogTrigger>
+              <Button variant="secondary">
+                <ButtonIcon>
+                  <PlusIcon />
+                </ButtonIcon>
+                Add domain
+              </Button>
+              <Modal>
+                <AddCustomDomainDialog projectId={project.id} />
+              </Modal>
+            </DialogTrigger>
+          ),
+        };
+      case CustomDomainsAvailability.RequiresTeam:
+        return {
+          text: "Custom domains are a team feature. Create a team and transfer this project to it to use your own domain.",
+          action: (
+            <LinkButton variant="secondary" href="/teams/new">
+              <ButtonIcon>
+                <UsersIcon />
+              </ButtonIcon>
+              Create team
+            </LinkButton>
+          ),
+        };
+      case CustomDomainsAvailability.RequiresSubscription:
+        return {
+          text: "Custom domains are included in paid plans. Subscribe to serve production deployments from your own domain.",
+          action: (
+            <TeamSubscribeDialog initialAccountId={project.account.id}>
+              Subscribe
+            </TeamSubscribeDialog>
+          ),
+        };
+      case CustomDomainsAvailability.RequiresContact:
+        return {
+          text: "Your plan does not include custom domains. Get in touch and we will sort it out with you.",
+          action: (
+            <LinkButton
+              variant="secondary"
+              href={`mailto:${config.contactEmail}`}
+            >
+              Contact us
+            </LinkButton>
+          ),
+        };
+      default:
+        assertNever(project.customDomainsAvailability);
+    }
+  })();
+
+  return (
+    <CardFooter className="flex items-center justify-between gap-4">
+      <div>{content.text}</div>
+      {content.action}
+    </CardFooter>
+  );
+}
+
+function LearnMore() {
+  return (
+    <>
+      Learn more about{" "}
+      <Link
+        href="https://argos-ci.com/docs/learn/deployments/urls-and-domains"
+        target="_blank"
+      >
+        deployment URLs and domains
+      </Link>
+      .
+    </>
+  );
+}
+
+function InternalDomainRow(props: { project: Project }) {
+  const { project } = props;
+
+  return (
+    <ListRow className="flex items-center justify-between gap-4 p-4 text-sm">
+      <div className="flex items-center gap-3">
+        {project.domain ? (
+          <span className="font-medium">{project.domain}</span>
+        ) : (
+          <span className="text-low">Assigned on first deployment</span>
+        )}
+        <Chip color="neutral" scale="xs">
+          Internal
+        </Chip>
+      </div>
+      <DialogTrigger>
+        <Button variant="secondary">
+          <ButtonIcon>
+            <PencilIcon />
+          </ButtonIcon>
+          Edit
+        </Button>
+        <Modal>
+          <EditInternalDomainDialog project={project} />
+        </Modal>
+      </DialogTrigger>
+    </ListRow>
+  );
+}
+
+type InternalDomainInputs = {
+  domain: string;
+};
+
+function EditInternalDomainDialog(props: { project: Project }) {
+  const { project } = props;
+  const state = useOverlayTriggerState();
+  const client = useApolloClient();
+  const form = useForm<InternalDomainInputs>({
+    defaultValues: {
+      domain: getInternalDomainSlug(project.domain),
+    },
+  });
+
+  const onSubmit: SubmitHandler<InternalDomainInputs> = async (data) => {
+    await client.mutate({
+      mutation: UpdateInternalDomainMutation,
+      variables: {
+        input: {
+          projectId: project.id,
+          domain: `${data.domain}.${INTERNAL_DOMAIN_SUFFIX}`,
+        },
+      },
+    });
+    state.close();
+  };
+
+  return (
+    <Dialog size="medium">
       <Form form={form} onSubmit={onSubmit} noValidate>
-        <CardBody>
-          <CardTitle>Custom domains</CardTitle>
-          <CardParagraph>
-            Serve this project's production deployments from your own domain.
-          </CardParagraph>
-          {project.customDomains.length > 0 ? (
-            <List className="mb-4">
-              {project.customDomains.map((customDomain) => (
-                <CustomDomainRow
-                  key={customDomain.id}
-                  customDomain={customDomain}
-                />
-              ))}
-            </List>
-          ) : (
-            <p className="text-low mb-4 text-sm">No custom domains yet.</p>
-          )}
+        <DialogBody>
+          <DialogTitle>Edit internal domain</DialogTitle>
+          <DialogText>
+            The Argos domain your production deployment is always reachable on.
+            Changing it releases the previous name immediately.
+          </DialogText>
+          <FormTextInput
+            control={form.control}
+            {...form.register("domain", {
+              required: "Please enter a domain slug",
+              maxLength: {
+                value: 48,
+                message: "Domain slugs must be 48 characters or less",
+              },
+              pattern: {
+                value: SLUG_REGEX,
+                message:
+                  "Domain slugs must be lowercase, start and end with an alphanumeric character, and may contain dashes in the middle.",
+              },
+            })}
+            autoFocus
+            label="Internal domain"
+            addon={`.${INTERNAL_DOMAIN_SUFFIX}`}
+          />
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError control={form.control} className="flex-1" />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control}>Save</FormSubmit>
+        </DialogFooter>
+      </Form>
+    </Dialog>
+  );
+}
+
+function getInternalDomainSlug(domain: string | null | undefined) {
+  if (!domain) {
+    return "";
+  }
+  const suffix = `.${INTERNAL_DOMAIN_SUFFIX}`;
+  if (!domain.endsWith(suffix)) {
+    return domain;
+  }
+  return domain.slice(0, -suffix.length);
+}
+
+type CustomDomainInputs = {
+  domain: string;
+};
+
+function AddCustomDomainDialog(props: { projectId: string }) {
+  const { projectId } = props;
+  const state = useOverlayTriggerState();
+  const client = useApolloClient();
+  const form = useForm<CustomDomainInputs>({
+    defaultValues: { domain: "" },
+  });
+
+  const onSubmit: SubmitHandler<CustomDomainInputs> = async (data) => {
+    await client.mutate({
+      mutation: AddCustomDomainMutation,
+      variables: {
+        input: { projectId, domain: data.domain.trim() },
+      },
+    });
+    // The new row appears with the DNS record to create — that is the real
+    // feedback, so no toast on top of it.
+    state.close();
+  };
+
+  return (
+    <Dialog size="medium">
+      <Form form={form} onSubmit={onSubmit} noValidate>
+        <DialogBody>
+          <DialogTitle>Add custom domain</DialogTitle>
+          <DialogText>
+            Serve this project's production deployment from a domain you own.
+            You will get a DNS record to create, and Argos issues and renews the
+            TLS certificate once it points at us.
+          </DialogText>
           <FormTextInput
             control={form.control}
             {...form.register("domain", {
@@ -167,114 +402,18 @@ export function CustomDomains(props: { project: Project }) {
                 return true;
               },
             })}
+            autoFocus
             label="Domain"
             placeholder="docs.example.com"
-            className="max-w-md"
           />
-        </CardBody>
-        <CardFooter className="flex items-center justify-between gap-4">
-          <div>
-            Argos issues and renews the TLS certificate once your DNS record
-            points at it.
-          </div>
-          <div className="flex items-center justify-end gap-4">
-            <FormRootError control={form.control} />
-            <FormSubmit control={form.control} disableIfPristine>
-              <ButtonIcon>
-                <PlusIcon />
-              </ButtonIcon>
-              Add domain
-            </FormSubmit>
-          </div>
-        </CardFooter>
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError control={form.control} className="flex-1" />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control}>Add domain</FormSubmit>
+        </DialogFooter>
       </Form>
-    </Card>
-  );
-}
-
-/**
- * The card when custom domains are closed to this project.
- *
- * Each state names the one thing that would open them, because "upgrade your
- * plan" is wrong advice for two of the three: a personal account has no plan to
- * upgrade, and a team we put on a plan by hand cannot change it itself.
- */
-function CustomDomainsUnavailableCard(props: {
-  availability: CustomDomainsAvailability;
-  accountId: string;
-}) {
-  const { availability, accountId } = props;
-
-  const content = (() => {
-    switch (availability) {
-      case CustomDomainsAvailability.RequiresTeam:
-        return {
-          paragraph:
-            "Custom domains are a team feature. Create a team and transfer this project to it to serve deployments from your own domain.",
-          action: (
-            <LinkButton href="/teams/new">
-              <ButtonIcon>
-                <UsersIcon />
-              </ButtonIcon>
-              Create team
-            </LinkButton>
-          ),
-        };
-      case CustomDomainsAvailability.RequiresSubscription:
-        return {
-          paragraph:
-            "Custom domains are included in paid plans. Subscribe to serve this project's deployments from your own domain.",
-          action: (
-            <TeamSubscribeDialog initialAccountId={accountId}>
-              Subscribe
-            </TeamSubscribeDialog>
-          ),
-        };
-      case CustomDomainsAvailability.RequiresContact:
-        return {
-          paragraph:
-            "Your plan does not include custom domains. Get in touch and we will sort it out with you.",
-          action: (
-            <LinkButton
-              variant="secondary"
-              href={`mailto:${config.contactEmail}`}
-            >
-              Contact us
-            </LinkButton>
-          ),
-        };
-      case CustomDomainsAvailability.Available:
-        // Handled by the caller, which renders the real card instead.
-        return null;
-      default:
-        assertNever(availability);
-    }
-  })();
-
-  if (!content) {
-    return null;
-  }
-
-  return (
-    <Card>
-      <CardBody>
-        <CardTitle>Custom domains</CardTitle>
-        <CardParagraph>{content.paragraph}</CardParagraph>
-      </CardBody>
-      <CardFooter className="flex items-center justify-between gap-4">
-        <div>
-          Learn more about{" "}
-          <Link
-            href="https://argos-ci.com/docs/learn/deployments/urls-and-domains"
-            target="_blank"
-          >
-            deployment URLs and domains
-          </Link>
-          .
-        </div>
-        {content.action}
-      </CardFooter>
-    </Card>
+    </Dialog>
   );
 }
 
@@ -347,7 +486,7 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
 /**
  * An apex domain cannot hold a CNAME, so the record type depends on whether the
  * customer gave us a subdomain — getting this wrong is the most common reason a
- * domain never leaves "Pending DNS".
+ * domain never leaves "DNS not configured".
  */
 function DnsInstructions(props: { domain: string; routingEndpoint: string }) {
   const { domain, routingEndpoint } = props;
