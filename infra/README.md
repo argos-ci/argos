@@ -346,10 +346,13 @@ The dev IAM group already gets it from the stack; the task role is not managed
 here, so attach it by hand once:
 
 ```sh
-aws iam put-role-policy --role-name <TASK_ROLE_NAME> --policy-name ArgosCustomDomains --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["cloudfront:CreateDistributionTenant","cloudfront:GetDistributionTenant","cloudfront:UpdateDistributionTenant","cloudfront:DeleteDistributionTenant","cloudfront:GetConnectionGroup"],"Resource":"*"}]}'
+aws iam put-role-policy --role-name <TASK_ROLE_NAME> --policy-name ArgosCustomDomains --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["cloudfront:CreateDistributionTenant","cloudfront:GetDistributionTenant","cloudfront:UpdateDistributionTenant","cloudfront:DeleteDistributionTenant","cloudfront:GetManagedCertificateDetails","acm:RequestCertificate","acm:DescribeCertificate","acm:ListCertificates","acm:AddTagsToCertificate"],"Resource":"*"}]}'
 ```
 
-No ACM permissions are needed — CloudFront owns the certificate lifecycle.
+The ACM actions are required even though nothing in this codebase calls ACM.
+CloudFront requests the managed certificate **as the calling identity**, so
+without them a tenant fails with "CloudFront cannot access the specified Amazon
+ACM certificate for the operation: RequestCertificate".
 
 #### 4. Set the app environment variables
 

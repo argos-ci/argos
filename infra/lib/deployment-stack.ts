@@ -564,8 +564,21 @@ function writeInjectedSecret(secret: string): string {
 
 /**
  * The permissions the app needs to manage a custom domain's distribution
- * tenant. Certificates are not listed: CloudFront requests and renews the
- * managed certificate itself, so the caller never touches ACM.
+ * tenant.
+ *
+ * The ACM actions are not optional, despite the documentation saying you never
+ * call ACM yourself. You don't — CloudFront does, but it does so *as you*, so
+ * a managed certificate request fails with "CloudFront cannot access the
+ * specified Amazon ACM certificate for the operation: RequestCertificate"
+ * unless the calling identity holds them.
+ *
+ * `acm:DeleteCertificate` is deliberately absent. Deleting a tenant does not
+ * delete its certificate, and nothing here asks ACM to; granting a destructive
+ * action for a call we never make would be worse than the certificates piling
+ * up, which is a quota to watch rather than a bug.
+ *
+ * Scoped to `*` because the certificates do not exist until CloudFront creates
+ * them, so there is no ARN to name in advance.
  */
 function customDomainsPolicyStatement(): iam.PolicyStatement {
   return new iam.PolicyStatement({
@@ -574,7 +587,11 @@ function customDomainsPolicyStatement(): iam.PolicyStatement {
       "cloudfront:GetDistributionTenant",
       "cloudfront:UpdateDistributionTenant",
       "cloudfront:DeleteDistributionTenant",
-      "cloudfront:GetConnectionGroup",
+      "cloudfront:GetManagedCertificateDetails",
+      "acm:RequestCertificate",
+      "acm:DescribeCertificate",
+      "acm:ListCertificates",
+      "acm:AddTagsToCertificate",
     ],
     resources: ["*"],
   });
