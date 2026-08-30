@@ -31,16 +31,19 @@ never by a deploy.
 
 ## Where configuration comes from
 
-`scripts/app.ts` takes stack props from one of three sources, chosen with
-`-c source=...`:
+`scripts/app.ts` reads its stack props from one place: the SSM parameter
+`/<stage>/cdk/config.json`. `-c stage=...` picks which one, and that is the only
+context value the app takes.
 
-| `source` | Reads from                               | Used by           |
-| -------- | ---------------------------------------- | ----------------- |
-| `1P`     | `op://argos-{prod,dev}/cdk/config.json`  | Local, historical |
-| `ssm`    | SSM parameter `/<stage>/cdk/config.json` | CI, and local     |
-| _unset_  | Individual `-c` context flags            | Throwaway synths  |
+There used to be two more sources — a 1Password item for local deploys and a set
+of `-c` flags for throwaway synths. Two copies of one document meant editing it
+twice, and they drifted: the development item was still missing the `assets`
+block long after the assets stack shipped, so a local deploy failed on a document
+CI had been reading correctly for months. You already need AWS credentials to
+run `cdk deploy`, so reading the parameter costs nothing that was not already
+required.
 
-The document is the same in all cases:
+The document:
 
 ```jsonc
 {
@@ -70,10 +73,10 @@ The document is the same in all cases:
 }
 ```
 
-> Keeping the 1Password item and the SSM parameter in sync by hand is a
-> standing trap. You already need AWS credentials to run `cdk deploy` locally,
-> so the simplest fix is to use `-c source=ssm` locally too and let the
-> 1Password copy go. The `1P` branch is kept only so nothing breaks mid-migration.
+> `assets` is optional, and development omits it: the frontend is served by Vite
+> there, so the stack has nothing to serve. Production refuses to synth without
+> it — dropping the block would take a live distribution out of the app without
+> failing.
 
 ---
 
@@ -191,8 +194,7 @@ which is why `infra.yml` also gates the diff job on the head repository.
 ### 4. Publish the config parameter
 
 Write the JSON from [Where configuration comes from](#where-configuration-comes-from)
-to a local file — starting from the current 1Password item and adding the
-`assets` block — then:
+to a local file, then:
 
 ```sh
 aws ssm put-parameter \
@@ -214,7 +216,7 @@ Delete the local file afterwards.
 Verify `app.ts` can read it — this synthesizes without deploying anything:
 
 ```sh
-pnpm --filter @argos/infra exec cdk synth argos-assets-production -c stage=production -c source=ssm
+pnpm --filter @argos/infra exec cdk synth argos-assets-production -c stage=production
 ```
 
 ### 5. Deploy the assets stack
@@ -223,7 +225,7 @@ Deploy **only** this stack. `--all` would also push any drift in the deployment
 stack, which is not what you want on the first CI-adjacent deploy:
 
 ```sh
-pnpm --filter @argos/infra exec cdk deploy argos-assets-production -c stage=production -c source=ssm
+pnpm --filter @argos/infra exec cdk deploy argos-assets-production -c stage=production
 ```
 
 Nothing serves yet — the distribution exists but no DNS points at it. Note the
@@ -280,7 +282,7 @@ served from the app origin, because the container never stopped serving
 - **Changing infra:** open a PR touching `infra/**`. `infra.yml` runs `cdk diff`
   against the live stacks and prints it in the job log. Merging to `main` runs
   `cdk deploy --all`.
-- **Deploying by hand:** `pnpm --filter @argos/infra exec cdk deploy <stack> -c stage=production -c source=ssm`
+- **Deploying by hand:** `pnpm --filter @argos/infra exec cdk deploy <stack> -c stage=production`
 - **Changing config:** update the SSM parameter (step 4), then redeploy. Config
   is read at synth time, so a parameter change alone does nothing.
 
@@ -311,7 +313,14 @@ renews it from then on. No TXT record, no ACM call from our side.
 #### 1. Deploy the stack
 
 ```sh
-pnpm --filter @argos/infra exec cdk deploy argos-deployment-production -c stage=production -c source=ssm
+pnpm --filter @argos/infra exec cdk deploy argos-deployment-production -c stage=production
+```
+
+Development is the same command against its own parameter, which omits the
+`assets` block:
+
+```sh
+pnpm --filter @argos/infra exec cdk deploy argos-deployment-development -c stage=development
 ```
 
 This adds `CustomDomainsConnectionGroup` and `CustomDomainsDistribution` and
