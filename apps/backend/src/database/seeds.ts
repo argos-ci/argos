@@ -1979,6 +1979,7 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
@@ -1990,6 +1991,7 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
@@ -2001,6 +2003,7 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
@@ -2011,6 +2014,7 @@ export async function seed() {
       usageBased: true,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
   ]);
@@ -2219,6 +2223,7 @@ async function createRevenueScenario(input: {
     usageBased: true,
     githubSsoIncluded: true,
     fineGrainedAccessControlIncluded: true,
+    customDomainsIncluded: true,
     samlIncluded: true,
     interval: "month",
   });
@@ -2229,6 +2234,7 @@ async function createRevenueScenario(input: {
     usageBased: true,
     githubSsoIncluded: true,
     fineGrainedAccessControlIncluded: true,
+    customDomainsIncluded: true,
     samlIncluded: true,
     interval: "year",
   });
