@@ -37,6 +37,7 @@ import { Link } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
+import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
@@ -90,6 +91,20 @@ const StaffRevenueQuery = graphql(`
           coveredUntil
           awaitingPayment
         }
+        usage {
+          periodFrom
+          periodEndsAt
+          screenshotsCount
+          includedScreenshots
+          additionalCost
+          additionalPrice {
+            amount
+            currency
+          }
+          monthlyAdditionalCost
+          projectedScreenshotsCount
+          projectedAdditionalCost
+        }
       }
     }
   }
@@ -131,6 +146,7 @@ type RevenueData = DocumentType<typeof StaffRevenueQuery>["staffRevenue"];
 type RevenueMonth = RevenueData["months"][number];
 type RevenueProjection = RevenueData["projection"];
 type YearlyContract = RevenueData["yearlyContracts"][number];
+type ContractUsage = NonNullable<YearlyContract["usage"]>;
 type Split = RevenueMonth["monthlyPlans"];
 type MonthTeam = DocumentType<
   typeof StaffRevenueMonthTeamsQuery
@@ -151,7 +167,7 @@ const CURRENT_MONTHLY_HINT =
   "This month's invoices so far, ex-tax, net of credit notes.";
 
 const YEARLY_HINT =
-  "Annual contracts amortized, day by day, over the months they cover. In €.";
+  "Annual contracts amortized, day by day, over the months they cover, with the overage their terms have run up. In €.";
 
 const GITHUB_HINT =
   "The month's Marketplace subscriptions at list price, billed by GitHub rather than invoiced by Argos.";
@@ -271,6 +287,59 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+/** How much of a term has gone by — what a projection off it is worth. */
+const SHARE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
+/**
+ * The figures a projection is stated in, rounded to the hundred and the
+ * thousand.
+ *
+ * A trend carried in a straight line does not know its own last two digits,
+ * and a euro-exact figure invites being quoted back as one. Rounded where it
+ * is written rather than where it is computed, so the arithmetic behind it
+ * stays exact and only the reading is coarse.
+ */
+function roundProjectedEuros(amount: number): number {
+  return Math.round(amount / 100) * 100;
+}
+
+/**
+ * Signed, both of them: what this column states is not what a contract comes
+ * to but what it runs up on top of it, and the sign is what says so on the
+ * figure as well as on the volume under it. `Intl` places it, so a locale that
+ * writes its signs elsewhere still reads right.
+ */
+const PROJECTED_PRICE_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+  signDisplay: "always",
+});
+
+function formatProjectedEuros(amount: number): string {
+  return PROJECTED_PRICE_FORMAT.format(roundProjectedEuros(amount));
+}
+
+function formatProjectedScreenshots(count: number): string {
+  return SCREENSHOTS_FORMAT.format(Math.round(count / 1000) * 1000);
+}
+
+/**
+ * The same count as a column prints it, shortened.
+ *
+ * Millions of screenshots written out set the width of the column they sit in
+ * and read as a precision a straight line does not have. Grouped in full in the
+ * tooltip, where a figure to quote belongs.
+ */
+const COMPACT_SCREENSHOTS_FORMAT = new Intl.NumberFormat(PAGE_LOCALE, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+  signDisplay: "always",
+});
+
 /** The figures behind a half, appended to its tooltip. */
 function getSplitNote(split: Split): string {
   const teams = ` ${split.teamsCount} ${split.teamsCount === 1 ? "team" : "teams"}.`;
@@ -388,7 +457,7 @@ function ProjectionSplit(props: { projection: RevenueProjection }) {
       <SplitAmount
         amount={projection.yearlyPlans}
         label="Yearly"
-        tooltip="A whole month of the annual contracts, where the card beside this one counts only the days that have gone by."
+        tooltip="A whole month of the annual contracts and their overage, where the card beside this one counts only the days that have gone by."
       />
       {projection.githubPlans > 0 ? (
         <>
@@ -1117,10 +1186,241 @@ function getOriginalTotal(
   };
 }
 
+/**
+ * How much of the term has gone by, which is what the projection beside it
+ * rests on: a fortnight into a year, the trend is a rounding error carried
+ * twenty-six times.
+ */
+function getElapsedShare(usage: ContractUsage): number {
+  const from = new Date(usage.periodFrom).getTime();
+  const until = new Date(usage.periodEndsAt).getTime();
+  return Math.min(1, Math.max(0, (Date.now() - from) / (until - from)));
+}
+
+/**
+ * What the term has got through, against what it includes.
+ *
+ * The term rather than the month the rest of the row reports: a yearly quota
+ * resets once a year, so this is the count the contract's renewal will be
+ * argued over — and the one figure on the row that says whether the amount
+ * beside it is still the right price.
+ */
+function ContractUsageCell(props: { usage: ContractUsage | null }) {
+  const { usage } = props;
+
+  if (!usage) {
+    return (
+      <td className="p-4 text-right text-sm tabular-nums">
+        <span className="text-low">—</span>
+      </td>
+    );
+  }
+
+  return (
+    <td className="p-4 text-right text-sm tabular-nums">
+      <Hint
+        content={`Term opened ${DATE_FORMAT.format(new Date(usage.periodFrom))}.`}
+      >
+        {SCREENSHOTS_FORMAT.format(usage.screenshotsCount)}
+      </Hint>
+      <div className="text-low text-xs">
+        / {SCREENSHOTS_FORMAT.format(usage.includedScreenshots)}
+      </div>
+    </td>
+  );
+}
+
+/**
+ * What the contract was sold for, and what it has been worth once the overage
+ * its term has run up is counted.
+ *
+ * One column rather than two: the pair is the same quantity at two moments, and
+ * a second column holding the contract's own amount over again was blank on
+ * every row that had run up nothing. Stacked the way the usage cell is —
+ * what actually happened above what was contracted for.
+ *
+ * In the contract's own currency: the pair is what a renewal is argued from,
+ * and both halves of that argument are quoted at the customer in the money they
+ * are billed in. The euro figure the rest of the page is kept in is in the
+ * tooltip, and in the monthly rate to the right.
+ */
+function ContractPlanCell(props: { contract: YearlyContract }) {
+  const { contract } = props;
+  const { usage } = contract;
+  const contracted = getOriginalTotal(contract);
+
+  if (contract.amount === null) {
+    return (
+      <td className="p-4 text-right text-sm tabular-nums">
+        <Hint className="text-danger-low" content="Counts nothing.">
+          no invoice found
+        </Hint>
+      </td>
+    );
+  }
+
+  // Both amounts come off one Stripe customer, so they disagree on a currency
+  // only when something upstream is wrong — and an overage added at parity to
+  // a total in another currency would be a figure nobody could trace.
+  const overage =
+    contracted &&
+    usage &&
+    usage.additionalPrice.currency === contracted.currency
+      ? usage.additionalPrice.amount
+      : 0;
+
+  const contractedAmount = (
+    <Hint
+      content={
+        <div className="flex flex-col gap-1">
+          {contract.invoices.map((invoice, invoiceIndex) => (
+            <div key={invoiceIndex}>{describeInvoice(invoice)}</div>
+          ))}
+        </div>
+      }
+    >
+      {contracted ? (
+        formatInvoiceAmount(contracted)
+      ) : (
+        // Invoices in more than one currency have no single original amount;
+        // the monthly rate beside this one still holds.
+        <span className="text-low">—</span>
+      )}
+    </Hint>
+  );
+
+  return (
+    <td className="p-4 text-right text-sm tabular-nums">
+      {contracted && overage > 0 ? (
+        <>
+          <ContractToDateAmount
+            contract={contract}
+            amount={{
+              amount: contracted.amount + overage,
+              currency: contracted.currency,
+            }}
+          />
+          <div className="text-low text-xs">{contractedAmount}</div>
+        </>
+      ) : (
+        contractedAmount
+      )}
+      {contract.awaitingPayment ? (
+        <div>
+          <Hint
+            className="text-warning-low"
+            content="Raised, not yet paid. Counted — expected to clear."
+          >
+            Awaiting payment
+          </Hint>
+        </div>
+      ) : null}
+    </td>
+  );
+}
+
+/** The contract once its overage is counted, in the currency it is billed in. */
+function ContractToDateAmount(props: {
+  contract: YearlyContract;
+  amount: { amount: number; currency: string };
+}) {
+  const { contract, amount } = props;
+  const label = formatInvoiceAmount(amount);
+
+  // Nothing to add on a contract already in euros: the tooltip would restate
+  // the figure it is attached to.
+  if (amount.currency === "eur") {
+    return label;
+  }
+
+  invariant(contract.amount !== null, "an amount to date has a contract");
+
+  return (
+    <Hint
+      content={`${CONTRACT_PRICE_FORMAT.format(contract.amount + (contract.usage?.additionalCost ?? 0))} at the fixed rate.`}
+    >
+      {label}
+    </Hint>
+  );
+}
+
+/**
+ * What the contract adds to the month: its own share of it, plus what a month
+ * of the term's usage has been worth.
+ */
+function ContractPerMonthCell(props: {
+  contract: YearlyContract;
+  usage: ContractUsage | null;
+}) {
+  const { contract, usage } = props;
+
+  if (contract.amount === null) {
+    return (
+      <td className="p-4 text-right text-sm tabular-nums">
+        <span className="text-low">—</span>
+      </td>
+    );
+  }
+
+  const overage = usage?.monthlyAdditionalCost ?? 0;
+
+  return (
+    <td className="p-4 text-right text-sm tabular-nums">
+      {usage && overage > 0 ? (
+        <Hint
+          content={`${CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue)} of contract + ${CONTRACT_PRICE_FORMAT.format(overage)} of overage, averaged over the ${SHARE_FORMAT.format(getElapsedShare(usage))} of the term gone by.`}
+        >
+          {CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue + overage)}
+        </Hint>
+      ) : (
+        CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue)
+      )}
+    </td>
+  );
+}
+
+/**
+ * Where the term lands if it carries on at the rate it has run at — the
+ * screenshots it reaches by the renewal, and what the contract would then be
+ * worth.
+ *
+ * A straight line, which is the whole point: it is the figure a renewal is
+ * offered against — this many screenshots a year, at this price — and a
+ * customer already twice past its quota is one nobody should be re-signing at
+ * last year's rate.
+ */
+function ContractAtRenewalCell(props: { usage: ContractUsage | null }) {
+  const { usage } = props;
+
+  // Tested on what the column would print rather than on the figure behind it:
+  // a term on course to stay inside its quota and one whose overage rounds
+  // away to nothing are the same row to read, and a printed zero reads as a
+  // figure rather than as an absence.
+  if (!usage || roundProjectedEuros(usage.projectedAdditionalCost) === 0) {
+    return <td className="p-4" />;
+  }
+
+  // An amount that survived the rounding above was billed on screenshots, so
+  // there are always some to name under it.
+  const screenshots =
+    usage.projectedScreenshotsCount - usage.includedScreenshots;
+
+  return (
+    <td className="p-4 text-right text-sm tabular-nums">
+      <Hint
+        content={`${formatProjectedScreenshots(screenshots)} past the quota, ${formatProjectedScreenshots(usage.projectedScreenshotsCount)} in all, from the ${SHARE_FORMAT.format(getElapsedShare(usage))} of the term gone by.`}
+      >
+        {formatProjectedEuros(usage.projectedAdditionalCost)}
+      </Hint>
+      <div className="text-low text-xs">
+        {COMPACT_SCREENSHOTS_FORMAT.format(screenshots)} screenshots
+      </div>
+    </td>
+  );
+}
+
 function ContractRow(props: { contract: YearlyContract; index: number }) {
   const { contract, index } = props;
-  const newestInvoice = contract.invoices[0] ?? null;
-  const originalTotal = getOriginalTotal(contract);
 
   return (
     <tr className={clsx(index % 2 === 0 ? "bg-app" : "bg-subtle", "border-b")}>
@@ -1132,60 +1432,18 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
           <StripeCustomerLink stripeCustomerId={contract.stripeCustomerId} />
         </div>
       </td>
-      <td className="p-4 text-right text-sm tabular-nums">
-        {contract.amount !== null ? (
-          <>
-            <Hint
-              content={
-                <div className="flex flex-col gap-1">
-                  {contract.invoices.map((invoice, invoiceIndex) => (
-                    <div key={invoiceIndex}>{describeInvoice(invoice)}</div>
-                  ))}
-                </div>
-              }
-            >
-              {originalTotal ? (
-                formatInvoiceAmount(originalTotal)
-              ) : (
-                // Invoices in more than one currency have no single original
-                // amount; the euro column beside this one still holds.
-                <span className="text-low">—</span>
-              )}
-            </Hint>
-            {contract.awaitingPayment ? (
-              <div>
-                <Hint
-                  className="text-warning-low"
-                  content="Raised, not yet paid. Counted — expected to clear."
-                >
-                  Awaiting payment
-                </Hint>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <Hint className="text-danger-low" content="Counts nothing.">
-            no invoice found
-          </Hint>
-        )}
-      </td>
-      <td className="p-4 text-right text-sm tabular-nums">
-        {contract.amount === null ? (
-          <span className="text-low">—</span>
-        ) : (
-          CONTRACT_PRICE_FORMAT.format(contract.amount)
-        )}
-      </td>
-      <td className="p-4 text-right text-sm tabular-nums">
-        {contract.amount !== null ? (
-          CONTRACT_PRICE_FORMAT.format(contract.monthlyRevenue)
-        ) : (
-          <span className="text-low">—</span>
-        )}
-      </td>
-      <td className="p-4 text-right text-sm tabular-nums">
-        {newestInvoice ? (
-          DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))
+      <ContractPlanCell contract={contract} />
+      <ContractPerMonthCell contract={contract} usage={contract.usage} />
+      <ContractUsageCell usage={contract.usage} />
+      <ContractAtRenewalCell usage={contract.usage} />
+      {/* How long the term has left: what the quota resets in, and the stretch
+          the projection beside it is carried over. Read as a distance rather
+          than as a date because that is the question — a renewal three weeks
+          out is a call to make now. `Time` carries the date itself in its own
+          tooltip. A contract Argos no longer bills has no next term. */}
+      <td className="p-4 text-right text-sm">
+        {contract.usage ? (
+          <Time date={contract.usage.periodEndsAt} />
         ) : (
           <span className="text-low">—</span>
         )}
@@ -1201,18 +1459,28 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
  * Stripe, and when it looks wrong, the contract at fault can only be found by
  * seeing each one's renewal — including the contracts that contributed
  * nothing, which the total alone would hide.
+ *
+ * The amounts carry the overage the terms have run up, which no invoice
+ * accounts for yet, so they read above the yearly band on the cards. That is
+ * the point: the cards report what was invoiced, and a contract is worth what
+ * it was sold for plus what its usage ran past the quota.
  */
 function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
   const { contracts } = props;
-  const total = contracts.reduce(
-    (sum, contract) => sum + (contract.amount ?? 0),
-    0,
-  );
   // Summed from what each contract contributes rather than divided by twelve:
   // the months are amortized over the stretch each invoice pays for, and an
   // upsell sold for five months is not a twelfth of anything.
   const monthlyTotal = contracts.reduce(
-    (sum, contract) => sum + contract.monthlyRevenue,
+    (sum, contract) =>
+      sum +
+      contract.monthlyRevenue +
+      (contract.usage?.monthlyAdditionalCost ?? 0),
+    0,
+  );
+  // What the annual book is on course to bill past its quotas by the time the
+  // terms renew — the one figure here that no invoice exists for at all.
+  const projectedOverageTotal = contracts.reduce(
+    (sum, contract) => sum + (contract.usage?.projectedAdditionalCost ?? 0),
     0,
   );
 
@@ -1225,22 +1493,27 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
         <p className="text-low text-sm">No annual contracts in force.</p>
       ) : (
         <div className="overflow-x-auto rounded-sm border">
-          <table className="w-full min-w-160 table-fixed border-collapse">
+          <table className="w-full min-w-256 table-fixed border-collapse">
             <thead>
               <tr className="text-low border-b text-xs font-semibold">
-                <th className="w-[26%] px-4 py-3 text-left">Team</th>
-                <th className="w-[20%] px-4 py-3 text-right">Invoiced</th>
-                <th className="w-[18%] px-4 py-3 text-right">
-                  <Hint content="Dollars converted at a fixed rate.">
-                    In euros
+                <th className="w-[25%] px-4 py-3 text-left">Team</th>
+                <th className="w-[15%] px-4 py-3 text-right">
+                  <Hint content="What it was sold for, and above it what it has been worth once the overage is counted.">
+                    Plan
                   </Hint>
                 </th>
-                <th className="w-[18%] px-4 py-3 text-right">
-                  <Hint content="What it adds to this month, in euros.">
+                <th className="w-[14%] px-4 py-3 text-right">
+                  <Hint content="What it adds to this month, in euros — contract plus overage.">
                     Per month
                   </Hint>
                 </th>
-                <th className="w-[18%] px-4 py-3 text-right">Last invoice</th>
+                <th className="w-[15%] px-4 py-3 text-right">Usage</th>
+                <th className="w-[19%] px-4 py-3 text-right">
+                  <Hint content="What the term is on course to owe past its quota if usage carries on at this rate. Rounded.">
+                    Overage at renewal
+                  </Hint>
+                </th>
+                <th className="w-[12%] px-4 py-3 text-right">Renewal</th>
               </tr>
             </thead>
             <tbody>
@@ -1255,12 +1528,15 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
             <tfoot>
               <tr className="text-sm font-medium">
                 <td className="p-4 text-left">Total</td>
+                {/* The contracts are each stated in their own currency, and a
+                    sum across currencies is not a figure. */}
                 <td />
                 <td className="p-4 text-right tabular-nums">
-                  {CONTRACT_PRICE_FORMAT.format(total)}
-                </td>
-                <td className="p-4 text-right tabular-nums">
                   {CONTRACT_PRICE_FORMAT.format(monthlyTotal)}
+                </td>
+                <td />
+                <td className="p-4 text-right tabular-nums">
+                  {formatProjectedEuros(projectedOverageTotal)}
                 </td>
                 <td />
               </tr>

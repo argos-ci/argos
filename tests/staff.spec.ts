@@ -1086,13 +1086,21 @@ revenueTest.describe("staff revenue", () => {
     const contractRow = page
       .getByRole("row")
       .filter({ hasText: revenueBook.contractTeam });
-    // Twice over: what Stripe charged, and what the page counts it as — the
-    // contract is in euros, so both cells read the same.
+    // Once: the amount it was sold for. The team has uploaded nothing, so it
+    // has run up no overage — nothing stacks above the contract, and the
+    // renewal column has nothing to owe.
     await expect(
       contractRow.getByText(revenueAmount(12_000, "EUR")),
-    ).toHaveCount(2);
+    ).toHaveCount(1);
     await expect(
       contractRow.getByText(revenueBook.contractPerMonth),
+    ).toBeVisible();
+    // The term's own quota, which is what the count above it is read against —
+    // and what says the row has no overage to carry.
+    await expect(
+      contractRow.getByText(
+        `/ ${new Intl.NumberFormat("fr-FR").format(1_000_000)}`,
+      ),
     ).toBeVisible();
 
     // Scoped to the monthly table: the contracts table below lists every annual

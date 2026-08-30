@@ -718,4 +718,110 @@ describe("getStaffRevenue", () => {
     expect(month.yearlyPlans.revenue).toBeCloseTo((1200 * elapsed) / term, 3);
     expect(month.yearlyPlans.teamsCount).toBe(1);
   });
+
+  it("projects where a contract's term lands at the rate it has run at", async () => {
+    // What a renewal is argued over: a customer already past the quota it was
+    // sold is one nobody should be re-signing at last year's price, and the
+    // figure to open the conversation with is where the year lands, not where
+    // it stands today.
+    //
+    // The clock is pinned to the exact middle of a calendar year and the
+    // subscription anchored to its first day, so the term has run for exactly
+    // half of itself: a trend carried forward doubles, and every figure below
+    // comes out exact rather than approximate. Only `Date` is faked — the
+    // pool's timers have to keep running, and Postgres keeps its own clock.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const year = new Date().getFullYear();
+    const termStart = new Date(year, 0, 1);
+    const termEnd = new Date(year + 1, 0, 1);
+    vi.setSystemTime(new Date((termStart.getTime() + termEnd.getTime()) / 2));
+
+    try {
+      await factory.StripeInvoiceSync.create({
+        sinceDate: new Date("2020-01-01").toISOString(),
+      });
+
+      const plan = await factory.Plan.create({
+        usageBased: true,
+        interval: "year",
+        includedScreenshots: 400,
+      });
+      const account = await factory.TeamAccount.create({
+        stripeCustomerId: "cus_staff_term",
+      });
+      const user = await factory.User.create();
+      const anchoredAt = new Date(year - 2, 0, 1).toISOString();
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: plan.id,
+        currency: "eur",
+        provider: "stripe",
+        stripeSubscriptionId: "sub_staff_term",
+        subscriberId: user.id,
+        // The first day of a year, so the anniversary the term opens on is the
+        // first day of this one.
+        startDate: anchoredAt,
+        createdAt: anchoredAt,
+        status: "active",
+        flatPrice: 1200,
+        additionalScreenshotPrice: 0.01,
+      });
+      const project = await factory.Project.create({ accountId: account.id });
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        screenshotCount: 1000,
+        createdAt: new Date(
+          termStart.getTime() + 24 * 3600 * 1000,
+        ).toISOString(),
+      });
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_term",
+        stripeCreatedAt: termStart.toISOString(),
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 120_000,
+        totalExcludingTax: 120_000,
+        periodStart: termStart.toISOString(),
+        periodEnd: termEnd.toISOString(),
+      });
+
+      const result = await getStaffRevenue(1);
+
+      const contract = result.yearlyContracts[0];
+      invariant(contract);
+      const { usage } = contract;
+      invariant(usage);
+      expect(usage.periodFrom.getTime()).toBe(termStart.getTime());
+      expect(usage.periodEndsAt.getTime()).toBe(termEnd.getTime());
+      expect(usage.screenshotsCount).toBe(1000);
+      expect(usage.includedScreenshots).toBe(400);
+      // Six hundred past the quota, at a cent each.
+      expect(usage.additionalCost).toBeCloseTo(6, 6);
+      // Half a year gone, so that overage has averaged a euro a month.
+      expect(usage.monthlyAdditionalCost).toBeCloseTo(1, 6);
+      // Half the term gone, so the year doubles what it has run up — and the
+      // overage is what is left of that once the quota is taken off, priced at
+      // the rate the term has already been billed at.
+      expect(usage.projectedScreenshotsCount).toBe(2000);
+      expect(usage.projectedAdditionalCost).toBeCloseTo(16, 6);
+
+      // The overage reaches the month's yearly band beside the contract, and on
+      // its own denominator: the contract is spread over the term it pays for,
+      // the overage over the stretch of that term it has accrued in.
+      const month = result.months[0];
+      invariant(month);
+      const monthStart = startOfUTCMonth(new Date(), 0).getTime();
+      const elapsedInMonth = Date.now() - monthStart;
+      const contractShare =
+        (1200 * elapsedInMonth) / (termEnd.getTime() - termStart.getTime());
+      const overageShare =
+        (6 * elapsedInMonth) / (Date.now() - termStart.getTime());
+      expect(month.yearlyPlans.revenue).toBeCloseTo(
+        contractShare + overageShare,
+        6,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

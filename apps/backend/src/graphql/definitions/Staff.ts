@@ -477,6 +477,45 @@ export const typeDefs = gql`
   }
 
   """
+  What a contract's running term has consumed, and where that lands by the
+  renewal if it carries on at the rate it has run so far.
+
+  The term rather than the month: a yearly quota resets once a year, so what
+  says whether a contract is about to be re-priced is the whole year against
+  the whole quota — the question a renewal is negotiated on.
+  """
+  type StaffContractUsage {
+    "The term the figures below are read over, and the day it renews on."
+    periodFrom: DateTime!
+    periodEndsAt: DateTime!
+    "Screenshots consumed since the term opened."
+    screenshotsCount: Int!
+    "What the term includes before overage is billed."
+    includedScreenshots: Int!
+    "What the overage run up so far comes to, in euros."
+    additionalCost: Float!
+    """
+    That same overage in the currency Stripe prices it in — what the contract's
+    own column adds it to, where the euro figure above is what the page's
+    monthly rate is built from.
+    """
+    additionalPrice: StaffRevenuePrice!
+    """
+    That same overage averaged over the months of the term that have gone by,
+    in euros — what a month of the contract's usage has been worth.
+
+    A mean rather than the month's own: the quota is crossed once somewhere in
+    the year and every month after it bills, so a term two months in reads
+    high and one eleven months in reads low.
+    """
+    monthlyAdditionalCost: Float!
+    "Where the count lands by the renewal, at the rate the term has run at."
+    projectedScreenshotsCount: Int!
+    "What that projected overage would come to, in euros."
+    projectedAdditionalCost: Float!
+  }
+
+  """
   One annual contract in force, and the invoices its rate is read from: the
   latest annual bill plus whatever was sold on top of it since.
 
@@ -506,6 +545,13 @@ export const typeDefs = gql`
     Counted all the same: a contract invoice raised is money on its way.
     """
     awaitingPayment: Boolean!
+    """
+    What the team's running term has consumed, and where it lands — null when
+    no yearly subscription of the team's can be read for it: one no longer
+    billed, one on a plan nothing is metered against, or a contract invoiced
+    by hand with no subscription behind it.
+    """
+    usage: StaffContractUsage
   }
 
   """
