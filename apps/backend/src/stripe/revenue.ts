@@ -326,6 +326,15 @@ type BilledTeam = {
    * the same order the usage is metered against.
    */
   includedScreenshots: number;
+  /**
+   * What one screenshot past the quota costs, in `currency` — null on a
+   * subscription Stripe states no unit price for.
+   *
+   * Only ever read to price a projection on a period that has not gone over
+   * yet: past that, what the overage has already cost says more, since it
+   * carries the Storybook mix the period was actually billed at.
+   */
+  additionalScreenshotPrice: number | null;
   /** The plan's name, which is what says whether its quota is worth printing. */
   planName: string;
 };
@@ -353,6 +362,7 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
       "accounts.stripeCustomerId",
       "subscriptions.flatPrice",
       "subscriptions.includedScreenshots",
+      "subscriptions.additionalScreenshotPrice",
       "plan.interval",
       "plan.name as planName",
       "plan.includedScreenshots as planIncludedScreenshots",
@@ -387,6 +397,7 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     currency: string | null;
     flatPrice: number | null;
     includedScreenshots: number | null;
+    additionalScreenshotPrice: number | null;
     planName: string;
     planIncludedScreenshots: number;
   }[];
@@ -401,6 +412,7 @@ export async function getBilledTeams(): Promise<BilledTeam[]> {
     currency: row.currency,
     flatPrice: row.flatPrice,
     includedScreenshots: row.includedScreenshots ?? row.planIncludedScreenshots,
+    additionalScreenshotPrice: row.additionalScreenshotPrice,
     planName: row.planName,
   }));
 }
@@ -601,6 +613,47 @@ type StaffContractInvoice = {
   awaitingPayment: boolean;
 };
 
+/**
+ * What a contract's running term has consumed, and where that lands by the
+ * renewal if it carries on at the rate it has run so far.
+ *
+ * The term rather than the month: a yearly quota resets once a year, so what
+ * says whether a contract is about to be re-priced is the whole year against
+ * the whole quota — the question a renewal is negotiated on.
+ */
+type StaffContractUsage = {
+  /** The term the figures below are read over, and the day it renews on. */
+  periodFrom: Date;
+  periodEndsAt: Date;
+  /** Screenshots consumed since the term opened. */
+  screenshotsCount: number;
+  /** What the term includes before overage is billed. */
+  includedScreenshots: number;
+  /** What the overage run up so far comes to, in euros. */
+  additionalCost: number;
+  /**
+   * That same overage in the currency Stripe prices it in — what the contract's
+   * own column adds it to, where the euro figure above is what the page's
+   * monthly rate is built from.
+   */
+  additionalPrice: StaffRevenuePrice;
+  /**
+   * That same overage averaged over the months of the term that have gone by,
+   * in euros — what a month of the contract's usage has been worth, beside the
+   * month of the contract itself that the table reports.
+   *
+   * A mean rather than the month's own: the quota is crossed once somewhere in
+   * the year and every month after it bills, so a term two months in reads
+   * high and one eleven months in reads low. It is the figure that says what
+   * the usage adds to a month, not what this month happened to add.
+   */
+  monthlyAdditionalCost: number;
+  /** Where the count lands by the renewal, at the rate the term has run at. */
+  projectedScreenshotsCount: number;
+  /** What that projected overage would come to, in euros. */
+  projectedAdditionalCost: number;
+};
+
 /** One annual contract, and the invoices its figure is read from. */
 type StaffYearlyContract = {
   /** The team's slug, which names its pages. */
@@ -621,6 +674,13 @@ type StaffYearlyContract = {
   invoices: StaffContractInvoice[];
   /** True when any invoice found is still awaiting payment. */
   awaitingPayment: boolean;
+  /**
+   * What the team's running term has consumed, and where it lands — null when
+   * no yearly subscription of the team's can be read for it: one no longer
+   * billed, one on a plan nothing is metered against, or a contract invoiced by
+   * hand with no subscription behind it.
+   */
+  usage: StaffContractUsage | null;
 };
 
 /** The statuses an invoice counts under: raised, and not written off. */
@@ -1005,6 +1065,134 @@ async function getEstimatedBills(options: {
   return bills;
 }
 
+/**
+ * A contract's usage as the table reports it, with what the month splits need
+ * to spread the overage behind it.
+ *
+ * The raw amounts travel beside the euro ones the table reads: the splits
+ * convert every figure themselves and count what the conversion touched, which
+ * is what the foreign-share caveat on the cards is read off.
+ */
+type ContractUsageRead = {
+  usage: StaffContractUsage;
+  /** The overage run up so far, in the currency Stripe priced it in. */
+  accrued: InvoiceRevenue;
+  /** A whole month of it, on the same terms — what the projection carries. */
+  monthlyAccrued: InvoiceRevenue;
+  /** The stretch it accrued over, which is what it is spread across. */
+  from: number;
+  until: number;
+};
+
+/**
+ * What each annual contract's running term has consumed, keyed by the customer
+ * it is billed on.
+ *
+ * Read off `getAccountBillings`, the same pass the team directory prices a
+ * period with, so the count a contract is quoted against here is the one the
+ * team's own pages state. It costs a scan of two terms of usage per team,
+ * which is why it is asked about the yearly teams alone — a dozen rows, where
+ * the monthly book is hundreds.
+ */
+async function getContractUsages(
+  billedTeams: BilledTeam[],
+): Promise<Map<string, ContractUsageRead>> {
+  const usages = new Map<string, ContractUsageRead>();
+  const yearlyTeams = billedTeams.filter((team) => team.interval === "year");
+
+  if (yearlyTeams.length === 0) {
+    return usages;
+  }
+
+  const accounts = await Account.query().findByIds(
+    yearlyTeams.map((team) => team.accountId),
+  );
+  const billings = await getAccountBillings(accounts);
+
+  for (const team of yearlyTeams) {
+    const billing = billings.get(team.accountId);
+    // A plan nothing is metered against has no usage to report and no overage
+    // to project — a flat contract is worth its invoices and nothing else.
+    if (!billing?.periodUsage || billing.includedScreenshots === null) {
+      continue;
+    }
+    // The two reads shortlist subscriptions differently — a trial counts for
+    // one and not the other — so a disagreement on the interval is a
+    // disagreement on the subscription, and the term would be a month's usage
+    // stretched over a year.
+    if (billing.plan?.interval !== "year") {
+      continue;
+    }
+
+    const period = billing.periodUsage.billingPeriods.find(
+      (billingPeriod) => !billingPeriod.closed,
+    );
+    if (!period) {
+      continue;
+    }
+
+    // How much of the term the count was measured over, and how much of it
+    // there is — `to` is the moment the period was read, so the two are the
+    // ratio the trend is carried forward at.
+    const elapsed = period.to.getTime() - period.from.getTime();
+    const term = period.endsAt.getTime() - period.from.getTime();
+    if (elapsed <= 0 || term <= 0) {
+      continue;
+    }
+
+    const included = billing.includedScreenshots;
+    const projectedScreenshotsCount = Math.round(
+      (period.screenshotsCount * term) / elapsed,
+    );
+    // Storybook screenshots are billed at their own rate, and nothing here
+    // carries the split they were consumed in — so the overage already run up
+    // is what states the blend, at the price the term is actually billed at.
+    // Only a term that has gone over states one; before that the neutral price
+    // is the closest thing there is, and it is what nearly every screenshot
+    // past a quota is billed at.
+    const additional = Math.max(0, period.screenshotsCount - included);
+    const unitPrice =
+      additional > 0
+        ? period.additionalScreenshotCost / additional
+        : (team.additionalScreenshotPrice ?? 0);
+    const projectedAdditional = Math.max(
+      0,
+      projectedScreenshotsCount - included,
+    );
+    const currency = team.currency ?? REPORTING_CURRENCY;
+    const priceInEuros = (amount: number) => toEuros({ amount, currency });
+
+    // The term cut into twelve, so a month of it is the same twelfth the
+    // contract beside it is amortized into — not a calendar month, which a
+    // term running from the 13th never lines up with anyway.
+    const elapsedMonths = (elapsed * 12) / term;
+    const monthlyAmount = period.additionalScreenshotCost / elapsedMonths;
+
+    usages.set(team.stripeCustomerId, {
+      usage: {
+        periodFrom: period.from,
+        periodEndsAt: period.endsAt,
+        screenshotsCount: period.screenshotsCount,
+        includedScreenshots: included,
+        additionalCost: priceInEuros(period.additionalScreenshotCost),
+        additionalPrice: {
+          amount: period.additionalScreenshotCost,
+          currency,
+        },
+        monthlyAdditionalCost: priceInEuros(monthlyAmount),
+        projectedScreenshotsCount,
+        projectedAdditionalCost: priceInEuros(projectedAdditional * unitPrice),
+      },
+      accrued: { amount: period.additionalScreenshotCost, currency },
+      monthlyAccrued: { amount: monthlyAmount, currency },
+      from: period.from.getTime(),
+      until: period.to.getTime(),
+    });
+  }
+
+  return usages;
+}
+
 /** Raised by the reader when the mirror cannot answer for the window asked. */
 export class MirrorCoverageError extends Error {}
 
@@ -1351,13 +1539,49 @@ export async function getStaffRevenue(
     }
   }
 
+  // Two usage reads over two disjoint sets — the monthly cycles about to bill,
+  // and the annual terms running — so neither waits on the other.
+  const [estimatedBills, contractUsages] = await Promise.all([
+    getEstimatedBills({ billedTeams, runningMonth }),
+    getContractUsages(billedTeams),
+  ]);
+
+  // The overage the running terms have run up, spread day by day over the part
+  // of each term that has gone by — the rule the contracts themselves are
+  // amortized by, applied to the one thing on this page no invoice accounts
+  // for. Nothing reaches the months before the running term: a closed term's
+  // overage was billed on the renewal that opened the next one, so it is
+  // already inside the contract invoices and would be counted twice.
+  for (const [customerId, read] of contractUsages) {
+    const accruedMs = read.until - read.from;
+    if (accruedMs <= 0) {
+      continue;
+    }
+    for (const [index, bound] of amortizeBounds.entries()) {
+      const overlap =
+        Math.min(read.until, bound.end) - Math.max(read.from, bound.start);
+      if (overlap <= 0) {
+        continue;
+      }
+      const split = yearlySplits[index];
+      const customers = yearlyMonthCustomers[index];
+      invariant(split && customers, "bounds and splits are built together");
+      addToSplit(split, {
+        amount: (read.accrued.amount * overlap) / accruedMs,
+        currency: read.accrued.currency,
+      });
+      customers.add(customerId);
+    }
+    // A running term holds today, so it is one of the running month's — and
+    // the projection carries a whole month of it, like the contract above.
+    addToSplit(projectedYearly, read.monthlyAccrued);
+  }
+
   for (const [index, split] of yearlySplits.entries()) {
     const customers = yearlyMonthCustomers[index];
     invariant(customers, "splits and customers are built together");
     split.teamsCount = customers.size;
   }
-
-  const estimatedBills = await getEstimatedBills({ billedTeams, runningMonth });
 
   // What the running month is heading for, rather than what it has billed: the
   // bills its cycles have not raised yet, and the two rates carried to the end
@@ -1408,6 +1632,7 @@ export async function getStaffRevenue(
       teamCustomers,
       billedTeams,
       monthlyByCustomer,
+      contractUsages,
       runningMonth,
     }),
     projection: {
@@ -1436,6 +1661,7 @@ function buildYearlyContracts(options: {
   teamCustomers: Map<string, TeamCustomer>;
   billedTeams: BilledTeam[];
   monthlyByCustomer: Map<string, number>;
+  contractUsages: Map<string, ContractUsageRead>;
   runningMonth: { start: number; end: number };
 }): StaffYearlyContract[] {
   const {
@@ -1443,6 +1669,7 @@ function buildYearlyContracts(options: {
     teamCustomers,
     billedTeams,
     monthlyByCustomer,
+    contractUsages,
     runningMonth,
   } = options;
   const reported = contracts.filter(
@@ -1485,6 +1712,7 @@ function buildYearlyContracts(options: {
       // Any of them, not all: the unpaid renewal beside a settled upsell is
       // exactly the one whose collection is worth watching.
       awaitingPayment: invoices.some((invoice) => invoice.awaitingPayment),
+      usage: contractUsages.get(customerId)?.usage ?? null,
     });
   }
 
@@ -1504,6 +1732,9 @@ function buildYearlyContracts(options: {
       monthlyRevenue: 0,
       invoices: [],
       awaitingPayment: false,
+      // Reported all the same: the contract nobody can find is exactly the row
+      // whose usage says what it should have been worth.
+      usage: contractUsages.get(team.stripeCustomerId)?.usage ?? null,
     });
   }
 
