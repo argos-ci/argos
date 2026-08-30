@@ -403,8 +403,31 @@ export class ArgosDeploymentStack extends cdk.Stack {
         distributionConfig: {
           enabled: true,
           connectionMode: "tenant-only",
-          httpVersion: "http2and3",
-          ipv6Enabled: true,
+          // No `ipv6Enabled`: the connection group is the network endpoint for
+          // every tenant, so it owns viewer-side addressing, and CloudFront
+          // rejects the field here outright.
+          //
+          // A certificate is required even though no tenant will use this one.
+          // CloudFront demands one of ACMCertificateArn, IAMCertificateId or
+          // CloudFrontDefaultCertificate, and for a multi-tenant distribution
+          // the first is the only one left: IAM certificates are unsupported,
+          // and the CloudFront default certificate serves `*.cloudfront.net`,
+          // which a distribution with no routing endpoint of its own can never
+          // answer on.
+          //
+          // A tenant inherits this certificate only where it covers that
+          // tenant's domain, which the wildcard never does for a customer
+          // domain — every tenant requests its own instead. So this is the
+          // wildcard we already own and already renew, rather than a second
+          // certificate minted to satisfy a validation rule.
+          //
+          // The protocol version is not optional either: unset it defaults to
+          // SSLv3, which multi-tenant distributions reject.
+          viewerCertificate: {
+            acmCertificateArn: certificate.certificateArn,
+            sslSupportMethod: "sni-only",
+            minimumProtocolVersion: "TLSv1.2_2021",
+          },
           origins: [
             {
               id: customDomainsOriginId,
