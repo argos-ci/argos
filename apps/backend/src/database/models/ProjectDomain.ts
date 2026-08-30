@@ -59,7 +59,7 @@ export class ProjectDomain extends Model {
   status!: ProjectDomainStatus;
   /** The CloudFront distribution tenant serving this domain. Null when internal. */
   cloudfrontTenantId!: string | null;
-  /** The CloudFront endpoint the customer points their DNS record at. */
+  /** The Argos hostname the customer points their DNS record at. */
   routingEndpoint!: string | null;
   statusReason!: string | null;
   activatedAt!: string | null;

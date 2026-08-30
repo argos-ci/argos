@@ -7,9 +7,11 @@ import {
   EntityAlreadyExists,
   EntityLimitExceeded,
   EntityNotFound,
-  GetConnectionGroupCommand,
   GetDistributionTenantCommand,
+  GetManagedCertificateDetailsCommand,
   InvalidArgument,
+  UpdateDistributionTenantCommand,
+  type ManagedCertificateStatus,
 } from "@aws-sdk/client-cloudfront";
 import { memoize } from "lodash-es";
 
@@ -48,26 +50,21 @@ function getCustomDomainsConfig() {
   return { distributionId, connectionGroupId };
 }
 
-async function getRoutingEndpointBase(): Promise<string> {
-  const { connectionGroupId } = getCustomDomainsConfig();
-  const result = await getCloudFrontClient().send(
-    new GetConnectionGroupCommand({ Identifier: connectionGroupId }),
-  );
-  const routingEndpoint = result.ConnectionGroup?.RoutingEndpoint;
-  invariant(
-    routingEndpoint,
-    `connection group ${connectionGroupId} has no routing endpoint`,
-  );
-  return routingEndpoint;
-}
-
 /**
- * The hostname customers point their DNS record at. Read from the connection
- * group rather than configured, so it cannot drift from the distribution.
+ * The hostname customers point their DNS record at.
+ *
+ * A name of ours, not the connection group's own `dxxxx.cloudfront.net`, which
+ * would otherwise be copied into every customer's zone and could then never be
+ * changed — recreating the connection group would break every custom domain at
+ * once, with no way to reach the people who would have to fix it.
+ *
+ * The record itself is created by `ArgosDeploymentStack`, which builds the same
+ * name from the same base domain. The two have to agree, so neither prefix
+ * moves without the other.
  */
-const getRoutingEndpoint: typeof getRoutingEndpointBase = memoize(
-  getRoutingEndpointBase,
-);
+export function getCustomDomainsTarget(): string {
+  return `cname.${config.get("deployments.baseDomain").toLowerCase()}`;
+}
 
 /**
  * The tenant name CloudFront knows a domain by.
@@ -83,9 +80,19 @@ function getTenantName(projectDomainId: string): string {
 
 export type DomainTenant = {
   tenantId: string;
+  /** The hostname the customer points their DNS record at. */
   routingEndpoint: string;
   /** True once CloudFront has issued the certificate and serves the domain. */
   active: boolean;
+  /**
+   * Whether the tenant has a certificate at all.
+   *
+   * A tenant can exist without one: CloudFront creates it and then requests the
+   * certificate, and if that second step fails the tenant survives with no
+   * certificate and no pending request. Nothing retries it on CloudFront's
+   * side, so the domain sits inactive forever unless we ask again.
+   */
+  hasCertificate: boolean;
 };
 
 /**
@@ -123,8 +130,11 @@ export async function createDomainTenant(input: {
 
   return {
     tenantId,
-    routingEndpoint: await getRoutingEndpoint(),
+    routingEndpoint: getCustomDomainsTarget(),
     active: checkIsTenantActive(result.DistributionTenant?.Domains),
+    hasCertificate: Boolean(
+      result.DistributionTenant?.Customizations?.Certificate?.Arn,
+    ),
   };
 }
 
@@ -141,8 +151,9 @@ export async function getDomainTenant(
   }
   return {
     tenantId,
-    routingEndpoint: await getRoutingEndpoint(),
+    routingEndpoint: getCustomDomainsTarget(),
     active: checkIsTenantActive(result.tenant.Domains),
+    hasCertificate: Boolean(result.tenant.Customizations?.Certificate?.Arn),
   };
 }
 
@@ -212,7 +223,134 @@ export function checkIsTerminalTenantError(error: unknown): boolean {
   return (
     error instanceof CNAMEAlreadyExists ||
     error instanceof EntityAlreadyExists ||
-    error instanceof EntityLimitExceeded ||
-    error instanceof InvalidArgument
+    error instanceof EntityLimitExceeded
   );
+}
+
+/**
+ * Whether CloudFront refused because the domain does not resolve to it yet.
+ *
+ * This is the normal state of a domain a customer has just added, not a fault:
+ * `ValidationTokenHost: "cloudfront"` has CloudFront answer the HTTP challenge
+ * at the domain itself, which it can only do once the DNS record exists. So the
+ * tenant cannot be created until the customer has pointed the record — the
+ * opposite order to the one the flow reads in.
+ *
+ * Matched on the message as well as the class because `InvalidArgument` also
+ * covers genuine misconfiguration, such as a wrong distribution id, which
+ * should not be reported to a customer as "waiting for DNS".
+ */
+export function checkIsDomainNotPointedError(error: unknown): boolean {
+  return (
+    error instanceof InvalidArgument &&
+    /verify domain name ownership/i.test(error.message)
+  );
+}
+
+/**
+ * Ask CloudFront to issue the certificate for a tenant that has none.
+ *
+ * The repair for a tenant created before its certificate could be requested —
+ * the shape a failed `RequestCertificate` leaves behind. CloudFront never
+ * retries that on its own, so without this the domain stays inactive however
+ * long it is polled.
+ */
+export async function requestDomainTenantCertificate(input: {
+  tenantId: string;
+  domain: string;
+}): Promise<DomainTenant | null> {
+  const existing = await getTenantWithETag(input.tenantId);
+  if (!existing) {
+    return null;
+  }
+
+  const result = await getCloudFrontClient().send(
+    new UpdateDistributionTenantCommand({
+      Id: input.tenantId,
+      IfMatch: existing.etag,
+      ManagedCertificateRequest: {
+        ValidationTokenHost: "cloudfront",
+        PrimaryDomainName: input.domain,
+      },
+    }),
+  );
+
+  return {
+    tenantId: input.tenantId,
+    routingEndpoint: getCustomDomainsTarget(),
+    active: checkIsTenantActive(result.DistributionTenant?.Domains),
+    hasCertificate: Boolean(
+      result.DistributionTenant?.Customizations?.Certificate?.Arn,
+    ),
+  };
+}
+
+export type DomainCertificate = {
+  arn: string | null;
+  status: ManagedCertificateStatus | null;
+};
+
+/**
+ * The state of the certificate CloudFront is managing for a tenant.
+ *
+ * Keyed by tenant rather than looked up in ACM by domain name: several
+ * certificates can cover the same name once a request has been retried, and
+ * only CloudFront knows which one belongs to this tenant.
+ */
+export async function getDomainTenantCertificate(
+  tenantId: string,
+): Promise<DomainCertificate | null> {
+  try {
+    const result = await getCloudFrontClient().send(
+      new GetManagedCertificateDetailsCommand({ Identifier: tenantId }),
+    );
+    const details = result.ManagedCertificateDetails;
+    if (!details) {
+      return null;
+    }
+    return {
+      arn: details.CertificateArn ?? null,
+      status: details.CertificateStatus ?? null,
+    };
+  } catch (error) {
+    if (error instanceof EntityNotFound) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Apply an issued certificate to its tenant, which is what actually puts the
+ * domain into service.
+ *
+ * Issuing and applying are two steps, and only the first is managed: the
+ * certificate reaches `issued` on its own, and then nothing happens. The domain
+ * stays `inactive` — for hours, indefinitely — until it is attached here.
+ */
+export async function attachDomainTenantCertificate(input: {
+  tenantId: string;
+  certificateArn: string;
+}): Promise<DomainTenant | null> {
+  const existing = await getTenantWithETag(input.tenantId);
+  if (!existing) {
+    return null;
+  }
+
+  const result = await getCloudFrontClient().send(
+    new UpdateDistributionTenantCommand({
+      Id: input.tenantId,
+      IfMatch: existing.etag,
+      Customizations: { Certificate: { Arn: input.certificateArn } },
+    }),
+  );
+
+  return {
+    tenantId: input.tenantId,
+    routingEndpoint: getCustomDomainsTarget(),
+    active: checkIsTenantActive(result.DistributionTenant?.Domains),
+    hasCertificate: Boolean(
+      result.DistributionTenant?.Customizations?.Certificate?.Arn,
+    ),
+  };
 }

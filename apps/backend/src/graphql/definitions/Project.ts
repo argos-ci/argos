@@ -54,6 +54,7 @@ import { safeParseTestId } from "@/util/test-id";
 import {
   IBuildStatus,
   IDeploymentAuth,
+  IProjectCustomDomainPendingReason,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
@@ -257,10 +258,19 @@ export const typeDefs = gql`
     failed
   }
 
+  enum ProjectCustomDomainPendingReason {
+    "The customer has not pointed their DNS record at us yet"
+    dns
+    "DNS is in place; the TLS certificate is being issued"
+    certificate
+  }
+
   type ProjectCustomDomain implements Node {
     id: ID!
     domain: String!
     status: ProjectCustomDomainStatus!
+    "What a pending domain is waiting on. Null unless pending."
+    pendingReason: ProjectCustomDomainPendingReason
     "The hostname the customer must point their DNS record at"
     routingEndpoint: String
     "Why the domain is not serving, when it is not"
@@ -683,6 +693,19 @@ function fromGraphQLBuildStatus(status: IBuildStatus): BuildAggregatedStatus {
 }
 
 export const resolvers: IResolvers = {
+  ProjectCustomDomain: {
+    pendingReason: (projectDomain) => {
+      if (projectDomain.status !== "pending") {
+        return null;
+      }
+      // CloudFront refuses to create the tenant until the domain resolves to
+      // it, so the tenant existing is itself the proof that DNS is done — and
+      // the only thing left to wait for is the certificate.
+      return projectDomain.cloudfrontTenantId
+        ? IProjectCustomDomainPendingReason.Certificate
+        : IProjectCustomDomainPendingReason.Dns;
+    },
+  },
   Project: {
     buildsCount: async (project, _args, ctx) => {
       return ctx.loaders.ProjectBuildsCountByProjectId.load(project.id);

@@ -3,7 +3,10 @@ import { PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { ProjectCustomDomainStatus } from "@/gql/graphql";
+import {
+  ProjectCustomDomainPendingReason,
+  ProjectCustomDomainStatus,
+} from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import {
   Card,
@@ -43,6 +46,7 @@ const _ProjectFragment = graphql(`
       id
       domain
       status
+      pendingReason
       routingEndpoint
       statusReason
     }
@@ -68,6 +72,7 @@ const CheckCustomDomainMutation = graphql(`
       id
       domain
       status
+      pendingReason
       routingEndpoint
       statusReason
     }
@@ -203,24 +208,34 @@ const STATUS_LABELS: Record<
 > = {
   [ProjectCustomDomainStatus.Active]: { label: "Active", color: "success" },
   [ProjectCustomDomainStatus.Pending]: {
-    label: "Pending DNS",
+    label: "Pending",
     color: "pending",
   },
   [ProjectCustomDomainStatus.Failed]: { label: "Failed", color: "danger" },
 };
 
+const PENDING_LABELS: Record<ProjectCustomDomainPendingReason, string> = {
+  [ProjectCustomDomainPendingReason.Dns]: "DNS not configured",
+  [ProjectCustomDomainPendingReason.Certificate]: "Issuing certificate",
+};
+
 function CustomDomainRow(props: { customDomain: CustomDomain }) {
   const { customDomain } = props;
   const status = STATUS_LABELS[customDomain.status];
-  const isPending = customDomain.status === ProjectCustomDomainStatus.Pending;
+  // Only the DNS record is the customer's to act on; while the certificate is
+  // issuing there is nothing for them to do, so the instructions come down.
+  const isAwaitingDns =
+    customDomain.pendingReason === ProjectCustomDomainPendingReason.Dns;
 
   return (
-    <ListRow className="flex-col items-stretch gap-3 p-4 text-sm">
+    <ListRow className="flex flex-col items-stretch gap-2 p-4 text-sm">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="font-medium">{customDomain.domain}</span>
           <Chip color={status.color} scale="xs">
-            {status.label}
+            {customDomain.pendingReason
+              ? PENDING_LABELS[customDomain.pendingReason]
+              : status.label}
           </Chip>
         </div>
         <div className="flex items-center gap-2">
@@ -239,13 +254,14 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
           </DialogTrigger>
         </div>
       </div>
-      {isPending && customDomain.routingEndpoint ? (
+      {isAwaitingDns && customDomain.routingEndpoint ? (
         <DnsInstructions
           domain={customDomain.domain}
           routingEndpoint={customDomain.routingEndpoint}
         />
       ) : null}
-      {customDomain.statusReason ? (
+      {customDomain.status === ProjectCustomDomainStatus.Failed &&
+      customDomain.statusReason ? (
         <p className="text-danger-low text-xs">{customDomain.statusReason}</p>
       ) : null}
     </ListRow>
@@ -305,7 +321,16 @@ function CheckCustomDomainButton(props: { customDomain: CustomDomain }) {
         if (isActive) {
           toast.success("Domain is live", { id: "custom-domain-active" });
         } else {
-          toast.info("Still waiting on DNS", { id: "custom-domain-pending" });
+          // Name the step that is actually blocking. "Waiting on DNS" sent
+          // people to re-check a record that was already correct; a generic
+          // "provisioning" hid that the record was never created.
+          toast.info(
+            data.checkProjectCustomDomain.pendingReason ===
+              ProjectCustomDomainPendingReason.Dns
+              ? "DNS record not found yet"
+              : "DNS is set — waiting on the certificate",
+            { id: "custom-domain-pending" },
+          );
         }
       },
     },

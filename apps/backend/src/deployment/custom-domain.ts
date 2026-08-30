@@ -8,11 +8,16 @@ import {
 import { boom } from "@/util/error";
 
 import {
+  attachDomainTenantCertificate,
   checkIsCustomDomainsConfigured,
+  checkIsDomainNotPointedError,
   checkIsTerminalTenantError,
   createDomainTenant,
   deleteDomainTenant,
+  getCustomDomainsTarget,
   getDomainTenant,
+  getDomainTenantCertificate,
+  requestDomainTenantCertificate,
 } from "./cloudfront";
 import { invalidateDeploymentCache } from "./invalidate";
 
@@ -90,6 +95,12 @@ export async function addCustomDomain(input: {
 
   const domain = validateCustomDomain(input.domain);
 
+  // Read before any tenant exists, and stored on the row whatever happens next.
+  // This is the DNS target the customer has to publish, and until they do,
+  // CloudFront refuses to create the tenant at all — so showing it is the
+  // entire content of the pending state.
+  const routingEndpoint = getCustomDomainsTarget();
+
   let projectDomain: ProjectDomain;
   try {
     projectDomain = await ProjectDomain.query().insertAndFetch({
@@ -99,6 +110,7 @@ export async function addCustomDomain(input: {
       projectId: input.projectId,
       internal: false,
       status: "pending",
+      routingEndpoint,
     });
   } catch (error) {
     if (isUniqueViolationError(error)) {
@@ -117,21 +129,28 @@ export async function addCustomDomain(input: {
       // associated with another CloudFront resource. Drop the row rather than
       // leaving one that can only ever be polled and never serve.
       await projectDomain.$query().delete();
+      console.error(error);
       throw boom(400, "This domain cannot be used", {
         code: "PROJECT_DOMAIN_ALREADY_USED",
+        cause: error,
       });
     }
-    // Transient: the row stays pending and the reconcile cron picks it up.
+    // Everything else is a wait, not a failure — most often the domain simply
+    // does not resolve to CloudFront yet, which is the expected state of a
+    // domain the customer has this second finished typing. The row stays
+    // pending with its DNS instructions and the reconcile cron takes it from
+    // there.
     return projectDomain;
   }
 }
 
 /**
- * Bring a custom domain's row in line with CloudFront: create the tenant if it
- * is missing, then copy the tenant's state onto the row.
+ * Bring a custom domain's row in line with CloudFront: create the tenant once
+ * the customer's DNS record makes that possible, then copy the tenant's state
+ * onto the row.
  *
- * Safe to call repeatedly — it is both the tail of `addCustomDomain` and the
- * body of the status poll.
+ * Safe to call repeatedly — it is the tail of `addCustomDomain`, the body of
+ * the status poll, and what the "Check" button runs.
  */
 export async function reconcileCustomDomain(
   projectDomain: ProjectDomain,
@@ -140,16 +159,69 @@ export async function reconcileCustomDomain(
     return projectDomain;
   }
 
-  const tenant = projectDomain.cloudfrontTenantId
+  let resolvedTenant = projectDomain.cloudfrontTenantId
     ? await getDomainTenant(projectDomain.cloudfrontTenantId)
     : null;
 
-  const resolvedTenant =
-    tenant ??
-    (await createDomainTenant({
-      projectDomainId: projectDomain.id,
-      domain: projectDomain.domain,
-    }));
+  // A tenant with no certificate attached is not progressing on its own, and
+  // there are two different reasons for it — so ask CloudFront which.
+  //
+  // "Managed" covers issuing the certificate, not applying it. Once it reaches
+  // `issued` nothing further happens: the domain stays `inactive` until the
+  // certificate is explicitly attached. Polling alone would wait forever.
+  if (resolvedTenant && !resolvedTenant.hasCertificate) {
+    const certificate = await getDomainTenantCertificate(
+      resolvedTenant.tenantId,
+    );
+
+    if (certificate?.status === "issued" && certificate.arn) {
+      resolvedTenant =
+        (await attachDomainTenantCertificate({
+          tenantId: resolvedTenant.tenantId,
+          certificateArn: certificate.arn,
+        })) ?? resolvedTenant;
+    } else if (certificate?.status !== "pending-validation") {
+      // No request in flight, or one that failed or timed out. Ask again —
+      // usually the DNS record has since appeared.
+      try {
+        resolvedTenant =
+          (await requestDomainTenantCertificate({
+            tenantId: resolvedTenant.tenantId,
+            domain: projectDomain.domain,
+          })) ?? resolvedTenant;
+      } catch (error) {
+        if (!checkIsDomainNotPointedError(error)) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  if (!resolvedTenant) {
+    try {
+      resolvedTenant = await createDomainTenant({
+        projectDomainId: projectDomain.id,
+        domain: projectDomain.domain,
+      });
+    } catch (error) {
+      if (!checkIsDomainNotPointedError(error)) {
+        throw error;
+      }
+      // The expected state until the customer publishes the record. Recorded as
+      // a wait rather than an error, so the card keeps showing the DNS
+      // instructions instead of a failure the customer cannot act on.
+      //
+      // The endpoint is written here too, not only on insert: rows added before
+      // the tenant creation moved behind DNS have none, and without it the card
+      // has no record to tell the customer to create.
+      return projectDomain.$query().patchAndFetch({
+        status: "pending",
+        routingEndpoint: getCustomDomainsTarget(),
+        statusReason: null,
+        lastCheckedAt: new Date().toISOString(),
+      });
+    }
+  }
 
   const wasActive = projectDomain.status === "active";
 
@@ -157,9 +229,13 @@ export async function reconcileCustomDomain(
     cloudfrontTenantId: resolvedTenant.tenantId,
     routingEndpoint: resolvedTenant.routingEndpoint,
     status: resolvedTenant.active ? "active" : "pending",
+    // Cleared on every reconcile that gets this far, not only on activation: a
+    // reason left over from an earlier failure otherwise outlives the thing it
+    // described and is read as the current state.
+    statusReason: null,
     lastCheckedAt: new Date().toISOString(),
     ...(resolvedTenant.active && !wasActive
-      ? { activatedAt: new Date().toISOString(), statusReason: null }
+      ? { activatedAt: new Date().toISOString() }
       : {}),
   });
 
