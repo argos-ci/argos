@@ -284,6 +284,97 @@ served from the app origin, because the container never stopped serving
 - **Changing config:** update the SSM parameter (step 4), then redeploy. Config
   is read at synth time, so a parameter change alone does nothing.
 
+## Custom domains (CloudFront SaaS Manager)
+
+Customer domains are served by a **second** distribution in the deployment
+stack, not by the wildcard one. A multi-tenant distribution runs in
+`tenant-only` mode and cannot serve traffic on its own, so folding
+`*.argos-ci.live` into it would mean turning every internal domain into a
+tenant. The new distribution shares the wildcard's origin and its
+viewer-request Lambda@Edge, so resolution, private-deployment auth and the
+DynamoDB file lookup are the same code on both paths.
+
+One **distribution tenant** exists per custom domain — never per project, because
+CloudFront allows only one pending certificate request per tenant, and a second
+domain added while the first is still validating would be rejected. Tenants are
+created and deleted by the app through `CreateDistributionTenant`, not by CDK:
+they are per-customer runtime state that would go stale in a template.
+
+Certificates are **CloudFront-managed and HTTP-validated**
+(`ValidationTokenHost: "cloudfront"`). That is what keeps the customer's side to
+a single DNS record: once the domain resolves to the routing endpoint,
+CloudFront answers the validation challenge itself, issues the certificate and
+renews it from then on. No TXT record, no ACM call from our side.
+
+### One-time setup
+
+#### 1. Deploy the stack
+
+```sh
+pnpm --filter @argos/infra exec cdk deploy argos-deployment-production -c stage=production -c source=ssm
+```
+
+This adds `CustomDomainsConnectionGroup` and `CustomDomainsDistribution` and
+changes nothing that is currently serving traffic — the wildcard distribution,
+its certificate and its Route 53 record are untouched.
+
+#### 2. Read the outputs
+
+```sh
+aws cloudformation describe-stacks --stack-name argos-deployment-production --region us-east-1 --query 'Stacks[0].Outputs[?starts_with(OutputKey, `CustomDomains`)]'
+```
+
+You need `CustomDomainsDistributionId` and `CustomDomainsConnectionGroupId`.
+`CustomDomainsRoutingEndpoint` is informational — the app reads it back from
+`GetConnectionGroup` at runtime rather than from configuration, so it cannot
+drift from the distribution.
+
+#### 3. Grant the task role the tenant permissions
+
+The app creates and deletes tenants, so the **ECS task role** needs the
+statement in `customDomainsPolicyStatement()` (`infra/lib/deployment-stack.ts`).
+The dev IAM group already gets it from the stack; the task role is not managed
+here, so attach it by hand once:
+
+```sh
+aws iam put-role-policy --role-name <TASK_ROLE_NAME> --policy-name ArgosCustomDomains --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["cloudfront:CreateDistributionTenant","cloudfront:GetDistributionTenant","cloudfront:UpdateDistributionTenant","cloudfront:DeleteDistributionTenant","cloudfront:GetConnectionGroup"],"Resource":"*"}]}'
+```
+
+No ACM permissions are needed — CloudFront owns the certificate lifecycle.
+
+#### 4. Set the app environment variables
+
+Both the web and worker tasks read them (the worker runs the reconcile cron):
+
+```
+DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID=<CustomDomainsDistributionId>
+DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID=<CustomDomainsConnectionGroupId>
+```
+
+Until both are set, `checkIsCustomDomainsConfigured()` is false: the settings
+card is hidden and the mutations refuse. That is the intended state for
+development and self-hosted installs, and it means step 4 is the switch that
+turns the feature on.
+
+#### 5. Verify end to end
+
+Add a domain you control from a project's deployment settings, create the CNAME
+it shows you, then watch it flip:
+
+```sh
+aws cloudfront get-distribution-tenant --identifier <TENANT_ID> --region us-east-1 --query 'DistributionTenant.Domains'
+```
+
+`Status: active` means the certificate is issued and CloudFront is serving it.
+The app polls this every five minutes (`custom-domain-reconcile`), and the
+"Check" button in the UI forces it immediately.
+
+### Costs
+
+Tenants are billed per month, so every path that stops serving a domain must
+delete its tenant — removal, project deletion, and losing the paid entitlement.
+`deleteDomainTenant` is idempotent for that reason.
+
 ## Asset retention
 
 Each release writes `manifests/<sha>.json` listing the keys it published. A

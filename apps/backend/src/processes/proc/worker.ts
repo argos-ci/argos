@@ -5,6 +5,7 @@ import { job as buildJob } from "@/build";
 import { job as buildNotificationJob } from "@/build-notification";
 import config from "@/config";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
+import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
@@ -30,6 +31,13 @@ if (config.get("target") === "prod-ro") {
   );
   process.exit(0);
 }
+
+// Custom domains wait on CloudFront to issue their certificate, which happens
+// minutes to hours after the customer points their DNS and is not announced.
+// Five minutes keeps "add a domain, see it go live" a session-length wait.
+scheduleCron("custom-domain-reconcile", "*/5 * * * *", () =>
+  reconcilePendingCustomDomains(),
+);
 
 scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
   checkExpiringSamlCertificates(context.date),

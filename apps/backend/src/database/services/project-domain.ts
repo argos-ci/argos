@@ -172,6 +172,56 @@ async function getLatestReadyProductionDeployment(
     .first();
 }
 
+/**
+ * Point a domain at the project's current production deployment.
+ *
+ * Deployments assign their aliases when they are finalized, so without this a
+ * domain attached between two deployments would serve nothing until the next
+ * one. Returns false when the project has never had a ready production
+ * deployment — there is nothing to alias yet, and the next finalize picks it up.
+ */
+export async function attachProductionDomainAlias(input: {
+  projectId: string;
+  domain: string;
+  trx?: TransactionOrKnex;
+}): Promise<boolean> {
+  const deployment = await getLatestReadyProductionDeployment(
+    input.projectId,
+    input.trx,
+  );
+
+  if (!deployment) {
+    return false;
+  }
+
+  await DeploymentAlias.query(input.trx)
+    .insert({
+      alias: input.domain,
+      deploymentId: deployment.id,
+      type: "domain",
+    })
+    .onConflict("alias")
+    .merge({
+      deploymentId: deployment.id,
+      type: "domain",
+      updatedAt: new Date().toISOString(),
+    });
+
+  return true;
+}
+
+/**
+ * Stop serving a domain. Removing the `project_domains` row is not enough on
+ * its own — resolution reads `deployment_aliases`, so an orphaned alias keeps
+ * answering for a domain the project no longer owns.
+ */
+export async function detachDomainAlias(
+  domain: string,
+  trx?: TransactionOrKnex,
+): Promise<void> {
+  await DeploymentAlias.query(trx).delete().where({ alias: domain });
+}
+
 async function syncProductionDomainAlias(input: {
   projectId: string;
   previousDomain: string | null;
@@ -205,18 +255,11 @@ async function syncProductionDomainAlias(input: {
     };
   }
 
-  await DeploymentAlias.query(input.trx)
-    .insert({
-      alias: input.nextDomain,
-      deploymentId: deployment.id,
-      type: "domain",
-    })
-    .onConflict("alias")
-    .merge({
-      deploymentId: deployment.id,
-      type: "domain",
-      updatedAt: new Date().toISOString(),
-    });
+  await attachProductionDomainAlias({
+    projectId: input.projectId,
+    domain: input.nextDomain,
+    ...(input.trx ? { trx: input.trx } : {}),
+  });
 
   return { previousAlias: null, nextAlias: input.nextDomain };
 }

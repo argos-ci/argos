@@ -5,7 +5,7 @@ import { signDeploymentAccessToken } from "@/auth/deployment-access";
 import { resolveSession } from "@/auth/session";
 import { readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
-import { Account, Project } from "@/database/models";
+import { Account, Project, ProjectDomain } from "@/database/models";
 import { resolveDeploymentByDomain } from "@/deployment/resolve";
 import { boom } from "@/util/error";
 
@@ -17,10 +17,15 @@ const QuerySchema = z.object({
 
 /**
  * Validate that `return_to` points at one of our deployment domains. We use the
- * URL only as a redirect target, so it must be HTTPS and live under the
- * deployments base domain — otherwise this endpoint becomes an open redirect.
+ * URL only as a redirect target — and it carries a signed access token — so an
+ * unvalidated host turns this endpoint into a token-leaking open redirect.
+ *
+ * Custom domains cannot be recognised by their shape, so they are checked
+ * against the domains we actually serve. Only `active` rows count: a `pending`
+ * one is a hostname a customer has claimed but not yet proven, and honouring it
+ * would let anyone redirect the token to a host they merely typed into a form.
  */
-function parseReturnTo(input: string): URL | null {
+async function parseReturnTo(input: string): Promise<URL | null> {
   let url: URL;
   try {
     url = new URL(input);
@@ -30,12 +35,18 @@ function parseReturnTo(input: string): URL | null {
   if (url.protocol !== "https:") {
     return null;
   }
+
   const baseDomain = config.get("deployments.baseDomain").toLowerCase();
   const hostname = url.hostname.toLowerCase();
-  if (hostname !== baseDomain && !hostname.endsWith(`.${baseDomain}`)) {
-    return null;
+  if (hostname === baseDomain || hostname.endsWith(`.${baseDomain}`)) {
+    return url;
   }
-  return url;
+
+  const customDomain = await ProjectDomain.query()
+    .select("id")
+    .findOne({ domain: hostname, internal: false, status: "active" });
+
+  return customDomain ? url : null;
 }
 
 const router: Router = Router();
@@ -48,7 +59,7 @@ router.get(
       throw boom(400, "Missing return_to");
     }
 
-    const returnTo = parseReturnTo(parsedQuery.data.return_to);
+    const returnTo = await parseReturnTo(parsedQuery.data.return_to);
     if (!returnTo) {
       throw boom(400, "Invalid return_to");
     }

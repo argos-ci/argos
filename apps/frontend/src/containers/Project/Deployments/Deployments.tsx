@@ -1,6 +1,7 @@
 import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
+import { config } from "@/config";
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -8,6 +9,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
 
+import { CustomDomains } from "./CustomDomains";
 import { DeploymentAuthentication } from "./DeploymentAuthentication";
 import { ProductionDeploymentBranch } from "./ProductionDeploymentBranch";
 import { ProductionDomain } from "./ProductionDomain";
@@ -18,6 +20,7 @@ const _ProjectFragment = graphql(`
     deploymentEnabled
     ...DeploymentAuthentication_Project
     ...ProductionDomain_Project
+    ...CustomDomains_Project
     ...ProductionDeploymentBranch_Project
   }
 `);
@@ -48,6 +51,9 @@ export function ProjectDeployments(props: {
         <>
           <DeploymentAuthentication project={project} isTeam={isTeam} />
           <ProductionDomain project={project} />
+          {config.deployments.customDomains && (
+            <CustomDomains project={project} />
+          )}
           <ProductionDeploymentBranch project={project} />
         </>
       )}

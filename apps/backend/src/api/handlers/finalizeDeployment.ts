@@ -11,6 +11,7 @@ import { ProjectDomain } from "@/database/models/ProjectDomain";
 import { ensureProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
+import { checkHasAccessToCustomDomains } from "@/deployment/custom-domain";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
@@ -147,13 +148,16 @@ async function updateDeploymentAliases(input: {
   project: Project;
   account: Account;
   projectDomains: ProjectDomain[];
+  customDomainsEnabled: boolean;
 }): Promise<ReturnType<typeof getDeploymentAliases>> {
-  const { deployment, project, account, projectDomains } = input;
+  const { deployment, project, account, projectDomains, customDomainsEnabled } =
+    input;
   const aliases = getDeploymentAliases({
     accountSlug: account.slug,
     projectName: project.name,
     deployment,
     projectDomains,
+    customDomainsEnabled,
   });
   const now = new Date().toISOString();
   await DeploymentAlias.query()
@@ -245,21 +249,29 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
-    const projectDomains =
-      deployment.environment === "production"
-        ? [
-            await ensureProductionInternalProjectDomain({
+    const isProduction = deployment.environment === "production";
+
+    const [projectDomains, customDomainsEnabled] = isProduction
+      ? await Promise.all([
+          ensureProductionInternalProjectDomain({
+            projectId: project.id,
+            projectName: project.name,
+          }).then(() =>
+            ProjectDomain.query().where({
               projectId: project.id,
-              projectName: project.name,
+              environment: "production",
             }),
-          ]
-        : [];
+          ),
+          checkHasAccessToCustomDomains(account),
+        ])
+      : [[], false];
 
     const aliases = await updateDeploymentAliases({
       deployment,
       project,
       account,
       projectDomains,
+      customDomainsEnabled,
     });
 
     await Promise.all([

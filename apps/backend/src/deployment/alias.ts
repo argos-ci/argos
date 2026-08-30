@@ -15,8 +15,15 @@ export function getDeploymentAliases(input: {
   projectName: string;
   deployment: Deployment;
   projectDomains?: ProjectDomain[];
+  customDomainsEnabled?: boolean;
 }): DeploymentAliasRecord[] {
-  const { accountSlug, projectName, deployment, projectDomains = [] } = input;
+  const {
+    accountSlug,
+    projectName,
+    deployment,
+    projectDomains = [],
+    customDomainsEnabled = false,
+  } = input;
   const aliases: DeploymentAliasRecord[] = [
     {
       type: "branch",
@@ -27,9 +34,18 @@ export function getDeploymentAliases(input: {
   if (deployment.environment === "production") {
     aliases.push(
       ...projectDomains
-        .filter(
-          (domain) => domain.environment === "production" && domain.internal,
-        )
+        .filter((domain) => {
+          if (domain.environment !== "production") {
+            return false;
+          }
+          if (domain.internal) {
+            return true;
+          }
+          // Re-checked on every deployment rather than only when the domain is
+          // added: an account that downgrades keeps its rows, and gating the
+          // mutation alone would let it serve custom domains forever.
+          return customDomainsEnabled && domain.status === "active";
+        })
         .map((domain) => ({
           type: "domain" as const,
           alias: domain.domain,

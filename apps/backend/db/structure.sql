@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 4zZG6Hoe1K3ZBDrHabFPUGq365Inj9r7dt9THx8frPwftlzfV3Wfyai1eXJJuqm
+\restrict BXXJp0ozPbWeuU3o8hOsVUglAYuIy3BZDOlUPP4mgeBvExXvT6R46a8uZzG10oA
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2092,6 +2092,7 @@ CREATE TABLE public.plans (
     "interval" text DEFAULT 'month'::text NOT NULL,
     "samlIncluded" boolean DEFAULT false NOT NULL,
     "githubMonthlyPriceCents" integer,
+    "customDomainsIncluded" boolean DEFAULT false NOT NULL,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -2132,8 +2133,16 @@ CREATE TABLE public.project_domains (
     branch character varying(255),
     "projectId" bigint NOT NULL,
     internal boolean DEFAULT false NOT NULL,
+    status text DEFAULT 'active'::text NOT NULL,
+    "cloudfrontTenantId" text,
+    "routingEndpoint" text,
+    "statusReason" text,
+    "activatedAt" timestamp with time zone,
+    "lastCheckedAt" timestamp with time zone,
     CONSTRAINT project_domains_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
-    CONSTRAINT project_domains_preview_branch_check CHECK ((((environment = 'preview'::text) AND (branch IS NOT NULL)) OR (environment = 'production'::text)))
+    CONSTRAINT project_domains_internal_status_check CHECK (((internal = false) OR ((status = 'active'::text) AND ("cloudfrontTenantId" IS NULL)))),
+    CONSTRAINT project_domains_preview_branch_check CHECK ((((environment = 'preview'::text) AND (branch IS NOT NULL)) OR (environment = 'production'::text))),
+    CONSTRAINT project_domains_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'failed'::text])))
 );
 
 
@@ -4328,6 +4337,14 @@ ALTER TABLE ONLY public.plans
 
 
 --
+-- Name: project_domains project_domains_cloudfronttenantid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_domains
+    ADD CONSTRAINT project_domains_cloudfronttenantid_unique UNIQUE ("cloudfrontTenantId");
+
+
+--
 -- Name: project_domains project_domains_domain_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5207,6 +5224,13 @@ CREATE INDEX origin_repositories_origininstallationid_index ON public.origin_rep
 --
 
 CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubPlanId");
+
+
+--
+-- Name: project_domains_pending_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_domains_pending_index ON public.project_domains USING btree ("lastCheckedAt") WHERE (status = 'pending'::text);
 
 
 --
@@ -6664,7 +6688,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 4zZG6Hoe1K3ZBDrHabFPUGq365Inj9r7dt9THx8frPwftlzfV3Wfyai1eXJJuqm
+\unrestrict BXXJp0ozPbWeuU3o8hOsVUglAYuIy3BZDOlUPP4mgeBvExXvT6R46a8uZzG10oA
 
 -- Knex migrations
 
@@ -6917,3 +6941,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823065836_stripe-invoices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823133757_github-plan-prices.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260830130624_custom-domains.js', 1, NOW());

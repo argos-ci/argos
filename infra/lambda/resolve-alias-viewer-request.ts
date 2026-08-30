@@ -178,10 +178,22 @@ function cookieName(projectId: string): string {
   return `argos_dep_${projectId}`;
 }
 
-function buildSetCookie(projectId: string, token: string): string {
+/**
+ * `Domain` is set only under our own base domain, where it lets one token cover
+ * every alias of a project. A custom domain gets a host-only cookie: naming a
+ * customer's registrable domain there would leak the token to every other host
+ * they run, and naming ours would not be sent back at all.
+ */
+function buildSetCookie(
+  projectId: string,
+  token: string,
+  host: string,
+): string {
+  const isInternalHost =
+    host === BASE_DOMAIN || host.endsWith(`.${BASE_DOMAIN}`);
   const attrs = [
     `${cookieName(projectId)}=${token}`,
-    `Domain=.${BASE_DOMAIN}`,
+    ...(isInternalHost ? [`Domain=.${BASE_DOMAIN}`] : []),
     "Path=/",
     "HttpOnly",
     "Secure",
@@ -279,9 +291,14 @@ function handleAuthCallback(
     return badRequestResponse("Invalid or expired token");
   }
 
+  const host = request.headers["host"]?.[0]?.value ?? "";
+
   return redirect(returnTo, {
     "set-cookie": [
-      { key: "Set-Cookie", value: buildSetCookie(payload.projectId, token) },
+      {
+        key: "Set-Cookie",
+        value: buildSetCookie(payload.projectId, token, host),
+      },
     ],
   });
 }
@@ -311,17 +328,16 @@ export const handler = async (
   }
 
   const host = request.headers["host"]?.[0]?.value ?? "";
-  const alias = host.split(".")[0] ?? "";
-  if (!alias) {
-    console.log("[404] No alias in host");
+  if (!host) {
+    console.log("[404] No host header");
     return notFoundResponse();
   }
 
-  console.log(`[request] alias=${alias} path=${request.uri}`);
+  console.log(`[request] host=${host} path=${request.uri}`);
 
   const deployment = await resolveAlias(host);
   if (!deployment) {
-    console.log(`[404] alias not found: ${alias}`);
+    console.log(`[404] host not found: ${host}`);
     return notFoundResponse();
   }
 

@@ -372,6 +372,70 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
+    // CloudFront SaaS Manager — customer custom domains
+    //
+    // A second distribution rather than a migration of the one above: a
+    // multi-tenant distribution runs in `tenant-only` mode and cannot serve
+    // traffic by itself, so folding `*.{baseDomain}` into it would mean turning
+    // every internal domain into a tenant. This one shares the same origin and
+    // the same edge functions, and the wildcard keeps working untouched.
+    //
+    // Tenants are not declared here. One exists per customer domain, created
+    // and deleted by the app through `CreateDistributionTenant` — runtime state
+    // that would go stale in a template.
+    // ----------------------------------------------------------------
+    const connectionGroup = new cloudfront.CfnConnectionGroup(
+      this,
+      "CustomDomainsConnectionGroup",
+      {
+        name: `argos-custom-domains-${stage}`,
+        enabled: true,
+        ipv6Enabled: true,
+      },
+    );
+
+    const customDomainsOriginId = "files-origin";
+
+    const customDomainsDistribution = new cloudfront.CfnDistribution(
+      this,
+      "CustomDomainsDistribution",
+      {
+        distributionConfig: {
+          enabled: true,
+          connectionMode: "tenant-only",
+          httpVersion: "http2and3",
+          ipv6Enabled: true,
+          origins: [
+            {
+              id: customDomainsOriginId,
+              domainName: filesDistribution.distributionDomainName,
+              customOriginConfig: { originProtocolPolicy: "https-only" },
+              originCustomHeaders: [
+                {
+                  headerName: filesOriginAuthHeaderName,
+                  headerValue: filesOriginAuthHeaderValue,
+                },
+              ],
+            },
+          ],
+          defaultCacheBehavior: {
+            targetOriginId: customDomainsOriginId,
+            viewerProtocolPolicy: "redirect-to-https",
+            // Multi-tenant distributions reject the legacy TTL fields, so the
+            // shared cache policy is not just tidier here — it is required.
+            cachePolicyId: cachePolicy.cachePolicyId,
+            lambdaFunctionAssociations: [
+              {
+                eventType: "viewer-request",
+                lambdaFunctionArn: viewerRequestFn.currentVersion.edgeArn,
+              },
+            ],
+          },
+        },
+      },
+    );
+
+    // ----------------------------------------------------------------
     // Route 53 — wildcard *.{baseDomain} → alias distribution
     // ----------------------------------------------------------------
     new route53.ARecord(this, "WildcardAlias", {
@@ -392,6 +456,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
       this.filesTable.grantReadWriteData(devGroup);
       this.deploymentFilesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
+      // So a developer running the app locally can provision custom domains.
+      // The production task role needs the same statement — see the runbook.
+      devGroup.addToPolicy(customDomainsPolicyStatement());
 
       for (const arn of appUserArns) {
         const user = iam.User.fromUserArn(
@@ -428,6 +495,19 @@ export class ArgosDeploymentStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ApiBaseUrl", {
       value: apiBaseUrl,
     });
+    // Both are read by the app: DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID and
+    // DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID.
+    new cdk.CfnOutput(this, "CustomDomainsDistributionId", {
+      value: customDomainsDistribution.ref,
+    });
+    new cdk.CfnOutput(this, "CustomDomainsConnectionGroupId", {
+      value: connectionGroup.attrId,
+    });
+    // The hostname customers point their DNS at. The app reads it from the API
+    // rather than from configuration, so this output is for operators.
+    new cdk.CfnOutput(this, "CustomDomainsRoutingEndpoint", {
+      value: connectionGroup.attrRoutingEndpoint,
+    });
   }
 }
 
@@ -457,4 +537,22 @@ function writeInjectedSecret(secret: string): string {
     { mode: 0o600 },
   );
   return file;
+}
+
+/**
+ * The permissions the app needs to manage a custom domain's distribution
+ * tenant. Certificates are not listed: CloudFront requests and renews the
+ * managed certificate itself, so the caller never touches ACM.
+ */
+function customDomainsPolicyStatement(): iam.PolicyStatement {
+  return new iam.PolicyStatement({
+    actions: [
+      "cloudfront:CreateDistributionTenant",
+      "cloudfront:GetDistributionTenant",
+      "cloudfront:UpdateDistributionTenant",
+      "cloudfront:DeleteDistributionTenant",
+      "cloudfront:GetConnectionGroup",
+    ],
+    resources: ["*"],
+  });
 }

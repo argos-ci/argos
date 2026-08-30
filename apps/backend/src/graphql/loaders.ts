@@ -156,6 +156,22 @@ function createLatestProductionDeploymentByProjectLoader() {
   });
 }
 
+function createCustomProjectDomainsByProjectLoader() {
+  return new DataLoader<string, ProjectDomain[]>(async (projectIds) => {
+    const projectDomains = await ProjectDomain.query()
+      .whereIn("projectId", projectIds as string[])
+      .where({ internal: false })
+      .orderBy("createdAt", "asc");
+    const projectDomainsMap: Record<string, ProjectDomain[]> = {};
+    for (const projectDomain of projectDomains) {
+      const domains = projectDomainsMap[projectDomain.projectId] ?? [];
+      domains.push(projectDomain);
+      projectDomainsMap[projectDomain.projectId] = domains;
+    }
+    return projectIds.map((id) => projectDomainsMap[id] ?? []);
+  });
+}
+
 function createProductionInternalProjectDomainByProjectLoader() {
   return new DataLoader<string, ProjectDomain | null>(async (projectIds) => {
     const projectDomains = await ProjectDomain.query()
@@ -1977,6 +1993,7 @@ export const createLoaders = () => ({
   Project: createModelLoader(Project),
   ProductionInternalProjectDomainByProject:
     createProductionInternalProjectDomainByProjectLoader(),
+  CustomProjectDomainsByProject: createCustomProjectDomainsByProjectLoader(),
   SlackInstallation: createModelLoader(SlackInstallation),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
