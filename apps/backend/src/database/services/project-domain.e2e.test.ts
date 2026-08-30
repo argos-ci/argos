@@ -96,21 +96,29 @@ describe("project-domain service", () => {
       });
     });
 
-    it("protects the reserved dev internal domain slug", async () => {
-      const project = await factory.Project.create({ name: "dev" });
+    it.each([
+      ["dev", "dev-1.dev.argos-ci.live"],
+      // The custom-domain CNAME target. A specific record in the zone, so a
+      // project holding this slug would be shadowed by it.
+      ["cname", "cname-1.dev.argos-ci.live"],
+    ])(
+      "protects the reserved %s internal domain slug",
+      async (name, expected) => {
+        const project = await factory.Project.create({ name });
 
-      const domain = await ensureProductionInternalProjectDomain({
-        projectId: project.id,
-        projectName: project.name,
-      });
+        const domain = await ensureProductionInternalProjectDomain({
+          projectId: project.id,
+          projectName: project.name,
+        });
 
-      expect(domain).toMatchObject({
-        projectId: project.id,
-        domain: "dev-1.dev.argos-ci.live",
-        environment: "production",
-        internal: true,
-      });
-    });
+        expect(domain).toMatchObject({
+          projectId: project.id,
+          domain: expected,
+          environment: "production",
+          internal: true,
+        });
+      },
+    );
 
     it("retries with a new suffix after a concurrent unique-constraint failure", async () => {
       const project = await factory.Project.create({ name: "docs" });

@@ -36,6 +36,8 @@ describe("validateCustomDomain", () => {
     "dev.argos-ci.live",
     "anything.dev.argos-ci.live",
     "deep.nested.dev.argos-ci.live",
+    // The target customers are told to point their own DNS at.
+    "cname.dev.argos-ci.live",
   ])("rejects the reserved domain %s", (input) => {
     expect(() => validateCustomDomain(input)).toThrow(/reserved/i);
   });

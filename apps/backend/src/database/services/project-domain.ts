@@ -9,9 +9,15 @@ import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
 
 /**
- * Domains reserved for internal usage.
+ * Slugs under the deployments base domain that a project may not take, because
+ * something else already answers on them.
+ *
+ * `cname` is the target customers point their own DNS at. It is a specific
+ * record in the zone, so it beats the wildcard: a project handed that slug
+ * would keep a row saying it owns the domain while every request to it went to
+ * the connection group instead.
  */
-const INTERNAL_DOMAIN_SLUGS = new Set(["dev"]);
+const INTERNAL_DOMAIN_SLUGS = new Set(["dev", "cname"]);
 
 const DOMAIN_REGEX =
   /^(?=.{1,255}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;

@@ -469,6 +469,25 @@ export class ArgosDeploymentStack extends cdk.Stack {
       ),
     });
 
+    // ----------------------------------------------------------------
+    // The hostname customers point their own DNS at.
+    //
+    // A layer of indirection over the connection group's routing endpoint,
+    // which is otherwise copied into every customer's zone and can then never
+    // be changed: recreating the connection group would break every custom
+    // domain at once, with no way to reach the people who have to fix it. One
+    // record here moves them all.
+    //
+    // More specific than the wildcard above, so it wins for this name.
+    // ----------------------------------------------------------------
+    const customDomainsTarget = `cname.${baseDomain}`;
+
+    new route53.CnameRecord(this, "CustomDomainsTarget", {
+      zone: hostedZone,
+      recordName: customDomainsTarget,
+      domainName: connectionGroup.attrRoutingEndpoint,
+    });
+
     const distribution = aliasDistribution;
 
     // ----------------------------------------------------------------
@@ -526,10 +545,13 @@ export class ArgosDeploymentStack extends cdk.Stack {
     new cdk.CfnOutput(this, "CustomDomainsConnectionGroupId", {
       value: connectionGroup.attrId,
     });
-    // The hostname customers point their DNS at. The app reads it from the API
-    // rather than from configuration, so this output is for operators.
+    // The connection group's own endpoint. The app reads this from the API
+    // rather than from configuration, so the output is for operators.
     new cdk.CfnOutput(this, "CustomDomainsRoutingEndpoint", {
       value: connectionGroup.attrRoutingEndpoint,
+    });
+    new cdk.CfnOutput(this, "CustomDomainsTargetHost", {
+      value: customDomainsTarget,
     });
   }
 }
