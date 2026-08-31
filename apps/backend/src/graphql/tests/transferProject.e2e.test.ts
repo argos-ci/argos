@@ -9,7 +9,7 @@ import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
-// Real notifications are already disabled in tests (the webhook client is off);
+// Real notifications are already disabled in tests (no webhook URL is set);
 // spy on the sender only to assert what would have been posted.
 const notifyDiscord = vi
   .spyOn(discord, "notifyDiscord")

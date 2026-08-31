@@ -4,7 +4,7 @@
  *
  * Distinct from `./index.ts`, which posts Argos' own ops notifications to a
  * single webhook we configure ourselves. The URLs here are user-supplied, which
- * is why they are validated rather than handed straight to a client.
+ * is why they are validated before being posted to.
  */
 
 import type { DiscordWebhook } from "@/database/models";

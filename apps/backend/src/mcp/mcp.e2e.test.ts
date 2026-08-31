@@ -22,7 +22,7 @@ import { issueTokens } from "@/oauth/tokens";
 
 import { mcpRouter } from "./router";
 
-// Real notifications are already disabled in tests (the webhook client is off);
+// Real notifications are already disabled in tests (no webhook URL is set);
 // spy on the sender only to assert it is not called.
 const notifyDiscord = vi
   .spyOn(discord, "notifyDiscord")
