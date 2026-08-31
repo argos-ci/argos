@@ -358,17 +358,23 @@ ACM certificate for the operation: RequestCertificate".
 
 #### 4. Set the app environment variables
 
-Both the web and worker tasks read them (the worker runs the reconcile cron):
+Both ids are identifiers rather than secrets, so they go in the
+`environment-variables:` block of the `deploy` job in
+`.github/workflows/release.yml`, next to `API_BASE_URL` — not in SSM, and not by
+hand in the console. That block is shared by the job's matrix, so the web task
+and the worker both get them; the worker needs them because it runs the
+reconcile cron.
 
-```
+```yaml
 DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID=<CustomDomainsDistributionId>
 DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID=<CustomDomainsConnectionGroupId>
 ```
 
-Until both are set, `checkIsCustomDomainsConfigured()` is false: the settings
-card is hidden and the mutations refuse. That is the intended state for
-development and self-hosted installs, and it means step 4 is the switch that
-turns the feature on.
+Until both are set `checkIsCustomDomainsConfigured()` is false, the settings card
+is hidden and the mutations refuse — the intended state for development and
+self-hosted installs, and what makes this step the switch that turns the feature
+on. It ships with a release rather than separately, so the stack can go out well
+ahead of it.
 
 #### 5. Verify end to end
 
