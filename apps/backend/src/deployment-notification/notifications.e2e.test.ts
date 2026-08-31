@@ -125,6 +125,31 @@ describe("processDeploymentNotification", () => {
     );
   });
 
+  test("points the commit status at the custom domain", async ({
+    deployment,
+    deploymentNotification,
+  }) => {
+    await factory.DeploymentAlias.createMany(2, [
+      {
+        deploymentId: deployment.id,
+        alias: "docs.example.com",
+        type: "domain",
+      },
+      {
+        deploymentId: deployment.id,
+        alias: "docs-argos.dev.argos-ci.live",
+        type: "domain",
+      },
+    ]);
+
+    await processDeploymentNotification(deploymentNotification);
+
+    expect(createGhCommitStatusMock).toHaveBeenCalledWith(
+      octokitMock,
+      expect.objectContaining({ target_url: "https://docs.example.com/" }),
+    );
+  });
+
   test("posts a pending status for progress notifications", async ({
     repository,
     deployment,

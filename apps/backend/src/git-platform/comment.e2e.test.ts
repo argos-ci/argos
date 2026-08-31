@@ -116,6 +116,32 @@ describe("getCommentBody", () => {
     );
   });
 
+  // The link a reviewer clicks from the pull request should be the hostname the
+  // team published, not ours.
+  test("links a deployment on its custom domain", async ({ project }) => {
+    const deployment = await createDeployment({
+      projectId: project.id,
+      slug: "custom-domain-deployment",
+    });
+    await factory.DeploymentAlias.createMany(2, [
+      {
+        deploymentId: deployment.id,
+        alias: "docs.example.com",
+        type: "domain",
+      },
+      {
+        deploymentId: deployment.id,
+        alias: "docs-argos.dev.argos-ci.live",
+        type: "domain",
+      },
+    ]);
+
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain("([Open](https://docs.example.com/))");
+    expect(body).not.toContain(deployment.url);
+  });
+
   test("uses the latest deployment per project and environment", async ({
     project,
   }) => {
