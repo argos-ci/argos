@@ -11,6 +11,7 @@ import { z } from "zod";
 import { revokeSessionByToken } from "@/auth/session";
 import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
+import { checkIsCustomDomainsConfigured } from "@/deployment/cloudfront";
 import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
 import { mountOAuthServer } from "@/oauth/router";
@@ -82,6 +83,7 @@ export const installAppRouter = async (app: express.Application) => {
     },
     deployments: {
       baseDomain: config.get("deployments.baseDomain"),
+      customDomains: checkIsCustomDomainsConfigured(),
     },
   };
 

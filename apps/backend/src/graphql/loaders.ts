@@ -11,6 +11,7 @@ import {
   getVisibleMediaCommentsQuery,
   getVisibleTestCommentsQuery,
 } from "@/comment/getVisibleComments";
+import config from "@/config";
 import { knex } from "@/database";
 import {
   Account,
@@ -156,6 +157,22 @@ function createLatestProductionDeploymentByProjectLoader() {
   });
 }
 
+function createCustomProjectDomainsByProjectLoader() {
+  return new DataLoader<string, ProjectDomain[]>(async (projectIds) => {
+    const projectDomains = await ProjectDomain.query()
+      .whereIn("projectId", projectIds as string[])
+      .where({ internal: false })
+      .orderBy("createdAt", "asc");
+    const projectDomainsMap: Record<string, ProjectDomain[]> = {};
+    for (const projectDomain of projectDomains) {
+      const domains = projectDomainsMap[projectDomain.projectId] ?? [];
+      domains.push(projectDomain);
+      projectDomainsMap[projectDomain.projectId] = domains;
+    }
+    return projectIds.map((id) => projectDomainsMap[id] ?? []);
+  });
+}
+
 function createProductionInternalProjectDomainByProjectLoader() {
   return new DataLoader<string, ProjectDomain | null>(async (projectIds) => {
     const projectDomains = await ProjectDomain.query()
@@ -240,11 +257,21 @@ function createLatestDeploymentByProjectAndCommitLoader() {
 
 function createDeploymentAliasesByDeploymentIdLoader() {
   return new DataLoader<string, DeploymentAlias[]>(async (deploymentIds) => {
+    // A customer's own hostname first: it is the one they recognise, and the one
+    // they came to the page to check. Internal domains and branch aliases are
+    // both under the base domain, which is what separates them from a custom
+    // one — see `checkIsCustomDomainAlias`.
+    const baseDomainSuffix = `%.${config.get("deployments.baseDomain")}`;
     const aliases = await DeploymentAlias.query()
       .whereIn("deploymentId", deploymentIds as string[])
       .orderBy("deploymentId", "asc")
       .orderByRaw(
-        `case "type" when 'domain' then 0 when 'branch' then 1 end asc`,
+        `case
+           when "type" = 'domain' and "alias" not ilike ? then 0
+           when "type" = 'domain' then 1
+           else 2
+         end asc`,
+        [baseDomainSuffix],
       )
       .orderBy("alias", "asc");
 
@@ -1977,6 +2004,7 @@ export const createLoaders = () => ({
   Project: createModelLoader(Project),
   ProductionInternalProjectDomainByProject:
     createProductionInternalProjectDomainByProjectLoader(),
+  CustomProjectDomainsByProject: createCustomProjectDomainsByProjectLoader(),
   SlackInstallation: createModelLoader(SlackInstallation),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),

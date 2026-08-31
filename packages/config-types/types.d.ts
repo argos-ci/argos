@@ -36,5 +36,7 @@ export interface ClientConfig {
   };
   deployments: {
     baseDomain: string;
+    /** Whether this install can provision custom domains at all. */
+    customDomains: boolean;
   };
 }

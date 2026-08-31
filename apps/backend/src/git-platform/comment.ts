@@ -12,6 +12,7 @@ import {
   Deployment,
   Project,
 } from "@/database/models";
+import { getDeploymentPreferredUrl } from "@/deployment/url";
 
 const dateFormatter = Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -280,7 +281,14 @@ function getDeploymentRows(input: {
         project: input.hasMultipleProjects ? deployment.project : null,
       });
 
-      return `| **${name}** ([Open](${deployment.url})) | ${getDeploymentLabel(
+      invariant(deployment.aliases, "Relation `aliases` should be fetched");
+
+      const url = getDeploymentPreferredUrl({
+        slug: deployment.slug,
+        aliases: deployment.aliases,
+      });
+
+      return `| **${name}** ([Open](${url})) | ${getDeploymentLabel(
         deployment,
       )} | ${deployment.branch} | ${formatDate(deployment.updatedAt)} |`;
     });
@@ -303,7 +311,11 @@ export async function getCommentBody(props: {
       ]),
     Deployment.query()
       .distinctOn("deployments.projectId", "deployments.environment")
-      .withGraphFetched("project")
+      // Explicit, because Objection adds the join columns a graph fetch needs
+      // and then omits them again from the result — on an implicit `select *`
+      // that strips `id` and leaves both relations empty.
+      .select("deployments.*")
+      .withGraphFetched("[project,aliases]")
       .where("deployments.commitSha", commit)
       .orderBy([
         { column: "deployments.projectId", order: "desc" },

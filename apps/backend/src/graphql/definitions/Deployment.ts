@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { getDeploymentUrl } from "@/deployment/url";
+import { getDeploymentAliasUrl } from "@/deployment/url";
 
 import {
   IDeploymentAliasType,
@@ -65,10 +65,7 @@ export const resolvers: IResolvers = {
           alias.type === "domain"
             ? IDeploymentAliasType.Domain
             : IDeploymentAliasType.Branch,
-        url:
-          alias.type === "domain"
-            ? new URL(`https://${alias.alias}`).href
-            : getDeploymentUrl(alias.alias),
+        url: getDeploymentAliasUrl(alias),
       }));
     },
     build: async (deployment, _args, ctx) => {

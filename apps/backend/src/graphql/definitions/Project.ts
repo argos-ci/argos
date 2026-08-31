@@ -14,6 +14,7 @@ import {
   GitlabProject,
   OriginRepository,
   Project,
+  ProjectDomain,
   Screenshot,
   User,
 } from "@/database/models";
@@ -36,6 +37,13 @@ import { upsertProductionInternalProjectDomain } from "@/database/services/proje
 import { loadAccountById } from "@/database/services/team-member";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import {
+  addCustomDomain,
+  checkHasAccessToCustomDomains,
+  getAccountCustomDomainsAvailability,
+  reconcileCustomDomain,
+  removeCustomDomain,
+} from "@/deployment/custom-domain";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -46,16 +54,20 @@ import { safeParseTestId } from "@/util/test-id";
 
 import {
   IBuildStatus,
+  ICustomDomainsAvailability,
   IDeploymentAuth,
+  IProjectCustomDomainPendingReason,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
 } from "../__generated__/resolver-types";
+import type { Context } from "../context";
 import { deleteProject, getAdminProject } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
 import {
   badUserInput,
   forbidden,
+  invalidId,
   toGraphQLError,
   unauthenticated,
 } from "../util";
@@ -233,6 +245,50 @@ export const typeDefs = gql`
     deployments(after: Int = 0, first: Int = 30): DeploymentConnection!
     "Production deployment domain"
     domain: String
+    "Custom domains serving the project's production deployments"
+    customDomains: [ProjectCustomDomain!]!
+    "Whether custom domains are available, and if not, what would unlock them"
+    customDomainsAvailability: CustomDomainsAvailability!
+  }
+
+  enum CustomDomainsAvailability {
+    "Usable now"
+    available
+    "The team has no active subscription — subscribing unlocks it"
+    requires_subscription
+    "The plan does not include it and cannot be changed without us"
+    requires_contact
+    "Personal accounts cannot use custom domains"
+    requires_team
+  }
+
+  enum ProjectCustomDomainStatus {
+    "Waiting for the customer's DNS record and the TLS certificate"
+    pending
+    "Serving traffic"
+    active
+    "Provisioning failed, see statusReason"
+    failed
+  }
+
+  enum ProjectCustomDomainPendingReason {
+    "The customer has not pointed their DNS record at us yet"
+    dns
+    "DNS is in place; the TLS certificate is being issued"
+    certificate
+  }
+
+  type ProjectCustomDomain implements Node {
+    id: ID!
+    domain: String!
+    status: ProjectCustomDomainStatus!
+    "What a pending domain is waiting on. Null unless pending."
+    pendingReason: ProjectCustomDomainPendingReason
+    "The hostname the customer must point their DNS record at"
+    routingEndpoint: String
+    "Why the domain is not serving, when it is not"
+    statusReason: String
+    createdAt: DateTime!
   }
 
   extend type Query {
@@ -336,6 +392,15 @@ export const typeDefs = gql`
     domain: String!
   }
 
+  input AddProjectCustomDomainInput {
+    projectId: ID!
+    domain: String!
+  }
+
+  input ProjectCustomDomainInput {
+    projectCustomDomainId: ID!
+  }
+
   input RemoveContributorFromProjectInput {
     projectId: ID!
     userAccountId: ID!
@@ -382,6 +447,14 @@ export const typeDefs = gql`
     ): ProjectContributor!
     "Update the production deployment domain"
     updateProjectDomain(input: UpdateProjectDomainInput!): Project!
+    "Attach a custom domain to the project's production deployments"
+    addProjectCustomDomain(input: AddProjectCustomDomainInput!): Project!
+    "Re-check a custom domain's provisioning state against CloudFront"
+    checkProjectCustomDomain(
+      input: ProjectCustomDomainInput!
+    ): ProjectCustomDomain!
+    "Detach a custom domain and stop serving it"
+    removeProjectCustomDomain(input: ProjectCustomDomainInput!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -633,6 +706,18 @@ function fromGraphQLBuildStatus(status: IBuildStatus): BuildAggregatedStatus {
 }
 
 export const resolvers: IResolvers = {
+  ProjectCustomDomain: {
+    pendingReason: (projectDomain) => {
+      if (projectDomain.status !== "pending") {
+        return null;
+      }
+      // CloudFront will not create the tenant until the domain resolves to it,
+      // so a tenant is itself the proof that DNS is done.
+      return projectDomain.cloudfrontTenantId
+        ? IProjectCustomDomainPendingReason.Certificate
+        : IProjectCustomDomainPendingReason.Dns;
+    },
+  },
   Project: {
     buildsCount: async (project, _args, ctx) => {
       return ctx.loaders.ProjectBuildsCountByProjectId.load(project.id);
@@ -789,6 +874,18 @@ export const resolvers: IResolvers = {
           project.id,
         );
       return domain?.domain ?? null;
+    },
+    customDomains: async (project, _args, ctx) => {
+      if (!project.deploymentEnabled) {
+        return [];
+      }
+      return ctx.loaders.CustomProjectDomainsByProject.load(project.id);
+    },
+    customDomainsAvailability: async (project, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(project.accountId);
+      invariant(account, "Account not found");
+      const availability = await getAccountCustomDomainsAvailability(account);
+      return availability as ICustomDomainsAvailability;
     },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
@@ -1296,6 +1393,52 @@ export const resolvers: IResolvers = {
 
       return project;
     },
+    addProjectCustomDomain: async (_root, args, ctx) => {
+      const project = await getAdminProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      await assertCustomDomainsAccess(project, ctx);
+
+      try {
+        await addCustomDomain({
+          projectId: project.id,
+          domain: args.input.domain,
+        });
+        ctx.loaders.CustomProjectDomainsByProject.clear(project.id);
+        return project;
+      } catch (error: unknown) {
+        throw toCustomDomainUserInputError(error);
+      }
+    },
+    checkProjectCustomDomain: async (_root, args, ctx) => {
+      const { project, projectDomain } = await getAdminCustomDomain(
+        args.input.projectCustomDomainId,
+        ctx,
+      );
+
+      await assertCustomDomainsAccess(project, ctx);
+
+      try {
+        const updated = await reconcileCustomDomain(projectDomain);
+        ctx.loaders.CustomProjectDomainsByProject.clear(project.id);
+        return updated;
+      } catch (error: unknown) {
+        throw toCustomDomainUserInputError(error);
+      }
+    },
+    removeProjectCustomDomain: async (_root, args, ctx) => {
+      const { project, projectDomain } = await getAdminCustomDomain(
+        args.input.projectCustomDomainId,
+        ctx,
+      );
+
+      // Not gated on the plan: a lapsed account must still be able to clean up.
+      await removeCustomDomain(projectDomain);
+      ctx.loaders.CustomProjectDomainsByProject.clear(project.id);
+      return project;
+    },
     removeContributorFromProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -1327,3 +1470,51 @@ export const resolvers: IResolvers = {
     },
   },
 };
+
+async function getAdminCustomDomain(
+  projectCustomDomainId: string,
+  ctx: Context,
+): Promise<{ project: Project; projectDomain: ProjectDomain }> {
+  if (!isValidPgBigInt(projectCustomDomainId)) {
+    throw invalidId();
+  }
+  const projectDomain = await ProjectDomain.query()
+    .findById(projectCustomDomainId)
+    .throwIfNotFound();
+  const project = await getAdminProject({
+    id: projectDomain.projectId,
+    user: ctx.auth?.user,
+  });
+  return { project, projectDomain };
+}
+
+async function assertCustomDomainsAccess(
+  project: Project,
+  ctx: Context,
+): Promise<void> {
+  const account = await ctx.loaders.Account.load(project.accountId);
+  invariant(account, "Account not found");
+  const hasAccess = await checkHasAccessToCustomDomains(account);
+  if (!hasAccess) {
+    throw forbidden("Custom domains require a paid plan");
+  }
+}
+
+function toCustomDomainUserInputError(error: unknown): unknown {
+  if (error instanceof HTTPError && error.code) {
+    switch (error.code) {
+      case "PROJECT_DOMAIN_INVALID":
+      case "PROJECT_DOMAIN_RESERVED":
+      case "PROJECT_DOMAIN_ALREADY_USED":
+      case "PROJECT_DOMAIN_UNAVAILABLE":
+        return badUserInput(error.message, {
+          field: "domain",
+          code: error.code,
+        });
+    }
+  }
+  if (isUniqueViolationError(error)) {
+    return badUserInput("Domain already in use", { field: "domain" });
+  }
+  return error;
+}

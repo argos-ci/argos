@@ -372,6 +372,79 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
+    // CloudFront SaaS Manager — customer custom domains
+    //
+    // A second distribution rather than a migration: `tenant-only` cannot serve
+    // traffic by itself, so folding `*.{baseDomain}` in would mean turning every
+    // internal domain into a tenant. This shares the origin and edge functions.
+    //
+    // Tenants are not declared here — one per customer domain, created by the
+    // app through `CreateDistributionTenant`.
+    // ----------------------------------------------------------------
+    const connectionGroup = new cloudfront.CfnConnectionGroup(
+      this,
+      "CustomDomainsConnectionGroup",
+      {
+        name: `argos-custom-domains-${stage}`,
+        enabled: true,
+        ipv6Enabled: true,
+      },
+    );
+
+    const customDomainsOriginId = "files-origin";
+
+    const customDomainsDistribution = new cloudfront.CfnDistribution(
+      this,
+      "CustomDomainsDistribution",
+      {
+        distributionConfig: {
+          enabled: true,
+          connectionMode: "tenant-only",
+          // No `ipv6Enabled` — the connection group owns viewer-side
+          // addressing and CloudFront rejects the field here.
+          //
+          // The certificate is required but unused: CloudFront demands one of
+          // three and only an ACM ARN is valid for a multi-tenant distribution,
+          // while tenants request their own. Pointing it at the wildcard we
+          // already renew avoids minting one to satisfy a validation rule.
+          // Unset, the protocol version would default to the SSLv3 that
+          // multi-tenant distributions reject.
+          viewerCertificate: {
+            acmCertificateArn: certificate.certificateArn,
+            sslSupportMethod: "sni-only",
+            minimumProtocolVersion: "TLSv1.2_2021",
+          },
+          origins: [
+            {
+              id: customDomainsOriginId,
+              domainName: filesDistribution.distributionDomainName,
+              customOriginConfig: { originProtocolPolicy: "https-only" },
+              originCustomHeaders: [
+                {
+                  headerName: filesOriginAuthHeaderName,
+                  headerValue: filesOriginAuthHeaderValue,
+                },
+              ],
+            },
+          ],
+          defaultCacheBehavior: {
+            targetOriginId: customDomainsOriginId,
+            viewerProtocolPolicy: "redirect-to-https",
+            // Multi-tenant distributions reject the legacy TTL fields, so the
+            // shared cache policy is not just tidier here — it is required.
+            cachePolicyId: cachePolicy.cachePolicyId,
+            lambdaFunctionAssociations: [
+              {
+                eventType: "viewer-request",
+                lambdaFunctionArn: viewerRequestFn.currentVersion.edgeArn,
+              },
+            ],
+          },
+        },
+      },
+    );
+
+    // ----------------------------------------------------------------
     // Route 53 — wildcard *.{baseDomain} → alias distribution
     // ----------------------------------------------------------------
     new route53.ARecord(this, "WildcardAlias", {
@@ -380,6 +453,22 @@ export class ArgosDeploymentStack extends cdk.Stack {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(aliasDistribution),
       ),
+    });
+
+    // ----------------------------------------------------------------
+    // The hostname customers point their own DNS at, kept as indirection over
+    // the connection group's routing endpoint — which would otherwise be copied
+    // into every customer's zone and could then never be changed. Must stay in
+    // step with `getCustomDomainsTarget()` in the app.
+    //
+    // More specific than the wildcard above, so it wins for this name.
+    // ----------------------------------------------------------------
+    const customDomainsTarget = `cname.${baseDomain}`;
+
+    new route53.CnameRecord(this, "CustomDomainsTarget", {
+      zone: hostedZone,
+      recordName: customDomainsTarget,
+      domainName: connectionGroup.attrRoutingEndpoint,
     });
 
     const distribution = aliasDistribution;
@@ -392,6 +481,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
       this.filesTable.grantReadWriteData(devGroup);
       this.deploymentFilesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
+      // So a developer running the app locally can provision custom domains.
+      // The production task role needs the same statement — see the runbook.
+      devGroup.addToPolicy(customDomainsPolicyStatement());
 
       for (const arn of appUserArns) {
         const user = iam.User.fromUserArn(
@@ -428,6 +520,22 @@ export class ArgosDeploymentStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ApiBaseUrl", {
       value: apiBaseUrl,
     });
+    // Both are read by the app: DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID and
+    // DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID.
+    new cdk.CfnOutput(this, "CustomDomainsDistributionId", {
+      value: customDomainsDistribution.ref,
+    });
+    new cdk.CfnOutput(this, "CustomDomainsConnectionGroupId", {
+      value: connectionGroup.attrId,
+    });
+    // The connection group's own endpoint. The app reads this from the API
+    // rather than from configuration, so the output is for operators.
+    new cdk.CfnOutput(this, "CustomDomainsRoutingEndpoint", {
+      value: connectionGroup.attrRoutingEndpoint,
+    });
+    new cdk.CfnOutput(this, "CustomDomainsTargetHost", {
+      value: customDomainsTarget,
+    });
   }
 }
 
@@ -457,4 +565,30 @@ function writeInjectedSecret(secret: string): string {
     { mode: 0o600 },
   );
   return file;
+}
+
+/**
+ * The ACM actions are not optional, despite the docs saying you never call ACM
+ * yourself: CloudFront calls it *as you*, so a managed certificate request fails
+ * with "CloudFront cannot access the specified Amazon ACM certificate" unless
+ * the calling identity holds them.
+ *
+ * Scoped to `*` because the certificates do not exist until CloudFront creates
+ * them.
+ */
+function customDomainsPolicyStatement(): iam.PolicyStatement {
+  return new iam.PolicyStatement({
+    actions: [
+      "cloudfront:CreateDistributionTenant",
+      "cloudfront:GetDistributionTenant",
+      "cloudfront:UpdateDistributionTenant",
+      "cloudfront:DeleteDistributionTenant",
+      "cloudfront:GetManagedCertificateDetails",
+      "acm:RequestCertificate",
+      "acm:DescribeCertificate",
+      "acm:ListCertificates",
+      "acm:AddTagsToCertificate",
+    ],
+    resources: ["*"],
+  });
 }

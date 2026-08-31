@@ -92,6 +92,7 @@ export class Deployment extends Model {
   githubPullRequestId!: string | null;
 
   project?: Project;
+  aliases?: DeploymentAlias[];
   notifications?: DeploymentNotification[];
   pullRequest?: GithubPullRequest | null;
 
