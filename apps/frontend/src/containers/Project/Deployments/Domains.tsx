@@ -167,7 +167,7 @@ function DomainsCardFooter(props: { project: Project }) {
     switch (project.customDomainsAvailability) {
       case CustomDomainsAvailability.Available:
         return {
-          text: <LearnMore />,
+          reason: null,
           action: (
             <DialogTrigger>
               <Button variant="secondary">
@@ -184,7 +184,8 @@ function DomainsCardFooter(props: { project: Project }) {
         };
       case CustomDomainsAvailability.RequiresTeam:
         return {
-          text: "Custom domains are a team feature. Create a team and transfer this project to it to use your own domain.",
+          reason:
+            "Custom domains are a team feature. Create a team and transfer this project to it to use your own domain.",
           action: (
             <LinkButton variant="secondary" href="/teams/new">
               <ButtonIcon>
@@ -196,7 +197,8 @@ function DomainsCardFooter(props: { project: Project }) {
         };
       case CustomDomainsAvailability.RequiresSubscription:
         return {
-          text: "Custom domains are included in paid plans. Subscribe to serve production deployments from your own domain.",
+          reason:
+            "Custom domains are included in paid plans. Subscribe to serve production deployments from your own domain.",
           action: (
             <TeamSubscribeDialog initialAccountId={project.account.id}>
               Subscribe
@@ -205,7 +207,8 @@ function DomainsCardFooter(props: { project: Project }) {
         };
       case CustomDomainsAvailability.RequiresContact:
         return {
-          text: "Your plan does not include custom domains. Get in touch and we will sort it out with you.",
+          reason:
+            "Your plan does not include custom domains. Get in touch and we will sort it out with you.",
           action: (
             <LinkButton
               variant="secondary"
@@ -222,7 +225,13 @@ function DomainsCardFooter(props: { project: Project }) {
 
   return (
     <CardFooter className="flex items-center justify-between gap-4">
-      <div>{content.text}</div>
+      {/* The docs link trails whatever the state has to say, rather than being
+          swapped out for it — every sibling card puts it in the footer, and it is
+          most useful to someone who cannot use the feature yet. */}
+      <div>
+        {content.reason ? `${content.reason} ` : null}
+        <LearnMore />
+      </div>
       {content.action}
     </CardFooter>
   );
