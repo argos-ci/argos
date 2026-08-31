@@ -294,3 +294,45 @@ describe("ChangeOccurrencesSince loader", () => {
     expect(allTime).toBe(9);
   });
 });
+
+describe("DeploymentAliasesByDeploymentId loader", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  // The order the deployments list renders in: a customer's own hostname is what
+  // they came to check, so it comes before ours.
+  it("orders custom domains, then internal domains, then branch aliases", async () => {
+    const deployment = await factory.Deployment.create();
+    await factory.DeploymentAlias.createMany(4, [
+      { deploymentId: deployment.id, alias: "main", type: "branch" },
+      {
+        deploymentId: deployment.id,
+        alias: "zzz.example.com",
+        type: "domain",
+      },
+      {
+        deploymentId: deployment.id,
+        alias: "aaa-project.dev.argos-ci.live",
+        type: "domain",
+      },
+      {
+        deploymentId: deployment.id,
+        alias: "bbb.example.org",
+        type: "domain",
+      },
+    ]);
+
+    const loaders = createLoaders();
+    const aliases = await loaders.DeploymentAliasesByDeploymentId.load(
+      deployment.id,
+    );
+
+    expect(aliases.map((alias) => alias.alias)).toEqual([
+      "bbb.example.org",
+      "zzz.example.com",
+      "aaa-project.dev.argos-ci.live",
+      "main",
+    ]);
+  });
+});
