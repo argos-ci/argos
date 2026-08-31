@@ -334,9 +334,11 @@ aws cloudformation describe-stacks --stack-name argos-deployment-production --re
 ```
 
 You need `CustomDomainsDistributionId` and `CustomDomainsConnectionGroupId`.
-`CustomDomainsRoutingEndpoint` is informational — the app reads it back from
-`GetConnectionGroup` at runtime rather than from configuration, so it cannot
-drift from the distribution.
+`CustomDomainsRoutingEndpoint` is the connection group's own hostname and is
+informational: customers are pointed at `CustomDomainsTargetHost`
+(`cname.<base domain>`) instead, a record this stack creates in front of it. The
+app builds that same name from the same base domain in `getCustomDomainsTarget()`,
+so the prefix cannot move on one side alone.
 
 #### 3. Grant the task role the tenant permissions
 
@@ -383,9 +385,16 @@ The app polls this every five minutes (`custom-domain-reconcile`), and the
 
 ### Costs
 
-Tenants are billed per month, so every path that stops serving a domain must
-delete its tenant — removal, project deletion, and losing the paid entitlement.
-`deleteDomainTenant` is idempotent for that reason.
+Tenants are billed per month. One is deleted where its `project_domains` row
+goes away — removing a domain, and deleting a project — and `deleteDomainTenant`
+is idempotent so neither path wedges on a failed earlier attempt.
+
+Losing the paid entitlement deliberately deletes nothing. An idle tenant costs
+little, a team that resubscribes finds its domains where it left them, and
+wiring deletion into the billing path trades a refund measured in cents against
+the risk of destroying a customer's live domain on a webhook. If idle tenants
+ever add up, the cheap fix is a sweep reconciling CloudFront's tenant list
+against this table.
 
 ## Asset retention
 

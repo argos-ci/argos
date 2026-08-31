@@ -78,67 +78,39 @@ describe("deployment aliases", () => {
       status: "active",
     } as ProjectDomain;
 
-    function getAliases(input: {
-      projectDomains: ProjectDomain[];
-      customDomainsEnabled?: boolean;
-    }) {
+    function getAliases(projectDomains: ProjectDomain[]) {
       return getDeploymentAliases({
         accountSlug: "argos",
         projectName: "docs",
         deployment,
-        projectDomains: input.projectDomains,
-        ...(input.customDomainsEnabled === undefined
-          ? {}
-          : { customDomainsEnabled: input.customDomainsEnabled }),
+        projectDomains,
       }).map((alias) => alias.alias);
     }
 
-    it("serves an active custom domain when the plan includes it", () => {
-      expect(
-        getAliases({
-          projectDomains: [internalDomain, customDomain],
-          customDomainsEnabled: true,
-        }),
-      ).toEqual([
+    it("serves an active custom domain alongside the internal one", () => {
+      expect(getAliases([internalDomain, customDomain])).toEqual([
         "docs-main-argos",
         "docs.dev.argos-ci.live",
         "docs.example.com",
       ]);
     });
 
-    it("drops custom domains when the plan does not include them", () => {
-      expect(
-        getAliases({
-          projectDomains: [internalDomain, customDomain],
-          customDomainsEnabled: false,
-        }),
-      ).toEqual(["docs-main-argos", "docs.dev.argos-ci.live"]);
-    });
+    // Only `active` means CloudFront has verified the domain and is routing it;
+    // aliasing a pending one would resolve to a deployment nothing serves.
+    it.each(["pending", "failed"] as const)(
+      "drops a custom domain that is %s",
+      (status) => {
+        expect(
+          getAliases([{ ...customDomain, status } as ProjectDomain]),
+        ).toEqual(["docs-main-argos"]);
+      },
+    );
 
-    it("drops custom domains by default", () => {
-      expect(getAliases({ projectDomains: [customDomain] })).toEqual([
+    it("serves internal domains whatever their plan", () => {
+      expect(getAliases([internalDomain])).toEqual([
         "docs-main-argos",
+        "docs.dev.argos-ci.live",
       ]);
-    });
-
-    it("drops a custom domain that is not active yet", () => {
-      expect(
-        getAliases({
-          projectDomains: [
-            { ...customDomain, status: "pending" } as ProjectDomain,
-          ],
-          customDomainsEnabled: true,
-        }),
-      ).toEqual(["docs-main-argos"]);
-    });
-
-    it("keeps serving internal domains regardless of the plan", () => {
-      expect(
-        getAliases({
-          projectDomains: [internalDomain],
-          customDomainsEnabled: false,
-        }),
-      ).toEqual(["docs-main-argos", "docs.dev.argos-ci.live"]);
     });
   });
 });
