@@ -36,18 +36,9 @@ export type CustomDomainsAvailability =
   | "requires_team";
 
 /**
- * Whether an account may use custom domains, and when it may not, what would
- * change that.
- *
- * One function rather than a boolean plus a second guess in the UI: the answer
- * decides both whether the mutation is honoured and which call to action the
- * settings card offers, and those two must never disagree about why the feature
- * is closed.
- *
- * `getPlan()` is not sufficient on its own. It resolves the plan of any
- * subscription that is merely `trialing` or `past_due`, so reading
- * `customDomainsIncluded` off it would hand the feature to a team that has
- * never paid.
+ * `planIncludesCustomDomains` alone is not enough: `getPlan()` resolves the plan
+ * of any subscription that is merely `trialing` or `past_due`, so the status has
+ * to be checked too or a team that never paid gets the feature.
  */
 export function getCustomDomainsAvailability(input: {
   accountType: "user" | "team";
@@ -59,8 +50,7 @@ export function getCustomDomainsAvailability(input: {
     return "requires_team";
   }
 
-  // A forced plan is one we set by hand, so there is no self-service path off
-  // it — subscribing is not the answer, talking to us is.
+  // A forced plan is set by hand, so there is no checkout that would change it.
   if (input.hasForcedPlan) {
     return input.planIncludesCustomDomains ? "available" : "requires_contact";
   }
@@ -69,14 +59,9 @@ export function getCustomDomainsAvailability(input: {
     return "requires_subscription";
   }
 
-  // Paying, but on a plan without the feature. A plan change is not something
-  // the team can do to itself either.
   return input.planIncludesCustomDomains ? "available" : "requires_contact";
 }
 
-/**
- * Resolve `getCustomDomainsAvailability` for an account.
- */
 export async function getAccountCustomDomainsAvailability(
   account: Account,
 ): Promise<CustomDomainsAvailability> {
@@ -94,9 +79,6 @@ export async function getAccountCustomDomainsAvailability(
   });
 }
 
-/**
- * The guard behind every custom-domain mutation.
- */
 export async function checkHasAccessToCustomDomains(
   account: Account,
 ): Promise<boolean> {
@@ -109,18 +91,16 @@ function getReservedSuffixes(): string[] {
     try {
       suffixes.push(new URL(url).hostname.toLowerCase());
     } catch {
-      // A malformed configured URL reserves nothing; the regex below still runs.
+      // A malformed configured URL simply reserves nothing.
     }
   }
   return suffixes;
 }
 
 /**
- * Validate a customer-supplied domain.
- *
- * Argos-owned names are rejected outright: `deployment_aliases.alias` is a flat
- * namespace shared with internal domains and branch aliases, so a customer who
- * claimed one would take over routing that does not belong to them.
+ * `deployment_aliases.alias` is a flat namespace shared with internal domains and
+ * branch aliases, so a customer allowed to claim an Argos-owned name would take
+ * over routing that is not theirs.
  */
 export function validateCustomDomain(domain: string): string {
   const normalizedDomain = domain.trim().toLowerCase();
@@ -144,25 +124,16 @@ export function validateCustomDomain(domain: string): string {
 }
 
 /**
- * Claim a hostname for a project, taking it from a project that never proved it
- * owned it.
+ * Claim a hostname, taking it from a holder that never proved it owned it.
  *
- * `project_domains.domain` is unique across every project, so the first team to
- * type a hostname used to hold it forever — including one they had no claim to,
- * which left the real owner with no path at all. But a row with no
- * `cloudfrontTenantId` is exactly a hostname nobody has proven anything about:
- * a tenant is only created once CloudFront has verified the domain resolves to
- * us, so until then the claim is a string someone typed into a form. Those are
- * takeable. A row that has a tenant is not, and neither is an internal domain.
+ * A row with no `cloudfrontTenantId` is a hostname nobody has proven anything
+ * about: the tenant is created only once CloudFront has verified the domain
+ * resolves to us. Until then the claim is a string someone typed into a form, so
+ * it moves to whoever asks next; a row with a tenant does not.
  *
- * Whoever holds the row when the DNS record goes live is the owner, which is
- * the same proof CloudFront itself requires.
- *
- * Expressed as one conditional upsert rather than a read followed by a write:
- * Postgres skips `DO UPDATE` when the `WHERE` does not hold and returns no row,
- * so two teams racing on the same hostname cannot both pass a check, and a
- * verified domain cannot be taken even under a race. Returns null when the
- * hostname is spoken for.
+ * One conditional upsert, because Postgres skips `DO UPDATE` when the `WHERE`
+ * does not hold — so two teams racing cannot both pass a check. Returns null
+ * when the hostname is spoken for.
  */
 export async function claimCustomDomain(input: {
   projectId: string;
@@ -186,8 +157,6 @@ export async function claimCustomDomain(input: {
       projectId,
       status: "pending",
       routingEndpoint,
-      // The previous holder's diagnostics describe a claim that no longer
-      // exists, so none of it carries over.
       statusReason: null,
       activatedAt: null,
       lastCheckedAt: null,
@@ -197,23 +166,15 @@ export async function claimCustomDomain(input: {
     .andWhere("project_domains.internal", false)
     .returning("*");
 
-  // A refused upsert still resolves to the model we asked Objection to insert —
-  // it just never reached the database, so it has no id. That is the signal, not
-  // a null return.
-  //
-  // No alias needs clearing on a takeover: one is written only when a domain
-  // goes active, which requires the tenant this row provably never had.
+  // A refused upsert still resolves to the model we asked Objection to insert;
+  // it just never reached the database, so the id is the signal, not a null.
   return claimed.id ? claimed : null;
 }
 
 /**
- * Attach a custom domain to a project's production deployments.
- *
- * The row is claimed before the tenant exists, so two requests racing on the
- * same hostname are settled in Postgres rather than by two CloudFront tenants
- * both claiming it. A row whose tenant creation then fails stays `pending` with
- * no tenant id, which `reconcileCustomDomain` retries — and which leaves the
- * hostname claimable by someone who can actually prove they own it.
+ * The row is claimed before the tenant exists, so a failed provision leaves a
+ * `pending` row with no tenant id — retried by the poll, and claimable by
+ * someone who can prove they own the hostname.
  */
 export async function addCustomDomain(input: {
   projectId: string;
@@ -227,10 +188,6 @@ export async function addCustomDomain(input: {
 
   const domain = validateCustomDomain(input.domain);
 
-  // Read before any tenant exists, and stored on the row whatever happens next.
-  // This is the DNS target the customer has to publish, and until they do,
-  // CloudFront refuses to create the tenant at all — so showing it is the
-  // entire content of the pending state.
   const routingEndpoint = getCustomDomainsTarget();
 
   const projectDomain = await claimCustomDomain({
@@ -249,13 +206,10 @@ export async function addCustomDomain(input: {
     return await reconcileCustomDomain(projectDomain);
   } catch (error) {
     if (checkIsTerminalTenantError(error)) {
-      // Nothing will ever make this hostname work — it is already associated
-      // with another CloudFront resource. Drop the row rather than leaving one
-      // that can only ever be polled and never serve.
-      //
-      // Re-read under the lock first: a concurrent reconcile may have created
-      // the tenant between our failure and this cleanup, and deleting the row
-      // then would strand a tenant nothing names.
+      // The hostname belongs to another CloudFront resource and never will
+      // work, so the row goes. Re-read under the lock: a concurrent reconcile
+      // may have created the tenant since, and deleting the row then would
+      // strand it.
       await withCustomDomainLock(projectDomain.id, async () => {
         const current = await ProjectDomain.query().findById(projectDomain.id);
         if (current && !current.cloudfrontTenantId) {
@@ -270,10 +224,9 @@ export async function addCustomDomain(input: {
 
     if (!checkIsDomainNotPointedError(error)) {
       // Not the ordinary "DNS is not published yet" wait, so it is ours to fix
-      // — a missing IAM permission being the likeliest. Record it on the row and
-      // log it, because otherwise the customer is shown a perfectly normal
-      // "add this record" card for a domain that can never provision, and
-      // nothing anywhere says why.
+      // — a missing IAM permission being the likeliest. Recorded on the row so
+      // the customer is not left with a normal-looking "add this record" card
+      // for a domain that can never provision.
       logger.error(
         { error, domain },
         "Failed to provision a custom domain on creation",
@@ -284,32 +237,24 @@ export async function addCustomDomain(input: {
       });
     }
 
-    // The expected first answer: the customer has not published the record yet.
-    // The row stays pending with its DNS instructions and the poll takes over.
+    // The expected first answer, not a failure: the record is not published yet.
     return projectDomain;
   }
 }
 
-/**
- * How long one domain's reconcile may hold its lock.
- *
- * Generous because the body can make four CloudFront calls, and a lock that
- * expires mid-run is worse than a slow one: the whole point is that two
- * reconciles of the same domain never overlap.
- */
+/** Generous: the body can make four CloudFront calls, and a lock that expires
+ * mid-run defeats the point of holding one. */
 const RECONCILE_LOCK_TIMEOUT = 60_000;
 
 /**
  * Serialize everything that writes one domain's row.
  *
- * Three callers reconcile the same domain — the add mutation, the "Check"
- * button, and the cron — and the cron schedules a just-added row first
- * (`lastCheckedAt` is null and it orders nulls first), so the collision window
- * is exactly the seconds after a domain is added. Two concurrent runs both read
- * `cloudfrontTenantId` as null and both call `CreateDistributionTenant` with the
- * same deterministic name; the loser gets `EntityAlreadyExists`, which is
- * terminal, and either deletes a row whose tenant now exists or marks a healthy
- * domain failed.
+ * The add mutation, the "Check" button and the cron all reconcile, and the cron
+ * schedules a just-added row first, so they collide most readily seconds after a
+ * domain is added. Unserialized, both read a null `cloudfrontTenantId` and both
+ * create a tenant under the same deterministic name; the loser's
+ * `EntityAlreadyExists` is terminal, which either deletes a row whose tenant now
+ * exists or marks a healthy domain failed.
  */
 function withCustomDomainLock<T>(
   projectDomainId: string,
@@ -321,12 +266,8 @@ function withCustomDomainLock<T>(
 }
 
 /**
- * Bring a custom domain's row in line with CloudFront: create the tenant once
- * the customer's DNS record makes that possible, then copy the tenant's state
- * onto the row.
- *
- * Safe to call repeatedly — it is the tail of `addCustomDomain`, the body of
- * the status poll, and what the "Check" button runs.
+ * Bring a domain's row in line with CloudFront. Idempotent, and called from all
+ * three paths above.
  */
 export async function reconcileCustomDomain(
   projectDomain: ProjectDomain,
@@ -336,24 +277,18 @@ export async function reconcileCustomDomain(
   }
 
   return withCustomDomainLock(projectDomain.id, async () => {
-    // Re-read inside the lock. The caller's copy was loaded before we queued
-    // for it, so anything the previous holder wrote — a tenant id, an active
-    // status — is invisible to it, and acting on it would redo work that has
-    // already happened.
+    // The caller's copy predates the queue wait, so whatever the previous
+    // holder wrote is invisible to it.
     const current = await ProjectDomain.query().findById(projectDomain.id);
     if (!current) {
-      // Removed while we waited. Nothing to reconcile, and recreating the
-      // tenant would strand it.
+      // Removed while we waited; recreating the tenant would strand it.
       return projectDomain;
     }
     return unsafe_reconcileCustomDomain(current);
   });
 }
 
-/**
- * The reconcile body. Assumes the caller holds the domain's lock and has read
- * the row inside it.
- */
+/** Assumes the caller holds the domain's lock and read the row inside it. */
 async function unsafe_reconcileCustomDomain(
   projectDomain: ProjectDomain,
 ): Promise<ProjectDomain> {
@@ -361,12 +296,9 @@ async function unsafe_reconcileCustomDomain(
     ? await getDomainTenant(projectDomain.cloudfrontTenantId)
     : null;
 
-  // A tenant with no certificate attached is not progressing on its own, and
-  // there are two different reasons for it — so ask CloudFront which.
-  //
-  // "Managed" covers issuing the certificate, not applying it. Once it reaches
-  // `issued` nothing further happens: the domain stays `inactive` until the
-  // certificate is explicitly attached. Polling alone would wait forever.
+  // "Managed" covers issuing the certificate, not applying it: once it reaches
+  // `issued` nothing further happens on CloudFront's side and the domain stays
+  // `inactive` until it is attached here. Polling alone would wait forever.
   if (resolvedTenant && !resolvedTenant.hasCertificate) {
     const certificate = await getDomainTenantCertificate(
       resolvedTenant.tenantId,
@@ -379,8 +311,8 @@ async function unsafe_reconcileCustomDomain(
           certificateArn: certificate.arn,
         })) ?? resolvedTenant;
     } else if (certificate?.status !== "pending-validation") {
-      // No request in flight, or one that failed or timed out. Ask again —
-      // usually the DNS record has since appeared.
+      // No request in flight, or one that failed. Ask again — usually the DNS
+      // record has since appeared.
       try {
         resolvedTenant =
           (await requestDomainTenantCertificate({
@@ -405,19 +337,12 @@ async function unsafe_reconcileCustomDomain(
       if (!checkIsDomainNotPointedError(error)) {
         throw error;
       }
-      // The expected state until the customer publishes the record. Recorded as
-      // a wait rather than an error, so the card keeps showing the DNS
-      // instructions instead of a failure the customer cannot act on.
+      // A wait, not an error, so the card keeps showing the DNS instructions.
       //
-      // The endpoint is written here too, not only on insert: rows added before
-      // the tenant creation moved behind DNS have none, and without it the card
-      // has no record to tell the customer to create.
-      //
-      // The tenant id is cleared for the same reason. This branch is also
-      // reached when the tenant vanished out of band, and a row left pointing at
-      // a tenant that no longer exists reports `certificate` as its pending
-      // reason — which hides the very DNS record the customer has to publish to
-      // get out of this state.
+      // The tenant id is cleared because this branch is also reached when the
+      // tenant vanished out of band, and a row still pointing at a dead tenant
+      // reports `certificate` as its pending reason — hiding the very record the
+      // customer has to publish.
       return projectDomain.$query().patchAndFetch({
         status: "pending",
         cloudfrontTenantId: null,
@@ -431,11 +356,10 @@ async function unsafe_reconcileCustomDomain(
   const wasActive = projectDomain.status === "active";
   const isActive = resolvedTenant.active;
 
-  // The alias is written *before* the row says active, because the alias is what
-  // actually serves the domain: `resolveDeploymentByDomain` reads
-  // `deployment_aliases`, not this table. Patching first would leave a row
-  // reading "Active" whose hostname 404s, and the poll only selects `pending`,
-  // so nothing would ever come back to finish the job.
+  // Before the row says active, because the alias is what actually serves the
+  // domain — `resolveDeploymentByDomain` reads `deployment_aliases`, not this
+  // table. Patching first would leave an "Active" row whose hostname 404s, in a
+  // state the poll never revisits.
   if (isActive && !wasActive) {
     await attachProductionDomainAlias({
       projectId: projectDomain.projectId,
@@ -447,9 +371,7 @@ async function unsafe_reconcileCustomDomain(
     cloudfrontTenantId: resolvedTenant.tenantId,
     routingEndpoint: resolvedTenant.routingEndpoint,
     status: isActive ? "active" : "pending",
-    // Cleared on every reconcile that gets this far, not only on activation: a
-    // reason left over from an earlier failure otherwise outlives the thing it
-    // described and is read as the current state.
+    // Cleared on every success, or a stale reason outlives what it described.
     statusReason: null,
     lastCheckedAt: new Date().toISOString(),
     ...(isActive && !wasActive
@@ -458,11 +380,8 @@ async function unsafe_reconcileCustomDomain(
   });
 
   if (isActive && !wasActive) {
-    // Best effort, and deliberately after the patch: the resolve endpoint
-    // answered 404 while the domain was not yet serving and caches that for five
-    // minutes, but a purge that fails is a domain that goes live a few minutes
-    // late — not a reason to roll back an activation that has otherwise
-    // completed, or to re-run the whole reconcile.
+    // The 404 from before the domain was serving is cached for five minutes.
+    // Best effort: a failed purge only delays going live.
     await invalidateDeploymentCache(updated.domain).catch((error: unknown) => {
       logger.error(
         { error, domain: updated.domain },
@@ -475,9 +394,8 @@ async function unsafe_reconcileCustomDomain(
 }
 
 /**
- * Detach a custom domain. Deletes the CloudFront tenant first: a row removed
- * while its tenant survives is an invisible recurring charge, whereas a tenant
- * left without a row is caught by the next reconcile.
+ * Deletes the tenant first: a row removed while its tenant survives is an
+ * invisible recurring charge that nothing sweeps up.
  */
 export async function removeCustomDomain(
   projectDomain: ProjectDomain,
@@ -497,20 +415,13 @@ export async function removeCustomDomain(
   await invalidateDeploymentCache(projectDomain.domain);
 }
 
-/**
- * Number of pending domains reconciled per run. CloudFront's control plane is
- * rate-limited and each domain costs two API calls, so the batch is capped and
- * the oldest-checked ones go first.
- */
+/** CloudFront's control plane is rate-limited and each domain costs two calls. */
 const RECONCILE_BATCH_SIZE = 50;
 
 /**
- * Advance every custom domain still waiting on CloudFront.
- *
  * Certificate issuance completes minutes to hours after the customer points
- * their DNS, and nothing tells us when. Polling is what moves a domain to
- * `active` and gets its alias attached — without it a domain would only ever
- * start serving on the project's next deployment.
+ * their DNS and nothing announces it, so polling is the only thing that moves a
+ * domain to `active` before the project's next deployment.
  */
 export async function reconcilePendingCustomDomains(): Promise<void> {
   if (!checkIsCustomDomainsConfigured()) {
@@ -526,21 +437,15 @@ export async function reconcilePendingCustomDomains(): Promise<void> {
     try {
       await reconcileCustomDomain(projectDomain);
     } catch (error) {
-      // One domain's failure must not stall the rest of the batch.
       await recordReconcileFailure(projectDomain.id, error);
     }
   }
 }
 
 /**
- * Record why a reconcile failed, without overwriting a result that landed while
- * it was failing.
- *
- * Under the same lock and re-reading the row, because the failure is only the
- * truth about the domain if nothing has succeeded since: a reconcile from
- * another caller can complete between this one throwing and this one writing,
- * and a blind patch from the stale in-memory row would mark a domain that is
- * now serving as `failed` — a state the poll never revisits.
+ * A failure is only the truth about a domain if nothing has succeeded since —
+ * another caller's reconcile can land between this one throwing and writing — so
+ * this takes the lock, re-reads, and leaves anything no longer `pending` alone.
  */
 export async function recordReconcileFailure(
   projectDomainId: string,
@@ -562,9 +467,6 @@ export async function recordReconcileFailure(
     }
 
     await current.$query().patch({
-      // A terminal error is about the hostname itself and will not resolve on
-      // its own, so it stops being polled. Everything else stays `pending` and
-      // is retried next run.
       ...(isTerminal ? { status: "failed" } : {}),
       statusReason: getReconcileErrorMessage(error),
       lastCheckedAt: new Date().toISOString(),
@@ -573,13 +475,9 @@ export async function recordReconcileFailure(
 }
 
 /**
- * The reason shown on the domain's card.
- *
- * Raw CloudFront messages are written through for the cases a customer can act
- * on — a hostname already in use elsewhere is the whole story in one sentence.
- * Anything else is ours to fix, not theirs, so it is logged in full and reported
- * as such rather than surfacing an AWS exception string to someone who has done
- * nothing wrong.
+ * Split by who can act on it: a terminal error is about the customer's hostname
+ * and its message is the whole story, while anything else is ours and would
+ * otherwise show an AWS exception string to someone who did nothing wrong.
  */
 export function getReconcileErrorMessage(error: unknown): string {
   if (checkIsTerminalTenantError(error)) {

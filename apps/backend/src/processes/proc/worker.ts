@@ -32,9 +32,9 @@ if (config.get("target") === "prod-ro") {
   process.exit(0);
 }
 
-// Custom domains wait on CloudFront to issue their certificate, which happens
-// minutes to hours after the customer points their DNS and is not announced.
-// Five minutes keeps "add a domain, see it go live" a session-length wait.
+// Certificate issuance is not announced, so this is the only thing that moves a
+// domain to active. Five minutes keeps "add a domain, see it go live" a
+// session-length wait.
 scheduleCron("custom-domain-reconcile", "*/5 * * * *", () =>
   reconcilePendingCustomDomains(),
 );

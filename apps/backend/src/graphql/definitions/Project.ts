@@ -711,9 +711,8 @@ export const resolvers: IResolvers = {
       if (projectDomain.status !== "pending") {
         return null;
       }
-      // CloudFront refuses to create the tenant until the domain resolves to
-      // it, so the tenant existing is itself the proof that DNS is done — and
-      // the only thing left to wait for is the certificate.
+      // CloudFront will not create the tenant until the domain resolves to it,
+      // so a tenant is itself the proof that DNS is done.
       return projectDomain.cloudfrontTenantId
         ? IProjectCustomDomainPendingReason.Certificate
         : IProjectCustomDomainPendingReason.Dns;
@@ -1435,8 +1434,7 @@ export const resolvers: IResolvers = {
         ctx,
       );
 
-      // Deliberately not gated on the plan: an account that has lost the
-      // entitlement must still be able to clean up the domains it added.
+      // Not gated on the plan: a lapsed account must still be able to clean up.
       await removeCustomDomain(projectDomain);
       ctx.loaders.CustomProjectDomainsByProject.clear(project.id);
       return project;
@@ -1473,10 +1471,6 @@ export const resolvers: IResolvers = {
   },
 };
 
-/**
- * Load a custom domain the authenticated user administrates, along with its
- * project.
- */
 async function getAdminCustomDomain(
   projectCustomDomainId: string,
   ctx: Context,
@@ -1494,10 +1488,6 @@ async function getAdminCustomDomain(
   return { project, projectDomain };
 }
 
-/**
- * The paid-plan gate. Enforced here as well as in the UI because the UI is only
- * a suggestion — this is the check that actually holds.
- */
 async function assertCustomDomainsAccess(
   project: Project,
   ctx: Context,
@@ -1510,10 +1500,6 @@ async function assertCustomDomainsAccess(
   }
 }
 
-/**
- * Turn the service's domain errors into field errors the form can display,
- * leaving anything unexpected to surface as a server error.
- */
 function toCustomDomainUserInputError(error: unknown): unknown {
   if (error instanceof HTTPError && error.code) {
     switch (error.code) {

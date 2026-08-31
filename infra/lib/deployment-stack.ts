@@ -374,15 +374,12 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // CloudFront SaaS Manager — customer custom domains
     //
-    // A second distribution rather than a migration of the one above: a
-    // multi-tenant distribution runs in `tenant-only` mode and cannot serve
-    // traffic by itself, so folding `*.{baseDomain}` into it would mean turning
-    // every internal domain into a tenant. This one shares the same origin and
-    // the same edge functions, and the wildcard keeps working untouched.
+    // A second distribution rather than a migration: `tenant-only` cannot serve
+    // traffic by itself, so folding `*.{baseDomain}` in would mean turning every
+    // internal domain into a tenant. This shares the origin and edge functions.
     //
-    // Tenants are not declared here. One exists per customer domain, created
-    // and deleted by the app through `CreateDistributionTenant` — runtime state
-    // that would go stale in a template.
+    // Tenants are not declared here — one per customer domain, created by the
+    // app through `CreateDistributionTenant`.
     // ----------------------------------------------------------------
     const connectionGroup = new cloudfront.CfnConnectionGroup(
       this,
@@ -403,26 +400,15 @@ export class ArgosDeploymentStack extends cdk.Stack {
         distributionConfig: {
           enabled: true,
           connectionMode: "tenant-only",
-          // No `ipv6Enabled`: the connection group is the network endpoint for
-          // every tenant, so it owns viewer-side addressing, and CloudFront
-          // rejects the field here outright.
+          // No `ipv6Enabled` — the connection group owns viewer-side
+          // addressing and CloudFront rejects the field here.
           //
-          // A certificate is required even though no tenant will use this one.
-          // CloudFront demands one of ACMCertificateArn, IAMCertificateId or
-          // CloudFrontDefaultCertificate, and for a multi-tenant distribution
-          // the first is the only one left: IAM certificates are unsupported,
-          // and the CloudFront default certificate serves `*.cloudfront.net`,
-          // which a distribution with no routing endpoint of its own can never
-          // answer on.
-          //
-          // A tenant inherits this certificate only where it covers that
-          // tenant's domain, which the wildcard never does for a customer
-          // domain — every tenant requests its own instead. So this is the
-          // wildcard we already own and already renew, rather than a second
-          // certificate minted to satisfy a validation rule.
-          //
-          // The protocol version is not optional either: unset it defaults to
-          // SSLv3, which multi-tenant distributions reject.
+          // The certificate is required but unused: CloudFront demands one of
+          // three and only an ACM ARN is valid for a multi-tenant distribution,
+          // while tenants request their own. Pointing it at the wildcard we
+          // already renew avoids minting one to satisfy a validation rule.
+          // Unset, the protocol version would default to the SSLv3 that
+          // multi-tenant distributions reject.
           viewerCertificate: {
             acmCertificateArn: certificate.certificateArn,
             sslSupportMethod: "sni-only",
@@ -470,13 +456,10 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
 
     // ----------------------------------------------------------------
-    // The hostname customers point their own DNS at.
-    //
-    // A layer of indirection over the connection group's routing endpoint,
-    // which is otherwise copied into every customer's zone and can then never
-    // be changed: recreating the connection group would break every custom
-    // domain at once, with no way to reach the people who have to fix it. One
-    // record here moves them all.
+    // The hostname customers point their own DNS at, kept as indirection over
+    // the connection group's routing endpoint — which would otherwise be copied
+    // into every customer's zone and could then never be changed. Must stay in
+    // step with `getCustomDomainsTarget()` in the app.
     //
     // More specific than the wildcard above, so it wins for this name.
     // ----------------------------------------------------------------
@@ -585,22 +568,13 @@ function writeInjectedSecret(secret: string): string {
 }
 
 /**
- * The permissions the app needs to manage a custom domain's distribution
- * tenant.
- *
- * The ACM actions are not optional, despite the documentation saying you never
- * call ACM yourself. You don't — CloudFront does, but it does so *as you*, so
- * a managed certificate request fails with "CloudFront cannot access the
- * specified Amazon ACM certificate for the operation: RequestCertificate"
- * unless the calling identity holds them.
- *
- * `acm:DeleteCertificate` is deliberately absent. Deleting a tenant does not
- * delete its certificate, and nothing here asks ACM to; granting a destructive
- * action for a call we never make would be worse than the certificates piling
- * up, which is a quota to watch rather than a bug.
+ * The ACM actions are not optional, despite the docs saying you never call ACM
+ * yourself: CloudFront calls it *as you*, so a managed certificate request fails
+ * with "CloudFront cannot access the specified Amazon ACM certificate" unless
+ * the calling identity holds them.
  *
  * Scoped to `*` because the certificates do not exist until CloudFront creates
- * them, so there is no ARN to name in advance.
+ * them.
  */
 function customDomainsPolicyStatement(): iam.PolicyStatement {
   return new iam.PolicyStatement({

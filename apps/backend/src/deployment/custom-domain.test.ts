@@ -76,8 +76,7 @@ describe("getCustomDomainsAvailability", () => {
     });
   }
 
-  // A personal account has no plan to upgrade, so no amount of paying changes
-  // the answer — the project has to move to a team.
+  // No plan to upgrade, so no amount of paying changes the answer.
   it.each([
     { hasForcedPlan: false, subscriptionStatus: null },
     { hasForcedPlan: true, subscriptionStatus: "active" as const },
@@ -119,7 +118,6 @@ describe("getCustomDomainsAvailability", () => {
     ).toBe("requires_subscription");
   });
 
-  // A forced plan is set by hand, so there is no checkout that would change it.
   it("unlocks a forced plan that includes it, without any subscription", () => {
     expect(
       availability({ hasForcedPlan: true, subscriptionStatus: null }),
@@ -136,8 +134,6 @@ describe("getCustomDomainsAvailability", () => {
     ).toBe("requires_contact");
   });
 
-  // Paying, but on a plan that does not carry the feature: subscribing again is
-  // not the fix either.
   it("sends a paying team on a plan without it to contact us", () => {
     expect(
       availability({

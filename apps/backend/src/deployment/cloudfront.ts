@@ -26,8 +26,7 @@ const getCloudFrontClient: typeof getCloudFrontClientBase = memoize(
 );
 
 /**
- * Whether custom domains can be provisioned in this environment. Development
- * and self-hosted installs have no multi-tenant distribution, and the whole
+ * Development and self-hosted installs have no multi-tenant distribution, so the
  * feature degrades to "not offered" rather than failing at request time.
  */
 export function checkIsCustomDomainsConfigured(): boolean {
@@ -52,25 +51,18 @@ function getCustomDomainsConfig() {
 /**
  * The hostname customers point their DNS record at.
  *
- * A name of ours, not the connection group's own `dxxxx.cloudfront.net`, which
- * would otherwise be copied into every customer's zone and could then never be
- * changed — recreating the connection group would break every custom domain at
- * once, with no way to reach the people who would have to fix it.
- *
- * The record itself is created by `ArgosDeploymentStack`, which builds the same
- * name from the same base domain. The two have to agree, so neither prefix
- * moves without the other.
+ * Ours rather than the connection group's own `dxxxx.cloudfront.net`, which
+ * would be copied into every customer's zone and could then never be changed.
+ * `ArgosDeploymentStack` builds the same name from the same base domain, so the
+ * prefix cannot move on one side alone.
  */
 export function getCustomDomainsTarget(): string {
   return `cname.${config.get("deployments.baseDomain").toLowerCase()}`;
 }
 
 /**
- * The tenant name CloudFront knows a domain by.
- *
- * Derived from the `project_domains` row rather than from the domain itself:
- * tenant names accept a narrower character set than hostnames do, and a
- * customer renaming a domain would otherwise strand the tenant under its old
+ * From the row id, not the domain: tenant names accept a narrower character set
+ * than hostnames, and renaming a domain would strand the tenant under its old
  * name.
  */
 function getTenantName(projectDomainId: string): string {
@@ -79,31 +71,24 @@ function getTenantName(projectDomainId: string): string {
 
 export type DomainTenant = {
   tenantId: string;
-  /** The hostname the customer points their DNS record at. */
   routingEndpoint: string;
-  /** True once CloudFront has issued the certificate and serves the domain. */
   active: boolean;
   /**
-   * Whether the tenant has a certificate at all.
-   *
-   * A tenant can exist without one: CloudFront creates it and then requests the
-   * certificate, and if that second step fails the tenant survives with no
-   * certificate and no pending request. Nothing retries it on CloudFront's
-   * side, so the domain sits inactive forever unless we ask again.
+   * A tenant can exist without a certificate: CloudFront creates it and then
+   * requests one, and if that second step fails nothing on its side retries, so
+   * the domain sits inactive until we ask again.
    */
   hasCertificate: boolean;
 };
 
 /**
- * Create the CloudFront distribution tenant that serves a custom domain.
- *
  * One tenant per domain, never per project: CloudFront allows a single pending
- * certificate request per tenant, so a second domain added while the first is
- * still validating would be rejected.
+ * certificate request per tenant, so a second domain added while the first was
+ * validating would be rejected.
  *
- * `ValidationTokenHost: "cloudfront"` is what makes the customer's side a single
- * DNS record — CloudFront answers the HTTP validation challenge itself as soon
- * as the domain resolves to it, instead of asking them for a TXT record.
+ * `ValidationTokenHost: "cloudfront"` is what keeps the customer's side to one
+ * DNS record — CloudFront answers the HTTP challenge itself once the domain
+ * resolves to it, instead of asking for a TXT record.
  */
 export async function createDomainTenant(input: {
   projectDomainId: string;
@@ -137,10 +122,7 @@ export async function createDomainTenant(input: {
   };
 }
 
-/**
- * Read a tenant's current state. Returns null when the tenant is gone, which
- * the caller treats as "reprovision" rather than as an error.
- */
+/** Null when the tenant is gone, which the caller treats as "reprovision". */
 export async function getDomainTenant(
   tenantId: string,
 ): Promise<DomainTenant | null> {
@@ -182,16 +164,11 @@ function checkIsTenantActive(
 }
 
 /**
- * Delete the tenant backing a custom domain. Idempotent — a tenant that is
- * already gone is a success, so removing a domain never wedges on a failed
- * earlier attempt.
+ * Idempotent, so removing a domain never wedges on a failed earlier attempt.
  *
- * Called only where the `project_domains` row itself goes away — removing a
- * domain, and deleting a project. Losing the paid entitlement deliberately does
- * not delete anything: an idle tenant costs little, and a team that resubscribes
- * finds its domains where it left them. If that ever adds up, the cheap fix is a
- * sweep that reconciles CloudFront's tenant list against this table, not a
- * deletion wired into the billing path.
+ * Called only where the `project_domains` row goes away. Losing the paid
+ * entitlement deliberately deletes nothing — see the Costs note in
+ * infra/README.md.
  */
 export async function deleteDomainTenant(tenantId: string): Promise<void> {
   const result = await getTenantWithETag(tenantId);
@@ -214,20 +191,13 @@ export async function deleteDomainTenant(tenantId: string): Promise<void> {
 }
 
 /**
- * Whether an error from CloudFront is about *this domain* and will still be
- * there on the next attempt.
+ * Whether the error is about *this hostname* and so will still be there next
+ * time. Domain association is unique across all of CloudFront, so a name another
+ * distribution serves can never be provisioned by retrying.
  *
- * Both entries are properties of the hostname, not of our account or the
- * moment: domain association is unique across all of CloudFront, so a name
- * another distribution already serves can never be provisioned by retrying.
- * Polling such a domain forever costs API calls and tells the customer nothing,
- * so it is marked failed and the reason is surfaced instead.
- *
- * `EntityLimitExceeded` is deliberately absent. It means *we* have run out of
- * tenants, which says nothing about the customer's hostname and clears the
- * moment the quota is raised — treating it as terminal would delete the row of
- * every customer adding a domain during the outage and permanently fail every
- * one already waiting.
+ * `EntityLimitExceeded` looks like it belongs here and must not: it is our own
+ * quota, so treating it as terminal fails every customer's domain during an
+ * outage of ours.
  */
 export function checkIsTerminalTenantError(error: unknown): boolean {
   return (
@@ -236,17 +206,13 @@ export function checkIsTerminalTenantError(error: unknown): boolean {
 }
 
 /**
- * Whether CloudFront refused because the domain does not resolve to it yet.
+ * The normal state of a just-added domain, not a fault: CloudFront answers the
+ * HTTP challenge at the domain itself, so the tenant cannot exist until the
+ * customer has pointed the record — the opposite order to the one the flow
+ * reads in.
  *
- * This is the normal state of a domain a customer has just added, not a fault:
- * `ValidationTokenHost: "cloudfront"` has CloudFront answer the HTTP challenge
- * at the domain itself, which it can only do once the DNS record exists. So the
- * tenant cannot be created until the customer has pointed the record — the
- * opposite order to the one the flow reads in.
- *
- * Matched on the message as well as the class because `InvalidArgument` also
- * covers genuine misconfiguration, such as a wrong distribution id, which
- * should not be reported to a customer as "waiting for DNS".
+ * Matched on the message too, because `InvalidArgument` also covers our own
+ * misconfiguration, which must not be reported as "waiting for DNS".
  */
 export function checkIsDomainNotPointedError(error: unknown): boolean {
   return (
@@ -256,12 +222,9 @@ export function checkIsDomainNotPointedError(error: unknown): boolean {
 }
 
 /**
- * Ask CloudFront to issue the certificate for a tenant that has none.
- *
- * The repair for a tenant created before its certificate could be requested —
- * the shape a failed `RequestCertificate` leaves behind. CloudFront never
- * retries that on its own, so without this the domain stays inactive however
- * long it is polled.
+ * The repair for a tenant whose certificate request failed — CloudFront never
+ * retries that itself, so the domain would stay inactive however long it is
+ * polled.
  */
 export async function requestDomainTenantCertificate(input: {
   tenantId: string;
@@ -299,11 +262,9 @@ export type DomainCertificate = {
 };
 
 /**
- * The state of the certificate CloudFront is managing for a tenant.
- *
- * Keyed by tenant rather than looked up in ACM by domain name: several
- * certificates can cover the same name once a request has been retried, and
- * only CloudFront knows which one belongs to this tenant.
+ * Keyed by tenant, not looked up in ACM by domain: several certificates can
+ * cover one name once a request has been retried, and only CloudFront knows
+ * which belongs to this tenant.
  */
 export async function getDomainTenantCertificate(
   tenantId: string,
@@ -329,12 +290,9 @@ export async function getDomainTenantCertificate(
 }
 
 /**
- * Apply an issued certificate to its tenant, which is what actually puts the
- * domain into service.
- *
- * Issuing and applying are two steps, and only the first is managed: the
- * certificate reaches `issued` on its own, and then nothing happens. The domain
- * stays `inactive` — for hours, indefinitely — until it is attached here.
+ * Issuing and applying are two steps and only the first is managed: a
+ * certificate reaches `issued` on its own and then nothing happens, leaving the
+ * domain `inactive` indefinitely until it is attached here.
  */
 export async function attachDomainTenantCertificate(input: {
   tenantId: string;

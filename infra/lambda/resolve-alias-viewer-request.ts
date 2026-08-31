@@ -179,10 +179,10 @@ function cookieName(projectId: string): string {
 }
 
 /**
- * `Domain` is set only under our own base domain, where it lets one token cover
- * every alias of a project. A custom domain gets a host-only cookie: naming a
- * customer's registrable domain there would leak the token to every other host
- * they run, and naming ours would not be sent back at all.
+ * `Domain` only under our own base domain, where it lets one token cover every
+ * alias of a project. A custom domain gets a host-only cookie: naming the
+ * customer's registrable domain would leak the token to every other host they
+ * run, and naming ours would never be sent back.
  */
 function buildSetCookie(
   projectId: string,

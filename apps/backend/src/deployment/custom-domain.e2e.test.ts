@@ -58,10 +58,9 @@ describe("recordReconcileFailure", () => {
     expect(updated?.statusReason).not.toContain("AccessDenied");
   });
 
-  // The regression this guards: the cron used to patch blindly from the row it
-  // had loaded before the failure, so a reconcile that succeeded in between —
-  // the "Check" button, most often — was overwritten and the domain was marked
-  // failed while it was serving. `failed` is never re-polled, so it stuck.
+  // Guards the regression: a blind patch from the pre-failure row overwrote a
+  // reconcile that succeeded in between, marking a serving domain `failed` —
+  // which is never re-polled.
   it("leaves a domain that went active in the meantime alone", async () => {
     const projectDomain = await createPendingDomain();
     await projectDomain.$query().patch({

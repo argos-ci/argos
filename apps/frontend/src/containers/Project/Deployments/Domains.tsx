@@ -146,18 +146,15 @@ export function Domains(props: { project: Project }) {
 }
 
 /**
- * The footer carries the one action the viewer can take next: add a domain
- * when custom domains are open to them, or the single thing that would open
- * them when they are not. "Upgrade your plan" is wrong advice for two of the
- * three closed states — a personal account has no plan to upgrade, and a team
- * we put on a plan by hand cannot change it itself — so each state names its
- * own way out.
+ * "Upgrade your plan" is wrong advice for two of the three closed states — a
+ * personal account has no plan to upgrade, and a team we put on a plan by hand
+ * cannot change it itself — so each names its own way out.
  */
 function DomainsCardFooter(props: { project: Project }) {
   const { project } = props;
 
-  // Installs without a multi-tenant distribution (development, self-hosted)
-  // cannot provision custom domains at all — no call to action would help.
+  // Development and self-hosted installs cannot provision custom domains at
+  // all, so no call to action would help.
   if (!config.deployments.customDomains) {
     return (
       <CardFooter>
@@ -371,8 +368,6 @@ function AddCustomDomainDialog(props: { projectId: string }) {
         input: { projectId, domain: data.domain.trim() },
       },
     });
-    // The new row appears with the DNS record to create — that is the real
-    // feedback, so no toast on top of it.
     state.close();
   };
 
@@ -438,8 +433,8 @@ const PENDING_LABELS: Record<ProjectCustomDomainPendingReason, string> = {
 function CustomDomainRow(props: { customDomain: CustomDomain }) {
   const { customDomain } = props;
   const status = STATUS_LABELS[customDomain.status];
-  // Only the DNS record is the customer's to act on; while the certificate is
-  // issuing there is nothing for them to do, so the instructions come down.
+  // Only the DNS record is the customer's to act on, so the instructions come
+  // down once the certificate is what we are waiting for.
   const isAwaitingDns =
     customDomain.pendingReason === ProjectCustomDomainPendingReason.Dns;
 
@@ -476,10 +471,6 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
           routingEndpoint={customDomain.routingEndpoint}
         />
       ) : null}
-      {/* Shown on pending rows too, not only failed ones: the reason a domain
-          is stuck is most often recorded while it is still pending — a missing
-          permission, a CloudFront outage — and rendering it only for `failed`
-          left the one message that explains the wait permanently invisible. */}
       {customDomain.statusReason ? (
         <p
           className={
@@ -496,9 +487,8 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
 }
 
 /**
- * An apex domain cannot hold a CNAME, so the record type depends on whether the
- * customer gave us a subdomain — getting this wrong is the most common reason a
- * domain never leaves "DNS not configured".
+ * An apex domain cannot hold a CNAME, and getting this wrong is the most common
+ * reason a domain never leaves "DNS not configured".
  */
 function DnsInstructions(props: { domain: string; routingEndpoint: string }) {
   const { domain, routingEndpoint } = props;
@@ -548,9 +538,6 @@ function CheckCustomDomainButton(props: { customDomain: CustomDomain }) {
         if (isActive) {
           toast.success("Domain is live", { id: "custom-domain-active" });
         } else {
-          // Name the step that is actually blocking. "Waiting on DNS" sent
-          // people to re-check a record that was already correct; a generic
-          // "provisioning" hid that the record was never created.
           toast.info(
             data.checkProjectCustomDomain.pendingReason ===
               ProjectCustomDomainPendingReason.Dns

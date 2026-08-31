@@ -9,13 +9,9 @@ import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
 
 /**
- * Slugs under the deployments base domain that a project may not take, because
- * something else already answers on them.
- *
- * `cname` is the target customers point their own DNS at. It is a specific
- * record in the zone, so it beats the wildcard: a project handed that slug
- * would keep a row saying it owns the domain while every request to it went to
- * the connection group instead.
+ * Slugs a project may not take because something else already answers on them.
+ * Each is a specific record in the zone, so it beats the wildcard — a project
+ * handed one would hold a row for a domain whose requests go elsewhere.
  */
 const INTERNAL_DOMAIN_SLUGS = new Set(["dev", "cname"]);
 
@@ -179,12 +175,9 @@ async function getLatestReadyProductionDeployment(
 }
 
 /**
- * Point a domain at the project's current production deployment.
- *
- * Deployments assign their aliases when they are finalized, so without this a
- * domain attached between two deployments would serve nothing until the next
- * one. Returns false when the project has never had a ready production
- * deployment — there is nothing to alias yet, and the next finalize picks it up.
+ * Deployments assign their aliases when finalized, so without this a domain
+ * attached between two deployments serves nothing until the next one. False when
+ * there is no ready production deployment to alias yet.
  */
 export async function attachProductionDomainAlias(input: {
   projectId: string;
@@ -217,9 +210,8 @@ export async function attachProductionDomainAlias(input: {
 }
 
 /**
- * Stop serving a domain. Removing the `project_domains` row is not enough on
- * its own — resolution reads `deployment_aliases`, so an orphaned alias keeps
- * answering for a domain the project no longer owns.
+ * Removing the `project_domains` row is not enough: resolution reads
+ * `deployment_aliases`, so an orphaned alias keeps answering.
  */
 export async function detachDomainAlias(
   domain: string,

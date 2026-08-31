@@ -28,8 +28,7 @@ export const up = async (knex) => {
     )
   `);
 
-  // Only active domains are served, so this is the index the alias assignment
-  // and the re-check cron both read.
+  // Partial, because the re-check cron only ever scans pending domains.
   await knex.raw(`
     CREATE INDEX project_domains_pending_index
     ON project_domains ("lastCheckedAt")

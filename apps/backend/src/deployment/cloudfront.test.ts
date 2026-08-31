@@ -12,11 +12,7 @@ import {
   checkIsTerminalTenantError,
 } from "./cloudfront";
 
-/**
- * The AWS SDK's exceptions are the only input these predicates take, and both
- * predicates decide whether a customer's domain stops being polled — so the
- * classification is worth pinning case by case rather than inferred.
- */
+/** Both predicates decide whether a customer's domain stops being polled. */
 function awsError<T>(
   Ctor: new (opts: { message: string; $metadata: object }) => T,
   message = "boom",
@@ -38,9 +34,8 @@ describe("checkIsTerminalTenantError", () => {
     },
   );
 
-  // Our own tenant quota, not anything about the customer's hostname. Treating
-  // it as terminal deleted the row of every domain added during the outage and
-  // permanently failed every one already waiting.
+  // Our own quota, not the customer's hostname: as terminal it failed every
+  // in-flight domain during an outage of ours.
   it("does not treat EntityLimitExceeded as terminal", () => {
     expect(checkIsTerminalTenantError(awsError(EntityLimitExceeded))).toBe(
       false,

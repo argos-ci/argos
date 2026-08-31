@@ -30,13 +30,8 @@ function assertStageMatches(config: { stage?: string }, stage: string) {
 /**
  * The stack props for a stage, read from SSM Parameter Store.
  *
- * The only source, and deliberately so. There used to be three — a 1Password
- * item for local deploys, this parameter for CI, and a pile of `-c` flags for
- * throwaway synths — which meant the same document existed in two places and
- * had to be edited in both. It drifted: the development item was still missing
- * the `assets` block long after the assets stack shipped, so a local deploy
- * failed on a document CI had been reading correctly for months. One copy, and
- * every stage reaches it the same way.
+ * The only source, deliberately: two stored copies of one document drift, and
+ * the one that drifted took a local deploy down while CI kept working.
  */
 function readSsmConfig(stage: string) {
   const json = execFileSync(
@@ -82,14 +77,13 @@ const deploymentStack = new ArgosDeploymentStack(
 // that one serves customer deployments. Kept separate so a release, which
 // touches only the asset bucket, never has to update the deployment stack.
 //
-// Only where the config describes one. Development serves the frontend from
-// Vite and has no asset CDN, so requiring an `assets` block there would mean
-// inventing a domain name and an ACM ARN for a stack nobody deploys.
+// Only where the config describes one: development serves the frontend from
+// Vite, so requiring an `assets` block there would mean inventing a domain and
+// an ACM ARN for a stack nobody deploys.
 const assetsConfig = rawProps.assets ?? null;
 
-// Production is the case where a missing block is a mistake rather than a
-// choice: dropping it would silently take a live distribution out of the app,
-// and `cdk deploy --all` would stop managing it without ever failing.
+// In production a missing block is a mistake, not a choice: it would silently
+// take a live distribution out of the app without ever failing.
 if (props.stage === "production" && !assetsConfig) {
   throw new Error(
     "Missing `assets` in the production config: refusing to synth without the assets stack.",

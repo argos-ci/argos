@@ -16,14 +16,11 @@ const QuerySchema = z.object({
 });
 
 /**
- * Validate that `return_to` points at one of our deployment domains. We use the
- * URL only as a redirect target — and it carries a signed access token — so an
- * unvalidated host turns this endpoint into a token-leaking open redirect.
- *
- * Custom domains cannot be recognised by their shape, so they are checked
- * against the domains we actually serve. Only `active` rows count: a `pending`
- * one is a hostname a customer has claimed but not yet proven, and honouring it
- * would let anyone redirect the token to a host they merely typed into a form.
+ * The URL is a redirect target carrying a signed access token, so an unvalidated
+ * host makes this a token-leaking open redirect. Custom domains have no
+ * recognisable shape, so they are checked against what we actually serve — and
+ * only `active` rows, since a `pending` one is a hostname someone typed into a
+ * form and has not proven.
  */
 async function parseReturnTo(input: string): Promise<URL | null> {
   let url: URL;

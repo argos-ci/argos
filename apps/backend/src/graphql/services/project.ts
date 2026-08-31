@@ -165,7 +165,8 @@ export async function unsafe_deleteProject(args: {
   let mediaDiffKeys: string[] = [];
   // Same reason as the media keys below: a CloudFront tenant is billed and is
   // not rolled back with the transaction, so its id is collected here and the
-  // tenant is dropped once the rows are gone for good.
+  // tenant dropped after. Note the caller may pass its own open transaction, in
+  // which case "after" is not yet committed.
   let cloudfrontTenantIds: string[] = [];
 
   await transaction(args.trx, async (trx) => {
@@ -238,8 +239,8 @@ export async function unsafe_deleteProject(args: {
       )
     ).keys;
     await Media.query(trx).where("projectId", args.projectId).delete();
-    // `project_domains` cascades with the project, which would otherwise leave
-    // the tenants behind with nothing naming them.
+    // `project_domains` cascades with the project, which would leave the
+    // tenants with nothing naming them.
     const projectDomains = await ProjectDomain.query(trx)
       .select("cloudfrontTenantId")
       .where({ projectId: args.projectId })

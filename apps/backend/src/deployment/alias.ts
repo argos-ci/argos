@@ -34,13 +34,9 @@ export function getDeploymentAliases(input: {
           if (domain.internal) {
             return true;
           }
-          // No plan check here. The entitlement is enforced where a domain is
-          // added, and losing it deliberately revokes nothing — see the Costs
-          // note in infra/README.md. A check at this point could not revoke
-          // anyway: the caller only ever upserts the aliases it is given and
-          // never deletes the ones it is not, so dropping a domain from this
-          // list would leave it serving whatever deployment it last pointed at,
-          // frozen, which is worse than leaving it working.
+          // No plan check: the entitlement is enforced where a domain is added,
+          // and losing it deliberately revokes nothing — see the Costs note in
+          // infra/README.md.
           return domain.status === "active";
         })
         .map((domain) => ({
