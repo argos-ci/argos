@@ -5,7 +5,6 @@ import {
   CreateDistributionTenantCommand,
   DeleteDistributionTenantCommand,
   EntityAlreadyExists,
-  EntityLimitExceeded,
   EntityNotFound,
   GetDistributionTenantCommand,
   GetManagedCertificateDetailsCommand,
@@ -187,8 +186,12 @@ function checkIsTenantActive(
  * already gone is a success, so removing a domain never wedges on a failed
  * earlier attempt.
  *
- * Tenants are billed, so this has to run on every path that stops serving a
- * domain: removal, project deletion, and losing the entitlement.
+ * Called only where the `project_domains` row itself goes away — removing a
+ * domain, and deleting a project. Losing the paid entitlement deliberately does
+ * not delete anything: an idle tenant costs little, and a team that resubscribes
+ * finds its domains where it left them. If that ever adds up, the cheap fix is a
+ * sweep that reconciles CloudFront's tenant list against this table, not a
+ * deletion wired into the billing path.
  */
 export async function deleteDomainTenant(tenantId: string): Promise<void> {
   const result = await getTenantWithETag(tenantId);
@@ -211,19 +214,24 @@ export async function deleteDomainTenant(tenantId: string): Promise<void> {
 }
 
 /**
- * Whether an error from CloudFront will still be there on the next attempt.
+ * Whether an error from CloudFront is about *this domain* and will still be
+ * there on the next attempt.
  *
- * The common one is `CNAMEAlreadyExists`: domain association is unique across
- * all of CloudFront, not just this account, so a hostname another distribution
- * already serves can never be provisioned by retrying. Polling such a domain
- * forever costs API calls and tells the customer nothing, so it is marked failed
- * and the reason is surfaced instead.
+ * Both entries are properties of the hostname, not of our account or the
+ * moment: domain association is unique across all of CloudFront, so a name
+ * another distribution already serves can never be provisioned by retrying.
+ * Polling such a domain forever costs API calls and tells the customer nothing,
+ * so it is marked failed and the reason is surfaced instead.
+ *
+ * `EntityLimitExceeded` is deliberately absent. It means *we* have run out of
+ * tenants, which says nothing about the customer's hostname and clears the
+ * moment the quota is raised — treating it as terminal would delete the row of
+ * every customer adding a domain during the outage and permanently fail every
+ * one already waiting.
  */
 export function checkIsTerminalTenantError(error: unknown): boolean {
   return (
-    error instanceof CNAMEAlreadyExists ||
-    error instanceof EntityAlreadyExists ||
-    error instanceof EntityLimitExceeded
+    error instanceof CNAMEAlreadyExists || error instanceof EntityAlreadyExists
   );
 }
 

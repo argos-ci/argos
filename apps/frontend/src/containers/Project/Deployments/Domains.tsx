@@ -31,6 +31,7 @@ import { Code } from "@/ui/Code";
 import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -475,9 +476,20 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
           routingEndpoint={customDomain.routingEndpoint}
         />
       ) : null}
-      {customDomain.status === ProjectCustomDomainStatus.Failed &&
-      customDomain.statusReason ? (
-        <p className="text-danger-low text-xs">{customDomain.statusReason}</p>
+      {/* Shown on pending rows too, not only failed ones: the reason a domain
+          is stuck is most often recorded while it is still pending — a missing
+          permission, a CloudFront outage — and rendering it only for `failed`
+          left the one message that explains the wait permanently invisible. */}
+      {customDomain.statusReason ? (
+        <p
+          className={
+            customDomain.status === ProjectCustomDomainStatus.Failed
+              ? "text-danger-low text-xs"
+              : "text-low text-xs"
+          }
+        >
+          {customDomain.statusReason}
+        </p>
       ) : null}
     </ListRow>
   );
@@ -579,14 +591,10 @@ function CheckCustomDomainButton(props: { customDomain: CustomDomain }) {
 function RemoveCustomDomainDialog(props: { customDomain: CustomDomain }) {
   const { customDomain } = props;
   const state = useOverlayTriggerState();
-  const [removeCustomDomain, { loading, error }] = useMutation(
+  const [removeCustomDomain, { error }] = useMutation(
     RemoveCustomDomainMutation,
     {
       variables: { input: { projectCustomDomainId: customDomain.id } },
-      onCompleted: () => {
-        state.close();
-        toast.success("Domain removed", { id: "custom-domain-removed" });
-      },
     },
   );
 
@@ -604,18 +612,21 @@ function RemoveCustomDomainDialog(props: { customDomain: CustomDomain }) {
         {error ? (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         ) : null}
-        <DialogDismiss disabled={loading}>Cancel</DialogDismiss>
-        <Button
+        <DialogDismiss>Cancel</DialogDismiss>
+        <DialogActionButton
           variant="destructive"
-          pending={loading}
-          onClick={() => {
-            removeCustomDomain().catch(() => {
-              // The error is shown in the dialog.
-            });
+          onAsyncAction={async () => {
+            try {
+              await removeCustomDomain();
+              state.close();
+              toast.success("Domain removed", { id: "custom-domain-removed" });
+            } catch {
+              // Surfaced via the mutation's `error` state above.
+            }
           }}
         >
           Remove
-        </Button>
+        </DialogActionButton>
       </DialogFooter>
     </Dialog>
   );

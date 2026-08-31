@@ -1,9 +1,15 @@
+import {
+  CNAMEAlreadyExists,
+  EntityLimitExceeded,
+  InvalidArgument,
+} from "@aws-sdk/client-cloudfront";
 import { describe, expect, it } from "vitest";
 
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 
 import {
   getCustomDomainsAvailability,
+  getReconcileErrorMessage,
   validateCustomDomain,
   type CustomDomainsAvailability,
 } from "./custom-domain";
@@ -139,5 +145,39 @@ describe("getCustomDomainsAvailability", () => {
         planIncludesCustomDomains: false,
       }),
     ).toBe("requires_contact");
+  });
+});
+
+describe("getReconcileErrorMessage", () => {
+  // A hostname already in use elsewhere is the whole story in one sentence, and
+  // it is the customer's to act on — so it is passed through verbatim.
+  it("passes a terminal CloudFront message through", () => {
+    const error = new CNAMEAlreadyExists({
+      message: "One or more of the CNAMEs you provided are already associated",
+      $metadata: {},
+    });
+    expect(getReconcileErrorMessage(error)).toBe(
+      "One or more of the CNAMEs you provided are already associated",
+    );
+  });
+
+  // Everything else is ours to fix. Surfacing the raw exception told customers
+  // who had done nothing wrong to go and re-check a DNS record that was fine.
+  it.each([
+    [
+      "our own tenant quota",
+      new EntityLimitExceeded({ message: "Limit exceeded", $metadata: {} }),
+    ],
+    [
+      "a misconfiguration",
+      new InvalidArgument({ message: "AccessDenied", $metadata: {} }),
+    ],
+    ["a plain error", new Error("socket hang up")],
+  ])("reports %s as ours rather than the customer's", (_label, error) => {
+    const message = getReconcileErrorMessage(error);
+    expect(message).toMatch(/no action is needed on your side/i);
+    expect(message).not.toContain("Limit exceeded");
+    expect(message).not.toContain("AccessDenied");
+    expect(message).not.toContain("socket hang up");
   });
 });
