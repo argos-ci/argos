@@ -402,14 +402,14 @@ function AddCustomDomainDialog(props: { projectId: string }) {
                   return "Enter a domain, not a URL";
                 }
                 if (!domain.includes(".")) {
-                  return "Enter a fully qualified domain, like docs.example.com";
+                  return "Enter a fully qualified domain, like storybook.acme.com";
                 }
                 return true;
               },
             })}
             autoFocus
             label="Domain"
-            placeholder="docs.example.com"
+            placeholder="storybook.acme.com"
           />
         </DialogBody>
         <DialogFooter>
