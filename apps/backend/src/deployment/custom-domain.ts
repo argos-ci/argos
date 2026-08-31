@@ -1,5 +1,4 @@
 import config from "@/config";
-import { isUniqueViolationError } from "@/database/error";
 import { Account, ProjectDomain } from "@/database/models";
 import {
   checkIsActiveSubscriptionStatus,
@@ -145,12 +144,76 @@ export function validateCustomDomain(domain: string): string {
 }
 
 /**
+ * Claim a hostname for a project, taking it from a project that never proved it
+ * owned it.
+ *
+ * `project_domains.domain` is unique across every project, so the first team to
+ * type a hostname used to hold it forever — including one they had no claim to,
+ * which left the real owner with no path at all. But a row with no
+ * `cloudfrontTenantId` is exactly a hostname nobody has proven anything about:
+ * a tenant is only created once CloudFront has verified the domain resolves to
+ * us, so until then the claim is a string someone typed into a form. Those are
+ * takeable. A row that has a tenant is not, and neither is an internal domain.
+ *
+ * Whoever holds the row when the DNS record goes live is the owner, which is
+ * the same proof CloudFront itself requires.
+ *
+ * Expressed as one conditional upsert rather than a read followed by a write:
+ * Postgres skips `DO UPDATE` when the `WHERE` does not hold and returns no row,
+ * so two teams racing on the same hostname cannot both pass a check, and a
+ * verified domain cannot be taken even under a race. Returns null when the
+ * hostname is spoken for.
+ */
+export async function claimCustomDomain(input: {
+  projectId: string;
+  domain: string;
+  routingEndpoint: string;
+}): Promise<ProjectDomain | null> {
+  const { projectId, domain, routingEndpoint } = input;
+
+  const claimed = await ProjectDomain.query()
+    .insert({
+      domain,
+      environment: "production",
+      branch: null,
+      projectId,
+      internal: false,
+      status: "pending",
+      routingEndpoint,
+    })
+    .onConflict("domain")
+    .merge({
+      projectId,
+      status: "pending",
+      routingEndpoint,
+      // The previous holder's diagnostics describe a claim that no longer
+      // exists, so none of it carries over.
+      statusReason: null,
+      activatedAt: null,
+      lastCheckedAt: null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where("project_domains.cloudfrontTenantId", null)
+    .andWhere("project_domains.internal", false)
+    .returning("*");
+
+  // A refused upsert still resolves to the model we asked Objection to insert —
+  // it just never reached the database, so it has no id. That is the signal, not
+  // a null return.
+  //
+  // No alias needs clearing on a takeover: one is written only when a domain
+  // goes active, which requires the tenant this row provably never had.
+  return claimed.id ? claimed : null;
+}
+
+/**
  * Attach a custom domain to a project's production deployments.
  *
- * The row is written before the tenant exists so that two requests racing on
- * the same hostname are settled by the unique constraint rather than by two
- * CloudFront tenants both claiming it. A row whose tenant creation then fails
- * stays `pending` with no tenant id, which `reconcileCustomDomain` retries.
+ * The row is claimed before the tenant exists, so two requests racing on the
+ * same hostname are settled in Postgres rather than by two CloudFront tenants
+ * both claiming it. A row whose tenant creation then fails stays `pending` with
+ * no tenant id, which `reconcileCustomDomain` retries — and which leaves the
+ * hostname claimable by someone who can actually prove they own it.
  */
 export async function addCustomDomain(input: {
   projectId: string;
@@ -170,24 +233,16 @@ export async function addCustomDomain(input: {
   // entire content of the pending state.
   const routingEndpoint = getCustomDomainsTarget();
 
-  let projectDomain: ProjectDomain;
-  try {
-    projectDomain = await ProjectDomain.query().insertAndFetch({
-      domain,
-      environment: "production",
-      branch: null,
-      projectId: input.projectId,
-      internal: false,
-      status: "pending",
-      routingEndpoint,
+  const projectDomain = await claimCustomDomain({
+    projectId: input.projectId,
+    domain,
+    routingEndpoint,
+  });
+
+  if (!projectDomain) {
+    throw boom(400, "Domain already in use", {
+      code: "PROJECT_DOMAIN_ALREADY_USED",
     });
-  } catch (error) {
-    if (isUniqueViolationError(error)) {
-      throw boom(400, "Domain already in use", {
-        code: "PROJECT_DOMAIN_ALREADY_USED",
-      });
-    }
-    throw error;
   }
 
   try {
