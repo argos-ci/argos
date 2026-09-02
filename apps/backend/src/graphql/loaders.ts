@@ -747,12 +747,16 @@ function createAccountActivationByAccountIdLoader() {
     // Left join so accounts that created projects but never built still get a
     // row. `count(distinct)` is required on projects: the join to builds
     // multiplies project rows.
-    const rows = await Project.queryNotDeleted()
+    const rows = await Project.query()
       .leftJoin("builds", "builds.projectId", "projects.id")
       .join("accounts", "accounts.id", "projects.accountId")
       .select("projects.accountId")
       .select(
-        knex.raw(`count(distinct projects.id) as "projectsCount"`),
+        // Only the live ones are projects the account *has*; everything below
+        // is what it consumed, which a deletion does not take back.
+        knex.raw(
+          `count(distinct projects.id) filter (where projects."deletedAt" is null) as "projectsCount"`,
+        ),
         knex.raw(`count(builds.id) as "buildsCount"`),
         // Only what was built once the account owned the project. A transferred
         // project brings its whole history along, and those screenshots were

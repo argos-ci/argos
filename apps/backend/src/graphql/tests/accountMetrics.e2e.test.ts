@@ -127,6 +127,67 @@ describe("GraphQL Account.metrics", () => {
     });
   });
 
+  it("still counts a deleted project's consumption", async () => {
+    // Deleting a project does not hand the screenshots back: the account
+    // consumed them, and the invoice still bills them. If the chart dropped
+    // them it would disagree with the meter on the same page.
+    const user = await factory.User.create();
+    const account = await factory.TeamAccount.create();
+    invariant(account.teamId, "team account should have a team");
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: user.id,
+      userLevel: "owner",
+    });
+    const project = await factory.Project.create({
+      accountId: account.id,
+      name: "web",
+    });
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: new Date("2021-01-01").toISOString(),
+      screenshotCount: 7,
+    });
+    await factory.Build.create({
+      projectId: project.id,
+      createdAt: new Date("2021-01-01").toISOString(),
+    });
+    await project.$query().patch({
+      name: `deleted-${project.id}-web`,
+      deletedAt: new Date().toISOString(),
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user, account },
+    );
+
+    const result = await request(app)
+      .post("/graphql")
+      .send({
+        query: ACCOUNT_METRICS_QUERY,
+        variables: {
+          accountSlug: account.slug,
+          from: "2020-12-31T00:00:00.000Z",
+          to: "2021-01-02T00:00:00.000Z",
+        },
+      });
+
+    expectNoGraphQLError(result);
+    expect(result.body.data.account.metrics).toMatchObject({
+      screenshots: {
+        all: { total: 7, projects: { [project.id]: 7 } },
+        // Labelled by the parked name, which is what makes the series legible
+        // as a project that is gone.
+        projects: [{ id: project.id, name: `deleted-${project.id}-web` }],
+      },
+      builds: {
+        all: { total: 1, projects: { [project.id]: 1 } },
+      },
+    });
+  });
+
   it("reports invalid date ranges as bad user input", async () => {
     const user = await factory.User.create();
     const account = await factory.UserAccount.create({ userId: user.id });

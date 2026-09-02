@@ -46,7 +46,7 @@ async function resolveProjectIds(input: AccountMetricsFilter) {
     return { projectIds: undefined, projectFilterApplied: false };
   }
 
-  const projects = await Project.queryNotDeleted()
+  const projects = await Project.query()
     .select("id")
     .where("accountId", input.accountId)
     .whereIn("name", input.projectNames);
@@ -111,7 +111,6 @@ export async function getAccountScreenshotMetrics(
     FROM screenshot_buckets sb
     LEFT JOIN projects p ON sb."projectId" = p.id
     WHERE p."accountId" = :accountId
-      AND p."deletedAt" IS NULL
       AND sb."createdAt" >= date_trunc(:groupBy, :from::timestamp)
       AND sb."createdAt" <= :to
       ${hasProjectFilter(input) ? `AND sb."projectId" = any(:projectIds)` : ""}
@@ -142,10 +141,7 @@ export async function getAccountScreenshotMetrics(
   ORDER BY s.date
   `;
 
-  const projectsQuery = Project.queryNotDeleted().where(
-    "accountId",
-    input.accountId,
-  );
+  const projectsQuery = Project.query().where("accountId", input.accountId);
   if (hasProjectFilter(input)) {
     const projectIds = input.projectIds;
     invariant(projectIds, "project IDs are required when filtering metrics");
@@ -240,7 +236,6 @@ export async function getAccountBuildMetrics(
         AND lr.state IN ('approved', 'rejected')
     ) r ON TRUE
     WHERE p."accountId" = :accountId
-      AND p."deletedAt" IS NULL
       AND b."createdAt" >= date_trunc(:groupBy, :from::timestamp)
       AND b."createdAt" <= :to
       ${hasProjectFilter(input) ? `AND b."projectId" = any(:projectIds)` : ""}
@@ -275,10 +270,7 @@ export async function getAccountBuildMetrics(
   ORDER BY s.date
   `;
 
-  const projectsQuery = Project.queryNotDeleted().where(
-    "accountId",
-    input.accountId,
-  );
+  const projectsQuery = Project.query().where("accountId", input.accountId);
   if (hasProjectFilter(input)) {
     const projectIds = input.projectIds;
     invariant(projectIds, "project IDs are required when filtering metrics");
