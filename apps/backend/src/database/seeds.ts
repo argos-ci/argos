@@ -115,6 +115,11 @@ export async function createPasskeys(input: {
       aaguid: null,
       name,
       lastUsedAt: new Date("2026-06-15T10:00:00Z").toISOString(),
+      // Pinned like `lastUsedAt`, because the row renders it. Left to default,
+      // it is the seeding instant, so the baseline holds whatever day CI ran —
+      // and the next run on a day of a different width ("Sep 2" then "Sep 12")
+      // shifts the line and reports a change nobody made.
+      createdAt: new Date("2026-05-20T09:00:00Z").toISOString(),
     })),
   );
 }
