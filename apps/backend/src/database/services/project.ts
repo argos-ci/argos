@@ -22,14 +22,19 @@ import { isValidPgBigInt } from "../util/biginteger";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
 
+/**
+ * What a deleted project's name is parked under, so the one it held goes back
+ * to the account. Lowercase, and compared as such: names collide
+ * case-insensitively.
+ */
+export const DELETED_PROJECT_NAME_PREFIX = "deleted-";
+
 const checkProjectName = async (args: { name: string; accountId: string }) => {
   if (RESERVED_PROJECT_NAMES.includes(args.name)) {
     throw new Error("Name is reserved for internal usage");
   }
 
-  // A deleted project no longer holds its name: the account is meant to be able
-  // to recreate the project it just removed under the same name.
-  const sameName = await Project.queryNotDeleted()
+  const sameName = await Project.query()
     .select("id")
     .whereILike("name", args.name)
     .where("accountId", args.accountId)
@@ -378,6 +383,23 @@ async function resolveAvailableProjectName(args: {
       400,
       parsed.error.issues[0]?.message ?? "Invalid project name.",
       { code: "PROJECT_NAME_INVALID", field: "name" },
+    );
+  }
+  // Deleting a project parks it under `DELETED_PROJECT_NAME_PREFIX` + its id, so
+  // a name a user chooses must not be able to land there first — that is the one
+  // way two projects of an account could end up sharing a name.
+  //
+  // Checked here rather than in `checkProjectName`, which `resolveProjectName`
+  // retries by appending `-1`, `-2`, …: a rejection a suffix cannot lift would
+  // make that recursion unbounded.
+  if (parsed.data.toLowerCase().startsWith(DELETED_PROJECT_NAME_PREFIX)) {
+    throw boom(
+      400,
+      `A project name cannot start with "${DELETED_PROJECT_NAME_PREFIX}".`,
+      {
+        code: "PROJECT_NAME_INVALID",
+        field: "name",
+      },
     );
   }
   try {

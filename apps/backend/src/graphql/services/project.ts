@@ -1,3 +1,4 @@
+import { PROJECT_NAME_MAX_LENGTH } from "@argos/schemas/project";
 import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
@@ -25,7 +26,10 @@ import {
   Test,
   User,
 } from "@/database/models";
-import { applyProjectVisibility } from "@/database/services/project";
+import {
+  applyProjectVisibility,
+  DELETED_PROJECT_NAME_PREFIX,
+} from "@/database/services/project";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { deleteDomainTenant } from "@/deployment/cloudfront";
@@ -144,20 +148,36 @@ export async function deleteProject(args: {
   const recipients = await getProjectDeleteNotificationRecipients(project);
   invariant(project.account, "project.account is undefined");
 
-  // The domains are the one thing still released for real: a CloudFront tenant
-  // is billed for as long as it exists, and a domain left claimed cannot be
-  // moved to another project. Both are cheap to drop — `project_domains` holds
-  // a handful of rows, none of the tables the hard delete had to walk.
   const cloudfrontTenantIds = await transaction(async (trx) => {
-    const tenantIds = await releaseProjectDomains({
-      projectId: project.id,
-      trx,
-    });
-    await Project.query(trx)
+    // The stamp goes first and carries its own `deletedAt IS NULL`, so it is
+    // the gate rather than the read above it. A second request that got past
+    // that read before this one committed blocks on the row here, re-checks the
+    // predicate, and updates nothing — without it both would get this far and
+    // every owner would be told twice that the project was deleted.
+    const stamped = await Project.query(trx)
       .findById(project.id)
-      .patch({ deletedAt: new Date().toISOString() });
-    return tenantIds;
+      .whereNull("projects.deletedAt")
+      .patch({
+        name: getDeletedProjectName(project),
+        deletedAt: new Date().toISOString(),
+      });
+
+    if (stamped === 0) {
+      return null;
+    }
+
+    // The domains are the one thing still released for real: a CloudFront
+    // tenant is billed for as long as it exists, and a domain left claimed
+    // cannot be moved to another project. Both are cheap to drop —
+    // `project_domains` holds a handful of rows, none of the tables the hard
+    // delete had to walk.
+    return releaseProjectDomains({ projectId: project.id, trx });
   });
+
+  // Lost the race, so the request that won it owns the notification.
+  if (cloudfrontTenantIds === null) {
+    return;
+  }
 
   await Promise.all(cloudfrontTenantIds.map((id) => deleteDomainTenant(id)));
 
@@ -173,6 +193,25 @@ export async function deleteProject(args: {
       recipients,
     });
   }
+}
+
+/**
+ * The name a deleted project is parked under, which frees the one it held: the
+ * account is meant to be able to recreate what it just removed.
+ *
+ * The id leads, so two parked names can never collide — the same name can be
+ * deleted, recreated and deleted again — and it survives the truncation below.
+ * The original trails it because a deleted project is still listed in the usage
+ * charts, and this is the name they label it with.
+ *
+ * Truncated to `PROJECT_NAME_MAX_LENGTH`: the prefix must not push the name
+ * past what the `name` property is validated against on the way in.
+ */
+function getDeletedProjectName(project: Project): string {
+  return `${DELETED_PROJECT_NAME_PREFIX}${project.id}-${project.name}`.slice(
+    0,
+    PROJECT_NAME_MAX_LENGTH,
+  );
 }
 
 /**
