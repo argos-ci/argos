@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict aeFr6U9ttlcAZBDF3KYmRrnZCUbhB9n9zNyvbbAsRhHuTMen0QJQIKrbhC7v8cC
+\restrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -6691,7 +6691,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aeFr6U9ttlcAZBDF3KYmRrnZCUbhB9n9zNyvbbAsRhHuTMen0QJQIKrbhC7v8cC
+\unrestrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
 
 -- Knex migrations
 
