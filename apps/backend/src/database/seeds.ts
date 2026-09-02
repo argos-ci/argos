@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import { decodeFingerprint } from "@/util/fingerprint";
+import { startOfUTCMonth } from "@/util/utc-month";
 
 import { knex } from "./knex";
 import { UserEmail } from "./models";
@@ -29,6 +30,8 @@ import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
 import { StripeInvoice } from "./models/StripeInvoice";
+import { StripeInvoiceSync } from "./models/StripeInvoiceSync";
+import { Subscription } from "./models/Subscription";
 import { Team } from "./models/Team";
 import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
@@ -849,6 +852,124 @@ export async function createFlakyTestScenario(input: {
   ]);
 
   return { test, build };
+}
+
+/**
+ * A build with two changed snapshots, both still to review and both carrying a
+ * fingerprint and a test, which is what makes a diff ignorable.
+ *
+ * Two of them on purpose: ignoring one also marks it accepted, which sends the
+ * reviewer to the other and unmounts the toolbar the flag was pressed from.
+ */
+export async function createReviewableChangeScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build; tests: [Test, Test] }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const names = ["home.png", "settings.png"];
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: names.length,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "8f1b0a1d9c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a" },
+      { ...bucketProps, commit: "1a3c5e7f9b0d2f4a6c8e0b2d4f6a8c0e2b4d6f8a" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [firstTest, secondTest] = await Test.query().insertAndFetch(
+    names.map((name) => ({ name, buildName: "default", projectId })),
+  );
+  invariant(firstTest && secondTest);
+  const tests: [Test, Test] = [firstTest, secondTest];
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "main",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      conclusion: "changes-detected" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  await Promise.all(
+    tests.map(async (test, index) => {
+      const [baseScreenshot, compareScreenshot] =
+        await Screenshot.query().insertAndFetch([
+          {
+            screenshotBucketId: baseBucket.id,
+            testId: test.id,
+            name: test.name,
+            s3Id: baseFile.key,
+            fileId: baseFile.id,
+          },
+          {
+            screenshotBucketId: compareBucket.id,
+            testId: test.id,
+            name: test.name,
+            s3Id: compareFile.key,
+            fileId: compareFile.id,
+          },
+        ]);
+      invariant(baseScreenshot && compareScreenshot);
+      await ScreenshotDiff.query().insert({
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot.id,
+        testId: test.id,
+        score: 0.3,
+        jobStatus: "complete" as const,
+        s3Id: diffFile.key,
+        fileId: diffFile.id,
+        // Dash-free: change ids embed the fingerprint and split on `-`.
+        fingerprint: decodeFingerprint(`v1${index}a2b4c6d8e0f2a4b6`),
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      });
+    }),
+  );
+
+  return { build, tests };
 }
 
 /**
@@ -1853,30 +1974,36 @@ export async function seed() {
       name: "starter",
       includedScreenshots: 40000,
       githubPlanId: 7786,
+      githubMonthlyPriceCents: 3_000,
       stripeProductId: "prod_MzEZEfBDYFIc53",
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
       name: "standard",
       includedScreenshots: 250000,
       githubPlanId: 7787,
+      githubMonthlyPriceCents: 8_000,
       stripeProductId: "prod_MzEavomA8VeCvW",
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
       name: "Pro (legacy)",
       includedScreenshots: 1000000,
       githubPlanId: 7788,
+      githubMonthlyPriceCents: 20_000,
       stripeProductId: "prod_MzEawyq1kFcHEn",
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
     {
@@ -1887,6 +2014,7 @@ export async function seed() {
       usageBased: true,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      customDomainsIncluded: true,
       interval: "month",
     },
   ]);
@@ -2012,6 +2140,756 @@ export async function seed() {
     projectId: bigProject.id,
     authorUserId: greg.user.id,
     replierUserId: jeremy.user.id,
+  });
+
+  await createRevenueScenario({ subscriberId: jeremy.user.id });
+}
+
+/**
+ * The oldest month the staff revenue page reports: it reads a year plus the
+ * running one.
+ */
+const OLDEST_REVENUE_MONTH = -12;
+
+/**
+ * The first instant of the month `offset` months from the running one, UTC.
+ *
+ * Cut by the same helper the revenue reader uses rather than by a copy of it:
+ * the page files an invoice by the month Postgres and Stripe agree it was
+ * raised in, so a seed that cut months anywhere else would land its bills
+ * either side of a boundary the page reads differently.
+ */
+function startOfRelativeMonth(offset: number): Date {
+  return startOfUTCMonth(new Date(), offset);
+}
+
+/**
+ * The `day`th of the month `offset` months from the running one, at 9am UTC.
+ *
+ * Clamped to the month's own length rather than spilling into the next one: a
+ * team billed on the 30th is billed on the 28th of February, the way Stripe
+ * moves a cycle anchor a short month cannot hold — and a bill that spilled
+ * would be reported in a month its team was never billed in.
+ */
+function billedOn(offset: number, day: number): Date {
+  const month = startOfRelativeMonth(offset);
+  const lastDay = new Date(
+    Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  return new Date(
+    Date.UTC(
+      month.getUTCFullYear(),
+      month.getUTCMonth(),
+      Math.min(day, lastDay),
+      9,
+    ),
+  );
+}
+
+/**
+ * The book the staff pages read: the teams Argos bills, the invoices behind
+ * them, the usage those invoices were raised on, and the Marketplace
+ * subscriptions GitHub bills.
+ *
+ * One set of teams for the two pages, and one story: a team's bill in the
+ * revenue breakdown is the one the team directory prices its period at, and
+ * the screenshots it lists are what that amount was computed from. Seeding a
+ * team without them left the directory quoting thousands against a consumption
+ * of zero.
+ *
+ * Dated against the running month rather than fixed, because the revenue page
+ * reports the last thirteen calendar months — fixed dates would fall out of the
+ * window a month after they were written. The Stripe ids are made up; nothing
+ * here talks to Stripe, and the pages only read them back to build their links.
+ */
+async function createRevenueScenario(input: {
+  subscriberId: string;
+}): Promise<void> {
+  /** A plan out of the catalog seeded above. */
+  async function getPlan(name: string): Promise<Plan> {
+    const plan = await Plan.query().findOne({ name });
+    invariant(plan, `the ${name} plan is seeded above`);
+    return plan;
+  }
+
+  const [monthlyPlan, marketplacePlan] = await Promise.all([
+    getPlan("pro"),
+    getPlan("standard"),
+  ]);
+
+  const scalePlan = await Plan.query().insertAndFetch({
+    name: "scale",
+    includedScreenshots: 250_000,
+    usageBased: true,
+    githubSsoIncluded: true,
+    fineGrainedAccessControlIncluded: true,
+    customDomainsIncluded: true,
+    samlIncluded: true,
+    interval: "month",
+  });
+
+  const yearlyPlan = await Plan.query().insertAndFetch({
+    name: "enterprise",
+    includedScreenshots: 2_000_000,
+    usageBased: true,
+    githubSsoIncluded: true,
+    fineGrainedAccessControlIncluded: true,
+    customDomainsIncluded: true,
+    samlIncluded: true,
+    interval: "year",
+  });
+
+  /** The Stripe customer a team's invoices are raised on. */
+  const customerOf = (slug: string) => `cus_seed_${slug}`;
+
+  /** The Stripe subscription they are raised against. */
+  const subscriptionOf = (slug: string) => `sub_seed_${slug}`;
+
+  /** What the monthly plan charges before any usage, per month, at list. */
+  const MONTHLY_FLAT_PRICE = 100;
+
+  /** What a screenshot past the quota costs on the monthly plan. */
+  const MONTHLY_SCREENSHOT_PRICE = 0.005;
+
+  /** The same, negotiated down, on a contract. */
+  const CONTRACT_SCREENSHOT_PRICE = 0.002;
+
+  /** A bucket a fortnight is what the usage below is spread over. */
+  const FORTNIGHT_MS = 14 * 24 * 3600 * 1000;
+
+  /**
+   * People in a team. The directory counts them and lists them in its detail
+   * panel, where a team of nobody reads as broken data rather than as a team
+   * nobody joined. They are members of nothing else: the seeded staff can
+   * already open every team, so making them owners would only crowd the
+   * account switcher.
+   */
+  async function addMembers(member: {
+    teamId: string;
+    slug: string;
+    names: string[];
+  }): Promise<void> {
+    const users = await Promise.all(
+      member.names.map((name) => {
+        const handle = name.toLowerCase().replaceAll(" ", ".");
+        return createUserAccount({
+          email: `${handle}@${member.slug}.example.com`,
+          slug: `${member.slug}-${handle.replaceAll(".", "-")}`,
+          name,
+        });
+      }),
+    );
+    await TeamUser.query().insert(
+      users.map((user, index) => ({
+        teamId: member.teamId,
+        userId: user.user.id,
+        userLevel: index === 0 ? ("owner" as const) : ("member" as const),
+      })),
+    );
+  }
+
+  /**
+   * The screenshots a team consumed over one billing period.
+   *
+   * Carried by buckets, because that is what the billing counts, and spread a
+   * fortnight apart over the period. None is dated ahead of now: the running
+   * period has to read as partial, and it is the buckets it has not reached
+   * that make it so.
+   */
+  function bucketsOver(usage: {
+    projectId: string;
+    from: Date;
+    to: Date;
+    screenshots: number;
+  }) {
+    const span = usage.to.getTime() - usage.from.getTime();
+    const count = Math.max(1, Math.round(span / FORTNIGHT_MS));
+    const share = Math.round(usage.screenshots / count);
+    const rows = [];
+    for (let index = 0; index < count; index++) {
+      const createdAt = new Date(usage.from.getTime() + (span * index) / count);
+      if (createdAt.getTime() > Date.now()) {
+        break;
+      }
+      rows.push({
+        name: "default",
+        commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
+        branch: "main",
+        projectId: usage.projectId,
+        complete: true,
+        valid: true,
+        screenshotCount: share,
+        storybookScreenshotCount: 0,
+        createdAt: createdAt.toISOString(),
+        updatedAt: createdAt.toISOString(),
+      });
+    }
+    return rows;
+  }
+
+  /**
+   * The project a team's usage was produced by, with a build on every bucket.
+   *
+   * The build numbers are handed out here rather than allocated one insert at a
+   * time: the counter moves to whatever a seed sets, so a batch can carry its
+   * own numbering.
+   */
+  async function recordUsage(usage: {
+    accountId: string;
+    periods: { from: Date; to: Date; screenshots: number }[];
+  }): Promise<void> {
+    const project = await createProject({
+      accountId: usage.accountId,
+      name: "web",
+    });
+    const buckets = await ScreenshotBucket.query().insertAndFetch(
+      usage.periods.flatMap((period) =>
+        bucketsOver({ projectId: project.id, ...period }),
+      ),
+    );
+    await Build.query().insert(
+      buckets.map((bucket, index) => ({
+        projectId: project.id,
+        compareScreenshotBucketId: bucket.id,
+        number: index + 1,
+        jobStatus: "complete" as const,
+        conclusion: "no-changes" as const,
+        type: "check" as const,
+        // Back through `Date`: the column comes back off the insert as one,
+        // and the model takes its timestamps as ISO strings.
+        createdAt: new Date(bucket.createdAt).toISOString(),
+        updatedAt: new Date(bucket.createdAt).toISOString(),
+        stats: {
+          total: bucket.screenshotCount ?? 0,
+          failure: 0,
+          added: 0,
+          unchanged: bucket.screenshotCount ?? 0,
+          changed: 0,
+          removed: 0,
+          retryFailure: 0,
+          ignored: 0,
+        },
+      })),
+    );
+  }
+
+  /** A team billed through Stripe, and the customer its invoices are on. */
+  async function createBilledTeam(team: {
+    slug: string;
+    name: string;
+    planId: string;
+    /** Negotiated on the subscription, where Stripe states one of its own. */
+    includedScreenshots?: number;
+    currency: "eur" | "usd";
+    /** The day of the month its cycle bills on, which anchors its periods. */
+    dayOfMonth: number;
+    /** Months back the subscription started, negative. */
+    startedMonth: number;
+    /** Months back it ended. Omitted while it is still running. */
+    endedMonth?: number;
+    /** What the plan charges over one period, ex-usage. */
+    flatPrice: number;
+    additionalScreenshotPrice: number;
+    members: string[];
+  }): Promise<string> {
+    const { account, team: teamRow } = await createTeamAccount({
+      slug: team.slug,
+      name: team.name,
+    });
+    await account.$query().patch({ stripeCustomerId: customerOf(team.slug) });
+    const endedMonth = team.endedMonth ?? null;
+    // On the day it bills rather than on the first of the month: the periods
+    // the directory prices are anchored on this date, and they have to be the
+    // stretches the invoices close.
+    const startDate = billedOn(
+      team.startedMonth,
+      team.dayOfMonth,
+    ).toISOString();
+    await Subscription.query().insert({
+      planId: team.planId,
+      accountId: account.id,
+      provider: "stripe",
+      stripeSubscriptionId: subscriptionOf(team.slug),
+      subscriberId: input.subscriberId,
+      startDate,
+      // As old as the subscription it describes: a closed period opening before
+      // the row existed reads as an invoice that was never sent, and the
+      // directory drops it — which would leave every seeded team with no last
+      // period at all.
+      createdAt: startDate,
+      updatedAt: startDate,
+      endDate:
+        endedMonth === null
+          ? null
+          : billedOn(endedMonth, team.dayOfMonth).toISOString(),
+      paymentMethodFilled: true,
+      status: endedMonth === null ? "active" : "canceled",
+      currency: team.currency,
+      flatPrice: team.flatPrice,
+      additionalScreenshotPrice: team.additionalScreenshotPrice,
+      ...(team.includedScreenshots !== undefined && {
+        includedScreenshots: team.includedScreenshots,
+      }),
+    });
+    await addMembers({
+      teamId: teamRow.id,
+      slug: team.slug,
+      names: team.members,
+    });
+    return account.id;
+  }
+
+  /**
+   * A team on the monthly plan: the bills it was sent, all on the same day of
+   * the month, and the usage each one was raised on.
+   *
+   * The usage is read back from the amount rather than invented beside it — the
+   * plan's own price covers the quota, everything past it is the overage — so
+   * the directory's period and the revenue page's invoice are two readings of
+   * one number.
+   */
+  async function createMonthlyTeam(team: {
+    slug: string;
+    name: string;
+    currency: "eur" | "usd";
+    dayOfMonth: number;
+    firstMonth: number;
+    lastMonth: number;
+    /** What the first month was billed, in cents, ex-tax. */
+    from: number;
+    growth: number;
+    members: string[];
+    /**
+     * The deal it was signed on, where it is not the self-serve one — a
+     * commitment negotiated up from the list plan, with the quota and the unit
+     * price that came with it.
+     *
+     * What decides how far past its quota the team reads: the same bill on the
+     * list plan is a team to call about a contract, and on a commitment three
+     * times the size it is a team well inside the one it already signed.
+     */
+    deal?: {
+      planId: string;
+      flatPrice: number;
+      includedScreenshots: number;
+      screenshotPrice: number;
+    };
+    /** Months back the subscription ended, for a team that has churned. */
+    endedMonth?: number;
+    /**
+     * Bills the tax with no ex-tax total stated, as Stripe leaves the older
+     * invoices — the figures then have to come off the total themselves.
+     */
+    vatRate?: number;
+    /** Cents credited back on the newest bill, as a credit note would. */
+    credited?: number;
+  }): Promise<void> {
+    const deal = team.deal ?? {
+      planId: monthlyPlan.id,
+      flatPrice: MONTHLY_FLAT_PRICE,
+      includedScreenshots: monthlyPlan.includedScreenshots,
+      screenshotPrice: MONTHLY_SCREENSHOT_PRICE,
+    };
+    const accountId = await createBilledTeam({
+      slug: team.slug,
+      name: team.name,
+      planId: deal.planId,
+      includedScreenshots: deal.includedScreenshots,
+      currency: team.currency,
+      dayOfMonth: team.dayOfMonth,
+      startedMonth: team.firstMonth - 1,
+      ...(team.endedMonth !== undefined && { endedMonth: team.endedMonth }),
+      flatPrice: deal.flatPrice,
+      additionalScreenshotPrice: deal.screenshotPrice,
+      members: team.members,
+    });
+
+    const invoices = [];
+    const periods = [];
+    /** The month of the newest bill raised, which the running period follows. */
+    let billedMonth = null;
+    for (let month = team.firstMonth; month <= team.lastMonth; month++) {
+      const invoicedAt = billedOn(month, team.dayOfMonth);
+      // A cycle whose day has not come round yet has billed nothing: the
+      // running month holds only the invoices Stripe has already raised.
+      if (invoicedAt.getTime() > Date.now()) {
+        continue;
+      }
+      const amount =
+        Math.round(
+          (team.from * team.growth ** (month - team.firstMonth)) / 100,
+        ) * 100;
+      const taxes = Math.round(amount * (team.vatRate ?? 0));
+      invoices.push({
+        stripeInvoiceId: `in_seed_${team.slug}_${month}`,
+        stripeCustomerId: customerOf(team.slug),
+        stripeSubscriptionId: subscriptionOf(team.slug),
+        stripeCreatedAt: invoicedAt.toISOString(),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: team.currency,
+        total: amount + taxes,
+        totalExcludingTax: taxes === 0 ? amount : null,
+        totalTaxesAmount: taxes === 0 ? null : taxes,
+        creditedAmountExcludingTax: 0,
+      });
+      billedMonth = month;
+      // The stretch the bill closes, not the one it opens: usage is invoiced
+      // in arrears, so the screenshots behind an amount are the month before it.
+      periods.push({
+        from: billedOn(month - 1, team.dayOfMonth),
+        to: invoicedAt,
+        screenshots:
+          deal.includedScreenshots +
+          Math.round((amount / 100 - deal.flatPrice) / deal.screenshotPrice),
+      });
+    }
+
+    // On the newest bill raised rather than on the last one asked for: a cycle
+    // still to come this month has nothing to credit back.
+    const newestInvoice = invoices.at(-1);
+    if (newestInvoice && team.credited) {
+      newestInvoice.creditedAmountExcludingTax = team.credited;
+    }
+    await StripeInvoice.query().insert(invoices);
+
+    // The period now running, whose bill has not been raised yet: consuming at
+    // the rate the last one closed on, and partial because `bucketsOver` stops
+    // at today.
+    const newestPeriod = periods.at(-1);
+    if (newestPeriod && billedMonth !== null && team.endedMonth === undefined) {
+      periods.push({
+        from: newestPeriod.to,
+        to: billedOn(billedMonth + 1, team.dayOfMonth),
+        screenshots: newestPeriod.screenshots,
+      });
+    }
+    await recordUsage({ accountId, periods });
+  }
+
+  /**
+   * A team on a yearly contract: the amount is the contract's own, and the
+   * usage runs under a quota negotiated to hold it.
+   */
+  async function createYearlyTeam(team: {
+    slug: string;
+    name: string;
+    currency: "eur" | "usd";
+    dayOfMonth: number;
+    startedMonth: number;
+    /** What the contract is worth over its year. */
+    flatPrice: number;
+    /** Screenshots the team gets through in a month.  */
+    monthlyScreenshots: number;
+    members: string[];
+  }): Promise<void> {
+    const accountId = await createBilledTeam({
+      slug: team.slug,
+      name: team.name,
+      planId: yearlyPlan.id,
+      currency: team.currency,
+      dayOfMonth: team.dayOfMonth,
+      startedMonth: team.startedMonth,
+      flatPrice: team.flatPrice,
+      additionalScreenshotPrice: CONTRACT_SCREENSHOT_PRICE,
+      members: team.members,
+    });
+    // A yearly subscription's period is its year, so the usage the directory
+    // reads is everything consumed since the running term opened — and a
+    // contract already renewed once has a term behind it that is not the one
+    // being read.
+    const terms = [];
+    for (let start = team.startedMonth; start < 1; start += 12) {
+      terms.push({
+        from: billedOn(start, team.dayOfMonth),
+        to: billedOn(start + 12, team.dayOfMonth),
+        screenshots: team.monthlyScreenshots * 12,
+      });
+    }
+    await recordUsage({ accountId, periods: terms });
+  }
+
+  await Promise.all([
+    createMonthlyTeam({
+      slug: "acme-corp",
+      name: "Acme Corp",
+      currency: "eur",
+      dayOfMonth: 3,
+      firstMonth: OLDEST_REVENUE_MONTH,
+      lastMonth: 0,
+      from: 89_000,
+      growth: 1.06,
+      members: ["Wile Coyote", "Road Runner", "Marvin Martian"],
+      // The deals differ from one team to the next so the overage column has
+      // a spread to show: this one is a commitment sized to what it was
+      // billing when it signed, so everything it has grown by since reads as
+      // overage — a team due a renegotiated contract.
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 890,
+        includedScreenshots: 250_000,
+        screenshotPrice: 0.004,
+      },
+    }),
+    // In dollars, so the euro figures rest on the page's fixed rate and say so.
+    createMonthlyTeam({
+      slug: "globex",
+      name: "Globex",
+      currency: "usd",
+      dayOfMonth: 12,
+      firstMonth: -8,
+      lastMonth: 0,
+      from: 74_900,
+      growth: 1.09,
+      members: ["Hank Scorpio", "Homer Simpson"],
+    }),
+    // Churned five months ago: the subscription is over, the invoices it was
+    // sent are not, and the months it was billed in still count it.
+    createMonthlyTeam({
+      slug: "initech",
+      name: "Initech",
+      currency: "eur",
+      dayOfMonth: 7,
+      firstMonth: OLDEST_REVENUE_MONTH,
+      lastMonth: -5,
+      endedMonth: -4,
+      from: 49_000,
+      growth: 1,
+      members: ["Peter Gibbons", "Milton Waddams"],
+    }),
+    createMonthlyTeam({
+      slug: "soylent",
+      name: "Soylent",
+      currency: "eur",
+      dayOfMonth: 21,
+      firstMonth: OLDEST_REVENUE_MONTH,
+      lastMonth: 0,
+      from: 29_000,
+      growth: 1.04,
+      vatRate: 0.2,
+      credited: 4_000,
+      members: ["Thorn Detective", "Sol Roth"],
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 399,
+        includedScreenshots: 150_000,
+        screenshotPrice: 0.005,
+      },
+    }),
+    // Signed six months ago: the month it arrives in is the one that jumps.
+    createMonthlyTeam({
+      slug: "hooli",
+      name: "Hooli",
+      currency: "eur",
+      dayOfMonth: 17,
+      firstMonth: -6,
+      lastMonth: 0,
+      from: 129_000,
+      growth: 1.05,
+      members: ["Gavin Belson", "Denpok Singh", "Richard Hendricks"],
+      deal: {
+        planId: scalePlan.id,
+        flatPrice: 490,
+        includedScreenshots: 250_000,
+        screenshotPrice: 0.005,
+      },
+    }),
+    createMonthlyTeam({
+      slug: "massive-dynamic",
+      name: "Massive Dynamic",
+      currency: "usd",
+      dayOfMonth: 9,
+      firstMonth: OLDEST_REVENUE_MONTH,
+      lastMonth: 0,
+      from: 59_900,
+      growth: 1.07,
+      members: ["Nina Sharp", "William Bell"],
+    }),
+    // Billed on the 30th, which February has no room for: its bill lands on
+    // the 28th there rather than spilling into March.
+    createMonthlyTeam({
+      slug: "tyrell-corp",
+      name: "Tyrell Corp",
+      currency: "eur",
+      dayOfMonth: 30,
+      firstMonth: -10,
+      lastMonth: 0,
+      from: 39_000,
+      growth: 1.03,
+      members: ["Eldon Tyrell", "Rachael Rosen"],
+    }),
+  ]);
+
+  // Two bills in one month: a mid-cycle true-up beside the cycle itself, which
+  // the breakdown has to fold into the team's single line.
+  await StripeInvoice.query().insert({
+    stripeInvoiceId: "in_seed_soylent_true_up",
+    stripeCustomerId: customerOf("soylent"),
+    stripeSubscriptionId: subscriptionOf("soylent"),
+    stripeCreatedAt: billedOn(-1, 26).toISOString(),
+    status: "paid",
+    billingReason: "subscription_update",
+    currency: "eur",
+    total: 9_600,
+    totalExcludingTax: 8_000,
+    totalTaxesAmount: 1_600,
+    creditedAmountExcludingTax: 0,
+  });
+
+  await Promise.all([
+    createYearlyTeam({
+      slug: "umbrella",
+      name: "Umbrella Corp",
+      currency: "eur",
+      dayOfMonth: 9,
+      startedMonth: -4,
+      flatPrice: 24_000,
+      monthlyScreenshots: 90_000,
+      members: ["Albert Wesker", "Ada Wong"],
+    }),
+    createYearlyTeam({
+      slug: "vandelay",
+      name: "Vandelay Industries",
+      currency: "eur",
+      dayOfMonth: 15,
+      startedMonth: -13,
+      flatPrice: 16_800,
+      monthlyScreenshots: 70_000,
+      members: ["Art Vandelay", "Elaine Benes"],
+    }),
+    createYearlyTeam({
+      slug: "wayne-enterprises",
+      name: "Wayne Enterprises",
+      currency: "usd",
+      dayOfMonth: 5,
+      startedMonth: -8,
+      flatPrice: 30_000,
+      monthlyScreenshots: 130_000,
+      members: ["Lucius Fox", "Alfred Pennyworth", "Selina Kyle"],
+    }),
+    // Billed yearly with no contract invoice to be found: the anomaly the
+    // contracts table exists to surface, rather than a team quietly worth zero.
+    createYearlyTeam({
+      slug: "pied-piper",
+      name: "Pied Piper",
+      currency: "usd",
+      dayOfMonth: 22,
+      startedMonth: -2,
+      flatPrice: 9_600,
+      monthlyScreenshots: 40_000,
+      members: ["Bertram Gilfoyle", "Dinesh Chugtai"],
+    }),
+  ]);
+
+  await StripeInvoice.query().insert([
+    {
+      stripeInvoiceId: "in_seed_umbrella_term",
+      stripeCustomerId: customerOf("umbrella"),
+      stripeSubscriptionId: subscriptionOf("umbrella"),
+      stripeCreatedAt: billedOn(-4, 9).toISOString(),
+      status: "paid",
+      billingReason: "subscription_create",
+      currency: "eur",
+      total: 2_400_000,
+      totalExcludingTax: 2_400_000,
+      creditedAmountExcludingTax: 0,
+      periodStart: billedOn(-4, 9).toISOString(),
+      periodEnd: billedOn(8, 9).toISOString(),
+    },
+    // The term before the renewal below, so the months it paid for carry a
+    // yearly figure too: a contract is worth something in every month it
+    // covers, not only in the one it was raised in.
+    {
+      stripeInvoiceId: "in_seed_vandelay_term",
+      stripeCustomerId: customerOf("vandelay"),
+      stripeSubscriptionId: subscriptionOf("vandelay"),
+      stripeCreatedAt: billedOn(-13, 15).toISOString(),
+      status: "paid",
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 1_440_000,
+      totalExcludingTax: 1_440_000,
+      creditedAmountExcludingTax: 0,
+      periodStart: billedOn(-13, 15).toISOString(),
+      periodEnd: billedOn(-1, 15).toISOString(),
+    },
+    {
+      stripeInvoiceId: "in_seed_vandelay_renewal",
+      stripeCustomerId: customerOf("vandelay"),
+      stripeSubscriptionId: subscriptionOf("vandelay"),
+      stripeCreatedAt: billedOn(-1, 15).toISOString(),
+      status: "open",
+      billingReason: "subscription_cycle",
+      currency: "eur",
+      total: 1_680_000,
+      totalExcludingTax: 1_680_000,
+      creditedAmountExcludingTax: 0,
+      periodStart: billedOn(-1, 15).toISOString(),
+      periodEnd: billedOn(11, 15).toISOString(),
+    },
+    // A contract in dollars, so the yearly figures carry a converted share of
+    // their own.
+    {
+      stripeInvoiceId: "in_seed_wayne_term",
+      stripeCustomerId: customerOf("wayne-enterprises"),
+      stripeSubscriptionId: subscriptionOf("wayne-enterprises"),
+      stripeCreatedAt: billedOn(-8, 5).toISOString(),
+      status: "paid",
+      billingReason: "quote_accept",
+      currency: "usd",
+      total: 3_000_000,
+      totalExcludingTax: 3_000_000,
+      creditedAmountExcludingTax: 0,
+      periodStart: billedOn(-8, 5).toISOString(),
+      periodEnd: billedOn(4, 5).toISOString(),
+    },
+  ]);
+
+  // Marketplace teams are billed by GitHub, so they have no Stripe customer
+  // and no invoice to mirror: the band is priced from the subscriptions alone.
+  const [stark, cyberdyne] = await Promise.all([
+    createTeamAccount({ slug: "stark-industries", name: "Stark Industries" }),
+    createTeamAccount({ slug: "cyberdyne", name: "Cyberdyne Systems" }),
+  ]);
+  await Promise.all([
+    addMembers({
+      teamId: stark.team.id,
+      slug: "stark-industries",
+      names: ["Tony Stark", "Pepper Potts"],
+    }),
+    addMembers({
+      teamId: cyberdyne.team.id,
+      slug: "cyberdyne",
+      names: ["Miles Dyson"],
+    }),
+    Subscription.query().insert([
+      {
+        planId: marketplacePlan.id,
+        accountId: stark.account.id,
+        provider: "github",
+        startDate: billedOn(-9, 1).toISOString(),
+        endDate: null,
+        paymentMethodFilled: true,
+        status: "active",
+      },
+      {
+        planId: marketplacePlan.id,
+        accountId: cyberdyne.account.id,
+        provider: "github",
+        startDate: billedOn(-16, 1).toISOString(),
+        endDate: billedOn(-3, 1).toISOString(),
+        paymentMethodFilled: true,
+        status: "canceled",
+      },
+    ]),
+  ]);
+
+  // The page refuses a window the mirror was never swept for, and distrusts a
+  // mirror unswept for a week — so the sweep has to be on record, and deep
+  // enough to hold the contracts still paying for the window's first months.
+  await StripeInvoiceSync.query().insert({
+    sinceDate: startOfRelativeMonth(-36).toISOString(),
+    completedAt: new Date().toISOString(),
   });
 }
 

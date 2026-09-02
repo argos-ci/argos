@@ -21,6 +21,15 @@ export type PricedPlan = {
 };
 
 /**
+ * What Pro costs a month at list.
+ *
+ * The one amount on these pages nearly every team is billed, which is what
+ * makes it worth leaving unprinted where a column would repeat it down every
+ * row — and what makes an amount that is *not* it worth seeing.
+ */
+export const PRO_MONTHLY_PRICE = 100;
+
+/**
  * Monthly price to assume for a plan when the subscription carries no amount of
  * its own — one Stripe has not been asked about since Argos started reading the
  * amount, or that has none to give.
@@ -32,7 +41,7 @@ export type PricedPlan = {
  * warning.
  */
 const FALLBACK_MONTHLY_PRICES: Record<string, number | undefined> = {
-  [PRO_PLAN_NAME]: 100,
+  [PRO_PLAN_NAME]: PRO_MONTHLY_PRICE,
   enterprise: 1000,
 };
 

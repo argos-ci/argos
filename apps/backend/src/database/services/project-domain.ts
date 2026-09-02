@@ -9,9 +9,11 @@ import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
 
 /**
- * Domains reserved for internal usage.
+ * Slugs a project may not take because something else already answers on them.
+ * Each is a specific record in the zone, so it beats the wildcard — a project
+ * handed one would hold a row for a domain whose requests go elsewhere.
  */
-const INTERNAL_DOMAIN_SLUGS = new Set(["dev"]);
+const INTERNAL_DOMAIN_SLUGS = new Set(["dev", "cname"]);
 
 const DOMAIN_REGEX =
   /^(?=.{1,255}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -172,6 +174,52 @@ async function getLatestReadyProductionDeployment(
     .first();
 }
 
+/**
+ * Deployments assign their aliases when finalized, so without this a domain
+ * attached between two deployments serves nothing until the next one. False when
+ * there is no ready production deployment to alias yet.
+ */
+export async function attachProductionDomainAlias(input: {
+  projectId: string;
+  domain: string;
+  trx?: TransactionOrKnex;
+}): Promise<boolean> {
+  const deployment = await getLatestReadyProductionDeployment(
+    input.projectId,
+    input.trx,
+  );
+
+  if (!deployment) {
+    return false;
+  }
+
+  await DeploymentAlias.query(input.trx)
+    .insert({
+      alias: input.domain,
+      deploymentId: deployment.id,
+      type: "domain",
+    })
+    .onConflict("alias")
+    .merge({
+      deploymentId: deployment.id,
+      type: "domain",
+      updatedAt: new Date().toISOString(),
+    });
+
+  return true;
+}
+
+/**
+ * Removing the `project_domains` row is not enough: resolution reads
+ * `deployment_aliases`, so an orphaned alias keeps answering.
+ */
+export async function detachDomainAlias(
+  domain: string,
+  trx?: TransactionOrKnex,
+): Promise<void> {
+  await DeploymentAlias.query(trx).delete().where({ alias: domain });
+}
+
 async function syncProductionDomainAlias(input: {
   projectId: string;
   previousDomain: string | null;
@@ -205,18 +253,11 @@ async function syncProductionDomainAlias(input: {
     };
   }
 
-  await DeploymentAlias.query(input.trx)
-    .insert({
-      alias: input.nextDomain,
-      deploymentId: deployment.id,
-      type: "domain",
-    })
-    .onConflict("alias")
-    .merge({
-      deploymentId: deployment.id,
-      type: "domain",
-      updatedAt: new Date().toISOString(),
-    });
+  await attachProductionDomainAlias({
+    projectId: input.projectId,
+    domain: input.nextDomain,
+    ...(input.trx ? { trx: input.trx } : {}),
+  });
 
   return { previousAlias: null, nextAlias: input.nextDomain };
 }

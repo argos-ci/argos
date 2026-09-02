@@ -22,6 +22,12 @@ type StatTileProps = ComponentPropsWithRef<"div"> & {
   format?: "number" | "percent" | "currency";
   /** ISO code for `format="currency"` — the staff pages price in USD, the revenue page in EUR. */
   currency?: string;
+  /**
+   * Locale the figure is written in. Left out, it follows the reader's own —
+   * which is what a page shown to customers wants, and what a page pinned to
+   * one locale has to override so it reads the same on every screen.
+   */
+  locales?: Intl.LocalesArgument;
   hint?: React.ReactNode;
   visual?: React.ReactNode;
 };
@@ -40,6 +46,7 @@ export function StatTile({
   value,
   format = "number",
   currency = "USD",
+  locales,
   hint,
   visual,
   ...rest
@@ -67,11 +74,13 @@ export function StatTile({
           ) : format === "percent" ? (
             <NumberFlow
               value={value}
+              locales={locales}
               format={{ style: "percent", maximumFractionDigits: 0 }}
             />
           ) : format === "currency" ? (
             <NumberFlow
               value={value}
+              locales={locales}
               format={{
                 style: "currency",
                 currency,
@@ -79,11 +88,15 @@ export function StatTile({
               }}
             />
           ) : (
-            <NumberFlow value={value} />
+            <NumberFlow value={value} locales={locales} />
           )}
         </div>
         {hint ? (
-          <p className="text-low mt-0.5 h-4 text-sm">
+          // A floor rather than a height: the line is reserved while the
+          // figures load, so the card does not grow under the reader when they
+          // land — but a hint that wraps at a narrow width has to take the
+          // room it needs instead of spilling out of the card's padding.
+          <p className="text-low mt-0.5 min-h-5 text-sm">
             {isLoading ? null : hint}
           </p>
         ) : null}

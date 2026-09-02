@@ -15,6 +15,7 @@ import {
   Media,
   MediaVersion,
   Project,
+  ProjectDomain,
   ProjectUser,
   Screenshot,
   ScreenshotBucket,
@@ -27,6 +28,7 @@ import {
 import { applyProjectVisibility } from "@/database/services/project";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { deleteDomainTenant } from "@/deployment/cloudfront";
 import {
   deleteUnreferencedMediaDiffObjects,
   deleteUnreferencedMediaObjects,
@@ -161,6 +163,11 @@ export async function unsafe_deleteProject(args: {
   // came after.
   let mediaKeys: string[] = [];
   let mediaDiffKeys: string[] = [];
+  // Same reason as the media keys below: a CloudFront tenant is billed and is
+  // not rolled back with the transaction, so its id is collected here and the
+  // tenant dropped after. Note the caller may pass its own open transaction, in
+  // which case "after" is not yet committed.
+  let cloudfrontTenantIds: string[] = [];
 
   await transaction(args.trx, async (trx) => {
     await ScreenshotDiffReview.query(trx)
@@ -232,6 +239,15 @@ export async function unsafe_deleteProject(args: {
       )
     ).keys;
     await Media.query(trx).where("projectId", args.projectId).delete();
+    // `project_domains` cascades with the project, which would leave the
+    // tenants with nothing naming them.
+    const projectDomains = await ProjectDomain.query(trx)
+      .select("cloudfrontTenantId")
+      .where({ projectId: args.projectId })
+      .whereNotNull("cloudfrontTenantId");
+    cloudfrontTenantIds = projectDomains
+      .map((projectDomain) => projectDomain.cloudfrontTenantId)
+      .filter((id): id is string => id !== null);
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
     await AuditTrail.query(trx).where("projectId", args.projectId).delete();
@@ -255,5 +271,6 @@ export async function unsafe_deleteProject(args: {
       keys: mediaDiffKeys,
       excludeDiffIds: [],
     }),
+    ...cloudfrontTenantIds.map((id) => deleteDomainTenant(id)),
   ]);
 }

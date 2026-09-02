@@ -245,15 +245,19 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
-    const projectDomains =
-      deployment.environment === "production"
-        ? [
-            await ensureProductionInternalProjectDomain({
-              projectId: project.id,
-              projectName: project.name,
-            }),
-          ]
-        : [];
+    const isProduction = deployment.environment === "production";
+
+    const projectDomains = isProduction
+      ? await ensureProductionInternalProjectDomain({
+          projectId: project.id,
+          projectName: project.name,
+        }).then(() =>
+          ProjectDomain.query().where({
+            projectId: project.id,
+            environment: "production",
+          }),
+        )
+      : [];
 
     const aliases = await updateDeploymentAliases({
       deployment,

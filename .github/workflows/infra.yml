@@ -60,8 +60,7 @@ jobs:
       - name: cdk diff
         run: |
           pnpm --filter @argos/infra exec cdk diff \
-            -c stage="$CDK_STAGE" \
-            -c source=ssm
+            -c stage="$CDK_STAGE"
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -90,8 +89,7 @@ jobs:
         run: |
           pnpm --filter @argos/infra exec cdk deploy --all \
             --require-approval never \
-            -c stage="$CDK_STAGE" \
-            -c source=ssm
+            -c stage="$CDK_STAGE"
 
       - name: Notify infra deployment failure
         if: failure()

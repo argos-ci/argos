@@ -27,6 +27,7 @@ import {
   ChangesMask,
   ChangesOverlayControls,
 } from "@/containers/Build/ChangesOverlay";
+import { useCommentTool } from "@/containers/Build/CommentTool";
 import { overlayVisibleAtom } from "@/containers/Build/OverlayStyle";
 import { getImageScale } from "@/containers/Build/projection";
 import {
@@ -40,6 +41,7 @@ import {
   fetchBlob,
   ImageActionsMenu,
 } from "@/containers/Build/ScreenshotActions";
+import { CommentToolToggle } from "@/containers/Build/toolbar/CommentToolToggle";
 import {
   DetailToolbar,
   DetailToolbarNav,
@@ -57,6 +59,7 @@ import { Separator } from "@/ui/Separator";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 
 import { MediaCommentLayer } from "./MediaCommentLayer";
+import { checkCanCommentOnMedia } from "./permissions";
 
 /** One renderable version of a media. */
 type ViewerVersion = {
@@ -174,6 +177,7 @@ export function MediaViewer(props: {
   const { media, counterpart, comments, diff, nav } = props;
   const version = media.version;
   const storedMode = useAtomValue(buildViewModeAtom);
+  const { mode: commentToolMode } = useCommentTool();
   const [onionOpacity, setOnionOpacity] = useAtom(onionOpacityAtom);
   const [swipePosition, setSwipePosition] = useAtom(swipePositionAtom);
   const [swipeHandleY, setSwipeHandleY] = useAtom(swipeHandleYAtom);
@@ -181,9 +185,20 @@ export function MediaViewer(props: {
   if (version.isVideo) {
     return (
       <div className="flex h-full min-h-0 flex-col">
+        {/* A recording has no pane a pin can land on, so a tool armed on the
+            image beside it comes down here as it does on the "before" half
+            alone — and it has to happen above the early return, because this
+            branch is the one page that offers nothing to put it away. */}
+        <DisarmCommentTool enabled={false} />
         {/* A recording gets the same bar as a screenshot — nothing to compare,
-            but the same name in the same place and the same way out of it. */}
-        <MediaViewToolbar title={media.name} nav={nav} compare={null} />
+            and nothing to pin a comment to, but the same name in the same place
+            and the same way out of it. */}
+        <MediaViewToolbar
+          title={media.name}
+          nav={nav}
+          compare={null}
+          commentTool={false}
+        />
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5">
           <MediaWell
             aspectRatio={
@@ -292,6 +307,12 @@ export function MediaViewer(props: {
   // than leave the reviewer clicking at an image that cannot take it.
   const commentable = panes.some((pane) => pane.interactive);
 
+  // What it takes for the comment tool to be worth offering: a half on screen
+  // that can take a pin, and a viewer allowed to add to the discussion.
+  // `DisarmCommentTool` is given the same value, so the tool can never stay
+  // armed once the control that would put it away has gone.
+  const canPlacePin = commentable && checkCanCommentOnMedia(comments.media);
+
   // Where the page stacks (below `lg`), the viewer sizes itself from the
   // media's own shape instead of claiming a fixed slice of the viewport: a
   // wide screenshot on a phone would otherwise sit in a mostly-empty well.
@@ -309,11 +330,7 @@ export function MediaViewer(props: {
           pane registered itself as the highlighter, so both have to be under
           one provider. */}
       <BuildDiffHighlighterProvider>
-        <DisarmCommentTool
-          enabled={commentable}
-          placing={comments.placing}
-          onPlacingChange={comments.onPlacingChange}
-        />
+        <DisarmCommentTool enabled={canPlacePin} />
         <div className="flex h-full min-h-0 flex-col gap-2">
           <MediaViewToolbar
             title={media.name}
@@ -321,6 +338,7 @@ export function MediaViewer(props: {
             compare={
               counterpart ? { blendEnabled, hasChanges: diff !== null } : null
             }
+            commentTool={canPlacePin}
           />
 
           <div
@@ -362,7 +380,9 @@ export function MediaViewer(props: {
                 // A single pane — alone, or with both halves blended into it —
                 // has nowhere else the pin could land.
                 pinState={
-                  panes.length > 1 && comments.placing
+                  panes.length > 1 &&
+                  canPlacePin &&
+                  commentToolMode === "comment"
                     ? pane.interactive
                       ? "target"
                       : "excluded"
@@ -385,17 +405,14 @@ export function MediaViewer(props: {
  * takes, and rendering nothing because there is nothing to say: the tool simply
  * stops being armed, the same as pressing Escape.
  */
-function DisarmCommentTool(props: {
-  enabled: boolean;
-  placing: boolean;
-  onPlacingChange: (placing: boolean) => void;
-}) {
-  const { enabled, placing, onPlacingChange } = props;
+function DisarmCommentTool(props: { enabled: boolean }) {
+  const { enabled } = props;
+  const { mode, activateHand } = useCommentTool();
   useEffect(() => {
-    if (!enabled && placing) {
-      onPlacingChange(false);
+    if (!enabled && mode === "comment") {
+      activateHand();
     }
-  }, [enabled, placing, onPlacingChange]);
+  }, [enabled, mode, activateHand]);
   return null;
 }
 
@@ -404,10 +421,12 @@ function DisarmCommentTool(props: {
  * own components: where to go next on the left, what is on screen in the middle,
  * what can be done to it on the right.
  *
- * The compare controls only exist for a pair — whether to compare at all, and
- * the build's three ways to do it — and the overlay controls only once Argos has
- * found changes to mark. The rest of the bar is there either way, which is what
- * makes a video's page and a screenshot's page the same page.
+ * Three of the slots are conditional, each on what it would act on: the compare
+ * controls on there being a pair, the overlay controls on Argos having found
+ * changes to mark, and the comment tool on a half being on screen that can take
+ * a pin. A recording has none of them. What is left — the name, and the arrows
+ * out of it — sits where a screenshot's page puts it, which is what makes the
+ * two the same page.
  */
 function MediaViewToolbar(props: {
   title: string;
@@ -420,8 +439,14 @@ function MediaViewToolbar(props: {
     /** Whether there is a mask to draw — the overlay controls act on nothing without one. */
     hasChanges: boolean;
   } | null;
+  /**
+   * Whether the comment tool belongs on the bar. Not when there is nothing on
+   * screen to pin to — a recording, the "before" half alone, or a visitor who
+   * may only read.
+   */
+  commentTool: boolean;
 }) {
-  const { title, nav, compare } = props;
+  const { title, nav, compare, commentTool } = props;
   return (
     // `mb-4` + the viewer column's `gap-2` puts 24px between the toolbar and
     // the panes, level with the sidebar's action strip.
@@ -465,6 +490,12 @@ function MediaViewToolbar(props: {
                 </>
               ) : null}
             </div>
+          ) : null}
+          {commentTool ? (
+            // Last, because it is the one control here that acts on the media
+            // rather than on how the media is shown — the order the build's own
+            // bar reads in: see the change, then annotate it.
+            <CommentToolToggle />
           ) : null}
         </div>
       </DetailToolbar>

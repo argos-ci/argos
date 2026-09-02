@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
 import { DeploymentNotification, GithubRepository } from "@/database/models";
+import { getDeploymentPreferredUrl } from "@/deployment/url";
 import { postGitHubComment } from "@/git-platform/github";
 import { getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
@@ -35,7 +36,7 @@ export async function processDeploymentNotification(
   });
 
   await deploymentNotification.$fetchGraph(
-    "deployment.[project.[githubRepository.[githubAccount,repoInstallations.installation]]]",
+    "deployment.[aliases,project.[githubRepository.[githubAccount,repoInstallations.installation]]]",
   );
 
   invariant(
@@ -48,6 +49,9 @@ export async function processDeploymentNotification(
 
   const { project } = deployment;
   invariant(project, "No project found", UnretryableError);
+
+  const { aliases: deploymentAliases } = deployment;
+  invariant(deploymentAliases, "No aliases found", UnretryableError);
 
   const { githubRepository } = project;
 
@@ -106,7 +110,10 @@ export async function processDeploymentNotification(
       repo: githubRepository.name,
       sha: deployment.commitSha,
       state: notification.github.state,
-      target_url: deployment.url,
+      target_url: getDeploymentPreferredUrl({
+        slug: deployment.slug,
+        aliases: deploymentAliases,
+      }),
       description: notification.description,
       context: notification.context,
     }),

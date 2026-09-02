@@ -647,6 +647,20 @@ export function createConfig() {
         default: "",
         env: "DEPLOYMENTS_ACCESS_TOKEN_SECRET",
       },
+      customDomains: {
+        distributionId: {
+          doc: "CloudFront multi-tenant distribution that serves customer custom domains. Empty disables custom domains.",
+          format: String,
+          default: "",
+          env: "DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID",
+        },
+        connectionGroupId: {
+          doc: "CloudFront connection group whose routing endpoint customers point their DNS at.",
+          format: String,
+          default: "",
+          env: "DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID",
+        },
+      },
     },
     dynamodb: {
       endpoint: {
@@ -709,7 +723,6 @@ export function createConfig() {
       ["RESEND_API_KEY", "resend.apiKey"],
       ["STRIPE_API_KEY", "stripe.apiKey"],
       ["GITHUB_APP_PRIVATE_KEY", "github.privateKey"],
-      ["GITHUB_CLIENT_SECRET", "github.clientSecret"],
       ["GITHUB_LIGHT_APP_PRIVATE_KEY", "githubLight.privateKey"],
       ["ORIGIN_APP_PRIVATE_KEY", "origin.privateKey"],
       ["GITLAB_APP_SECRET", "gitlab.appSecret"],

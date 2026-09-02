@@ -25,6 +25,7 @@ export class Plan extends Model {
           githubSsoIncluded: { type: "boolean" },
           fineGrainedAccessControlIncluded: { type: "boolean" },
           samlIncluded: { type: "boolean" },
+          customDomainsIncluded: { type: "boolean" },
           interval: { type: "string", enum: ["month", "year"] },
         },
       },
@@ -46,6 +47,7 @@ export class Plan extends Model {
   githubSsoIncluded!: boolean;
   fineGrainedAccessControlIncluded!: boolean;
   samlIncluded!: boolean;
+  customDomainsIncluded!: boolean;
   interval!: SubscriptionInterval;
 
   static override virtualAttributes = ["displayName"];

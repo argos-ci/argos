@@ -15,6 +15,13 @@
         "NODE_ENV=test pnpm run --filter @argos/backend start-web"
       ],
       "port": 3000
+    },
+    {
+      "name": "dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 4002,
+      "url": "https://app.argos-ci.dev:4002"
     }
   ]
 }

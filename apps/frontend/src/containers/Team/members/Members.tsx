@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
@@ -11,7 +11,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { DialogTrigger } from "@/ui/Dialog";
+import { DialogTrigger, useDialogValueState } from "@/ui/Dialog";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tab";
@@ -68,15 +68,7 @@ export function TeamMembers(props: {
 }) {
   const { team } = props;
   const authAccount = useAssertAuthAccount();
-  const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
-  const removeFromTeamModal = {
-    isOpen: removedUser !== null,
-    onOpenChange: (open: boolean) => {
-      if (!open) {
-        setRemovedUser(null);
-      }
-    },
-  };
+  const removing = useDialogValueState<RemovedUser | null>(null);
   const me = team.me;
   const amOwner =
     team.permissions.includes(AccountPermission.Admin) ||
@@ -107,7 +99,7 @@ export function TeamMembers(props: {
               <TeamMembersList
                 teamId={team.id}
                 amOwner={amOwner}
-                onRemove={setRemovedUser}
+                onRemove={removing.open}
                 hasGithubSSO={hasGithubSSO}
                 hasFineGrainedAccessControl={hasFineGrainedAccessControl}
               />
@@ -121,7 +113,7 @@ export function TeamMembers(props: {
                   teamName={teamName}
                   githubAccount={team.ssoGithubAccount}
                   amOwner={amOwner}
-                  onRemove={setRemovedUser}
+                  onRemove={removing.open}
                   hasFineGrainedAccessControl={hasFineGrainedAccessControl}
                 />
               </Suspense>
@@ -135,15 +127,15 @@ export function TeamMembers(props: {
             </TabPanel>
           ) : null}
         </Tabs>
-        <Modal {...removeFromTeamModal}>
-          {removedUser ? (
-            authAccount.id === removedUser.id ? (
+        <Modal open={removing.isOpen} onOpenChange={removing.onOpenChange}>
+          {removing.value ? (
+            authAccount.id === removing.value.id ? (
               <LeaveTeamDialog teamName={teamName} teamAccountId={team.id} />
             ) : (
               <RemoveFromTeamDialog
                 teamName={teamName}
                 teamAccountId={team.id}
-                user={removedUser}
+                user={removing.value}
               />
             )
           ) : null}

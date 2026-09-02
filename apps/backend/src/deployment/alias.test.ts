@@ -56,4 +56,61 @@ describe("deployment aliases", () => {
       },
     ]);
   });
+
+  describe("custom domains", () => {
+    const deployment = {
+      slug: "deployment-1",
+      branch: "main",
+      environment: "production",
+    } as Deployment;
+
+    const internalDomain = {
+      domain: "docs.dev.argos-ci.live",
+      environment: "production",
+      internal: true,
+      status: "active",
+    } as ProjectDomain;
+
+    const customDomain = {
+      domain: "docs.example.com",
+      environment: "production",
+      internal: false,
+      status: "active",
+    } as ProjectDomain;
+
+    function getAliases(projectDomains: ProjectDomain[]) {
+      return getDeploymentAliases({
+        accountSlug: "argos",
+        projectName: "docs",
+        deployment,
+        projectDomains,
+      }).map((alias) => alias.alias);
+    }
+
+    it("serves an active custom domain alongside the internal one", () => {
+      expect(getAliases([internalDomain, customDomain])).toEqual([
+        "docs-main-argos",
+        "docs.dev.argos-ci.live",
+        "docs.example.com",
+      ]);
+    });
+
+    // Only `active` means CloudFront has verified the domain and is routing it;
+    // aliasing a pending one would resolve to a deployment nothing serves.
+    it.each(["pending", "failed"] as const)(
+      "drops a custom domain that is %s",
+      (status) => {
+        expect(
+          getAliases([{ ...customDomain, status } as ProjectDomain]),
+        ).toEqual(["docs-main-argos"]);
+      },
+    );
+
+    it("serves internal domains whatever their plan", () => {
+      expect(getAliases([internalDomain])).toEqual([
+        "docs-main-argos",
+        "docs.dev.argos-ci.live",
+      ]);
+    });
+  });
 });

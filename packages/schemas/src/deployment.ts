@@ -7,3 +7,11 @@ export type DeploymentEnvironment = z.infer<typeof DeploymentEnvironmentSchema>;
 export const DeploymentStatusSchema = z.enum(["pending", "ready", "error"]);
 
 export type DeploymentStatus = z.infer<typeof DeploymentStatusSchema>;
+
+export const ProjectDomainStatusSchema = z.enum([
+  "pending",
+  "active",
+  "failed",
+]);
+
+export type ProjectDomainStatus = z.infer<typeof ProjectDomainStatusSchema>;

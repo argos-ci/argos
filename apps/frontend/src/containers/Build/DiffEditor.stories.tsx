@@ -1,10 +1,13 @@
+import { Suspense, useState } from "react";
+import { invariant } from "@argos/util/invariant";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
+import { Button } from "@/ui/Button";
 import { ColorModeProvider } from "@/ui/ColorMode";
 import { StoryTitle } from "@/ui/StoryTitle";
 
-import { Editor, getLanguageFromContentType } from "./DiffEditor";
+import { DiffEditor, Editor, getLanguageFromContentType } from "./DiffEditor";
 
 /**
  * Guards the curated Shiki bundle in `@/shiki/bundle`, which ships grammars only
@@ -64,7 +67,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const EveryHighlightedContentType: Story = {
-  args: { value: SAMPLES[0]?.value ?? "", language: "json" },
+  args: {
+    value: SAMPLES[0]?.value ?? "",
+    language: "json",
+    cacheKey: "application/json",
+  },
   render: () => (
     // `Editor` reads the color mode to pick its light/dark Shiki theme.
     <ColorModeProvider>
@@ -75,6 +82,7 @@ export const EveryHighlightedContentType: Story = {
             <Editor
               value={value}
               language={getLanguageFromContentType(contentType)}
+              cacheKey={contentType}
             />
           </div>
         ))}
@@ -93,6 +101,126 @@ export const EveryHighlightedContentType: Story = {
           SAMPLES.length,
         );
         expect(canvas.queryByText("Loading snapshot…")).not.toBeInTheDocument();
+      },
+      { timeout: 15_000 },
+    );
+  },
+};
+
+const DIFF_SAMPLES = [
+  {
+    baseCacheKey: "screenshot-base-1",
+    headCacheKey: "screenshot-head-1",
+    original: '<meta name="description" content="the first baseline line" />',
+    modified: '<meta name="description" content="the first changed line" />',
+  },
+  {
+    baseCacheKey: "screenshot-base-2",
+    headCacheKey: "screenshot-head-2",
+    original: '<meta name="description" content="the second baseline line" />',
+    modified: '<meta name="description" content="the second changed line" />',
+  },
+];
+
+/** Text rendered by the viewer, which lives in the custom element's shadow DOM. */
+function getViewerText(canvasElement: HTMLElement) {
+  const container = canvasElement.querySelector("diffs-container");
+  return container?.shadowRoot?.textContent ?? "";
+}
+
+/**
+ * The viewer adopts the DOM already sitting in its container and skips its first
+ * render when it finds code in there — and `disableFileHeader` leaves no header
+ * to force that render either. React reuses the same element across snapshots
+ * (the subtree suspends on the incoming text and resumes onto the same node), so
+ * the second snapshot used to inherit the first one's markup and never repaint:
+ * the title changed, the diff did not, and only a full reload cleared it.
+ *
+ * Suspending between the two samples is what makes this reproduce — switching
+ * content on a mounted viewer keeps the instance alive and repaints normally.
+ */
+const SUSPENSE_CACHE = new Map<string, string | Promise<void>>();
+
+function useSuspendedText(key: string, value: string): string {
+  const entry = SUSPENSE_CACHE.get(key);
+  if (typeof entry === "string") {
+    return entry;
+  }
+  if (entry) {
+    throw entry;
+  }
+  const promise = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      SUSPENSE_CACHE.set(key, value);
+      resolve();
+    }, 30);
+  });
+  SUSPENSE_CACHE.set(key, promise);
+  throw promise;
+}
+
+function SuspendedDiff(props: { sample: (typeof DIFF_SAMPLES)[number] }) {
+  const { sample } = props;
+  const original = useSuspendedText(sample.baseCacheKey, sample.original);
+  const modified = useSuspendedText(sample.headCacheKey, sample.modified);
+  return (
+    <DiffEditor
+      original={original}
+      modified={modified}
+      originalLanguage="html"
+      modifiedLanguage="html"
+      originalCacheKey={sample.baseCacheKey}
+      modifiedCacheKey={sample.headCacheKey}
+      renderSideBySide
+    />
+  );
+}
+
+function SuspendingSnapshotSwitcher() {
+  const [index, setIndex] = useState(0);
+  const sample = DIFF_SAMPLES[index];
+  invariant(sample);
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <Button
+        onClick={() => setIndex((value) => (value + 1) % DIFF_SAMPLES.length)}
+      >
+        Next snapshot
+      </Button>
+      <Suspense fallback={<div>Loading snapshot…</div>}>
+        <SuspendedDiff sample={sample} />
+      </Suspense>
+    </div>
+  );
+}
+
+export const SwitchingSnapshotsThroughSuspense: Story = {
+  args: { value: "", language: "text", cacheKey: "unused" },
+  render: () => (
+    <ColorModeProvider>
+      <SuspendingSnapshotSwitcher />
+    </ColorModeProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(
+      () => {
+        expect(getViewerText(canvasElement)).toContain(
+          "the first changed line",
+        );
+      },
+      { timeout: 15_000 },
+    );
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Next snapshot" }),
+    );
+
+    await waitFor(
+      () => {
+        const text = getViewerText(canvasElement);
+        expect(text).toContain("the second changed line");
+        expect(text).not.toContain("the first changed line");
       },
       { timeout: 15_000 },
     );

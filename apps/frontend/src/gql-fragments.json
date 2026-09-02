@@ -63,6 +63,7 @@
       "Plan",
       "Project",
       "ProjectContributor",
+      "ProjectCustomDomain",
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",

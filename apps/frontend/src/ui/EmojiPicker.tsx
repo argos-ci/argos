@@ -7,6 +7,7 @@ import {
   type Path,
 } from "react-hook-form";
 
+import { requestIdle } from "@/util/idle";
 import { mergeRefs } from "@/util/merge-refs";
 
 import { Button, type ButtonProps } from "./Button";
@@ -18,13 +19,26 @@ import { Popover } from "./Popover";
 
 export { DialogTrigger as EmojiPickerTrigger } from "./Overlay";
 
+const importEmojiPickerGrid = () => import("./EmojiPickerGrid");
+
 /**
  * The picker grid carries the full emojibase dataset — 571 kB of JSON, plus the
- * index it builds at module scope — so it is loaded on demand. Nothing here can
- * be seen before the user opens the picker, and keeping it out of the static
- * graph is what stops it from riding along in the build page's chunk.
+ * index it builds at module scope — so it stays out of the static graph: that
+ * is what stops it from riding along in the build page's chunk, ahead of the
+ * screenshot diffs that are the reason to open the page.
+ *
+ * Out of the static graph, not off the page: waiting for the click to fetch it
+ * put a spinner in front of every first open. So the chunk is warmed as soon as
+ * the main thread is free, and the boundary below is only ever seen by someone
+ * who opens the picker inside that window.
  */
-const EmojiPickerGrid = lazy(() => import("./EmojiPickerGrid"));
+const EmojiPickerGrid = lazy(importEmojiPickerGrid);
+
+requestIdle(() => {
+  // Fire and forget: a rejected warm-up is a preload that didn't help, and
+  // opening the picker retries the import and reports the failure for real.
+  importEmojiPickerGrid().catch(() => {});
+});
 
 /** Placeholder matching the grid's footprint, so the popover does not resize. */
 function EmojiPickerFallback() {

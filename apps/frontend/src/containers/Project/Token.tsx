@@ -98,9 +98,7 @@ function RegenerateTokenButton(
     <DialogTrigger>
       <Button variant="secondary">Regenerate token</Button>
       <Modal>
-        <Dialog size="medium">
-          <RegenerateTokenDialog {...props} />
-        </Dialog>
+        <RegenerateTokenDialog {...props} />
       </Modal>
     </DialogTrigger>
   );

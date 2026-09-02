@@ -1,7 +1,9 @@
 import { expect } from "@playwright/test";
 
+import { TeamUser } from "../apps/backend/src/database/models";
+import { createUserAccount } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, screenshot } from "./util";
+import { ensureTeamOwner, getUniqueTestIdentifier, screenshot } from "./util";
 
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
@@ -68,3 +70,45 @@ loggedTest("team settings - authentication", async ({ page, team }) => {
   ]);
   await screenshot(page, "team-settings-authentication");
 });
+
+loggedTest(
+  "team settings - remove a member from the team",
+  async ({ page, team }, testInfo) => {
+    const id = getUniqueTestIdentifier(testInfo);
+    const member = await createUserAccount({
+      email: `dana-${id}@acme.com`,
+      name: "Dana Scully",
+      slug: `dana-${id}`,
+    });
+    await TeamUser.query().insert({
+      teamId: team.team.id,
+      userId: member.user.id,
+      userLevel: "member",
+    });
+
+    await page.goto(`/${team.account.slug}/settings/members`);
+    const row = page.getByRole("row").filter({ hasText: "Dana Scully" });
+    await expect(row).toBeVisible();
+
+    await row.locator("button:has(.lucide-ellipsis-vertical)").click();
+    await page.getByRole("option", { name: "Remove from Team" }).click();
+
+    // The whole point of the guard: the dialog is driven by a controlled
+    // `Modal`, and a mismatched prop left it permanently closed — the menu
+    // item worked, and nothing happened.
+    const dialog = page.getByRole("alertdialog");
+    await expect(
+      dialog.getByRole("heading", { name: "Remove Team Member" }),
+    ).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Remove from Team" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(row).toBeHidden();
+    expect(
+      await TeamUser.query().findOne({
+        teamId: team.team.id,
+        userId: member.user.id,
+      }),
+    ).toBeUndefined();
+  },
+);

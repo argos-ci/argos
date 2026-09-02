@@ -792,6 +792,7 @@ function BaseScreenshot({
       }
       return (
         <Snapshot
+          id={diff.baseScreenshot.id}
           url={diff.baseScreenshot.url}
           contentType={diff.baseScreenshot.contentType}
         />
@@ -956,6 +957,7 @@ function CompareScreenshot(props: {
 
       return (
         <Snapshot
+          id={diff.compareScreenshot.id}
           url={diff.compareScreenshot.url}
           contentType={diff.compareScreenshot.contentType}
         />
@@ -1024,6 +1026,7 @@ function CompareScreenshot(props: {
       }
       return (
         <Snapshot
+          id={diff.compareScreenshot.id}
           url={diff.compareScreenshot.url}
           contentType={diff.compareScreenshot.contentType}
         />
@@ -1390,11 +1393,13 @@ const BuildScreenshots = memo(
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pt-2 pb-4">
             <BuildSnapshotsDiff
               base={{
+                id: diff.baseScreenshot.id,
                 url: diff.baseScreenshot.url,
                 contentType: diff.baseScreenshot.contentType,
                 header: <BaselineScreenshotHeader build={build} />,
               }}
               head={{
+                id: diff.compareScreenshot.id,
                 url: diff.compareScreenshot.url,
                 contentType: diff.compareScreenshot.contentType,
                 header: <ChangesScreenshotHeader build={build} />,
@@ -1454,7 +1459,7 @@ function Snapshot(props: SnapshotProps) {
   );
 }
 
-type SnapshotProps = { url: string; contentType: string };
+type SnapshotProps = { id: string; url: string; contentType: string };
 
 function SuspendedSnapshot(props: SnapshotProps) {
   const [text] = useTextContent([props.url]);
@@ -1467,6 +1472,7 @@ function SuspendedSnapshot(props: SnapshotProps) {
       <Editor
         value={text}
         language={getLanguageFromContentType(props.contentType)}
+        cacheKey={props.id}
       />
     </EditorContainer>
   );
@@ -1481,8 +1487,8 @@ function EditorContainer(props: { children: React.ReactNode }) {
 }
 
 function DiffSnapshots(props: {
-  base: { url: string; contentType: string };
-  head: { url: string; contentType: string };
+  base: { id: string; url: string; contentType: string };
+  head: { id: string; url: string; contentType: string };
   renderSideBySide: boolean;
   build: BuildFragmentDocument;
   screenshotDiffId: string;
@@ -1496,8 +1502,10 @@ function DiffSnapshots(props: {
         screenshotDiffId={screenshotDiffId}
         original={baseText}
         originalLanguage={getLanguageFromContentType(base.contentType)}
+        originalCacheKey={base.id}
         modified={headText}
         modifiedLanguage={getLanguageFromContentType(head.contentType)}
+        modifiedCacheKey={head.id}
         renderSideBySide={renderSideBySide}
       />
     </EditorContainer>
@@ -1505,6 +1513,7 @@ function DiffSnapshots(props: {
 }
 
 type DiffSnapshotEntry = {
+  id: string;
   url: string;
   contentType: string;
   header: ReactNode;
@@ -1525,7 +1534,11 @@ function BuildSnapshotsDiff(props: {
       return (
         <>
           <div className="flex shrink-0 justify-center">{base.header}</div>
-          <Snapshot url={base.url} contentType={base.contentType} />
+          <Snapshot
+            id={base.id}
+            url={base.url}
+            contentType={base.contentType}
+          />
         </>
       );
     }
@@ -1538,7 +1551,11 @@ function BuildSnapshotsDiff(props: {
         return (
           <>
             <div className="flex shrink-0 justify-center">{base.header}</div>
-            <Snapshot url={base.url} contentType={base.contentType} />
+            <Snapshot
+              id={base.id}
+              url={base.url}
+              contentType={base.contentType}
+            />
           </>
         );
       }

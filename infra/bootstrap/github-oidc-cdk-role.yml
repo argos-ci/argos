@@ -109,7 +109,7 @@ Resources:
             Version: "2012-10-17"
             Statement:
               # infra/scripts/app.ts reads its stack props from here when
-              # invoked with `-c source=ssm`, which is how CI runs it.
+              # invoked with `-c stage=<stage>`, which is how CI runs it.
               - Effect: Allow
                 Action:
                   - ssm:GetParameter

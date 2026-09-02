@@ -135,7 +135,24 @@ function useSearch(): SearchState {
 /* Trigger and surface                                                        */
 /* -------------------------------------------------------------------------- */
 
-type MenuOpenState = { open: boolean; setOpen: (open: boolean) => void };
+type MenuOpenState = {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  /**
+   * Takes the popup out of the DOM now, skipping the exit animation.
+   *
+   * Base UI renders a popover's dismiss layer while `open || mounted`, so a
+   * closing popup keeps its Escape handler and its focus for the length of the
+   * animation. When a row opens a dialog, that leaves the two overlaid, and the
+   * Escape meant for the dialog closes the menu instead — the dialog stays up.
+   *
+   * `actionsRef.close()` does not help: it is `setOpen(false)`, which is what
+   * closing the menu already does. Unmounting is the only one of the two that
+   * ends the overlap. Picking a row is also the one dismissal with nothing to
+   * animate away from — the pointer has already left.
+   */
+  unmount: () => void;
+};
 
 const MenuOpenContext = createContext<MenuOpenState | null>(null);
 
@@ -163,10 +180,19 @@ export function MenuRoot(props: {
     },
     [onOpenChange],
   );
-  const value = useMemo(() => ({ open, setOpen }), [open, setOpen]);
+  const actionsRef = useRef<BasePopover.Root.Actions>(null);
+  const unmount = useCallback(() => actionsRef.current?.unmount(), []);
+  const value = useMemo(
+    () => ({ open, setOpen, unmount }),
+    [open, setOpen, unmount],
+  );
   return (
     <MenuOpenContext value={value}>
-      <BasePopover.Root open={open} onOpenChange={setOpen}>
+      <BasePopover.Root
+        open={open}
+        onOpenChange={setOpen}
+        actionsRef={actionsRef}
+      >
         {children}
       </BasePopover.Root>
     </MenuOpenContext>
@@ -369,6 +395,8 @@ type MenuContextValue = {
   activeId: string | null;
   checkedIndicator: "icon" | "highlight";
   close: () => void;
+  /** What a row calls once its action has run — see `MenuOpenState.unmount`. */
+  closeNow: () => void;
   /**
    * Whether the focused row's submenu is open.
    *
@@ -480,6 +508,12 @@ function MenuList(
 
   const close = useCallback(() => {
     openState?.setOpen(false);
+  }, [openState]);
+
+  /** Closes the menu for good — see `MenuOpenState.unmount`. */
+  const closeNow = useCallback(() => {
+    openState?.setOpen(false);
+    openState?.unmount();
   }, [openState]);
 
   const [isSubmenuOpen, setSubmenuOpen] = useState(false);
@@ -595,6 +629,7 @@ function MenuList(
       activeId,
       checkedIndicator,
       close,
+      closeNow,
       isSubmenuOpen,
       requestSubmenu,
       openSubmenu,
@@ -605,6 +640,7 @@ function MenuList(
       activeId,
       checkedIndicator,
       close,
+      closeNow,
       isSubmenuOpen,
       requestSubmenu,
       openSubmenu,
@@ -989,11 +1025,11 @@ function MenuItemRow(
       setPending(true);
       result.finally(() => {
         setPending(false);
-        menu.close();
+        menu.closeNow();
       });
       return;
     }
-    menu.close();
+    menu.closeNow();
   };
 
   const highlighted =

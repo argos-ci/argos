@@ -104,11 +104,31 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   modified: string;
   originalLanguage: BundledLanguage;
   modifiedLanguage: BundledLanguage;
+  /**
+   * Identity of each side of the diff. The `key` below is built from these, so
+   * they are what makes the viewer repaint when another snapshot is selected.
+   *
+   * They also reach the library as `cacheKey`, which falls back to the file
+   * *name* — the constant `"snapshot"` below — when unset. That fallback is
+   * harmless while the render cache is per instance and the `key` hands each
+   * snapshot a fresh one, but the worker pool's caches are global and keyed on
+   * it alone. Nothing provides a pool today; the day something does, one shared
+   * key would serve every text diff in the app the same highlight.
+   */
+  originalCacheKey: string;
+  modifiedCacheKey: string;
   renderSideBySide: boolean;
   comments?: DiffEditorComments<LAnnotation>;
 }) {
-  const { original, modified, originalLanguage, modifiedLanguage, comments } =
-    props;
+  const {
+    original,
+    modified,
+    originalLanguage,
+    modifiedLanguage,
+    originalCacheKey,
+    modifiedCacheKey,
+    comments,
+  } = props;
   const themeType = useThemeType();
   const options = {
     ...BASE_OPTIONS,
@@ -135,15 +155,26 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   return (
     <Suspense fallback={<SnapshotLoader />}>
       <MultiFileDiff<LAnnotation>
+        // A fresh element per snapshot, and not an optimization to drop. The
+        // viewer hydrates onto whatever DOM its container already holds and
+        // skips its first render when it finds a `<pre>` in there, assuming the
+        // markup is its own; `disableFileHeader` removes the header that would
+        // otherwise force that render. React reuses this element across
+        // snapshots — the subtree suspends on the new text and resumes onto the
+        // same node — so without a key the incoming snapshot inherits the
+        // previous one's markup and never repaints.
+        key={`${originalCacheKey}:${modifiedCacheKey}`}
         oldFile={{
           name: "snapshot",
           contents: original,
           lang: originalLanguage,
+          cacheKey: originalCacheKey,
         }}
         newFile={{
           name: "snapshot",
           contents: modified,
           lang: modifiedLanguage,
+          cacheKey: modifiedCacheKey,
         }}
         options={options}
         lineAnnotations={comments?.lineAnnotations}
@@ -154,12 +185,24 @@ export function DiffEditor<LAnnotation = undefined>(props: {
   );
 }
 
-export function Editor(props: { value: string; language: BundledLanguage }) {
+export function Editor(props: {
+  value: string;
+  language: BundledLanguage;
+  /** See {@link DiffEditor}'s `originalCacheKey`. */
+  cacheKey: string;
+}) {
   const themeType = useThemeType();
   return (
     <Suspense fallback={<SnapshotLoader />}>
       <File
-        file={{ name: "snapshot", contents: props.value, lang: props.language }}
+        // See {@link DiffEditor}: same hydrate-onto-stale-DOM trap.
+        key={props.cacheKey}
+        file={{
+          name: "snapshot",
+          contents: props.value,
+          lang: props.language,
+          cacheKey: props.cacheKey,
+        }}
         options={{ ...BASE_OPTIONS, themeType }}
       />
     </Suspense>

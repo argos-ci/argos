@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
@@ -6,6 +5,7 @@ import { useAssertAuthAccount } from "@/containers/Auth";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { RemoveMenu, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
+import { useDialogValueState } from "@/ui/Dialog";
 import {
   List,
   ListEmpty,
@@ -51,15 +51,7 @@ export function ProjectContributorsList(props: {
   readOnly: boolean;
 }) {
   const authAccount = useAssertAuthAccount();
-  const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
-  const removeModal = {
-    isOpen: removedUser !== null,
-    onOpenChange: (open: boolean) => {
-      if (!open) {
-        setRemovedUser(null);
-      }
-    },
-  };
+  const removing = useDialogValueState<RemovedUser | null>(null);
   const result = useQuery(ProjectContributorsQuery, {
     variables: {
       projectId: props.projectId,
@@ -112,7 +104,7 @@ export function ProjectContributorsList(props: {
                             actionLabel={
                               isMe ? "Leave Project" : "Remove from Project"
                             }
-                            onRemove={() => setRemovedUser(user)}
+                            onRemove={() => removing.open(user)}
                           />
                         )}
                       </UserListRow>
@@ -153,19 +145,19 @@ export function ProjectContributorsList(props: {
           );
         })()}
       </div>
-      <Modal {...removeModal}>
-        {removedUser ? (
-          authAccount.id === removedUser.id ? (
+      <Modal open={removing.isOpen} onOpenChange={removing.onOpenChange}>
+        {removing.value ? (
+          authAccount.id === removing.value.id ? (
             <LeaveProjectDialog
               projectId={props.projectId}
               projectName={props.projectName}
-              userAccountId={removedUser.id}
+              userAccountId={removing.value.id}
             />
           ) : (
             <RemoveFromProjectDialog
               projectId={props.projectId}
               projectName={props.projectName}
-              user={removedUser}
+              user={removing.value}
             />
           )
         ) : null}

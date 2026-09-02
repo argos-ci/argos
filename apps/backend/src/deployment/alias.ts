@@ -27,9 +27,18 @@ export function getDeploymentAliases(input: {
   if (deployment.environment === "production") {
     aliases.push(
       ...projectDomains
-        .filter(
-          (domain) => domain.environment === "production" && domain.internal,
-        )
+        .filter((domain) => {
+          if (domain.environment !== "production") {
+            return false;
+          }
+          if (domain.internal) {
+            return true;
+          }
+          // No plan check: the entitlement is enforced where a domain is added,
+          // and losing it deliberately revokes nothing — see the Costs note in
+          // infra/README.md.
+          return domain.status === "active";
+        })
         .map((domain) => ({
           type: "domain" as const,
           alias: domain.domain,

@@ -9,6 +9,7 @@ import {
 } from "@/database/services/period-usage";
 import {
   getStaffRevenue,
+  getStaffRevenueMonthTeams,
   MAX_MONTHS,
   MirrorCoverageError,
 } from "@/stripe/revenue";
@@ -373,12 +374,13 @@ export const typeDefs = gql`
   type StaffRevenueMonth {
     "The first instant of the month, in UTC — what names it on screen."
     month: DateTime!
-    "The two splits below, added up."
+    "The three splits below, added up."
     revenue: Float!
-    "What teams billed by the month were invoiced that month."
+    """
+    What teams billed by the month were invoiced that month. The teams behind
+    it are read one month at a time, by \`staffRevenueMonthTeams\`.
+    """
     monthlyPlans: StaffRevenueSplit!
-    "The teams behind \`monthlyPlans\`, largest first — they sum to it."
-    teams: [StaffRevenueMonthTeam!]!
     """
     What the annual contracts contributed to the month: their invoices
     amortized, day by day, over the stretch each one pays for — the monthly
@@ -389,10 +391,28 @@ export const typeDefs = gql`
     yearlyPlans: StaffRevenueSplit!
     """
     What GitHub Marketplace brought in over the month: the subscriptions
-    running then, at their plans' list prices. Beside the two above rather
-    than inside them — GitHub bills it, and \`revenue\` never counts it.
+    running then, at their plans' list prices, each earning the share of the
+    month it was subscribed for. Billed by GitHub rather than invoiced by
+    Argos, and counted in \`revenue\` like the two above it — the figure states
+    what the month was worth, whoever raised the bill.
     """
     githubPlans: StaffRevenueSplit!
+  }
+
+  "One invoice behind a team's month line."
+  type StaffRevenueMonthTeamInvoice {
+    "Net of tax and credit notes, in the currency it was raised in."
+    amount: Float!
+    "The currency it was raised in."
+    currency: String!
+    "When it was raised."
+    invoicedAt: DateTime!
+  }
+
+  "An amount in the currency it is stated in."
+  type StaffRevenuePrice {
+    amount: Float!
+    currency: String!
   }
 
   "What one team was invoiced over a month, one line of the breakdown."
@@ -409,6 +429,36 @@ export const typeDefs = gql`
     currency: String
     "In euros, like the split it sums into."
     revenue: Float!
+    """
+    Screenshots the line's amount was raised on: what the team consumed over
+    the month for a bill that exists, and what the running period has
+    accumulated for one still to come.
+    """
+    screenshotsCount: Int!
+    """
+    What the plan itself costs over a period, before any usage — null when the
+    subscription carries no amount, or when the team is no longer billed.
+
+    This and the two below describe the subscription as it stands today, not as
+    it stood in the month: they are read to decide what to offer a team next.
+    Every other figure on the line is read off the invoice instead, and a plan
+    change cannot rewrite it.
+    """
+    planPrice: StaffRevenuePrice
+    "What a period includes before overage is billed, on that same plan."
+    includedScreenshots: Int
+    "That plan's name, which says whether its quota is worth printing."
+    planName: String
+    "The invoices the line adds up, newest first. Empty on an estimate."
+    invoices: [StaffRevenueMonthTeamInvoice!]!
+    """
+    When the cycle is expected to raise a bill Stripe has not billed yet, and
+    null on every line read from a real invoice.
+
+    Such a line is an estimate read off the usage so far, and it is left out of
+    the month's own figures — they report what was invoiced.
+    """
+    estimatedAt: DateTime
   }
 
   "One invoice a contract's worth is read from."
@@ -424,6 +474,45 @@ export const typeDefs = gql`
     "The stretch its money pays for, after the next bill clipped it."
     coveredFrom: DateTime!
     coveredUntil: DateTime!
+  }
+
+  """
+  What a contract's running term has consumed, and where that lands by the
+  renewal if it carries on at the rate it has run so far.
+
+  The term rather than the month: a yearly quota resets once a year, so what
+  says whether a contract is about to be re-priced is the whole year against
+  the whole quota — the question a renewal is negotiated on.
+  """
+  type StaffContractUsage {
+    "The term the figures below are read over, and the day it renews on."
+    periodFrom: DateTime!
+    periodEndsAt: DateTime!
+    "Screenshots consumed since the term opened."
+    screenshotsCount: Int!
+    "What the term includes before overage is billed."
+    includedScreenshots: Int!
+    "What the overage run up so far comes to, in euros."
+    additionalCost: Float!
+    """
+    That same overage in the currency Stripe prices it in — what the contract's
+    own column adds it to, where the euro figure above is what the page's
+    monthly rate is built from.
+    """
+    additionalPrice: StaffRevenuePrice!
+    """
+    That same overage averaged over the months of the term that have gone by,
+    in euros — what a month of the contract's usage has been worth.
+
+    A mean rather than the month's own: the quota is crossed once somewhere in
+    the year and every month after it bills, so a term two months in reads
+    high and one eleven months in reads low.
+    """
+    monthlyAdditionalCost: Float!
+    "Where the count lands by the renewal, at the rate the term has run at."
+    projectedScreenshotsCount: Int!
+    "What that projected overage would come to, in euros."
+    projectedAdditionalCost: Float!
   }
 
   """
@@ -456,6 +545,38 @@ export const typeDefs = gql`
     Counted all the same: a contract invoice raised is money on its way.
     """
     awaitingPayment: Boolean!
+    """
+    What the team's running term has consumed, and where it lands — null when
+    no yearly subscription of the team's can be read for it: one no longer
+    billed, one on a plan nothing is metered against, or a contract invoiced
+    by hand with no subscription behind it.
+    """
+    usage: StaffContractUsage
+  }
+
+  """
+  Where the running month is heading, once everything it has not billed yet is
+  counted.
+
+  The month itself reports what was invoiced, which is why it reads low all
+  month and only catches up on its last cycle. These are the same three
+  figures, each carried to the end of the month rather than stopped at today.
+  """
+  type StaffRevenueProjection {
+    "The three below, added up."
+    revenue: Float!
+    "Invoiced so far, plus the bills the cycles have not raised yet."
+    monthlyPlans: Float!
+    "A whole month of the contracts, not the share of it that has gone by."
+    yearlyPlans: Float!
+    "A whole month of Marketplace, on the same basis."
+    githubPlans: Float!
+    """
+    The part of \`monthlyPlans\` no invoice exists for: what the subscriptions
+    still to be billed have run up so far, which is a floor rather than a
+    forecast — their usage keeps accruing until the cycle closes.
+    """
+    estimated: Float!
   }
 
   "What Argos invoiced, and the annual contracts behind the yearly rate."
@@ -464,6 +585,8 @@ export const typeDefs = gql`
     months: [StaffRevenueMonth!]!
     "The contracts behind every month's \`yearlyPlans\`, largest first."
     yearlyContracts: [StaffYearlyContract!]!
+    "Where the running month is heading, beside what it has billed."
+    projection: StaffRevenueProjection!
   }
 
   type StaffTeamConnection implements Connection {
@@ -472,6 +595,24 @@ export const typeDefs = gql`
   }
 
   extend type Query {
+    """
+    The teams behind one month of \`staffRevenue\`'s monthly plans, largest
+    first (staff only).
+
+    Read a month at a time rather than beside the figures: a line carries the
+    usage its team got through, and pricing a year of that to draw one month
+    is the difference between reading a handful of rows and walking every
+    screenshot the year produced.
+
+    They sum to that month's \`monthlyPlans\`, except on the running month,
+    which also carries the bills its cycles have not raised yet — marked by
+    \`estimatedAt\`, and in no figure the month reports.
+    """
+    staffRevenueMonthTeams(
+      "Any instant of the month; the month it falls in is what is read."
+      month: DateTime!
+    ): [StaffRevenueMonthTeam!]!
+
     """
     List all teams (staff only).
 
@@ -695,6 +836,20 @@ export const resolvers: IResolvers = {
       ]);
 
       return paginateResult({ result: { total, results }, after, first });
+    },
+    staffRevenueMonthTeams: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      try {
+        return await getStaffRevenueMonthTeams(args.month);
+      } catch (error) {
+        // Read by the same page as `staffRevenue`, and answered the same way:
+        // a mirror not backfilled is an operator state, not a fault.
+        if (error instanceof MirrorCoverageError) {
+          throw notFound(error.message);
+        }
+        throw error;
+      }
     },
     staffRevenue: async (_root, args, ctx) => {
       assertStaff(ctx);
