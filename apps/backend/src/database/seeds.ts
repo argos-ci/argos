@@ -1288,6 +1288,213 @@ export async function createVariantSwitchersScenario(input: {
 }
 
 /**
+ * A build whose screenshots come from a test that walks a checkout step by
+ * step, with the SDK's capture order recorded — plus one screenshot from a
+ * test that is not a journey. Names are chosen so that neither the
+ * alphabetical order (cart, confirmation, payment, shipping) nor the diff
+ * score order matches the journey (cart, shipping, payment, confirmation):
+ * a drawer that follows the journey can only be following the metadata.
+ *
+ * Two of the four steps are unchanged, so the journey is only whole if it is
+ * built from every diff of the build rather than from the reviewable ones.
+ */
+export async function createJourneyScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const sdk = { name: "@argos-ci/playwright", version: "6.0.0" };
+  const automationLibrary = { name: "playwright", version: "1.61.0" };
+  const browser = { name: "chromium", version: "126.0" };
+  const viewport = { width: 375, height: 1024 };
+
+  const steps: {
+    name: string;
+    index: number;
+    /** Diff score; `null` for an unchanged screenshot. */
+    score: number | null;
+  }[] = [
+    { name: "checkout/cart.png", index: 0, score: null },
+    { name: "checkout/shipping.png", index: 1, score: null },
+    { name: "checkout/payment.png", index: 2, score: 0.3 },
+    // Scores higher than the payment step, so the server (score first) lists
+    // it before payment while the journey puts it after.
+    { name: "checkout/confirmation.png", index: 3, score: 0.5 },
+  ];
+  const journey = {
+    title: "complete a purchase",
+    titlePath: ["checkout.spec.ts", "complete a purchase"],
+    location: { file: "e2e/checkout.spec.ts", line: 8, column: 5 },
+    retries: 0,
+    retry: 0,
+  };
+  const other = {
+    name: "account/settings.png",
+    score: 0.1,
+    test: {
+      title: "shows the account settings",
+      titlePath: ["account.spec.ts", "shows the account settings"],
+      location: { file: "e2e/account.spec.ts", line: 4, column: 5 },
+      retries: 0,
+      retry: 0,
+    },
+  };
+
+  const bucketProps = {
+    name: "default",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: steps.length + 1,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      {
+        ...bucketProps,
+        branch: "main",
+        commit: "5f1e0c2b7a9d4e6f8c3b1a0d9e7f6c5b4a3d2e1f",
+      },
+      {
+        ...bucketProps,
+        branch: "feat/apple-pay",
+        commit: "9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b",
+      },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const screenshots = [
+    ...steps.map((step) => ({
+      name: step.name,
+      score: step.score,
+      metadata: {
+        url: `https://shop.example.com/${step.name.replace(/\.png$/, "")}`,
+        viewport,
+        colorScheme: "light" as const,
+        mediaType: "screen" as const,
+        test: journey,
+        capture: { index: step.index },
+        browser,
+        automationLibrary,
+        sdk,
+      } satisfies ScreenshotMetadata,
+    })),
+    {
+      name: other.name,
+      score: other.score,
+      metadata: {
+        url: "https://shop.example.com/account/settings",
+        viewport,
+        colorScheme: "light" as const,
+        mediaType: "screen" as const,
+        test: other.test,
+        capture: { index: 0 },
+        browser,
+        automationLibrary,
+        sdk,
+      } satisfies ScreenshotMetadata,
+    },
+  ];
+
+  const tests = await Test.query().insertAndFetch(
+    screenshots.map((screenshot) => ({
+      name: screenshot.name,
+      buildName: "default",
+      projectId,
+    })),
+  );
+  const testIdByName = new Map(tests.map((test) => [test.name, test.id]));
+
+  const baseScreenshots = await Screenshot.query().insertAndFetch(
+    screenshots.map((screenshot) => ({
+      screenshotBucketId: baseBucket.id,
+      testId: testIdByName.get(screenshot.name) ?? null,
+      name: screenshot.name,
+      s3Id: baseFile.key,
+      fileId: baseFile.id,
+      metadata: screenshot.metadata,
+    })),
+  );
+  const compareScreenshots = await Screenshot.query().insertAndFetch(
+    screenshots.map((screenshot) => ({
+      screenshotBucketId: compareBucket.id,
+      testId: testIdByName.get(screenshot.name) ?? null,
+      name: screenshot.name,
+      s3Id: screenshot.score === null ? baseFile.key : compareFile.key,
+      fileId: screenshot.score === null ? baseFile.id : compareFile.id,
+      metadata: screenshot.metadata,
+    })),
+  );
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "default",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      baseBranch: "main",
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  await ScreenshotDiff.query().insert(
+    screenshots.map((screenshot, index) => {
+      const baseScreenshot = baseScreenshots[index];
+      const compareScreenshot = compareScreenshots[index];
+      invariant(baseScreenshot && compareScreenshot);
+      const changed = screenshot.score !== null;
+      return {
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot.id,
+        testId: testIdByName.get(screenshot.name) ?? null,
+        score: screenshot.score ?? 0,
+        jobStatus: "complete" as const,
+        s3Id: changed ? diffFile.key : null,
+        fileId: changed ? diffFile.id : null,
+        createdAt: seededAt,
+        updatedAt: seededAt,
+      };
+    }),
+  );
+
+  await concludeBuild({ build, notify: false });
+
+  return { build };
+}
+
+/**
  * Three builds sharing one head commit and branch — the shape a commit gets
  * when it runs several suites, and when a monorepo splits them over several
  * Argos projects. Two live in the given project, told apart by their build
