@@ -3,32 +3,18 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon } from "lucide-react";
-import { Helmet } from "react-helmet";
 
-import { SettingsPage } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
-import { AccountPermission, InvoiceStatus } from "@/gql/graphql";
+import { InvoiceStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
+import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Chip, ChipColor } from "@/ui/Chip";
 import { Details, Summary } from "@/ui/Details";
-import { Heading } from "@/ui/Heading";
-import {
-  Page,
-  PageContainer,
-  PageHeader,
-  PageHeaderContent,
-} from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
-import { PageLoader } from "@/ui/PageLoader";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import { TooltipIndicator } from "@/ui/TooltipIndicator";
 import { formatCurrency } from "@/util/intl";
-
-import { useAccountContext } from ".";
-import { NotFound } from "../NotFound";
-import { useAccountParams } from "./AccountParams";
 
 const InvoicesQuery = graphql(`
   query AccountInvoices_account($slug: String!, $after: Int!, $first: Int!) {
@@ -77,42 +63,33 @@ const UpcomingInvoiceQuery = graphql(`
 const INITIAL_NB_INVOICES = 20;
 const NB_INVOICES_PER_PAGE = 50;
 
-export function Component() {
-  const params = useAccountParams();
-  invariant(params, "Account params required");
-  const { accountSlug } = params;
-
+/** The Settings › Invoices section. */
+export function AccountInvoices(props: { accountSlug: string }) {
   return (
-    <Page>
-      <Helmet>
-        <title>{`${accountSlug} • Invoices`}</title>
-      </Helmet>
-      <PageContainer>
-        <PageHeader>
-          <PageHeaderContent>
-            <Heading>Invoices</Heading>
-            <Text slot="headline">
-              What you have been billed, and what is coming.
-            </Text>
-          </PageHeaderContent>
-        </PageHeader>
-        <Suspense fallback={<PageLoader />}>
-          <PageContent accountSlug={accountSlug} />
+    <Card>
+      <CardBody>
+        <CardTitle>Invoices</CardTitle>
+        <CardParagraph>
+          What you have been billed, and what is coming.
+        </CardParagraph>
+        {/* Its own boundary: the list is a query of its own, and the settings
+            nav must not blank while it loads. */}
+        <Suspense fallback={<InvoiceListSkeleton />}>
+          <InvoiceList accountSlug={props.accountSlug} />
         </Suspense>
-      </PageContainer>
-    </Page>
+      </CardBody>
+    </Card>
   );
 }
 
-function PageContent(props: { accountSlug: string }) {
-  const { accountSlug } = props;
-  const { permissions } = useAccountContext();
-
-  if (!permissions.includes(AccountPermission.Admin)) {
-    return <NotFound />;
-  }
-
-  return <InvoiceList accountSlug={accountSlug} />;
+function InvoiceListSkeleton() {
+  return (
+    <List>
+      <UpcomingInvoiceSkeletonRow />
+      <UpcomingInvoiceSkeletonRow />
+      <UpcomingInvoiceSkeletonRow />
+    </List>
+  );
 }
 
 function InvoiceList(props: { accountSlug: string }) {
@@ -121,14 +98,13 @@ function InvoiceList(props: { accountSlug: string }) {
     variables: { slug: accountSlug, after: 0, first: INITIAL_NB_INVOICES },
   });
 
-  if (!data.account) {
-    return <NotFound />;
-  }
+  // The settings page resolved this account before rendering the section.
+  invariant(data.account, "account is required");
 
   const { invoices } = data.account;
 
   return (
-    <SettingsPage>
+    <>
       <List>
         {/* The invoice to come is one row of the same list, but it is read from
             Stripe rather than from the mirror — so it gets its own boundary and
@@ -175,7 +151,7 @@ function InvoiceList(props: { accountSlug: string }) {
           }}
         />
       ) : null}
-    </SettingsPage>
+    </>
   );
 }
 
