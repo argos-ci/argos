@@ -81,6 +81,20 @@ describe("getProject", () => {
       });
   });
 
+  test("returns 401 once the project has been deleted", async ({ project }) => {
+    await project.$query().patch({ deletedAt: new Date().toISOString() });
+
+    await request(app)
+      .get("/projects/acme/web")
+      .set("Authorization", "Bearer the-awesome-token")
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          `Project not found in Argos. If the issue persists, verify your token. (token: "the-awesome-token").`,
+        );
+      })
+      .expect(401);
+  });
+
   test("returns 401 when a project token accesses another project", async ({
     account,
   }) => {

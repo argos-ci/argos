@@ -91,7 +91,9 @@ export async function getProjectFromShortLivedProjectToken(
     return null;
   }
 
-  const project = await Project.query().findById(result.data.projectId);
+  const project = await Project.queryNotDeleted().findById(
+    result.data.projectId,
+  );
 
   if (!project) {
     return null;

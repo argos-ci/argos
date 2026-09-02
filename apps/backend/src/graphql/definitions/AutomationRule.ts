@@ -386,7 +386,7 @@ export const resolvers: IResolvers = {
 
       const { projectId } = args.input;
 
-      const project = await Project.query().findById(projectId);
+      const project = await Project.queryNotDeleted().findById(projectId);
 
       if (!project) {
         throw notFound("Project not found.");

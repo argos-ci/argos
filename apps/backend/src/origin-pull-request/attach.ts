@@ -26,6 +26,7 @@ export async function attachHeadBuildsToOriginPullRequest(
   const builds = await Build.query()
     .joinRelated("[project, compareScreenshotBucket]")
     .where("project.originRepositoryId", pullRequest.originRepositoryId)
+    .whereNull("project.deletedAt")
     .where("compareScreenshotBucket.commit", headSha)
     // The commit alone is not the pull request: a release pull request opened
     // from the default branch shares its head commit with the builds of that

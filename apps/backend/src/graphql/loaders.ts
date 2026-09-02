@@ -436,7 +436,7 @@ function createProjectTeamUserLevelLoader() {
         }
       }
       const existingProjects = projectTuples.length
-        ? await Project.query()
+        ? await Project.queryNotDeleted()
             .whereIn(["accountId", "name"], projectTuples)
             .select("accountId", "name")
         : [];
@@ -747,7 +747,7 @@ function createAccountActivationByAccountIdLoader() {
     // Left join so accounts that created projects but never built still get a
     // row. `count(distinct)` is required on projects: the join to builds
     // multiplies project rows.
-    const rows = await Project.query()
+    const rows = await Project.queryNotDeleted()
       .leftJoin("builds", "builds.projectId", "projects.id")
       .join("accounts", "accounts.id", "projects.accountId")
       .select("projects.accountId")

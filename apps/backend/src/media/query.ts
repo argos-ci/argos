@@ -1,7 +1,7 @@
 import type { MediaStage } from "@argos/schemas/media";
 import type { QueryBuilder } from "objection";
 
-import { Media, MediaVersion } from "@/database/models";
+import { Media, MediaVersion, Project } from "@/database/models";
 
 /**
  * How many of a pull request's media the share page's sidebar lists.
@@ -41,6 +41,27 @@ export type MediaFilters = {
  * that never completed is an implementation detail of the two-step flow, not
  * something a project should see listed.
  */
+/**
+ * Resolve the media a share link points at, or `null` when nothing is behind
+ * it.
+ *
+ * A share URL is the one way into a media that does not go through its project,
+ * so the soft-delete check lives here: deleting a project has to take its share
+ * links with it, and the token alone would keep answering.
+ */
+export function findMediaByShareToken(
+  shareToken: string,
+): QueryBuilder<Media, Media | undefined> {
+  return Media.query()
+    .findOne("media.shareToken", shareToken)
+    .whereExists(
+      Project.query()
+        .select(1)
+        .whereColumn("projects.id", "media.projectId")
+        .whereNull("projects.deletedAt"),
+    );
+}
+
 export function queryProjectMedia(args: {
   projectIds: string[];
   filters: MediaFilters | null;

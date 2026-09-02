@@ -27,7 +27,9 @@ const checkProjectName = async (args: { name: string; accountId: string }) => {
     throw new Error("Name is reserved for internal usage");
   }
 
-  const sameName = await Project.query()
+  // A deleted project no longer holds its name: the account is meant to be able
+  // to recreate the project it just removed under the same name.
+  const sameName = await Project.queryNotDeleted()
     .select("id")
     .whereILike("name", args.name)
     .where("accountId", args.accountId)
@@ -62,7 +64,8 @@ export const resolveProjectName = async (args: {
  * This is the single source of truth shared by the GraphQL API
  * (`Account.projects`, `getVisibleProjectIds`) and the public REST API
  * (`GET /accounts/{accountSlug}/projects`):
- * - staff see every project
+ * - a soft-deleted project is listed to nobody, staff included
+ * - staff see every other project
  * - on a user account, only the owner
  * - on a team, owners/members see all; contributors see projects they are a
  *   contributor on (or that expose a default user level)
@@ -72,6 +75,8 @@ export function applyProjectVisibility<R>(
   args: { account: Account; user: { id: string; staff: boolean } },
 ): QueryBuilder<Project, R> | null {
   const { account, user } = args;
+
+  query.whereNull("projects.deletedAt");
 
   // Staff can view all projects
   if (user.staff) {
@@ -222,7 +227,7 @@ export async function loadProjectById(id: string): Promise<Project> {
   if (!isValidPgBigInt(id)) {
     throw boom(400, "Invalid ID.");
   }
-  const project = await Project.query().findById(id);
+  const project = await Project.queryNotDeleted().findById(id);
   if (!project) {
     throw boom(404, "Project not found.");
   }

@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
+\restrict KpjS2jKXTxQgaV2MMwS992ZcqvSv3J5pYvxbsy4hL6CE5lxMr5e9WGe0MUzJrDr
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.6 (Homebrew)
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2235,6 +2235,7 @@ CREATE TABLE public.projects (
     "ignoreConfig" jsonb,
     "buildNumber" integer DEFAULT 0 NOT NULL,
     "originRepositoryId" bigint,
+    "deletedAt" timestamp with time zone,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
@@ -6691,7 +6692,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
+\unrestrict KpjS2jKXTxQgaV2MMwS992ZcqvSv3J5pYvxbsy4hL6CE5lxMr5e9WGe0MUzJrDr
 
 -- Knex migrations
 
@@ -6946,3 +6947,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823133757_github-plan-prices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260824081749_stripe-invoices-customer-fields.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260830130624_custom-domains.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260902183811_project-soft-delete.js', 1, NOW());

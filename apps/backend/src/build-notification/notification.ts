@@ -63,19 +63,21 @@ async function checkHasSiblingProject(project: Project): Promise<boolean> {
     return false;
   }
 
-  const query = Project.query();
+  // The repository predicates are grouped: left loose alongside the
+  // soft-delete filter they would `or` their way past it.
+  const query = Project.queryNotDeleted().where((qb) => {
+    if (project.githubRepositoryId) {
+      qb.orWhere("githubRepositoryId", project.githubRepositoryId);
+    }
 
-  if (project.githubRepositoryId) {
-    query.orWhere("githubRepositoryId", project.githubRepositoryId);
-  }
+    if (project.gitlabProjectId) {
+      qb.orWhere("gitlabProjectId", project.gitlabProjectId);
+    }
 
-  if (project.gitlabProjectId) {
-    query.orWhere("gitlabProjectId", project.gitlabProjectId);
-  }
-
-  if (project.originRepositoryId) {
-    query.orWhere("originRepositoryId", project.originRepositoryId);
-  }
+    if (project.originRepositoryId) {
+      qb.orWhere("originRepositoryId", project.originRepositoryId);
+    }
+  });
 
   const projectCount = await query.resultSize();
   return projectCount > 1;

@@ -997,10 +997,12 @@ export const resolvers: IResolvers = {
   },
   Query: {
     project: async (_root, args, ctx) => {
-      const project = await Project.query().joinRelated("account").findOne({
-        "account.slug": args.accountSlug,
-        "projects.name": args.projectName,
-      });
+      const project = await Project.queryNotDeleted()
+        .joinRelated("account")
+        .findOne({
+          "account.slug": args.accountSlug,
+          "projects.name": args.projectName,
+        });
 
       if (!project) {
         return null;
@@ -1021,7 +1023,7 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const project = await Project.query()
+      const project = await Project.queryNotDeleted()
         .joinRelated("account")
         .findById(args.id);
 
@@ -1304,7 +1306,11 @@ export const resolvers: IResolvers = {
       }
     },
     deleteProject: async (_root, args, ctx) => {
-      const project = await Project.query().findById(args.id).select("id");
+      // A project that is gone — never existed, or already deleted — answers
+      // the same way, so a double submit does not send a second notification.
+      const project = await Project.queryNotDeleted()
+        .findById(args.id)
+        .select("id");
       if (!project) {
         return true;
       }

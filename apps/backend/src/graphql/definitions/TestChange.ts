@@ -240,7 +240,7 @@ async function runChangeMutaton(
     throw notFound("Test change not found");
   }
 
-  const project = await Project.query()
+  const project = await Project.queryNotDeleted()
     .joinRelated("account")
     .where("account.slug", accountSlug)
     .whereILike("projects.name", changeIdPayload.projectName)

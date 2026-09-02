@@ -8,6 +8,7 @@ import {
   IgnoredChange,
   MediaDiff,
   Project,
+  ProjectDomain,
   ProjectUser,
   Screenshot,
   ScreenshotBucket,
@@ -17,6 +18,7 @@ import {
   User,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { deleteDomainTenant } from "@/deployment/cloudfront";
 import {
   deleteUnreferencedMediaDiffObjects,
   deleteUnreferencedMediaObjects,
@@ -36,6 +38,13 @@ vi.mock("@/media/object", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/media/object")>()),
   deleteUnreferencedMediaObjects: vi.fn(async () => undefined),
   deleteUnreferencedMediaDiffObjects: vi.fn(async () => undefined),
+}));
+
+// Same reason as the media bytes: a CloudFront tenant is billed and is not
+// rolled back, so what matters is that its id makes it out of the transaction.
+vi.mock("@/deployment/cloudfront", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/deployment/cloudfront")>()),
+  deleteDomainTenant: vi.fn(async () => undefined),
 }));
 
 type SeededProject = {
@@ -315,6 +324,27 @@ describe("deleteProject", () => {
     });
     const recipients = mockSendNotification.mock.calls[0]?.[0].recipients;
     expect(recipients).toHaveLength(3);
+  });
+
+  test("releases the custom domains and their CloudFront tenants", async () => {
+    // The one thing a soft delete still drops for real: a tenant is billed for
+    // as long as it exists, and the domain has to be free for another project.
+    const account = await factory.UserAccount.create();
+    const owner = await User.query().findById(account.userId!);
+    const project = await factory.Project.create({ accountId: account.id });
+    const projectDomain = await factory.ProjectDomain.create({
+      projectId: project.id,
+      internal: false,
+      status: "active",
+      cloudfrontTenantId: "dt-tenant-1",
+    });
+
+    await deleteProject({ id: project.id, user: owner });
+
+    expect(deleteDomainTenant).toHaveBeenCalledWith("dt-tenant-1");
+    await expect(
+      ProjectDomain.query().findById(projectDomain.id),
+    ).resolves.toBeUndefined();
   });
 
   test("sends a notification to the personal account owner", async () => {

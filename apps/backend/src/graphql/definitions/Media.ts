@@ -8,6 +8,7 @@ import {
   getMediaPermissions,
   type MediaPermission,
 } from "@/media/permissions";
+import { findMediaByShareToken } from "@/media/query";
 import {
   getMediaDiffUrl,
   getMediaEmbedArgs,
@@ -527,9 +528,7 @@ export const resolvers: IResolvers = {
   },
   Query: {
     mediaByShareToken: async (_root, args, ctx) => {
-      const media = await Media.query().findOne({
-        shareToken: args.shareToken,
-      });
+      const media = await findMediaByShareToken(args.shareToken);
 
       if (!media) {
         return null;
