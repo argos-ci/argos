@@ -14,7 +14,7 @@ import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
-import { AccountInvoicesCard } from "@/containers/Account/InvoicesCard";
+import { AccountInvoices } from "@/containers/Account/Invoices";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -38,7 +38,7 @@ import { UserNotificationPreferences } from "@/containers/User/NotificationPrefe
 import { OAuthApps } from "@/containers/User/OAuthApps";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
 import { graphql } from "@/gql";
-import { AccountPermission } from "@/gql/graphql";
+import { AccountPermission, PlanInterval } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Heading } from "@/ui/Heading";
 import {
@@ -59,6 +59,12 @@ const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {
     account(slug: $slug) {
       id
+      stripeCustomerId
+
+      plan {
+        id
+        interval
+      }
 
       ... on Team {
         plan {
@@ -75,7 +81,6 @@ const AccountQuery = graphql(`
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
-      ...AccountInvoicesCard_Account
       ...TeamAddOns_Team
       ...AccountGitLab_Account
       ...AccountCursorOrigin_Account
@@ -159,6 +164,14 @@ function PageContent() {
 
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
   const isTeam = account.__typename === "Team";
+  // Without a Stripe customer there is no invoice to read, ever — a free
+  // account, or a team GitHub Marketplace bills. A yearly plan is a negotiated
+  // contract, invoiced by the sales side rather than read here; it is the same
+  // line the add-ons draw between self-serve and contract.
+  const showInvoices =
+    hasAdminPermission &&
+    Boolean(account.stripeCustomerId) &&
+    account.plan?.interval !== PlanInterval.Year;
   const isUser = account.__typename === "User";
   const fineGrainedAccessControlIncluded = Boolean(
     isTeam && account.plan?.fineGrainedAccessControlIncluded,
@@ -213,13 +226,19 @@ function PageContent() {
       element: (
         <>
           {hasAdminPermission && <PlanCard account={account} />}
-          {hasAdminPermission && <AccountInvoicesCard account={account} />}
           {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />
           ) : null}
         </>
       ),
+    },
+    {
+      name: "Invoices",
+      slug: "invoices",
+      element: showInvoices ? (
+        <AccountInvoices accountSlug={accountSlug} />
+      ) : null,
     },
     {
       name: "Authentication",

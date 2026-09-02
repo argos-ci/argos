@@ -383,11 +383,6 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   lazy: () => import("./pages/Account/Tests"),
                 },
                 {
-                  path: "~/invoices",
-                  HydrateFallback,
-                  lazy: () => import("./pages/Account/Invoices"),
-                },
-                {
                   path: "settings/*",
                   HydrateFallback,
                   lazy: () => import("./pages/Account/Settings"),
