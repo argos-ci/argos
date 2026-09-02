@@ -78,6 +78,10 @@ export const typeDefs = gql`
     play: Boolean
   }
 
+  type ScreenshotMetadataCapture {
+    index: Int!
+  }
+
   type ScreenshotMetadata {
     url: String
     previewUrl: String
@@ -89,6 +93,7 @@ export const typeDefs = gql`
     automationLibrary: ScreenshotMetadataAutomationLibrary!
     sdk: ScreenshotMetadataSDK!
     story: ScreenshotMetadataStory
+    capture: ScreenshotMetadataCapture
     tags: [String!]
   }
 
