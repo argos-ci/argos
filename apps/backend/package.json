@@ -55,7 +55,7 @@
     "@sentry/node": "^10.69.0",
     "@simplewebauthn/server": "^13.3.2",
     "@slack/bolt": "^5.0.0",
-    "@tiptap/core": "^3.29.2",
+    "@tiptap/core": "^3.30.4",
     "@tiptap/extension-mention": "^3.29.2",
     "@tiptap/html": "^3.29.2",
     "@tiptap/pm": "^3.29.2",
