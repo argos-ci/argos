@@ -71,6 +71,8 @@ const config: CodegenConfig = {
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           GoogleUser: "../../database/models/index.js#GoogleUser",
+          Invoice: "../../database/models/index.js#StripeInvoice",
+          UpcomingInvoice: "../../stripe/upcoming-invoice.js#UpcomingInvoice",
           Media: "../../database/models/index.js#Media",
           MediaDiff: "../../database/models/index.js#MediaDiff",
           MediaVersion: "../../database/models/index.js#MediaVersion",

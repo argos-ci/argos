@@ -12,15 +12,12 @@ const getCurrencyFormatter = memoize((currency: string, digits: number) => {
 /**
  * Formats a number as a currency string using the Intl API.
  * @param value - The numeric value to format
- * @param currency - The currency code (e.g., 'USD', 'EUR')
+ * @param currency - An ISO 4217 code, in either case: Stripe states them
+ *   lowercase ('eur'), and Intl canonicalizes them itself
  * @param digits - The number of fraction digits to display (default: 2)
  * @returns The formatted currency string
  */
-export function formatCurrency(
-  value: number,
-  currency: "EUR" | "USD",
-  digits = 2,
-) {
+export function formatCurrency(value: number, currency: string, digits = 2) {
   return getCurrencyFormatter(currency, digits).format(value);
 }
 

@@ -3491,3 +3491,58 @@ function commentDoc(text: string) {
     content: [{ type: "paragraph", content: [{ type: "text", text }] }],
   };
 }
+
+/**
+ * A billing history: the account's Stripe customer, and the invoices raised on
+ * it.
+ *
+ * Fixed dates and amounts, since the invoices page is under visual test and a
+ * moving figure would fail it every run. The three statuses cover the shapes a
+ * row can take — settled, still due, and one raised in error and canceled. Only
+ * the columns that page reads are filled: the tax split and the covered period
+ * belong to the revenue arithmetic, and inventing them here would be fixture
+ * noise pretending to be data.
+ */
+export async function createInvoicesScenario(input: {
+  accountId: string;
+}): Promise<void> {
+  const { accountId } = input;
+  const stripeCustomerId = `cus_seed_${accountId}`;
+  const account = await Account.query().findById(accountId).throwIfNotFound();
+  await account.$query().patch({ stripeCustomerId });
+
+  const invoices = [
+    {
+      stripeInvoiceId: `in_seed_${accountId}_3`,
+      number: "ARGOS-0003",
+      stripeCreatedAt: "2026-08-01T06:00:00.000Z",
+      status: "open",
+      total: 24_900,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_2`,
+      number: "ARGOS-0002",
+      stripeCreatedAt: "2026-07-01T06:00:00.000Z",
+      status: "paid",
+      total: 21_500,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_1`,
+      number: "ARGOS-0001",
+      stripeCreatedAt: "2026-06-01T06:00:00.000Z",
+      status: "void",
+      total: 19_900,
+    },
+  ];
+
+  await StripeInvoice.query().insert(
+    invoices.map((invoice) => ({
+      ...invoice,
+      stripeCustomerId,
+      currency: "eur",
+      creditedAmountExcludingTax: 0,
+      hostedInvoiceUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}`,
+      invoicePdfUrl: `https://invoice.stripe.com/i/${invoice.stripeInvoiceId}/pdf`,
+    })),
+  );
+}
