@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict y0HGAClZuh0p5kDWaPm1UP8FySoT684n31wtUqA6YyKFNCVe8YAQoVkbQiCxkoB
+\restrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2606,7 +2606,10 @@ CREATE TABLE public.stripe_invoices (
     "totalTaxesAmount" integer,
     "creditedAmountExcludingTax" integer NOT NULL,
     "periodStart" timestamp with time zone,
-    "periodEnd" timestamp with time zone
+    "periodEnd" timestamp with time zone,
+    number character varying(255),
+    "hostedInvoiceUrl" text,
+    "invoicePdfUrl" text
 );
 
 
@@ -6688,7 +6691,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict y0HGAClZuh0p5kDWaPm1UP8FySoT684n31wtUqA6YyKFNCVe8YAQoVkbQiCxkoB
+\unrestrict jqxvgZ0SmaaAGQGPDX28eFfv8u1rvpY9JgBksmGseQ2x0ZpjffWyjxe0qQC7FTR
 
 -- Knex migrations
 
@@ -6941,4 +6944,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260822180431_screenshot-buckets-insert-autovacuum.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823065836_stripe-invoices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260823133757_github-plan-prices.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260824081749_stripe-invoices-customer-fields.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260830130624_custom-domains.js', 1, NOW());
