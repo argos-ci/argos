@@ -10,7 +10,7 @@ import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { completeLogin } from "@/auth/login";
 import config from "@/config";
-import { Account } from "@/database/models";
+import { Account, StripeInvoice } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
@@ -36,6 +36,7 @@ import {
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
 import { encodeStripeClientReferenceId } from "@/stripe";
+import { getUpcomingInvoice } from "@/stripe/upcoming-invoice";
 import { HTTPError } from "@/util/error";
 
 import {
@@ -219,6 +220,10 @@ export const typeDefs = gql`
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int
     blockWhenSpendLimitIsReached: Boolean!
+    "Invoices raised on the account, most recent first. Admins only."
+    invoices(after: Int = 0, first: Int = 20): InvoiceConnection!
+    "The invoice to come, previewed from Stripe at read time. Admins only."
+    upcomingInvoice: UpcomingInvoice
   }
 
   input UpdateAccountInput {
@@ -317,6 +322,20 @@ async function accountByIdResolver(
   return account;
 }
 
+/**
+ * Billing reads what the account is charged, which no member below admin is
+ * entitled to see.
+ */
+async function assertAccountAdmin(
+  account: Account,
+  ctx: Context,
+): Promise<void> {
+  const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+  if (!permissions.includes("admin")) {
+    throw forbidden("user is not an admin of the account");
+  }
+}
+
 export const commonAccountResolvers: IResolvers["Team"] = {
   stripeClientReferenceId: (account, _args, ctx) => {
     if (!ctx.auth) {
@@ -383,6 +402,27 @@ export const commonAccountResolvers: IResolvers["Team"] = {
   additionalScreenshotsCost: async (account) => {
     const manager = account.$getSubscriptionManager();
     return manager.getAdditionalScreenshotCost();
+  },
+  invoices: async (account, args, ctx) => {
+    await assertAccountAdmin(account, ctx);
+    if (!account.stripeCustomerId) {
+      return {
+        pageInfo: { totalCount: 0, hasNextPage: false, isEmpty: true },
+        edges: [],
+      };
+    }
+    const result = await StripeInvoice.query()
+      .where("stripeCustomerId", account.stripeCustomerId)
+      .orderBy("stripeCreatedAt", "desc")
+      // Two invoices raised in the same second would otherwise order freely,
+      // and a page boundary falling between them would repeat or skip one.
+      .orderBy("id", "desc")
+      .range(args.after, args.after + args.first - 1);
+    return paginateResult({ result, after: args.after, first: args.first });
+  },
+  upcomingInvoice: async (account, _args, ctx) => {
+    await assertAccountAdmin(account, ctx);
+    return getUpcomingInvoice(account);
   },
   includedScreenshots: async (account) => {
     const manager = account.$getSubscriptionManager();

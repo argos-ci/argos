@@ -19,6 +19,7 @@ describe("#formatDate", () => {
   it("formats each preset", () => {
     expect(formatDate(date, "monthDay")).toBe("Sep 4");
     expect(formatDate(date, "month")).toBe("Sep");
+    expect(formatDate(date, "monthYear")).toBe("September 2026");
     expect(formatDate(date, "date")).toBe("Sep 4, 2026");
     expect(formatDate(date, "longDate")).toBe("September 4, 2026");
     expect(formatDate(date, "dateTime")).toBe("September 4, 2026 at 3:04 PM");

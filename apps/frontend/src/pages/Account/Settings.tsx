@@ -14,6 +14,7 @@ import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
+import { AccountInvoicesCard } from "@/containers/Account/InvoicesCard";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -74,6 +75,7 @@ const AccountQuery = graphql(`
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
+      ...AccountInvoicesCard_Account
       ...TeamAddOns_Team
       ...AccountGitLab_Account
       ...AccountCursorOrigin_Account
@@ -211,6 +213,7 @@ function PageContent() {
       element: (
         <>
           {hasAdminPermission && <PlanCard account={account} />}
+          {hasAdminPermission && <AccountInvoicesCard account={account} />}
           {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />

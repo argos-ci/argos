@@ -24,6 +24,7 @@ import * as GitlabUser from "./GitlabUser";
 import * as GlApiNamespace from "./GlApiNamespace";
 import * as GlApiProject from "./GlApiProject";
 import * as GoogleUser from "./GoogleUser";
+import * as Invoice from "./Invoice";
 import * as JobStatus from "./JobStatus";
 import * as Media from "./Media";
 import * as MetricsPeriod from "./MetricsPeriod";
@@ -82,6 +83,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GlApiNamespace,
   GlApiProject,
   GoogleUser,
+  Invoice,
   JobStatus,
   Media,
   MetricsPeriod,
