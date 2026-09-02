@@ -7,6 +7,7 @@ import type {
 } from "@/auth/payload";
 import { Media, type Project } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { liveProject } from "@/media/query";
 import { boom } from "@/util/error";
 
 import { assertProjectAccess } from "./project";
@@ -36,6 +37,7 @@ export async function loadMediaForAuth<
     isValidPgBigInt(params.mediaId)
       ? Media.query()
           .findById(params.mediaId)
+          .whereExists(liveProject())
           .withGraphFetched("project.account")
       : null,
   ]);

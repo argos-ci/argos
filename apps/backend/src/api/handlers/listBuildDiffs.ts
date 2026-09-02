@@ -2,10 +2,11 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { Build, ScreenshotDiff } from "@/database/models";
+import { ScreenshotDiff } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { boom } from "@/util/error";
 
+import { queryBuildByNumber } from "../auth/build";
 import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import {
@@ -90,13 +91,7 @@ export const listBuildDiffs: CreateAPIHandler = ({ get }) => {
 
       const [auth, build] = await Promise.all([
         req.ctx.auth(),
-        Build.query()
-          .joinRelated("project.account")
-          .where("project:account.slug", params.owner)
-          .where("project.name", params.project)
-          .where("number", params.buildNumber)
-          .withGraphFetched("project")
-          .first(),
+        queryBuildByNumber(params),
       ]);
 
       assertProjectAccess(auth, {

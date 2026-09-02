@@ -8,6 +8,7 @@ import {
   IgnoredChange,
   MediaDiff,
   Project,
+  DeploymentAlias,
   ProjectDomain,
   ProjectUser,
   Screenshot,
@@ -19,6 +20,7 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { deleteDomainTenant } from "@/deployment/cloudfront";
+import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import {
   deleteUnreferencedMediaDiffObjects,
   deleteUnreferencedMediaObjects,
@@ -45,6 +47,13 @@ vi.mock("@/media/object", async (importOriginal) => ({
 vi.mock("@/deployment/cloudfront", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/deployment/cloudfront")>()),
   deleteDomainTenant: vi.fn(async () => undefined),
+}));
+
+// Reaches Cloudflare, and like the tenant it is not rolled back — what matters
+// is that the domain is handed over to be purged.
+vi.mock("@/deployment/invalidate", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/deployment/invalidate")>()),
+  invalidateDeploymentCache: vi.fn(async () => undefined),
 }));
 
 type SeededProject = {
@@ -345,6 +354,45 @@ describe("deleteProject", () => {
     await expect(
       ProjectDomain.query().findById(projectDomain.id),
     ).resolves.toBeUndefined();
+  });
+
+  test("releases the domain so another project can claim it", async () => {
+    // `deployment_aliases.alias` is globally unique and is what resolution
+    // reads. The hard delete took the alias with the project through
+    // `deployments`' cascade; the soft delete keeps the deployments, so an
+    // alias left behind made the domain unclaimable by anyone, forever.
+    const account = await factory.UserAccount.create();
+    const owner = await User.query().findById(account.userId!);
+    const project = await factory.Project.create({ accountId: account.id });
+    const projectDomain = await factory.ProjectDomain.create({
+      projectId: project.id,
+      domain: "docs.acme.test",
+      internal: false,
+      status: "active",
+      cloudfrontTenantId: "dt-tenant-2",
+    });
+    const deployment = await factory.Deployment.create({
+      projectId: project.id,
+      environment: "production",
+    });
+    await DeploymentAlias.query().insert({
+      alias: "docs.acme.test",
+      deploymentId: deployment.id,
+      type: "domain",
+    });
+
+    await deleteProject({ id: project.id, user: owner });
+
+    await expect(
+      ProjectDomain.query().findById(projectDomain.id),
+    ).resolves.toBeUndefined();
+    // The row that would have kept answering for the domain.
+    await expect(
+      DeploymentAlias.query().findOne({ alias: "docs.acme.test" }),
+    ).resolves.toBeUndefined();
+    expect(deleteDomainTenant).toHaveBeenCalledWith("dt-tenant-2");
+    // And the edge, which serves the resolution for minutes after the row goes.
+    expect(invalidateDeploymentCache).toHaveBeenCalledWith("docs.acme.test");
   });
 
   test("sends a notification to the personal account owner", async () => {

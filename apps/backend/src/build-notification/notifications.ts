@@ -60,6 +60,16 @@ export async function processBuildNotification(
   );
   invariant(project, "No project found", UnretryableError);
 
+  // A build already in the pipeline when its project was deleted must not go on
+  // writing a commit status and editing the pull request comment for it. The
+  // hard delete stopped these jobs by taking the `builds` row with it, and the
+  // rows surviving is what put this back in reach — a required `argos/<name>`
+  // check on an open pull request would otherwise be left resolved by a project
+  // that no longer exists.
+  if (project.deletedAt) {
+    return;
+  }
+
   const commit = (() => {
     // In merge queue, we never notify the PR head commit but the merge queue itself.
     if (!build.mergeQueue && build.prHeadCommit) {

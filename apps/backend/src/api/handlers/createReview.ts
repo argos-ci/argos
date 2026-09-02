@@ -14,10 +14,9 @@ import {
 } from "@/build/createBuildReview";
 import { resolveCommentBody } from "@/comment/body";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
-import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
-import { assertProjectAccess } from "../auth/project";
+import { loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -177,25 +176,10 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         throw boom(400, "Either `event` or `conclusion` is required");
       }
 
-      const [auth, build] = await Promise.all([
+      const { auth, build } = await loadBuildForUserAuth(
         req.ctx.auth(),
-        Build.query()
-          .joinRelated("project.account")
-          .where("project:account.slug", params.owner)
-          .where("project.name", params.project)
-          .where("number", params.buildNumber)
-          .withGraphFetched("project.account")
-          .first(),
-      ]);
-
-      assertProjectAccess(auth, {
-        projectId: build?.projectId ?? null,
-        account: { slug: params.owner },
-      });
-
-      if (!build) {
-        throw boom(404, "Not found");
-      }
+        params,
+      );
 
       invariant(build.project);
 

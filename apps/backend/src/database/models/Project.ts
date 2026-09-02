@@ -307,6 +307,17 @@ export class Project extends Model {
     project: Project,
     user: User | null,
   ): Promise<ProjectPermission[]> {
+    // A deleted project grants nothing to anyone, and this is where that is
+    // enforced for the whole application. Every surface that reaches a project
+    // through one of its own rows — a build, a test, a media, an automation
+    // rule, addressed by id or by `{owner}/{project}` — authorizes here rather
+    // than through a project lookup, so filtering the lookups cannot reach
+    // them. Being the funnel also makes it fail closed: a surface added later
+    // is covered without knowing that soft delete exists.
+    if (project.deletedAt) {
+      return [];
+    }
+
     const [isPublic, membershipPermissions] = await Promise.all([
       project.$checkIsPublic(),
       Project.getMembershipPermissions(project, user),
@@ -330,6 +341,12 @@ export class Project extends Model {
     project: Project,
     user: User | null,
   ): Promise<ProjectPermission[]> {
+    // Repeated rather than left to the caller: this is a public entry point of
+    // its own, and a deleted project has no members either.
+    if (project.deletedAt) {
+      return [];
+    }
+
     // An anonymous visitor is a member of nothing.
     if (!user) {
       return [];

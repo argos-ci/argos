@@ -208,6 +208,33 @@ describe("getBuild", () => {
         });
     });
 
+    test("returns 404 once the project is deleted", async ({
+      account,
+      project,
+      build,
+    }) => {
+      // An account-scoped token is the case that reaches the build lookup: a
+      // project token is refused at authentication, but `assertProjectAccess`
+      // only checks that the token is scoped to the account, and this handler
+      // checks no project permission at all.
+      const token = await createOAuthAccessToken(account, ["projects:read"]);
+      await project.$query().patch({
+        name: `deleted-${project.id}-web`,
+        deletedAt: new Date().toISOString(),
+      });
+
+      await request(oauthApp)
+        .get(`/projects/acme/web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
+
+      // Nor under the name it was parked as.
+      await request(oauthApp)
+        .get(`/projects/acme/deleted-${project.id}-web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
+    });
+
     test("returns 403 without the projects:read scope", async ({
       account,
       build,

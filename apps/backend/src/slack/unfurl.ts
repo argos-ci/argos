@@ -31,6 +31,7 @@ export async function unfurlBuild(
     .where("builds.number", params.buildNumber)
     .where("project:account.id", auth.accountId)
     .where("project:account.slug", params.accountSlug)
+    .whereNull("project.deletedAt")
     .first();
 
   if (!build) {
@@ -113,6 +114,7 @@ export async function unfurlTest(
     .where("project.name", params.projectName)
     .where("project:account.id", auth.accountId)
     .where("project:account.slug", params.accountSlug)
+    .whereNull("project.deletedAt")
     .first();
 
   if (!test) {

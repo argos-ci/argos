@@ -59,18 +59,26 @@ export async function exchangeGitHubActionsOidcToken(
 
   invariant(repository.projects, "Relation `projects` not loaded");
 
-  if (repository.projects.length === 0) {
+  // Deleted rows keep their repository link, and one left in would shadow the
+  // live project as "multiple projects found" — which no caller of this
+  // endpoint can disambiguate, since it takes no project slug. Mirrors the
+  // tokenless path in `auth/tokenless/github-actions.ts`.
+  const projects = repository.projects.filter(
+    (candidate) => !candidate.deletedAt,
+  );
+
+  if (projects.length === 0) {
     throw boom(401, "No Argos project is linked to this GitHub repository.");
   }
 
-  if (repository.projects.length > 1) {
+  if (projects.length > 1) {
     throw boom(
       400,
       "Multiple Argos projects are linked to this GitHub repository.",
     );
   }
 
-  const project = repository.projects[0];
+  const project = projects[0];
   invariant(project, "Project not found");
 
   if (!project.githubActionsOidcEnabled) {
