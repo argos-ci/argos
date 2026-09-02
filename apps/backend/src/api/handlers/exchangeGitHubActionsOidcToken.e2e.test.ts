@@ -100,6 +100,60 @@ describe("exchangeGitHubActionsOidcToken", () => {
     expect(auth.sha).toBe(sha);
   });
 
+  test("ignores a deleted project linked to the same repository", async ({
+    linkedProject,
+  }) => {
+    // A deleted project keeps its repository link. Left in, it would shadow the
+    // live one as "multiple projects found" — and this endpoint takes no project
+    // slug, so CI would have no way to disambiguate.
+    const { project: live } = linkedProject;
+    const deleted = await factory.Project.create({
+      name: "old",
+      accountId: live.accountId,
+      githubActionsOidcEnabled: true,
+      githubRepositoryId: live.githubRepositoryId,
+    });
+    await deleted.$query().patch({
+      name: `deleted-${deleted.id}-old`,
+      deletedAt: new Date().toISOString(),
+    });
+
+    const res = await request(app)
+      .post("/auth/github-actions/oidc/exchange")
+      .send({
+        oidcToken: signGitHubActionsToken(),
+        repository: "argos-ci/argos",
+        commit: sha,
+      })
+      .expect(200);
+
+    const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
+    expect(auth.project.id).toBe(live.id);
+  });
+
+  test("rejects when every linked project is deleted", async ({
+    linkedProject,
+  }) => {
+    await linkedProject.project.$query().patch({
+      deletedAt: new Date().toISOString(),
+    });
+
+    // Not a token that fails later: the exchange used to mint one for the
+    // deleted project, and the CLI's next call reported it as expired.
+    await request(app)
+      .post("/auth/github-actions/oidc/exchange")
+      .send({
+        oidcToken: signGitHubActionsToken(),
+        repository: "argos-ci/argos",
+      })
+      .expect(401)
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          "No Argos project is linked to this GitHub repository.",
+        );
+      });
+  });
+
   test("rejects when GitHub Actions OIDC is disabled on the project", async ({
     linkedProject,
   }) => {

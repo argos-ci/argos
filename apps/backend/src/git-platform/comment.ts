@@ -301,9 +301,15 @@ export async function getCommentBody(props: {
   const [builds, deployments] = await Promise.all([
     Build.query()
       .distinctOn("builds.name", "builds.projectId")
-      .joinRelated("compareScreenshotBucket")
+      .joinRelated("[project, compareScreenshotBucket]")
       .withGraphFetched("project.account")
       .where("compareScreenshotBucket.commit", commit)
+      // A commit reaches every project that ever built it, so one deleted
+      // project of a monorepo would keep its row — and its 404 link — in the
+      // comment every time a surviving project rebuilds that commit. It would
+      // also keep `hasMultipleProjects` true, prefixing every other row with a
+      // project name.
+      .whereNull("project.deletedAt")
       .orderBy([
         { column: "builds.name", order: "desc" },
         { column: "builds.projectId", order: "desc" },
@@ -315,8 +321,10 @@ export async function getCommentBody(props: {
       // and then omits them again from the result — on an implicit `select *`
       // that strips `id` and leaves both relations empty.
       .select("deployments.*")
+      .joinRelated("project")
       .withGraphFetched("[project,aliases]")
       .where("deployments.commitSha", commit)
+      .whereNull("project.deletedAt")
       .orderBy([
         { column: "deployments.projectId", order: "desc" },
         { column: "deployments.environment", order: "desc" },

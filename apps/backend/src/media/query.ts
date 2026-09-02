@@ -31,16 +31,19 @@ export type MediaFilters = {
 };
 
 /**
- * The media list query, shared by the REST list endpoint and the GraphQL pull
- * request list so both paginate, filter and order identically.
+ * Correlated subquery asserting the media's project is not soft-deleted, for
+ * the media surfaces that are addressed by something other than their project —
+ * a share token, a media id — and so never pass through a project lookup.
  *
- * Takes project ids rather than an account so the caller decides the scope: one
- * project for the project endpoint, or every project a viewer can see.
- *
- * Only media with at least one uploaded version: a media created to sign an upload
- * that never completed is an implementation detail of the two-step flow, not
- * something a project should see listed.
+ * Only valid inside a query rooted at `media`, which is what it correlates on.
  */
+export function liveProject() {
+  return Project.query()
+    .select(1)
+    .whereColumn("projects.id", "media.projectId")
+    .whereNull("projects.deletedAt");
+}
+
 /**
  * Resolve the media a share link points at, or `null` when nothing is behind
  * it.
@@ -54,14 +57,20 @@ export function findMediaByShareToken(
 ): QueryBuilder<Media, Media | undefined> {
   return Media.query()
     .findOne("media.shareToken", shareToken)
-    .whereExists(
-      Project.query()
-        .select(1)
-        .whereColumn("projects.id", "media.projectId")
-        .whereNull("projects.deletedAt"),
-    );
+    .whereExists(liveProject());
 }
 
+/**
+ * The media list query, shared by the REST list endpoint and the GraphQL pull
+ * request list so both paginate, filter and order identically.
+ *
+ * Takes project ids rather than an account so the caller decides the scope: one
+ * project for the project endpoint, or every project a viewer can see.
+ *
+ * Only media with at least one uploaded version: a media created to sign an upload
+ * that never completed is an implementation detail of the two-step flow, not
+ * something a project should see listed.
+ */
 export function queryProjectMedia(args: {
   projectIds: string[];
   filters: MediaFilters | null;

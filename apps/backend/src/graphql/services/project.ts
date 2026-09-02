@@ -30,9 +30,11 @@ import {
   applyProjectVisibility,
   DELETED_PROJECT_NAME_PREFIX,
 } from "@/database/services/project";
+import { detachDomainAlias } from "@/database/services/project-domain";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { deleteDomainTenant } from "@/deployment/cloudfront";
+import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import {
   deleteUnreferencedMediaDiffObjects,
   deleteUnreferencedMediaObjects,
@@ -148,7 +150,7 @@ export async function deleteProject(args: {
   const recipients = await getProjectDeleteNotificationRecipients(project);
   invariant(project.account, "project.account is undefined");
 
-  const cloudfrontTenantIds = await transaction(async (trx) => {
+  const released = await transaction(async (trx) => {
     // The stamp goes first and carries its own `deletedAt IS NULL`, so it is
     // the gate rather than the read above it. A second request that got past
     // that read before this one committed blocks on the row here, re-checks the
@@ -175,11 +177,17 @@ export async function deleteProject(args: {
   });
 
   // Lost the race, so the request that won it owns the notification.
-  if (cloudfrontTenantIds === null) {
+  if (released === null) {
     return;
   }
 
-  await Promise.all(cloudfrontTenantIds.map((id) => deleteDomainTenant(id)));
+  // Both outside the transaction, and neither rolls back with it: a CloudFront
+  // tenant is billed, and the edge caches `/v2/deployments/resolve/{domain}`
+  // for minutes, so the deployment stays publicly live until it is purged.
+  await Promise.all([
+    ...released.cloudfrontTenantIds.map((id) => deleteDomainTenant(id)),
+    ...released.domains.map((domain) => invalidateDeploymentCache(domain)),
+  ]);
 
   if (recipients.length > 0) {
     await sendNotification({
@@ -215,24 +223,41 @@ function getDeletedProjectName(project: Project): string {
 }
 
 /**
- * Drop a project's domains, returning the CloudFront tenant ids they held so
- * the caller can delete the tenants once the transaction has committed — a
- * tenant is billed and is not rolled back with it.
+ * Release a project's domains: the `project_domains` rows, the
+ * `deployment_aliases` rows that answer for them, and — via the returned tenant
+ * ids, once the transaction has committed, since a tenant is billed and is not
+ * rolled back with it — their CloudFront tenants.
+ *
+ * The alias has to go explicitly. `detachDomainAlias` says why: "Removing the
+ * `project_domains` row is not enough: resolution reads `deployment_aliases`,
+ * so an orphaned alias keeps answering." A hard delete got it for free through
+ * `deployments`' cascade; a soft delete keeps the deployments, so the alias
+ * survives — and `deployment_aliases.alias` is globally unique, so an orphan
+ * makes the domain unclaimable by any project, forever.
  */
 async function releaseProjectDomains(args: {
   projectId: string;
   trx: TransactionOrKnex;
-}): Promise<string[]> {
+}): Promise<{ cloudfrontTenantIds: string[]; domains: string[] }> {
   const projectDomains = await ProjectDomain.query(args.trx)
-    .select("cloudfrontTenantId")
-    .where({ projectId: args.projectId })
-    .whereNotNull("cloudfrontTenantId");
+    .select("domain", "cloudfrontTenantId")
+    .where({ projectId: args.projectId });
+
+  const domains = projectDomains.map((projectDomain) => projectDomain.domain);
+
+  await Promise.all(
+    domains.map((domain) => detachDomainAlias(domain, args.trx)),
+  );
   await ProjectDomain.query(args.trx)
     .where("projectId", args.projectId)
     .delete();
-  return projectDomains
-    .map((projectDomain) => projectDomain.cloudfrontTenantId)
-    .filter((id): id is string => id !== null);
+
+  return {
+    domains,
+    cloudfrontTenantIds: projectDomains
+      .map((projectDomain) => projectDomain.cloudfrontTenantId)
+      .filter((id): id is string => id !== null),
+  };
 }
 
 /**
@@ -326,10 +351,10 @@ export async function unsafe_deleteProject(args: {
       )
     ).keys;
     await Media.query(trx).where("projectId", args.projectId).delete();
-    cloudfrontTenantIds = await releaseProjectDomains({
+    ({ cloudfrontTenantIds } = await releaseProjectDomains({
       projectId: args.projectId,
       trx,
-    });
+    }));
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
     await AuditTrail.query(trx).where("projectId", args.projectId).delete();

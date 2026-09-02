@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import type { QueryBuilder } from "objection";
 
 import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
 import { Build, type User } from "@/database/models";
@@ -20,19 +21,43 @@ export type BuildActionPermission = "view" | "review" | "review_dismiss";
  * Returns the resolved auth and the build (with `project.account` fetched so
  * callers can check permissions and serialize without a second round-trip).
  */
+/**
+ * The build addressed by `{owner}/{project}/builds/{buildNumber}`, with
+ * `project.account` fetched.
+ *
+ * Extracted because the routes that resolve one do not share an auth shape —
+ * some take a project token as well as a user's — so they cannot all go through
+ * {@link loadBuildForUserAuth}, and each had its own copy of this query.
+ */
+export function queryBuildByNumber(params: {
+  owner: string;
+  project: string;
+  buildNumber: number;
+}): QueryBuilder<Build, Build | undefined> {
+  return (
+    Build.query()
+      .joinRelated("project.account")
+      .where("project:account.slug", params.owner)
+      .where("project.name", params.project)
+      // A deleted project answers 404 rather than 403: the route is addressed by
+      // name, and that name is no longer this project's — deleting it parks the
+      // project under a prefixed one. The permission check in
+      // `assertBuildPermission` would refuse it too, but not every route that
+      // resolves a build runs one.
+      .whereNull("project.deletedAt")
+      .where("number", params.buildNumber)
+      .withGraphFetched("project.account")
+      .first()
+  );
+}
+
 export async function loadBuildForUserAuth(
   authPromise: Promise<AuthPATPayload | AuthOAuthPayload>,
   params: { owner: string; project: string; buildNumber: number },
 ): Promise<{ auth: AuthPATPayload | AuthOAuthPayload; build: Build }> {
   const [auth, build] = await Promise.all([
     authPromise,
-    Build.query()
-      .joinRelated("project.account")
-      .where("project:account.slug", params.owner)
-      .where("project.name", params.project)
-      .where("number", params.buildNumber)
-      .withGraphFetched("project.account")
-      .first(),
+    queryBuildByNumber(params),
   ]);
 
   assertProjectAccess(auth, {

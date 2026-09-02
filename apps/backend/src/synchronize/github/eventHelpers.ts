@@ -57,7 +57,13 @@ const findRelevantUserTeam = async (
   // Find the team containing projects linked to the GitHub organization
   const relevantTeams = ownedTeams.filter((team) => {
     invariant(team.account?.projects, "projects not fetched");
+    // Deleted projects keep their repository link, so one would still make a
+    // team count as relevant — and two relevant teams skip the single-match
+    // branch below and attach the purchase to a brand-new empty team.
     return team.account.projects.some((project) => {
+      if (project.deletedAt) {
+        return false;
+      }
       if (!project.githubRepository) {
         return false;
       }

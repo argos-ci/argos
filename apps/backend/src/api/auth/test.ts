@@ -39,6 +39,7 @@ export async function loadTestForAuth<
           .where("tests.id", parsed.testId)
           .where("project:account.slug", params.owner)
           .where("project.name", params.project)
+          .whereNull("project.deletedAt")
           .withGraphFetched("project.account")
           .first()
       : null,

@@ -1,9 +1,9 @@
 import z from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { Build } from "@/database/models";
 import { boom } from "@/util/error";
 
+import { queryBuildByNumber } from "../auth/build";
 import { assertProjectAccess } from "../auth/project";
 import {
   BuildNumber,
@@ -53,12 +53,7 @@ export const getBuild: CreateAPIHandler = ({ get }) => {
     const { params } = req.ctx;
     const [auth, build] = await Promise.all([
       req.ctx.auth(),
-      Build.query()
-        .joinRelated("project.account")
-        .where("project:account.slug", params.owner)
-        .where("project.name", params.project)
-        .where("number", params.buildNumber)
-        .first(),
+      queryBuildByNumber(params),
     ]);
 
     assertProjectAccess(auth, {

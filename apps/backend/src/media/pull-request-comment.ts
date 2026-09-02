@@ -6,13 +6,12 @@ import {
   GithubRepository,
   Media,
   MediaVersion,
-  Project,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
-import { uploadedVersions } from "./query";
+import { liveProject, uploadedVersions } from "./query";
 import { getMediaEmbedArgs } from "./serve";
 import {
   getMediaTableMarkdown,
@@ -48,13 +47,7 @@ export async function updatePullRequestComment(
     // still getting them. Per project, because one pull request can carry media
     // from several — the ones that opted out, and the ones that were deleted,
     // drop out of the table rather than suppressing the whole comment.
-    .whereExists(
-      Project.query()
-        .select(1)
-        .whereColumn("projects.id", "media.projectId")
-        .where("projects.prCommentEnabled", true)
-        .whereNull("projects.deletedAt"),
-    )
+    .whereExists(liveProject().where("projects.prCommentEnabled", true))
     .orderBy("createdAt", "asc")
     .limit(MAX_LISTED_MEDIA);
 

@@ -127,7 +127,11 @@ export async function performBuild(build: Build) {
   }
 
   const [project] = await Promise.all([
-    Project.query()
+    // Not deleted: a build whose project went away mid-run must not push usage
+    // to Stripe or sync a GitLab status for it. `throwIfNotFound` raises the
+    // same error the missing `builds` row used to raise under the hard delete,
+    // which the job treats as unretryable.
+    Project.queryNotDeleted()
       .findById(build.projectId)
       .withGraphFetched("[gitlabProject, account]")
       .throwIfNotFound(),
