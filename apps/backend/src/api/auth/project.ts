@@ -131,7 +131,7 @@ export async function getProjectForAuth(
   // or a genuine 404. Pass `req.ctx.auth()` so both run concurrently.
   const [auth, project] = await Promise.all([
     authPromise,
-    Project.query()
+    Project.queryNotDeleted()
       .joinRelated("account")
       .where("account.slug", params.owner)
       .where("projects.name", params.project)

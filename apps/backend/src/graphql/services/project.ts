@@ -90,7 +90,7 @@ export async function getAdminProject(args: {
     throw invalidId();
   }
   invariant(args.user, "no user");
-  const query = Project.query().findById(args.id).throwIfNotFound();
+  const query = Project.queryNotDeleted().findById(args.id).throwIfNotFound();
   if (args.withGraphFetched) {
     query.withGraphFetched(args.withGraphFetched);
   }
@@ -123,7 +123,14 @@ export async function getVisibleProjectIds(args: {
 }
 
 /**
- * Delete a project and all associated data after checking permissions.
+ * Soft-delete a project after checking permissions.
+ *
+ * The row is stamped rather than dropped. A hard delete walks every build,
+ * diff, review and screenshot the project ever produced — the busiest tables in
+ * the schema — and holds locks on them the whole way through, so deleting a
+ * large project was felt by every other project on the instance. Nothing is
+ * served from a stamped project: the surfaces that resolve one all filter on
+ * `deletedAt`, most of them through {@link Project.queryNotDeleted}.
  */
 export async function deleteProject(args: {
   id: string;
@@ -136,7 +143,24 @@ export async function deleteProject(args: {
   });
   const recipients = await getProjectDeleteNotificationRecipients(project);
   invariant(project.account, "project.account is undefined");
-  await unsafe_deleteProject({ projectId: project.id });
+
+  // The domains are the one thing still released for real: a CloudFront tenant
+  // is billed for as long as it exists, and a domain left claimed cannot be
+  // moved to another project. Both are cheap to drop — `project_domains` holds
+  // a handful of rows, none of the tables the hard delete had to walk.
+  const cloudfrontTenantIds = await transaction(async (trx) => {
+    const tenantIds = await releaseProjectDomains({
+      projectId: project.id,
+      trx,
+    });
+    await Project.query(trx)
+      .findById(project.id)
+      .patch({ deletedAt: new Date().toISOString() });
+    return tenantIds;
+  });
+
+  await Promise.all(cloudfrontTenantIds.map((id) => deleteDomainTenant(id)));
+
   if (recipients.length > 0) {
     await sendNotification({
       type: "project_deleted",
@@ -152,7 +176,31 @@ export async function deleteProject(args: {
 }
 
 /**
+ * Drop a project's domains, returning the CloudFront tenant ids they held so
+ * the caller can delete the tenants once the transaction has committed — a
+ * tenant is billed and is not rolled back with it.
+ */
+async function releaseProjectDomains(args: {
+  projectId: string;
+  trx: TransactionOrKnex;
+}): Promise<string[]> {
+  const projectDomains = await ProjectDomain.query(args.trx)
+    .select("cloudfrontTenantId")
+    .where({ projectId: args.projectId })
+    .whereNotNull("cloudfrontTenantId");
+  await ProjectDomain.query(args.trx)
+    .where("projectId", args.projectId)
+    .delete();
+  return projectDomains
+    .map((projectDomain) => projectDomain.cloudfrontTenantId)
+    .filter((id): id is string => id !== null);
+}
+
+/**
  * Delete a project and all associated data without checking permissions.
+ *
+ * The heavy pass, kept for deleting an account outright: a project a user
+ * deletes is soft-deleted by {@link deleteProject} instead.
  */
 export async function unsafe_deleteProject(args: {
   projectId: string;
@@ -239,15 +287,10 @@ export async function unsafe_deleteProject(args: {
       )
     ).keys;
     await Media.query(trx).where("projectId", args.projectId).delete();
-    // `project_domains` cascades with the project, which would leave the
-    // tenants with nothing naming them.
-    const projectDomains = await ProjectDomain.query(trx)
-      .select("cloudfrontTenantId")
-      .where({ projectId: args.projectId })
-      .whereNotNull("cloudfrontTenantId");
-    cloudfrontTenantIds = projectDomains
-      .map((projectDomain) => projectDomain.cloudfrontTenantId)
-      .filter((id): id is string => id !== null);
+    cloudfrontTenantIds = await releaseProjectDomains({
+      projectId: args.projectId,
+      trx,
+    });
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
     await AuditTrail.query(trx).where("projectId", args.projectId).delete();

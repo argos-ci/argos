@@ -80,7 +80,7 @@ export async function publishBranchMedia(
   // unique across an installation, and `feat/checkout` in one repository must
   // never publish to another's pull request. More than one project can point at
   // one repository, and what is staged on each belongs on this pull request.
-  const projects = await Project.query()
+  const projects = await Project.queryNotDeleted()
     .select("id")
     .where("githubRepositoryId", githubRepositoryId);
 

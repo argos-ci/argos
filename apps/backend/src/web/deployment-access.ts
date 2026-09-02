@@ -83,7 +83,9 @@ router.get(
       throw boom(401, "Invalid session");
     }
 
-    const project = await Project.query().findById(deployment.projectId);
+    const project = await Project.queryNotDeleted().findById(
+      deployment.projectId,
+    );
     if (!project) {
       throw boom(404, "Project not found");
     }

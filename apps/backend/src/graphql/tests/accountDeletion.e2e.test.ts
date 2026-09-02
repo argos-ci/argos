@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Account, User, UserPasskey } from "@/database/models";
+import { Account, Build, Project, User, UserPasskey } from "@/database/models";
 import { createPasskeys } from "@/database/seeds";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
@@ -250,6 +250,20 @@ describe("GraphQL confirmAccountDeletion", () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
 
+    // Deleting a *project* is a soft delete now, but deleting the account that
+    // owns it still has to take its rows with it: the account is gone, and
+    // nothing would ever come back for them.
+    const project = await factory.Project.create({
+      accountId: userAccount.id,
+    });
+    const bucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: bucket.id,
+    });
+
     // A passkey outlives the `users` row, which is only soft-deleted, so the
     // table's ON DELETE CASCADE never fires — deletion has to remove it
     // explicitly or the credential keeps signing in to a deleted account.
@@ -289,6 +303,10 @@ describe("GraphQL confirmAccountDeletion", () => {
     const user = await User.query().findById(userAccount.userId!);
     expect(user?.deletedAt).not.toBeNull();
     expect(user?.email).toBeNull();
+
+    // Gone, not stamped.
+    await expect(Project.query().findById(project.id)).resolves.toBeUndefined();
+    await expect(Build.query().findById(build.id)).resolves.toBeUndefined();
 
     // Every credential has to go, not just the ones the FK reaches.
     const passkeys = await UserPasskey.query().where(

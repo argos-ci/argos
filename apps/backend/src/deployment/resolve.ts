@@ -96,6 +96,7 @@ export async function resolveDeploymentByDomain(
     .join("deployments", "deployments.id", "deployment_aliases.deploymentId")
     .join("projects", "projects.id", "deployments.projectId")
     .where("projects.deploymentEnabled", true)
+    .whereNull("projects.deletedAt")
     .whereIn("deployment_aliases.alias", aliases)
     .orderByRaw(`case ${orderByAliasPriority} else ? end`, [
       ...aliases.flatMap((alias, index) => [alias, index]),
@@ -116,6 +117,7 @@ export async function resolveDeploymentByDomain(
     )
     .join("projects", "projects.id", "deployments.projectId")
     .where("projects.deploymentEnabled", true)
+    .whereNull("projects.deletedAt")
     .whereIn("deployments.slug", aliases)
     .first()) as Omit<ResolvedDeploymentRow, "type"> | undefined;
 

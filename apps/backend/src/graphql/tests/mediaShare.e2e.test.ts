@@ -304,6 +304,21 @@ describe("mediaByShareToken", () => {
     expect(result.comments).toEqual([]);
   });
 
+  it("stops serving a public media once its project is deleted", async () => {
+    // A share link is the one way into a media that does not go through the
+    // project, and it answers an anonymous crawler — so nothing else would stop
+    // it once the project is gone.
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({ accountId: account.id });
+    const media = await createMediaScenario({ projectId: project.id });
+    await project.$query().patch({ deletedAt: new Date().toISOString() });
+
+    const res = await query({ auth: null, shareToken: media.video.shareToken });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.mediaByShareToken).toBeNull();
+  });
+
   it("pairs a staged media only within its own branch", async () => {
     // Identity is (project, attachment, name, state), and for staged media the
     // attachment is the branch. Keying the pairing on the pull request alone

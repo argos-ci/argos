@@ -79,7 +79,14 @@ export async function resolveTokenlessGitHubActionsContext(
 
   invariant(repository.projects);
 
-  if (!repository.projects[0]) {
+  // Dropped here rather than in the graph: the deleted rows still hold the
+  // repository link, and leaving them in would let one shadow the live project
+  // as "multiple projects found".
+  const projects = repository.projects.filter(
+    (candidate) => candidate.deletedAt === null,
+  );
+
+  if (!projects[0]) {
     return null;
   }
 
@@ -88,7 +95,7 @@ export async function resolveTokenlessGitHubActionsContext(
   if (authData.project) {
     // A project slug was provided: pick the matching project. This is what lets
     // a repository with several linked projects authenticate tokenless-ly.
-    const matching = repository.projects.find(
+    const matching = projects.find(
       (candidate) => getProjectSlug(candidate) === authData.project,
     );
 
@@ -103,14 +110,14 @@ export async function resolveTokenlessGitHubActionsContext(
   } else {
     // No project slug: keep the legacy behavior and reject when the repository
     // is linked to more than one project, since we cannot disambiguate.
-    if (repository.projects.length > 1) {
+    if (projects.length > 1) {
       throw boom(
         400,
         `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a project slug or a project token.`,
       );
     }
 
-    project = repository.projects[0];
+    project = projects[0];
   }
 
   const installation = GithubRepository.pickBestInstallation(repository);

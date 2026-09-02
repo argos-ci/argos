@@ -103,7 +103,7 @@ async function getReachableProjectIds(input: {
     return [build.projectId];
   }
 
-  const projects = await Project.query()
+  const projects = await Project.queryNotDeleted()
     .whereIn("id", otherIds)
     .withGraphFetched("account");
   const memberOf = await Promise.all(

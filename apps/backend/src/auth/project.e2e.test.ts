@@ -120,6 +120,35 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
     });
   });
 
+  test("throws when the project has been deleted", async ({ project }) => {
+    await project.$query().patch({ deletedAt: new Date().toISOString() });
+
+    await expect(
+      getAuthProjectPayloadFromBearerToken("project-token"),
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: `Project not found in Argos. If the issue persists, verify your token. (token: "project-token").`,
+    });
+  });
+
+  test("refuses a short-lived token minted before the project was deleted", async ({
+    project,
+  }) => {
+    await project.$query().patch({ githubActionsOidcEnabled: true });
+    const { token } = await createShortLivedProjectToken({
+      projectId: project.id,
+      source: "github-actions-oidc",
+    });
+    await project.$query().patch({ deletedAt: new Date().toISOString() });
+
+    await expect(
+      getAuthProjectPayloadFromBearerToken(token),
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: "Short-lived project token has expired or is invalid.",
+    });
+  });
+
   test("throws when no project matches a standard project token", async ({
     factory,
   }) => {

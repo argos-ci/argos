@@ -135,6 +135,7 @@ export class Project extends Model {
           autoApprovedBranchGlob: { type: ["null", "string"] },
           deploymentProdBranchGlob: { type: ["null", "string"] },
           accountId: { type: "string" },
+          deletedAt: { type: ["string", "null"] },
           githubRepositoryId: { type: ["null", "string"] },
           gitlabProjectId: { type: ["null", "string"] },
           originRepositoryId: { type: ["null", "string"] },
@@ -185,6 +186,12 @@ export class Project extends Model {
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
   accountId!: string;
+  /**
+   * When the project was soft-deleted, or `null` while it is live. Deleting a
+   * project stamps this instead of dropping its rows — see
+   * `deleteProject` — so use {@link Project.queryNotDeleted} to look one up.
+   */
+  deletedAt!: string | null;
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
   originRepositoryId!: string | null;
@@ -203,6 +210,18 @@ export class Project extends Model {
    * not handed out again.
    */
   buildNumber!: number;
+
+  /**
+   * Query the projects that have not been soft-deleted, which is what every
+   * surface serving a project to a user, to CI or to a crawler wants.
+   *
+   * `Project.query()` still reaches deleted rows on purpose: stamping the
+   * deletion, hard-deleting an account's projects, and staff tooling all need
+   * them.
+   */
+  static queryNotDeleted(trx?: TransactionOrKnex) {
+    return Project.query(trx).whereNull("projects.deletedAt");
+  }
 
   /**
    * Resolve the effective ignore configuration of the project.

@@ -1,5 +1,6 @@
-import { Media, type MediaVersion } from "@/database/models";
+import { type MediaVersion } from "@/database/models";
 
+import { findMediaByShareToken } from "./query";
 import { getMediaFileUrl, getMediaPosterUrl } from "./serve";
 import { getMediaShareUrl } from "./url";
 import { getLatestMediaVersion } from "./version";
@@ -56,7 +57,7 @@ export type MediaShareMeta = {
 export async function getPublicMediaShareMeta(
   shareToken: string,
 ): Promise<MediaShareMeta | null> {
-  const media = await Media.query().findOne({ shareToken });
+  const media = await findMediaByShareToken(shareToken);
 
   if (!media || media.visibility !== "public") {
     return null;

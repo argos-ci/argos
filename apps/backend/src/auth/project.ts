@@ -40,9 +40,15 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
 
   const project = strategy
     ? await strategy.getProject(bearer)
-    : await Project.query()
-        .where("token", encryptDeterministic(bearer))
-        .orWhere("token", bearer)
+    : await Project.queryNotDeleted()
+        // Grouped: the two forms of the token are one alternative, and left
+        // loose they would `or` their way past the soft-delete filter.
+        .where((qb) => {
+          qb.where("token", encryptDeterministic(bearer)).orWhere(
+            "token",
+            bearer,
+          );
+        })
         .first();
 
   if (!project && strategy) {

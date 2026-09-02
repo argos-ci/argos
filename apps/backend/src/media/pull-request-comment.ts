@@ -46,13 +46,14 @@ export async function updatePullRequestComment(
     // The setting the build and deployment paths both honour, and the media
     // path did not: an owner who turned Argos pull request comments off was
     // still getting them. Per project, because one pull request can carry media
-    // from several — the ones that opted out drop out of the table rather than
-    // suppressing the whole comment.
+    // from several — the ones that opted out, and the ones that were deleted,
+    // drop out of the table rather than suppressing the whole comment.
     .whereExists(
       Project.query()
         .select(1)
         .whereColumn("projects.id", "media.projectId")
-        .where("projects.prCommentEnabled", true),
+        .where("projects.prCommentEnabled", true)
+        .whereNull("projects.deletedAt"),
     )
     .orderBy("createdAt", "asc")
     .limit(MAX_LISTED_MEDIA);
