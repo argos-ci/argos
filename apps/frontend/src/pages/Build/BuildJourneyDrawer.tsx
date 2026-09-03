@@ -127,7 +127,7 @@ export function BuildJourneyDrawer() {
                 </span>
                 <span
                   className={clsx(
-                    "max-w-28 truncate text-center text-[0.6875rem] leading-none",
+                    "max-w-28 truncate text-center text-[0.6875rem] leading-tight",
                     isActive ? "font-medium" : "text-low",
                   )}
                   title={getStepLabel(step.key)}
