@@ -2337,6 +2337,15 @@ export async function seed() {
     projectId: bigProject.id,
   });
 
+  // Its own project: the scenario owns build 1 and its buckets, which would
+  // collide with the builds `bigProject` already carries.
+  const journeyProject = await createProject({
+    name: "checkout",
+    token: "checkout-3f0b9c1d4e2a8b7c6d5e4f3a2b1c0d9e8f7a",
+    accountId: smoothAccount.id,
+  });
+  await createJourneyScenario({ projectId: journeyProject.id });
+
   await createDeploymentScenario({
     projectId: bigProject.id,
     accountSlug: smoothAccount.slug,
