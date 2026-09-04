@@ -44,6 +44,25 @@ loggedTest(
       "4 · confirmation",
     ]);
 
+    // The label is cut to fit, so it hands the whole key over on hover; the
+    // dot has no legend anywhere, so it explains itself.
+    // Base UI portals its tooltip out of the trigger and gives the box
+    // `role="presentation"`, so the portal is what there is to assert on.
+    const tooltip = page.locator("[data-base-ui-portal]");
+    await expect(async () => {
+      await page.mouse.move(0, 0);
+      await drawer.getByText("2 · shipping").hover();
+      await expect(tooltip).toHaveText("checkout/shipping", { timeout: 2_000 });
+    }).toPass();
+    await expect(async () => {
+      await page.mouse.move(0, 0);
+      await drawer.getByTestId("journey-step-attention").first().hover();
+      await expect(tooltip).toHaveText("Needs review: Changed", {
+        timeout: 2_000,
+      });
+    }).toPass();
+    await page.mouse.move(0, 0);
+
     // Jumping to a step opens it, unchanged included.
     await drawer.getByRole("button", { name: "1 · cart" }).click();
     await expect(

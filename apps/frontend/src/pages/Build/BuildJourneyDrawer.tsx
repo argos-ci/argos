@@ -1,6 +1,10 @@
 import { clsx } from "clsx";
 import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
+import {
+  type DiffGroupName,
+  getDiffGroupDefinition,
+} from "@/containers/Build/BuildDiffGroup";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -8,6 +12,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import {
+  type ActiveDiffJourney,
   pickStepDiff,
   useActiveDiffJourney,
   useBuildDiffState,
@@ -47,12 +52,26 @@ export function JourneyStepHotkeys() {
   return null;
 }
 
-const ATTENTION_STATUSES: string[] = [
+/** What the dot marks: the statuses that put a diff in front of a reviewer. */
+const ATTENTION_STATUSES = [
   ScreenshotDiffStatus.Failure,
   ScreenshotDiffStatus.Changed,
   ScreenshotDiffStatus.Added,
   ScreenshotDiffStatus.Removed,
-];
+] as const satisfies DiffGroupName[];
+
+/**
+ * The statuses of a step worth a reviewer's attention, named as the rest of the
+ * review names them, in the order the diff list sections come in.
+ */
+function getAttentionLabels(
+  step: ActiveDiffJourney["steps"][number],
+): string[] {
+  const statuses = new Set(step.diffs.map((diff) => diff.status));
+  return ATTENTION_STATUSES.filter((status) => statuses.has(status)).map(
+    (status) => getDiffGroupDefinition(status).label,
+  );
+}
 
 /**
  * The journey of the active diff as a strip of steps, on demand: shows where
@@ -85,9 +104,7 @@ export function BuildJourneyDrawer() {
             return null;
           }
           const isActive = index === journey.stepIndex;
-          const needsAttention = step.diffs.some((candidate) =>
-            ATTENTION_STATUSES.includes(candidate.status),
-          );
+          const attentionLabels = getAttentionLabels(step);
           return (
             <div key={step.key} className="flex shrink-0 items-center gap-0.5">
               {index > 0 && (
@@ -121,19 +138,32 @@ export function BuildJourneyDrawer() {
                         : ["w-128", "h-96", "fo-top"]
                     }
                   />
-                  {needsAttention ? (
-                    <span className="bg-warning-solid absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
+                  {attentionLabels.length > 0 ? (
+                    <Tooltip
+                      content={`Needs review: ${attentionLabels.join(", ")}`}
+                    >
+                      {/* The dot is 10px, so the padding around it is what the
+                          pointer actually has to land on; the negative offsets
+                          keep the dot itself where it was. */}
+                      <span
+                        data-testid="journey-step-attention"
+                        className="absolute -top-2.5 -right-2.5 p-1.5"
+                      >
+                        <span className="bg-warning-solid block size-2.5 rounded-full ring-2 ring-(--background-color-app)" />
+                      </span>
+                    </Tooltip>
                   ) : null}
                 </span>
-                <span
-                  className={clsx(
-                    "max-w-28 truncate text-center text-[0.6875rem] leading-tight",
-                    isActive ? "font-medium" : "text-low",
-                  )}
-                  title={getStepLabel(step.key)}
-                >
-                  {index + 1} · {getStepLabel(step.key)}
-                </span>
+                <Tooltip content={step.key}>
+                  <span
+                    className={clsx(
+                      "max-w-28 truncate text-center text-[0.6875rem] leading-tight",
+                      isActive ? "font-medium" : "text-low",
+                    )}
+                  >
+                    {index + 1} · {getStepLabel(step.key)}
+                  </span>
+                </Tooltip>
               </button>
             </div>
           );
