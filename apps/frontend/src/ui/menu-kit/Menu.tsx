@@ -711,14 +711,26 @@ function MenuList(
     }
   };
 
-  const activateItem = (item: ItemNode) => {
+  /**
+   * Press the highlighted row, the way the pointer would.
+   *
+   * @param aim - `checkbox` presses the row's box instead of the row, which is
+   *   what keeps a split row's toggle reachable from the keyboard. Rows without
+   *   a box of their own take the press whole.
+   */
+  const activateItem = (item: ItemNode, aim: "row" | "checkbox" = "row") => {
     if (item.children.length > 0) {
       openSubmenu(item.id);
       // A submenu asked for by the keyboard takes the keyboard with it.
       setFocusedId(getSubmenuMenuId(item.id));
       return;
     }
-    document.getElementById(item.id)?.click();
+    const row = document.getElementById(item.id);
+    const checkbox =
+      aim === "checkbox"
+        ? row?.querySelector<HTMLElement>("[data-menu-item-checkbox]")
+        : null;
+    (checkbox ?? row)?.click();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -788,15 +800,15 @@ function MenuList(
       }
       case " ": {
         // In an empty, untouched field, space is a press, not a character: it
-        // runs the highlighted row like Enter. Once a query exists — or ever
-        // did — it types, because queries have spaces in them.
+        // ticks the highlighted row where Enter runs it. Once a query exists —
+        // or ever did — it types, because queries have spaces in them.
         if (search.query || search.touched) {
           break;
         }
         event.preventDefault();
         const active = items.find((item) => item.id === activeId);
         if (active) {
-          activateItem(active);
+          activateItem(active, "checkbox");
         }
         break;
       }
@@ -952,7 +964,14 @@ export type MenuItemProps = {
   disabled?: boolean;
   variant?: "default" | "danger";
   checked?: boolean;
-  /** Draws a checkbox and keeps the menu open when the row is activated. */
+  /**
+   * Draws a checkbox and keeps the menu open when the row is activated.
+   *
+   * Given an `onAction` too, the box becomes a target of its own and the row
+   * splits: the box toggles this one and the menu stays open, while the rest of
+   * the row runs the action and closes — which is how a filter offers "narrow
+   * to this one" and "add this one" from the same list.
+   */
   checkbox?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   /** Run on activation. Returning a promise holds the menu open until it settles. */
@@ -1006,6 +1025,17 @@ function MenuItemRow(
   const [pending, setPending] = useState(false);
   const active = menu.activeId === node.id;
 
+  // With an action to run, the box is worth pressing on its own; without one
+  // it would toggle exactly what the row around it already toggles.
+  const checkboxIsOwnTarget = Boolean(itemProps.checkbox && itemProps.onAction);
+
+  const toggle = () => {
+    if (itemProps.disabled || pending) {
+      return;
+    }
+    itemProps.onCheckedChange?.(!itemProps.checked);
+  };
+
   const activate = () => {
     if (itemProps.disabled || pending) {
       return;
@@ -1016,8 +1046,8 @@ function MenuItemRow(
       menu.openSubmenu(node.id);
       return;
     }
-    if (itemProps.checkbox) {
-      itemProps.onCheckedChange?.(!itemProps.checked);
+    if (itemProps.checkbox && !checkboxIsOwnTarget) {
+      toggle();
       return;
     }
     const result = itemProps.onAction?.();
@@ -1074,16 +1104,10 @@ function MenuItemRow(
   const content = (
     <>
       {itemProps.checkbox ? (
-        <span
-          className={clsx(
-            "border-primary text-primary flex size-3.5 shrink-0 items-center justify-center rounded-sm border",
-            itemProps.checked
-              ? "bg-primary-active border-active opacity-100"
-              : "opacity-0 group-data-active/menu-item:opacity-100",
-          )}
-        >
-          {itemProps.checked ? <CheckIcon className="size-3" /> : null}
-        </span>
+        <MenuItemCheckbox
+          checked={Boolean(itemProps.checked)}
+          onToggle={checkboxIsOwnTarget ? toggle : null}
+        />
       ) : null}
       {itemProps.icon ? (
         <span className={menuItemIconClassName}>{itemProps.icon}</span>
@@ -1148,6 +1172,56 @@ function MenuItemRow(
     >
       {content}
     </div>
+  );
+}
+
+/**
+ * The box a checkbox row leads with.
+ *
+ * `onToggle` is what makes it a control rather than a glyph: given one it takes
+ * the press itself and stops it there, so the row's own action never runs and
+ * the menu stays open. The halo is the only cue that the row has two halves, so
+ * it is drawn only when there really are two.
+ */
+function MenuItemCheckbox(props: {
+  checked: boolean;
+  onToggle: (() => void) | null;
+}) {
+  const { checked, onToggle } = props;
+  const box = (
+    <span
+      className={clsx(
+        "border-primary text-primary flex size-3.5 shrink-0 items-center justify-center rounded-sm border",
+        checked
+          ? "bg-primary-active border-active opacity-100"
+          : "opacity-0 group-data-active/menu-item:opacity-100",
+        // Only ever matches under the pressable wrapper below, which is the
+        // only place the box is a thing you can point at.
+        "group-hover/menu-checkbox:border-primary-active",
+      )}
+    >
+      {checked ? <CheckIcon className="size-3" /> : null}
+    </span>
+  );
+  if (!onToggle) {
+    return box;
+  }
+  return (
+    <span
+      // How the keyboard finds the box to tick, having only the row's id.
+      data-menu-item-checkbox=""
+      // Padded out to a pressable size, then pulled back in so the row lays out
+      // as if the box were still its own 14px self.
+      className="group/menu-checkbox -m-1 flex shrink-0 p-1"
+      onClick={(event) => {
+        // The row would otherwise run its action and close the menu under the
+        // box that was just ticked.
+        event.stopPropagation();
+        onToggle();
+      }}
+    >
+      {box}
+    </span>
   );
 }
 

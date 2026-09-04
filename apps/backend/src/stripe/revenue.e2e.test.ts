@@ -198,196 +198,216 @@ describe("getStaffRevenue", () => {
   });
 
   it("reports the window from the mirror, split by interval", async () => {
-    const now = new Date();
-    const lastMonth = new Date(
-      startOfUTCMonth(now, -1).getTime() + 5 * 24 * 3600 * 1000,
+    // The mirror below recomputes the running month's share by hand, so it
+    // has to divide by the same instant the reader did. Seeding these
+    // fixtures takes seconds, and a contract accruing across them moves the
+    // figure by more than the tolerance — the clock is pinned so both sides
+    // read one instant. Mid-month, so the month has a share to be partial
+    // of, and only `Date` is faked — the pool's timers have to keep running,
+    // and Postgres keeps its own clock either way.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const realNow = new Date();
+    vi.setSystemTime(
+      new Date(
+        Date.UTC(realNow.getUTCFullYear(), realNow.getUTCMonth(), 15, 12),
+      ),
     );
 
-    await factory.StripeInvoiceSync.create();
-    const monthly = await createTeam({
-      interval: "month",
-      stripeCustomerId: "cus_staff_monthly",
-    });
-    const yearly = await createTeam({
-      interval: "year",
-      stripeCustomerId: "cus_staff_yearly",
-    });
-    // A churned team keeps the invoices it was already sent.
-    const churned = await factory.TeamAccount.create({
-      stripeCustomerId: "cus_staff_churned",
-    });
-    // A team that has left keeps paying for the months its contract bought.
-    const churnedYearly = await factory.TeamAccount.create({
-      stripeCustomerId: "cus_staff_churned_yearly",
-    });
+    try {
+      const now = new Date();
+      const lastMonth = new Date(
+        startOfUTCMonth(now, -1).getTime() + 5 * 24 * 3600 * 1000,
+      );
 
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_monthly",
-      stripeCreatedAt: lastMonth.toISOString(),
-      billingReason: "subscription_cycle",
-      currency: "eur",
-      total: 50_000,
-      totalExcludingTax: 50_000,
-    });
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_monthly",
-      stripeCreatedAt: now.toISOString(),
-      billingReason: "manual",
-      currency: "eur",
-      total: 10_000,
-      totalExcludingTax: 10_000,
-    });
-    // A zero invoice is not a team being invoiced.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_monthly",
-      stripeCreatedAt: lastMonth.toISOString(),
-      currency: "eur",
-      total: 0,
-      totalExcludingTax: 0,
-    });
-    // Billed by hand, a month at a time — a legacy deal, not a contract.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_churned",
-      stripeCreatedAt: lastMonth.toISOString(),
-      billingReason: "manual",
-      currency: "eur",
-      total: 20_000,
-      totalExcludingTax: 20_000,
-      periodStart: startOfUTCMonth(now, -1).toISOString(),
-      periodEnd: startOfUTCMonth(now, 0).toISOString(),
-    });
-    // Not an Argos team: not this page's.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_random",
-      stripeCreatedAt: lastMonth.toISOString(),
-      currency: "eur",
-      total: 99_900,
-      totalExcludingTax: 99_900,
-    });
-    // The term before this one: last month is paid for by it, so the months
-    // before a renewal must not fall to zero.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_yearly",
-      stripeCreatedAt: startOfUTCMonth(now, -12).toISOString(),
-      billingReason: "subscription_cycle",
-      currency: "eur",
-      total: 120_000,
-      totalExcludingTax: 120_000,
-      periodStart: startOfUTCMonth(now, -12).toISOString(),
-      periodEnd: startOfUTCMonth(now, 0).toISOString(),
-    });
-    // The annual contract, covering twelve months from this month's start.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_yearly",
-      stripeCreatedAt: startOfUTCMonth(now, 0).toISOString(),
-      billingReason: "subscription_update",
-      currency: "eur",
-      total: 120_000,
-      totalExcludingTax: 120_000,
-      periodStart: startOfUTCMonth(now, 0).toISOString(),
-      periodEnd: startOfUTCMonth(now, 12).toISOString(),
-    });
-    // The same team's monthly bill from before its conversion: history the
-    // present interval must not erase.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_yearly",
-      stripeCreatedAt: lastMonth.toISOString(),
-      billingReason: "subscription_cycle",
-      currency: "eur",
-      total: 30_000,
-      totalExcludingTax: 30_000,
-    });
-    // A churned yearly team's old renewal: an annual bill is never a month's
-    // revenue, whoever it belongs to now.
-    await factory.StripeInvoice.create({
-      stripeCustomerId: "cus_staff_churned_yearly",
-      stripeCreatedAt: lastMonth.toISOString(),
-      billingReason: "subscription_cycle",
-      currency: "eur",
-      total: 480_000,
-      totalExcludingTax: 480_000,
-      periodStart: startOfUTCMonth(now, -1).toISOString(),
-      periodEnd: startOfUTCMonth(now, 11).toISOString(),
-    });
+      await factory.StripeInvoiceSync.create();
+      const monthly = await createTeam({
+        interval: "month",
+        stripeCustomerId: "cus_staff_monthly",
+      });
+      const yearly = await createTeam({
+        interval: "year",
+        stripeCustomerId: "cus_staff_yearly",
+      });
+      // A churned team keeps the invoices it was already sent.
+      const churned = await factory.TeamAccount.create({
+        stripeCustomerId: "cus_staff_churned",
+      });
+      // A team that has left keeps paying for the months its contract bought.
+      const churnedYearly = await factory.TeamAccount.create({
+        stripeCustomerId: "cus_staff_churned_yearly",
+      });
 
-    const result = await getStaffRevenue(2);
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_monthly",
+        stripeCreatedAt: lastMonth.toISOString(),
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 50_000,
+        totalExcludingTax: 50_000,
+      });
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_monthly",
+        stripeCreatedAt: now.toISOString(),
+        billingReason: "manual",
+        currency: "eur",
+        total: 10_000,
+        totalExcludingTax: 10_000,
+      });
+      // A zero invoice is not a team being invoiced.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_monthly",
+        stripeCreatedAt: lastMonth.toISOString(),
+        currency: "eur",
+        total: 0,
+        totalExcludingTax: 0,
+      });
+      // Billed by hand, a month at a time — a legacy deal, not a contract.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_churned",
+        stripeCreatedAt: lastMonth.toISOString(),
+        billingReason: "manual",
+        currency: "eur",
+        total: 20_000,
+        totalExcludingTax: 20_000,
+        periodStart: startOfUTCMonth(now, -1).toISOString(),
+        periodEnd: startOfUTCMonth(now, 0).toISOString(),
+      });
+      // Not an Argos team: not this page's.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_random",
+        stripeCreatedAt: lastMonth.toISOString(),
+        currency: "eur",
+        total: 99_900,
+        totalExcludingTax: 99_900,
+      });
+      // The term before this one: last month is paid for by it, so the months
+      // before a renewal must not fall to zero.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_yearly",
+        stripeCreatedAt: startOfUTCMonth(now, -12).toISOString(),
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 120_000,
+        totalExcludingTax: 120_000,
+        periodStart: startOfUTCMonth(now, -12).toISOString(),
+        periodEnd: startOfUTCMonth(now, 0).toISOString(),
+      });
+      // The annual contract, covering twelve months from this month's start.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_yearly",
+        stripeCreatedAt: startOfUTCMonth(now, 0).toISOString(),
+        billingReason: "subscription_update",
+        currency: "eur",
+        total: 120_000,
+        totalExcludingTax: 120_000,
+        periodStart: startOfUTCMonth(now, 0).toISOString(),
+        periodEnd: startOfUTCMonth(now, 12).toISOString(),
+      });
+      // The same team's monthly bill from before its conversion: history the
+      // present interval must not erase.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_yearly",
+        stripeCreatedAt: lastMonth.toISOString(),
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 30_000,
+        totalExcludingTax: 30_000,
+      });
+      // A churned yearly team's old renewal: an annual bill is never a month's
+      // revenue, whoever it belongs to now.
+      await factory.StripeInvoice.create({
+        stripeCustomerId: "cus_staff_churned_yearly",
+        stripeCreatedAt: lastMonth.toISOString(),
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 480_000,
+        totalExcludingTax: 480_000,
+        periodStart: startOfUTCMonth(now, -1).toISOString(),
+        periodEnd: startOfUTCMonth(now, 11).toISOString(),
+      });
 
-    expect(result.months).toHaveLength(2);
-    const [last, current] = result.months;
-    invariant(last && current);
+      const result = await getStaffRevenue(2);
 
-    expect(last.monthlyPlans).toEqual({
-      revenue: 1000,
-      teamsCount: 3,
-      foreignRevenue: 0,
-    });
-    // The teams behind the month are read on their own, a month at a time.
-    const lastMonthTeams = await getStaffRevenueMonthTeams(
-      startOfUTCMonth(now, -1),
-    );
-    expect(lastMonthTeams.map((team) => [team.slug, team.revenue])).toEqual([
-      [monthly.slug, 500],
-      [yearly.slug, 300],
-      [churned.slug, 200],
-    ]);
-    // Two contracts pay for last month: the term before this team's newest
-    // renewal — a contract does not begin at whichever bill is latest — and
-    // the churned team's, which keeps paying for the months it bought
-    // whatever its subscription says today.
-    expect(last.yearlyPlans.teamsCount).toBe(2);
-    expect(last.yearlyPlans.revenue).toBeGreaterThan(0);
-    expect(last.revenue).toBe(1000 + last.yearlyPlans.revenue);
+      expect(result.months).toHaveLength(2);
+      const [last, current] = result.months;
+      invariant(last && current);
 
-    // The running month is only as long as it has been, so a contract's share
-    // of it is as partial as the invoices beside it.
-    expect(current.monthlyPlans.revenue).toBe(100);
-    expect(current.monthlyPlans.teamsCount).toBe(1);
-    await expect(
-      getStaffRevenueMonthTeams(startOfUTCMonth(now, 0)),
-    ).resolves.toHaveLength(1);
-    const elapsed = now.getTime() - startOfUTCMonth(now, 0).getTime();
-    const currentTerm =
-      startOfUTCMonth(now, 12).getTime() - startOfUTCMonth(now, 0).getTime();
-    const churnedTerm =
-      startOfUTCMonth(now, 11).getTime() - startOfUTCMonth(now, -1).getTime();
-    expect(current.yearlyPlans.revenue).toBeCloseTo(
-      (1200 * elapsed) / currentTerm + (4800 * elapsed) / churnedTerm,
-      3,
-    );
-    expect(current.yearlyPlans.teamsCount).toBe(2);
+      expect(last.monthlyPlans).toEqual({
+        revenue: 1000,
+        teamsCount: 3,
+        foreignRevenue: 0,
+      });
+      // The teams behind the month are read on their own, a month at a time.
+      const lastMonthTeams = await getStaffRevenueMonthTeams(
+        startOfUTCMonth(now, -1),
+      );
+      expect(lastMonthTeams.map((team) => [team.slug, team.revenue])).toEqual([
+        [monthly.slug, 500],
+        [yearly.slug, 300],
+        [churned.slug, 200],
+      ]);
+      // Two contracts pay for last month: the term before this team's newest
+      // renewal — a contract does not begin at whichever bill is latest — and
+      // the churned team's, which keeps paying for the months it bought
+      // whatever its subscription says today.
+      expect(last.yearlyPlans.teamsCount).toBe(2);
+      expect(last.yearlyPlans.revenue).toBeGreaterThan(0);
+      expect(last.revenue).toBe(1000 + last.yearlyPlans.revenue);
 
-    // Both contracts are in force, largest first, each with the invoice its
-    // figure is read from.
-    expect(
-      result.yearlyContracts.map((contract) => [
-        contract.slug,
-        contract.amount,
-      ]),
-    ).toEqual([
-      [churnedYearly.slug, 4800],
-      [yearly.slug, 1200],
-    ]);
-    const contract = result.yearlyContracts[1];
-    invariant(contract);
-    expect(contract.awaitingPayment).toBe(false);
-    expect(contract.invoices).toHaveLength(1);
-    // A whole month of it, not the part of the running month that has gone by.
-    const runningMonth =
-      startOfUTCMonth(now, 1).getTime() - startOfUTCMonth(now, 0).getTime();
-    expect(contract.monthlyRevenue).toBeCloseTo(
-      (1200 * runningMonth) / currentTerm,
-      3,
-    );
+      // The running month is only as long as it has been, so a contract's share
+      // of it is as partial as the invoices beside it.
+      expect(current.monthlyPlans.revenue).toBe(100);
+      expect(current.monthlyPlans.teamsCount).toBe(1);
+      await expect(
+        getStaffRevenueMonthTeams(startOfUTCMonth(now, 0)),
+      ).resolves.toHaveLength(1);
+      const elapsed = now.getTime() - startOfUTCMonth(now, 0).getTime();
+      const currentTerm =
+        startOfUTCMonth(now, 12).getTime() - startOfUTCMonth(now, 0).getTime();
+      const churnedTerm =
+        startOfUTCMonth(now, 11).getTime() - startOfUTCMonth(now, -1).getTime();
+      expect(current.yearlyPlans.revenue).toBeCloseTo(
+        (1200 * elapsed) / currentTerm + (4800 * elapsed) / churnedTerm,
+        3,
+      );
+      expect(current.yearlyPlans.teamsCount).toBe(2);
 
-    // The projection carries the same contracts to the end of the month, where
-    // the month itself stops at today — that difference is what it exists for.
-    expect(result.projection.yearlyPlans).toBeCloseTo(
-      (1200 * runningMonth) / currentTerm + (4800 * runningMonth) / churnedTerm,
-      3,
-    );
-    expect(result.projection.yearlyPlans).toBeGreaterThan(
-      current.yearlyPlans.revenue,
-    );
+      // Both contracts are in force, largest first, each with the invoice its
+      // figure is read from.
+      expect(
+        result.yearlyContracts.map((contract) => [
+          contract.slug,
+          contract.amount,
+        ]),
+      ).toEqual([
+        [churnedYearly.slug, 4800],
+        [yearly.slug, 1200],
+      ]);
+      const contract = result.yearlyContracts[1];
+      invariant(contract);
+      expect(contract.awaitingPayment).toBe(false);
+      expect(contract.invoices).toHaveLength(1);
+      // A whole month of it, not the part of the running month that has gone by.
+      const runningMonth =
+        startOfUTCMonth(now, 1).getTime() - startOfUTCMonth(now, 0).getTime();
+      expect(contract.monthlyRevenue).toBeCloseTo(
+        (1200 * runningMonth) / currentTerm,
+        3,
+      );
+
+      // The projection carries the same contracts to the end of the month, where
+      // the month itself stops at today — that difference is what it exists for.
+      expect(result.projection.yearlyPlans).toBeCloseTo(
+        (1200 * runningMonth) / currentTerm +
+          (4800 * runningMonth) / churnedTerm,
+        3,
+      );
+      expect(result.projection.yearlyPlans).toBeGreaterThan(
+        current.yearlyPlans.revenue,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("estimates the running month's bills that have not been raised", async () => {

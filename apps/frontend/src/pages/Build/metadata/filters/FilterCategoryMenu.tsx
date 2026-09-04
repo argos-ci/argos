@@ -47,6 +47,12 @@ export function getFilterCategoryItems(props: {
           checkbox
           textValue={filter.label}
           checked={selectedKeys.has(filter.key)}
+          onAction={() => {
+            // Only within this category: the chips of the others are their own
+            // filters, and this row says nothing about them.
+            const otherKeys = state.active.difference(filterGroup.filterKeys);
+            state.setActive(otherKeys.union(new Set([filter.key])));
+          }}
           onCheckedChange={(checked: boolean) => {
             const next = new Set(selectedKeys);
             if (checked) {

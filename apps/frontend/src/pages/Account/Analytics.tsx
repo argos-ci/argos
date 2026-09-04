@@ -1289,6 +1289,7 @@ export function ProjectFilterMenu(props: {
           key={project.id}
           textValue={project.name}
           checked={selected.includes(project.name)}
+          onAction={() => props.onChange([project.name])}
           onCheckedChange={(checked: boolean) => {
             const next = new Set(selected);
             if (checked) {
