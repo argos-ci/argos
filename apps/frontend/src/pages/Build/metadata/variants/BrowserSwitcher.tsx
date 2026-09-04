@@ -19,6 +19,12 @@ import {
   type MetadataBrowser,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
+import {
+  getVariantStatus,
+  VariantStatusIcon,
+  withVariantStatus,
+  type VariantStatus,
+} from "./VariantStatus";
 
 export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
@@ -51,6 +57,7 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
           <BrowserLinkButton
             key={key}
             browser={browser}
+            status={getVariantStatus(resolvedDiff)}
             aria-current={isActive ? "page" : undefined}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
@@ -63,14 +70,18 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
 
 function BrowserLinkButton(props: {
   browser: MetadataBrowser;
+  status: VariantStatus | null;
   href: string;
   shortcutEnabled: boolean;
   "aria-current"?: "page";
 }) {
-  const { browser, shortcutEnabled, ...rest } = props;
+  const { browser, status, shortcutEnabled, ...rest } = props;
   const navigate = useNavigate();
   const label = getBrowserLabel(browser.name);
-  const tooltipContent = `${label} v${browser.version}`;
+  const tooltipContent = withVariantStatus(
+    `${label} v${browser.version}`,
+    status,
+  );
   const hotkey = useBuildHotkey("switchBrowser", () => navigate(props.href), {
     enabled: shortcutEnabled,
   });
@@ -79,8 +90,19 @@ function BrowserLinkButton(props: {
     // The logo is the label: browsers are the one dimension whose icons anyone
     // reviewing snapshots can already tell apart. The name stays for a screen
     // reader, and the version for the tooltip.
-    <LinkButton {...rest} variant="secondary" iconOnly aria-label={label}>
+    //
+    // Still `iconOnly` with the status marker beside the logo: that is what
+    // sizes both icons alike and keeps the segment as tall as the text ones.
+    // `gap-1` because `iconOnly` expects the one child it is named for.
+    <LinkButton
+      {...rest}
+      variant="secondary"
+      iconOnly
+      className="gap-1"
+      aria-label={withVariantStatus(label, status)}
+    >
       <BrowserIcon browser={browser} />
+      {status ? <VariantStatusIcon status={status} /> : null}
     </LinkButton>
   );
 

@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { LinkButton } from "@/ui/Button";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
@@ -15,6 +15,12 @@ import {
   useGetDiffPath,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
+import {
+  getVariantStatus,
+  VariantStatusIcon,
+  withVariantStatus,
+  type VariantStatus,
+} from "./VariantStatus";
 
 export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
@@ -46,6 +52,7 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
           <StoryModeLinkButton
             key={mode}
             mode={mode}
+            status={getVariantStatus(resolvedDiff)}
             aria-current={isActive ? "page" : undefined}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
@@ -58,22 +65,32 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
 
 function StoryModeLinkButton(props: {
   mode: string;
+  status: VariantStatus | null;
   href: string;
   shortcutEnabled: boolean;
   "aria-current"?: "page";
 }) {
-  const { mode, shortcutEnabled, ...rest } = props;
+  const { mode, status, shortcutEnabled, ...rest } = props;
   const navigate = useNavigate();
   const hotkey = useBuildHotkey("switchStoryMode", () => navigate(props.href), {
     enabled: shortcutEnabled,
   });
-  const content = `Story mode: ${mode}`;
+  const content = withVariantStatus(`Story mode: ${mode}`, status);
 
-  // No icon: a mode is named by whoever wrote the story, so the name is the
-  // only thing that tells one from another.
+  // No icon of its own: a mode is named by whoever wrote the story, so the name
+  // is the only thing that tells one from another.
   const button = (
-    <LinkButton {...rest} variant="secondary">
+    <LinkButton
+      {...rest}
+      variant="secondary"
+      aria-label={status ? withVariantStatus(mode, status) : undefined}
+    >
       {mode}
+      {status ? (
+        <ButtonIcon position="right">
+          <VariantStatusIcon status={status} />
+        </ButtonIcon>
+      ) : null}
     </LinkButton>
   );
 

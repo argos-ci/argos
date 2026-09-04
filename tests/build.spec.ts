@@ -461,6 +461,57 @@ loggedTest(
 );
 
 loggedTest(
+  "marks the variants holding a change",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createVariantSwitchersScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    const variants = page.getByRole("group", { name: "Snapshot variants" });
+    const segment = (name: string) =>
+      variants.getByRole("link", { name, exact: true });
+
+    // Every marker the switchers can draw, in one toolbar: the reviewer sees
+    // which siblings are worth the jump before making it. The status rides the
+    // accessible name because the tooltip carrying it is out of the
+    // accessibility tree.
+    await expect(segment("Chromium, Changed")).toBeVisible();
+    await expect(segment("Firefox, Removed")).toBeVisible();
+    await expect(segment("390px, Added")).toBeVisible();
+    await expect(segment("1280px, Changed")).toBeVisible();
+
+    await screenshot(page, "build-variant-statuses", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    // And the other half of the rule: Firefox's 390 sibling is unchanged, so
+    // that segment says nothing at all rather than marking itself "unchanged".
+    await segment("Firefox, Removed").click();
+    await expect(segment("390px")).toBeVisible();
+    await expect(segment("Firefox, Removed")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+
+    await screenshot(page, "build-variant-statuses-unchanged", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+  },
+);
+
+loggedTest(
   "keeps the other variant when switching one",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });

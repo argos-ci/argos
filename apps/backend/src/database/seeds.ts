@@ -1138,6 +1138,11 @@ export async function createFallbackBaselineScenario(input: {
  * another because `getVariantKey` strips both the browser prefix and the
  * ` vw-<width>` suffix from their names, leaving one key.
  *
+ * One variant per status, so every marker a switcher can draw is on screen at
+ * once — and, on the unchanged one, the absence of a marker. Which is why the
+ * matrix is not a square of identical diffs: the reviewer's question is which
+ * of the siblings is worth jumping to.
+ *
  * The snapshot name is long on purpose: the toolbar has to seat it beside the
  * switchers without cropping it, and a short name proves nothing.
  */
@@ -1148,21 +1153,63 @@ export async function createVariantSwitchersScenario(input: {
   const seededAt = getSeedInstant();
   const variantKey = "components/data-table/with-pagination-and-sticky-header";
 
+  // Every variant reuses the one `dummy-*` image, since those are the only keys
+  // that exist in the test bucket. The recorded viewport is therefore the
+  // browser's, not the file's — which is what the switchers read anyway.
+  //
+  // The statuses are placed by where the switchers land, not spread at random:
+  // from the first diff (chromium/1280, the only changed one) the toolbar
+  // reaches chromium/390 and firefox/1280, so those two carry the added and
+  // removed markers. The unchanged one sits behind Firefox, where switching the
+  // viewport shows a segment with nothing to say.
+  const variants = [
+    {
+      browser: CHROMIUM,
+      viewport: { width: 390, height: 844 },
+      status: "added",
+    },
+    {
+      browser: CHROMIUM,
+      viewport: { width: 1280, height: 800 },
+      status: "changed",
+    },
+    {
+      browser: FIREFOX,
+      viewport: { width: 390, height: 844 },
+      status: "unchanged",
+    },
+    {
+      browser: FIREFOX,
+      viewport: { width: 1280, height: 800 },
+      status: "removed",
+    },
+  ].map((variant) => ({
+    ...variant,
+    name: `${variant.browser.name}/${variantKey} vw-${variant.viewport.width}.png`,
+  }));
+
   const bucketProps = {
     name: "default",
     branch: "main",
     projectId,
     complete: true,
     valid: true,
-    screenshotCount: 4,
     storybookScreenshotCount: 0,
     createdAt: seededAt,
     updatedAt: seededAt,
   };
   const [baseBucket, compareBucket] =
     await ScreenshotBucket.query().insertAndFetch([
-      { ...bucketProps, commit: "4f1a9c2d8e5b3a7f6c0d9e8b1a2c3d4e5f6a7b8c" },
-      { ...bucketProps, commit: "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d" },
+      {
+        ...bucketProps,
+        commit: "4f1a9c2d8e5b3a7f6c0d9e8b1a2c3d4e5f6a7b8c",
+        screenshotCount: variants.filter((v) => v.status !== "added").length,
+      },
+      {
+        ...bucketProps,
+        commit: "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d",
+        screenshotCount: variants.filter((v) => v.status !== "removed").length,
+      },
     ]);
   invariant(baseBucket && compareBucket);
 
@@ -1183,19 +1230,6 @@ export async function createVariantSwitchersScenario(input: {
     }),
   ]);
 
-  // Every variant reuses the one `dummy-*` image, since those are the only keys
-  // that exist in the test bucket. The recorded viewport is therefore the
-  // browser's, not the file's — which is what the switchers read anyway.
-  const variants = [
-    { browser: CHROMIUM, viewport: { width: 390, height: 844 } },
-    { browser: CHROMIUM, viewport: { width: 1280, height: 800 } },
-    { browser: FIREFOX, viewport: { width: 390, height: 844 } },
-    { browser: FIREFOX, viewport: { width: 1280, height: 800 } },
-  ].map((variant) => ({
-    ...variant,
-    name: `${variant.browser.name}/${variantKey} vw-${variant.viewport.width}.png`,
-  }));
-
   const tests = await Test.query().insertAndFetch(
     variants.map((variant) => ({
       name: variant.name,
@@ -1208,6 +1242,7 @@ export async function createVariantSwitchersScenario(input: {
     const test = tests[index];
     invariant(test);
     return {
+      status: variant.status,
       testId: test.id,
       name: variant.name,
       s3Id: imageFile.key,
@@ -1233,16 +1268,26 @@ export async function createVariantSwitchersScenario(input: {
   });
 
   const baseScreenshots = await Screenshot.query().insertAndFetch(
-    screenshotProps.map((props) => ({
-      ...props,
-      screenshotBucketId: baseBucket.id,
-    })),
+    screenshotProps
+      .filter((props) => props.status !== "added")
+      .map(({ status: _status, ...props }) => ({
+        ...props,
+        screenshotBucketId: baseBucket.id,
+      })),
   );
   const compareScreenshots = await Screenshot.query().insertAndFetch(
-    screenshotProps.map((props) => ({
-      ...props,
-      screenshotBucketId: compareBucket.id,
-    })),
+    screenshotProps
+      .filter((props) => props.status !== "removed")
+      .map(({ status: _status, ...props }) => ({
+        ...props,
+        screenshotBucketId: compareBucket.id,
+      })),
+  );
+  const baseScreenshotIdByName = new Map(
+    baseScreenshots.map((screenshot) => [screenshot.name, screenshot.id]),
+  );
+  const compareScreenshotIdByName = new Map(
+    compareScreenshots.map((screenshot) => [screenshot.name, screenshot.id]),
   );
 
   const [build] = await Build.query().insertAndFetch([
@@ -1261,20 +1306,32 @@ export async function createVariantSwitchersScenario(input: {
   invariant(build);
 
   await ScreenshotDiff.query().insert(
-    variants.map((_variant, index) => {
-      const baseScreenshot = baseScreenshots[index];
-      const compareScreenshot = compareScreenshots[index];
+    variants.map((variant, index) => {
       const test = tests[index];
-      invariant(baseScreenshot && compareScreenshot && test);
+      invariant(test);
+      const changed = variant.status === "changed";
       return {
         buildId: build.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: compareScreenshot.id,
+        baseScreenshotId: baseScreenshotIdByName.get(variant.name) ?? null,
+        compareScreenshotId:
+          compareScreenshotIdByName.get(variant.name) ?? null,
         testId: test.id,
-        score: 0.2,
+        // A missing screenshot on one side is what makes a diff added or
+        // removed, so those carry no score at all; the score only tells changed
+        // from unchanged.
+        score: (() => {
+          switch (variant.status) {
+            case "changed":
+              return 0.2;
+            case "unchanged":
+              return 0;
+            default:
+              return null;
+          }
+        })(),
         jobStatus: "complete" as const,
-        s3Id: diffFile.key,
-        fileId: diffFile.id,
+        s3Id: changed ? diffFile.key : null,
+        fileId: changed ? diffFile.id : null,
         createdAt: seededAt,
         updatedAt: seededAt,
       };

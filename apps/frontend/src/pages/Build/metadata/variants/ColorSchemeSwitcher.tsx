@@ -16,6 +16,11 @@ import {
   useGetDiffPath,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
+import {
+  getVariantStatus,
+  VariantStatusIcon,
+  withVariantStatus,
+} from "./VariantStatus";
 
 function getColorSchemeName(colorScheme: ScreenshotMetadataColorScheme) {
   switch (colorScheme) {
@@ -60,7 +65,11 @@ export function ColorSchemeSwitcher(props: {
             });
         invariant(resolvedDiff, "diff cannot be null");
         const Icon = colorSchemeIcons[colorScheme];
-        const label = getColorSchemeLabel(colorScheme);
+        const status = getVariantStatus(resolvedDiff);
+        const label = withVariantStatus(
+          getColorSchemeLabel(colorScheme),
+          status,
+        );
         return (
           // A sun against a moon: with the two side by side, each names the
           // other — the trap of a lone undecodable moon needs a lone moon.
@@ -68,11 +77,13 @@ export function ColorSchemeSwitcher(props: {
             <LinkButton
               variant="secondary"
               iconOnly
+              className="gap-1"
               aria-label={label}
               aria-current={isActive ? "page" : undefined}
               href={getDiffPath(resolvedDiff.id) ?? ""}
             >
               <Icon />
+              {status ? <VariantStatusIcon status={status} /> : null}
             </LinkButton>
           </Tooltip>
         );
