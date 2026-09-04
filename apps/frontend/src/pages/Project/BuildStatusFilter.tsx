@@ -80,6 +80,7 @@ export function BuildStatusFilter(props: {
               key={status}
               textValue={descriptor.label}
               checked={value.has(status)}
+              onAction={() => onChange(new Set([status]))}
               onCheckedChange={(checked: boolean) => {
                 const next = new Set(value);
                 if (checked) {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { invariant } from "@argos/util/invariant";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   ChevronDownIcon,
@@ -313,6 +314,71 @@ export const OpenWithCheckboxes: Story = {
         </MenuRoot>
       </OverlayStage>
     );
+  },
+};
+
+/**
+ * A filter's two answers in one list: the box adds a status to the selection
+ * and leaves the menu up, the rest of the row narrows to that one and closes.
+ */
+export const OpenWithSplitCheckboxes: Story = {
+  parameters: openOverlayParameters,
+  render: function Render() {
+    const [selected, setSelected] = useState<string[]>([
+      "accepted",
+      "rejected",
+    ]);
+    const statuses = ["accepted", "rejected", "pending", "expired"];
+    return (
+      <OverlayStage>
+        <MenuRoot defaultOpen>
+          <MenuTrigger>
+            <Button variant="secondary">Status ({selected.length})</Button>
+          </MenuTrigger>
+          <Menu aria-label="Build status">
+            {statuses.map((status) => (
+              <MenuItem
+                key={status}
+                checkbox
+                checked={selected.includes(status)}
+                onAction={() => setSelected([status])}
+                onCheckedChange={(checked) => {
+                  setSelected((previous) =>
+                    checked
+                      ? [...previous, status]
+                      : previous.filter((item) => item !== status),
+                  );
+                }}
+              >
+                {status}
+              </MenuItem>
+            ))}
+          </Menu>
+        </MenuRoot>
+      </OverlayStage>
+    );
+  },
+  play: async ({ userEvent }) => {
+    const list = await screen.findByRole("listbox", { name: "Build status" });
+    const row = await screen.findByRole("option", { name: "pending" });
+    const box = row.querySelector("[data-menu-item-checkbox]");
+    invariant(box instanceof HTMLElement, "the row has a box of its own");
+
+    // The box adds to the selection and the list survives the press.
+    await userEvent.click(box);
+    await expect(
+      await screen.findByRole("button", { name: "Status (3)" }),
+    ).toBeVisible();
+    await expect(list).toBeVisible();
+
+    // The rest of the row narrows to that one and takes the menu with it.
+    await userEvent.click(
+      await screen.findByRole("option", { name: "accepted" }),
+    );
+    await expect(
+      await screen.findByRole("button", { name: "Status (1)" }),
+    ).toBeVisible();
+    await waitFor(() => expect(list).not.toBeInTheDocument());
   },
 };
 
