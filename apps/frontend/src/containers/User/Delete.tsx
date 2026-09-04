@@ -118,7 +118,7 @@ function UserDeleteDialog(props: DeleteUserButtonProps) {
           <DialogText>The link expires in 15 minutes.</DialogText>
         </DialogBody>
         <DialogFooter>
-          <DialogDismiss>Close</DialogDismiss>
+          <DialogDismiss autoFocus>Close</DialogDismiss>
         </DialogFooter>
       </Dialog>
     );

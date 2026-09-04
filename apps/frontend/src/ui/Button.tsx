@@ -1,6 +1,8 @@
 import {
   Children,
   cloneElement,
+  useCallback,
+  useRef,
   useState,
   type ComponentPropsWithRef,
 } from "react";
@@ -9,6 +11,7 @@ import { clsx } from "clsx";
 
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
+import { mergeRefs } from "@/util/merge-refs";
 
 import { Loader } from "./Loader";
 import { RouterLink } from "./RouterLink";
@@ -379,6 +382,30 @@ export interface LinkButtonProps
 }
 
 /**
+ * React applies `autoFocus` to `button`, `input`, `select` and `textarea` and
+ * to nothing else, so an anchor asking for it is left unfocused without a
+ * word — which is how a dialog whose default action is a link ended up with
+ * nothing for Enter to trigger. Focus it from the ref instead, once, when it
+ * mounts: that is what `autoFocus` means, and a re-render must not pull focus
+ * back from wherever it has since moved.
+ */
+function useAutoFocusRef<T extends HTMLElement>(
+  autoFocus: boolean | undefined,
+) {
+  const focusedRef = useRef(false);
+  return useCallback(
+    (element: T | null) => {
+      if (!autoFocus || !element || focusedRef.current) {
+        return;
+      }
+      focusedRef.current = true;
+      element.focus();
+    },
+    [autoFocus],
+  );
+}
+
+/**
  * A link wearing the button's clothes. `RouterLink` keeps an in-app path on
  * the client router and leaves a scheme like `codex://` a plain anchor —
  * which is what react-aria's `RouterProvider` used to do for every link.
@@ -391,6 +418,8 @@ export function LinkButton({
   showFocusRing,
   onClick,
   disabled,
+  autoFocus,
+  ref,
   ...props
 }: LinkButtonProps) {
   const buttonProps = getButtonProps({
@@ -399,9 +428,11 @@ export function LinkButton({
     iconOnly,
     showFocusRing,
   });
+  const autoFocusRef = useAutoFocusRef<HTMLAnchorElement>(autoFocus);
   return (
     <RouterLink
       {...buttonProps}
+      ref={mergeRefs(ref, autoFocusRef)}
       className={clsx(buttonProps.className, className)}
       aria-disabled={disabled || undefined}
       onClick={(event) => {

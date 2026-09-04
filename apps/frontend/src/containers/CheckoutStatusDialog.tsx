@@ -60,7 +60,7 @@ export function CheckoutStatusDialog() {
           )}
         </DialogBody>
         <DialogFooter>
-          <DialogDismiss>OK</DialogDismiss>
+          <DialogDismiss autoFocus>OK</DialogDismiss>
         </DialogFooter>
       </Dialog>
     </Modal>

@@ -99,6 +99,10 @@ function ReapplyPreviousApprovalsButton(props: {
   const { close } = useOverlayTriggerState();
   return (
     <Button
+      autoFocus
+      // The dialog opens on its own when the build loads, so nothing marks the
+      // button as focused for a pointer user. Keep the ring on.
+      showFocusRing
       onClick={() => {
         if (checkIsPending()) {
           return;
