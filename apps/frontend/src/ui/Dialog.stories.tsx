@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, waitFor } from "storybook/test";
 
-import { Button } from "./Button";
+import { Button, LinkButton } from "./Button";
 import {
   Dialog,
   DialogActionButton,
@@ -214,6 +214,48 @@ export const PendingBlocksDismissal: Story = {
     await userEvent.keyboard("{Escape}");
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+  },
+};
+
+/**
+ * A dialog that offers to move somewhere puts its default action on a link,
+ * and a link is exactly where `autoFocus` stops working on its own: React
+ * applies it to form controls and to nothing else, so the anchor stayed
+ * unfocused and Enter did nothing. `Modal` also aims focus at the popup
+ * itself, which the autofocused element has to win against. Neither shows up
+ * in a screenshot, so it is asserted.
+ */
+export const AutoFocusedLinkTakesFocus: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <div className="flex h-screen w-full items-start justify-center p-16">
+      <DialogTrigger defaultOpen>
+        <Button variant="secondary">Open Dialog</Button>
+        <Modal dismissible>
+          <Dialog>
+            <DialogBody>
+              <DialogTitle>Review the next build</DialogTitle>
+              <DialogText>
+                One more build ran on this commit and still needs your review.
+              </DialogText>
+            </DialogBody>
+            <DialogFooter>
+              <DialogDismiss>Not now</DialogDismiss>
+              <LinkButton href="/builds/2" autoFocus showFocusRing>
+                Review next build
+              </LinkButton>
+            </DialogFooter>
+          </Dialog>
+        </Modal>
+      </DialogTrigger>
+    </div>
+  ),
+  play: async () => {
+    await waitFor(async () => {
+      await expect(
+        screen.getByRole("link", { name: "Review next build" }),
+      ).toHaveFocus();
     });
   },
 };

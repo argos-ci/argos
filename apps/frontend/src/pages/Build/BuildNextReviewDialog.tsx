@@ -188,6 +188,9 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
         <LinkButton
           href={getBuildOverviewURL(getBuildParams(nextBuild))}
           autoFocus
+          // The dialog opens on its own once a review is submitted, so nothing
+          // marks the link as focused for a pointer user. Keep the ring on.
+          showFocusRing
         >
           Review next build
         </LinkButton>

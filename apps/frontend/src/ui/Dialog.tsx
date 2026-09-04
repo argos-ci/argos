@@ -117,6 +117,11 @@ export function DialogDismiss(props: {
   onClick?: () => void;
   single?: boolean;
   disabled?: boolean;
+  /**
+   * Focus the button when the dialog opens. For a dialog that only asks to be
+   * acknowledged, dismissing *is* the action, so Enter should do it.
+   */
+  autoFocus?: boolean;
 }) {
   const { ref, ...rest } = props;
   const state = useOverlayTriggerState();
@@ -126,6 +131,7 @@ export function DialogDismiss(props: {
       ref={ref}
       className={rest.single ? "flex-1 justify-center" : undefined}
       variant="secondary"
+      autoFocus={rest.autoFocus}
       onClick={() => {
         props.onClick?.();
         state.close();
