@@ -62,6 +62,13 @@ export function DetailToolbarTitle(props: {
    * fits beside it. It still grows into whatever the cluster does not use.
    * Without a cluster there is nothing designed to yield, so the name asks for
    * its own length and shrinks like anything else.
+   *
+   * The floor has to be the whole of that guarantee, because the growth beside
+   * it cannot be counted on: a cluster wide enough to wrap keeps claiming its
+   * single-line width — `fit-content` of a wrapped flex container is its
+   * max-content — and hands the name nothing back. `basis-80` is two lines of a
+   * 70-odd character snapshot name, which is what the build toolbar has to
+   * seat.
    */
   crowded?: boolean;
 }) {
@@ -79,7 +86,7 @@ export function DetailToolbarTitle(props: {
     <div
       className={clsx(
         "flex grow",
-        crowded ? "shrink-0 basis-72" : "min-w-0 shrink basis-auto",
+        crowded ? "shrink-0 basis-80" : "min-w-0 shrink basis-auto",
       )}
     >
       {render ? render(title) : title}

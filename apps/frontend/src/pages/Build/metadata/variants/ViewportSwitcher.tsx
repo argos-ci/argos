@@ -17,6 +17,12 @@ import {
   type MetadataViewport,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
+import {
+  getVariantStatus,
+  VariantStatusButtonIcon,
+  withVariantStatus,
+  type VariantStatus,
+} from "./VariantStatus";
 
 export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
@@ -49,6 +55,7 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
           <ViewportLinkButton
             key={key}
             viewport={viewport}
+            status={getVariantStatus(resolvedDiff)}
             aria-current={isActive ? "page" : undefined}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
@@ -61,25 +68,33 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
 
 function ViewportLinkButton(props: {
   viewport: MetadataViewport;
+  status: VariantStatus | null;
   href: string;
   shortcutEnabled: boolean;
   "aria-current"?: "page";
 }) {
-  const { viewport, shortcutEnabled, ...rest } = props;
+  const { viewport, status, shortcutEnabled, ...rest } = props;
   const navigate = useNavigate();
   const hotkey = useBuildHotkey("switchViewport", () => navigate(props.href), {
     enabled: shortcutEnabled,
   });
-  const content = tooltipContent(viewport);
+  const content = withVariantStatus(tooltipContent(viewport), status);
 
   const button = (
     // The width alone: it is what tells siblings apart, and the height and the
     // unit are the same for all of them — the tooltip carries both.
-    <LinkButton {...rest} variant="secondary">
+    <LinkButton
+      {...rest}
+      variant="secondary"
+      aria-label={
+        status ? withVariantStatus(`${viewport.width}px`, status) : undefined
+      }
+    >
       <span className="align-baseline">
         {viewport.width}
         <small className="ml-px">px</small>
       </span>
+      {status ? <VariantStatusButtonIcon status={status} /> : null}
     </LinkButton>
   );
 
