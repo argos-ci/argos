@@ -1,6 +1,9 @@
-import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
+import {
+  getDiffGroupDefinition,
+  type DiffGroupColor,
+} from "@/containers/Build/BuildDiffGroup";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
-import type { ButtonIconElementProps } from "@/ui/Button";
+import { ButtonIcon, type ButtonIconElementProps } from "@/ui/Button";
 
 import type { Diff } from "../../BuildDiffState";
 
@@ -46,14 +49,55 @@ export function withVariantStatus(
 }
 
 /**
- * Deliberately unsized: the button sizes it, so an `iconOnly` segment carries
- * it at the same 16px as its own icon while a text segment gets `1em` of its
- * label through `ButtonIcon`.
+ * Each group's own color, so the marker matches the count it stands for in the
+ * build's stats rather than picking a shade of its own. All three are orange
+ * today; the map is over the colors a group can have because the definitions,
+ * not this file, decide that.
  */
-export function VariantStatusIcon(
-  props: ButtonIconElementProps & { status: VariantStatus },
-) {
+const colorClassNames: Record<DiffGroupColor, string> = {
+  danger: "text-danger-low",
+  warning: "text-warning-low",
+  success: "text-success-low",
+  neutral: "text-low",
+};
+
+function getColorClassName(status: VariantStatus): string {
+  return colorClassNames[getDiffGroupDefinition(status).color];
+}
+
+function StatusIcon(props: ButtonIconElementProps & { status: VariantStatus }) {
   const { status, ...rest } = props;
   const { icon: Icon } = getDiffGroupDefinition(status);
   return <Icon aria-hidden {...rest} />;
+}
+
+/**
+ * The marker for a segment carrying a label — it trails the text at `1em` of
+ * it. Colored through `ButtonIcon`, which is also what marks it
+ * `data-colored-icon`: without that the button dims every icon it holds until
+ * hovered, and a marker that has to be hovered to be seen is no marker.
+ */
+export function VariantStatusButtonIcon(props: { status: VariantStatus }) {
+  const { status } = props;
+  return (
+    <ButtonIcon position="right" colorClassName={getColorClassName(status)}>
+      <StatusIcon status={status} />
+    </ButtonIcon>
+  );
+}
+
+/**
+ * The marker for an `iconOnly` segment, whose own icon is its label. A bare
+ * second child, deliberately unsized and unspaced: there the button sizes both
+ * icons alike, and the segment sets the gap.
+ */
+export function VariantStatusIcon(props: { status: VariantStatus }) {
+  const { status } = props;
+  return (
+    <StatusIcon
+      status={status}
+      data-colored-icon
+      className={getColorClassName(status)}
+    />
+  );
 }

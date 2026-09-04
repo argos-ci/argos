@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { useNavigate } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { ButtonIcon, LinkButton } from "@/ui/Button";
+import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
@@ -19,7 +19,7 @@ import {
 import { findVariantSibling } from "./sibling";
 import {
   getVariantStatus,
-  VariantStatusIcon,
+  VariantStatusButtonIcon,
   withVariantStatus,
   type VariantStatus,
 } from "./VariantStatus";
@@ -94,11 +94,7 @@ function ViewportLinkButton(props: {
         {viewport.width}
         <small className="ml-px">px</small>
       </span>
-      {status ? (
-        <ButtonIcon position="right">
-          <VariantStatusIcon status={status} />
-        </ButtonIcon>
-      ) : null}
+      {status ? <VariantStatusButtonIcon status={status} /> : null}
     </LinkButton>
   );
 
