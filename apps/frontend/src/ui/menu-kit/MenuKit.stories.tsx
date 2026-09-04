@@ -322,7 +322,13 @@ export const OpenWithCheckboxes: Story = {
  * and leaves the menu up, the rest of the row narrows to that one and closes.
  */
 export const OpenWithSplitCheckboxes: Story = {
-  parameters: openOverlayParameters,
+  parameters: {
+    ...openOverlayParameters,
+    // The play leaves the menu closed, so the only thing left to photograph is
+    // the trigger — a baseline that says nothing and breaks whenever a button
+    // changes. The behaviour is what this story is for; the picture is not.
+    argos: { modes: { default: { disabled: true } } },
+  },
   render: function Render() {
     const [selected, setSelected] = useState<string[]>([
       "accepted",
