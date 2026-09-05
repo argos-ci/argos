@@ -14,6 +14,7 @@ import { Account, StripeInvoice } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
+  parseAccountName,
   requestEmailSignin,
   requestEmailSignup,
 } from "@/database/services/account";
@@ -639,7 +640,13 @@ export const resolvers: IResolvers = {
       }
 
       if (input.name !== undefined) {
-        data.name = input.name;
+        // `null` clears the name, which the column allows; anything else has to
+        // fit it, or the model rejects it as an error nothing maps.
+        try {
+          data.name = input.name === null ? null : parseAccountName(input.name);
+        } catch (error) {
+          throw toGraphQLError(error);
+        }
       }
 
       if (

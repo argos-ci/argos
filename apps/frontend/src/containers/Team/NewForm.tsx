@@ -1,4 +1,5 @@
 import { useApolloClient, useQuery } from "@apollo/client/react";
+import { ACCOUNT_NAME_MAX_LENGTH } from "@argos/schemas/account";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -90,8 +91,8 @@ export function TeamNewForm(props: {
         {...form.register("name", {
           required: "Team name is required",
           maxLength: {
-            value: 255,
-            message: "Team name must be 255 characters or less",
+            value: ACCOUNT_NAME_MAX_LENGTH,
+            message: `Team name must be ${ACCOUNT_NAME_MAX_LENGTH} characters or less`,
           },
         })}
         label="Team Name"

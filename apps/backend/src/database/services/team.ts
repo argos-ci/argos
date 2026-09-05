@@ -6,6 +6,7 @@ import { Account } from "../models/Account";
 import { Team } from "../models/Team";
 import { TeamUser } from "../models/TeamUser";
 import { transaction } from "../transaction";
+import { parseAccountName } from "./account";
 
 const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);
@@ -28,7 +29,8 @@ export const createTeamAccount = async (props: {
   ownerId: string;
   githubAccountId?: string | null;
 }) => {
-  const slug = await resolveTeamSlug(props.name);
+  const name = parseAccountName(props.name);
+  const slug = await resolveTeamSlug(name);
   return transaction(async (trx) => {
     const team = await Team.query(trx).insertAndFetch({
       defaultUserLevel: "member",
@@ -39,7 +41,7 @@ export const createTeamAccount = async (props: {
       userLevel: "owner",
     });
     const accountData: PartialModelObject<Account> = {
-      name: props.name,
+      name,
       slug,
       teamId: team.id,
     };

@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent } from "react";
+import { AccountNameSchema } from "@argos/schemas/account";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router";
 
@@ -36,7 +37,11 @@ export function Component() {
   const name = searchParams.get("name");
   const autoSubmit = searchParams.get("autoSubmit") === "true";
 
-  if (name && autoSubmit) {
+  // The name comes straight from the URL, so no form has vetted it. Submitting
+  // one the API refuses would only bounce back to this page a round-trip later,
+  // so a name that cannot be a team goes to the form instead, prefilled and
+  // editable.
+  if (name && autoSubmit && AccountNameSchema.safeParse(name).success) {
     return <AutoCreateTeam name={name} />;
   }
 

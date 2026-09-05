@@ -949,10 +949,15 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const teamAccount = await createTeamAccount({
-        name: args.input.name,
-        ownerId: auth.user.id,
-      });
+      let teamAccount;
+      try {
+        teamAccount = await createTeamAccount({
+          name: args.input.name,
+          ownerId: auth.user.id,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
 
       if (args.input.autoJoinDomain) {
         invariant(teamAccount.teamId, "team account has no teamId");

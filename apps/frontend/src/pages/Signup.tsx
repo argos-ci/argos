@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
+import { ACCOUNT_NAME_MAX_LENGTH } from "@argos/schemas/account";
 import { assertNever } from "@argos/util/assertNever";
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
@@ -218,6 +219,12 @@ function FormStep(props: {
   const registerName = form.register("name", {
     required: { value: true, message: "Name is required" },
     minLength: { value: 2, message: "Too short" },
+    // A Pro signup carries this name to `/teams/new` in a URL that submits
+    // itself, so this is the only form standing between it and the API.
+    maxLength: {
+      value: ACCOUNT_NAME_MAX_LENGTH,
+      message: `Name must be ${ACCOUNT_NAME_MAX_LENGTH} characters or less`,
+    },
   });
   const nameRef = useObjectRef(registerName.ref);
   useEffect(() => {
