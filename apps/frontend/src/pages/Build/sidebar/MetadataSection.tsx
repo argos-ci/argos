@@ -34,6 +34,11 @@ export type MetadataSectionProps = {
   compareBranch: string | null | undefined;
   deploymentUrl: string | null;
   prMerged: boolean;
+  /**
+   * Rows rendered ahead of the metadata. The mobile sheet leads with the
+   * snapshot's full name and status, which its slim header cannot show.
+   */
+  leadingRows?: React.ReactNode;
 };
 
 export function MetadataSection(props: MetadataSectionProps) {
@@ -61,6 +66,7 @@ export function MetadataSection(props: MetadataSectionProps) {
       </PanelHeader>
       <ChipContext value={CHIP_DEFAULTS}>
         <div data-rows className="flex flex-col gap-1 empty:hidden">
+          {props.leadingRows}
           <SdkRow sdk={metadata?.sdk ?? null} />
           <AutomationLibraryRow
             automationLibrary={metadata?.automationLibrary ?? null}

@@ -1,4 +1,4 @@
-import { atom } from "jotai";
+import { atom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -13,6 +13,20 @@ export const buildViewModeAtom = atomWithStorage<ViewMode>(
   "preferences.diffViewMode",
   "split",
 );
+
+/**
+ * Transient baseline override while the mobile dock's BASE button is held
+ * down. Kept apart from `buildViewModeAtom` so releasing restores the stored
+ * mode and the hold never persists.
+ */
+export const holdBaselineAtom = atom(false);
+
+/** The view mode the snapshot panes should render, hold override included. */
+export function useEffectiveBuildViewMode(): ViewMode {
+  const viewMode = useAtomValue(buildViewModeAtom);
+  const holdBaseline = useAtomValue(holdBaselineAtom);
+  return holdBaseline ? "baseline" : viewMode;
+}
 
 /** Opacity of the changes layer in onion skin view (0 = baseline, 1 = changes). */
 export const onionOpacityAtom = atom(0.5);

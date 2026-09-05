@@ -16,6 +16,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
+import { useIsMobile } from "@/ui/useIsMobile";
 
 const getStatCountColorClassName = (
   color: DiffGroupColor,
@@ -81,19 +82,23 @@ function InteractiveStatCount({
 }: InteractiveStatCountProps) {
   const colorClassName = getStatCountColorClassName(color, true);
   const hotkey = useBuildHotkey(hotkeyName, onActive);
+  // These are tap targets for jumping between groups on a phone, not just
+  // passive counters: give them finger-sized type there.
+  const isMobile = useIsMobile();
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
       <button
         type="button"
         className={clsx(
           colorClassName,
-          "disabled:opacity-disabled focus-ring flex cursor-default items-center gap-1 py-2 transition",
+          "disabled:opacity-disabled focus-ring flex cursor-default items-center transition",
+          isMobile ? "gap-1.5 px-1 py-3" : "gap-1 py-2",
         )}
         onClick={onActive}
         disabled={count === 0}
       >
-        <Icon className="size-3" />
-        <span className="text-xs">{count}</span>
+        <Icon className={isMobile ? "size-4" : "size-3"} />
+        <span className={isMobile ? "text-sm" : "text-xs"}>{count}</span>
       </button>
     </HotkeyTooltip>
   );

@@ -96,7 +96,7 @@ export const ScreenshotActionsToolbar = memo(
   },
 );
 
-function ScreenshotIgnoreButton(props: { diff: Diff }) {
+export function ScreenshotIgnoreButton(props: { diff: Diff }) {
   const { diff } = props;
 
   const [status, setStatus] = useBuildDiffStatusState({

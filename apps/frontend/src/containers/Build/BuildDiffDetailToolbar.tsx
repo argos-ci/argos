@@ -27,6 +27,10 @@ interface BuildDiffDetailToolbarProps {
    * they act on is; this bar keeps how the pane is laid out.
    */
   snapshotControls?: boolean;
+  /** Render the comment controls; the mobile dock hosts its own copy. */
+  commentControls?: boolean;
+  /** Render the fit toggle; the mobile dock hosts it ahead of the view modes. */
+  fitToggle?: boolean;
   children?: React.ReactNode;
 }
 
@@ -69,13 +73,12 @@ function checkCanCommentOnTextDiff(diff: BuildDiffDetailDocument): boolean {
   }
 }
 
-export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
-  const { diff, children, fitControls, snapshotControls = true } = props;
-  const showOverlayControls = checkDiffHasChangesOverlay(diff);
-
-  const params = useProjectParams();
-  invariant(params, "can't be used outside of a project route");
-
+/**
+ * Which comment controls the current diff and viewer support. Shared with the
+ * mobile dock, which hosts the controls itself to put them ahead of the view
+ * modes.
+ */
+export function useDiffCommentControlsState(diff: BuildDiffDetailDocument) {
   const commentsEnabled = use(CommentsEnabledContext);
   const canReview = useProjectPermission(ProjectPermission.Review);
   const canComment = commentsEnabled && canReview;
@@ -86,11 +89,29 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   // whether image (point) or text (line) comments.
   const showComments =
     showCommentTool || (canComment && checkCanCommentOnTextDiff(diff));
+  return { showCommentTool, showComments };
+}
+
+export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
+  const {
+    diff,
+    children,
+    fitControls,
+    snapshotControls = true,
+    commentControls = true,
+    fitToggle = true,
+  } = props;
+  const showOverlayControls = checkDiffHasChangesOverlay(diff);
+
+  const params = useProjectParams();
+  invariant(params, "can't be used outside of a project route");
+
+  const { showCommentTool, showComments } = useDiffCommentControlsState(diff);
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
-      <FitToggle />
+      {fitToggle ? <FitToggle /> : null}
       {fitControls}
       {showOverlayControls && (
         <>
@@ -100,7 +121,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
           {snapshotControls ? <ChangesOverlayControls /> : <SettingsButton />}
         </>
       )}
-      {showComments && (
+      {commentControls && showComments && (
         <>
           <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
           {showCommentTool && snapshotControls && <CommentToolToggle />}
