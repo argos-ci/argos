@@ -33,11 +33,19 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import {
+  compareSteps,
+  getCaptureIndex,
+  getVariantSignature,
+  resolveJourneyIdentity,
+  type JourneyIdentity,
+} from "./journey-model";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
   diffMatchesFilters,
   useCreateFilterState,
 } from "./metadata/filters/util";
+import { resolveDiffMetadata } from "./metadata/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -84,6 +92,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -146,6 +157,9 @@ const ScreenshotDiffFragment = graphql(`
           mode
           play
           tags
+        }
+        capture {
+          index
         }
         viewport {
           width
@@ -624,6 +638,108 @@ const INITIAL_EXPANDED = [
   ScreenshotDiffStatus.Removed,
 ];
 
+/**
+ * Visibility of the journey drawer in the build detail, persisted as a user
+ * preference.
+ */
+const JOURNEY_DRAWER_STORAGE_KEY = "preferences.build.journey-drawer";
+
+type JourneyDrawerContextValue = {
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+};
+
+const JourneyDrawerContext = createContext<JourneyDrawerContextValue | null>(
+  null,
+);
+
+export function useJourneyDrawerState() {
+  const context = use(JourneyDrawerContext);
+  invariant(
+    context,
+    "useJourneyDrawerState must be used within a BuildDiffProvider",
+  );
+  return context;
+}
+
+export type ActiveDiffJourney = {
+  identity: JourneyIdentity;
+  /** The steps of the journey in order, each with its variants. */
+  steps: { key: string; diffs: Diff[] }[];
+  /** Position of the active diff's step in `steps`. */
+  stepIndex: number;
+};
+
+/**
+ * The journey context of the active diff: the journey it belongs to, its steps
+ * (variants collapsed) in order, and the active step position. Null when the
+ * active diff has no journey information or the journey has a single step —
+ * a test that captures one screen is regular visual testing, not a journey.
+ *
+ * Built from `allDiffs`, not from the filtered list: a journey is worth showing
+ * whole, so the screens that did not change are in it too, and the drawer marks
+ * the ones that did.
+ */
+export function useActiveDiffJourney(): ActiveDiffJourney | null {
+  const { activeDiff, allDiffs } = useBuildDiffState();
+  return useMemo(() => {
+    if (!activeDiff) {
+      return null;
+    }
+    const identity = resolveJourneyIdentity(resolveDiffMetadata(activeDiff));
+    if (!identity) {
+      return null;
+    }
+    const stepMap = new Map<
+      string,
+      { key: string; captureIndex: number | null; diffs: Diff[] }
+    >();
+    for (const diff of allDiffs) {
+      const metadata = resolveDiffMetadata(diff);
+      if (resolveJourneyIdentity(metadata)?.key !== identity.key) {
+        continue;
+      }
+      const key = diff.variantKey;
+      const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
+      stepMap.set(key, step);
+      step.diffs.push(diff);
+      const captureIndex = getCaptureIndex(metadata);
+      if (captureIndex !== null) {
+        step.captureIndex = Math.min(
+          step.captureIndex ?? Number.MAX_SAFE_INTEGER,
+          captureIndex,
+        );
+      }
+    }
+    const steps = [...stepMap.values()].toSorted(compareSteps);
+    if (steps.length < 2) {
+      return null;
+    }
+    return {
+      identity,
+      steps,
+      stepIndex: steps.findIndex((step) => step.key === activeDiff.variantKey),
+    };
+  }, [activeDiff, allDiffs]);
+}
+
+/**
+ * The diff of `step` that is the same variant as `reference` (same browser,
+ * viewport, scheme…), or the step's first diff when that variant is missing.
+ * Moving between steps stays on one viewport this way.
+ */
+export function pickStepDiff(
+  step: ActiveDiffJourney["steps"][number],
+  reference: Diff,
+): Diff | null {
+  const signature = getVariantSignature(reference);
+  return (
+    step.diffs.find((diff) => getVariantSignature(diff) === signature) ??
+    step.diffs[0] ??
+    null
+  );
+}
+
 export function BuildDiffProvider(props: {
   children: React.ReactNode;
   build: DocumentType<typeof _BuildDiffStateFragment> | null;
@@ -726,6 +842,21 @@ export function BuildDiffProvider(props: {
   }, [activeDiff, indices]);
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
+
+  const [drawerVisible, setDrawerVisibleState] = useState<boolean>(
+    () => localStorage.getItem(JOURNEY_DRAWER_STORAGE_KEY) === "true",
+  );
+  const setDrawerVisible = useCallback((visible: boolean) => {
+    localStorage.setItem(JOURNEY_DRAWER_STORAGE_KEY, String(visible));
+    setDrawerVisibleState(visible);
+  }, []);
+  const drawerValue = useMemo(
+    (): JourneyDrawerContextValue => ({
+      visible: drawerVisible,
+      setVisible: setDrawerVisible,
+    }),
+    [drawerVisible, setDrawerVisible],
+  );
 
   const groups = useMemo(() => {
     return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
@@ -845,7 +976,9 @@ export function BuildDiffProvider(props: {
     <FilterStateContext value={filterState}>
       <SearchModeContext value={searchModeValue}>
         <SearchContext value={searchValue}>
-          <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          <JourneyDrawerContext value={drawerValue}>
+            <BuildDiffContext value={value}>{children}</BuildDiffContext>
+          </JourneyDrawerContext>
         </SearchContext>
       </SearchModeContext>
     </FilterStateContext>

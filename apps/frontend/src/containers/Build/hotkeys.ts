@@ -101,6 +101,18 @@ const hotkeyGroups = [
         description: "Go to next media",
         envs: ["media"],
       },
+      goToPreviousJourneyStep: {
+        keys: ["⇧", "ArrowLeft"],
+        displayKeys: ["⇧", "←"],
+        description: "Go to previous journey step",
+        envs: ["build"],
+      },
+      goToNextJourneyStep: {
+        keys: ["⇧", "ArrowRight"],
+        displayKeys: ["⇧", "→"],
+        description: "Go to next journey step",
+        envs: ["build"],
+      },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],

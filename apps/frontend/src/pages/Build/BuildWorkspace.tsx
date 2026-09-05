@@ -17,6 +17,7 @@ import { Code } from "../../ui/Code";
 import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
+import { BuildJourneyDrawer, JourneyStepHotkeys } from "./BuildJourneyDrawer";
 import { BuildOverview } from "./BuildOverview";
 import { BuildParams } from "./BuildParams";
 import { BuildLeftSidebar } from "./LeftSidebar";
@@ -119,47 +120,53 @@ export function BuildWorkspace(props: {
         <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <BuildDetailProviders>
+            <JourneyStepHotkeys />
             <Toolbar />
             <div className="bg-subtle flex min-h-0 flex-1">
-              {(() => {
-                switch (build.status) {
-                  case BuildStatus.Aborted:
-                  case BuildStatus.Error:
-                  case BuildStatus.Expired:
-                    return (
-                      <div className="min-h-0 flex-1 p-6 text-xl">
-                        <Alert className="mx-auto max-w-xl rounded-sm border p-4">
-                          <AlertTitle>
-                            {
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <BuildJourneyDrawer />
+                {(() => {
+                  switch (build.status) {
+                    case BuildStatus.Aborted:
+                    case BuildStatus.Error:
+                    case BuildStatus.Expired:
+                      return (
+                        <div className="min-h-0 flex-1 p-6 text-xl">
+                          <Alert className="mx-auto max-w-xl rounded-sm border p-4">
+                            <AlertTitle>
                               {
-                                [BuildStatus.Error]: "Build failed",
-                                [BuildStatus.Expired]: "Build expired",
-                                [BuildStatus.Aborted]: "Build aborted",
-                              }[build.status]
-                            }
-                          </AlertTitle>
-                          <AlertText>
-                            <BuildStatusDescription build={build} />
-                          </AlertText>
-                        </Alert>
-                      </div>
-                    );
-                  case BuildStatus.Pending:
-                  case BuildStatus.Progress:
-                    return <BuildProgress parallel={build.parallel} />;
-                  default:
-                    if (
-                      !params.diffId &&
-                      build.type !== BuildType.Skipped &&
-                      ((build.stats?.total ?? 0) > 0 ||
-                        build.type === BuildType.Orphan)
-                    ) {
-                      return <BuildOverview build={build} repoUrl={repoUrl} />;
-                    }
+                                {
+                                  [BuildStatus.Error]: "Build failed",
+                                  [BuildStatus.Expired]: "Build expired",
+                                  [BuildStatus.Aborted]: "Build aborted",
+                                }[build.status]
+                              }
+                            </AlertTitle>
+                            <AlertText>
+                              <BuildStatusDescription build={build} />
+                            </AlertText>
+                          </Alert>
+                        </div>
+                      );
+                    case BuildStatus.Pending:
+                    case BuildStatus.Progress:
+                      return <BuildProgress parallel={build.parallel} />;
+                    default:
+                      if (
+                        !params.diffId &&
+                        build.type !== BuildType.Skipped &&
+                        ((build.stats?.total ?? 0) > 0 ||
+                          build.type === BuildType.Orphan)
+                      ) {
+                        return (
+                          <BuildOverview build={build} repoUrl={repoUrl} />
+                        );
+                      }
 
-                    return build && <BuildDetail build={build} />;
-                }
-              })()}
+                      return build && <BuildDetail build={build} />;
+                  }
+                })()}
+              </div>
               <RightSidebar
                 build={build}
                 repoUrl={repoUrl}
