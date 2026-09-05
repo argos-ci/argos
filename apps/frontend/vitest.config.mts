@@ -31,6 +31,15 @@ export default mergeConfig(
     server: {
       host: "127.0.0.1",
     },
+    // The frontend config is resolved with `mode: "production"` above, which
+    // makes it define `process.env.NODE_ENV` as "production". React's
+    // `jsx-dev-runtime` entry is a shim that switches on exactly that, and its
+    // production half exports `jsxDEV` as `undefined` — while Storybook still
+    // compiles stories with the dev JSX transform. Every story then dies on
+    // `_jsxDEV is not a function`, so pin the test bundle to development.
+    define: {
+      "process.env.NODE_ENV": JSON.stringify("development"),
+    },
     test: {
       projects: [
         {
@@ -63,6 +72,11 @@ export default mergeConfig(
               }) as unknown as BrowserProviderOption<object>,
               headless: true,
               instances: [{ browser: "chromium" }],
+              // Storybook's Vitest addon has its own 1200x900 default, which it
+              // applies through an API that stopped taking effect in Vitest 5 —
+              // leaving every story at Vitest's own 414x896 and rewriting every
+              // baseline. Pin the size the addon used to give us.
+              viewport: { width: 1200, height: 900 },
             },
             setupFiles: ["./.storybook/vitest.setup.ts"],
           },

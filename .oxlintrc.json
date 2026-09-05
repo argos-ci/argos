@@ -18,6 +18,24 @@
         "argsIgnorePattern": "^_"
       }
     ],
+    // Oxlint 1.79 replaced the `react/react-compiler` nursery rule with 22
+    // category-specific ones, 12 of them in `correctness`. Four of those fire
+    // on deliberate patterns rather than on bugs, so they stay off until the
+    // code they flag is revisited on its own:
+    //
+    // - `incompatible-library` flags every call into react-hook-form's
+    //   `form.register` / `form.watch` and @tanstack/react-virtual's
+    //   `useVirtualizer`. It reports the library, not our use of it.
+    // - `refs` flags reading `ref.current` during render, which is the whole
+    //   point of usePrevious / usePersistentValue / useLatestTruethyValue.
+    // - `immutability` flags ref forwarding (`ref.current = element`) inside
+    //   callback refs.
+    // - `set-state-in-effect` has five hits worth looking at, but they are
+    //   render-loop questions to answer one at a time, not a dependency bump.
+    "react/incompatible-library": "off",
+    "react/refs": "off",
+    "react/immutability": "off",
+    "react/set-state-in-effect": "off",
     "unicorn/no-thenable": "off",
     "vitest/no-conditional-expect": "off",
     "vitest/no-standalone-expect": "off",
@@ -43,12 +61,6 @@
             ]
           }
         ]
-      }
-    },
-    {
-      "files": ["**/*.jsx", "**/*.tsx"],
-      "rules": {
-        "react/react-compiler": "error"
       }
     },
     {

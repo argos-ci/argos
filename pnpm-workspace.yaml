@@ -5,15 +5,16 @@ packages:
 
 catalog:
   '@types/react': ^19.2.18
-  '@types/react-dom': ^19.2.4
+  '@types/react-dom': ^19.2.7
   react: ^19.2.8
   react-dom: ^19.2.8
-  react-router: ^8.3.0
-  zod: ^4.4.3
+  react-router: ^8.3.1
+  zod: ^4.5.4
 
 overrides:
   '@types/react': "catalog:"
   '@types/react-dom': "catalog:"
+  browserslist: ^4.28.7
   dompurify: ^3.4.0
   esbuild: ^0.28.1
   file-type: ^21.3.2

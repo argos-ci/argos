@@ -1,4 +1,3 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
 import { NotFoundError } from "objection";
@@ -186,7 +185,7 @@ export function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2026-07-29.dahlia",
+  apiVersion: "2026-08-26.dahlia",
   typescript: true,
 });
 
@@ -322,8 +321,11 @@ async function getPriceInfosFromStripeSubscription(
         additionalStorybookScreenshotPrice: null,
       };
     }
+    // Stripe types every enum as open (`... | OtherString`) so that a value
+    // added server-side does not break the build, which rules out an
+    // `assertNever` exhaustiveness check here.
     default:
-      assertNever(price.billing_scheme);
+      throw new Error(`Unsupported billing scheme: ${price.billing_scheme}`);
   }
 }
 
