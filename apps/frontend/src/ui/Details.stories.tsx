@@ -41,6 +41,13 @@ export const Toggles: Story = {
 
     await userEvent.click(canvas.getByText("Advanced Settings"));
     await expect(details).toHaveAttribute("open");
+
+    // `Summary` styles no focus state, so the ring left behind here is the
+    // browser's own `:focus-visible` outline. A real mouse click on a
+    // `<summary>` does not match that pseudo-class — only the synthetic one
+    // does, and only since Vitest 5 — so keeping the focus would bake into the
+    // baseline something no user ever sees.
+    canvasElement.querySelector("summary")?.blur();
   },
   render: () => (
     <Details>
