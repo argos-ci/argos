@@ -486,7 +486,10 @@ function EmojiPickerGrid(props: EmojiPickerProps) {
         id={listboxId}
         role="listbox"
         aria-label="Emoji"
-        className="relative overflow-x-hidden overflow-y-auto outline-hidden"
+        // Bottom edge only: the category header pins itself to the top of this
+        // box, and a top fade would dissolve the one row that has to stay
+        // readable while the grid scrolls under it.
+        className="scroll-mask-b-from-90% relative overflow-x-hidden overflow-y-auto outline-hidden"
         style={{ height: VIEWPORT_HEIGHT, paddingInline: GRID_PADDING_X }}
       >
         {rows.length === 0 ? (

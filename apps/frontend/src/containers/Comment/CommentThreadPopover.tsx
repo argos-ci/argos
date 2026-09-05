@@ -27,9 +27,21 @@ export function CommentThreadPopover(props: {
       className="w-80"
     >
       {/* No horizontal padding so the thread (and its full-width reply divider)
-          spans the whole card; the card's sections carry their own insets. */}
-      <div className="bg-app border-thin max-h-96 w-full overflow-y-auto rounded-xl shadow-xl">
-        {children}
+          spans the whole card; the card's sections carry their own insets.
+
+          Two boxes because the fade cannot share one with the card: a mask
+          fades the border and shadow along with the messages. The outer box
+          draws the card and clips the scroller to its corners; the inner one
+          scrolls.
+
+          Top edge only. The composer is the last thing in the thread and it
+          takes focus on open, which scrolls this box to the bottom — so the
+          fade that means something is the one over the earlier messages, and a
+          bottom fade would land on the field being typed in. */}
+      <div className="bg-app border-thin w-full overflow-hidden rounded-xl shadow-xl">
+        <div className="scroll-mask-t-from-90% max-h-96 overflow-y-auto">
+          {children}
+        </div>
       </div>
     </CommentPopoverFrame>
   );
