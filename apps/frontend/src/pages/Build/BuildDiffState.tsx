@@ -554,6 +554,16 @@ function groupDiffs(
   );
 }
 
+function findDiffGroup(
+  groups: DiffGroup<Diff>[],
+  diff: Diff | null,
+): DiffGroup<Diff> | null {
+  if (!diff) {
+    return null;
+  }
+  return groups.find((group) => group.diffs.includes(diff)) ?? null;
+}
+
 type SearchModeContextValue = {
   searchMode: boolean;
   setSearchMode: (enabled: boolean) => void;
@@ -735,15 +745,9 @@ export function BuildDiffProvider(props: {
     return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
   }, [groups]);
 
-  const getDiffGroup = useEventCallback((diff: Diff | null) => {
-    if (!diff) {
-      return null;
-    }
-    const group = groups.find((group) =>
-      group.diffs.includes(diff),
-    ) as DiffGroup<Diff>;
-    return group;
-  });
+  const getDiffGroup = useEventCallback((diff: Diff | null) =>
+    findDiffGroup(groups, diff),
+  );
 
   const setActiveDiff = useEventCallback((diff: Diff, scroll?: boolean) => {
     navigate(
@@ -759,13 +763,24 @@ export function BuildDiffProvider(props: {
     if (scroll) {
       startTransition(() => {
         setScrolledDiff(diff);
-        const group = getDiffGroup(diff)!;
+        const group = getDiffGroup(diff);
+        invariant(group, "the active diff always belongs to a group");
         toggleGroup(group.name, true);
       });
     }
   });
 
-  const initialDiffGroup = getDiffGroup(initialDiff);
+  // Read from `groups` rather than through `getDiffGroup`: an event callback
+  // only picks up the new render's closure in a layout effect, so during the
+  // render that moves a diff to another group it still answers with the group
+  // the diff just left. The effect below would then keep the deps it already
+  // had, and the new group would stay collapsed until an unrelated render
+  // happened to recompute this — the snapshot blinking out of the list for a
+  // few frames right after a review is submitted.
+  const initialDiffGroup = useMemo(
+    () => findDiffGroup(groups, initialDiff),
+    [groups, initialDiff],
+  );
 
   const [ready, setReady] = useState(false);
 
