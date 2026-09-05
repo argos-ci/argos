@@ -65,7 +65,9 @@ export function Component() {
                 >
                   $
                 </span>
-                <code className="text-default no-scrollbar min-w-0 flex-1 overflow-x-auto font-mono text-sm whitespace-nowrap">
+                {/* The scrollbar is hidden, so the fade is the only thing
+                    saying the command runs past the edge. */}
+                <code className="text-default no-scrollbar scroll-mask-x-from-90% min-w-0 flex-1 overflow-x-auto font-mono text-sm whitespace-nowrap">
                   {SKILL_INSTALL_COMMAND}
                 </code>
                 <CopyButton

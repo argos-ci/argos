@@ -25,6 +25,8 @@
 @import "@radix-ui/colors/blue" layer(base);
 @import "@radix-ui/colors/blue-dark" layer(base);
 
+@import "./scroll-mask.css";
+
 @theme {
   --font-sans:
     "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",

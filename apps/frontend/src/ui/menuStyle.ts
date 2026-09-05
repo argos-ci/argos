@@ -14,8 +14,15 @@ import { clsx } from "clsx";
  * @see popupSurface for the box these sit in.
  */
 
-/** The scrolling box the rows live in. */
-export const menuListClassName = "overflow-y-auto p-1.5 outline-hidden";
+/**
+ * The scrolling box the rows live in.
+ *
+ * The fade belongs here rather than on `popupSurface`: a mask fades everything
+ * its element paints, and on the surface that would take the popup's border and
+ * shadow with it.
+ */
+export const menuListClassName =
+  "scroll-mask-y-from-90% overflow-y-auto p-1.5 outline-hidden";
 
 /**
  * Which row the keyboard is on.

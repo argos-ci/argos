@@ -82,7 +82,7 @@ export function RightSidebar(
           <PillTab value="snapshot">Snapshot</PillTab>
           <PillTab value="review">Review</PillTab>
         </TabList>
-        <SidebarTabPanel value="snapshot">
+        <SidebarTabPanel value="snapshot" className="scroll-mask-b-from-95%">
           <MetadataSection
             diff={activeDiff}
             siblingDiffs={siblingDiffs}
@@ -118,8 +118,11 @@ function SidebarTabPanel(props: React.ComponentProps<typeof TabPanel>) {
   return (
     <TabPanel
       {...props}
+      // Top edge here, and the bottom left to the caller: the review panel ends
+      // in a comment composer, and fading the field someone is typing into is
+      // worse than leaving its cut-off edge to say there is more below.
       className={clsx(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-6 empty:hidden",
+        "scroll-mask-t-from-95% flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-6 empty:hidden",
         props.className,
       )}
     />
