@@ -15,7 +15,7 @@
   "devDependencies": {
     "@apollo/client": "^4.2.12",
     "@argos-ci/cli": "^6.9.2",
-    "@argos-ci/storybook": "^6.2.8",
+    "@argos-ci/storybook": "^6.3.0",
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
     "@argos/schemas": "workspace:*",

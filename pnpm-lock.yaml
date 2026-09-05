@@ -436,8 +436,8 @@ importers:
         specifier: ^6.9.2
         version: 6.9.2(@types/node@26.4.1)(supports-color@10.2.2)
       '@argos-ci/storybook':
-        specifier: ^6.2.8
-        version: 6.2.8(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)
+        specifier: ^6.3.0
+        version: 6.3.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)
       '@argos/config-types':
         specifier: workspace:*
         version: link:../../packages/config-types
@@ -969,16 +969,16 @@ packages:
     resolution: {integrity: sha512-+fRi+M5hkjv4zHOKp07Hx9O5OemWXcfUTMtQrvgKg1l4gZHourD2zJF2eJ9/QMIdz+VFNWC5rN14RRFwo+0Pkw==}
     engines: {node: '>=22.0.0'}
 
-  '@argos-ci/storybook@6.2.8':
-    resolution: {integrity: sha512-39GGFNLkJ2a1SyE+I0ISxHrCrF86G4uRchK6oGPE4kF5Oeq6d0Y5eKjLguwIFTFCVdwolQdCtDBOIx1HRrbFWQ==}
+  '@argos-ci/storybook@6.3.0':
+    resolution: {integrity: sha512-Ou2pFFW2IyVDwqB5rc/adNIhdMuLq4d5E75MRDzoPFWKEPseQsVpT1YHqbXmMnU4/mJZPQ5Ia7Jq4+0gM/5wsA==}
     engines: {node: '>=22.0.0'}
 
   '@argos-ci/util@4.2.0':
     resolution: {integrity: sha512-HZCNwbJqoaL3pwhnEXH+HJYUPeOMv7rWyCrQaT6IcKZCrdYGOFkG72uXbDvoa84y/FvVSWPV2ja2Ryv0I8ViUg==}
     engines: {node: '>=22.0.0'}
 
-  '@argos-ci/vitest@0.5.0':
-    resolution: {integrity: sha512-HMkF82EnlFD5oKyZaE7sg3Wzg7D8TMIgfb+tA9qWze7tXuhmb+owgYyWlsZfmckphY9K3PQspASr7vivsRxzpw==}
+  '@argos-ci/vitest@0.6.0':
+    resolution: {integrity: sha512-ZGNRPFGNduMwTi4wnZDeB7WdNVq9MbNpAQVXP8oYaf7vBc6Rj7iZGXSrVKdf/ac3HQY6Av5L3aZH0REZQJsdlw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@vitest/browser': '>=4'
@@ -8603,12 +8603,12 @@ snapshots:
       - '@types/node'
       - supports-color
 
-  '@argos-ci/storybook@6.2.8(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)':
+  '@argos-ci/storybook@6.3.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)':
     dependencies:
       '@argos-ci/core': 6.8.3(@types/node@26.4.1)(supports-color@10.2.2)
       '@argos-ci/playwright': 7.5.0(@types/node@26.4.1)(supports-color@10.2.2)
       '@argos-ci/util': 4.2.0
-      '@argos-ci/vitest': 0.5.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)
+      '@argos-ci/vitest': 0.6.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)
     transitivePeerDependencies:
       - '@types/node'
       - '@vitest/browser'
@@ -8619,7 +8619,7 @@ snapshots:
 
   '@argos-ci/util@4.2.0': {}
 
-  '@argos-ci/vitest@0.5.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)':
+  '@argos-ci/vitest@0.6.0(@types/node@26.4.1)(@vitest/browser-playwright@5.0.0)(@vitest/browser@4.1.10(msw@2.15.0(@types/node@26.4.1)(typescript@7.0.2))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.0))(playwright@1.62.1)(supports-color@10.2.2)(vitest@5.0.0)':
     dependencies:
       '@argos-ci/browser': 6.4.5
       '@argos-ci/core': 6.8.3(@types/node@26.4.1)(supports-color@10.2.2)
