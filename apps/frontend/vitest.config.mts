@@ -72,6 +72,11 @@ export default mergeConfig(
               }) as unknown as BrowserProviderOption<object>,
               headless: true,
               instances: [{ browser: "chromium" }],
+              // Storybook's Vitest addon has its own 1200x900 default, which it
+              // applies through an API that stopped taking effect in Vitest 5 —
+              // leaving every story at Vitest's own 414x896 and rewriting every
+              // baseline. Pin the size the addon used to give us.
+              viewport: { width: 1200, height: 900 },
             },
             setupFiles: ["./.storybook/vitest.setup.ts"],
           },
