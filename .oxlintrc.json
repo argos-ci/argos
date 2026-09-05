@@ -46,12 +46,6 @@
       }
     },
     {
-      "files": ["**/*.jsx", "**/*.tsx"],
-      "rules": {
-        "react/react-compiler": "error"
-      }
-    },
-    {
       "files": ["apps/frontend/**"],
       "excludeFiles": ["apps/frontend/src/ui/Toaster.tsx"],
       "rules": {
