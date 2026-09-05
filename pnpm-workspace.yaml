@@ -14,6 +14,7 @@ catalog:
 overrides:
   '@types/react': "catalog:"
   '@types/react-dom': "catalog:"
+  browserslist: ^4.28.7
   dompurify: ^3.4.0
   esbuild: ^0.28.1
   file-type: ^21.3.2
