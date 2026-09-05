@@ -1,3 +1,4 @@
+import { ACCOUNT_NAME_MAX_LENGTH } from "@argos/schemas/account";
 import { ACTIVE_SUBSCRIPTION_STATUSES } from "@argos/schemas/subscription-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -172,7 +173,11 @@ export class Account extends Model {
           forcedPlanId: { type: ["string", "null"] },
           stripeCustomerId: { type: ["string", "null"] },
           teamId: { type: ["string", "null"] },
-          name: { type: ["string", "null"], maxLength: 255, minLength: 1 },
+          name: {
+            type: ["string", "null"],
+            maxLength: ACCOUNT_NAME_MAX_LENGTH,
+            minLength: 1,
+          },
           slug: slugJsonSchema,
           githubAccountId: { type: ["string", "null"] },
           gitlabBaseUrl: { type: ["string", "null"] },

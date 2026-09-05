@@ -1,4 +1,5 @@
 import type { ErrorCode } from "@argos/error-types";
+import { AccountNameSchema } from "@argos/schemas/account";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { slugify } from "@argos/util/slug";
@@ -169,6 +170,24 @@ export async function getOrCreateUserAccountFromSaml(input: {
     lastAuthMethod: "saml",
   });
   return account;
+}
+
+/**
+ * Validate an account name, returning it normalized (the schema trims it).
+ *
+ * Checked here rather than left to the column: the `Account` model rejects an
+ * oversized name as an Objection validation error, which nothing maps — Apollo
+ * reports it as INTERNAL_SERVER_ERROR, Sentry pages on it, and the user is told
+ * nothing they can act on. An `HTTPError` is what both API layers understand.
+ */
+export function parseAccountName(name: string): string {
+  const parsed = AccountNameSchema.safeParse(name);
+  if (!parsed.success) {
+    throw boom(400, parsed.error.issues[0]?.message ?? "Invalid name.", {
+      field: "name",
+    });
+  }
+  return parsed.data;
 }
 
 export async function checkAccountSlug(slug: string, trx?: TransactionOrKnex) {
