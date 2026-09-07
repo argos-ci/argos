@@ -4,11 +4,21 @@ import { createMediaScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
+/**
+ * The team slug is seeded from the test id and, on a retry, suffixed with the
+ * attempt number so the retried run does not collide with the first one's rows
+ * (see getUniqueTestIdentifier). Every share page prints it in the header, so a
+ * screenshot taken on a retry would otherwise report the whole page as changed.
+ */
+function maskTeamSlug(team: { account: { slug: string } }) {
+  return { replacements: { [team.account.slug]: "acme" } };
+}
+
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("media share page", async ({ page, auth, project }) => {
+loggedTest("media share page", async ({ team, page, auth, project }) => {
   const media = await createMediaScenario({
     projectId: project.id,
     commentAuthorId: auth.user.id,
@@ -72,12 +82,12 @@ loggedTest("media share page", async ({ page, auth, project }) => {
     `https://github.com/acme-${project.id}/sparkle/commit/d15cba5`,
   );
 
-  await screenshot(page, "media-share-page");
+  await screenshot(page, "media-share-page", maskTeamSlug(team));
 });
 
 loggedTest(
   "navigates the pull request's media with the sidebar and the keyboard",
-  async ({ page, project }) => {
+  async ({ team, page, project }) => {
     // Uploaded oldest first: dashboard.png (07:00), the checkout.png pair
     // (08:00), then checkout-flow.mp4 (09:30).
     const media = await createMediaScenario({
@@ -131,7 +141,7 @@ loggedTest(
     await sidebar.getByText("checkout.png").click();
     await expect(page).toHaveURL(`/m/${media.after.shareToken}`);
 
-    await screenshot(page, "media-share-sidebar");
+    await screenshot(page, "media-share-sidebar", maskTeamSlug(team));
   },
 );
 
@@ -213,7 +223,7 @@ loggedTest(
 
 loggedTest(
   "brings a resolved thread's pin back with the thread",
-  async ({ page, auth, project }) => {
+  async ({ team, page, auth, project }) => {
     // "The primary button is misaligned here" only says something next to its
     // pin, so a resolved thread the reviewer expands gets its pin back — wearing
     // a check, since the expansion outlives the session that made it.
@@ -253,7 +263,7 @@ loggedTest(
     await page.getByRole("button", { name: "Close toast" }).click();
     await expect(page.getByText("Thread resolved.")).toBeHidden();
 
-    await screenshot(page, "media-resolved-pin-expanded");
+    await screenshot(page, "media-resolved-pin-expanded", maskTeamSlug(team));
 
     // And collapsing it takes the pin away again.
     await page.getByRole("button", { name: "Collapse thread" }).click();
@@ -296,7 +306,7 @@ loggedTest(
 
 loggedTest(
   "marks the changed pixels of a before/after pair",
-  async ({ page, project }) => {
+  async ({ team, page, project }) => {
     // The pair has been compared, so the share page offers the build's own
     // overlay controls and draws the mask over the "after".
     const media = await createMediaScenario({ projectId: project.id });
@@ -322,7 +332,7 @@ loggedTest(
     );
     await expect(mask).toHaveCount(1);
 
-    await screenshot(page, "media-share-changes-overlay");
+    await screenshot(page, "media-share-changes-overlay", maskTeamSlug(team));
 
     // Hiding it leaves the pair on screen, untouched — which is the point of
     // having a toggle rather than a mode.
@@ -366,7 +376,7 @@ loggedTest(
 
 loggedTest(
   "switches between the two halves with the build's own controls",
-  async ({ page, project }) => {
+  async ({ team, page, project }) => {
     // A pair and a build's baseline-against-changes are the same question, so
     // they are looked at with the same controls and the same shortcuts — only
     // the two words differ.
@@ -404,7 +414,7 @@ loggedTest(
       page.getByRole("img", { name: "checkout.png (before)" }),
     ).toBeVisible();
 
-    await screenshot(page, "media-share-single-half");
+    await screenshot(page, "media-share-single-half", maskTeamSlug(team));
 
     // Comments belong to the "after", so with only the "before" on screen there
     // is nowhere for a pin to land — the tool puts itself away rather than
@@ -423,7 +433,7 @@ loggedTest(
 
 loggedTest(
   "rings the half a pin would land on, in compare mode",
-  async ({ page, auth, project }) => {
+  async ({ team, page, auth, project }) => {
     // Side by side puts two images on screen and only one of them takes
     // comments. Arming the tool without saying which is which leaves the
     // reviewer to click and find out.
@@ -453,7 +463,7 @@ loggedTest(
       target.getByRole("img", { name: "checkout.png (after)" }),
     ).toBeVisible();
 
-    await screenshot(page, "media-share-pin-target");
+    await screenshot(page, "media-share-pin-target", maskTeamSlug(team));
   },
 );
 
