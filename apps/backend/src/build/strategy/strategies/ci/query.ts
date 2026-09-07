@@ -155,6 +155,26 @@ export async function getSameCommitBaseBucket(
 }
 
 /**
+ * VALUES clause pairing each commit with its position in the list, for a join
+ * that ranks matches by that position.
+ *
+ * The position is cast: a bound parameter reaches Postgres untyped, and a VALUES
+ * list resolves an untyped column as text, so "10" sorts before "2". Every list
+ * shorter than ten commits orders the same either way, which is how this went
+ * unnoticed - the candidate lists in production run to hundreds.
+ */
+function rankedValuesClause(shas: string[]): string {
+  return shas.map(() => "(?, ?::int)").join(",");
+}
+
+/**
+ * Bindings for {@link rankedValuesClause}: each commit followed by its position.
+ */
+function rankedBindings(shas: string[]): (string | number)[] {
+  return shas.flatMap((sha, index) => [sha, index]);
+}
+
+/**
  * Get the bucket from a list of commits, ordered by the order of the commits.
  */
 export async function getBucketFromCommits(args: {
@@ -164,17 +184,16 @@ export async function getBucketFromCommits(args: {
   if (args.shas.length === 0) {
     return null;
   }
-  const valuesClause = args.shas.map(() => "(?, ?)").join(",");
-  const bindings: (string | number)[] = [];
-  args.shas.forEach((sha, index) => {
-    bindings.push(sha, index);
-  });
   const bucket = await queryBaseBucket(args.build)
     .whereIn("commit", args.shas)
     .joinRaw(
-      `join (values ${valuesClause}) as ordering(sha, rank) on commit = ordering.sha`,
-      bindings,
+      `join (values ${rankedValuesClause(args.shas)}) as ordering(sha, rank) on commit = ordering.sha`,
+      rankedBindings(args.shas),
     )
+    // queryBaseBucket orders by id to pick the latest bucket of a commit. Here
+    // the position has to decide first, the id only settles ties within one
+    // commit - appended after an existing order, it would never get a say.
+    .clearOrder()
     .orderBy("ordering.rank")
     .orderBy("id", "desc")
     .first();
@@ -199,12 +218,6 @@ export async function getEligibleBaselineBuildFromCommits(args: {
     return null;
   }
 
-  const valuesClause = args.shas.map(() => "(?, ?)").join(",");
-  const bindings: (string | number)[] = [];
-  args.shas.forEach((sha, index) => {
-    bindings.push(sha, index);
-  });
-
   const match = await queryEligibleBaselineBuilds({
     projectId: args.projectId,
     name: args.name,
@@ -217,8 +230,8 @@ export async function getEligibleBaselineBuildFromCommits(args: {
     .where("compareScreenshotBucket.valid", true)
     .whereIn("compareScreenshotBucket.commit", args.shas)
     .joinRaw(
-      `join (values ${valuesClause}) as ordering(sha, rank) on "compareScreenshotBucket"."commit" = ordering.sha`,
-      bindings,
+      `join (values ${rankedValuesClause(args.shas)}) as ordering(sha, rank) on "compareScreenshotBucket"."commit" = ordering.sha`,
+      rankedBindings(args.shas),
     )
     .select("builds.id")
     .orderBy("ordering.rank")

@@ -128,6 +128,31 @@ describe("findBaseline", () => {
       });
   });
 
+  test("ranks candidates by position, not by the text of the position", async ({
+    project,
+  }) => {
+    // Twelve candidates put the nearest eligible commit at position 2 and a
+    // decoy at position 10. The positions are bound as parameters, which reach
+    // Postgres untyped, and a VALUES list types those as text - where "10" sorts
+    // before "2". Below ten candidates the two orders agree, which is why no
+    // shorter list can catch this.
+    const commits = Array.from({ length: 12 }, (_, i) => sha(100 + i));
+    await createEligibleBaseline(project, commits[10]!);
+    const nearest = await createEligibleBaseline(project, commits[2]!);
+
+    await request(app)
+      .post("/baseline")
+      .set("Authorization", `Bearer ${TOKEN}`)
+      .send({ commits })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.baseline).toMatchObject({
+          id: nearest.id,
+          head: { sha: commits[2] },
+        });
+      });
+  });
+
   test("respects the order of the commits and picks the first match", async ({
     project,
   }) => {
