@@ -283,6 +283,23 @@ describe("#getBucketFromCommits", () => {
     expect(result).toEqual(preferredBucket);
   });
 
+  it("ranks candidates by position, not by the text of the position", async () => {
+    // Twelve candidates put the nearest eligible commit at position 2 and a
+    // decoy at position 10. The positions are bound as parameters, which reach
+    // Postgres untyped, and a VALUES list types those as text - where "10" sorts
+    // before "2". Below ten candidates the two orders agree, which is why no
+    // shorter list can catch this.
+    const shas = Array.from({ length: 12 }, (_, i) =>
+      i.toString(16).padStart(40, "0"),
+    );
+    // The decoy is created last, so it also has the higher id: an ordering that
+    // lets the id decide before the position picks it too.
+    const nearest = await createEligibleBucket(shas[2]!);
+    await createEligibleBucket(shas[10]!);
+    const result = await getBucketFromCommits({ shas, build });
+    expect(result).toEqual(nearest);
+  });
+
   it("returns the most recent bucket when multiple buckets share a commit", async () => {
     const olderBucket = await createEligibleBucket(
       "29f2757a14512b1c07547e6a0f516a731f7518f7",
