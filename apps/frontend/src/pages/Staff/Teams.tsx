@@ -45,7 +45,7 @@ import {
   PRO_PLAN_NAME,
   type PricedPlan,
 } from "./pricing";
-import { getStripeCustomerURL } from "./stripe";
+import { StripeCustomerLink } from "./stripe";
 
 const StaffTeamsQuery = graphql(`
   query StaffTeams_staffTeams(
@@ -103,7 +103,7 @@ const StaffTeamsQuery = graphql(`
 `);
 
 const StaffTeamMembersQuery = graphql(`
-  query StaffTeams_teamDetails(
+  query StaffTeams_teamMembers(
     $teamAccountId: ID!
     $first: Int!
     $after: Int!
@@ -111,19 +111,6 @@ const StaffTeamMembersQuery = graphql(`
     teamById(id: $teamAccountId) {
       id
       ... on Team {
-        subscriptionStatus
-        last30DaysScreenshots
-        projects(first: 100, after: 0) {
-          pageInfo {
-            totalCount
-            hasNextPage
-          }
-          edges {
-            id
-            name
-            buildsCount
-          }
-        }
         members(first: $first, after: $after, orderBy: NAME_ASC) {
           pageInfo {
             totalCount
@@ -184,12 +171,6 @@ type TeamMemberItem = NonNullable<
     DocumentType<typeof StaffTeamMembersQuery>["teamById"],
     { __typename?: "Team" }
   >["members"]
->["edges"][number];
-type TeamProjectItem = NonNullable<
-  Extract<
-    DocumentType<typeof StaffTeamMembersQuery>["teamById"],
-    { __typename?: "Team" }
-  >["projects"]
 >["edges"][number];
 
 type SortKey =
@@ -513,8 +494,8 @@ function BilledAmount(props: {
   billing: TeamBilling | null;
   /** Which of the two periods to read off the billing above. */
   period: "previous" | "current";
-  /** Rendered under the amount — what makes the two period columns readable. */
-  footnote: React.ReactNode;
+  /** Rendered under the amount — only the running period has one. */
+  footnote?: React.ReactNode;
 }) {
   const { team, billing, period, footnote } = props;
   // Read here rather than passed in: an amount only ever comes from the billing
@@ -537,15 +518,10 @@ function BilledAmount(props: {
 }
 
 /**
- * The two period columns, rendered as a pair.
+ * The two period columns, rendered together.
  *
- * They have to agree on whether a footnote line is there at all: only the
- * running period has one, and a cell one line taller than its neighbour centers
- * differently, so the two amounts stop sitting on the same line. Aligning both
- * cells to the top instead fixes the pair and breaks the row — the amounts then
- * float above the members count and the links, which are centered. So the empty
- * line is kept on the left column whenever the right one has one, and neither
- * on the rows that have no running period.
+ * Only the running one carries a footnote — how much of it is left, which is
+ * what separates a genuine drop from a period that opened three days ago.
  */
 function BilledPeriodCells(props: {
   team: TeamItem;
@@ -558,12 +534,7 @@ function BilledPeriodCells(props: {
   return (
     <>
       <td className="p-4 text-right text-sm tabular-nums">
-        <BilledAmount
-          team={team}
-          billing={billing}
-          period="previous"
-          footnote={footnote ? <div className="text-xs">&nbsp;</div> : null}
-        />
+        <BilledAmount team={team} billing={billing} period="previous" />
       </td>
       <td className="p-4 text-right text-sm tabular-nums">
         <BilledAmount
@@ -609,6 +580,12 @@ function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* `px-2` matches the padding of the rows below, so the two labels sit
+          over the columns they name rather than a border's width outside them. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-2 text-xs font-medium">
+        <div>Member / Emails</div>
+        <div>Role</div>
+      </div>
       {props.members.map((member) => (
         <div
           key={member.id}
@@ -637,37 +614,6 @@ function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
   );
 }
 
-function StaffProjectsPanel(props: {
-  projects: TeamProjectItem[];
-  hasMore: boolean;
-}) {
-  if (props.projects.length === 0) {
-    return <div className="text-low text-sm">No projects found.</div>;
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {props.projects.map((project) => (
-        <div
-          key={project.id}
-          className="bg-app grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border p-2 text-sm"
-        >
-          <div className="truncate font-medium">{project.name}</div>
-          <div className="text-low tabular-nums">
-            {project.buildsCount} builds
-          </div>
-        </div>
-      ))}
-      {props.hasMore ? (
-        <div className="text-low text-xs">
-          Showing first 100 projects. Refine data in the team page for full
-          list.
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function StaffTeamRow(props: {
   team: TeamItem;
   index: number;
@@ -677,12 +623,11 @@ function StaffTeamRow(props: {
 }) {
   const { team, index, isLast, isOpened, toggleMembers } = props;
   const teamURL = getAccountURL({ accountSlug: team.slug });
-  const analyticsURL = `${teamURL}/~/analytics`;
   const billing = getTeamBilling(team);
   const {
-    data: detailsData,
-    loading: detailsLoading,
-    error: detailsError,
+    data: membersData,
+    loading: membersLoading,
+    error: membersError,
   } = useQuery(StaffTeamMembersQuery, {
     variables: {
       teamAccountId: team.id,
@@ -693,16 +638,9 @@ function StaffTeamRow(props: {
   });
 
   const members =
-    detailsData?.teamById?.__typename === "Team"
-      ? detailsData.teamById.members.edges
+    membersData?.teamById?.__typename === "Team"
+      ? membersData.teamById.members.edges
       : [];
-  const details =
-    detailsData?.teamById?.__typename === "Team" ? detailsData.teamById : null;
-  const projects = details?.projects.edges ?? [];
-  const projectsCount = details?.projects.pageInfo.totalCount ?? 0;
-  const hasMoreProjects = Boolean(details?.projects.pageInfo.hasNextPage);
-  const subscriptionStatus = details?.subscriptionStatus ?? null;
-  const last30DaysScreenshots = details?.last30DaysScreenshots ?? 0;
 
   return (
     <>
@@ -715,13 +653,17 @@ function StaffTeamRow(props: {
       >
         <td className="p-4 text-sm">
           <div className="flex min-w-0 items-center gap-3">
-            <AccountAvatar avatar={team.avatar} className="size-8" />
-            <div className="min-w-0">
-              <div className="truncate font-medium">
-                {team.name || team.slug}
-              </div>
-              <div className="text-low truncate">{team.slug}</div>
-            </div>
+            <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
+            {/* `flex-1` is what pushes the Stripe link to the cell edge: this
+                wrapper takes the width the link does not, so the link lands at
+                the same offset on every row whatever the name is. */}
+            <Link
+              href={teamURL}
+              className="min-w-0 flex-1 truncate font-medium"
+            >
+              {team.name || team.slug}
+            </Link>
+            <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
           </div>
         </td>
         <td className="p-4 text-sm">
@@ -748,24 +690,8 @@ function StaffTeamRow(props: {
         </td>
         <BilledPeriodCells team={team} billing={billing} />
         <td className="p-4 text-right text-sm">
-          <div className="flex items-center justify-end gap-3 whitespace-nowrap">
-            <Link href={teamURL}>Team</Link>
-            <Link href={analyticsURL}>Analytics</Link>
-            {/* Only for teams that reached checkout — a link to
-                `/customers/null` would only look broken. */}
-            {team.stripeCustomerId ? (
-              <Link
-                href={getStripeCustomerURL(team.stripeCustomerId)}
-                target="_blank"
-              >
-                Stripe
-              </Link>
-            ) : null}
-          </div>
-        </td>
-        <td className="p-4 text-right text-sm">
           <Button variant="secondary" size="small" onClick={toggleMembers}>
-            {isOpened ? "Hide details" : "View details"}
+            {isOpened ? "Hide members" : "Show members"}
           </Button>
         </td>
       </tr>
@@ -777,58 +703,15 @@ function StaffTeamRow(props: {
               : `bg-app ${isLast ? "" : "border-b"}`
           }
         >
-          <td colSpan={9} className="border-t px-4 py-3">
-            {detailsError ? (
+          <td colSpan={8} className="border-t px-4 py-3">
+            {membersError ? (
               <div className="text-danger-low text-sm">
-                Failed to load team details.
+                Failed to load team members.
               </div>
-            ) : detailsLoading ? (
-              <div className="text-low text-sm">Loading details…</div>
+            ) : membersLoading ? (
+              <div className="text-low text-sm">Loading members…</div>
             ) : (
-              <div className="space-y-4">
-                <div className="grid gap-2 text-sm md:grid-cols-3">
-                  <div className="bg-app rounded-sm border p-3">
-                    <div className="text-low text-xs uppercase">
-                      Subscription
-                    </div>
-                    <div className="font-medium">
-                      <SubscriptionLabel status={subscriptionStatus} />
-                    </div>
-                  </div>
-                  <div className="bg-app rounded-sm border p-3">
-                    <div className="text-low text-xs uppercase">Projects</div>
-                    <div className="font-medium tabular-nums">
-                      {projectsCount}
-                    </div>
-                  </div>
-                  <div className="bg-app rounded-sm border p-3">
-                    <div className="text-low text-xs uppercase">
-                      Screenshots (30d)
-                    </div>
-                    <div className="font-medium tabular-nums">
-                      {last30DaysScreenshots}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 text-xs font-medium">
-                    Builds by project
-                  </div>
-                  <StaffProjectsPanel
-                    projects={projects}
-                    hasMore={hasMoreProjects}
-                  />
-                </div>
-
-                <div>
-                  <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-medium">
-                    <div>Member / Emails</div>
-                    <div>Role</div>
-                  </div>
-                  <StaffMembersPanel members={members} />
-                </div>
-              </div>
+              <StaffMembersPanel members={members} />
             )}
           </td>
         </tr>
@@ -882,7 +765,7 @@ function StaffTeamsTable(props: {
           isBusy && "opacity-65",
         )}
       >
-        <table className="w-full min-w-312 table-fixed border-collapse">
+        <table className="w-full min-w-256 table-fixed border-collapse">
           {/* Widths live on the headers rather than in a `colgroup`: the
             positional mapping broke silently whenever a column moved. */}
           <thead>
@@ -893,7 +776,7 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[16%] text-left"
+                className="w-[26%] text-left"
               />
               <SortHeader
                 label="Created"
@@ -901,9 +784,9 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[11%] text-left"
+                className="w-[12%] text-left"
               />
-              <th className="w-[8%] px-4 py-3 text-left">Subscription</th>
+              <th className="w-[10%] px-4 py-3 text-left">Subscription</th>
               <SortHeader
                 label="Members"
                 sortKey="members"
@@ -938,10 +821,9 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[11%] text-right"
+                className="w-[12%] text-right"
               />
-              <th className="w-[18%] px-4 py-3 text-right">Links</th>
-              <th className="w-[10%] px-4 py-3 text-right">Actions</th>
+              <th className="w-[14%] px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>

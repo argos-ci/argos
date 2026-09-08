@@ -8,7 +8,7 @@ import stripeLogo from "./stripe.svg";
  * invoices actually live — the questions the staff tables raise are answered
  * there.
  */
-export function getStripeCustomerURL(stripeCustomerId: string) {
+function getStripeCustomerURL(stripeCustomerId: string) {
   return `https://dashboard.stripe.com/customers/${stripeCustomerId}`;
 }
 

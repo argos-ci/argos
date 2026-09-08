@@ -162,9 +162,8 @@ async function createBilledTeam(input: {
   });
   await account.$query().patch({
     createdAt: daysFromNow(-input.createdDaysAgo),
-    // A billed team reached checkout, so it has a Stripe customer and its row
-    // carries the third link. Without one the Links column renders two links
-    // out of three and never reaches the width it needs.
+    // A billed team reached checkout, so it has a Stripe customer — which is
+    // what puts the Stripe tile at the edge of its team cell.
     stripeCustomerId: `cus_${input.slug}`,
   });
 
