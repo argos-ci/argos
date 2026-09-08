@@ -7,6 +7,7 @@ import { ProjectPermissionsContext } from "@/containers/Project/PermissionsConte
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { Loader } from "@/ui/Loader";
+import { useIsMobile } from "@/ui/useIsMobile";
 
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildNextReviewDialogProvider } from "./BuildNextReviewDialog";
@@ -17,6 +18,7 @@ import { BuildReviewStateProvider } from "./BuildReviewState";
 import { BuildReviewUndoHotkeys } from "./BuildReviewUndoHotkeys";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildHeader } from "./header/BuildHeader";
+import { MobileBuildHeader } from "./mobile/MobileBuildHeader";
 import { OvercapacityBanner } from "./OvercapacityBanner";
 import { RejectCommentDialogProvider } from "./RejectCommentDialog";
 
@@ -44,6 +46,7 @@ const ProjectQuery = graphql(`
         id
         status
         ...BuildHeader_Build
+        ...MobileBuildHeader_Build
         ...BuildWorkspace_Build
         ...BuildDiffState_Build
         ...RejectCommentDialog_Build
@@ -53,6 +56,7 @@ const ProjectQuery = graphql(`
 `);
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
+  const isMobile = useIsMobile();
   const { data, refetch, error } = useQuery(ProjectQuery, {
     variables: {
       accountSlug: params.accountSlug,
@@ -107,7 +111,11 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
               <BuildReviewDialogProvider project={data?.project ?? null}>
                 <RejectCommentDialogProvider build={build}>
                   <BuildReviewUndoHotkeys />
-                  <div className="flex h-screen min-h-0 flex-col">
+                  {/* `h-dvh`, not `h-screen`: 100vh overshoots the visible
+                      viewport behind mobile browser bars, and the overflow
+                      makes the page itself scrollable on top of the inner
+                      scroll containers. */}
+                  <div className="flex h-dvh min-h-0 flex-col">
                     {data?.project?.account && (
                       <>
                         <PaymentBanner account={data.project.account} />
@@ -117,13 +125,22 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                         />
                       </>
                     )}
-                    <BuildHeader
-                      buildNumber={params.buildNumber}
-                      accountSlug={params.accountSlug}
-                      projectName={params.projectName}
-                      build={build}
-                      project={data?.project ?? null}
-                    />
+                    {/* The mobile diff view brings its own slim header, and
+                        the overview gets a compact one — the desktop header's
+                        chips have no room at phone width. */}
+                    {isMobile ? (
+                      params.diffId ? null : (
+                        <MobileBuildHeader build={build} params={params} />
+                      )
+                    ) : (
+                      <BuildHeader
+                        buildNumber={params.buildNumber}
+                        accountSlug={params.accountSlug}
+                        projectName={params.projectName}
+                        build={build}
+                        project={data?.project ?? null}
+                      />
+                    )}
                     {project && build ? (
                       <BuildWorkspace
                         params={params}

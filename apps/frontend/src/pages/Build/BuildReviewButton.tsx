@@ -2,11 +2,13 @@ import { useState } from "react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
+import { BottomSheet } from "@/ui/BottomSheet";
 import { Button } from "@/ui/Button";
 import { DialogTrigger } from "@/ui/Dialog";
 import { Dialog } from "@/ui/Dialog";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
+import { useIsMobile } from "@/ui/useIsMobile";
 
 import { BuildReviewForm } from "./BuildReviewForm";
 
@@ -35,6 +37,40 @@ function BaseReviewButton(props: {
   children?: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const form = (
+    <BuildReviewForm
+      build={props.build}
+      onSubmitted={() => {
+        setIsOpen(false);
+        props.onCompleted?.();
+      }}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Button
+          className="shrink-0"
+          disabled={props.disabled}
+          autoFocus={props.autoFocus}
+          onClick={() => setIsOpen(true)}
+        >
+          {props.children ?? "Submit review"}
+        </Button>
+        <BottomSheet
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          aria-label="Submit review"
+          className="h-auto max-h-[85dvh]"
+        >
+          {form}
+        </BottomSheet>
+      </>
+    );
+  }
 
   return (
     <DialogTrigger open={isOpen} onOpenChange={setIsOpen}>
@@ -46,15 +82,7 @@ function BaseReviewButton(props: {
         {props.children ?? "Submit review"}
       </Button>
       <Popover side="bottom" align="end" className="overflow-hidden">
-        <Dialog aria-label="Submit review">
-          <BuildReviewForm
-            build={props.build}
-            onSubmitted={() => {
-              setIsOpen(false);
-              props.onCompleted?.();
-            }}
-          />
-        </Dialog>
+        <Dialog aria-label="Submit review">{form}</Dialog>
       </Popover>
     </DialogTrigger>
   );

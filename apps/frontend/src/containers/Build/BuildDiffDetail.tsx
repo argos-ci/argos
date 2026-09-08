@@ -44,6 +44,7 @@ import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { MenuItem, MenuSeparator } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
+import { useIsMobile } from "@/ui/useIsMobile";
 import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
@@ -58,12 +59,12 @@ import {
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
 import {
-  buildViewModeAtom,
   checkDiffCanBeBlended,
   checkIsBlendViewMode,
   onionOpacityAtom,
   swipeHandleYAtom,
   swipePositionAtom,
+  useEffectiveBuildViewMode,
   type BlendViewMode,
 } from "./BuildViewMode";
 import {
@@ -427,7 +428,7 @@ function ScreenshotHeaderDetail(props: {
   );
 }
 
-const BaselineScreenshotHeader = memo(
+export const BaselineScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => {
     const { build } = props;
     if (!build.baseScreenshotBucket) {
@@ -490,7 +491,7 @@ function BaselineDetails(props: { build: BuildFragmentDocument }) {
   );
 }
 
-const ChangesScreenshotHeader = memo(
+export const ChangesScreenshotHeader = memo(
   (props: { build: BuildFragmentDocument }) => (
     <BuildScreenshotHeader
       label="Changes"
@@ -1181,7 +1182,7 @@ function CompareScreenshotChanged(props: {
             />
           </div>
         )}
-        {blendMode === "onion" && <BuildOnionOpacityControl />}
+        {blendMode === "onion" && <FloatingOnionControl />}
       </div>
       {dimensions && paneSize && (
         <DiffIndicator url={jpgUrl} imgSize={dimensions} />
@@ -1365,7 +1366,8 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { diff, build } = props;
-    const viewMode = useAtomValue(buildViewModeAtom);
+    const isMobile = useIsMobile();
+    const viewMode = useEffectiveBuildViewMode();
     const canBlend = checkDiffCanBeBlended(diff);
     const blendMode =
       checkIsBlendViewMode(viewMode) && canBlend ? viewMode : null;
@@ -1418,9 +1420,18 @@ const BuildScreenshots = memo(
     return (
       // `pt-2`, not `p-4`: the header row tops out level with the right
       // sidebar's Snapshot/Review tabs, which sit 8px into the same region.
-      <div className="flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2 pb-4">
+      // On mobile the dock sits right below — the pane gives up most of its
+      // bottom padding to it.
+      <div
+        className={clsx(
+          "flex min-h-0 min-w-0 flex-1 gap-4 px-4 pt-2",
+          isMobile ? "pb-1" : "pb-4",
+        )}
+      >
         <div className={columnClassName} hidden={!showBaseline}>
-          <BaselineScreenshotHeader build={build} />
+          <PaneHeaderRow>
+            <BaselineScreenshotHeader build={build} />
+          </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <BaseScreenshot diff={diff} buildId={build.id} />
@@ -1428,14 +1439,16 @@ const BuildScreenshots = memo(
           </div>
         </div>
         <div className={columnClassName} hidden={!showChanges}>
-          {blendMode ? (
-            <div className="flex shrink-0 justify-center gap-6">
-              <BaselineScreenshotHeader build={build} />
+          <PaneHeaderRow>
+            {blendMode ? (
+              <>
+                <BaselineScreenshotHeader build={build} />
+                <ChangesScreenshotHeader build={build} />
+              </>
+            ) : (
               <ChangesScreenshotHeader build={build} />
-            </div>
-          ) : (
-            <ChangesScreenshotHeader build={build} />
-          )}
+            )}
+          </PaneHeaderRow>
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
               <CompareScreenshot
@@ -1450,6 +1463,32 @@ const BuildScreenshots = memo(
     );
   },
 );
+
+/**
+ * The Baseline / Changes labels above a pane. The mobile workspace shows
+ * them on its own label line under the header instead, and the pane keeps
+ * the full height.
+ */
+function PaneHeaderRow(props: { children: React.ReactNode }) {
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return null;
+  }
+  return (
+    <div className="flex shrink-0 items-center justify-center">
+      <div className="flex items-center gap-6">{props.children}</div>
+    </div>
+  );
+}
+
+/**
+ * The floating onion-skin control skips the mobile workspace: the dock sits
+ * exactly where it floats and hosts its own copy.
+ */
+function FloatingOnionControl() {
+  const isMobile = useIsMobile();
+  return isMobile ? null : <BuildOnionOpacityControl />;
+}
 
 function Snapshot(props: SnapshotProps) {
   return (
@@ -1527,7 +1566,7 @@ function BuildSnapshotsDiff(props: {
 }) {
   const { base, head, build, screenshotDiffId } = props;
   const isDiffOverlayVisible = useAtomValue(overlayVisibleAtom);
-  const viewMode = useAtomValue(buildViewModeAtom);
+  const viewMode = useEffectiveBuildViewMode();
   // const [headText, baseText] = useTextContent([props.base, props.head]);
   switch (viewMode) {
     case "baseline": {
