@@ -220,9 +220,10 @@ once:
 
 - **AWS credentials** for a principal allowed to `rds-db:connect` as
   `argos_dev_ro` (`arn:aws:rds-db:<region>:<account>:dbuser:<db-resource-id>/argos_dev_ro`).
-  Any principal the SDK can find works — an `aws sso login` session or a
+  Any principal the SDK can find works — an `aws login` session or a
   configured IAM user. There is no database password at all: `PG_IAM_AUTH=true`
-  signs a short-lived token per connection.
+  signs a short-lived token per connection, so the command refuses to start
+  without a session and tells you to sign in.
 
 What the mode changes, enforced by the config (`ARGOS_TARGET=prod-ro`):
 

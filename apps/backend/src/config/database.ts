@@ -28,7 +28,19 @@ function getPassword(config: Config): string | (() => Promise<string>) {
     port: config.get("pg.connection.port"),
     username: config.get("pg.connection.user"),
   });
-  return () => signer.getAuthToken();
+  return async () => {
+    try {
+      return await signer.getAuthToken();
+    } catch (error) {
+      // An AWS session expires while the process keeps running, and the SDK
+      // failure would otherwise surface as a connection error naming neither
+      // AWS nor what to do about it.
+      throw new Error(
+        `No AWS session - could not sign an RDS IAM token for "${username}". Run \`aws login\`, then retry.`,
+        { cause: error },
+      );
+    }
+  };
 }
 
 /**

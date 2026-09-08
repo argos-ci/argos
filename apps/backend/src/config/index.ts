@@ -559,7 +559,7 @@ export function createConfig() {
           default: 5432,
         },
         iamAuth: {
-          doc: "Authenticate with short-lived RDS IAM tokens instead of a password. The Postgres role must have `rds_iam` granted, and the process needs AWS credentials (e.g. `aws sso login`).",
+          doc: "Authenticate with short-lived RDS IAM tokens instead of a password. The Postgres role must have `rds_iam` granted, and the process needs AWS credentials (e.g. `aws login`).",
           format: Boolean,
           default: false,
           env: "PG_IAM_AUTH",
