@@ -22,11 +22,12 @@ function getPassword(config: Config): string | (() => Promise<string>) {
     `cannot derive an AWS region from Postgres host "${hostname}" — PG_IAM_AUTH expects an RDS endpoint`,
   );
 
+  const username = config.get("pg.connection.user");
   const signer = new Signer({
     hostname,
     region,
     port: config.get("pg.connection.port"),
-    username: config.get("pg.connection.user"),
+    username,
   });
   return async () => {
     try {
