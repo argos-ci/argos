@@ -134,6 +134,19 @@ describe("claimOverageAlert", () => {
   );
 
   withUsageBasedTeam(
+    "claims nothing when a spend limit is set after the account was loaded",
+    async ({ account, project }) => {
+      await spend(project, 600);
+      const loaded = await Account.query()
+        .findById(account.id)
+        .throwIfNotFound();
+      await account.$query().patch({ meteredSpendLimitByPeriod: 1000 });
+      await expect(claimOverageAlert(loaded)).resolves.toBeNull();
+      await expect(getLastThreshold(account)).resolves.toBeNull();
+    },
+  );
+
+  withUsageBasedTeam(
     "lets a single concurrent run claim a threshold",
     async ({ account, project }) => {
       await spend(project, 200);
