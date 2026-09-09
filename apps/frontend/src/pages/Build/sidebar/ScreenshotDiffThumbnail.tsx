@@ -33,12 +33,15 @@ export function ScreenshotDiffThumbnail(props: {
   iconClassName?: string;
   /** How the image fills the box. */
   fit?: "contain" | "cover";
+  /** ImageKit transformations for the source, to match the box being drawn. */
+  transformations?: string[];
 }) {
   const {
     screenshotDiff,
     className,
     iconClassName = className,
     fit = "contain",
+    transformations = ["w-32", "h-32", "c-at_max"],
   } = props;
   const screenshot =
     screenshotDiff.compareScreenshot ?? screenshotDiff.baseScreenshot ?? null;
@@ -57,7 +60,7 @@ export function ScreenshotDiffThumbnail(props: {
       >
         <ImageKitPicture
           src={thumbnailUrl}
-          transformations={["w-32", "h-32", "c-at_max"]}
+          transformations={transformations}
           className={clsx(
             "size-full",
             fit === "cover" ? "object-cover" : "object-contain",

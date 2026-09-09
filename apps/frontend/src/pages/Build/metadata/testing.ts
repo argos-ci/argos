@@ -25,6 +25,7 @@ export function metadata(props: Partial<Metadata>): Metadata {
       latestVersion: null,
     },
     story: null,
+    capture: null,
     viewport: null,
     test: null,
     tags: null,

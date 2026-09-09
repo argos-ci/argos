@@ -25,6 +25,7 @@ import {
   useHasNextDiff,
   useHasPreviousDiff,
 } from "./BuildDiffState";
+import { JourneyDrawerToggle } from "./BuildJourneyDrawer";
 import { VariantSwitchers } from "./metadata/variants/VariantSwitchers";
 import { RightSidebarToggle } from "./RightSidebar";
 
@@ -94,6 +95,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           snapshotControls={false}
           fitControls={<AriaSnapshotToggle />}
         >
+          <JourneyDrawerToggle />
           <RightSidebarToggle />
         </BuildDiffDetailToolbar>
       </div>
