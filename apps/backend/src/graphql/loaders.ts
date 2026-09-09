@@ -106,12 +106,26 @@ function createBuildAggregatedStatusLoader() {
 function createLatestAutomationRunLoader() {
   return new DataLoader<string, AutomationRun | null>(
     async (automationRuleIds) => {
+      const valuesSql = automationRuleIds.map(() => "(?::bigint)").join(", ");
+
       const latestRuns = await AutomationRun.query()
-        .select("*")
-        .whereIn("automationRuleId", automationRuleIds as string[])
-        .distinctOn("automationRuleId")
-        .orderBy("automationRuleId")
-        .orderBy("createdAt", "desc");
+        .select("automation_runs.*")
+        .from(
+          AutomationRun.raw(`(values ${valuesSql}) as t("automationRuleId")`, [
+            ...automationRuleIds,
+          ]),
+        )
+        .joinRaw(
+          `
+            join lateral (
+              select *
+              from "automation_runs"
+              where "automation_runs"."automationRuleId" = t."automationRuleId"
+              order by "automation_runs"."createdAt" desc
+              limit 1
+            ) as automation_runs on true
+          `,
+        );
       const latestRunsMap = latestRuns.reduce<Record<string, AutomationRun>>(
         (map, run) => ({
           ...map,
@@ -126,15 +140,30 @@ function createLatestAutomationRunLoader() {
 
 function createLatestProjectBuildLoader() {
   return new DataLoader<string, Build | null>(async (projectIds) => {
+    const valuesSql = projectIds.map(() => "(?::bigint)").join(", ");
+
+    // The ordering must stay a prefix-match of
+    // `builds_projectid_createdat_number_idx`, otherwise each key stops being a
+    // single index descent and starts sorting the project's builds again.
     const latestBuilds = await Build.query()
-      .select("*")
-      .whereIn("projectId", projectIds as string[])
-      .distinctOn("projectId")
-      .orderBy("projectId")
-      .orderBy("createdAt", "desc");
+      .select("builds.*")
+      .from(
+        Build.raw(`(values ${valuesSql}) as t("projectId")`, [...projectIds]),
+      )
+      .joinRaw(
+        `
+          join lateral (
+            select *
+            from "builds"
+            where "builds"."projectId" = t."projectId"
+            order by "builds"."createdAt" desc, "builds"."number" desc
+            limit 1
+          ) as builds on true
+        `,
+      );
     const latestBuildsMap: Record<string, Build> = {};
     for (const build of latestBuilds) {
-      latestBuildsMap[build.projectId!] = build;
+      latestBuildsMap[build.projectId] = build;
     }
     return projectIds.map((id) => latestBuildsMap[id] ?? null);
   });
@@ -142,13 +171,28 @@ function createLatestProjectBuildLoader() {
 
 function createLatestProductionDeploymentByProjectLoader() {
   return new DataLoader<string, Deployment | null>(async (projectIds) => {
+    const valuesSql = projectIds.map(() => "(?::bigint)").join(", ");
+
     const latestDeployments = await Deployment.query()
-      .whereIn("projectId", projectIds)
-      .where("environment", "production")
-      .distinctOn("projectId")
-      .orderBy("projectId")
-      .orderBy("createdAt", "desc")
-      .orderBy("id", "desc");
+      .select("deployments.*")
+      .from(
+        Deployment.raw(`(values ${valuesSql}) as t("projectId")`, [
+          ...projectIds,
+        ]),
+      )
+      .joinRaw(
+        `
+          join lateral (
+            select *
+            from "deployments"
+            where "deployments"."projectId" = t."projectId"
+              and "deployments"."environment" = ?
+            order by "deployments"."createdAt" desc, "deployments"."id" desc
+            limit 1
+          ) as deployments on true
+        `,
+        ["production"],
+      );
     const latestDeploymentsMap: Record<string, Deployment> = {};
     for (const deployment of latestDeployments) {
       latestDeploymentsMap[deployment.projectId] = deployment;
@@ -1643,21 +1687,36 @@ function createLatestChangeDiffLoader() {
     string
   >(
     async (changes) => {
+      const valuesSql = changes.map(() => "(?::bigint, ?::text)").join(", ");
+      const bindings = changes.flatMap(({ testId, fingerprint }) => [
+        testId,
+        fingerprint,
+      ]);
+
+      // The filter and the ordering match
+      // `screenshot_diffs_testid_fingerprint_id_desc_notnull_idx`, so each key
+      // reads a single index entry.
       const rows = await ScreenshotDiff.query()
         .select("screenshot_diffs.*")
-        // The ordering below puts the newest diff of each pair first, so
-        // DISTINCT ON keeps exactly that one.
-        .distinctOn("screenshot_diffs.testId", "screenshot_diffs.fingerprint")
-        .whereIn(
-          ["screenshot_diffs.testId", "screenshot_diffs.fingerprint"],
-          changes.map(({ testId, fingerprint }) => [testId, fingerprint]),
+        .from(
+          ScreenshotDiff.raw(
+            `(values ${valuesSql}) as t("testId", "fingerprint")`,
+            bindings,
+          ),
         )
-        .whereNotNull("screenshot_diffs.fileId")
-        .orderBy([
-          { column: "screenshot_diffs.testId" },
-          { column: "screenshot_diffs.fingerprint" },
-          { column: "screenshot_diffs.id", order: "desc" },
-        ]);
+        .joinRaw(
+          `
+            join lateral (
+              select *
+              from "screenshot_diffs"
+              where "screenshot_diffs"."testId" = t."testId"
+                and "screenshot_diffs"."fingerprint" = t."fingerprint"
+                and "screenshot_diffs"."fileId" is not null
+              order by "screenshot_diffs"."id" desc
+              limit 1
+            ) as screenshot_diffs on true
+          `,
+        );
 
       const diffByKey = new Map(
         rows.map((diff) => [`${diff.testId}|${diff.fingerprint}`, diff]),
