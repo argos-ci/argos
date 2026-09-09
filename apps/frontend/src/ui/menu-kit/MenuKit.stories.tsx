@@ -6,6 +6,7 @@ import {
   CopyIcon,
   DownloadIcon,
   FolderCodeIcon,
+  FunnelPlusIcon,
   PencilIcon,
   PlusCircleIcon,
   SettingsIcon,
@@ -113,6 +114,26 @@ export const Open: Story = {
               Delete
             </MenuItem>
           </MenuSection>
+        </Menu>
+      </MenuRoot>
+    </OverlayStage>
+  ),
+};
+
+/**
+ * A context menu of a couple of fixed rows: nothing filters under it, so the
+ * width floor that keeps a dropdown still has nothing to keep still.
+ */
+export const OpenFitContent: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage>
+      <MenuRoot defaultOpen>
+        <MenuTrigger>
+          <Button variant="secondary">Actions</Button>
+        </MenuTrigger>
+        <Menu aria-label="Actions" search={false} fitContent>
+          <MenuItem icon={<FunnelPlusIcon />}>Add to filters</MenuItem>
         </Menu>
       </MenuRoot>
     </OverlayStage>

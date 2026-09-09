@@ -3,7 +3,7 @@ import { BookMarkedIcon } from "lucide-react";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { FilterableIndicator } from "../../metadata/filters/FilterableIndicator";
+import { FilterableIndicator } from "../../metadata/filters/FilterContextMenu";
 import {
   getFilterKey,
   getStoryKindFromStoryId,

@@ -1,5 +1,6 @@
 import {
   memo,
+  use,
   useCallback,
   useEffect,
   useMemo,
@@ -45,7 +46,7 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
+import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
 import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -64,6 +65,7 @@ import {
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { FilterStateContext } from "./metadata/filters/FilterState";
 
 const DIFF_IMAGE_CONFIG = {
   maxWidth: 262,
@@ -667,6 +669,7 @@ const InternalBuildDiffList = memo(() => {
     isSubsetBuild,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
+  const filterState = use(FilterStateContext);
   const rows = useMemo(
     () => getRows(groups, expanded, results, searchMode),
     [groups, expanded, results, searchMode],
@@ -820,6 +823,7 @@ const InternalBuildDiffList = memo(() => {
           the header that names what you are looking at. */}
       <div
         ref={containerRef}
+        data-testid="diff-list-scroller"
         className="scroll-mask-b-from-95% min-h-0 flex-1 overflow-y-auto"
       >
         <div
@@ -835,9 +839,9 @@ const InternalBuildDiffList = memo(() => {
                   <EmptyStateIcon>
                     <ImagesIcon />
                   </EmptyStateIcon>
-                  <Heading>No screenshots</Heading>
+                  <Heading>Nothing to show</Heading>
                   <Text slot="description">
-                    This build has no screenshots matching the current search.
+                    No screenshot matches your search.
                   </Text>
                 </EmptyState>
               );
@@ -848,6 +852,34 @@ const InternalBuildDiffList = memo(() => {
               .filter((x) => x);
 
             if (virtualItems.length === 0 && !searchMode) {
+              // The build having no screenshots and the filters leaving none
+              // are the same empty list, and the quickstart guide is nonsense
+              // advice for the second.
+              if (filterState && filterState.active.size > 0) {
+                return (
+                  <EmptyState>
+                    <EmptyStateIcon>
+                      <ImagesIcon />
+                    </EmptyStateIcon>
+                    {/* A plain heading, so the line under it can state the
+                        case without echoing it. "all" is the word that earns
+                        its place: categories combine, so every filter can have
+                        matches of its own while the intersection has none. */}
+                    <Heading>Nothing to show</Heading>
+                    <Text slot="description">
+                      No screenshot matches all the filters.
+                    </Text>
+                    <EmptyStateActions>
+                      <Button
+                        variant="secondary"
+                        onClick={() => filterState.setActive(new Set())}
+                      >
+                        Clear filters
+                      </Button>
+                    </EmptyStateActions>
+                  </EmptyState>
+                );
+              }
               return <NoScreenshotsBuildEmptyState />;
             }
 
