@@ -109,6 +109,36 @@ export function getUniqueStoryModes(metadataList: Metadata[]): string[] {
   return Array.from(modes).sort();
 }
 
+/**
+ * Whether the story mode says nothing the color scheme has not already said.
+ *
+ * A Storybook mode is commonly named after the scheme it sets, and the SDK
+ * records both — so the toolbar ends up carrying two switchers, four buttons
+ * and one binary choice, and the sun/moon pair says it better.
+ *
+ * Judged on the names, not on how the two axes cut the snapshots up. A
+ * `mobile`/`desktop` pair can line up one-to-one with `light`/`dark` by
+ * accident of how the matrix was captured, and dropping it on that evidence
+ * would take away the labels that tell the reviewer what they are looking at.
+ * Only a mode that spells the scheme out is a restatement of it.
+ */
+export function storyModeRestatesColorScheme(
+  metadataList: Metadata[],
+): boolean {
+  let named = false;
+  for (const metadata of metadataList) {
+    const mode = metadata.story?.mode;
+    if (!mode) {
+      continue;
+    }
+    if (mode.toLowerCase() !== resolveColorScheme(metadata)) {
+      return false;
+    }
+    named = true;
+  }
+  return named;
+}
+
 export function useGetDiffPath() {
   const path = "/:accountSlug/:projectName/builds/:buildNumber/:diffId";
   const match = useMatch(path);

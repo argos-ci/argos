@@ -8,6 +8,7 @@ import {
   getUniqueColorSchemes,
   getUniqueStoryModes,
   getUniqueViewports,
+  storyModeRestatesColorScheme,
 } from "./utils";
 
 /**
@@ -87,5 +88,77 @@ describe("getUniqueStoryModes", () => {
       metadata({ story: story("compact") }),
     ]);
     expect(modes).toEqual(["compact", "wide"]);
+  });
+});
+
+describe("storyModeRestatesColorScheme", () => {
+  const dark = ScreenshotMetadataColorScheme.Dark;
+  const light = ScreenshotMetadataColorScheme.Light;
+
+  it("is true when every mode names the scheme it goes with", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("dark"), colorScheme: dark }),
+        metadata({ story: story("light"), colorScheme: light }),
+      ]),
+    ).toBe(true);
+  });
+
+  it("reads the mode case-insensitively", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("Dark"), colorScheme: dark }),
+        metadata({ story: story("LIGHT"), colorScheme: light }),
+      ]),
+    ).toBe(true);
+  });
+
+  // Light is what a snapshot saying nothing resolves to, so a `light` mode
+  // restates it even where the SDK reported no scheme at all.
+  it("counts the scheme a snapshot leaves unset as light", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("light") }),
+        metadata({ story: story("dark"), colorScheme: dark }),
+      ]),
+    ).toBe(true);
+  });
+
+  it("is false when a mode is named anything else", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("mobile"), colorScheme: light }),
+        metadata({ story: story("desktop"), colorScheme: dark }),
+      ]),
+    ).toBe(false);
+  });
+
+  // The one the naming rule buys over a structural test: these two cut the
+  // snapshots up exactly as the scheme does, and still say something else.
+  it("is false for names that merely line up one-to-one with the schemes", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("night"), colorScheme: dark }),
+        metadata({ story: story("day"), colorScheme: light }),
+      ]),
+    ).toBe(false);
+  });
+
+  it("is false when a mode names the scheme the snapshot does not have", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ story: story("dark"), colorScheme: light }),
+        metadata({ story: story("light"), colorScheme: light }),
+      ]),
+    ).toBe(false);
+  });
+
+  it("is false when no snapshot carries a mode", () => {
+    expect(
+      storyModeRestatesColorScheme([
+        metadata({ colorScheme: dark }),
+        metadata({ colorScheme: light }),
+      ]),
+    ).toBe(false);
   });
 });

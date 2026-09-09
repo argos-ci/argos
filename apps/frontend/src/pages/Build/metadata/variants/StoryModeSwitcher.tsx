@@ -12,6 +12,7 @@ import type { Diff } from "../../BuildDiffState";
 import {
   getUniqueStoryModes,
   resolveDiffMetadata,
+  storyModeRestatesColorScheme,
   useGetDiffPath,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
@@ -26,10 +27,15 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
   const getDiffPath = useGetDiffPath();
   const metadata = resolveDiffMetadata(diff);
-  const storyModes = getUniqueStoryModes(
-    siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
-  );
-  if (storyModes.length < 2) {
+  const siblingMetadata = siblingDiffs
+    .map(resolveDiffMetadata)
+    .filter(checkIsNonNullable);
+  const storyModes = getUniqueStoryModes(siblingMetadata);
+  // Modes named after the scheme they set are the same choice twice over, and
+  // the color scheme switcher is the one that reads without a legend. It is
+  // always there to take over: a mode that spells its scheme out cannot offer
+  // two values without the schemes differing too.
+  if (storyModes.length < 2 || storyModeRestatesColorScheme(siblingMetadata)) {
     return null;
   }
   const activeMode = metadata?.story?.mode ?? null;
