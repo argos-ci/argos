@@ -17,7 +17,7 @@ import { MsTeamsWebhook } from "./MsTeamsWebhook";
 import { OriginInstallation } from "./OriginInstallation";
 import { Plan } from "./Plan";
 import { Project } from "./Project";
-import { ScreenshotBucket } from "./ScreenshotBucket";
+import { clampedStorybookCount, ScreenshotBucket } from "./ScreenshotBucket";
 import { SlackInstallation } from "./SlackInstallation";
 import { Subscription } from "./Subscription";
 import { Team, type GetPermissionsOptions } from "./Team";
@@ -752,15 +752,10 @@ export class Account extends Model {
   ): Promise<ScreenshotsCount> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as all")
-      // A bucket's Storybook count is clamped to its total before being summed.
-      // The two used to be counted by two separate queries, so buckets written
-      // back then can hold more Storybook screenshots than screenshots, which
-      // would make `neutral` negative.
       .select(
-        raw(`sum(least(coalesce(??, 0), coalesce(??, 0))) as "storybook"`, [
-          "screenshot_buckets.storybookScreenshotCount",
-          "screenshot_buckets.screenshotCount",
-        ]),
+        raw(
+          `sum(${clampedStorybookCount("screenshot_buckets")}) as "storybook"`,
+        ),
       )
       .leftJoinRelated("project")
       .where("screenshot_buckets.createdAt", ">=", from.toISOString())

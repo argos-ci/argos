@@ -11,8 +11,17 @@ const PROJECTS = [
   { __typename: "Project" as const, id: "4", name: "storybook" },
 ];
 
-/** The one project in the fixture whose screenshots come from stories. */
-const STORYBOOK_PROJECT_ID = "4";
+/**
+ * Share of each project's screenshots captured from stories; projects left out
+ * capture none. Storybook counts are per bucket rather than per project, so a
+ * project is never all-or-nothing — and the tile's share must not be readable
+ * off the pie chart's slices.
+ */
+const STORYBOOK_RATIO: Record<string, number | undefined> = {
+  "1": 0.15,
+  "3": 0.4,
+  "4": 0.9,
+};
 
 const DAY = 24 * 60 * 60 * 1000;
 const START = new Date("2026-06-01T00:00:00Z").getTime();
@@ -31,7 +40,7 @@ function buildFixture() {
     rejected: 0,
   };
   const screenshotsAll = {
-    __typename: "AccountMetricData" as const,
+    __typename: "AccountScreenshotMetricData" as const,
     total: 0,
     projects: {} as Record<string, number>,
     storybook: 0,
@@ -68,9 +77,9 @@ function buildFixture() {
       screenshotCounts[project.id] = screenshots;
       total += builds;
       sTotal += screenshots;
-      if (project.id === STORYBOOK_PROJECT_ID) {
-        sStorybook += screenshots;
-      }
+      sStorybook += Math.round(
+        screenshots * (STORYBOOK_RATIO[project.id] ?? 0),
+      );
       buildsAll.projects[project.id] =
         (buildsAll.projects[project.id] ?? 0) + builds;
       screenshotsAll.projects[project.id] =
@@ -101,7 +110,7 @@ function buildFixture() {
     buildsAll.rejected += rejected;
 
     screenshotsSeries.push({
-      __typename: "AccountMetricDataPoint" as const,
+      __typename: "AccountScreenshotMetricDataPoint" as const,
       ts,
       total: sTotal,
       projects: screenshotCounts,
@@ -176,7 +185,7 @@ export const Empty: Story = {
       screenshots: {
         __typename: "AccountScreenshotMetrics",
         all: {
-          __typename: "AccountMetricData",
+          __typename: "AccountScreenshotMetricData",
           total: 0,
           projects: {},
           storybook: 0,

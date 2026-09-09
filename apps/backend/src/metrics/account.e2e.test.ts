@@ -94,15 +94,36 @@ describe("getAccountScreenshotMetrics", () => {
 
     const results = await getAccountScreenshotMetrics({
       accountId: project.accountId,
-      from: new Date("2020-12-01"),
-      to: new Date("2021-02-01"),
-      groupBy: "month",
+      from: new Date("2021-01-04"),
+      to: new Date("2021-01-06"),
+      groupBy: "day",
     });
 
-    // 34 from the shared fixture, plus 8 and 5 here.
+    // Each day keeps its own split rather than the period's, so a count landing
+    // in the wrong bucket does not hide inside the total.
+    expect(results.series).toEqual([
+      {
+        ts: new Date("2021-01-04").getTime(),
+        total: 8,
+        projects: { [project.id]: 8 },
+        storybook: 3,
+      },
+      {
+        ts: new Date("2021-01-05").getTime(),
+        total: 5,
+        projects: { [project.id]: 5 },
+        storybook: 5,
+      },
+      {
+        ts: new Date("2021-01-06").getTime(),
+        total: 0,
+        projects: { [project.id]: 0 },
+        storybook: 0,
+      },
+    ]);
     expect(results.all).toEqual({
-      total: 47,
-      projects: { [project.id]: 47 },
+      total: 13,
+      projects: { [project.id]: 13 },
       storybook: 8,
     });
   });

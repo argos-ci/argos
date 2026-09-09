@@ -114,6 +114,6 @@ export class ScreenshotBucket extends Model {
  * back then can hold more Storybook screenshots than screenshots at all. Left
  * unclamped, the non-Storybook half of any split comes out negative.
  */
-export function clampedStorybookCount(alias: string) {
+export function clampedStorybookCount(alias: "sb" | "screenshot_buckets") {
   return `least(coalesce(${alias}."storybookScreenshotCount", 0), coalesce(${alias}."screenshotCount", 0))`;
 }

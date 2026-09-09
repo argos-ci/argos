@@ -95,7 +95,7 @@ export const typeDefs = gql`
     view
   }
 
-  type AccountMetricDataPoint {
+  type AccountScreenshotMetricDataPoint {
     ts: Timestamp!
     total: Int!
     projects: JSONObject!
@@ -103,7 +103,7 @@ export const typeDefs = gql`
     storybook: Int!
   }
 
-  type AccountMetricData {
+  type AccountScreenshotMetricData {
     total: Int!
     projects: JSONObject!
     "Screenshots captured from Storybook stories, already counted in the total"
@@ -138,8 +138,8 @@ export const typeDefs = gql`
   }
 
   type AccountScreenshotMetrics {
-    series: [AccountMetricDataPoint!]!
-    all: AccountMetricData!
+    series: [AccountScreenshotMetricDataPoint!]!
+    all: AccountScreenshotMetricData!
     projects: [Project!]!
   }
 

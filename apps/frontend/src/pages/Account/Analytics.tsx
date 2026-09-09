@@ -376,11 +376,7 @@ export function AnalyticsDashboard(props: {
           color="primary"
           label="Builds"
           value={metrics?.builds.all.total ?? null}
-          hint={
-            buildsPerPeriod !== null
-              ? `${buildsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
-              : null
-          }
+          hint={`${buildsPerPeriod.toLocaleString()} avg / ${groupByLabel}`}
           visual={
             metrics && metrics.builds.all.total > 0 ? (
               <Sparkline
@@ -555,10 +551,15 @@ export function AnalyticsDashboard(props: {
                     to,
                     groupBy,
                   }),
+                  // Prefixed because the project columns sitting next to them
+                  // carry raw project names, and "storybook" is a common one.
                   extraColumns: [
-                    { label: "Storybook", get: (serie) => serie.storybook },
                     {
-                      label: "Other",
+                      label: "Source: Storybook",
+                      get: (serie) => serie.storybook,
+                    },
+                    {
+                      label: "Source: other",
                       get: (serie) => serie.total - serie.storybook,
                     },
                   ],
@@ -649,11 +650,7 @@ export function AnalyticsDashboard(props: {
         <ChartCard
           className="col-span-12 lg:col-span-7"
           title="Screenshots per build"
-          description={
-            screenshotsPerBuild !== null
-              ? `${screenshotsPerBuild.toLocaleString()} on average across the period.`
-              : "Average screenshots captured per build."
-          }
+          description={`${screenshotsPerBuild.toLocaleString()} on average across the period.`}
         >
           {screenshotByBuildSeries ? (
             screenshotByBuildSeries.all.total === 0 ? (
@@ -678,9 +675,10 @@ export function AnalyticsDashboard(props: {
  * The Screenshots tile's supporting line.
  *
  * The Storybook share only joins it for accounts that capture stories at all —
- * everywhere else it would be a permanent "0%" saying nothing. `storybook` is
- * clamped to `total` upstream, so a non-zero share always has a total to divide
- * by.
+ * everywhere else it would be a permanent "0%" saying nothing. A share too
+ * small to round up to a percent gets "<1%" for the same reason: "0%" next to a
+ * non-zero count reads as a bug. `storybook` is clamped to `total` upstream, so
+ * a non-zero share always has a total to divide by.
  */
 function getScreenshotsHint(props: {
   perPeriod: number;
@@ -692,12 +690,20 @@ function getScreenshotsHint(props: {
   if (screenshots.storybook === 0) {
     return average;
   }
-  const share = (screenshots.storybook / screenshots.total).toLocaleString(
-    navigator.language,
-    { style: "percent", maximumFractionDigits: 0 },
-  );
-  return `${average} · ${share} Storybook`;
+  const ratio = screenshots.storybook / screenshots.total;
+  const share =
+    Math.round(ratio * 100) === 0
+      ? `<${(0.01).toLocaleString(navigator.language, PERCENT_FORMAT)}`
+      : ratio.toLocaleString(navigator.language, PERCENT_FORMAT);
+  // Non-breaking, so that the tile at its narrowest — four columns at the `lg`
+  // breakpoint — wraps between the two clauses rather than inside this one.
+  return `${average} · ${share}\u00A0Storybook`;
 }
+
+const PERCENT_FORMAT: Intl.NumberFormatOptions = {
+  style: "percent",
+  maximumFractionDigits: 0,
+};
 
 function getCSVName(props: {
   account: string;
