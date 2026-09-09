@@ -188,6 +188,7 @@ export class Account extends Model {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
+          lastOverageAlertThreshold: { type: ["integer", "null"] },
         },
       },
     ],
@@ -207,6 +208,13 @@ export class Account extends Model {
   originInstallationId!: string | null;
   meteredSpendLimitByPeriod!: number | null;
   blockWhenSpendLimitIsReached!: boolean;
+  /**
+   * Highest overage alert already sent to the owners, null when none was.
+   * Without a spend limit, the owners are nudged once at each threshold and
+   * never again, not once per billing period: the alert exists to get a limit
+   * configured, not to report usage.
+   */
+  lastOverageAlertThreshold!: number | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

@@ -43,7 +43,7 @@ export const notificationCategoryMetadata: Record<
   },
   billing: {
     label: "Billing",
-    description: "Spend limit alerts for teams you own.",
+    description: "Spend limit and additional usage alerts for teams you own.",
     configurable: true,
   },
   project: {

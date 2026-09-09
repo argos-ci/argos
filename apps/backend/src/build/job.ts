@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
+import { claimOverageAlert } from "@/database/services/overage-alert";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -37,7 +38,8 @@ async function pushDiffs(input: {
 }
 
 /**
- * Update the usage in Stripe, also check the spend limit.
+ * Update the usage in Stripe, then send the spend alert that became due: a
+ * spend limit threshold when a limit is set, an overage alert otherwise.
  */
 async function updateUsage(project: Project) {
   const { account } = project;
@@ -68,6 +70,23 @@ async function updateUsage(project: Project) {
           accountSlug: account.slug,
           blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
           threshold: spendLimitThreshold,
+        },
+        recipients: ownerIds,
+      });
+    }
+
+    // A claim is not undone by a failed run, so it comes after the Stripe
+    // update, the step that can fail and get retried.
+    const overageAlert = await claimOverageAlert(account);
+    if (overageAlert !== null) {
+      const ownerIds = await account.$getOwnerIds();
+      await sendNotification({
+        type: "overage_alert",
+        data: {
+          accountName: account.name,
+          accountSlug: account.slug,
+          threshold: overageAlert.threshold,
+          currency: overageAlert.currency,
         },
         recipients: ownerIds,
       });

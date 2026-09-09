@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict KpjS2jKXTxQgaV2MMwS992ZcqvSv3J5pYvxbsy4hL6CE5lxMr5e9WGe0MUzJrDr
+\restrict 9RtOxyeUu8jhzkjsBQQ5Ur9nRozyDFBofOxHaaPMoGifWmN1aiXM3dnH2fEDWFd
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -127,6 +127,7 @@ CREATE TABLE public.accounts (
     "meteredSpendLimitByPeriod" integer,
     "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
     "originInstallationId" bigint,
+    "lastOverageAlertThreshold" integer,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -6692,7 +6693,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict KpjS2jKXTxQgaV2MMwS992ZcqvSv3J5pYvxbsy4hL6CE5lxMr5e9WGe0MUzJrDr
+\unrestrict 9RtOxyeUu8jhzkjsBQQ5Ur9nRozyDFBofOxHaaPMoGifWmN1aiXM3dnH2fEDWFd
 
 -- Knex migrations
 
@@ -6948,3 +6949,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260824081749_stripe-invoices-customer-fields.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260830130624_custom-domains.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260902183811_project-soft-delete.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260909153631_overage-alert.js', 1, NOW());
