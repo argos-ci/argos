@@ -614,12 +614,6 @@ loggedTest(
     await expect(page.getByText(/vw-1280\.png/)).toHaveCount(0);
     await expect(page.getByText("The snapshot you are viewing")).toHaveCount(0);
 
-    await screenshot(page, "build-variant-filter", {
-      replacements: {
-        [team.account.slug]: "acme",
-      },
-    });
-
     // The switchers still offer the siblings the filter excludes, so the
     // reviewer can walk straight out of their own filter. The list cannot show
     // where they are, so the sidebar says so rather than leaving them on a
@@ -635,6 +629,15 @@ loggedTest(
       .click({ button: "right" });
     await page.getByRole("option", { name: "Remove from filters" }).click();
     await expect(viewportChip).toHaveCount(0);
+
+    // Re-opened, the row has to read the filter as it stands now: the menu is
+    // held at what it said only while it animates out.
+    await variants
+      .getByRole("link", { name: "390px, Added" })
+      .click({ button: "right" });
+    await expect(
+      page.getByRole("option", { name: "Add to filters" }),
+    ).toBeVisible();
   },
 );
 
@@ -674,12 +677,6 @@ loggedTest(
     await expect(
       page.getByText("The snapshot you are viewing is filtered out."),
     ).toBeVisible();
-
-    await screenshot(page, "build-filters-no-match", {
-      replacements: {
-        [team.account.slug]: "acme",
-      },
-    });
 
     await page.getByRole("button", { name: "Clear filters" }).click();
     await expect(

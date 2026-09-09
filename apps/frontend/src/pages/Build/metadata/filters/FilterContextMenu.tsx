@@ -47,13 +47,20 @@ export function FilterContextMenu(props: {
     filterState?.filterGroups.some((group) => group.filterKeys.has(filterKey)),
   );
 
+  const isActive = Boolean(filterState?.active.has(filterKey));
+  // The row must not flip under the pointer as the menu animates out, so it is
+  // held at what it read while the menu was open — and re-read on the next
+  // open, or a second right-click still offers to remove a filter already gone.
+  const [rowIsActive, setRowIsActive] = useState(isActive);
+  if (isOpen && rowIsActive !== isActive) {
+    setRowIsActive(isActive);
+  }
+
   if (!filterState || !isFilterable) {
     // Cloned rather than returned bare: `rest` is the outer tooltip's trigger
     // props, and dropping them takes the tooltip down with the menu.
     return cloneElement(children, rest);
   }
-
-  const isActive = filterState.active.has(filterKey);
 
   return (
     <MenuRoot open={isOpen} onOpenChange={setIsOpen}>
@@ -73,7 +80,7 @@ export function FilterContextMenu(props: {
         {children}
       </MenuTrigger>
       <FilterIndicatorMenu
-        isActive={isActive}
+        isActive={rowIsActive}
         onToggle={() => {
           // Adding rather than replacing: a reviewer narrowing to two viewports
           // builds the set up one right-click at a time, and replacing would
@@ -98,10 +105,7 @@ function FilterIndicatorMenu(props: {
   onToggle: () => void;
 }) {
   const { isActive, onToggle } = props;
-  // Frozen at open time: toggling flips `isActive` while the menu is still
-  // animating out, and the label must not change under the pointer.
-  const [initialIsActive] = useState(isActive);
-  const action = initialIsActive
+  const action = isActive
     ? { icon: FunnelXIcon, label: "Remove from filters" }
     : { icon: FunnelPlusIcon, label: "Add to filters" };
 
