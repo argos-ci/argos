@@ -46,6 +46,7 @@ export function FilterIcon(props: { filter: Filter; className?: string }) {
     case FilterCategory.storyTag:
     case FilterCategory.snapshotTag:
     case FilterCategory.storyKind:
+    case FilterCategory.storyMode:
       return null;
 
     default:

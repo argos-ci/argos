@@ -6,6 +6,7 @@ import {
 } from "../apps/backend/src/database/models";
 import {
   BuildScenario,
+  createBuildScenario,
   createFallbackBaselineScenario,
   createSiblingBuildsScenario,
   createVariantSwitchersScenario,
@@ -554,5 +555,135 @@ loggedTest(
     await expect(
       page.getByRole("heading", { name: snapshotName("chromium", 390) }),
     ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "filters from a variant segment and follows it",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build, variantKey } = await createVariantSwitchersScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    const variants = page.getByRole("group", { name: "Snapshot variants" });
+    const snapshotName = (browser: string, width: number) =>
+      new RegExp(
+        `^${browser}/${variantKey.replaceAll("/", "\\/")} vw-${width}\\.png$`,
+      );
+
+    await expect(
+      page.getByRole("heading", { name: snapshotName("chromium", 1280) }),
+    ).toBeVisible();
+
+    // Filtering on a viewport the snapshot on screen does not have would drop
+    // that snapshot out of the list under it, so the filter takes the reviewer
+    // to the sibling it names — the same place a left click would have gone.
+    await variants
+      .getByRole("link", { name: "390px, Added" })
+      .click({ button: "right" });
+
+    await expect(
+      page.getByRole("option", { name: "Add to filters" }),
+    ).toBeVisible();
+    await screenshot(page, "build-variant-filter-menu", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await page.getByRole("option", { name: "Add to filters" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: snapshotName("chromium", 390) }),
+    ).toBeVisible();
+    const viewportChip = page.getByRole("button", {
+      name: "Remove Viewport filter",
+    });
+    await expect(viewportChip).toBeVisible();
+
+    // Only the 390 siblings are left in the list, and the notice that calls out
+    // a snapshot filtered out from under itself stays away.
+    await expect(page.getByText(/vw-1280\.png/)).toHaveCount(0);
+    await expect(page.getByText("The snapshot you are viewing")).toHaveCount(0);
+
+    await screenshot(page, "build-variant-filter", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    // The switchers still offer the siblings the filter excludes, so the
+    // reviewer can walk straight out of their own filter. The list cannot show
+    // where they are, so the sidebar says so rather than leaving them on a
+    // snapshot no row points at.
+    await variants.getByRole("link", { name: "1280px, Changed" }).click();
+    await expect(
+      page.getByText("The snapshot you are viewing is filtered out."),
+    ).toBeVisible();
+
+    // And back off the same segment, which now reads as the way out.
+    await variants
+      .getByRole("link", { name: "390px, Added" })
+      .click({ button: "right" });
+    await page.getByRole("option", { name: "Remove from filters" }).click();
+    await expect(viewportChip).toHaveCount(0);
+  },
+);
+
+loggedTest(
+  "says which of the two emptied the snapshot list",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const builds = await createBuildScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    await page
+      .getByRole("button", {
+        name: /^(Browse test failures|Start review|Browse snapshots)/,
+      })
+      .click();
+
+    // Two categories that do not overlap: the stories captured on Firefox are
+    // never the hero ones. An intersection is the only way to empty the list
+    // without emptying the build, which is exactly the case the build's own
+    // "no screenshots" state gets wrong.
+    const addFilter = async (category: string, value: RegExp) => {
+      await page.keyboard.press("f");
+      await page.getByRole("option", { name: category }).click();
+      await page.getByRole("option", { name: value }).click();
+      await page.keyboard.press("Escape");
+    };
+    await addFilter("Story kind", /gallery-hero/);
+    await addFilter("Browser", /firefox/);
+
+    // Not "follow one of our quickstart guides": the build has screenshots, the
+    // filters just leave none, and the reviewer needs to be told which.
+    await expect(
+      page.getByText("No screenshot matches the current filters."),
+    ).toBeVisible();
+    await expect(
+      page.getByText("The snapshot you are viewing is filtered out."),
+    ).toBeVisible();
+
+    await screenshot(page, "build-filters-no-match", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await page.getByRole("button", { name: "Clear filters" }).click();
+    await expect(
+      page.getByText("No screenshot matches the current filters."),
+    ).toHaveCount(0);
   },
 );

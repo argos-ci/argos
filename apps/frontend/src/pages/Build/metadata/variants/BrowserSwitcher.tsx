@@ -11,6 +11,9 @@ import { Tooltip } from "@/ui/Tooltip";
 import type { Diff } from "../../BuildDiffState";
 import { BrowserIcon } from "../browser/BrowserIcon";
 import { getBrowserLabel } from "../browser/browserLabels";
+import { FilterContextMenu } from "../filters/FilterContextMenu";
+import { getFilterKey } from "../filters/util";
+import { MetadataCategory } from "../metadataCategories";
 import {
   getUniqueBrowsers,
   hashBrowser,
@@ -58,7 +61,7 @@ export function BrowserSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             key={key}
             browser={browser}
             status={getVariantStatus(resolvedDiff)}
-            aria-current={isActive ? "page" : undefined}
+            isActive={isActive}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
           />
@@ -72,38 +75,48 @@ function BrowserLinkButton(props: {
   browser: MetadataBrowser;
   status: VariantStatus | null;
   href: string;
+  isActive: boolean;
   shortcutEnabled: boolean;
-  "aria-current"?: "page";
 }) {
-  const { browser, status, shortcutEnabled, ...rest } = props;
+  const { browser, status, href, isActive, shortcutEnabled } = props;
   const navigate = useNavigate();
   const label = getBrowserLabel(browser.name);
   const tooltipContent = withVariantStatus(
     `${label} v${browser.version}`,
     status,
   );
-  const hotkey = useBuildHotkey("switchBrowser", () => navigate(props.href), {
+  const hotkey = useBuildHotkey("switchBrowser", () => navigate(href), {
     enabled: shortcutEnabled,
   });
-
   const button = (
-    // The logo is the label: browsers are the one dimension whose icons anyone
-    // reviewing snapshots can already tell apart. The name stays for a screen
-    // reader, and the version for the tooltip.
-    //
-    // Still `iconOnly` with the status marker beside the logo: that is what
-    // sizes both icons alike and keeps the segment as tall as the text ones.
-    // `gap-1` because `iconOnly` expects the one child it is named for.
-    <LinkButton
-      {...rest}
-      variant="secondary"
-      iconOnly
-      className="gap-1"
-      aria-label={withVariantStatus(label, status)}
+    // Keyed on the name alone, which is all the filter knows: filtering from a
+    // Chrome 121 segment covers every Chrome the build captured.
+    <FilterContextMenu
+      filterKey={getFilterKey({
+        category: MetadataCategory.browser,
+        value: browser.name,
+      })}
+      onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
     >
-      <BrowserIcon browser={browser} />
-      {status ? <VariantStatusIcon status={status} /> : null}
-    </LinkButton>
+      {/* The logo is the label: browsers are the one dimension whose icons
+          anyone reviewing snapshots can already tell apart. The name stays for
+          a screen reader, and the version for the tooltip.
+
+          Still `iconOnly` with the status marker beside the logo: that is what
+          sizes both icons alike and keeps the segment as tall as the text ones.
+          `gap-1` because `iconOnly` expects the one child it is named for. */}
+      <LinkButton
+        href={href}
+        aria-current={isActive ? "page" : undefined}
+        variant="secondary"
+        iconOnly
+        className="gap-1"
+        aria-label={withVariantStatus(label, status)}
+      >
+        <BrowserIcon browser={browser} />
+        {status ? <VariantStatusIcon status={status} /> : null}
+      </LinkButton>
+    </FilterContextMenu>
   );
 
   if (!shortcutEnabled) {

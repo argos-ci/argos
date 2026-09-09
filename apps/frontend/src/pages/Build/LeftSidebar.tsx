@@ -14,6 +14,7 @@ import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
+import { OutOfFilterNotice } from "./metadata/filters/OutOfFilterNotice";
 
 const _BuildFragment = graphql(`
   fragment BuildLeftSidebar_Build on Build {
@@ -149,6 +150,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
       {searchMode ? (
         <div className="flex min-h-0 flex-1 flex-col">
           <FilterChips />
+          <OutOfFilterNotice />
           <BuildDiffList />
         </div>
       ) : (
@@ -159,6 +161,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
               className="flex min-h-0 flex-1 flex-col"
             >
               <FilterChips />
+              <OutOfFilterNotice />
               <BuildDiffList />
             </TabPanel>
           ) : null}

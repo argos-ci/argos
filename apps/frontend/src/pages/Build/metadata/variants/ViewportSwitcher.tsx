@@ -9,6 +9,9 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
+import { FilterContextMenu } from "../filters/FilterContextMenu";
+import { getFilterKey } from "../filters/util";
+import { MetadataCategory } from "../metadataCategories";
 import {
   getUniqueViewports,
   hashViewport,
@@ -16,6 +19,7 @@ import {
   useGetDiffPath,
   type MetadataViewport,
 } from "../utils";
+import { formatViewport } from "../viewports/util";
 import { findVariantSibling } from "./sibling";
 import {
   getVariantStatus,
@@ -56,7 +60,7 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             key={key}
             viewport={viewport}
             status={getVariantStatus(resolvedDiff)}
-            aria-current={isActive ? "page" : undefined}
+            isActive={isActive}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
           />
@@ -70,32 +74,41 @@ function ViewportLinkButton(props: {
   viewport: MetadataViewport;
   status: VariantStatus | null;
   href: string;
+  isActive: boolean;
   shortcutEnabled: boolean;
-  "aria-current"?: "page";
 }) {
-  const { viewport, status, shortcutEnabled, ...rest } = props;
+  const { viewport, status, href, isActive, shortcutEnabled } = props;
   const navigate = useNavigate();
-  const hotkey = useBuildHotkey("switchViewport", () => navigate(props.href), {
+  const hotkey = useBuildHotkey("switchViewport", () => navigate(href), {
     enabled: shortcutEnabled,
   });
   const content = withVariantStatus(tooltipContent(viewport), status);
 
   const button = (
-    // The width alone: it is what tells siblings apart, and the height and the
-    // unit are the same for all of them — the tooltip carries both.
-    <LinkButton
-      {...rest}
-      variant="secondary"
-      aria-label={
-        status ? withVariantStatus(`${viewport.width}px`, status) : undefined
-      }
+    <FilterContextMenu
+      filterKey={getFilterKey({
+        category: MetadataCategory.viewport,
+        value: formatViewport(viewport),
+      })}
+      onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
     >
-      <span className="align-baseline">
-        {viewport.width}
-        <small className="ml-px">px</small>
-      </span>
-      {status ? <VariantStatusButtonIcon status={status} /> : null}
-    </LinkButton>
+      {/* The width alone: it is what tells siblings apart, and the height and
+          the unit are the same for all of them — the tooltip carries both. */}
+      <LinkButton
+        href={href}
+        aria-current={isActive ? "page" : undefined}
+        variant="secondary"
+        aria-label={
+          status ? withVariantStatus(`${viewport.width}px`, status) : undefined
+        }
+      >
+        <span className="align-baseline">
+          {viewport.width}
+          <small className="ml-px">px</small>
+        </span>
+        {status ? <VariantStatusButtonIcon status={status} /> : null}
+      </LinkButton>
+    </FilterContextMenu>
   );
 
   if (!shortcutEnabled) {

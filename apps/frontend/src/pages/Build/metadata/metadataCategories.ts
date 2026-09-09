@@ -3,6 +3,7 @@ import {
   GlobeIcon,
   MonitorSmartphoneIcon,
   PrinterIcon,
+  SlidersHorizontalIcon,
   SunMoonIcon,
   TagIcon,
 } from "lucide-react";
@@ -13,6 +14,7 @@ export const MetadataCategory = {
   colorScheme: "colorScheme",
   mediaType: "mediaType",
   storyKind: "storyKind",
+  storyMode: "storyMode",
   storyTag: "storyTag",
   snapshotTag: "snapshotTag",
   testTag: "testTag",
@@ -46,6 +48,11 @@ const metadataCategoryDefinitions = {
     label: "Story kind",
     pluralLabel: "kinds",
     icon: BookMarkedIcon,
+  },
+  [MetadataCategory.storyMode]: {
+    label: "Story mode",
+    pluralLabel: "modes",
+    icon: SlidersHorizontalIcon,
   },
   [MetadataCategory.storyTag]: {
     label: "Story tag",

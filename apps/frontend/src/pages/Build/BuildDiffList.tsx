@@ -1,5 +1,6 @@
 import {
   memo,
+  use,
   useCallback,
   useEffect,
   useMemo,
@@ -64,6 +65,7 @@ import {
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { FilterStateContext } from "./metadata/filters/FilterState";
 
 const DIFF_IMAGE_CONFIG = {
   maxWidth: 262,
@@ -667,6 +669,7 @@ const InternalBuildDiffList = memo(() => {
     isSubsetBuild,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
+  const filterState = use(FilterStateContext);
   const rows = useMemo(
     () => getRows(groups, expanded, results, searchMode),
     [groups, expanded, results, searchMode],
@@ -848,6 +851,22 @@ const InternalBuildDiffList = memo(() => {
               .filter((x) => x);
 
             if (virtualItems.length === 0 && !searchMode) {
+              // The build having no screenshots and the filters leaving none
+              // are the same empty list, and the quickstart guide is nonsense
+              // advice for the second.
+              if (filterState && filterState.active.size > 0) {
+                return (
+                  <EmptyState>
+                    <EmptyStateIcon>
+                      <ImagesIcon />
+                    </EmptyStateIcon>
+                    <Heading>No screenshots</Heading>
+                    <Text slot="description">
+                      No screenshot matches the current filters.
+                    </Text>
+                  </EmptyState>
+                );
+              }
               return <NoScreenshotsBuildEmptyState />;
             }
 

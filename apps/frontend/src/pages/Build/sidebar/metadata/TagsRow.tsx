@@ -4,7 +4,7 @@ import { TagIcon } from "lucide-react";
 import { Chip, type ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { FilterableIndicator } from "../../metadata/filters/FilterableIndicator";
+import { FilterableIndicator } from "../../metadata/filters/FilterContextMenu";
 import { getFilterKey } from "../../metadata/filters/util";
 import { MetadataCategory } from "../../metadata/metadataCategories";
 import {
