@@ -11,6 +11,9 @@ const PROJECTS = [
   { __typename: "Project" as const, id: "4", name: "storybook" },
 ];
 
+/** The one project in the fixture whose screenshots come from stories. */
+const STORYBOOK_PROJECT_ID = "4";
+
 const DAY = 24 * 60 * 60 * 1000;
 const START = new Date("2026-06-01T00:00:00Z").getTime();
 const POINTS = 30;
@@ -31,6 +34,7 @@ function buildFixture() {
     __typename: "AccountMetricData" as const,
     total: 0,
     projects: {} as Record<string, number>,
+    storybook: 0,
   };
 
   // Builds per project per bucket, roughly matching real relative volumes.
@@ -56,6 +60,7 @@ function buildFixture() {
     const screenshotCounts: Record<string, number> = {};
     let total = 0;
     let sTotal = 0;
+    let sStorybook = 0;
     for (const project of PROJECTS) {
       const builds = Math.round(buildWeights[project.id]! * wave) + 1;
       const screenshots = builds * screenshotWeights[project.id]!;
@@ -63,6 +68,9 @@ function buildFixture() {
       screenshotCounts[project.id] = screenshots;
       total += builds;
       sTotal += screenshots;
+      if (project.id === STORYBOOK_PROJECT_ID) {
+        sStorybook += screenshots;
+      }
       buildsAll.projects[project.id] =
         (buildsAll.projects[project.id] ?? 0) + builds;
       screenshotsAll.projects[project.id] =
@@ -97,8 +105,10 @@ function buildFixture() {
       ts,
       total: sTotal,
       projects: screenshotCounts,
+      storybook: sStorybook,
     });
     screenshotsAll.total += sTotal;
+    screenshotsAll.storybook += sStorybook;
   }
 
   return {
@@ -165,7 +175,12 @@ export const Empty: Story = {
       },
       screenshots: {
         __typename: "AccountScreenshotMetrics",
-        all: { __typename: "AccountMetricData", total: 0, projects: {} },
+        all: {
+          __typename: "AccountMetricData",
+          total: 0,
+          projects: {},
+          storybook: 0,
+        },
         series: [],
         projects: [],
       },

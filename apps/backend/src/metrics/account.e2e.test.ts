@@ -74,6 +74,39 @@ describe("getAccountScreenshotMetrics", () => {
     },
   );
 
+  it("splits the total by source, clamping buckets that over-report Storybook", async () => {
+    await factory.ScreenshotBucket.createMany(2, [
+      {
+        createdAt: new Date("2021-01-04").toISOString(),
+        projectId: project.id,
+        screenshotCount: 8,
+        storybookScreenshotCount: 3,
+      },
+      // Buckets written before the two counters shared a query can claim more
+      // Storybook screenshots than screenshots.
+      {
+        createdAt: new Date("2021-01-05").toISOString(),
+        projectId: project.id,
+        screenshotCount: 5,
+        storybookScreenshotCount: 9,
+      },
+    ]);
+
+    const results = await getAccountScreenshotMetrics({
+      accountId: project.accountId,
+      from: new Date("2020-12-01"),
+      to: new Date("2021-02-01"),
+      groupBy: "month",
+    });
+
+    // 34 from the shared fixture, plus 8 and 5 here.
+    expect(results.all).toEqual({
+      total: 47,
+      projects: { [project.id]: 47 },
+      storybook: 8,
+    });
+  });
+
   it("does not filter when projectIds is empty", async () => {
     const results = await getAccountScreenshotMetrics({
       accountId: project.accountId,
@@ -86,6 +119,7 @@ describe("getAccountScreenshotMetrics", () => {
     expect(results.all).toEqual({
       total: 34,
       projects: { [project.id]: 34 },
+      storybook: 0,
     });
   });
 });
@@ -240,6 +274,7 @@ describe("getAccountMetrics", () => {
     expect(metrics.screenshots.all).toEqual({
       total: 2,
       projects: { [project.id]: 2 },
+      storybook: 0,
     });
     // Creating the builds above bumped `projects."buildNumber"`, so the factory
     // instance is stale — compare against the current row.
@@ -269,7 +304,11 @@ describe("getAccountMetrics", () => {
       groupBy: "day",
     });
 
-    expect(metrics.screenshots.all).toEqual({ total: 0, projects: {} });
+    expect(metrics.screenshots.all).toEqual({
+      total: 0,
+      projects: {},
+      storybook: 0,
+    });
     expect(metrics.screenshots.projects).toEqual([]);
     expect(metrics.builds.all.total).toBe(0);
     expect(metrics.builds.all.projects).toEqual({});

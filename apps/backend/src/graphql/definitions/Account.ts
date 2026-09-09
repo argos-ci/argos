@@ -99,11 +99,15 @@ export const typeDefs = gql`
     ts: Timestamp!
     total: Int!
     projects: JSONObject!
+    "Screenshots captured from Storybook stories, already counted in the total"
+    storybook: Int!
   }
 
   type AccountMetricData {
     total: Int!
     projects: JSONObject!
+    "Screenshots captured from Storybook stories, already counted in the total"
+    storybook: Int!
   }
 
   type AccountBuildsMetricDataPoint {

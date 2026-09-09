@@ -99,11 +99,13 @@ const AccountQuery = graphql(`
           all {
             total
             projects
+            storybook
           }
           series {
             ts
             total
             projects
+            storybook
           }
           projects {
             id
@@ -395,11 +397,11 @@ export function AnalyticsDashboard(props: {
           color="storybook"
           label="Screenshots"
           value={metrics?.screenshots.all.total ?? null}
-          hint={
-            screenshotsPerPeriod !== null
-              ? `${screenshotsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
-              : null
-          }
+          hint={getScreenshotsHint({
+            perPeriod: screenshotsPerPeriod,
+            groupByLabel,
+            screenshots: metrics.screenshots.all,
+          })}
           visual={
             metrics && metrics.screenshots.all.total > 0 ? (
               <Sparkline
@@ -553,6 +555,13 @@ export function AnalyticsDashboard(props: {
                     to,
                     groupBy,
                   }),
+                  extraColumns: [
+                    { label: "Storybook", get: (serie) => serie.storybook },
+                    {
+                      label: "Other",
+                      get: (serie) => serie.total - serie.storybook,
+                    },
+                  ],
                 });
               }}
             />
@@ -663,6 +672,31 @@ export function AnalyticsDashboard(props: {
       </Section>
     </div>
   );
+}
+
+/**
+ * The Screenshots tile's supporting line.
+ *
+ * The Storybook share only joins it for accounts that capture stories at all —
+ * everywhere else it would be a permanent "0%" saying nothing. `storybook` is
+ * clamped to `total` upstream, so a non-zero share always has a total to divide
+ * by.
+ */
+function getScreenshotsHint(props: {
+  perPeriod: number;
+  groupByLabel: string;
+  screenshots: { total: number; storybook: number };
+}) {
+  const { perPeriod, groupByLabel, screenshots } = props;
+  const average = `${perPeriod.toLocaleString()} avg / ${groupByLabel}`;
+  if (screenshots.storybook === 0) {
+    return average;
+  }
+  const share = (screenshots.storybook / screenshots.total).toLocaleString(
+    navigator.language,
+    { style: "percent", maximumFractionDigits: 0 },
+  );
+  return `${average} · ${share} Storybook`;
 }
 
 function getCSVName(props: {
