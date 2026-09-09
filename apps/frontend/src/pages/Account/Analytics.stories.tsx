@@ -140,7 +140,16 @@ function buildFixture() {
 const meta: Meta<typeof AnalyticsDashboard> = {
   title: "Pages/AnalyticsDashboard",
   component: AnalyticsDashboard,
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    // A page, not a component. Left to the runner's default the dashboard
+    // renders around 600px wide, where the tile band drops to two columns and
+    // every chart is squeezed into a column thousands of pixels tall. Pin a
+    // desktop viewport and screenshot that, rather than fitting the capture to
+    // content the way a button story wants.
+    viewport: { defaultViewport: 1440 },
+    argos: { fitToContent: false },
+  },
   decorators: [
     (Story) => (
       <div className="bg-subtle min-h-screen p-10">
