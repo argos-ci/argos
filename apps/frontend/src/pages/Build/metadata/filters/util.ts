@@ -113,14 +113,6 @@ function getFiltersFromDiffs(diffs: Diff[]): {
       });
     }
 
-    if (metadata.story?.mode) {
-      addFilter({
-        category: MetadataCategory.storyMode,
-        value: metadata.story.mode,
-        label: metadata.story.mode,
-      });
-    }
-
     if (metadata.tags) {
       for (const tag of metadata.tags) {
         addFilter({
@@ -302,13 +294,6 @@ export function diffMatchesFilters(
         case MetadataCategory.storyKind: {
           const storyKind = getStoryKindFromStoryId(metadata.story?.id);
           if (storyKind === value) {
-            matched = true;
-          }
-          break;
-        }
-
-        case MetadataCategory.storyMode: {
-          if (metadata.story?.mode === value) {
             matched = true;
           }
           break;

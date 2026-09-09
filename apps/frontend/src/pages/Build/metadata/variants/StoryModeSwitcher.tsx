@@ -9,9 +9,6 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
-import { FilterContextMenu } from "../filters/FilterContextMenu";
-import { getFilterKey } from "../filters/util";
-import { MetadataCategory } from "../metadataCategories";
 import {
   getUniqueStoryModes,
   resolveDiffMetadata,
@@ -56,7 +53,7 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
             key={mode}
             mode={mode}
             status={getVariantStatus(resolvedDiff)}
-            isActive={isActive}
+            aria-current={isActive ? "page" : undefined}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}
           />
@@ -70,36 +67,27 @@ function StoryModeLinkButton(props: {
   mode: string;
   status: VariantStatus | null;
   href: string;
-  isActive: boolean;
   shortcutEnabled: boolean;
+  "aria-current"?: "page";
 }) {
-  const { mode, status, href, isActive, shortcutEnabled } = props;
+  const { mode, status, shortcutEnabled, ...rest } = props;
   const navigate = useNavigate();
-  const hotkey = useBuildHotkey("switchStoryMode", () => navigate(href), {
+  const hotkey = useBuildHotkey("switchStoryMode", () => navigate(props.href), {
     enabled: shortcutEnabled,
   });
   const content = withVariantStatus(`Story mode: ${mode}`, status);
 
+  // No icon of its own: a mode is named by whoever wrote the story, so the name
+  // is the only thing that tells one from another.
   const button = (
-    <FilterContextMenu
-      filterKey={getFilterKey({
-        category: MetadataCategory.storyMode,
-        value: mode,
-      })}
-      onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
+    <LinkButton
+      {...rest}
+      variant="secondary"
+      aria-label={status ? withVariantStatus(mode, status) : undefined}
     >
-      {/* No icon of its own: a mode is named by whoever wrote the story, so the
-          name is the only thing that tells one from another. */}
-      <LinkButton
-        href={href}
-        aria-current={isActive ? "page" : undefined}
-        variant="secondary"
-        aria-label={status ? withVariantStatus(mode, status) : undefined}
-      >
-        {mode}
-        {status ? <VariantStatusButtonIcon status={status} /> : null}
-      </LinkButton>
-    </FilterContextMenu>
+      {mode}
+      {status ? <VariantStatusButtonIcon status={status} /> : null}
+    </LinkButton>
   );
 
   if (!shortcutEnabled) {
