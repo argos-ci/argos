@@ -269,6 +269,24 @@ describe("LatestAutomationRun loader", () => {
     expect(runB?.id).toBe(newestB.id);
     expect(none).toBeNull();
   });
+
+  it("breaks a tie on `createdAt` with the highest id", async () => {
+    const rule = await factory.AutomationRule.create();
+    const createdAt = "2026-01-01T00:00:00.000Z";
+    await factory.AutomationRun.create({
+      automationRuleId: rule.id,
+      createdAt,
+    });
+    const last = await factory.AutomationRun.create({
+      automationRuleId: rule.id,
+      createdAt,
+    });
+
+    const loaders = createLoaders();
+    const run = await loaders.LatestAutomationRun.load(rule.id);
+
+    expect(run?.id).toBe(last.id);
+  });
 });
 
 describe("ChangeOccurrencesSince loader", () => {

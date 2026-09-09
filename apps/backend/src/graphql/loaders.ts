@@ -121,18 +121,15 @@ function createLatestAutomationRunLoader() {
               select *
               from "automation_runs"
               where "automation_runs"."automationRuleId" = t."automationRuleId"
-              order by "automation_runs"."createdAt" desc
+              order by "automation_runs"."createdAt" desc, "automation_runs"."id" desc
               limit 1
             ) as automation_runs on true
           `,
         );
-      const latestRunsMap = latestRuns.reduce<Record<string, AutomationRun>>(
-        (map, run) => ({
-          ...map,
-          [run.automationRuleId]: run,
-        }),
-        {},
-      );
+      const latestRunsMap: Record<string, AutomationRun> = {};
+      for (const run of latestRuns) {
+        latestRunsMap[run.automationRuleId] = run;
+      }
       return automationRuleIds.map((id) => latestRunsMap[id] ?? null);
     },
   );
@@ -140,32 +137,43 @@ function createLatestAutomationRunLoader() {
 
 function createLatestProjectBuildLoader() {
   return new DataLoader<string, Build | null>(async (projectIds) => {
-    const valuesSql = projectIds.map(() => "(?::bigint)").join(", ");
+    return Sentry.startSpan(
+      {
+        name: "LatestProjectBuildLoader",
+        attributes: { "argos.project.count": projectIds.length },
+      },
+      async () => {
+        const valuesSql = projectIds.map(() => "(?::bigint)").join(", ");
 
-    // The ordering must stay a prefix-match of
-    // `builds_projectid_createdat_number_idx`, otherwise each key stops being a
-    // single index descent and starts sorting the project's builds again.
-    const latestBuilds = await Build.query()
-      .select("builds.*")
-      .from(
-        Build.raw(`(values ${valuesSql}) as t("projectId")`, [...projectIds]),
-      )
-      .joinRaw(
-        `
-          join lateral (
-            select *
-            from "builds"
-            where "builds"."projectId" = t."projectId"
-            order by "builds"."createdAt" desc, "builds"."number" desc
-            limit 1
-          ) as builds on true
-        `,
-      );
-    const latestBuildsMap: Record<string, Build> = {};
-    for (const build of latestBuilds) {
-      latestBuildsMap[build.projectId] = build;
-    }
-    return projectIds.map((id) => latestBuildsMap[id] ?? null);
+        // `number desc` only breaks ties on `createdAt`, which the second
+        // between two builds of a busy project makes real. It costs nothing:
+        // `builds_projectid_createdat_number_idx` already carries it, so the
+        // lateral stays a single descent either way.
+        const latestBuilds = await Build.query()
+          .select("builds.*")
+          .from(
+            Build.raw(`(values ${valuesSql}) as t("projectId")`, [
+              ...projectIds,
+            ]),
+          )
+          .joinRaw(
+            `
+              join lateral (
+                select *
+                from "builds"
+                where "builds"."projectId" = t."projectId"
+                order by "builds"."createdAt" desc, "builds"."number" desc
+                limit 1
+              ) as builds on true
+            `,
+          );
+        const latestBuildsMap: Record<string, Build> = {};
+        for (const build of latestBuilds) {
+          latestBuildsMap[build.projectId] = build;
+        }
+        return projectIds.map((id) => latestBuildsMap[id] ?? null);
+      },
+    );
   });
 }
 
@@ -186,12 +194,11 @@ function createLatestProductionDeploymentByProjectLoader() {
             select *
             from "deployments"
             where "deployments"."projectId" = t."projectId"
-              and "deployments"."environment" = ?
+              and "deployments"."environment" = 'production'
             order by "deployments"."createdAt" desc, "deployments"."id" desc
             limit 1
           ) as deployments on true
         `,
-        ["production"],
       );
     const latestDeploymentsMap: Record<string, Deployment> = {};
     for (const deployment of latestDeployments) {
@@ -1687,44 +1694,54 @@ function createLatestChangeDiffLoader() {
     string
   >(
     async (changes) => {
-      const valuesSql = changes.map(() => "(?::bigint, ?::text)").join(", ");
-      const bindings = changes.flatMap(({ testId, fingerprint }) => [
-        testId,
-        fingerprint,
-      ]);
+      return Sentry.startSpan(
+        {
+          name: "LatestChangeDiffLoader",
+          attributes: { "argos.change.count": changes.length },
+        },
+        async () => {
+          const valuesSql = changes
+            .map(() => "(?::bigint, ?::text)")
+            .join(", ");
+          const bindings = changes.flatMap(({ testId, fingerprint }) => [
+            testId,
+            fingerprint,
+          ]);
 
-      // The filter and the ordering match
-      // `screenshot_diffs_testid_fingerprint_id_desc_notnull_idx`, so each key
-      // reads a single index entry.
-      const rows = await ScreenshotDiff.query()
-        .select("screenshot_diffs.*")
-        .from(
-          ScreenshotDiff.raw(
-            `(values ${valuesSql}) as t("testId", "fingerprint")`,
-            bindings,
-          ),
-        )
-        .joinRaw(
-          `
-            join lateral (
-              select *
-              from "screenshot_diffs"
-              where "screenshot_diffs"."testId" = t."testId"
-                and "screenshot_diffs"."fingerprint" = t."fingerprint"
-                and "screenshot_diffs"."fileId" is not null
-              order by "screenshot_diffs"."id" desc
-              limit 1
-            ) as screenshot_diffs on true
-          `,
-        );
+          // The filter and the ordering match
+          // `screenshot_diffs_testid_fingerprint_id_desc_notnull_idx`, so each
+          // key reads a single index entry.
+          const rows = await ScreenshotDiff.query()
+            .select("screenshot_diffs.*")
+            .from(
+              ScreenshotDiff.raw(
+                `(values ${valuesSql}) as t("testId", "fingerprint")`,
+                bindings,
+              ),
+            )
+            .joinRaw(
+              `
+                join lateral (
+                  select *
+                  from "screenshot_diffs"
+                  where "screenshot_diffs"."testId" = t."testId"
+                    and "screenshot_diffs"."fingerprint" = t."fingerprint"
+                    and "screenshot_diffs"."fileId" is not null
+                  order by "screenshot_diffs"."id" desc
+                  limit 1
+                ) as screenshot_diffs on true
+              `,
+            );
 
-      const diffByKey = new Map(
-        rows.map((diff) => [`${diff.testId}|${diff.fingerprint}`, diff]),
-      );
+          const diffByKey = new Map(
+            rows.map((diff) => [`${diff.testId}|${diff.fingerprint}`, diff]),
+          );
 
-      return changes.map(
-        ({ testId, fingerprint }) =>
-          diffByKey.get(`${testId}|${fingerprint}`) ?? null,
+          return changes.map(
+            ({ testId, fingerprint }) =>
+              diffByKey.get(`${testId}|${fingerprint}`) ?? null,
+          );
+        },
       );
     },
     { cacheKeyFn: (input) => JSON.stringify(input) },
