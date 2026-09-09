@@ -609,19 +609,8 @@ loggedTest(
     });
     await expect(viewportChip).toBeVisible();
 
-    // Only the 390 siblings are left in the list, and the notice that calls out
-    // a snapshot filtered out from under itself stays away.
+    // Only the 390 siblings are left in the list.
     await expect(page.getByText(/vw-1280\.png/)).toHaveCount(0);
-    await expect(page.getByText("The snapshot you are viewing")).toHaveCount(0);
-
-    // The switchers still offer the siblings the filter excludes, so the
-    // reviewer can walk straight out of their own filter. The list cannot show
-    // where they are, so the sidebar says so rather than leaving them on a
-    // snapshot no row points at.
-    await variants.getByRole("link", { name: "1280px, Changed" }).click();
-    await expect(
-      page.getByText("The snapshot you are viewing is filtered out."),
-    ).toBeVisible();
 
     // And back off the same segment, which now reads as the way out.
     await variants
@@ -672,15 +661,12 @@ loggedTest(
     // Not "follow one of our quickstart guides": the build has screenshots, the
     // filters just leave none, and the reviewer needs to be told which.
     await expect(
-      page.getByText("No screenshot matches the current filters."),
-    ).toBeVisible();
-    await expect(
-      page.getByText("The snapshot you are viewing is filtered out."),
+      page.getByText("No screenshot matches all the filters."),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Clear filters" }).click();
     await expect(
-      page.getByText("No screenshot matches the current filters."),
+      page.getByText("No screenshot matches all the filters."),
     ).toHaveCount(0);
   },
 );

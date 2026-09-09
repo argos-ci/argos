@@ -46,7 +46,7 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
+import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
 import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -839,9 +839,9 @@ const InternalBuildDiffList = memo(() => {
                   <EmptyStateIcon>
                     <ImagesIcon />
                   </EmptyStateIcon>
-                  <Heading>No screenshots</Heading>
+                  <Heading>Nothing to show</Heading>
                   <Text slot="description">
-                    This build has no screenshots matching the current search.
+                    No screenshot matches your search.
                   </Text>
                 </EmptyState>
               );
@@ -861,10 +861,22 @@ const InternalBuildDiffList = memo(() => {
                     <EmptyStateIcon>
                       <ImagesIcon />
                     </EmptyStateIcon>
-                    <Heading>No screenshots</Heading>
+                    {/* A plain heading, so the line under it can state the
+                        case without echoing it. "all" is the word that earns
+                        its place: categories combine, so every filter can have
+                        matches of its own while the intersection has none. */}
+                    <Heading>Nothing to show</Heading>
                     <Text slot="description">
-                      No screenshot matches the current filters.
+                      No screenshot matches all the filters.
                     </Text>
+                    <EmptyStateActions>
+                      <Button
+                        variant="secondary"
+                        onClick={() => filterState.setActive(new Set())}
+                      >
+                        Clear filters
+                      </Button>
+                    </EmptyStateActions>
                   </EmptyState>
                 );
               }
