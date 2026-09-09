@@ -74,17 +74,10 @@ if [ ${#PSQL_ARGS[@]} -gt 0 ] && [ "${RUN_PSQL}" = false ]; then
   exit 1
 fi
 
-if ! command -v aws >/dev/null 2>&1; then
-  echo "aws CLI not found - install it with \`brew install awscli\`." >&2
-  exit 1
-fi
-
 # Fail here with a clear message rather than minting a token signed by nothing
-# and letting Postgres report it as a password failure.
-if ! aws sts get-caller-identity >/dev/null 2>&1; then
-  echo "No usable AWS credentials. Sign in first (\`aws sso login\`), then retry." >&2
-  exit 1
-fi
+# and letting Postgres report it as a password failure. The check prints only to
+# stderr, so it never lands in the token TablePlus reads from stdout.
+"$(dirname "$0")/require-aws-session.sh"
 
 TOKEN=$(aws rds generate-db-auth-token \
   --hostname "${HOST}" \
