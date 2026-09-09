@@ -106,8 +106,9 @@ function FilterIndicatorMenu(props: {
     : { icon: FunnelPlusIcon, label: "Add to filters" };
 
   return (
-    // `search={false}`: a filter box over a single row is furniture.
-    <Menu className="text-sm" aria-label="Actions" search={false}>
+    // One fixed row: a search field over it, and a menu three times wider than
+    // it reads, are both furniture.
+    <Menu className="text-sm" aria-label="Actions" search={false} fitContent>
       <MenuItem icon={<action.icon />} onAction={onToggle}>
         {action.label}
       </MenuItem>

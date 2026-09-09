@@ -223,6 +223,7 @@ function MenuSurface(props: {
   submenu?: boolean;
   side?: BasePopover.Positioner.Props["side"];
   align?: BasePopover.Positioner.Props["align"];
+  fitContent?: boolean;
   className?: string;
 }) {
   const {
@@ -230,6 +231,7 @@ function MenuSurface(props: {
     submenu = false,
     side = "bottom",
     align = "start",
+    fitContent = false,
     className,
     popupId,
   } = props;
@@ -280,7 +282,10 @@ function MenuSurface(props: {
             "flex-col overflow-hidden outline-hidden select-none",
             className,
           )}
-          style={{ minWidth: MENU_MIN_WIDTH, maxWidth: MENU_MAX_WIDTH }}
+          style={{
+            minWidth: fitContent ? undefined : MENU_MIN_WIDTH,
+            maxWidth: MENU_MAX_WIDTH,
+          }}
         >
           {children}
         </BasePopover.Popup>
@@ -428,6 +433,14 @@ export function Menu(props: {
   checkedIndicator?: "icon" | "highlight";
   side?: BasePopover.Positioner.Props["side"];
   align?: BasePopover.Positioner.Props["align"];
+  /**
+   * Let the menu shrink to its rows.
+   *
+   * The floor is there so a dropdown holds its width while a query filters the
+   * list under it. A menu of a couple of fixed rows has nothing to hold still,
+   * and the floor only leaves it half empty.
+   */
+  fitContent?: boolean;
   className?: string;
   popupId?: string;
   "aria-label"?: string;
@@ -460,6 +473,7 @@ function MenuList(
     checkedIndicator = "icon",
     side,
     align,
+    fitContent = false,
     className,
     popupId,
     menuId,
@@ -847,6 +861,7 @@ function MenuList(
     <MenuSurface
       side={side}
       align={align}
+      fitContent={fitContent}
       className={className}
       popupId={popupId}
       submenu={!isRoot}
