@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
 
-import { Account, Plan, Subscription } from "../models";
+import { Account, clampedStorybookCount, Plan, Subscription } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
 
 /** One billing period of an account, priced from the usage it accumulated. */
@@ -163,8 +163,7 @@ type AccountTotals = Map<number, ScreenshotTotals>;
 
 const EMPTY_TOTALS: ScreenshotTotals = { all: 0, storybook: 0 };
 
-/** A bucket's Storybook count, never above the bucket's own total. */
-const CLAMPED_STORYBOOK_COUNT = `least(coalesce(sb."storybookScreenshotCount", 0), coalesce(sb."screenshotCount", 0))`;
+const CLAMPED_STORYBOOK_COUNT = clampedStorybookCount("sb");
 
 /** Rows of `(accountId, index, from, to)` to join the usage tables against. */
 function buildPeriodValues(periods: AccountPeriod[]) {

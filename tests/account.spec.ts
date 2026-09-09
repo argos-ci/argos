@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 
+import { createAnalyticsScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -30,3 +31,16 @@ loggedTest("account analytics", async ({ page, team, auth }) => {
   await expect(page.getByText("Screenshots by Project")).toBeVisible();
   await screenshot(page, "account-analytics");
 });
+
+loggedTest(
+  "account analytics with Storybook screenshots",
+  async ({ page, team, project, auth }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    // 100 Storybook screenshots out of 400 over the last three days.
+    await createAnalyticsScenario({ projectId: project.id });
+
+    await page.goto(`/${team.account.slug}/~/analytics`);
+    await expect(page.getByText("25% Storybook")).toBeVisible();
+    await screenshot(page, "account-analytics-storybook");
+  },
+);

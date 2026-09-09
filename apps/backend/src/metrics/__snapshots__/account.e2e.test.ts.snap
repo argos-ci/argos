@@ -1786,6 +1786,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606780800000,
   },
@@ -1793,6 +1794,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606867200000,
   },
@@ -1800,6 +1802,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606953600000,
   },
@@ -1807,6 +1810,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607040000000,
   },
@@ -1814,6 +1818,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607126400000,
   },
@@ -1821,6 +1826,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607212800000,
   },
@@ -1828,6 +1834,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607299200000,
   },
@@ -1835,6 +1842,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607385600000,
   },
@@ -1842,6 +1850,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607472000000,
   },
@@ -1849,6 +1858,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607558400000,
   },
@@ -1856,6 +1866,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607644800000,
   },
@@ -1863,6 +1874,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607731200000,
   },
@@ -1870,6 +1882,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607817600000,
   },
@@ -1877,6 +1890,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607904000000,
   },
@@ -1884,6 +1898,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607990400000,
   },
@@ -1891,6 +1906,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608076800000,
   },
@@ -1898,6 +1914,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608163200000,
   },
@@ -1905,6 +1922,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608249600000,
   },
@@ -1912,6 +1930,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608336000000,
   },
@@ -1919,6 +1938,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608422400000,
   },
@@ -1926,6 +1946,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608508800000,
   },
@@ -1933,6 +1954,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608595200000,
   },
@@ -1940,6 +1962,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608681600000,
   },
@@ -1947,6 +1970,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608768000000,
   },
@@ -1954,6 +1978,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608854400000,
   },
@@ -1961,6 +1986,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608940800000,
   },
@@ -1968,6 +1994,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609027200000,
   },
@@ -1975,6 +2002,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609113600000,
   },
@@ -1982,6 +2010,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609200000000,
   },
@@ -1989,6 +2018,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609286400000,
   },
@@ -1996,6 +2026,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609372800000,
   },
@@ -2003,6 +2034,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 20,
     },
+    "storybook": 0,
     "total": 20,
     "ts": 1609459200000,
   },
@@ -2010,6 +2042,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 4,
     },
+    "storybook": 0,
     "total": 4,
     "ts": 1609545600000,
   },
@@ -2017,6 +2050,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 10,
     },
+    "storybook": 0,
     "total": 10,
     "ts": 1609632000000,
   },
@@ -2024,6 +2058,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609718400000,
   },
@@ -2031,6 +2066,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609804800000,
   },
@@ -2038,6 +2074,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609891200000,
   },
@@ -2045,6 +2082,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609977600000,
   },
@@ -2052,6 +2090,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610064000000,
   },
@@ -2059,6 +2098,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610150400000,
   },
@@ -2066,6 +2106,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610236800000,
   },
@@ -2073,6 +2114,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610323200000,
   },
@@ -2080,6 +2122,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610409600000,
   },
@@ -2087,6 +2130,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610496000000,
   },
@@ -2094,6 +2138,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610582400000,
   },
@@ -2101,6 +2146,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610668800000,
   },
@@ -2108,6 +2154,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610755200000,
   },
@@ -2115,6 +2162,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610841600000,
   },
@@ -2122,6 +2170,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610928000000,
   },
@@ -2129,6 +2178,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611014400000,
   },
@@ -2136,6 +2186,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611100800000,
   },
@@ -2143,6 +2194,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611187200000,
   },
@@ -2150,6 +2202,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611273600000,
   },
@@ -2157,6 +2210,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611360000000,
   },
@@ -2164,6 +2218,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611446400000,
   },
@@ -2171,6 +2226,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611532800000,
   },
@@ -2178,6 +2234,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611619200000,
   },
@@ -2185,6 +2242,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611705600000,
   },
@@ -2192,6 +2250,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611792000000,
   },
@@ -2199,6 +2258,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611878400000,
   },
@@ -2206,6 +2266,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611964800000,
   },
@@ -2213,6 +2274,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612051200000,
   },
@@ -2220,6 +2282,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2231,6 +2294,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > with projectIds > retu
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;
@@ -2241,6 +2305,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606780800000,
   },
@@ -2248,6 +2313,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606867200000,
   },
@@ -2255,6 +2321,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606953600000,
   },
@@ -2262,6 +2329,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607040000000,
   },
@@ -2269,6 +2337,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607126400000,
   },
@@ -2276,6 +2345,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607212800000,
   },
@@ -2283,6 +2353,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607299200000,
   },
@@ -2290,6 +2361,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607385600000,
   },
@@ -2297,6 +2369,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607472000000,
   },
@@ -2304,6 +2377,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607558400000,
   },
@@ -2311,6 +2385,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607644800000,
   },
@@ -2318,6 +2393,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607731200000,
   },
@@ -2325,6 +2401,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607817600000,
   },
@@ -2332,6 +2409,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607904000000,
   },
@@ -2339,6 +2417,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607990400000,
   },
@@ -2346,6 +2425,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608076800000,
   },
@@ -2353,6 +2433,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608163200000,
   },
@@ -2360,6 +2441,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608249600000,
   },
@@ -2367,6 +2449,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608336000000,
   },
@@ -2374,6 +2457,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608422400000,
   },
@@ -2381,6 +2465,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608508800000,
   },
@@ -2388,6 +2473,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608595200000,
   },
@@ -2395,6 +2481,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608681600000,
   },
@@ -2402,6 +2489,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608768000000,
   },
@@ -2409,6 +2497,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608854400000,
   },
@@ -2416,6 +2505,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608940800000,
   },
@@ -2423,6 +2513,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609027200000,
   },
@@ -2430,6 +2521,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609113600000,
   },
@@ -2437,6 +2529,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609200000000,
   },
@@ -2444,6 +2537,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609286400000,
   },
@@ -2451,6 +2545,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609372800000,
   },
@@ -2458,6 +2553,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 20,
     },
+    "storybook": 0,
     "total": 20,
     "ts": 1609459200000,
   },
@@ -2465,6 +2561,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 4,
     },
+    "storybook": 0,
     "total": 4,
     "ts": 1609545600000,
   },
@@ -2472,6 +2569,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 10,
     },
+    "storybook": 0,
     "total": 10,
     "ts": 1609632000000,
   },
@@ -2479,6 +2577,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609718400000,
   },
@@ -2486,6 +2585,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609804800000,
   },
@@ -2493,6 +2593,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609891200000,
   },
@@ -2500,6 +2601,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609977600000,
   },
@@ -2507,6 +2609,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610064000000,
   },
@@ -2514,6 +2617,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610150400000,
   },
@@ -2521,6 +2625,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610236800000,
   },
@@ -2528,6 +2633,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610323200000,
   },
@@ -2535,6 +2641,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610409600000,
   },
@@ -2542,6 +2649,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610496000000,
   },
@@ -2549,6 +2657,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610582400000,
   },
@@ -2556,6 +2665,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610668800000,
   },
@@ -2563,6 +2673,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610755200000,
   },
@@ -2570,6 +2681,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610841600000,
   },
@@ -2577,6 +2689,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610928000000,
   },
@@ -2584,6 +2697,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611014400000,
   },
@@ -2591,6 +2705,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611100800000,
   },
@@ -2598,6 +2713,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611187200000,
   },
@@ -2605,6 +2721,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611273600000,
   },
@@ -2612,6 +2729,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611360000000,
   },
@@ -2619,6 +2737,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611446400000,
   },
@@ -2626,6 +2745,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611532800000,
   },
@@ -2633,6 +2753,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611619200000,
   },
@@ -2640,6 +2761,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611705600000,
   },
@@ -2647,6 +2769,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611792000000,
   },
@@ -2654,6 +2777,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611878400000,
   },
@@ -2661,6 +2785,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611964800000,
   },
@@ -2668,6 +2793,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612051200000,
   },
@@ -2675,6 +2801,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2686,6 +2813,7 @@ exports[`getAccountScreenshotMetrics > with groupBy day > without projectIds > r
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;
@@ -2696,6 +2824,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > with projectIds > re
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606780800000,
   },
@@ -2703,6 +2832,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > with projectIds > re
     "projects": {
       "1000000": 34,
     },
+    "storybook": 0,
     "total": 34,
     "ts": 1609459200000,
   },
@@ -2710,6 +2840,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > with projectIds > re
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2721,6 +2852,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > with projectIds > re
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;
@@ -2731,6 +2863,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > without projectIds >
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606780800000,
   },
@@ -2738,6 +2871,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > without projectIds >
     "projects": {
       "1000000": 34,
     },
+    "storybook": 0,
     "total": 34,
     "ts": 1609459200000,
   },
@@ -2745,6 +2879,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > without projectIds >
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2756,6 +2891,7 @@ exports[`getAccountScreenshotMetrics > with groupBy month > without projectIds >
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;
@@ -2766,6 +2902,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606694400000,
   },
@@ -2773,6 +2910,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607299200000,
   },
@@ -2780,6 +2918,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607904000000,
   },
@@ -2787,6 +2926,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608508800000,
   },
@@ -2794,6 +2934,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 34,
     },
+    "storybook": 0,
     "total": 34,
     "ts": 1609113600000,
   },
@@ -2801,6 +2942,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609718400000,
   },
@@ -2808,6 +2950,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610323200000,
   },
@@ -2815,6 +2958,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610928000000,
   },
@@ -2822,6 +2966,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611532800000,
   },
@@ -2829,6 +2974,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2840,6 +2986,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > with projectIds > ret
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;
@@ -2850,6 +2997,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1606694400000,
   },
@@ -2857,6 +3005,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607299200000,
   },
@@ -2864,6 +3013,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1607904000000,
   },
@@ -2871,6 +3021,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1608508800000,
   },
@@ -2878,6 +3029,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 34,
     },
+    "storybook": 0,
     "total": 34,
     "ts": 1609113600000,
   },
@@ -2885,6 +3037,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1609718400000,
   },
@@ -2892,6 +3045,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610323200000,
   },
@@ -2899,6 +3053,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1610928000000,
   },
@@ -2906,6 +3061,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1611532800000,
   },
@@ -2913,6 +3069,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
     "projects": {
       "1000000": 0,
     },
+    "storybook": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -2924,6 +3081,7 @@ exports[`getAccountScreenshotMetrics > with groupBy week > without projectIds > 
   "projects": {
     "1000000": 34,
   },
+  "storybook": 0,
   "total": 34,
 }
 `;

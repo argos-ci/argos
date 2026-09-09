@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
-import { Project } from "@/database/models";
+import { clampedStorybookCount, Project } from "@/database/models";
 
 type AccountMetricsGroupBy = "month" | "week" | "day";
 
@@ -97,6 +97,10 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
 
 /**
  * Get the number of screenshots by projects over time.
+ *
+ * `storybook` counts the same screenshots a second way: how many of the period's
+ * total came from Storybook stories. It is a subset of `total`, not a sibling of
+ * it, so the rest of the suite is `total - storybook`.
  */
 export async function getAccountScreenshotMetrics(
   input: AccountMetricsAggregationInput,
@@ -107,7 +111,8 @@ export async function getAccountScreenshotMetrics(
     SELECT
       date_trunc(:groupBy, sb."createdAt") AS date,
       p.id AS "projectId",
-      SUM(sb."screenshotCount") AS value
+      SUM(sb."screenshotCount") AS value,
+      SUM(${clampedStorybookCount("sb")}) AS storybook
     FROM screenshot_buckets sb
     LEFT JOIN projects p ON sb."projectId" = p.id
     WHERE p."accountId" = :accountId
@@ -132,7 +137,8 @@ export async function getAccountScreenshotMetrics(
   SELECT
     s.date,
     jsonb_object_agg(a."projectId", COALESCE(a.value, 0))
-      FILTER (WHERE a."projectId" IS NOT NULL) AS counts
+      FILTER (WHERE a."projectId" IS NOT NULL) AS counts,
+    COALESCE(SUM(a.storybook), 0)::int AS storybook
   FROM series s
   LEFT JOIN aggregated a
     ON s.date = a.date
@@ -149,7 +155,11 @@ export async function getAccountScreenshotMetrics(
   }
   const [result, inputProjects] = await Promise.all([
     knex.raw<{
-      rows: { date: number; counts: Record<string, number> | null }[];
+      rows: {
+        date: number;
+        counts: Record<string, number> | null;
+        storybook: number;
+      }[];
     }>(query, {
       accountId: input.accountId,
       projectIds: input.projectIds,
@@ -183,21 +193,24 @@ export async function getAccountScreenshotMetrics(
       ts: new Date(row.date).getTime(),
       projects: projectCounts,
       total,
+      storybook: row.storybook,
     };
   });
 
   const all = series.reduce<{
     total: number;
     projects: Record<string, number>;
+    storybook: number;
   }>(
     (acc, serie) => {
       acc.total += serie.total;
+      acc.storybook += serie.storybook;
       Object.entries(serie.projects).forEach(([projectId, count]) => {
         acc.projects[projectId] = (acc.projects[projectId] ?? 0) + count;
       });
       return acc;
     },
-    { total: 0, projects: {} },
+    { total: 0, projects: {}, storybook: 0 },
   );
 
   return { series, all, projects };

@@ -3603,3 +3603,67 @@ export async function createInvoicesScenario(input: {
     })),
   );
 }
+
+/**
+ * Three days of capture, part of it from Storybook stories, dated inside the
+ * analytics page's default period so the dashboard has something to aggregate.
+ *
+ * The counts are deliberately round: the page derives a percentage from them,
+ * and a test asserting "25% Storybook" should fail because the aggregation
+ * broke, not because the arithmetic drifted.
+ */
+export async function createAnalyticsScenario(input: {
+  projectId: string;
+}): Promise<{ screenshotCount: number; storybookScreenshotCount: number }> {
+  const { projectId } = input;
+
+  const days = [
+    {
+      daysAgo: 3,
+      commit: "8f14e45fceea167a5a36dedd4bea2543f6e1a2b3",
+      screenshotCount: 120,
+      storybookScreenshotCount: 30,
+    },
+    {
+      daysAgo: 2,
+      commit: "c9f0f895fb98ab9159f51fd0297e236d1a2b3c4d",
+      screenshotCount: 80,
+      storybookScreenshotCount: 20,
+    },
+    {
+      daysAgo: 1,
+      commit: "45c48cce2e2d7fbdea1afc51c7c6ad26a3b4c5d6",
+      screenshotCount: 200,
+      storybookScreenshotCount: 50,
+    },
+  ];
+
+  await ScreenshotBucket.query().insert(
+    days.map((day) => {
+      const createdAt = new Date(
+        Date.now() - day.daysAgo * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      return {
+        name: "default",
+        commit: day.commit,
+        branch: "main",
+        projectId,
+        complete: true,
+        valid: true,
+        screenshotCount: day.screenshotCount,
+        storybookScreenshotCount: day.storybookScreenshotCount,
+        createdAt,
+        updatedAt: createdAt,
+      };
+    }),
+  );
+
+  return days.reduce(
+    (totals, day) => ({
+      screenshotCount: totals.screenshotCount + day.screenshotCount,
+      storybookScreenshotCount:
+        totals.storybookScreenshotCount + day.storybookScreenshotCount,
+    }),
+    { screenshotCount: 0, storybookScreenshotCount: 0 },
+  );
+}

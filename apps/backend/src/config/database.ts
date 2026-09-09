@@ -35,10 +35,9 @@ function getPassword(config: Config): string | (() => Promise<string>) {
       // An AWS session expires while the process keeps running, and the SDK
       // failure would otherwise surface as a connection error naming neither
       // AWS nor what to do about it.
-      throw new Error(
-        `No AWS session - could not sign an RDS IAM token for "${username}". Run \`aws login\`, then retry.`,
-        { cause: error },
-      );
+      throw new Error(`No AWS session. ¨Please run \`aws login\` and retry.`, {
+        cause: error,
+      });
     }
   };
 }

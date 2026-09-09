@@ -59,7 +59,14 @@ const MetricDataSchema = z.object({
   projects: MetricProjectsSchema,
 });
 
-const MetricDataPointSchema = MetricDataSchema.extend({
+const ScreenshotMetricDataSchema = MetricDataSchema.extend({
+  storybook: z.number().int().meta({
+    description:
+      "Screenshots captured from Storybook stories. Already included in `total`, so the rest of the test suite is `total - storybook`.",
+  }),
+});
+
+const ScreenshotMetricDataPointSchema = ScreenshotMetricDataSchema.extend({
   ts: z.number().int().meta({
     description: "Unix timestamp in milliseconds at the start of the period.",
   }),
@@ -86,8 +93,8 @@ const MetricProjectSchema = z.object({
 const AccountAnalyticsSchema = z
   .object({
     screenshots: z.object({
-      series: z.array(MetricDataPointSchema),
-      all: MetricDataSchema,
+      series: z.array(ScreenshotMetricDataPointSchema),
+      all: ScreenshotMetricDataSchema,
       projects: z.array(MetricProjectSchema),
     }),
     builds: z.object({

@@ -139,7 +139,11 @@ describe("getAccountAnalytics", () => {
       .set("Authorization", `Bearer ${patToken}`)
       .expect(200);
 
-    expect(res.body.screenshots.all).toEqual({ total: 0, projects: {} });
+    expect(res.body.screenshots.all).toEqual({
+      total: 0,
+      projects: {},
+      storybook: 0,
+    });
     expect(res.body.screenshots.projects).toEqual([]);
     expect(res.body.builds.all.total).toBe(0);
     expect(res.body.builds.all.projects).toEqual({});

@@ -11,6 +11,18 @@ const PROJECTS = [
   { __typename: "Project" as const, id: "4", name: "storybook" },
 ];
 
+/**
+ * Share of each project's screenshots captured from stories; projects left out
+ * capture none. Storybook counts are per bucket rather than per project, so a
+ * project is never all-or-nothing — and the tile's share must not be readable
+ * off the pie chart's slices.
+ */
+const STORYBOOK_RATIO: Record<string, number | undefined> = {
+  "1": 0.15,
+  "3": 0.4,
+  "4": 0.9,
+};
+
 const DAY = 24 * 60 * 60 * 1000;
 const START = new Date("2026-06-01T00:00:00Z").getTime();
 const POINTS = 30;
@@ -28,9 +40,10 @@ function buildFixture() {
     rejected: 0,
   };
   const screenshotsAll = {
-    __typename: "AccountMetricData" as const,
+    __typename: "AccountScreenshotMetricData" as const,
     total: 0,
     projects: {} as Record<string, number>,
+    storybook: 0,
   };
 
   // Builds per project per bucket, roughly matching real relative volumes.
@@ -56,6 +69,7 @@ function buildFixture() {
     const screenshotCounts: Record<string, number> = {};
     let total = 0;
     let sTotal = 0;
+    let sStorybook = 0;
     for (const project of PROJECTS) {
       const builds = Math.round(buildWeights[project.id]! * wave) + 1;
       const screenshots = builds * screenshotWeights[project.id]!;
@@ -63,6 +77,9 @@ function buildFixture() {
       screenshotCounts[project.id] = screenshots;
       total += builds;
       sTotal += screenshots;
+      sStorybook += Math.round(
+        screenshots * (STORYBOOK_RATIO[project.id] ?? 0),
+      );
       buildsAll.projects[project.id] =
         (buildsAll.projects[project.id] ?? 0) + builds;
       screenshotsAll.projects[project.id] =
@@ -93,12 +110,14 @@ function buildFixture() {
     buildsAll.rejected += rejected;
 
     screenshotsSeries.push({
-      __typename: "AccountMetricDataPoint" as const,
+      __typename: "AccountScreenshotMetricDataPoint" as const,
       ts,
       total: sTotal,
       projects: screenshotCounts,
+      storybook: sStorybook,
     });
     screenshotsAll.total += sTotal;
+    screenshotsAll.storybook += sStorybook;
   }
 
   return {
@@ -121,7 +140,16 @@ function buildFixture() {
 const meta: Meta<typeof AnalyticsDashboard> = {
   title: "Pages/AnalyticsDashboard",
   component: AnalyticsDashboard,
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    // A page, not a component. Left to the runner's default the dashboard
+    // renders around 600px wide, where the tile band drops to two columns and
+    // every chart is squeezed into a column thousands of pixels tall. Pin a
+    // desktop viewport and screenshot that, rather than fitting the capture to
+    // content the way a button story wants.
+    viewport: { defaultViewport: 1440 },
+    argos: { fitToContent: false },
+  },
   decorators: [
     (Story) => (
       <div className="bg-subtle min-h-screen p-10">
@@ -165,7 +193,12 @@ export const Empty: Story = {
       },
       screenshots: {
         __typename: "AccountScreenshotMetrics",
-        all: { __typename: "AccountMetricData", total: 0, projects: {} },
+        all: {
+          __typename: "AccountScreenshotMetricData",
+          total: 0,
+          projects: {},
+          storybook: 0,
+        },
         series: [],
         projects: [],
       },

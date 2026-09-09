@@ -106,3 +106,14 @@ export class ScreenshotBucket extends Model {
   screenshots?: Screenshot[];
   project?: Project;
 }
+
+/**
+ * A bucket's Storybook count, never above the bucket's own total.
+ *
+ * The two counters used to be written by two separate queries, so buckets from
+ * back then can hold more Storybook screenshots than screenshots at all. Left
+ * unclamped, the non-Storybook half of any split comes out negative.
+ */
+export function clampedStorybookCount(alias: "sb" | "screenshot_buckets") {
+  return `least(coalesce(${alias}."storybookScreenshotCount", 0), coalesce(${alias}."screenshotCount", 0))`;
+}
