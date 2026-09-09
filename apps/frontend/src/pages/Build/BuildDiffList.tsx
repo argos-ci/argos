@@ -823,6 +823,7 @@ const InternalBuildDiffList = memo(() => {
           the header that names what you are looking at. */}
       <div
         ref={containerRef}
+        data-testid="diff-list-scroller"
         className="scroll-mask-b-from-95% min-h-0 flex-1 overflow-y-auto"
       >
         <div

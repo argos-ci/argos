@@ -10,6 +10,10 @@ import { diffMatchesFilters } from "./util";
 /**
  * Says out loud that the snapshot on screen is not in the list under it.
  *
+ * Sits under the filter chips at the head of the snapshot list, which is the
+ * list it is talking about — it reads as a caption on that list, not as a
+ * banner about the page.
+ *
  * The active diff is resolved from the URL against the unfiltered index, so a
  * filter that excludes it leaves the viewer on a snapshot no row points at —
  * nothing selected in the list, and the up arrow walking out to the build

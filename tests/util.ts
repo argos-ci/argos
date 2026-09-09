@@ -150,6 +150,30 @@ async function replaceText(
   };
 }
 
+/**
+ * Wait for the snapshot list to stop moving.
+ *
+ * Selecting a diff scrolls the list to it with `behavior: "smooth"`, and the
+ * heading of the diff resolves long before the scroll lands — so a screenshot
+ * taken right after a navigation catches the sidebar at whatever offset the
+ * animation happened to reach, and never twice at the same one.
+ */
+export async function waitForDiffListToSettle(page: Page) {
+  const scroller = page.getByTestId("diff-list-scroller");
+  await expect(scroller).toBeVisible();
+  await expect
+    .poll(
+      async () => {
+        const before = await scroller.evaluate((el) => el.scrollTop);
+        await page.waitForTimeout(100);
+        const after = await scroller.evaluate((el) => el.scrollTop);
+        return before === after;
+      },
+      { timeout: 5_000 },
+    )
+    .toBe(true);
+}
+
 export async function screenshot(
   page: Page,
   name: string,

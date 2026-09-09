@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 
 import { createJourneyScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, screenshot } from "./util";
+import { ensureTeamOwner, screenshot, waitForDiffListToSettle } from "./util";
 
 loggedTest(
   "reviews a change against the journey it happened in",
@@ -82,6 +82,7 @@ loggedTest(
       page.getByRole("heading", { name: "checkout/cart.png" }),
     ).toBeVisible();
 
+    await waitForDiffListToSettle(page);
     await screenshot(page, "build-journey-drawer", {
       replacements: {
         [team.account.slug]: "acme",
