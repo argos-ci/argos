@@ -5,7 +5,7 @@ import { diffInCalendarDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { CreditCardIcon, SearchIcon } from "lucide-react";
-import { parseAsStringEnum, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { Helmet } from "react-helmet";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -851,7 +851,10 @@ function StaffTeamsTable(props: {
 
 function StaffTeamsList() {
   const [openedTeams, setOpenedTeams] = useState<Record<string, boolean>>({});
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const deferredSearch = useDeferredValue(search);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
