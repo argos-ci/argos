@@ -227,7 +227,7 @@ export async function screenshot(
     [data-testid="avatar"] {
       background-color: #4527a0 !important;
     }
-    ${otherOptions.argosCSS ?? ""}  
+    ${otherOptions.argosCSS ?? ""}
     `,
     ...otherOptions,
   });

@@ -114,10 +114,6 @@ export async function createPasskeys(input: {
       backedUp: true,
       aaguid: null,
       name,
-      // A visual test hides a date but still gives it its width, and "Created"
-      // is followed on the same line by "• Synced". Left to default to today,
-      // `createdAt` reads "Sep 9, 2026" one day and "Sep 10, 2026" the next,
-      // and the extra character shifts everything after it.
       createdAt: new Date("2026-06-01T10:00:00Z").toISOString(),
       lastUsedAt: new Date("2026-06-15T10:00:00Z").toISOString(),
     })),
@@ -3826,9 +3822,8 @@ export async function createInvoicesScenario(input: {
 }
 
 /**
- * Three days of capture, part of it from Storybook stories, on fixed dates
- * inside the `period` returned alongside them: the caller opens the dashboard
- * on that window, so the chart aggregates the same days whenever it runs.
+ * Three days of capture, part of it from Storybook stories, dated inside the
+ * analytics page's default period so the dashboard has something to aggregate.
  *
  * The counts are deliberately round: the page derives a percentage from them,
  * and a test asserting "25% Storybook" should fail because the aggregation
@@ -3836,33 +3831,24 @@ export async function createInvoicesScenario(input: {
  */
 export async function createAnalyticsScenario(input: {
   projectId: string;
-}): Promise<{
-  screenshotCount: number;
-  storybookScreenshotCount: number;
-  period: { from: string; to: string };
-}> {
+}): Promise<{ screenshotCount: number; storybookScreenshotCount: number }> {
   const { projectId } = input;
 
-  // Fixed days inside a fixed window, which the caller passes back to the page
-  // as a custom period. Seeded relative to `Date.now()` and read through the
-  // default "last 30 days", the chart plots the same shape every run but
-  // labels its axis with the calendar, so every day is a new baseline.
-  const period = { from: "2026-06-01", to: "2026-06-30" };
   const days = [
     {
-      day: "2026-06-15",
+      daysAgo: 3,
       commit: "8f14e45fceea167a5a36dedd4bea2543f6e1a2b3",
       screenshotCount: 120,
       storybookScreenshotCount: 30,
     },
     {
-      day: "2026-06-16",
+      daysAgo: 2,
       commit: "c9f0f895fb98ab9159f51fd0297e236d1a2b3c4d",
       screenshotCount: 80,
       storybookScreenshotCount: 20,
     },
     {
-      day: "2026-06-17",
+      daysAgo: 1,
       commit: "45c48cce2e2d7fbdea1afc51c7c6ad26a3b4c5d6",
       screenshotCount: 200,
       storybookScreenshotCount: 50,
@@ -3871,7 +3857,9 @@ export async function createAnalyticsScenario(input: {
 
   await ScreenshotBucket.query().insert(
     days.map((day) => {
-      const createdAt = new Date(`${day.day}T12:00:00Z`).toISOString();
+      const createdAt = new Date(
+        Date.now() - day.daysAgo * 24 * 60 * 60 * 1000,
+      ).toISOString();
       return {
         name: "default",
         commit: day.commit,
@@ -3889,11 +3877,10 @@ export async function createAnalyticsScenario(input: {
 
   return days.reduce(
     (totals, day) => ({
-      ...totals,
       screenshotCount: totals.screenshotCount + day.screenshotCount,
       storybookScreenshotCount:
         totals.storybookScreenshotCount + day.storybookScreenshotCount,
     }),
-    { screenshotCount: 0, storybookScreenshotCount: 0, period },
+    { screenshotCount: 0, storybookScreenshotCount: 0 },
   );
 }
