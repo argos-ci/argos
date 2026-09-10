@@ -154,24 +154,52 @@ async function replaceText(
  * Wait for the snapshot list to stop moving.
  *
  * Selecting a diff scrolls the list to it with `behavior: "smooth"`, and the
- * heading of the diff resolves long before the scroll lands — so a screenshot
- * taken right after a navigation catches the sidebar at whatever offset the
- * animation happened to reach, and never twice at the same one.
+ * heading of the diff resolves long before the scroll lands, so a navigation
+ * has to be settled before the next one is driven — otherwise two animations
+ * overlap and the list comes to rest wherever the last one was interrupted,
+ * which is a different offset every run.
+ *
+ * The quiet period is timed inside the page rather than by polling from here:
+ * a loaded machine stretches a round trip as much as it stretches the
+ * animation, so a sampler that pays four of them per attempt reads a moving
+ * list and never agrees with itself.
  */
 export async function waitForDiffListToSettle(page: Page) {
   const scroller = page.getByTestId("diff-list-scroller");
   await expect(scroller).toBeVisible();
-  await expect
-    .poll(
-      async () => {
-        const before = await scroller.evaluate((el) => el.scrollTop);
-        await page.waitForTimeout(100);
-        const after = await scroller.evaluate((el) => el.scrollTop);
-        return before === after;
-      },
-      { timeout: 5_000 },
-    )
-    .toBe(true);
+  await scroller.evaluate(
+    (el, { quietMs, timeoutMs }) =>
+      new Promise<void>((resolve, reject) => {
+        let quiet = 0;
+        const stop = () => {
+          clearTimeout(quiet);
+          clearTimeout(expired);
+          el.removeEventListener("scroll", restartQuietPeriod);
+        };
+        const expired = setTimeout(() => {
+          stop();
+          reject(
+            new Error(`the snapshot list still scrolls after ${timeoutMs}ms`),
+          );
+        }, timeoutMs);
+        const restartQuietPeriod = () => {
+          clearTimeout(quiet);
+          quiet = setTimeout(() => {
+            stop();
+            resolve();
+          }, quietMs);
+        };
+        // The scroll is started by an effect, so it has not necessarily been
+        // scheduled yet when this runs: give it a frame before counting.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            el.addEventListener("scroll", restartQuietPeriod);
+            restartQuietPeriod();
+          }),
+        );
+      }),
+    { quietMs: 300, timeoutMs: 10_000 },
+  );
 }
 
 export async function screenshot(
