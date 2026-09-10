@@ -36,69 +36,111 @@ export const handler = defineNotificationHandler({
     accountName: "Argos",
     accountSlug: "argos",
   },
+  // A heads-up, not a warning: the overage is what a usage-based plan is for,
+  // so the copy informs about the coming invoice instead of urging a cap.
   email: (props) => {
     const { threshold, currency, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
-    const amount = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(threshold);
-    const settingsHref = new URL(
+    const formatAmount = (value: number) =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      }).format(value);
+    const amount = formatAmount(threshold);
+    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
+      .href;
+    const spendManagementHref = new URL(
       `/${props.accountSlug}/settings#spend-management`,
       baseUrl,
     ).href;
+    const content = (() => {
+      switch (threshold) {
+        case 200: {
+          return {
+            intro: (
+              <>
+                <Paragraph>
+                  Your team, <strong>{accountName}</strong>, has used all the
+                  screenshots included in its plan this billing period, plus
+                  additional screenshots for a total of{" "}
+                  <strong>{amount}</strong> so far. They are billed at your
+                  plan’s per-screenshot rate and will appear on your next
+                  invoice.
+                </Paragraph>
+                <Paragraph>
+                  This is exactly what your usage-based plan is for: your builds
+                  keep running and you only pay for what your team actually
+                  uses. We simply want to make sure nothing on your invoice
+                  comes as a surprise.
+                </Paragraph>
+                <Paragraph>
+                  If you would like more visibility on this, you can set a spend
+                  limit from your team settings. Argos will then let you know
+                  when you reach 50%, 75% and 100% of the amount you choose, and
+                  can pause builds at that point if you prefer.
+                </Paragraph>
+              </>
+            ),
+            outro: (
+              <Paragraph>
+                You can check your current usage at any time in your{" "}
+                <Link href={settingsHref}>team settings</Link>, and learn more
+                about{" "}
+                <Link href={spendManagementDocsHref}>spend management</Link> in
+                the documentation. If you have any questions about your usage or
+                your plan, don’t hesitate to reach out.
+              </Paragraph>
+            ),
+          };
+        }
+        case 500: {
+          return {
+            intro: (
+              <>
+                <Paragraph>
+                  Your team, <strong>{accountName}</strong>, has now used{" "}
+                  <strong>{amount}</strong> of additional screenshots this
+                  billing period, on top of the ones included in its plan. They
+                  are billed at your plan’s per-screenshot rate on your next
+                  invoice, and your builds keep running.
+                </Paragraph>
+                <Paragraph>
+                  Argos sends this heads-up at {formatAmount(200)} and {amount}{" "}
+                  of additional usage, and this is the second and last one. If
+                  you would like to keep being notified as your usage grows, you
+                  can set a spend limit: Argos will then let you know at 50%,
+                  75% and 100% of the amount you choose, and can pause builds at
+                  that point if you prefer.
+                </Paragraph>
+              </>
+            ),
+            outro: (
+              <Paragraph>
+                If you have any questions about your usage or your plan, don’t
+                hesitate to reach out.
+              </Paragraph>
+            ),
+          };
+        }
+        default:
+          assertNever(threshold);
+      }
+    })();
     return {
-      subject: `Your team has reached ${amount} of additional screenshot usage`,
+      subject: `Heads-up: ${amount} of additional screenshots this billing period`,
       body: (
         <EmailLayout
-          preview={`${accountName} has spent ${amount} on additional screenshots this billing period, and no spend limit is set.`}
+          preview={`A quick update on ${accountName}’s usage, so your next invoice holds no surprise.`}
           preferencesUrl={ctx.preferencesUrl}
         >
-          <H1>Your team has reached {amount} of additional screenshot usage</H1>
+          <H1>{amount} of additional screenshots this billing period</H1>
           <Hi name={ctx.user.name} />
-          <Paragraph>
-            Your team, <strong>{accountName}</strong>, has used more screenshots
-            than its plan includes this billing period. The additional
-            screenshots now amount to <strong>{amount}</strong>, billed at your
-            plan’s per-screenshot rate on your next invoice. Your builds keep
-            running.
-          </Paragraph>
-          {(() => {
-            switch (threshold) {
-              case 200: {
-                return (
-                  <Paragraph>
-                    <strong>No spend limit is set on your team</strong>, so
-                    nothing caps this cost. Set a spend amount and Argos
-                    notifies you at 50%, 75% and 100% of it, and can pause
-                    builds once it is reached, so your invoice never goes above
-                    what you expect.
-                  </Paragraph>
-                );
-              }
-              case 500: {
-                return (
-                  <Paragraph>
-                    <strong>No spend limit is set on your team</strong>, and
-                    this is the last alert Argos sends without one. Set a spend
-                    amount to stay informed: Argos then notifies you at 50%, 75%
-                    and 100% of it, and can pause builds once it is reached.
-                  </Paragraph>
-                );
-              }
-              default:
-                assertNever(threshold);
-            }
-          })()}
+          {content.intro}
           <Section className="my-4 text-center">
-            <Button href={settingsHref}>Set up spend management</Button>
+            <Button href={spendManagementHref}>Set up spend management</Button>
           </Section>
-          <Paragraph>
-            It takes a minute from your team settings. Learn more about{" "}
-            <Link href={spendManagementDocsHref}>spend management</Link> in the
-            documentation.
-          </Paragraph>
+          {content.outro}
           <Signature />
         </EmailLayout>
       ),
