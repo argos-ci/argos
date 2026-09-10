@@ -36,10 +36,15 @@ loggedTest(
   "account analytics with Storybook screenshots",
   async ({ page, team, project, auth }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
-    // 100 Storybook screenshots out of 400 over the last three days.
-    await createAnalyticsScenario({ projectId: project.id });
+    // 100 Storybook screenshots out of 400 over three fixed days.
+    const { period } = await createAnalyticsScenario({ projectId: project.id });
 
-    await page.goto(`/${team.account.slug}/~/analytics`);
+    // The window the seed was written for. Read through a relative period, the
+    // chart labels its axis with today's calendar and the baseline is stale
+    // tomorrow.
+    await page.goto(
+      `/${team.account.slug}/~/analytics?period=custom&from=${period.from}&to=${period.to}`,
+    );
     await expect(page.getByText("25% Storybook")).toBeVisible();
     await screenshot(page, "account-analytics-storybook");
   },
