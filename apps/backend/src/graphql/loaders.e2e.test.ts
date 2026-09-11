@@ -181,6 +181,114 @@ describe("LatestChangeDiff loader", () => {
   });
 });
 
+describe("LatestProjectBuild loader", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  it("returns the newest build of each project in a batch", async () => {
+    const [projectA, projectB, emptyProject] = await Promise.all([
+      factory.Project.create(),
+      factory.Project.create(),
+      factory.Project.create(),
+    ]);
+    await factory.Build.create({
+      projectId: projectA.id,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    const newestA = await factory.Build.create({
+      projectId: projectA.id,
+      createdAt: "2026-01-02T00:00:00.000Z",
+    });
+    const newestB = await factory.Build.create({
+      projectId: projectB.id,
+      createdAt: "2025-06-01T00:00:00.000Z",
+    });
+
+    const loaders = createLoaders();
+    const [buildA, buildB, none] = await Promise.all([
+      loaders.LatestProjectBuild.load(projectA.id),
+      loaders.LatestProjectBuild.load(projectB.id),
+      loaders.LatestProjectBuild.load(emptyProject.id),
+    ]);
+
+    expect(buildA?.id).toBe(newestA.id);
+    expect(buildB?.id).toBe(newestB.id);
+    expect(none).toBeNull();
+  });
+
+  it("breaks a tie on `createdAt` with the highest build number", async () => {
+    const project = await factory.Project.create();
+    const createdAt = "2026-01-01T00:00:00.000Z";
+    await factory.Build.create({ projectId: project.id, createdAt });
+    const last = await factory.Build.create({
+      projectId: project.id,
+      createdAt,
+    });
+
+    const loaders = createLoaders();
+    const build = await loaders.LatestProjectBuild.load(project.id);
+
+    expect(build?.id).toBe(last.id);
+    expect(build?.number).toBe(2);
+  });
+});
+
+describe("LatestAutomationRun loader", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  it("returns the newest run of each rule in a batch", async () => {
+    const [ruleA, ruleB, unusedRule] = await Promise.all([
+      factory.AutomationRule.create(),
+      factory.AutomationRule.create(),
+      factory.AutomationRule.create(),
+    ]);
+    await factory.AutomationRun.create({
+      automationRuleId: ruleA.id,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    const newestA = await factory.AutomationRun.create({
+      automationRuleId: ruleA.id,
+      createdAt: "2026-01-02T00:00:00.000Z",
+    });
+    const newestB = await factory.AutomationRun.create({
+      automationRuleId: ruleB.id,
+      createdAt: "2025-06-01T00:00:00.000Z",
+    });
+
+    const loaders = createLoaders();
+    const [runA, runB, none] = await Promise.all([
+      loaders.LatestAutomationRun.load(ruleA.id),
+      loaders.LatestAutomationRun.load(ruleB.id),
+      loaders.LatestAutomationRun.load(unusedRule.id),
+    ]);
+
+    expect(runA?.id).toBe(newestA.id);
+    expect(runB?.id).toBe(newestB.id);
+    expect(none).toBeNull();
+  });
+
+  it("breaks a tie on `createdAt` with the highest id", async () => {
+    const rule = await factory.AutomationRule.create();
+    const createdAt = "2026-01-01T00:00:00.000Z";
+    await factory.AutomationRun.create({
+      automationRuleId: rule.id,
+      createdAt,
+    });
+    const last = await factory.AutomationRun.create({
+      automationRuleId: rule.id,
+      createdAt,
+    });
+
+    const loaders = createLoaders();
+    const run = await loaders.LatestAutomationRun.load(rule.id);
+
+    expect(run?.id).toBe(last.id);
+  });
+});
+
 describe("ChangeOccurrencesSince loader", () => {
   beforeEach(async () => {
     await setupDatabase();
