@@ -114,6 +114,7 @@ export async function createPasskeys(input: {
       backedUp: true,
       aaguid: null,
       name,
+      createdAt: new Date("2026-06-01T10:00:00Z").toISOString(),
       lastUsedAt: new Date("2026-06-15T10:00:00Z").toISOString(),
     })),
   );

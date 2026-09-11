@@ -1095,7 +1095,11 @@ function EvolutionChart(props: {
     }
   }, [from, to, groupBy]);
   return (
-    <ChartContainer config={chartConfig} className="h-full md:flex-1">
+    <ChartContainer
+      config={chartConfig}
+      className="h-full md:flex-1"
+      data-visual-test="transparent"
+    >
       <AreaChart
         margin={{ left: -12, right: 12 }}
         accessibilityLayer

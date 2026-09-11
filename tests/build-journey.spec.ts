@@ -71,18 +71,23 @@ loggedTest(
     await expect(drawer.locator("[aria-current='step']")).toHaveText(
       "1 · cart",
     );
+    // Each jump scrolls the snapshot list to the step, and the next jump reads
+    // that scroll to decide whether it has to move at all. Settle between them
+    // or the walk below rests wherever the animation happened to be.
+    await waitForDiffListToSettle(page);
 
     // ⇧→ walks to the next step, ⇧← back — across status sections.
     await page.keyboard.press("Shift+ArrowRight");
     await expect(
       page.getByRole("heading", { name: "checkout/shipping.png" }),
     ).toBeVisible();
+    await waitForDiffListToSettle(page);
     await page.keyboard.press("Shift+ArrowLeft");
     await expect(
       page.getByRole("heading", { name: "checkout/cart.png" }),
     ).toBeVisible();
-
     await waitForDiffListToSettle(page);
+
     await screenshot(page, "build-journey-drawer", {
       replacements: {
         [team.account.slug]: "acme",
