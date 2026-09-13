@@ -7,7 +7,7 @@
 <h3 align="center">Argos</h3>
 
 <p align="center">
-  Argos is the open source visual testing platform for modern engineering teams.
+  Argos is the open source visual testing platform for teams and AI agents.
   <br />
   <a href="https://argos-ci.com"><strong>Learn more »</strong></a>
   <br />
