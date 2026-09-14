@@ -14,10 +14,10 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
-import { Text } from "@/ui/Text";
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
@@ -58,9 +58,9 @@ export function Component() {
               <PageHeader>
                 <PageHeaderContent>
                   <Heading>Create a Team</Heading>
-                  <Text slot="headline">
+                  <PageHeaderHeadline>
                     Create a team to collaborate on one or several projects.
-                  </Text>
+                  </PageHeaderHeadline>
                 </PageHeaderContent>
               </PageHeader>
               <div className="max-w-2xl">

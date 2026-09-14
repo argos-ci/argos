@@ -37,13 +37,13 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
 import { Switch } from "@/ui/Switch";
-import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
@@ -1083,10 +1083,10 @@ function StaffTrialsList() {
       <PageHeader>
         <PageHeaderContent>
           <Heading>Trial pipeline</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             Teams created recently, what they built, and whether they ever got a
             check build.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
         <PageHeaderActions className="items-center">
           <PeriodSelect state={periodState} />

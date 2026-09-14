@@ -63,6 +63,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIllustration,
   EmptyStateLearnMore,
   EmptyStateStep,
@@ -70,7 +71,6 @@ import {
 } from "@/ui/Layout";
 import { HeadlessLink } from "@/ui/Link";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
-import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
@@ -876,12 +876,12 @@ function UnavailableState() {
           </EmptyStateIllustration>
           {/* Still the page's `h1`: the empty state is the whole document. */}
           <Heading level={1}>This media is no longer available</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             The link has expired, the file was deleted, or you need to be signed
             in to a team that has access to it. Links like this one are how
             teams on Argos share screenshots and recordings in their pull
             requests.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <LinkButton
               variant="secondary"

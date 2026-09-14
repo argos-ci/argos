@@ -45,6 +45,7 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   Page,
   PageContainer,
@@ -53,7 +54,6 @@ import {
 } from "@/ui/Layout";
 import { Panel } from "@/ui/Panel";
 import { Separator } from "@/ui/Separator";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 import useViewportSize from "@/ui/useViewportSize";
 import { compactNumberFormatter } from "@/util/intl";
@@ -376,12 +376,12 @@ function ChangesExplorer(props: {
               <FlagOffIcon strokeWidth={1} />
             </EmptyStateIcon>
             <Heading>No ignored changes</Heading>
-            <Text slot="description">
+            <EmptyStateDescription>
               No ignored change showed up in this test over the {periodLabel}.
               Widen the period to look further back, or ignore a change from its
               toolbar when it keeps coming back without anything really
               changing.
-            </Text>
+            </EmptyStateDescription>
             <EmptyStateActions>
               <Button
                 variant="secondary"
@@ -397,9 +397,9 @@ function ChangesExplorer(props: {
               <PartyPopperIcon />
             </EmptyStateIcon>
             <Heading>No changes</Heading>
-            <Text slot="description">
+            <EmptyStateDescription>
               This test remained unchanged over the {periodLabel}.
-            </Text>
+            </EmptyStateDescription>
           </EmptyState>
         )}
       </>

@@ -40,6 +40,7 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   EmptyStateIllustration,
   EmptyStateLearnMore,
@@ -50,9 +51,9 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { List, ListHeaderRow, ListRowLink, ListRowLoader } from "@/ui/List";
-import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
@@ -215,11 +216,11 @@ function PageContent(props: {
             <TestsIllustration />
           </EmptyStateIllustration>
           <Heading>No tests yet</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             A test is one screenshot name, followed across builds. Once your
             suite uploads its first build, every screenshot shows up here with
             the metrics that tell you which ones you can trust.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/reliability-and-flakiness/tests-dashboard" />
           <EmptyStateSteps>
             <EmptyStateStep
@@ -257,10 +258,10 @@ function PageContent(props: {
       <PageHeader>
         <PageHeaderContent>
           <Heading>Tests</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             View all the tests associated with this project sorted by flakiness
             score.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
         <PageHeaderActions>
           <PeriodSelect state={periodState} />
@@ -294,9 +295,9 @@ function PageContent(props: {
               <FileImageIcon strokeWidth={1} />
             </EmptyStateIcon>
             <Heading>No tests</Heading>
-            <Text slot="description">
+            <EmptyStateDescription>
               There is no tests matching the filters.
-            </Text>
+            </EmptyStateDescription>
             <EmptyStateActions>
               <Button onClick={() => setFilters(null)}>Reset filters</Button>
             </EmptyStateActions>

@@ -4,10 +4,9 @@ import { FolderCodeIcon } from "lucide-react";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
-import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
+import { EmptyState, EmptyStateDescription, EmptyStateIcon } from "@/ui/Layout";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
-import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 
@@ -84,10 +83,10 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
           <FolderCodeIcon strokeWidth={1} />
         </EmptyStateIcon>
         <Heading>No projects in this namespace</Heading>
-        <Text slot="description">
+        <EmptyStateDescription>
           Your project may not be authorized yet on Argos or on another
           namespace.
-        </Text>
+        </EmptyStateDescription>
       </EmptyState>
     );
   }

@@ -31,15 +31,16 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   Page,
   PageContainer,
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
-import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -430,9 +431,9 @@ function PageContent(props: {
               <BoxesIcon strokeWidth={1} />
             </EmptyStateIcon>
             <Heading>No builds</Heading>
-            <Text slot="description">
+            <EmptyStateDescription>
               There are no builds yet on this project.
-            </Text>
+            </EmptyStateDescription>
             <EmptyStateActions>
               <LinkButton href="/">Back to home</LinkButton>
             </EmptyStateActions>
@@ -447,9 +448,9 @@ function PageContent(props: {
       <PageHeader>
         <PageHeaderContent>
           <Heading>Builds</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             View all the builds associated with this project.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
         <PageHeaderActions>
           <BuildTypeFilter
@@ -490,9 +491,9 @@ function PageContent(props: {
               <BoxesIcon strokeWidth={1} />
             </EmptyStateIcon>
             <Heading>No builds</Heading>
-            <Text slot="description">
+            <EmptyStateDescription>
               There are no builds matching the filters.
-            </Text>
+            </EmptyStateDescription>
             <EmptyStateActions>
               <Button onClick={() => setFilters(null)}>Reset filters</Button>
             </EmptyStateActions>

@@ -1,10 +1,10 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ComponentPropsWithRef } from "react";
+import clsx from "clsx";
 
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { Heading, HeadingContext } from "@/ui/Heading";
-import { Text, TextContext } from "@/ui/Text";
 
 import { AccountAvatar } from "../AccountAvatar";
 
@@ -14,12 +14,14 @@ export function InviteContainer(props: { children: React.ReactNode }) {
       <HeadingContext
         value={{ level: 1, className: "mb-2 text-2xl font-medium" }}
       >
-        <TextContext value={{ className: "text-low" }}>
-          {props.children}
-        </TextContext>
+        {props.children}
       </HeadingContext>
     </Container>
   );
+}
+
+export function InviteDescription(props: ComponentPropsWithRef<"span">) {
+  return <span {...props} className={clsx("text-low", props.className)} />;
 }
 
 export function InviteAccountAvatar(props: {
@@ -36,9 +38,9 @@ export function AlreadyJoined(props: {
   return (
     <>
       <Heading>This invite has already been accepted</Heading>
-      <Text>
+      <InviteDescription>
         You are already a member of <strong>{teamName}</strong> team.
-      </Text>
+      </InviteDescription>
       <LinkButton
         className="mt-8"
         size="large"
@@ -54,10 +56,10 @@ export function InvalidInvite() {
   return (
     <>
       <Heading>Invalid invite</Heading>
-      <Text>
+      <InviteDescription>
         Team not found by the given invite code or user is not authorized to
         join team.
-      </Text>
+      </InviteDescription>
     </>
   );
 }

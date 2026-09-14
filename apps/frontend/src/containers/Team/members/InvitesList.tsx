@@ -16,11 +16,14 @@ import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { DialogTrigger } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
-import { EmptyState, EmptyStateActions } from "@/ui/Layout";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+} from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
-import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 
 import { InviteDialog } from "./InviteDialog";
@@ -243,9 +246,9 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No pending invitations found</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Your team has no invitations matching the current search.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <Button
               variant="secondary"
@@ -260,9 +263,9 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
       ) : (
         <EmptyState>
           <Heading>No pending invitations found</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Invite people to your team to give them access to your projects.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <DialogTrigger>
               <Button variant="secondary">Invite members</Button>

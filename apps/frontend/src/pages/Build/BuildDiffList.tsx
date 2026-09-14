@@ -46,8 +46,12 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
-import { Text } from "@/ui/Text";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+} from "@/ui/Layout";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
@@ -840,9 +844,9 @@ const InternalBuildDiffList = memo(() => {
                     <ImagesIcon />
                   </EmptyStateIcon>
                   <Heading>Nothing to show</Heading>
-                  <Text slot="description">
+                  <EmptyStateDescription>
                     No screenshot matches your search.
-                  </Text>
+                  </EmptyStateDescription>
                 </EmptyState>
               );
             }
@@ -866,9 +870,9 @@ const InternalBuildDiffList = memo(() => {
                         its place: categories combine, so every filter can have
                         matches of its own while the intersection has none. */}
                     <Heading>Nothing to show</Heading>
-                    <Text slot="description">
+                    <EmptyStateDescription>
                       No screenshot matches all the filters.
-                    </Text>
+                    </EmptyStateDescription>
                     <EmptyStateActions>
                       <Button
                         variant="secondary"

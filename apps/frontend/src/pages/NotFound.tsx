@@ -6,10 +6,10 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   Page,
 } from "@/ui/Layout";
-import { Text } from "@/ui/Text";
 
 export function NotFound() {
   return (
@@ -22,7 +22,9 @@ export function NotFound() {
           <CircleXIcon strokeWidth={1} />
         </EmptyStateIcon>
         <Heading>Page not found</Heading>
-        <Text slot="description">There is nothing to see here.</Text>
+        <EmptyStateDescription>
+          There is nothing to see here.
+        </EmptyStateDescription>
         <EmptyStateActions>
           <LinkButton href="/">Back to home</LinkButton>
         </EmptyStateActions>

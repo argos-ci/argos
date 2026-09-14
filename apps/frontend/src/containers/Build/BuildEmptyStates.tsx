@@ -2,8 +2,12 @@ import { ImagesIcon, SquareSlashIcon } from "lucide-react";
 
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
-import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
-import { Text } from "@/ui/Text";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+} from "@/ui/Layout";
 
 export function SkippedBuildEmptyState() {
   return (
@@ -12,9 +16,9 @@ export function SkippedBuildEmptyState() {
         <SquareSlashIcon />
       </EmptyStateIcon>
       <Heading>Skipped build</Heading>
-      <Text slot="description">
+      <EmptyStateDescription>
         This build has been skipped in your CI configuration.
-      </Text>
+      </EmptyStateDescription>
     </EmptyState>
   );
 }
@@ -26,9 +30,9 @@ export function NoScreenshotsBuildEmptyState() {
         <ImagesIcon />
       </EmptyStateIcon>
       <Heading>No screenshots found</Heading>
-      <Text slot="description">
+      <EmptyStateDescription>
         Follow one of our quickstart guides to start taking screenshots.
-      </Text>
+      </EmptyStateDescription>
       <EmptyStateActions>
         <LinkButton href="https://argos-ci.com/docs/quickstart" target="_blank">
           View documentation

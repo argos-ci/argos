@@ -10,6 +10,7 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIllustration,
   EmptyStateLearnMore,
   EmptyStateStep,
@@ -19,8 +20,8 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Text } from "@/ui/Text";
 
 import { NotFound } from "../NotFound";
 import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
@@ -135,10 +136,10 @@ function PageContentFound(props: { project: ProjectDocument }) {
             <AutomationsIllustration />
           </EmptyStateIllustration>
           <Heading>No automations yet</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             An automation watches for something happening on this project and
             reacts to it, so nobody has to notice and relay it by hand.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <AddAutomationButton />
           </EmptyStateActions>
@@ -175,10 +176,10 @@ function PageContentFound(props: { project: ProjectDocument }) {
           <PageHeader>
             <PageHeaderContent>
               <Heading>Automations Rules</Heading>
-              <Text slot="headline">
+              <PageHeaderHeadline>
                 Set up rules to trigger actions or notifications when specific
                 events happen in your project.
-              </Text>
+              </PageHeaderHeadline>
             </PageHeaderContent>
             <PageHeaderActions>
               <AddAutomationButton variant="secondary" />

@@ -14,9 +14,12 @@ import { TeamMembersOrderBy } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
-import { EmptyState, EmptyStateActions } from "@/ui/Layout";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+} from "@/ui/Layout";
 import { List, ListLoadMore } from "@/ui/List";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -175,9 +178,9 @@ export function TeamMembersList(props: TeamMembersListProps) {
       ) : (
         <EmptyState>
           <Heading>No members found</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Your team has no members matching the current filters.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <Button
               variant="secondary"

@@ -26,6 +26,7 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
@@ -33,7 +34,6 @@ import { Loader } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton } from "@/ui/Select";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
-import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -945,9 +945,9 @@ function StaffTeamsList() {
       <PageHeader>
         <PageHeaderContent>
           <Heading>All Teams</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             Team directory for staff with members, subscriptions, and usage.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
         <PageHeaderActions className="items-center">
           <Select

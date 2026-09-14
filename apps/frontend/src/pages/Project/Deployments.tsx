@@ -19,6 +19,7 @@ import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
+  EmptyStateDescription,
   EmptyStateIllustration,
   EmptyStateLearnMore,
   EmptyStateStep,
@@ -27,10 +28,10 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { List, ListRow, ListRowLoader } from "@/ui/List";
-import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
@@ -405,10 +406,10 @@ function PageContent() {
             <DeploymentsIllustration />
           </EmptyStateIllustration>
           <Heading>No deployments yet</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Argos can track where each build was deployed, so a review links
             straight to the running site the screenshots came from.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/deployments" />
           <EmptyStateSteps>
             <EmptyStateStep
@@ -446,9 +447,9 @@ function PageContent() {
       <PageHeader>
         <PageHeaderContent>
           <Heading>Deployments</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             View all the deployments associated with this project.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
       </PageHeader>
       <div className="relative flex-1">

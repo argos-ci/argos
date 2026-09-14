@@ -33,10 +33,10 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
-import { Text } from "@/ui/Text";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useProjectOutletContext } from "./ProjectOutletContext";
@@ -95,9 +95,9 @@ export function Component() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>Project Settings</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Configure the settings for this project.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
         </PageHeader>
         <Suspense

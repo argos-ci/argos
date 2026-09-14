@@ -4,28 +4,29 @@ import clsx from "clsx";
 import { Container, type ContainerProps } from "./Container";
 import { HeadingContext } from "./Heading";
 import { Link } from "./Link";
-import { TextContext } from "./Text";
 
 export function PageHeader(props: ComponentPropsWithRef<"div">) {
   return (
     <HeadingContext value={{ level: 1, className: "text-2xl font-medium" }}>
-      <TextContext
-        value={{ slots: { headline: { className: "text-low text-sm" } } }}
-      >
-        <div
-          {...props}
-          className={clsx(
-            "mb-6 flex flex-wrap justify-between items-end gap-x-4 gap-y-3",
-            props.className,
-          )}
-        />
-      </TextContext>
+      <div
+        {...props}
+        className={clsx(
+          "mb-6 flex flex-wrap justify-between items-end gap-x-4 gap-y-3",
+          props.className,
+        )}
+      />
     </HeadingContext>
   );
 }
 
 export function PageHeaderContent(props: ComponentPropsWithRef<"div">) {
   return <div {...props} />;
+}
+
+export function PageHeaderHeadline(props: ComponentPropsWithRef<"span">) {
+  return (
+    <span {...props} className={clsx("text-low text-sm", props.className)} />
+  );
 }
 
 export function PageHeaderActions(props: ComponentPropsWithRef<"div">) {
@@ -44,25 +45,13 @@ export function PageContainer(props: ComponentPropsWithRef<"div">) {
 export function EmptyState(props: ComponentPropsWithRef<"div">) {
   return (
     <HeadingContext value={{ level: 2, className: "font-medium text-base" }}>
-      <TextContext
-        value={{
-          slots: {
-            description: {
-              // A fixed measure keeps the description readable and gives every
-              // empty state the same silhouette, whatever its copy length.
-              className: "text-low max-w-lg text-center text-sm text-balance",
-            },
-          },
-        }}
-      >
-        <Container
-          {...props}
-          className={clsx(
-            "flex flex-col items-center justify-center gap-1 py-10",
-            props.className,
-          )}
-        />
-      </TextContext>
+      <Container
+        {...props}
+        className={clsx(
+          "flex flex-col items-center justify-center gap-1 py-10",
+          props.className,
+        )}
+      />
     </HeadingContext>
   );
 }
@@ -92,6 +81,20 @@ export function EmptyStateIllustration(props: ComponentPropsWithRef<"div">) {
       {...props}
       className={clsx("mb-5 w-full max-w-[200px]", props.className)}
       aria-hidden="true"
+    />
+  );
+}
+
+export function EmptyStateDescription(props: ComponentPropsWithRef<"span">) {
+  return (
+    <span
+      {...props}
+      // A fixed measure keeps the description readable and gives every empty
+      // state the same silhouette, whatever its copy length.
+      className={clsx(
+        "text-low max-w-lg text-center text-sm text-balance",
+        props.className,
+      )}
     />
   );
 }

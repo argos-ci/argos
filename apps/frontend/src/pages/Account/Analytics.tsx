@@ -65,13 +65,13 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton, SelectStyleButton } from "@/ui/Select";
 import { StatTile } from "@/ui/StatTile";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useAccountParams } from "./AccountParams";
@@ -215,10 +215,10 @@ export function Component() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>Analytics</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Track builds and screenshots to monitor your visual testing
               activity at a glance.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
           <PageHeaderActions>
             <div className="flex items-center gap-2">
