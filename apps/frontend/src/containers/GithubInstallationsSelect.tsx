@@ -3,12 +3,7 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 import { ListIcon, PlusIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
-import {
-  ListBox,
-  ListBoxItem,
-  ListBoxItemIcon,
-  ListBoxSeparator,
-} from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxSeparator } from "@/ui/ListBox";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { getGitHubAppInstallURL } from "./GitHub";
@@ -86,26 +81,21 @@ export function GithubInstallationsSelect(props: {
       <ListBox>
         {installations.map((installation) => {
           return (
-            <ListBoxItem key={installation.id} value={installation.id}>
-              <ListBoxItemIcon>
-                <MarkGithubIcon />
-              </ListBoxItemIcon>
+            <ListBoxItem
+              key={installation.id}
+              value={installation.id}
+              icon={<MarkGithubIcon />}
+            >
               {installation.account.name || installation.account.login}
             </ListBoxItem>
           );
         })}
         <ListBoxSeparator />
-        <ListBoxItem value="add-github-account">
-          <ListBoxItemIcon>
-            <PlusIcon />
-          </ListBoxItemIcon>
+        <ListBoxItem value="add-github-account" icon={<PlusIcon />}>
           Add GitHub Account
         </ListBoxItem>
         {props.onSwitchProvider && (
-          <ListBoxItem value="switch-git-provider">
-            <ListBoxItemIcon>
-              <ListIcon />
-            </ListBoxItemIcon>
+          <ListBoxItem value="switch-git-provider" icon={<ListIcon />}>
             Switch Git Provider
           </ListBoxItem>
         )}

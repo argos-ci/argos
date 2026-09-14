@@ -66,11 +66,17 @@ export function ListBoxSeparator() {
 
 export function ListBoxItem(props: {
   children: ReactNode;
+  /**
+   * The icon the option leads with. A prop rather than a child, as on
+   * `MenuItem`: the children are the stacked label and description, and an
+   * icon among them would sit above the words instead of beside them.
+   */
+  icon?: ReactNode;
   value: string;
   disabled?: boolean;
   className?: string;
 }) {
-  const { children, className, ...rest } = props;
+  const { children, className, icon, ...rest } = props;
   return (
     <BaseSelect.Item
       {...rest}
@@ -79,14 +85,10 @@ export function ListBoxItem(props: {
       {/* Always rendered, so every row's words line up whether or not it is
           the chosen one. */}
       <CheckIcon className="size-4 shrink-0 opacity-0 group-data-selected/menu-item:opacity-100" />
+      {icon ? <span className={menuItemIconClassName}>{icon}</span> : null}
       <span className="flex min-w-0 flex-1 flex-col">{children}</span>
     </BaseSelect.Item>
   );
-}
-
-/** The icon an option leads with. */
-export function ListBoxItemIcon(props: { children: ReactNode }) {
-  return <span className={menuItemIconClassName}>{props.children}</span>;
 }
 
 /**

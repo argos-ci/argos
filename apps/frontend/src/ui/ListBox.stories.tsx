@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { GitBranchIcon, GitCommitVerticalIcon, TagIcon } from "lucide-react";
 
 import {
   ListBox,
@@ -29,6 +30,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const ACTIONS = { edit: "Edit", duplicate: "Duplicate", delete: "Delete" };
+const REFS = { branch: "Branch", tag: "Tag", commit: "Commit" };
 const REVIEWERS = { jane: "Jane Doe", long: "A reviewer with a long name" };
 
 export const Default: Story = {
@@ -81,6 +83,39 @@ export const LabelAndDescription: Story = {
               </ListBoxItemLabel>
               <ListBoxItemDescription>
                 someone.with.a.long.address@example.com
+              </ListBoxItemDescription>
+            </ListBoxItem>
+          </ListBox>
+        </Select>
+      </OverlaySlot>
+    </OverlayStage>
+  ),
+};
+
+/**
+ * An option can lead with an icon. It sits beside the words, on the row — the
+ * check, the icon and the label reading as one line.
+ */
+export const WithIcon: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage>
+      <OverlaySlot>
+        <Select items={REFS} value="branch" aria-label="Reference" defaultOpen>
+          <SelectButton>
+            <SelectValue />
+          </SelectButton>
+          <ListBox className="w-64">
+            <ListBoxItem value="branch" icon={<GitBranchIcon />}>
+              Branch
+            </ListBoxItem>
+            <ListBoxItem value="tag" icon={<TagIcon />}>
+              Tag
+            </ListBoxItem>
+            <ListBoxItem value="commit" icon={<GitCommitVerticalIcon />}>
+              <ListBoxItemLabel>Commit</ListBoxItemLabel>
+              <ListBoxItemDescription>
+                An icon keeps its column when the row has two lines.
               </ListBoxItemDescription>
             </ListBoxItem>
           </ListBox>
