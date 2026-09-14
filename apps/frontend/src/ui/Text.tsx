@@ -21,13 +21,7 @@ type TextContextValue = TextStyle & {
 /** Lets a layout style the text inside it, by slot or wholesale. */
 export const TextContext = createContext<TextContextValue>({});
 
-/**
- * Text whose style comes from the layout it sits in.
- *
- * `slot` stays on the element: `ListBoxItem` selects on it
- * (`has-[[slot=description]]:flex-wrap`, `**:[[slot=label]]:truncate`), so
- * dropping it from the DOM would break that styling silently.
- */
+/** Text whose style comes from the layout it sits in. */
 export function Text({
   slot,
   className,
@@ -38,7 +32,6 @@ export function Text({
   return (
     <span
       {...props}
-      slot={slot}
       // `|| undefined` so unstyled text renders no attribute at all rather
       // than `class=""`.
       className={clsx(style?.className, className) || undefined}
