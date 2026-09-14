@@ -23,13 +23,14 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { Heading } from "@/ui/Heading";
 import {
+  EmptyStateDescription,
   Page,
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Modal } from "@/ui/Modal";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { Time } from "../../ui/Time";
@@ -279,7 +280,11 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
   const { automationRule } = props;
 
   if (!automationRule.actionRuns.length) {
-    return <Text slot="description">No actions have been run yet.</Text>;
+    return (
+      <EmptyStateDescription>
+        No actions have been run yet.
+      </EmptyStateDescription>
+    );
   }
 
   return (
@@ -370,10 +375,10 @@ function AutomationPage() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>{automationRule.name}</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Edit this automation rule and view the history of recent action
               runs.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
         </PageHeader>
         <SettingsPage>

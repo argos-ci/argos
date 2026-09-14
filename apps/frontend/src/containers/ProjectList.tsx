@@ -9,14 +9,15 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   PageContainer,
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { HeadlessLink, Link } from "@/ui/Link";
-import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
@@ -156,9 +157,9 @@ export function ProjectList(props: {
             <FolderIcon />
           </EmptyStateIcon>
           <Heading>Create your first project</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Start by creating your first Argos project.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <CreateProjectButton />
           </EmptyStateActions>
@@ -172,7 +173,9 @@ export function ProjectList(props: {
           <FolderIcon />
         </EmptyStateIcon>
         <Heading>No projects</Heading>
-        <Text slot="description">You haven't created any project yet.</Text>
+        <EmptyStateDescription>
+          You haven't created any project yet.
+        </EmptyStateDescription>
         {props.canCreateProject && (
           <EmptyStateActions>
             <CreateProjectButton />
@@ -187,9 +190,9 @@ export function ProjectList(props: {
       <PageHeader>
         <PageHeaderContent>
           <Heading>Projects</Heading>
-          <Text slot="headline">
+          <PageHeaderHeadline>
             View all the projects associated with this account.
-          </Text>
+          </PageHeaderHeadline>
         </PageHeaderContent>
         {props.canCreateProject && (
           <PageHeaderActions>

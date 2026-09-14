@@ -29,17 +29,18 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   Page,
   PageContainer,
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { HeadlessLink } from "@/ui/Link";
 import { List, ListHeaderRow, ListRowLink, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
-import { Text } from "@/ui/Text";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
@@ -174,9 +175,9 @@ function PageContent(props: { accountSlug: string }) {
           <FileImageIcon strokeWidth={1} />
         </EmptyStateIcon>
         <Heading>No tests</Heading>
-        <Text slot="description">
+        <EmptyStateDescription>
           There are no tests yet across this account's projects.
-        </Text>
+        </EmptyStateDescription>
       </EmptyState>
     );
   }
@@ -188,7 +189,9 @@ function PageContent(props: { accountSlug: string }) {
           <FileImageIcon strokeWidth={1} />
         </EmptyStateIcon>
         <Heading>No tests</Heading>
-        <Text slot="description">There is no tests matching the filters.</Text>
+        <EmptyStateDescription>
+          There is no tests matching the filters.
+        </EmptyStateDescription>
         <EmptyStateActions>
           <Button onClick={() => setFilters(null)}>Reset filters</Button>
         </EmptyStateActions>
@@ -419,9 +422,9 @@ export function Component() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>Tests</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               View all the tests across your projects sorted by flakiness score.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
           <PageHeaderActions>
             <PeriodSelect state={periodState} />

@@ -46,10 +46,10 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
-import { Text } from "@/ui/Text";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useAccountContext } from ".";
@@ -125,10 +125,10 @@ export function Component() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>{title}</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Manage your {userSlug === accountSlug ? "personal" : "team"}{" "}
               settings and preferences.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
         </PageHeader>
         <Suspense

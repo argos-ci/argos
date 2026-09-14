@@ -9,9 +9,12 @@ import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
-import { EmptyState, EmptyStateActions } from "@/ui/Layout";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+} from "@/ui/Layout";
 import { List, ListLoadMore, ListRow } from "@/ui/List";
-import { Text } from "@/ui/Text";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -167,9 +170,9 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No GitHub members found</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             Your team has no members matching the current search.
-          </Text>
+          </EmptyStateDescription>
           <EmptyStateActions>
             <Button
               variant="secondary"
@@ -184,9 +187,9 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
       ) : (
         <EmptyState>
           <Heading>No GitHub members found</Heading>
-          <Text slot="description">
+          <EmptyStateDescription>
             There are no GitHub members in your organization.
-          </Text>
+          </EmptyStateDescription>
         </EmptyState>
       )}
       {data.team.githubMembers.pageInfo.hasNextPage && (

@@ -9,12 +9,12 @@ import {
   InvalidInvite,
   InviteAccountAvatar,
   InviteContainer,
+  InviteDescription,
 } from "@/containers/Team/Invite";
 import { graphql } from "@/gql";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { PageLoader } from "@/ui/PageLoader";
-import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -137,9 +137,9 @@ export function Component() {
                   <Heading>
                     You’ve been invited to the <strong>{teamName}</strong> team
                   </Heading>
-                  <Text className="mb-8">
+                  <InviteDescription className="mb-8">
                     Invited by {invite.invitedBy.name || invite.invitedBy.slug}
-                  </Text>
+                  </InviteDescription>
                   <AcceptInviteButton secret={secret} size="large">
                     {auth.status === "authenticated" ? (
                       <>Join {teamName}</>

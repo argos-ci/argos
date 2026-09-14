@@ -19,9 +19,9 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Separator } from "@/ui/Separator";
-import { Text } from "@/ui/Text";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
@@ -210,10 +210,10 @@ export function Component() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>Create a new Project</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Import an existing Git repository, or create a project and connect
               a repository later.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
         </PageHeader>
         <div className="flex max-w-6xl flex-col items-start gap-12 lg:flex-row">

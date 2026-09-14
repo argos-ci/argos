@@ -9,6 +9,7 @@ import {
   InvalidInvite,
   InviteAccountAvatar,
   InviteContainer,
+  InviteDescription,
 } from "@/containers/Team/Invite";
 import { graphql } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -16,7 +17,6 @@ import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
-import { Text } from "@/ui/Text";
 
 import { getAccountURL } from "./Account/AccountParams";
 
@@ -109,10 +109,10 @@ export function Component() {
                       You’ve been invited to the <strong>{teamName}</strong>{" "}
                       team.
                     </Heading>
-                    <Text>
+                    <InviteDescription>
                       Before accepting the invite you have to create a new Argos
                       Account or login to an existing one.
-                    </Text>
+                    </InviteDescription>
                     <div className="mt-15 flex gap-15 self-stretch text-left">
                       <div className="flex flex-1 flex-col gap-4">
                         <div className="text-low text-xs font-medium uppercase">
@@ -166,10 +166,10 @@ export function Component() {
                   <Heading>
                     You’ve been invited to the <strong>{teamName}</strong> team
                   </Heading>
-                  <Text className="mb-8">
+                  <InviteDescription className="mb-8">
                     Let's use Argos to review visual differences in your
                     applications.
-                  </Text>
+                  </InviteDescription>
                   <JoinTeamButton secret={secret}>
                     Join {teamName}
                   </JoinTeamButton>

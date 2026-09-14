@@ -18,8 +18,8 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Text } from "@/ui/Text";
 
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
@@ -108,9 +108,9 @@ function NewAutomationPage() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>New Automation Rule</Heading>
-            <Text slot="headline">
+            <PageHeaderHeadline>
               Trigger actions when specific events occur in your project.
-            </Text>
+            </PageHeaderHeadline>
           </PageHeaderContent>
         </PageHeader>
 

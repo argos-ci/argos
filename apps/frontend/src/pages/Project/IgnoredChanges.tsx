@@ -43,6 +43,7 @@ import { Heading } from "@/ui/Heading";
 import {
   EmptyState,
   EmptyStateActions,
+  EmptyStateDescription,
   EmptyStateIcon,
   EmptyStateIllustration,
   EmptyStateLearnMore,
@@ -52,11 +53,11 @@ import {
   PageContainer,
   PageHeader,
   PageHeaderContent,
+  PageHeaderHeadline,
 } from "@/ui/Layout";
 import { HeadlessLink, Link } from "@/ui/Link";
 import { List, ListHeaderRow, ListRow, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
-import { Text } from "@/ui/Text";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
@@ -348,10 +349,10 @@ function PageContent(props: { params: ProjectParams }) {
           <PageHeader>
             <PageHeaderContent>
               <Heading>Ignored changes</Heading>
-              <Text slot="headline">
+              <PageHeaderHeadline>
                 Changes Argos no longer asks you to review, most recently
                 ignored first. Unignore one to start tracking it again.
-              </Text>
+              </PageHeaderHeadline>
             </PageHeaderContent>
           </PageHeader>
           <div className="relative flex-1">
@@ -394,11 +395,11 @@ function FeatureDisabledEmptyState(props: { params: ProjectParams }) {
         <SlidersHorizontalIcon strokeWidth={1} />
       </EmptyStateIcon>
       <Heading>Ignoring is turned off</Heading>
-      <Text slot="description">
+      <EmptyStateDescription>
         New builds on this project ignore nothing — every change is treated as
         needing review. Turn the feature on to let reviewers mute recurring
         flaky changes.
-      </Text>
+      </EmptyStateDescription>
       {canViewSettings && (
         <EmptyStateActions>
           <LinkButton
@@ -427,11 +428,11 @@ function NothingIgnoredEmptyState(props: { params: ProjectParams }) {
         <IgnoredChangesIllustration />
       </EmptyStateIllustration>
       <Heading>Nothing is ignored yet</Heading>
-      <Text slot="description">
+      <EmptyStateDescription>
         Ignoring a change tells Argos to stop asking you to review it. Reach for
         it when a diff is flaky — the kind that keeps coming back build after
         build without anything really changing.
-      </Text>
+      </EmptyStateDescription>
       {canViewSettings && (
         <EmptyStateActions>
           <LinkButton
