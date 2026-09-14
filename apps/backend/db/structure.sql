@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9RtOxyeUu8jhzkjsBQQ5Ur9nRozyDFBofOxHaaPMoGifWmN1aiXM3dnH2fEDWFd
+\restrict 8LAo6ERHoIfM5mB0nDXEzROcaJWmDh9vu7jIjbvcL1UTUQSSqKesp1nSc8kN9Ts
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -6693,7 +6693,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9RtOxyeUu8jhzkjsBQQ5Ur9nRozyDFBofOxHaaPMoGifWmN1aiXM3dnH2fEDWFd
+\unrestrict 8LAo6ERHoIfM5mB0nDXEzROcaJWmDh9vu7jIjbvcL1UTUQSSqKesp1nSc8kN9Ts
 
 -- Knex migrations
 
@@ -6950,3 +6950,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260830130624_custom-domains.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260902183811_project-soft-delete.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260909153631_overage-alert.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260914151447_lowercase-deployment-slugs.js', 1, NOW());
