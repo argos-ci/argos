@@ -8,12 +8,7 @@ import { useFieldArray } from "react-hook-form";
 import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import {
-  ListBox,
-  ListBoxItem,
-  ListBoxItemIcon,
-  ListBoxItemLabel,
-} from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
 import {
   checkIsGlobCondition,
@@ -69,10 +64,14 @@ function BuildConclusionCondition(props: {
             const descriptor = buildStatusDescriptors[status];
             const Icon = descriptor.icon;
             return (
-              <ListBoxItem key={value} value={value} className="text-sm">
-                <ListBoxItemIcon>
+              <ListBoxItem
+                key={value}
+                value={value}
+                className="text-sm"
+                icon={
                   <Icon className={lowTextColorClassNames[descriptor.color]} />
-                </ListBoxItemIcon>
+                }
+              >
                 {descriptor.label}
               </ListBoxItem>
             );
@@ -215,10 +214,12 @@ function BuildModeCondition(props: {
         <FieldError />
         <ListBox>
           {buildModeOptions.map(({ mode, label, icon: Icon }) => (
-            <ListBoxItem key={mode} value={mode} className="text-sm">
-              <ListBoxItemIcon>
-                <Icon />
-              </ListBoxItemIcon>
+            <ListBoxItem
+              key={mode}
+              value={mode}
+              className="text-sm"
+              icon={<Icon />}
+            >
               <ListBoxItemLabel>{label}</ListBoxItemLabel>
             </ListBoxItem>
           ))}
@@ -256,10 +257,14 @@ function BuildTypeCondition(props: {
             const descriptor = buildTypeDescriptors[type];
             const Icon = descriptor.icon;
             return (
-              <ListBoxItem key={type} value={type} className="text-sm">
-                <ListBoxItemIcon>
+              <ListBoxItem
+                key={type}
+                value={type}
+                className="text-sm"
+                icon={
                   <Icon className={lowTextColorClassNames[descriptor.color]} />
-                </ListBoxItemIcon>
+                }
+              >
                 <ListBoxItemLabel>{descriptor.label}</ListBoxItemLabel>
               </ListBoxItem>
             );

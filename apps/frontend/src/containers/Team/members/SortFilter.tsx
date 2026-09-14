@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 
 import { TeamMembersOrderBy } from "@/gql/graphql";
-import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
+import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Select, SelectButton, SelectValue } from "@/ui/Select";
 
 const OrderBySchema = z.enum(TeamMembersOrderBy);
@@ -53,22 +53,22 @@ export function SortFilter(props: {
         <SelectValue />
       </SelectButton>
       <ListBox>
-        <ListBoxItem value={TeamMembersOrderBy.Date}>
-          <ListBoxItemIcon>
-            <CalendarArrowDownIcon />
-          </ListBoxItemIcon>
+        <ListBoxItem
+          value={TeamMembersOrderBy.Date}
+          icon={<CalendarArrowDownIcon />}
+        >
           Date
         </ListBoxItem>
-        <ListBoxItem value={TeamMembersOrderBy.NameAsc}>
-          <ListBoxItemIcon>
-            <ArrowDownAZIcon />
-          </ListBoxItemIcon>
+        <ListBoxItem
+          value={TeamMembersOrderBy.NameAsc}
+          icon={<ArrowDownAZIcon />}
+        >
           Name (A-Z)
         </ListBoxItem>
-        <ListBoxItem value={TeamMembersOrderBy.NameDesc}>
-          <ListBoxItemIcon>
-            <ArrowDownZAIcon />
-          </ListBoxItemIcon>
+        <ListBoxItem
+          value={TeamMembersOrderBy.NameDesc}
+          icon={<ArrowDownZAIcon />}
+        >
           Name (Z-A)
         </ListBoxItem>
       </ListBox>

@@ -13,12 +13,7 @@ import { graphql } from "@/gql";
 import { ButtonIcon, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import {
-  ListBox,
-  ListBoxItem,
-  ListBoxItemIcon,
-  ListBoxItemLabel,
-} from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { SelectButton, Select, SelectField, SelectValue } from "@/ui/Select";
 import { getSlackAuthURL } from "@/util/slack";
 
@@ -215,10 +210,7 @@ function SendWebhookMessageAction(props: {
         <FieldError />
         <ListBox>
           {webhooks.map((webhook) => (
-            <ListBoxItem key={webhook.id} value={webhook.id}>
-              <ListBoxItemIcon>
-                <Logo />
-              </ListBoxItemIcon>
+            <ListBoxItem key={webhook.id} value={webhook.id} icon={<Logo />}>
               <ListBoxItemLabel>{webhook.name}</ListBoxItemLabel>
             </ListBoxItem>
           ))}
@@ -378,10 +370,11 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
           <FieldError />
           <ListBox>
             {ACTIONS.map((action) => (
-              <ListBoxItem key={action.type} value={action.type}>
-                <ListBoxItemIcon>
-                  <action.icon />
-                </ListBoxItemIcon>
+              <ListBoxItem
+                key={action.type}
+                value={action.type}
+                icon={<action.icon />}
+              >
                 <ListBoxItemLabel>{action.label}</ListBoxItemLabel>
               </ListBoxItem>
             ))}

@@ -2,12 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { ListIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
-import {
-  ListBox,
-  ListBoxItem,
-  ListBoxItemIcon,
-  ListBoxSeparator,
-} from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxSeparator } from "@/ui/ListBox";
 import { Select, SelectButton } from "@/ui/Select";
 
 import { GitLabLogo } from "./GitLab";
@@ -59,25 +54,20 @@ export const GitlabNamespacesSelect = (props: {
       <ListBox>
         {namespaces.map((namespace) => {
           return (
-            <ListBoxItem key={namespace.id} value={namespace.id}>
-              <ListBoxItemIcon>
-                <GitLabLogo />
-              </ListBoxItemIcon>
+            <ListBoxItem
+              key={namespace.id}
+              value={namespace.id}
+              icon={<GitLabLogo />}
+            >
               {namespace.name || namespace.path}
             </ListBoxItem>
           );
         })}
-        <ListBoxItem value="all">
-          <ListBoxItemIcon>
-            <GitLabLogo />
-          </ListBoxItemIcon>
+        <ListBoxItem value="all" icon={<GitLabLogo />}>
           All Projects...
         </ListBoxItem>
         <ListBoxSeparator />
-        <ListBoxItem value="switch-git-provider">
-          <ListBoxItemIcon>
-            <ListIcon />
-          </ListBoxItemIcon>
+        <ListBoxItem value="switch-git-provider" icon={<ListIcon />}>
           Switch Git Provider
         </ListBoxItem>
       </ListBox>
