@@ -7,6 +7,7 @@ import {
   getDeploymentAliasCandidates,
   resolveDeploymentByDomain,
 } from "./resolve";
+import { generateDeploymentSlug } from "./slug";
 
 const test = base.extend<{
   deployment: Deployment;
@@ -79,5 +80,19 @@ describe("resolveDeploymentByDomain", () => {
     await setupDatabase();
 
     await expect(resolveDeploymentByDomain(" ")).resolves.toBeNull();
+  });
+
+  test("resolves a deployment at the URL built from its generated slug", async () => {
+    await setupDatabase();
+    const deployment = await factory.Deployment.create({
+      slug: generateDeploymentSlug({
+        projectName: "Docs",
+        accountSlug: "AcmeIO",
+      }),
+    });
+
+    await expect(
+      resolveDeploymentByDomain(deployment.url),
+    ).resolves.toMatchObject({ id: deployment.id, type: "slug" });
   });
 });

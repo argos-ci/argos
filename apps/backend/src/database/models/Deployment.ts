@@ -4,8 +4,10 @@ import {
   type DeploymentEnvironment,
   type DeploymentStatus,
 } from "@argos/schemas/deployment";
+import { SLUG_REGEX } from "@argos/util/slug";
 import type { JSONSchema, RelationMappings } from "objection";
 
+import { DEPLOYMENT_SLUG_MAX_LENGTH } from "@/deployment/slug";
 import { getDeploymentUrl } from "@/deployment/url";
 
 import { Model } from "../util/model";
@@ -37,7 +39,11 @@ export class Deployment extends Model {
           environment: DeploymentEnvironmentSchema.toJSONSchema() as JSONSchema,
           branch: { type: "string" },
           commitSha: { type: "string" },
-          slug: { type: "string" },
+          slug: {
+            type: "string",
+            pattern: SLUG_REGEX.source,
+            maxLength: DEPLOYMENT_SLUG_MAX_LENGTH,
+          },
           githubPullRequestId: { type: ["string", "null"] },
         },
       },
