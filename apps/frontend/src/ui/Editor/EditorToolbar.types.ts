@@ -17,9 +17,7 @@ export type ToolbarState = {
   linkHref: string | null;
   canSetLink: boolean;
   isBulletList: boolean;
-  canBulletList: boolean;
   isOrderedList: boolean;
-  canOrderedList: boolean;
   headingLevel: number | null;
   selectionFrom: number;
   selectionTo: number;

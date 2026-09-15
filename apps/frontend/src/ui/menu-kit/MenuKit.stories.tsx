@@ -16,7 +16,11 @@ import { expect, screen, waitFor } from "storybook/test";
 
 import { Button } from "../Button";
 import { ButtonGroup } from "../ButtonGroup";
-import { openOverlayParameters, OverlayStage } from "../storyOverlay";
+import {
+  openOverlayParameters,
+  OverlaySlot,
+  OverlayStage,
+} from "../storyOverlay";
 import {
   Menu,
   MenuHeading,
@@ -165,22 +169,37 @@ export const OpenWithSubtitles: Story = {
   ),
 };
 
-/** `checked` reads as a trailing glyph, or as a highlighted row. */
+/**
+ * `checked` reads as a trailing glyph, or as a highlighted row.
+ *
+ * The glyph menu carries shortcuts too, which is the shape that shows what the
+ * check costs the rows around it: drawn on the ticked row alone it would push
+ * that row's shortcut in, and the column would kink around whichever row
+ * happens to be the current one. No story paired the two before, so nothing
+ * held the column straight.
+ */
 export const OpenWithChecked: Story = {
   parameters: openOverlayParameters,
   render: () => (
     <OverlayStage>
-      <div className="flex gap-8">
+      {/* A slot each: two triggers side by side overlap their popups, and the
+          one underneath loses the whole right of its rows — which is where a
+          check and a shortcut both sit. */}
+      <OverlaySlot>
         <MenuRoot defaultOpen>
           <MenuTrigger>
             <Button variant="secondary">Glyph</Button>
           </MenuTrigger>
           <Menu aria-label="Sort by">
-            <MenuItem checked>Most recent</MenuItem>
-            <MenuItem>Name</MenuItem>
-            <MenuItem>Status</MenuItem>
+            <MenuItem checked keyboardShortcut={["⌘", "1"]}>
+              Most recent
+            </MenuItem>
+            <MenuItem keyboardShortcut={["⌘", "2"]}>Name</MenuItem>
+            <MenuItem keyboardShortcut={["⌘", "3"]}>Status</MenuItem>
           </Menu>
         </MenuRoot>
+      </OverlaySlot>
+      <OverlaySlot>
         <MenuRoot defaultOpen>
           <MenuTrigger>
             <Button variant="secondary">Highlight</Button>
@@ -191,7 +210,7 @@ export const OpenWithChecked: Story = {
             <MenuItem>Status</MenuItem>
           </Menu>
         </MenuRoot>
-      </div>
+      </OverlaySlot>
     </OverlayStage>
   ),
 };

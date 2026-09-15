@@ -259,9 +259,15 @@ export default function Editor(props: EditorProps) {
         if (!editor) {
           return () => {};
         }
-        editor.on("create", onStoreChange);
+        // TipTap emits `create` one statement before it sets `isInitialized`,
+        // so a listener reading the flag as the event fires still finds it
+        // false, React sees the snapshot unchanged, and the toolbar waits for
+        // an unrelated re-render that may never come. A microtask later the
+        // flag is set.
+        const handleCreate = () => queueMicrotask(onStoreChange);
+        editor.on("create", handleCreate);
         return () => {
-          editor.off("create", onStoreChange);
+          editor.off("create", handleCreate);
         };
       },
       [editor],
@@ -323,12 +329,19 @@ export default function Editor(props: EditorProps) {
     }
 
     const target = event.target;
+    // React bubbles a portal's events through the component tree, so a press
+    // in one of the toolbar's menus — rendered under `document.body` — lands
+    // here too, and collapsing the selection is exactly what hides the toolbar
+    // the menu hangs from. Only what lies inside the box is its chrome.
+    if (!event.currentTarget.contains(target)) {
+      return;
+    }
     // Let ProseMirror place the cursor for clicks inside the editable content,
-    // and let interactive controls (toolbar, footer button, links) behave
-    // normally.
+    // and let the toolbar and interactive controls (footer button, links)
+    // behave normally.
     if (
       editor.view.dom.contains(target) ||
-      target.closest("button, a, input, textarea")
+      target.closest("button, a, input, textarea, [data-editor-toolbar]")
     ) {
       return;
     }
