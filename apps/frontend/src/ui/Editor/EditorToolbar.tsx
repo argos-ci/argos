@@ -127,6 +127,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
   return (
     <AnimatedBubbleMenu
       editor={editor}
+      // How the editor box tells the toolbar apart from its own chrome.
+      data-editor-toolbar=""
       className={clsx(
         BUBBLE_MENU_ANIMATION_CLASS_NAME,
         "bg-subtle border-thin z-50 flex items-center gap-0.5 rounded-lg bg-clip-padding p-1 shadow-sm",

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, screen, within } from "storybook/test";
 
 import { Label } from "@/ui/Label";
 import { StoryTitle } from "@/ui/StoryTitle";
@@ -17,6 +18,7 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+type PlayContext = Parameters<NonNullable<Story["play"]>>[0];
 
 function ControlledEditor(props: { initialValue?: EditorValue }) {
   const [value, setValue] = useState<EditorValue>(props.initialValue ?? null);
@@ -163,4 +165,79 @@ export const Default: Story = {
       />
     </div>
   ),
+};
+
+/** Two paragraphs, so a command that loses the selection has somewhere else to land. */
+const TWO_PARAGRAPHS: EditorValue = {
+  type: "doc",
+  content: [
+    {
+      type: "paragraph",
+      content: [{ type: "text", text: "First paragraph" }],
+    },
+    {
+      type: "paragraph",
+      content: [{ type: "text", text: "Second paragraph" }],
+    },
+  ],
+};
+
+/** Selects the first paragraph, which raises the floating toolbar. */
+async function selectFirstParagraph(context: PlayContext) {
+  const { canvasElement, userEvent } = context;
+  // The editor chunk is loaded on demand, so the first lookup waits for it.
+  const editor = await within(canvasElement).findByLabelText(
+    "Comment",
+    {},
+    { timeout: 5000 },
+  );
+  await userEvent.tripleClick(within(editor).getByText("First paragraph"));
+  return editor;
+}
+
+/**
+ * The toolbar's menus are portalled to `document.body`, but React still bubbles
+ * their events up through the editor box. A press on a row used to reach the
+ * box's mousedown handler, which took it for a click on the box's own padding
+ * and moved the cursor to the end of the document — the toolbar vanished, the
+ * menu lost its anchor and jumped to the corner of the page, and the command
+ * ran on the last paragraph instead of the selected one.
+ */
+export const HeadingFromToolbar: Story = {
+  name: "Heading picked from the toolbar",
+  render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
+  play: async (context) => {
+    const { userEvent } = context;
+    const editor = await selectFirstParagraph(context);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Text style" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: /^Heading 2/ }),
+    );
+    await expect(
+      await within(editor).findByRole("heading", { level: 2 }),
+    ).toHaveTextContent("First paragraph");
+    // The selection survived, so the toolbar is still up.
+    await expect(
+      screen.getByRole("button", { name: "Text style" }),
+    ).toBeVisible();
+  },
+};
+
+export const ListFromToolbar: Story = {
+  name: "List picked from the toolbar",
+  render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
+  play: async (context) => {
+    const { userEvent } = context;
+    const editor = await selectFirstParagraph(context);
+    await userEvent.click(await screen.findByRole("button", { name: "Lists" }));
+    await userEvent.click(
+      await screen.findByRole("option", { name: /^Bullet list/ }),
+    );
+    await expect(await within(editor).findByRole("listitem")).toHaveTextContent(
+      "First paragraph",
+    );
+    await expect(screen.getByRole("button", { name: "Lists" })).toBeVisible();
+  },
 };
