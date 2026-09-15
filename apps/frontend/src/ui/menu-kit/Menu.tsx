@@ -399,6 +399,8 @@ type RowSnapshot = { id: string; disabled: boolean; hasChildren: boolean };
 type MenuContextValue = {
   activeId: string | null;
   checkedIndicator: "icon" | "highlight";
+  /** Whether every row keeps room for a trailing check — see `MenuList`. */
+  reservesCheckColumn: boolean;
   close: () => void;
   /** What a row calls once its action has run — see `MenuOpenState.unmount`. */
   closeNow: () => void;
@@ -508,6 +510,23 @@ function MenuList(
         (node): node is ItemNode => node.type === "item" && !node.disabled,
       ),
     [visible],
+  );
+
+  // A check drawn on the chosen row alone pushes that row's shortcut left of
+  // all the others, so the column of shortcuts kinks around whichever row
+  // happens to be the current one. Every row in a menu that ticks anything
+  // keeps the room instead. Read from all the rows rather than the visible
+  // ones, so the column holds still while a query filters the list.
+  const reservesCheckColumn = useMemo(
+    () =>
+      checkedIndicator === "icon" &&
+      allNodes.some(
+        (node) =>
+          node.type === "item" &&
+          getItemProps(node).checked !== undefined &&
+          !getItemProps(node).checkbox,
+      ),
+    [allNodes, checkedIndicator],
   );
 
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -642,6 +661,7 @@ function MenuList(
     () => ({
       activeId,
       checkedIndicator,
+      reservesCheckColumn,
       close,
       closeNow,
       isSubmenuOpen,
@@ -653,6 +673,7 @@ function MenuList(
     [
       activeId,
       checkedIndicator,
+      reservesCheckColumn,
       close,
       closeNow,
       isSubmenuOpen,
@@ -1032,11 +1053,7 @@ function MenuItemRow(
   const { node, ref, onPointerMove: onPointerMoveProp, ...rest } = props;
   const menu = useMenuContext();
   const isSubmenu = node.children.length > 0;
-  const itemProps = (
-    isSubmenu
-      ? (findSubmenuTriggerProps(node) ?? {})
-      : (node.element.props as MenuItemProps)
-  ) as MenuItemProps;
+  const itemProps = getItemProps(node);
   const [pending, setPending] = useState(false);
   const active = menu.activeId === node.id;
 
@@ -1144,17 +1161,21 @@ function MenuItemRow(
         ) : null}
       </span>
       {itemProps.keyboardShortcut ? (
-        <Shortcut keys={itemProps.keyboardShortcut} />
+        // Set apart from the label rather than spaced by the row's own gap,
+        // which is the gap between an icon and the words it belongs to.
+        <Shortcut keys={itemProps.keyboardShortcut} className="ml-4" />
       ) : null}
       {itemProps.suffix ? (
         <span className={clsx(menuItemSuffixClassName, "font-normal")}>
           {itemProps.suffix}
         </span>
       ) : null}
-      {itemProps.checked &&
-      !itemProps.checkbox &&
-      menu.checkedIndicator === "icon" ? (
-        <CheckIcon className="size-4 shrink-0" />
+      {menu.reservesCheckColumn ? (
+        <span className="size-4 shrink-0">
+          {itemProps.checked && !itemProps.checkbox ? (
+            <CheckIcon className="size-4" />
+          ) : null}
+        </span>
       ) : null}
       {isSubmenu ? (
         <ChevronRightIcon className="text-default size-4 shrink-0" />
@@ -1238,6 +1259,17 @@ function MenuItemCheckbox(props: {
       {box}
     </span>
   );
+}
+
+/**
+ * A row's own props, wherever it declared them: a submenu row is described by
+ * the `MenuItem` inside its `SubMenu`, not by the element the node holds.
+ */
+function getItemProps(node: ItemNode): MenuItemProps {
+  if (node.children.length > 0) {
+    return findSubmenuTriggerProps(node) ?? { children: null };
+  }
+  return node.element.props as MenuItemProps;
 }
 
 function findSubmenuTriggerProps(node: ItemNode): MenuItemProps | null {

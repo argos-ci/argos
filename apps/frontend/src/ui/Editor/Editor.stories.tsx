@@ -182,8 +182,8 @@ const TWO_PARAGRAPHS: EditorValue = {
   ],
 };
 
-/** Selects the first paragraph, which raises the floating toolbar. */
-async function selectFirstParagraph(context: PlayContext) {
+/** Selects the block that reads `text`, which raises the floating toolbar. */
+async function selectBlock(context: PlayContext, text: string) {
   const { canvasElement, userEvent } = context;
   // The editor chunk is loaded on demand, so the first lookup waits for it.
   const editor = await within(canvasElement).findByLabelText(
@@ -191,7 +191,7 @@ async function selectFirstParagraph(context: PlayContext) {
     {},
     { timeout: 5000 },
   );
-  await userEvent.tripleClick(within(editor).getByText("First paragraph"));
+  await userEvent.tripleClick(within(editor).getByText(text));
   return editor;
 }
 
@@ -208,7 +208,7 @@ export const HeadingFromToolbar: Story = {
   render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
   play: async (context) => {
     const { userEvent } = context;
-    const editor = await selectFirstParagraph(context);
+    const editor = await selectBlock(context, "First paragraph");
     await userEvent.click(
       await screen.findByRole("button", { name: "Text style" }),
     );
@@ -230,7 +230,7 @@ export const ListFromToolbar: Story = {
   render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
   play: async (context) => {
     const { userEvent } = context;
-    const editor = await selectFirstParagraph(context);
+    const editor = await selectBlock(context, "First paragraph");
     await userEvent.click(await screen.findByRole("button", { name: "Lists" }));
     await userEvent.click(
       await screen.findByRole("option", { name: /^Bullet list/ }),
@@ -239,5 +239,44 @@ export const ListFromToolbar: Story = {
       "First paragraph",
     );
     await expect(screen.getByRole("button", { name: "Lists" })).toBeVisible();
+  },
+};
+
+/** A heading over a paragraph: a heading is the block a list cannot wrap as it stands. */
+const HEADING_AND_PARAGRAPH: EditorValue = {
+  type: "doc",
+  content: [
+    {
+      type: "heading",
+      attrs: { level: 1 },
+      content: [{ type: "text", text: "A heading" }],
+    },
+    {
+      type: "paragraph",
+      content: [{ type: "text", text: "A paragraph" }],
+    },
+  ],
+};
+
+/**
+ * The list rows read as disabled on a heading, which is one of the blocks
+ * people most want to turn into bullets. `toggleBulletList` flattens a block it
+ * cannot wrap and then wraps it, but that flattening does nothing in a dry run,
+ * so `editor.can()` measured the wrap against the heading and called the whole
+ * command impossible.
+ */
+export const ListFromHeading: Story = {
+  name: "List picked with a heading selected",
+  render: () => <ControlledEditor initialValue={HEADING_AND_PARAGRAPH} />,
+  play: async (context) => {
+    const { userEvent } = context;
+    const editor = await selectBlock(context, "A heading");
+    await userEvent.click(await screen.findByRole("button", { name: "Lists" }));
+    const row = await screen.findByRole("option", { name: /^Bullet list/ });
+    await expect(row).not.toHaveAttribute("aria-disabled");
+    await userEvent.click(row);
+    await expect(await within(editor).findByRole("listitem")).toHaveTextContent(
+      "A heading",
+    );
   },
 };

@@ -8,6 +8,17 @@ import { MOD, SHIFT } from "@/util/os";
 import { Button } from "../Button";
 import type { ToolbarState } from "./EditorToolbar.types";
 
+/*
+ * The rows are never disabled, and `editor.can()` is why they used to be.
+ *
+ * A heading has no place in a list item — `listItem` starts with a paragraph —
+ * so `toggleBulletList` flattens the block before wrapping it. That flattening
+ * is `clearNodes`, which does nothing in a dry run, so `can()` goes on to
+ * measure the wrap against the heading it was supposed to have removed and
+ * reports the whole command impossible. Running it works. So the rows that
+ * read as dead were exactly the blocks people reach for a list on.
+ */
+
 const LIST_OPTIONS = [
   {
     key: "bulletList",
@@ -63,11 +74,6 @@ export function ListMenu(props: { editor: Editor; state: ToolbarState }) {
             textValue={option.label}
             icon={<option.icon />}
             checked={selectedKey === option.key}
-            disabled={
-              option.key === "bulletList"
-                ? !state.canBulletList
-                : !state.canOrderedList
-            }
             keyboardShortcut={option.keys}
             onAction={() => {
               const chain = editor.chain().focus();

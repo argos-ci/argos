@@ -78,9 +78,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           (editor.getAttributes("link").href as string | undefined) ?? null,
         canSetLink: editor.can().setLink({ href: "" }),
         isBulletList: editor.isActive("bulletList"),
-        canBulletList: editor.can().toggleBulletList(),
         isOrderedList: editor.isActive("orderedList"),
-        canOrderedList: editor.can().toggleOrderedList(),
         headingLevel:
           ([1, 2, 3, 4, 5, 6] as const).find((level) =>
             editor.isActive("heading", { level }),
