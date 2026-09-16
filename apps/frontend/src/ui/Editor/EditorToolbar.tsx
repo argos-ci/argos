@@ -78,9 +78,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           (editor.getAttributes("link").href as string | undefined) ?? null,
         canSetLink: editor.can().setLink({ href: "" }),
         isBulletList: editor.isActive("bulletList"),
-        canBulletList: editor.can().toggleBulletList(),
         isOrderedList: editor.isActive("orderedList"),
-        canOrderedList: editor.can().toggleOrderedList(),
         headingLevel:
           ([1, 2, 3, 4, 5, 6] as const).find((level) =>
             editor.isActive("heading", { level }),
@@ -127,6 +125,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
   return (
     <AnimatedBubbleMenu
       editor={editor}
+      // How the editor box tells the toolbar apart from its own chrome.
+      data-editor-toolbar=""
       className={clsx(
         BUBBLE_MENU_ANIMATION_CLASS_NAME,
         "bg-subtle border-thin z-50 flex items-center gap-0.5 rounded-lg bg-clip-padding p-1 shadow-sm",
