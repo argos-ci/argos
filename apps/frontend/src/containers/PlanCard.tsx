@@ -7,6 +7,10 @@ import { PlusCircleIcon } from "lucide-react";
 
 import { config } from "@/config";
 import { CONTACT_HREF } from "@/constants";
+import {
+  CancelSubscriptionDialog,
+  ResumeSubscriptionButton,
+} from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -195,6 +199,23 @@ function PlanStatus(props: {
                   >
                     GitHub
                   </Link>
+                  .
+                </CardParagraph>
+              );
+            }
+            // A scheduled cancellation keeps every feature until the date it
+            // lands on, so the card announces that date rather than a payment
+            // that will never be taken.
+            if (account.subscription?.endDate) {
+              return (
+                <CardParagraph className="text-low">
+                  Your subscription is canceled. Your team keeps its plan until{" "}
+                  <strong>
+                    <Time
+                      date={account.subscription.endDate}
+                      format="longDate"
+                    />
+                  </strong>
                   .
                 </CardParagraph>
               );
@@ -409,6 +430,34 @@ function Period({ start, end }: { start: string; end: string }) {
   );
 }
 
+/**
+ * The one control that starts or calls off a cancellation.
+ *
+ * Only Stripe subscriptions get it: a GitHub Marketplace plan is canceled on
+ * GitHub, and a forced plan never reaches this footer at all.
+ */
+function SubscriptionLifecycleButton(props: {
+  account: DocumentType<typeof _PlanCardFragment>;
+}) {
+  const { account } = props;
+  const { subscription } = account;
+
+  if (subscription?.provider !== AccountSubscriptionProvider.Stripe) {
+    return null;
+  }
+
+  if (subscription.endDate) {
+    return <ResumeSubscriptionButton accountId={account.id} />;
+  }
+
+  return (
+    <CancelSubscriptionDialog
+      accountId={account.id}
+      periodEndDate={account.periodEndDate ?? null}
+    />
+  );
+}
+
 function PlanCardFooter(props: {
   account: DocumentType<typeof _PlanCardFragment>;
 }) {
@@ -464,10 +513,13 @@ function PlanCardFooter(props: {
         }
         default: {
           return (
-            <CardFooter className="flex items-center justify-between gap-4">
-              <ManageSubscriptionButton account={account}>
-                Manage subscription
-              </ManageSubscriptionButton>
+            <CardFooter className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <ManageSubscriptionButton account={account}>
+                  Manage subscription
+                </ManageSubscriptionButton>
+                <SubscriptionLifecycleButton account={account} />
+              </div>
               <div className="flex items-center gap-4">
                 Custom needs?{" "}
                 <LinkButton

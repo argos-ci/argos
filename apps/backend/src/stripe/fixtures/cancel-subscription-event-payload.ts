@@ -53,6 +53,17 @@ const cancellationFeedbackUpdatedSubscription = {
   },
 } as unknown as Stripe.Subscription;
 
+/**
+ * What Stripe answers once a cancellation has been scheduled: the subscription
+ * is still active and now carries the date it will stop on. That date is kept
+ * ahead of now, because a row synced from a past one reads as an expired
+ * subscription and drops out of the account's active plan.
+ */
+export const CANCEL_SCHEDULED_SUBSCRIPTION = {
+  ...cancellationFeedbackUpdatedSubscription,
+  cancel_at: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+} as unknown as Stripe.Subscription;
+
 export const TRIALING_CUSTOMER_ID = "cus_trialing_test";
 export const TRIALING_SUBSCRIPTION_ID = "sub_trialing_test";
 

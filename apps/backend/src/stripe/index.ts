@@ -458,6 +458,65 @@ export async function cancelStripeSubscription(subscriptionId: string) {
   await stripe.subscriptions.cancel(subscriptionId);
 }
 
+export type StripeCancellationFeedback =
+  Stripe.SubscriptionUpdateParams.CancellationDetails.Feedback;
+
+/**
+ * Write a subscription we just mutated back into our own row instead of waiting
+ * for the webhook that will replay the same change: the caller is answering a
+ * user action, and the screen it refreshes must not show the state from before.
+ */
+async function syncArgosSubscriptionFromStripe(
+  stripeSubscription: Stripe.Subscription,
+): Promise<Subscription> {
+  const argosSubscription = await getArgosSubscriptionFromStripeSubscriptionId(
+    stripeSubscription.id,
+  );
+  invariant(
+    argosSubscription,
+    `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+  );
+  return updateArgosSubscriptionFromStripe(
+    argosSubscription,
+    stripeSubscription,
+  );
+}
+
+/**
+ * Stop a subscription at the end of the period it is already paid for, and
+ * record why.
+ *
+ * The survey answers go into Stripe's own `cancellation_details` rather than a
+ * table of ours because everything downstream already reads that field: the
+ * webhook that alerts Discord (see `getCancelReason`) and Stripe's own churn
+ * reporting.
+ */
+export async function scheduleStripeSubscriptionCancellation(args: {
+  subscriptionId: string;
+  feedback: StripeCancellationFeedback;
+  comment: string | null;
+}): Promise<Subscription> {
+  const { subscriptionId, feedback, comment } = args;
+  const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: true,
+    cancellation_details: { feedback, comment: comment ?? "" },
+  });
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
+}
+
+/**
+ * Undo a scheduled cancellation, leaving the subscription running.
+ */
+export async function resumeStripeSubscription(
+  subscriptionId: string,
+): Promise<Subscription> {
+  const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: false,
+    cancellation_details: { feedback: "", comment: "" },
+  });
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
+}
+
 /**
  * Check if a subscription status is one we can charge additional screenshots
  * for.
