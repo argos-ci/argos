@@ -63,10 +63,16 @@ loggedTest(
       dialog.getByText("Tell us why, from the list or in your own words."),
     ).toBeVisible();
 
+    // "Other" is the one choice that cannot stand on its own.
     await dialog.getByLabel("Why are you leaving?").click();
-    await page
-      .getByRole("option", { name: "It costs too much for what we use" })
-      .click();
+    await page.getByRole("option", { name: "Other", exact: true }).click();
+    await dialog.getByRole("button", { name: "Cancel subscription" }).click();
+    await expect(
+      dialog.getByText("Tell us what went wrong so we can fix it."),
+    ).toBeVisible();
+
+    await dialog.getByLabel("Why are you leaving?").click();
+    await page.getByRole("option", { name: "It costs too much" }).click();
 
     // Price is the one answer that opens an offer, and it opens in place: no
     // extra screen between the leaver and the way out.

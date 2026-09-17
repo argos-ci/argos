@@ -50,13 +50,12 @@ const CancelSubscriptionMutation = graphql(`
  *
  * The values are Stripe's `cancellation_details.feedback` vocabulary: the same
  * list the billing portal used to show, so no answer is asked twice and the
- * churn reports keep counting the same buckets. Its `other` is missing on
- * purpose, because the box below the list is what that bucket means.
+ * churn reports keep counting the same buckets.
  */
 const REASONS: { value: SubscriptionCancelReason; label: string }[] = [
   {
     value: SubscriptionCancelReason.TooExpensive,
-    label: "It costs too much for what we use",
+    label: "It costs too much",
   },
   {
     value: SubscriptionCancelReason.MissingFeatures,
@@ -82,6 +81,7 @@ const REASONS: { value: SubscriptionCancelReason; label: string }[] = [
     value: SubscriptionCancelReason.CustomerService,
     label: "Support was not good enough",
   },
+  { value: SubscriptionCancelReason.Other, label: "Other" },
 ];
 
 /** What the trigger shows for the chosen reason, with the list unmounted. */
@@ -122,6 +122,7 @@ function CancelSubscriptionDialogContent(props: {
   });
   const reason = form.watch("reason");
   const error = form.formState.errors.reason;
+  const commentRequired = reason === SubscriptionCancelReason.Other;
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     const trimmedComment = data.comment.trim();
@@ -132,6 +133,15 @@ function CancelSubscriptionDialogContent(props: {
     if (!data.reason && !trimmedComment) {
       form.setError("reason", {
         message: "Tell us why, from the list or in your own words.",
+      });
+      return;
+    }
+
+    // "Other" without words is the one combination that tells us nothing, and
+    // the mutation refuses it too. Catch it here rather than on a round trip.
+    if (data.reason === SubscriptionCancelReason.Other && !trimmedComment) {
+      form.setError("reason", {
+        message: "Tell us what went wrong so we can fix it.",
       });
       return;
     }
@@ -204,9 +214,11 @@ function CancelSubscriptionDialogContent(props: {
                 aria-label="Why are you leaving, in your own words"
                 aria-invalid={error ? "true" : undefined}
                 placeholder={
-                  reason
-                    ? "Tell us more, if you want to"
-                    : "Or tell us in your own words"
+                  commentRequired
+                    ? "Tell us what went wrong"
+                    : reason
+                      ? "Tell us more, if you want to"
+                      : "Or tell us in your own words"
                 }
                 {...form.register("comment")}
               />
