@@ -506,13 +506,16 @@ export async function scheduleStripeSubscriptionCancellation(args: {
 
 /**
  * Undo a scheduled cancellation, leaving the subscription running.
+ *
+ * `cancellation_details` is left alone: the answers the customer gave on their
+ * way out are why we asked, and a team that was talked back is exactly the one
+ * worth being able to look up later.
  */
 export async function resumeStripeSubscription(
   subscriptionId: string,
 ): Promise<Subscription> {
   const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
-    cancellation_details: { feedback: "", comment: "" },
   });
   return syncArgosSubscriptionFromStripe(stripeSubscription);
 }

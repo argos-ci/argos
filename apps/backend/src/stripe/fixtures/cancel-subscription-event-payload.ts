@@ -64,6 +64,12 @@ export const CANCEL_SCHEDULED_SUBSCRIPTION = {
   cancel_at: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
 } as unknown as Stripe.Subscription;
 
+/** What Stripe answers once a scheduled cancellation has been called off. */
+export const CANCEL_RESUMED_SUBSCRIPTION = {
+  ...cancellationFeedbackUpdatedSubscription,
+  cancel_at: null,
+} as unknown as Stripe.Subscription;
+
 export const TRIALING_CUSTOMER_ID = "cus_trialing_test";
 export const TRIALING_SUBSCRIPTION_ID = "sub_trialing_test";
 

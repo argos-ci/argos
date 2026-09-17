@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
@@ -97,6 +97,8 @@ type Inputs = {
 export function CancelSubscriptionDialog(props: {
   accountId: string;
   periodEndDate: string | null;
+  /** A trial has been paid for by nobody, so it cannot be described as one. */
+  trial: boolean;
 }) {
   return (
     <DialogTrigger>
@@ -111,8 +113,9 @@ export function CancelSubscriptionDialog(props: {
 function CancelSubscriptionDialogContent(props: {
   accountId: string;
   periodEndDate: string | null;
+  trial: boolean;
 }) {
-  const { accountId, periodEndDate } = props;
+  const { accountId, periodEndDate, trial } = props;
   const client = useApolloClient();
   const state = useOverlayTriggerState();
   const reasonId = useId();
@@ -168,8 +171,9 @@ function CancelSubscriptionDialogContent(props: {
         <DialogBody>
           <DialogTitle>Cancel subscription</DialogTitle>
           <DialogText>
-            Your team keeps every Pro feature until the end of the period you
-            have already paid for
+            {trial
+              ? "Your team keeps every Pro feature until the trial ends"
+              : "Your team keeps every Pro feature until the end of the period you have already paid for"}
             {periodEndDate ? (
               <>
                 , on <Time date={periodEndDate} format="longDate" />.
@@ -288,24 +292,15 @@ const ResumeSubscriptionMutation = graphql(`
  */
 export function ResumeSubscriptionButton(props: { accountId: string }) {
   const client = useApolloClient();
-  const [pending, setPending] = useState(false);
 
   return (
     <Button
-      pending={pending}
-      onClick={async () => {
-        setPending(true);
-        try {
-          await client.mutate({
-            mutation: ResumeSubscriptionMutation,
-            variables: { input: { accountId: props.accountId } },
-          });
-          toast.success("Your subscription will renew as usual.");
-        } catch {
-          toast.error("Something went wrong, please try again.");
-        } finally {
-          setPending(false);
-        }
+      onAsyncAction={async () => {
+        await client.mutate({
+          mutation: ResumeSubscriptionMutation,
+          variables: { input: { accountId: props.accountId } },
+        });
+        toast.success("Your subscription will renew as usual.");
       }}
     >
       Resume subscription

@@ -20,6 +20,8 @@ async function subscribeToStripe(input: {
   planId: string;
   subscriberId: string;
   slug: string;
+  /** Seeds a running trial instead of a paid subscription. */
+  trial?: boolean;
 }) {
   await Account.query()
     .findById(input.accountId)
@@ -32,8 +34,12 @@ async function subscribeToStripe(input: {
     subscriberId: input.subscriberId,
     startDate: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
     endDate: null,
-    paymentMethodFilled: true,
-    status: "active",
+    // A trial prices its period off `trialEndDate`, so the card needs one.
+    trialEndDate: input.trial
+      ? new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString()
+      : null,
+    paymentMethodFilled: !input.trial,
+    status: input.trial ? "trialing" : "active",
   });
 }
 
@@ -115,5 +121,25 @@ loggedTest(
     await expect(
       page.getByRole("button", { name: "Cancel subscription" }),
     ).toHaveCount(0);
+  },
+);
+
+loggedTest(
+  "team billing - a trial is never told it already paid",
+  async ({ page, team, auth, plan }) => {
+    await subscribeToStripe({
+      accountId: team.account.id,
+      planId: plan.id,
+      subscriberId: auth.user.id,
+      slug: team.account.slug,
+      trial: true,
+    });
+
+    await page.goto(`/${team.account.slug}/settings/billing`);
+    await page.getByRole("button", { name: "Cancel subscription" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("until the trial ends")).toBeVisible();
+    await expect(dialog.getByText("already paid for")).toHaveCount(0);
   },
 );
