@@ -13,39 +13,47 @@ const sizeClassNames: Record<TextInputScale, string> = {
   lg: "text-base p-3 rounded-xl",
 };
 
+/**
+ * Everything that makes a field look like a field, shared by the single-line
+ * input and the textarea so the two never drift apart.
+ */
+function getFieldClassName(scale: TextInputScale, className?: string) {
+  return clsx(
+    className,
+    "peer/input",
+    "search-cancel:hidden",
+    "bg-app text-default border-thin block w-full appearance-none",
+    "placeholder:text-placeholder",
+    /* Hover */
+    "not-disabled:hover:border-hover",
+    /* Focus: the border marks the field however it was reached, the ring
+       only when it was reached by keyboard. CSS `:focus-visible` cannot
+       draw that line — a text input matches it on a plain click too — so
+       the ring keys off the modality `util/focus-modality` publishes,
+       which is the one thing react-aria was still doing here. */
+    "focus:border-active focus:outline-hidden",
+    "kbd-focus:ring-primary-active kbd-focus:ring-2",
+    /* Invalid: red all the way through, ring included. */
+    "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:not-disabled:hover:border-danger-hover",
+    "aria-invalid:kbd-focus:ring-danger-active",
+    /* Disabled */
+    "disabled:opacity-disabled",
+    /* Addon  */
+    "group-has-[.addon:first-child]/text-input-group:rounded-l-none",
+    "group-has-[.addon:last-child]/text-input-group:rounded-r-none",
+    /* Icon */
+    "peer-first/icon:pl-9",
+    /* Scale */
+    sizeClassNames[scale],
+  );
+}
+
 export function TextInput(props: TextInputProps) {
   const { scale = "md", ...rest } = props;
   return (
     <input
       {...rest}
-      className={clsx(
-        rest.className,
-        "peer/input",
-        "search-cancel:hidden",
-        "bg-app text-default border-thin block w-full appearance-none",
-        "placeholder:text-placeholder",
-        /* Hover */
-        "not-disabled:hover:border-hover",
-        /* Focus: the border marks the field however it was reached, the ring
-           only when it was reached by keyboard. CSS `:focus-visible` cannot
-           draw that line — a text input matches it on a plain click too — so
-           the ring keys off the modality `util/focus-modality` publishes,
-           which is the one thing react-aria was still doing here. */
-        "focus:border-active focus:outline-hidden",
-        "kbd-focus:ring-primary-active kbd-focus:ring-2",
-        /* Invalid: red all the way through, ring included. */
-        "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:not-disabled:hover:border-danger-hover",
-        "aria-invalid:kbd-focus:ring-danger-active",
-        /* Disabled */
-        "disabled:opacity-disabled",
-        /* Addon  */
-        "group-has-[.addon:first-child]/text-input-group:rounded-l-none",
-        "group-has-[.addon:last-child]/text-input-group:rounded-r-none",
-        /* Icon */
-        "peer-first/icon:pl-9",
-        /* Scale */
-        sizeClassNames[scale],
-      )}
+      className={getFieldClassName(scale, rest.className)}
       {...(props.autoComplete === "off"
         ? {
             "data-1p-ignore": "true",
@@ -53,6 +61,20 @@ export function TextInput(props: TextInputProps) {
             "data-protonpass-ignore": "true",
           }
         : {})}
+    />
+  );
+}
+
+export interface TextareaProps extends ComponentPropsWithRef<"textarea"> {
+  scale?: TextInputScale;
+}
+
+export function Textarea(props: TextareaProps) {
+  const { scale = "md", ...rest } = props;
+  return (
+    <textarea
+      {...rest}
+      className={clsx(getFieldClassName(scale, rest.className), "resize-y")}
     />
   );
 }
