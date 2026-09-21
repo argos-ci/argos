@@ -18,7 +18,7 @@ import {
   Screenshot,
   User,
 } from "@/database/models";
-import { queryBuilds } from "@/database/services/build";
+import { queryBuilds, resolveBuildsFilters } from "@/database/services/build";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
@@ -758,12 +758,15 @@ export const resolvers: IResolvers = {
     builds: async (project, { first, after, filters }) => {
       const query = queryBuilds({
         projectId: project.id,
-        filters: {
-          name: filters?.name,
-          type: filters?.type as BuildType[] | null | undefined,
-          status: filters?.status?.map(fromGraphQLBuildStatus),
-          search: filters?.search,
-        },
+        filters: await resolveBuildsFilters({
+          projectId: project.id,
+          filters: {
+            name: filters?.name,
+            type: filters?.type as BuildType[] | null | undefined,
+            status: filters?.status?.map(fromGraphQLBuildStatus),
+            search: filters?.search,
+          },
+        }),
       });
 
       // Fetch one extra row to know if there is a next page instead of
