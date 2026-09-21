@@ -138,12 +138,13 @@ function AppActionsMenu(props: {
   onRevoke: (value: RevokeValue) => void;
 }) {
   const { app, onRevoke } = props;
+  const label = `${app.client.name} options`;
   return (
     <MenuRoot>
       <MenuTrigger>
-        <ProviderMenuButton />
+        <ProviderMenuButton aria-label={label} />
       </MenuTrigger>
-      <Menu aria-label={`${app.client.name} options`}>
+      <Menu aria-label={label}>
         <MenuItem
           icon={<Trash2Icon />}
           variant="danger"

@@ -79,7 +79,7 @@ export function GoogleAuth(props: {
           )}
           <MenuRoot>
             <MenuTrigger>
-              <ProviderMenuButton />
+              <ProviderMenuButton aria-label="Google options" />
             </MenuTrigger>
             <Menu aria-label="Google options">
               <MenuItem
