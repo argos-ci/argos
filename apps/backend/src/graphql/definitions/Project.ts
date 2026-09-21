@@ -18,7 +18,11 @@ import {
   Screenshot,
   User,
 } from "@/database/models";
-import { queryBuilds } from "@/database/services/build";
+import {
+  getProjectBuildNames,
+  queryBuilds,
+  resolveBuildsFilters,
+} from "@/database/services/build";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
@@ -758,12 +762,15 @@ export const resolvers: IResolvers = {
     builds: async (project, { first, after, filters }) => {
       const query = queryBuilds({
         projectId: project.id,
-        filters: {
-          name: filters?.name,
-          type: filters?.type as BuildType[] | null | undefined,
-          status: filters?.status?.map(fromGraphQLBuildStatus),
-          search: filters?.search,
-        },
+        filters: await resolveBuildsFilters({
+          projectId: project.id,
+          filters: {
+            name: filters?.name,
+            type: filters?.type as BuildType[] | null | undefined,
+            status: filters?.status?.map(fromGraphQLBuildStatus),
+            search: filters?.search,
+          },
+        }),
       });
 
       // Fetch one extra row to know if there is a next page instead of
@@ -955,12 +962,8 @@ export const resolvers: IResolvers = {
       return `${account.slug}/${project.name}`;
     },
     buildNames: async (project) => {
-      const builds = await Build.query()
-        .select("name")
-        .distinct("name")
-        .where("projectId", project.id)
-        .whereRaw(`"createdAt" > now() - interval '1 month'`);
-      return builds.map((build) => build.name);
+      const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+      return getProjectBuildNames({ projectId: project.id, since });
     },
     contributors: async (project, args, ctx) => {
       const { first, after } = args;

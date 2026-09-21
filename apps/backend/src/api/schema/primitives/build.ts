@@ -13,7 +13,7 @@ import {
   NotificationPayloadSchema,
 } from "@/build-notification";
 import { Build, ScreenshotBucket } from "@/database/models";
-import { queryBuilds } from "@/database/services/build";
+import { queryBuilds, resolveBuildsFilters } from "@/database/services/build";
 
 import { PageParamsSchema } from "./pagination";
 import { Sha1HashSchema } from "./sha";
@@ -56,7 +56,10 @@ export async function listBuilds(
   const { head, headSha, search, distinctName, page, perPage } = params;
   const filterQuery = queryBuilds({
     projectId: ctx.projectId,
-    filters: { branch: head, commit: headSha, search },
+    filters: await resolveBuildsFilters({
+      projectId: ctx.projectId,
+      filters: { branch: head, commit: headSha, search },
+    }),
   }).select("builds.id");
 
   if (distinctName) {
