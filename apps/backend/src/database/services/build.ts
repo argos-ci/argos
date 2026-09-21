@@ -91,6 +91,12 @@ const SEARCH_NAMES_LIMIT = 200;
 const SEARCH_BUCKETS_LIMIT = 1000;
 
 /**
+ * How many distinct build names {@link getProjectBuildNames} returns before it
+ * stops enumerating.
+ */
+const PROJECT_NAMES_LIMIT = 1000;
+
+/**
  * Resolve the filters {@link queryBuilds} cannot turn into an indexable
  * predicate on its own. Only `search` needs it; anything else is passed
  * through untouched.
@@ -98,6 +104,12 @@ const SEARCH_BUCKETS_LIMIT = 1000;
 export async function resolveBuildsFilters(input: {
   projectId: string | string[];
   filters?: BuildsFilters | null;
+  /**
+   * The points at which the search stops resolving an arm and falls back to
+   * matching it in the build query. Overridable so tests can reach those
+   * fallbacks, which the defaults put far out of reach of any fixture.
+   */
+  limits?: { names?: number; buckets?: number } | undefined;
 }): Promise<ResolvedBuildsFilters | null> {
   const { filters } = input;
   if (!filters) {
@@ -113,70 +125,134 @@ export async function resolveBuildsFilters(input: {
   // If the search looks like a commit SHA, also match commits by prefix.
   const sha = /^[0-9a-f]{7,40}$/i.test(search) ? search.toLowerCase() : null;
   const pattern = `%${escapeLikePattern(search)}%`;
-  const [names, bucketIds] = await Promise.all([
-    findMatchingBuildNames({ projectIds, pattern }),
-    findMatchingBucketIds({ projectIds, pattern, sha }),
+  const [matchingNames, bucketIds] = await Promise.all([
+    findDistinctBuildNames({
+      projectIds,
+      pattern,
+      limit: input.limits?.names ?? SEARCH_NAMES_LIMIT,
+    }),
+    findMatchingBucketIds({
+      projectIds,
+      pattern,
+      sha,
+      limit: input.limits?.buckets ?? SEARCH_BUCKETS_LIMIT,
+    }),
   ]);
+  // Past the limit the names were not all read, so the ones that came back
+  // are not the whole answer: match the pattern in the build query instead.
+  const names = matchingNames.capped ? null : matchingNames.names;
 
   return { ...filters, search: { pattern, sha, names, bucketIds } };
 }
 
 /**
- * The build names of `projectIds` matching `pattern`, or `null` when one of
- * the projects has more distinct names than {@link SEARCH_NAMES_LIMIT}.
+ * The distinct names of the builds of `projectIds`, read with a loose index
+ * scan over `builds_projectid_name_createdat_idx`: one descent per distinct
+ * name, instead of reading the projects' builds to collect them.
  *
- * The recursive CTE is a loose index scan over
- * `builds_projectid_name_createdat_idx`: one descent per distinct name,
- * instead of reading the project's builds to collect them.
+ * `capped` says the walk stopped at `limit` with names still to come, so
+ * `names` is a prefix rather than the whole set.
+ *
+ * With `pattern`, only the names matching it are returned — the match is left
+ * to Postgres so it means exactly what `ILIKE` means in the build query.
+ * With `since`, only the names a build carried since then.
  */
-async function findMatchingBuildNames(input: {
+async function findDistinctBuildNames(input: {
   projectIds: string[];
-  pattern: string;
-}): Promise<string[] | null> {
-  const perProject = await Promise.all(
-    input.projectIds.map(async (projectId) => {
-      const result = await knex.raw<{
-        rows: { name: string; matched: boolean }[];
-      }>(
-        `with recursive "distinct_names" as (
-            (select "name" from "builds" where "projectId" = :projectId order by "name" limit 1)
-            union all
-            select (
-              select "b"."name" from "builds" as "b"
-              where "b"."projectId" = :projectId and "b"."name" > "distinct_names"."name"
-              order by "b"."name" limit 1
-            )
-            from "distinct_names" where "distinct_names"."name" is not null
-          )
-          select "name", "name" ilike :pattern as "matched"
-          from "distinct_names" where "name" is not null limit :limit`,
-        { projectId, pattern: input.pattern, limit: SEARCH_NAMES_LIMIT + 1 },
-      );
-      return result.rows;
-    }),
-  );
-  if (perProject.some((rows) => rows.length > SEARCH_NAMES_LIMIT)) {
-    return null;
+  pattern?: string | undefined;
+  since?: Date | undefined;
+  limit: number;
+}): Promise<{ names: string[]; capped: boolean }> {
+  const { projectIds, pattern, since, limit } = input;
+  if (projectIds.length === 0) {
+    return { names: [], capped: false };
   }
-  return Array.from(
-    new Set(
-      perProject.flatMap((rows) =>
-        rows.filter((row) => row.matched).map((row) => row.name),
-      ),
-    ),
+
+  // One statement for every project rather than one each: the filters run on
+  // every keystroke of a search, and `Project.builds` resolves once per
+  // project.
+  const bindings: (string | Date | number)[] = [...projectIds];
+  const projectRows = projectIds.map(() => "(?::bigint)").join(", ");
+  const matched = pattern ? `"dn"."name" ilike ?` : "true";
+  if (pattern) {
+    bindings.push(pattern);
+  }
+  const seenSince = since
+    ? `and exists (
+         select 1 from "builds" as "rb"
+         where "rb"."projectId" = "dn"."projectId"
+           and "rb"."name" = "dn"."name"
+           and "rb"."createdAt" > ?
+       )`
+    : "";
+  if (since) {
+    bindings.push(since);
+  }
+  bindings.push(limit + 1);
+
+  const result = await knex.raw<{ rows: { name: string; matched: boolean }[] }>(
+    `with recursive "dn" as (
+        select
+          "p"."projectId" as "projectId",
+          (
+            select "b"."name" from "builds" as "b"
+            where "b"."projectId" = "p"."projectId"
+            order by "b"."name" limit 1
+          ) as "name"
+        from (values ${projectRows}) as "p"("projectId")
+        union all
+        select
+          "dn"."projectId",
+          (
+            select "b"."name" from "builds" as "b"
+            where "b"."projectId" = "dn"."projectId" and "b"."name" > "dn"."name"
+            order by "b"."name" limit 1
+          )
+        from "dn"
+        where "dn"."name" is not null
+      )
+      select "dn"."name", ${matched} as "matched"
+      from "dn"
+      where "dn"."name" is not null ${seenSince}
+      limit ?`,
+    bindings,
   );
+
+  const rows = result.rows;
+  return {
+    names: Array.from(
+      new Set(rows.filter((row) => row.matched).map((row) => row.name)),
+    ),
+    capped: rows.length > limit,
+  };
+}
+
+/**
+ * The distinct names of the builds `projectId` produced since `since`.
+ */
+export async function getProjectBuildNames(input: {
+  projectId: string;
+  since: Date;
+}): Promise<string[]> {
+  const { names } = await findDistinctBuildNames({
+    projectIds: [input.projectId],
+    since: input.since,
+    limit: PROJECT_NAMES_LIMIT,
+  });
+  return names;
 }
 
 /**
  * The ids of the compare buckets of `projectIds` matching `pattern`, or `null`
- * when there are more than {@link SEARCH_BUCKETS_LIMIT} of them.
+ * when there are more than `limit` of them.
  */
 async function findMatchingBucketIds(input: {
   projectIds: string[];
   pattern: string;
   sha: string | null;
+  limit: number;
 }): Promise<string[] | null> {
-  const { projectIds, pattern, sha } = input;
+  const { projectIds, pattern, sha, limit } = input;
   const buckets = await ScreenshotBucket.query()
     .select("id")
     .whereIn("projectId", projectIds)
@@ -186,8 +262,8 @@ async function findMatchingBucketIds(input: {
         qb.orWhereLike("commit", `${sha}%`);
       }
     })
-    .limit(SEARCH_BUCKETS_LIMIT + 1);
-  if (buckets.length > SEARCH_BUCKETS_LIMIT) {
+    .limit(limit + 1);
+  if (buckets.length > limit) {
     return null;
   }
   return buckets.map((bucket) => bucket.id);
@@ -260,7 +336,7 @@ export function queryBuilds(input: {
         // re-runs it per row — before it looks at a single build. On its own
         // the subquery does flatten, so how the bucket arm is written depends
         // on what it sits next to.
-        const isBucketArmAlone = hasBucketArm && !hasNameArm && !sha;
+        const isBucketArmAlone = !hasNameArm && !sha;
 
         if (!hasNameArm && !hasBucketArm && !sha) {
           // Nothing in the project matches: say so, rather than go looking.
@@ -278,7 +354,7 @@ export function queryBuilds(input: {
                 qb.orWhereIn("builds.compareScreenshotBucketId", bucketIds);
               }
             } else if (isBucketArmAlone) {
-              qb.whereIn(
+              qb.orWhereIn(
                 "builds.compareScreenshotBucketId",
                 projectBucketsQuery().where((bucketQb) => {
                   bucketQb.whereILike("branch", pattern);
@@ -292,12 +368,17 @@ export function queryBuilds(input: {
               // read the bucket per build instead. One primary key lookup a
               // row is nothing next to a pattern this wide — it is matched by
               // so many builds that a page of them is found in the first rows
-              // read.
+              // read. Scoped to the projects like the two arms above, so all
+              // three stand for the same set of buckets.
+              const projectArray = projectIds.map(() => "?").join(", ");
               qb.orWhereRaw(
                 `(select ${sha ? `"sb"."branch" ilike ? or "sb"."commit" like ?` : `"sb"."branch" ilike ?`}
                     from "screenshot_buckets" as "sb"
-                    where "sb"."id" = "builds"."compareScreenshotBucketId")`,
-                sha ? [pattern, `${sha}%`] : [pattern],
+                    where "sb"."id" = "builds"."compareScreenshotBucketId"
+                      and "sb"."projectId" = any(array[${projectArray}]::bigint[]))`,
+                sha
+                  ? [pattern, `${sha}%`, ...projectIds]
+                  : [pattern, ...projectIds],
               );
             }
 

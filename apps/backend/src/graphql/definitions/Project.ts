@@ -18,7 +18,11 @@ import {
   Screenshot,
   User,
 } from "@/database/models";
-import { queryBuilds, resolveBuildsFilters } from "@/database/services/build";
+import {
+  getProjectBuildNames,
+  queryBuilds,
+  resolveBuildsFilters,
+} from "@/database/services/build";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
@@ -958,12 +962,8 @@ export const resolvers: IResolvers = {
       return `${account.slug}/${project.name}`;
     },
     buildNames: async (project) => {
-      const builds = await Build.query()
-        .select("name")
-        .distinct("name")
-        .where("projectId", project.id)
-        .whereRaw(`"createdAt" > now() - interval '1 month'`);
-      return builds.map((build) => build.name);
+      const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+      return getProjectBuildNames({ projectId: project.id, since });
     },
     contributors: async (project, args, ctx) => {
       const { first, after } = args;

@@ -80,6 +80,13 @@ const ProjectQuery = graphql(`
 type ProjectDocument = DocumentType<typeof ProjectQuery>;
 type Project = NonNullable<ProjectDocument["project"]>;
 
+/**
+ * Builds fetched per page. Keep it at two or more: the onboarding check below
+ * reads "the project has fewer than two builds" off `edges` rather than
+ * counting the project, so a page of one would make it always true.
+ */
+const BUILDS_PAGE_SIZE = 20;
+
 const ProjectBuildsQuery = graphql(`
   query ProjectBuilds_project_Builds(
     $accountSlug: String!
@@ -364,7 +371,7 @@ function PageContent(props: {
         projectName: params.projectName,
         filters: filtersVariable,
         after: 0,
-        first: 20,
+        first: BUILDS_PAGE_SIZE,
       },
     },
   );
@@ -417,7 +424,8 @@ function PageContent(props: {
   // Until a project has two builds (a first one and one compared with it),
   // guide reviewers through the onboarding instead of showing the list. Read
   // it off the page rather than from a `totalCount`: counting a project's
-  // builds costs a scan of all of them, and the first page already says it.
+  // builds costs a scan of all of them, and a page of `BUILDS_PAGE_SIZE`
+  // already says whether there are two.
   if (builds.edges.length < 2 && !hasFilters) {
     if (hasReviewerPermission) {
       // GettingStarted owns its scroll container: the project route sets a
