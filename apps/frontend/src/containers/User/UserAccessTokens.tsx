@@ -58,12 +58,13 @@ const ActionsMenu = ({
   onRename: (value: TokenDialogValue) => void;
   onDelete: (value: TokenDialogValue) => void;
 }) => {
+  const label = `${token.name} options`;
   return (
     <MenuRoot>
       <MenuTrigger>
-        <ProviderMenuButton />
+        <ProviderMenuButton aria-label={label} />
       </MenuTrigger>
-      <Menu aria-label={`${token.name} options`}>
+      <Menu aria-label={label}>
         <MenuItem
           icon={<PencilIcon />}
           onAction={() => {

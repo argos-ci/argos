@@ -1,7 +1,8 @@
 import { cloneElement } from "react";
+import clsx from "clsx";
 import { MoreVerticalIcon } from "lucide-react";
 
-import { Button } from "@/ui/Button";
+import { Button, ButtonProps } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 
 export function ProviderCard(props: {
@@ -46,9 +47,19 @@ export function ProviderLastLoggedAt(props: { date: string }) {
   );
 }
 
-export function ProviderMenuButton() {
+/**
+ * The row's overflow button. It forwards its props: every call site hangs a
+ * menu off it, and a trigger that drops what Base UI hands it renders a button
+ * that opens nothing.
+ */
+export function ProviderMenuButton({ className, ...props }: ButtonProps) {
   return (
-    <Button variant="ghost" iconOnly className="shrink-0">
+    <Button
+      variant="ghost"
+      iconOnly
+      className={clsx("shrink-0", className)}
+      {...props}
+    >
       <MoreVerticalIcon />
     </Button>
   );

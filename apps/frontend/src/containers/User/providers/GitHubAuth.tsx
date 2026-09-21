@@ -84,7 +84,7 @@ export function GitHubAuth(props: {
           )}
           <MenuRoot>
             <MenuTrigger>
-              <ProviderMenuButton />
+              <ProviderMenuButton aria-label="GitHub options" />
             </MenuTrigger>
             <Menu aria-label="GitHub options">
               <MenuItem

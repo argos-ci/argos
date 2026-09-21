@@ -82,7 +82,7 @@ export function GitLabAuth(props: {
           )}
           <MenuRoot>
             <MenuTrigger>
-              <ProviderMenuButton />
+              <ProviderMenuButton aria-label="GitLab options" />
             </MenuTrigger>
             <Menu aria-label="GitLab options">
               <MenuItem
