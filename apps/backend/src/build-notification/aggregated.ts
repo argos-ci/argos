@@ -3,11 +3,36 @@ import { assertNever } from "@argos/util/assertNever";
 import { Build } from "@/database/models/Build";
 import { BuildNotification } from "@/database/models/BuildNotification";
 import type { Project } from "@/database/models/Project";
+import { ScreenshotBucket } from "@/database/models/ScreenshotBucket";
 
 import {
   getNotificationStates,
   type NotificationPayload,
 } from "./notification";
+
+/**
+ * Every build of the project on this commit, re-runs included — merge queue
+ * builds too, which is why the bucket arm does not exclude builds that have a
+ * `prHeadCommit`. Unioned rather than joined: an `or` across both tables is
+ * indexable on neither, so Postgres hashed all of `screenshot_buckets` for it.
+ */
+function queryCommitBuildIds(input: { project: Project; commit: string }) {
+  const { project, commit } = input;
+  const projectBuilds = () =>
+    Build.query().select("builds.id").where("builds.projectId", project.id);
+
+  return projectBuilds()
+    .where("builds.prHeadCommit", commit)
+    .unionAll(
+      projectBuilds().whereIn(
+        "builds.compareScreenshotBucketId",
+        ScreenshotBucket.query()
+          .select("id")
+          .where("projectId", project.id)
+          .where("commit", commit),
+      ),
+    );
+}
 
 export async function getAggregatedNotificationPayload(args: {
   project: Project;
@@ -24,14 +49,7 @@ export async function getAggregatedNotificationPayload(args: {
   const [siblingBuilds, projectUrl] = await Promise.all([
     Build.query()
       .select("builds.id")
-      .joinRelated("compareScreenshotBucket")
-      .where("builds.projectId", project.id)
-      .where((qb) => {
-        qb.where("builds.prHeadCommit", commit).orWhere(
-          "compareScreenshotBucket.commit",
-          commit,
-        );
-      })
+      .whereIn("builds.id", queryCommitBuildIds({ project, commit }))
       .distinctOn("builds.name")
       .orderBy("builds.name")
       .orderBy("builds.createdAt", "desc"),
