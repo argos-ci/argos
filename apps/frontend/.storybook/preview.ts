@@ -11,9 +11,11 @@ trackFocusModality();
 
 // Provide a mock clientData so that `src/config.ts` does not throw when
 // modules are eagerly resolved by Vite.
-(window as any).clientData ??= {
+window.clientData ??= {
   config: {
     sentry: { environment: "storybook", clientDsn: "" },
+    session: { domain: "" },
+    samlTeamSlug: "",
     releaseVersion: "storybook",
     contactEmail: "",
     github: {
@@ -27,7 +29,7 @@ trackFocusModality();
     stripe: { pricingTableId: "", publishableKey: "" },
     server: { url: "" },
     api: { baseUrl: "" },
-    bucket: { publishableKey: "" },
+    deployments: { baseDomain: "", customDomains: false },
   },
 };
 

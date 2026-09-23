@@ -6,5 +6,6 @@
       "@/*": ["./src/*"]
     }
   },
+  "include": ["**/*", ".storybook/**/*"],
   "exclude": ["node_modules", "dist", "storybook-static", "eslint.config.mjs"]
 }
