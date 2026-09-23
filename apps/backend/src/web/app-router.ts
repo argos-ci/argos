@@ -238,6 +238,14 @@ export const installAppRouter = async (app: express.Application) => {
   // server card) — `argos-ci.com` redirects `/.well-known/*` here.
   installAgentDiscoveryRoutes(router);
 
+  // Any other well-known document would fall through to the SPA catch-all and
+  // come back as the shell with a 200, which a discovery client takes for the
+  // document itself: an MCP client probing OpenID Connect discovery fails to
+  // parse HTML instead of falling back to the OAuth metadata above.
+  router.use("/.well-known", (_req, res) => {
+    res.status(404).json({ error: "Not found" });
+  });
+
   router.use(getSlackMiddleware());
 
   // Static directory
