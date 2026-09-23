@@ -3,7 +3,9 @@ import { Router } from "express";
 import { z } from "zod";
 
 import config from "@/config";
+import { transaction } from "@/database";
 import { Account, GithubInstallation } from "@/database/models";
+import { checkOctokitErrorStatus, getAppOctokit } from "@/github";
 import logger from "@/logger";
 import {
   handleGitHubEvents,
@@ -81,6 +83,61 @@ function parseState(input: unknown) {
   }
 }
 
+/**
+ * GitHub sends the user to the setup URL right after creating the
+ * installation, but nothing in that URL is signed: anyone can visit it with
+ * the id of an installation that is not theirs. The one the user just made is
+ * brand new, and nobody owns it yet.
+ */
+const MAX_NEW_INSTALLATION_AGE = 60 * 60 * 1000;
+
+/**
+ * Check if GitHub created a light app installation moments ago.
+ */
+async function checkIsNewLightInstallation(installationId: number) {
+  const octokit = getAppOctokit({ app: "light", proxy: false });
+  const ghInstallation = await octokit.apps
+    .getInstallation({ installation_id: installationId })
+    .then((res) => res.data)
+    .catch((error: unknown) => {
+      if (checkOctokitErrorStatus(404, error)) {
+        return null;
+      }
+      throw error;
+    });
+  if (!ghInstallation) {
+    return false;
+  }
+  const age = Date.now() - new Date(ghInstallation.created_at).getTime();
+  return age < MAX_NEW_INSTALLATION_AGE;
+}
+
+/**
+ * Link a light installation to an account, unless another account owns it.
+ */
+async function linkLightInstallation(
+  account: Account,
+  installation: GithubInstallation,
+) {
+  return transaction(async (trx) => {
+    // Two accounts linking the same installation would both find it unowned:
+    // the lock makes the second one wait, and then see the first one's link.
+    await GithubInstallation.query(trx).findById(installation.id).forUpdate();
+    const owner = await Account.query(trx)
+      .select("id")
+      .where("githubLightInstallationId", installation.id)
+      .whereNot("id", account.id)
+      .first();
+    if (owner) {
+      return false;
+    }
+    await account
+      .$query(trx)
+      .patch({ githubLightInstallationId: installation.id });
+    return true;
+  });
+}
+
 router.get(
   "/github-light/install",
   asyncHandler(async (req, res) => {
@@ -114,16 +171,22 @@ router.get(
       ) {
         return account.githubLightInstallation;
       }
+      if (!(await checkIsNewLightInstallation(query.data.installation_id))) {
+        return null;
+      }
       // If the installation does not exist, create it
       const installation = await getOrCreateInstallation({
         githubId: query.data.installation_id,
         app: "light",
       });
-      await account.$query().patch({
-        githubLightInstallationId: installation.id,
-      });
-      return installation;
+      const linked = await linkLightInstallation(account, installation);
+      return linked ? installation : null;
     })();
+
+    if (!installation) {
+      res.status(400).send("Invalid installation");
+      return;
+    }
 
     await synchronizeFromInstallationId(installation.id);
 

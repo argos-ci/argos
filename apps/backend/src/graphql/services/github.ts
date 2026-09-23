@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
@@ -5,8 +6,10 @@ import {
   Account,
   GithubAccount,
   GithubAccountMember,
+  GithubInstallation,
   GithubRepository,
   TeamUser,
+  User,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getTokenOctokit, Octokit } from "@/github";
 
@@ -140,6 +143,51 @@ export async function checkUserHasAccessToInstallation(
     octokit.apps.listInstallationsForAuthenticatedUser,
   );
   return result.some((installation) => installation.id === ghInstallationId);
+}
+
+/**
+ * Check if a user administers an account a light installation belongs to.
+ */
+export async function checkUserAdministersLightInstallation(
+  user: User,
+  installation: GithubInstallation,
+): Promise<boolean> {
+  if (installation.app !== "light") {
+    return false;
+  }
+  const accounts = await Account.query().where(
+    "githubLightInstallationId",
+    installation.id,
+  );
+  const permissionsByAccount = await Promise.all(
+    accounts.map((account) => account.$getPermissions(user)),
+  );
+  return permissionsByAccount.some((permissions) =>
+    permissions.includes("admin"),
+  );
+}
+
+/**
+ * Check if a user can use a GitHub installation to link repositories to an
+ * account they administer.
+ */
+export async function checkUserCanUseInstallation(input: {
+  userAccount: Account;
+  installation: GithubInstallation;
+  account: Account;
+}): Promise<boolean> {
+  const { userAccount, installation, account } = input;
+  switch (installation.app) {
+    case "main":
+      return checkUserHasAccessToInstallation(
+        userAccount,
+        installation.githubId,
+      );
+    case "light":
+      return account.githubLightInstallationId === installation.id;
+    default:
+      assertNever(installation.app);
+  }
 }
 
 type CreateGitHubAccountInput = {

@@ -204,6 +204,11 @@ export class Account extends Model {
   gitlabAccessToken!: string | null;
   gitlabBaseUrl!: string | null;
   slackInstallationId!: string | null;
+  /**
+   * The light GitHub App does not authorize users, so GitHub cannot tell who
+   * may use one of its installations: it belongs to the account it was
+   * installed from, and this link is the only record of that.
+   */
   githubLightInstallationId!: string | null;
   originInstallationId!: string | null;
   meteredSpendLimitByPeriod!: number | null;
