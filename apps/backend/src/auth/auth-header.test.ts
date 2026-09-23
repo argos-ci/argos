@@ -11,6 +11,15 @@ describe("parseBearerFromHeader", () => {
     expect(parseBearerFromHeader("Bearer secret-token")).toBe("secret-token");
   });
 
+  it.each(["bearer", "BEARER"])(
+    "accepts the scheme in any letter case (%s)",
+    (scheme) => {
+      expect(parseBearerFromHeader(`${scheme} secret-token`)).toBe(
+        "secret-token",
+      );
+    },
+  );
+
   it("throws on invalid header syntax", () => {
     expect.assertions(2);
 
