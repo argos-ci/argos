@@ -8,6 +8,7 @@ import { startOfUTCMonth } from "@/util/utc-month";
 import { knex } from "./knex";
 import { UserEmail } from "./models";
 import { Account } from "./models/Account";
+import { AuditTrail } from "./models/AuditTrail";
 import { Build } from "./models/Build";
 import { BuildReview } from "./models/BuildReview";
 import { Comment } from "./models/Comment";
@@ -1012,6 +1013,122 @@ export async function createIgnoredChangeScenario(input: {
   ]);
 
   return { test, build };
+}
+
+/**
+ * Three ignored changes that each column of the ledger ranks differently, so
+ * sorting on any of them — either way — gives an order of its own:
+ *
+ * | test          | ignored     | occurrences since | last seen   |
+ * | ------------- | ----------- | ----------------- | ----------- |
+ * | checkout.png  | 20 days ago | 3                 | 2 hours ago |
+ * | dashboard.png | 2 days ago  | 0                 | 3 days ago  |
+ * | settings.png  | 8 days ago  | 12                | 5 days ago  |
+ */
+export async function createSortableIgnoredChangesScenario(input: {
+  projectId: string;
+  userId: string;
+}): Promise<void> {
+  const { projectId, userId } = input;
+  const daysAgo = (days: number) =>
+    new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const changes = [
+    {
+      name: "checkout.png",
+      ignoredAt: daysAgo(20),
+      occurrences: [{ date: daysAgo(10), value: 3 }],
+      lastSeenAt: getSeedInstant(),
+    },
+    {
+      name: "dashboard.png",
+      ignoredAt: daysAgo(2),
+      // Before the ignore, so it does not count.
+      occurrences: [{ date: daysAgo(4), value: 5 }],
+      lastSeenAt: daysAgo(3),
+    },
+    {
+      name: "settings.png",
+      ignoredAt: daysAgo(8),
+      occurrences: [
+        { date: daysAgo(7), value: 8 },
+        { date: daysAgo(6), value: 4 },
+      ],
+      lastSeenAt: daysAgo(5),
+    },
+  ];
+
+  const seededAt = getSeedInstant();
+  const bucket = await ScreenshotBucket.query().insertAndFetch({
+    name: "default",
+    branch: "main",
+    commit: "3f8a1c5e7b9d0f2a4c6e8b0d2f4a6c8e0b2d4f6a",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: changes.length,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  });
+  const [build, diffFile] = await Promise.all([
+    Build.query().insertAndFetch({
+      name: "main",
+      number: 1,
+      type: "reference" as const,
+      jobStatus: "complete" as const,
+      compareScreenshotBucketId: bucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+  const tests = await Test.query().insertAndFetch(
+    changes.map(({ name }) => ({ name, buildName: "default", projectId })),
+  );
+
+  await Promise.all(
+    changes.map(async (change, index) => {
+      const test = tests[index];
+      invariant(test);
+      // Dash-free: change ids embed the fingerprint and split on `-`.
+      const fingerprint = decodeFingerprint(`v1${index}f5e4d3c2b1a09876`);
+      await Promise.all([
+        // The ledger only reads the diff's own image, not the screenshots.
+        ScreenshotDiff.query().insert({
+          buildId: build.id,
+          baseScreenshotId: null,
+          compareScreenshotId: null,
+          testId: test.id,
+          score: 0.3,
+          jobStatus: "complete" as const,
+          s3Id: diffFile.key,
+          fileId: diffFile.id,
+          fingerprint,
+          createdAt: change.lastSeenAt,
+          updatedAt: change.lastSeenAt,
+        }),
+        knex("test_stats_fingerprints").insert(
+          change.occurrences.map((occurrence) => ({
+            testId: test.id,
+            fingerprint,
+            ...occurrence,
+          })),
+        ),
+      ]);
+      await ignoreChange({ projectId, testId: test.id, fingerprint, userId });
+      // The ledger reads the ignore date from the audit trail.
+      await AuditTrail.query()
+        .where({ projectId, testId: test.id, fingerprint })
+        .patch({ date: change.ignoredAt });
+    }),
+  );
 }
 
 /**

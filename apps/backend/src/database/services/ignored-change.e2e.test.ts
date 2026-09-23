@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { knex } from "@/database";
 import {
   AuditTrail,
   IgnoredChange,
+  ScreenshotDiff,
   type Test,
   type User,
 } from "@/database/models";
@@ -13,6 +15,7 @@ import {
   isChangeIgnored,
   queryIgnoredChanges,
   unignoreChange,
+  type IgnoredChangesOrder,
 } from "./ignored-change";
 
 describe("ignored-change service", () => {
@@ -132,11 +135,15 @@ describe("ignored-change service", () => {
   });
 
   describe("queryIgnoredChanges", () => {
-    const pagination = { after: 0, first: 30 };
+    const defaultOrder: IgnoredChangesOrder = {
+      key: "ignoredAt",
+      direction: "desc",
+    };
+    const listing = { orderBy: defaultOrder, after: 0, first: 30 };
 
     it("returns an empty page when nothing is ignored", async () => {
       await expect(
-        queryIgnoredChanges({ projectId: test.projectId, ...pagination }),
+        queryIgnoredChanges({ projectId: test.projectId, ...listing }),
       ).resolves.toEqual({ total: 0, results: [] });
     });
 
@@ -145,7 +152,7 @@ describe("ignored-change service", () => {
 
       const { total, results } = await queryIgnoredChanges({
         projectId: test.projectId,
-        ...pagination,
+        ...listing,
       });
 
       expect(total).toBe(1);
@@ -170,7 +177,7 @@ describe("ignored-change service", () => {
 
       const { results } = await queryIgnoredChanges({
         projectId: test.projectId,
-        ...pagination,
+        ...listing,
       });
 
       expect(results.map((row) => row.fingerprint)).toEqual([
@@ -189,7 +196,7 @@ describe("ignored-change service", () => {
 
       const { total, results } = await queryIgnoredChanges({
         projectId: test.projectId,
-        ...pagination,
+        ...listing,
       });
 
       expect(total).toBe(2);
@@ -211,7 +218,7 @@ describe("ignored-change service", () => {
       await unignoreChange(identity());
 
       await expect(
-        queryIgnoredChanges({ projectId: test.projectId, ...pagination }),
+        queryIgnoredChanges({ projectId: test.projectId, ...listing }),
       ).resolves.toEqual({ total: 0, results: [] });
     });
 
@@ -231,11 +238,13 @@ describe("ignored-change service", () => {
 
       const firstPage = await queryIgnoredChanges({
         projectId: test.projectId,
+        orderBy: defaultOrder,
         after: 0,
         first: 1,
       });
       const secondPage = await queryIgnoredChanges({
         projectId: test.projectId,
+        orderBy: defaultOrder,
         after: 1,
         first: 1,
       });
@@ -245,6 +254,123 @@ describe("ignored-change service", () => {
       expect(secondPage.results).toHaveLength(1);
       expect(secondPage.results[0]?.fingerprint).not.toBe(
         firstPage.results[0]?.fingerprint,
+      );
+    });
+
+    describe("ordering", () => {
+      async function ignoreAt(fingerprint: string, date: string) {
+        await Promise.all([
+          IgnoredChange.query().insert({
+            projectId: test.projectId,
+            testId: test.id,
+            fingerprint,
+          }),
+          AuditTrail.query().insert({
+            date,
+            projectId: test.projectId,
+            testId: test.id,
+            userId: user.id,
+            fingerprint,
+            action: "files.ignored",
+          }),
+        ]);
+      }
+
+      async function seeAt(input: {
+        fingerprint: string;
+        createdAt: string;
+        fileId: string | null;
+      }) {
+        const diff = await factory.ScreenshotDiff.create();
+        await ScreenshotDiff.query()
+          .findById(diff.id)
+          .patch({ testId: test.id, ...input });
+      }
+
+      /**
+       * Three changes that each ordering ranks differently, so that every
+       * ordering and direction comes out as its own permutation:
+       * - "fp-a" was ignored first, came back 3 times, and has no image left;
+       * - "fp-b" only came back before it was ignored, and was seen last;
+       * - "fp-c" was ignored last, and came back 3 times too.
+       */
+      async function createRankedChanges() {
+        const file = await factory.File.create({ type: "screenshotDiff" });
+        const stat = (fingerprint: string, date: string, value: number) => ({
+          testId: test.id,
+          fingerprint,
+          date,
+          value,
+        });
+        await Promise.all([
+          ignoreAt("fp-a", "2026-01-01T00:00:00.000Z"),
+          ignoreAt("fp-b", "2026-02-01T00:00:00.000Z"),
+          ignoreAt("fp-c", "2026-03-01T00:00:00.000Z"),
+          knex("test_stats_fingerprints").insert([
+            stat("fp-a", "2026-01-10T00:00:00.000Z", 3),
+            stat("fp-b", "2026-01-15T00:00:00.000Z", 9),
+            stat("fp-c", "2026-03-10T00:00:00.000Z", 1),
+            stat("fp-c", "2026-03-11T00:00:00.000Z", 2),
+          ]),
+          seeAt({
+            fingerprint: "fp-a",
+            createdAt: "2026-01-20T00:00:00.000Z",
+            fileId: null,
+          }),
+          seeAt({
+            fingerprint: "fp-b",
+            createdAt: "2026-03-20T00:00:00.000Z",
+            fileId: file.id,
+          }),
+          seeAt({
+            fingerprint: "fp-c",
+            createdAt: "2026-03-10T00:00:00.000Z",
+            fileId: file.id,
+          }),
+        ]);
+      }
+
+      it.each([
+        {
+          orderBy: { key: "ignoredAt", direction: "desc" },
+          expected: ["fp-c", "fp-b", "fp-a"],
+        },
+        {
+          orderBy: { key: "ignoredAt", direction: "asc" },
+          expected: ["fp-a", "fp-b", "fp-c"],
+        },
+        // "fp-a" and "fp-c" tie, so the ignore date decides between them.
+        {
+          orderBy: { key: "occurrences", direction: "desc" },
+          expected: ["fp-c", "fp-a", "fp-b"],
+        },
+        {
+          orderBy: { key: "occurrences", direction: "asc" },
+          expected: ["fp-b", "fp-a", "fp-c"],
+        },
+        // "fp-a" reads "Never", which sorts as the oldest either way.
+        {
+          orderBy: { key: "lastSeen", direction: "desc" },
+          expected: ["fp-b", "fp-c", "fp-a"],
+        },
+        {
+          orderBy: { key: "lastSeen", direction: "asc" },
+          expected: ["fp-a", "fp-c", "fp-b"],
+        },
+      ] satisfies { orderBy: IgnoredChangesOrder; expected: string[] }[])(
+        "orders by $orderBy.key $orderBy.direction",
+        async ({ orderBy, expected }) => {
+          await createRankedChanges();
+
+          const { results } = await queryIgnoredChanges({
+            projectId: test.projectId,
+            orderBy,
+            after: 0,
+            first: 30,
+          });
+
+          expect(results.map((row) => row.fingerprint)).toEqual(expected);
+        },
       );
     });
   });

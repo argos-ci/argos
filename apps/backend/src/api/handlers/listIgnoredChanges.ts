@@ -70,9 +70,11 @@ export const listIgnoredChanges: CreateAPIHandler = ({ get }) => {
     const { page, perPage } = req.ctx.query;
     const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
 
-    // Shared with the GraphQL API (`Project.ignoredChanges`) — same ordering.
+    // Shared with the GraphQL API (`Project.ignoredChanges`), in its default
+    // order.
     const ignored = await queryIgnoredChanges({
       projectId: project.id,
+      orderBy: { key: "ignoredAt", direction: "desc" },
       after: (page - 1) * perPage,
       first: perPage,
     });

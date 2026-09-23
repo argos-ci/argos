@@ -1,4 +1,4 @@
-import { useEffect, useRef, useTransition } from "react";
+import { useDeferredValue, useEffect, useRef, useTransition } from "react";
 import {
   useApolloClient,
   useMutation,
@@ -15,6 +15,7 @@ import {
   WavesIcon,
   ZapIcon,
 } from "lucide-react";
+import { parseAsStringLiteral, useQueryStates } from "nuqs";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import {
@@ -24,7 +25,11 @@ import {
 } from "@/containers/Build/BuildDiffListPrimitives";
 import { IgnoredChangesIllustration } from "@/containers/EmptyStateIllustrations";
 import { graphql, type DocumentType } from "@/gql";
-import { ProjectPermission, UserType } from "@/gql/graphql";
+import {
+  IgnoredChangesOrderBy,
+  ProjectPermission,
+  UserType,
+} from "@/gql/graphql";
 import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import {
@@ -56,8 +61,15 @@ import {
   PageHeaderHeadline,
 } from "@/ui/Layout";
 import { HeadlessLink, Link } from "@/ui/Link";
-import { List, ListHeaderRow, ListRow, ListRowLoader } from "@/ui/List";
+import {
+  List,
+  ListHeaderRow,
+  ListRow,
+  ListRowLoader,
+  ListSortHeader,
+} from "@/ui/List";
 import { Modal } from "@/ui/Modal";
+import type { SortDirection } from "@/ui/SortHeader";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
@@ -89,13 +101,14 @@ const ProjectIgnoredChangesQuery = graphql(`
     $projectName: String!
     $after: Int!
     $first: Int!
+    $orderBy: IgnoredChangesOrderBy!
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       ignoreConfig {
         enabled
       }
-      ignoredChanges(after: $after, first: $first) {
+      ignoredChanges(after: $after, first: $first, orderBy: $orderBy) {
         pageInfo {
           totalCount
           hasNextPage
@@ -148,11 +161,40 @@ type IgnoredChanges = NonNullable<
 >["ignoredChanges"];
 type IgnoredChange = DocumentType<typeof _IgnoredChangeFragment>;
 
+const PAGE_SIZE = 30;
+
+const SORT_KEYS = ["ignored", "occurrences", "last-seen"] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+
+const sortSchema = {
+  sort: parseAsStringLiteral(SORT_KEYS).withDefault("ignored"),
+  order: parseAsStringLiteral(["asc", "desc"] as const).withDefault("desc"),
+};
+
+type Sort = { sort: SortKey; order: SortDirection };
+
 /**
- * Both mutations select the fields the ledger row renders, so that undoing an
- * unignore refreshes the restored row through normalization instead of leaving
- * it showing the previous ignore's date and count.
+ * The server's ordering for each column and direction. The list is paginated
+ * there, so sorting here would only reorder the pages already loaded.
  */
+const ORDER_BY: Record<
+  SortKey,
+  Record<SortDirection, IgnoredChangesOrderBy>
+> = {
+  ignored: {
+    asc: IgnoredChangesOrderBy.IgnoredAtAsc,
+    desc: IgnoredChangesOrderBy.IgnoredAtDesc,
+  },
+  occurrences: {
+    asc: IgnoredChangesOrderBy.OccurrencesAsc,
+    desc: IgnoredChangesOrderBy.OccurrencesDesc,
+  },
+  "last-seen": {
+    asc: IgnoredChangesOrderBy.LastSeenAsc,
+    desc: IgnoredChangesOrderBy.LastSeenDesc,
+  },
+};
+
 const UnignoreChangeMutation = graphql(`
   mutation ProjectIgnoredChanges_unignoreChange(
     $accountSlug: String!
@@ -161,8 +203,6 @@ const UnignoreChangeMutation = graphql(`
     unignoreChange(input: { accountSlug: $accountSlug, changeId: $changeId }) {
       id
       ignored
-      ignoredAt
-      occurrencesSinceIgnored
     }
   }
 `);
@@ -175,23 +215,21 @@ const IgnoreChangeMutation = graphql(`
     ignoreChange(input: { accountSlug: $accountSlug, changeId: $changeId }) {
       id
       ignored
-      ignoredAt
-      occurrencesSinceIgnored
     }
   }
 `);
 
 /**
- * Add or drop a change from the project's ignore ledger in the cache, so the
- * list reacts without refetching and losing the pages already loaded.
+ * Drop a change from the project's ignore ledger in the cache, so the list
+ * reacts without refetching and losing the pages already loaded. Whatever the
+ * sort order, the other rows keep their place.
  */
-function updateIgnoredChangesCache(options: {
+function removeFromIgnoredChangesCache(options: {
   cache: ReturnType<typeof useApolloClient>["cache"];
   projectId: string;
   changeId: string;
-  operation: "remove" | "restore";
 }) {
-  const { cache, projectId, changeId, operation } = options;
+  const { cache, projectId, changeId } = options;
   const cacheId = cache.identify({ __typename: "Project", id: projectId });
   if (!cacheId) {
     return;
@@ -199,30 +237,17 @@ function updateIgnoredChangesCache(options: {
   cache.modify({
     id: cacheId,
     fields: {
-      ignoredChanges(existing, { readField, toReference }) {
+      ignoredChanges(existing, { readField }) {
         if (!existing) {
           return existing;
         }
-        const edges = existing.edges.filter(
-          (edge: Parameters<typeof readField>[1]) =>
-            readField("id", edge) !== changeId,
-        );
-        if (operation === "restore") {
-          const ref = toReference({ __typename: "TestChange", id: changeId });
-          if (!ref) {
-            return existing;
-          }
-          // Re-ignoring makes it the most recently ignored change, which is the
-          // top of this list.
-          edges.unshift(ref);
-        }
-        const totalCount =
-          operation === "restore"
-            ? existing.pageInfo.totalCount + 1
-            : Math.max(existing.pageInfo.totalCount - 1, 0);
+        const totalCount = Math.max(existing.pageInfo.totalCount - 1, 0);
         return {
           ...existing,
-          edges,
+          edges: existing.edges.filter(
+            (edge: Parameters<typeof readField>[1]) =>
+              readField("id", edge) !== changeId,
+          ),
           pageInfo: {
             ...existing.pageInfo,
             totalCount,
@@ -232,6 +257,32 @@ function updateIgnoredChangesCache(options: {
       },
     },
   });
+}
+
+/**
+ * Drop the cached list of every order but the one on screen, so each is read
+ * again when it comes back rather than shown without a change restored since.
+ * The list on screen is left alone: evicting it would suspend the page.
+ */
+function evictOtherOrders(options: {
+  cache: ReturnType<typeof useApolloClient>["cache"];
+  projectId: string;
+  orderBy: IgnoredChangesOrderBy;
+}) {
+  const { cache, projectId, orderBy } = options;
+  const cacheId = cache.identify({ __typename: "Project", id: projectId });
+  if (!cacheId) {
+    return;
+  }
+  for (const other of Object.values(IgnoredChangesOrderBy)) {
+    if (other !== orderBy) {
+      cache.evict({
+        id: cacheId,
+        fieldName: "ignoredChanges",
+        args: { after: 0, first: PAGE_SIZE, orderBy: other },
+      });
+    }
+  }
 }
 
 export function Component() {
@@ -251,12 +302,17 @@ type UnignoreValue = { changeId: string; testName: string };
 
 function PageContent(props: { params: ProjectParams }) {
   const { params } = props;
+  const [sort, setSort] = useQueryStates(sortSchema);
+  const deferredSort = useDeferredValue(sort);
+  const isUpdating = sort !== deferredSort;
+  const orderBy = ORDER_BY[deferredSort.sort][deferredSort.order];
   const { fetchMore, data } = useSuspenseQuery(ProjectIgnoredChangesQuery, {
     variables: {
       accountSlug: params.accountSlug,
       projectName: params.projectName,
       after: 0,
-      first: 30,
+      first: PAGE_SIZE,
+      orderBy,
     },
   });
   const client = useApolloClient();
@@ -298,6 +354,20 @@ function PageContent(props: { params: ProjectParams }) {
     });
   });
 
+  // Where a change lands when it is ignored again depends on the sort order,
+  // and on what it now reads — ignoring it anew restarts its count — so the
+  // rows on screen are read back rather than patched. One more than on screen,
+  // so the change coming back does not push the last row out.
+  const refreshLoadedChanges = useEventCallback(() => {
+    invariant(ignoredChanges);
+    startFetchMoreTransition(() => {
+      fetchMore({
+        variables: { after: 0, first: ignoredChanges.edges.length + 1 },
+        updateQuery: (_prev, { fetchMoreResult }) => fetchMoreResult,
+      });
+    });
+  });
+
   const projectId = project?.id;
 
   // Runs from a toast, which outlives this component's dialog, so it goes
@@ -308,25 +378,30 @@ function PageContent(props: { params: ProjectParams }) {
       .mutate({
         mutation: IgnoreChangeMutation,
         variables: { accountSlug: params.accountSlug, changeId },
-        update: (cache) =>
-          updateIgnoredChangesCache({
-            cache,
-            projectId,
-            changeId,
-            operation: "restore",
-          }),
+        update: (cache) => evictOtherOrders({ cache, projectId, orderBy }),
       })
       .then(
-        () =>
+        () => {
+          refreshLoadedChanges();
           toast.success("Change ignored again", {
             id: `ignore-change:${changeId}`,
-          }),
+          });
+        },
         () =>
           toast.error("Could not restore the ignored change", {
             id: `ignore-change:${changeId}`,
           }),
       );
   });
+
+  const onSort = (key: SortKey) => {
+    setSort(
+      key === sort.sort
+        ? { order: sort.order === "asc" ? "desc" : "asc" }
+        : // The latest date or the biggest count first: the end worth reading.
+          { sort: key, order: "desc" },
+    );
+  };
 
   if (!project || !ignoredChanges) {
     return <NotFound />;
@@ -350,8 +425,8 @@ function PageContent(props: { params: ProjectParams }) {
             <PageHeaderContent>
               <Heading>Ignored changes</Heading>
               <PageHeaderHeadline>
-                Changes Argos no longer asks you to review, most recently
-                ignored first. Unignore one to start tracking it again.
+                Changes Argos no longer asks you to review. Unignore one to
+                start tracking it again.
               </PageHeaderHeadline>
             </PageHeaderContent>
           </PageHeader>
@@ -359,6 +434,9 @@ function PageContent(props: { params: ProjectParams }) {
             <IgnoredChangesList
               ignoredChanges={ignoredChanges}
               params={params}
+              sort={sort}
+              onSort={onSort}
+              isUpdating={isUpdating}
               isFetchingMore={isFetchingMore}
               fetchNextPage={fetchNextPage}
               onUnignore={(value) => unignoring.open(value)}
@@ -486,12 +564,23 @@ const DIFF_IMAGE_CONFIG = {
 function IgnoredChangesList(props: {
   ignoredChanges: IgnoredChanges;
   params: ProjectParams;
+  sort: Sort;
+  onSort: (key: SortKey) => void;
+  isUpdating: boolean;
   isFetchingMore: boolean;
   fetchNextPage: () => void;
   onUnignore: (value: UnignoreValue) => void;
 }) {
-  const { ignoredChanges, params, isFetchingMore, fetchNextPage, onUnignore } =
-    props;
+  const {
+    ignoredChanges,
+    params,
+    sort,
+    onSort,
+    isUpdating,
+    isFetchingMore,
+    fetchNextPage,
+    onUnignore,
+  } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const { hasNextPage } = ignoredChanges.pageInfo;
   const displayCount = ignoredChanges.edges.length;
@@ -510,42 +599,74 @@ function IgnoredChangesList(props: {
       lastItem &&
       lastItem.index === displayCount &&
       !isFetchingMore &&
-      hasNextPage
+      hasNextPage &&
+      // Mid-sort, the rows on screen still belong to the previous order, so
+      // their count is the wrong offset for the next page of the new one.
+      !isUpdating
     ) {
       fetchNextPage();
     }
-  }, [lastItem, displayCount, isFetchingMore, hasNextPage, fetchNextPage]);
+  }, [
+    lastItem,
+    displayCount,
+    isFetchingMore,
+    hasNextPage,
+    isUpdating,
+    fetchNextPage,
+  ]);
+
+  const getSortProps = (key: SortKey) => ({
+    direction: sort.sort === key ? sort.order : null,
+    onSort: () => {
+      parentRef.current?.scrollTo({ top: 0 });
+      onSort(key);
+    },
+  });
 
   return (
-    <List className="absolute max-h-full w-full overflow-hidden">
-      <ListHeaderRow>
-        <div className="flex-1 truncate">Change</div>
-        <div className="w-44">Ignored</div>
-        <div className="w-24 text-right">
-          <Tooltip
-            content={
-              <>
-                Number of auto-approved builds that have shown this exact change
-                since it was ignored — the review noise it has absorbed.
-              </>
-            }
-          >
-            <span className="underline-emphasis">Occurrences</span>
-          </Tooltip>
+    <List
+      aria-busy={isUpdating}
+      className={clsx(
+        "absolute max-h-full w-full overflow-hidden",
+        isUpdating && "animate-pulse",
+      )}
+    >
+      <ListHeaderRow role="row">
+        <div role="columnheader" className="flex-1 truncate">
+          Change
         </div>
-        <div className="w-28 text-right">
-          <Tooltip
-            content={
-              <>
-                Last build in which this exact change appeared. A change that
-                went quiet is a good candidate to unignore.
-              </>
-            }
-          >
-            <span className="underline-emphasis">Last seen</span>
-          </Tooltip>
+        <ListSortHeader {...getSortProps("ignored")} className="w-44">
+          Ignored
+        </ListSortHeader>
+        <ListSortHeader
+          {...getSortProps("occurrences")}
+          align="end"
+          tooltip={
+            <>
+              Number of auto-approved builds that have shown this exact change
+              since it was ignored — the review noise it has absorbed.
+            </>
+          }
+          className="w-24"
+        >
+          Occurrences
+        </ListSortHeader>
+        <ListSortHeader
+          {...getSortProps("last-seen")}
+          align="end"
+          tooltip={
+            <>
+              Last build in which this exact change appeared. A change that went
+              quiet is a good candidate to unignore.
+            </>
+          }
+          className="w-28"
+        >
+          Last seen
+        </ListSortHeader>
+        <div role="columnheader" className="w-24">
+          <span className="sr-only">Actions</span>
         </div>
-        <div className="w-24" />
       </ListHeaderRow>
       <div ref={parentRef} className="overflow-auto">
         <div
@@ -769,12 +890,7 @@ function UnignoreChangeDialog(props: {
   const [unignore, { error }] = useMutation(UnignoreChangeMutation, {
     variables: { accountSlug: params.accountSlug, changeId },
     update: (cache) =>
-      updateIgnoredChangesCache({
-        cache,
-        projectId,
-        changeId,
-        operation: "remove",
-      }),
+      removeFromIgnoredChangesCache({ cache, projectId, changeId }),
   });
 
   return (
