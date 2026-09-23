@@ -18,8 +18,13 @@ import { invariant } from "@argos/util/invariant";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import cors from "cors";
-import express, { Router, type Request, type Response } from "express";
-import { rateLimit } from "express-rate-limit";
+import express, {
+  Router,
+  type Request,
+  type RequestHandler,
+  type Response,
+} from "express";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 
 import { getAuthPayloadFromExpressReq } from "@/api/auth/project";
 import { markAcceptedOAuthResources } from "@/auth/oauth-access-token";
@@ -87,12 +92,73 @@ router.delete("/", (_req, res) => {
   res.set("Allow", "POST").sendStatus(405);
 });
 
+type Caller =
+  | { authenticated: true; rateLimitKey: string }
+  | { authenticated: false; error: string };
+
+const callers = new WeakMap<Request, Caller>();
+
+async function resolveCaller(req: Request): Promise<Caller> {
+  markAcceptedOAuthResources(req, [getMcpResourceUrl(), getApiResourceUrl()]);
+  try {
+    const auth = await getAuthPayloadFromExpressReq(req);
+    if (auth.type === "project") {
+      return {
+        authenticated: false,
+        error:
+          "The MCP server requires a personal access token or an OAuth access token; project tokens are not accepted.",
+      };
+    }
+    return {
+      authenticated: true,
+      rateLimitKey:
+        auth.type === "oauth"
+          ? `oauth-grant:${auth.grantId}`
+          : `pat:${auth.tokenId}`,
+    };
+  } catch (error) {
+    return {
+      authenticated: false,
+      error: error instanceof Error ? error.message : "Authentication required",
+    };
+  }
+}
+
+function getCaller(req: Request): Caller {
+  const caller = callers.get(req);
+  invariant(caller, "MCP caller read before it was resolved");
+  return caller;
+}
+
+/**
+ * Authenticate before rate-limiting, because the limiter needs to know who is
+ * calling: hosted connectors (claude.ai, ChatGPT, Cursor) serve all their
+ * users from a handful of egress IPs, and a budget per IP would be shared by
+ * every one of those users. Tool calls re-authenticate inside the API layer.
+ */
+const identifyCaller = asyncHandler(async (req, _res, next) => {
+  callers.set(req, await resolveCaller(req));
+  next();
+});
+
+/**
+ * An authenticated caller gets a budget per credential. Anything else is
+ * budgeted by IP, which is what bounds a client retrying a dead token.
+ */
 const limiter = rateLimit({
   windowMs: config.get("api.rateLimit.window"),
   limit: config.get("api.rateLimit.limit"),
   standardHeaders: "draft-8",
   legacyHeaders: false,
   store: createRedisStore("mcp"),
+  keyGenerator: (req) => {
+    const caller = getCaller(req);
+    if (caller.authenticated) {
+      return caller.rateLimitKey;
+    }
+    invariant(req.ip, "MCP request without a remote address");
+    return ipKeyGenerator(req.ip);
+  },
 });
 
 function sendUnauthorized(res: Response, message: string): void {
@@ -104,39 +170,27 @@ function sendUnauthorized(res: Response, message: string): void {
 }
 
 /**
- * Authenticate the MCP request. Tool calls re-authenticate inside the API
- * layer; this gate exists so unauthenticated clients get the `401` +
- * `WWW-Authenticate` handshake before reaching the protocol, and so project
- * tokens are rejected with a clear message.
+ * Unauthenticated clients get the `401` + `WWW-Authenticate` handshake before
+ * reaching the protocol, and project tokens a clear message.
  */
-const authenticate = asyncHandler(async (req, res, next) => {
-  markAcceptedOAuthResources(req, [getMcpResourceUrl(), getApiResourceUrl()]);
-  try {
-    const auth = await getAuthPayloadFromExpressReq(req);
-    if (auth.type === "project") {
-      sendUnauthorized(
-        res,
-        "The MCP server requires a personal access token or an OAuth access token; project tokens are not accepted.",
-      );
-      return;
-    }
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Authentication required";
-    sendUnauthorized(res, message);
+const requireAuthentication: RequestHandler = (req, res, next) => {
+  const caller = getCaller(req);
+  if (!caller.authenticated) {
+    sendUnauthorized(res, caller.error);
     return;
   }
   next();
-});
+};
 
 router.post(
   "/",
+  identifyCaller,
   limiter,
+  requireAuthentication,
   express.json({ limit: "1mb" }),
-  authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    // `authenticate` runs first and rejects any request without a resolvable
-    // bearer, so the header is guaranteed to be present here.
+    // `requireAuthentication` runs first and rejects any request without a
+    // resolvable bearer, so the header is guaranteed to be present here.
     const authorization = req.headers.authorization;
     invariant(
       authorization,
