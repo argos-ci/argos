@@ -49,13 +49,14 @@ async function rpc(
   token: string | null,
   method: string,
   params: Record<string, unknown> = {},
+  { scheme = "Bearer" }: { scheme?: string } = {},
 ) {
   let req = request(app)
     .post("/")
     .set("Accept", ACCEPT)
     .set("Content-Type", "application/json");
   if (token) {
-    req = req.set("Authorization", `Bearer ${token}`);
+    req = req.set("Authorization", `${scheme} ${token}`);
   }
   return req.send({ jsonrpc: "2.0", id: 1, method, params });
 }
@@ -424,6 +425,28 @@ describe("MCP server", () => {
     });
     const res = await rpc(token, "tools/list");
     expect(res.status).toBe(200);
+  });
+
+  test("accepts the bearer scheme in any letter case", async ({
+    userAccount,
+  }) => {
+    const token = await createOAuthAccessToken({
+      userAccount,
+      scopes: ["profile"],
+      resource: getMcpResourceUrl(),
+    });
+    // A tool call authenticates twice: at the MCP endpoint, then in the API
+    // layer the call is dispatched to.
+    const res = await rpc(
+      token,
+      "tools/call",
+      { name: "getMe", arguments: {} },
+      { scheme: "bearer" },
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({
+      structuredContent: { slug: "jane-doe" },
+    });
   });
 
   test("rejects OAuth tokens bound to a foreign resource", async ({

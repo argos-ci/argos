@@ -19,7 +19,9 @@ function parseAuthHeader(authHeader: string) {
 export function parseBearerFromHeader(authHeader: string) {
   const authorization = parseAuthHeader(authHeader);
 
-  if (authorization.scheme !== "Bearer") {
+  // Schemes are case-insensitive (RFC 9110 §11.1): OAuth clients that echo a
+  // lowercased `token_type` send `bearer`.
+  if (authorization.scheme.toLowerCase() !== "bearer") {
     throw boom(
       400,
       `Invalid authorization header scheme "${authorization.scheme}", please use "Bearer"`,
