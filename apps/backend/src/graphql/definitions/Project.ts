@@ -23,7 +23,10 @@ import {
   queryBuilds,
   resolveBuildsFilters,
 } from "@/database/services/build";
-import { queryIgnoredChanges } from "@/database/services/ignored-change";
+import {
+  queryIgnoredChanges,
+  type IgnoredChangesOrder,
+} from "@/database/services/ignored-change";
 import {
   createProject as createProjectService,
   loadProjectById,
@@ -63,6 +66,7 @@ import {
   IBuildStatus,
   ICustomDomainsAvailability,
   IDeploymentAuth,
+  IIgnoredChangesOrderBy,
   IProjectCustomDomainPendingReason,
   IProjectPermission,
   IProjectUserLevel,
@@ -131,6 +135,21 @@ export const typeDefs = gql`
     enabled: Boolean!
     "Auto-ignore settings, null to disable auto-ignore"
     autoIgnore: AutoIgnoreSettingsInput
+  }
+
+  """
+  How a project's ignored changes are ordered: by when each was last ignored
+  (\`ignoredAt\`), by how often it came back since
+  (\`occurrencesSinceIgnored\`), or by when it last appeared (\`lastSeenDiff\`).
+  A missing date sorts as the oldest, and ties fall back to the ignore date.
+  """
+  enum IgnoredChangesOrderBy {
+    IGNORED_AT_ASC
+    IGNORED_AT_DESC
+    OCCURRENCES_ASC
+    OCCURRENCES_DESC
+    LAST_SEEN_ASC
+    LAST_SEEN_DESC
   }
 
   type ProjectContributor implements Node {
@@ -239,8 +258,12 @@ export const typeDefs = gql`
     defaultUserLevel: ProjectUserLevel
     "Ignore feature configuration"
     ignoreConfig: IgnoreConfig!
-    "Changes currently ignored in this project, most recently ignored first"
-    ignoredChanges(after: Int = 0, first: Int = 30): TestChangesConnection!
+    "Changes currently ignored in this project, most recently ignored first by default"
+    ignoredChanges(
+      after: Int = 0
+      first: Int = 30
+      orderBy: IgnoredChangesOrderBy! = IGNORED_AT_DESC
+    ): TestChangesConnection!
     "List all tests in a project"
     tests(
       after: Int = 0
@@ -722,6 +745,27 @@ function fromGraphQLBuildStatus(status: IBuildStatus): BuildAggregatedStatus {
   }
 }
 
+function fromGraphQLIgnoredChangesOrderBy(
+  orderBy: IIgnoredChangesOrderBy,
+): IgnoredChangesOrder {
+  switch (orderBy) {
+    case IIgnoredChangesOrderBy.IgnoredAtAsc:
+      return { key: "ignoredAt", direction: "asc" };
+    case IIgnoredChangesOrderBy.IgnoredAtDesc:
+      return { key: "ignoredAt", direction: "desc" };
+    case IIgnoredChangesOrderBy.OccurrencesAsc:
+      return { key: "occurrences", direction: "asc" };
+    case IIgnoredChangesOrderBy.OccurrencesDesc:
+      return { key: "occurrences", direction: "desc" };
+    case IIgnoredChangesOrderBy.LastSeenAsc:
+      return { key: "lastSeen", direction: "asc" };
+    case IIgnoredChangesOrderBy.LastSeenDesc:
+      return { key: "lastSeen", direction: "desc" };
+    default:
+      assertNever(orderBy);
+  }
+}
+
 export const resolvers: IResolvers = {
   ProjectCustomDomain: {
     pendingReason: (projectDomain) => {
@@ -844,9 +888,10 @@ export const resolvers: IResolvers = {
       }
       return test;
     },
-    ignoredChanges: async (project, { first, after }) => {
+    ignoredChanges: async (project, { first, after, orderBy }) => {
       const result = await queryIgnoredChanges({
         projectId: project.id,
+        orderBy: fromGraphQLIgnoredChangesOrderBy(orderBy),
         after,
         first,
       });

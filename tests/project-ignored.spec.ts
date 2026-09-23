@@ -7,6 +7,7 @@ import {
 import {
   createIgnoredChangeScenario,
   createReviewableChangeScenario,
+  createSortableIgnoredChangesScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
@@ -123,6 +124,67 @@ loggedTest("ignored changes list", async ({ page, team, project, auth }) => {
 
   await screenshot(page, "project-ignored-list");
 });
+
+loggedTest(
+  "sorting ignored changes by column",
+  async ({ page, team, project, auth }) => {
+    await createSortableIgnoredChangesScenario({
+      projectId: project.id,
+      userId: auth.user.id,
+    });
+
+    await page.goto(`/${team.account.slug}/${project.name}/ignored`);
+
+    // Only the data rows link to their test; the header row holds buttons.
+    const rows = page.getByRole("row").filter({ has: page.getByRole("link") });
+    const header = (name: string) => page.getByRole("columnheader", { name });
+
+    await expect(header("Ignored")).toHaveAttribute("aria-sort", "descending");
+    await expect(rows).toContainText([
+      "dashboard.png",
+      "settings.png",
+      "checkout.png",
+    ]);
+
+    await page.getByRole("button", { name: "Occurrences" }).click();
+    await expect(header("Occurrences")).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+    await expect(header("Ignored")).toHaveAttribute("aria-sort", "none");
+    await expect(rows).toContainText([
+      "settings.png",
+      "checkout.png",
+      "dashboard.png",
+    ]);
+    await screenshot(page, "project-ignored-sorted");
+
+    // A second click flips the order, and the URL keeps it across a reload.
+    await page.getByRole("button", { name: "Occurrences" }).click();
+    await expect(rows).toContainText([
+      "dashboard.png",
+      "checkout.png",
+      "settings.png",
+    ]);
+    await page.reload();
+    await expect(header("Occurrences")).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    await expect(rows).toContainText([
+      "dashboard.png",
+      "checkout.png",
+      "settings.png",
+    ]);
+
+    await page.getByRole("button", { name: "Last seen" }).click();
+    await expect(rows).toContainText([
+      "checkout.png",
+      "dashboard.png",
+      "settings.png",
+    ]);
+  },
+);
 
 loggedTest(
   "unignoring a change removes it from the list, and Undo puts it back",
