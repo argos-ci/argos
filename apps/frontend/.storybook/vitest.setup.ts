@@ -21,3 +21,21 @@ const style = document.createElement("style");
 style.textContent =
   "*, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; transition-delay: 0s !important; }";
 document.head.append(style);
+
+// That rule only reaches CSS. `Loader` spins with an SVG SMIL
+// `<animateTransform>`, which runs on its `<svg>`'s own clock: Argos's
+// stabilization and Playwright's `animations: "disabled"` leave it running
+// too, so each screenshot caught the spinner on whichever of its twelve steps
+// it had reached. Every `<svg>` is held on its first frame as it is inserted,
+// because Argos renders each story afresh for its capture.
+new MutationObserver((records) => {
+  const svgs = records
+    .flatMap((record) => [...record.addedNodes])
+    .filter((node) => node instanceof Element)
+    .flatMap((element) => [element, ...element.querySelectorAll("svg")])
+    .filter((element) => element instanceof SVGSVGElement);
+  for (const svg of svgs) {
+    svg.pauseAnimations();
+    svg.setCurrentTime(0);
+  }
+}).observe(document, { childList: true, subtree: true });
