@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, within } from "storybook/test";
+import { expect, screen, waitFor, within } from "storybook/test";
 
 import { Label } from "@/ui/Label";
 import { StoryTitle } from "@/ui/StoryTitle";
@@ -182,6 +182,24 @@ const TWO_PARAGRAPHS: EditorValue = {
   ],
 };
 
+/**
+ * For the stories that end with the formatting toolbar up. Argos's default
+ * capture zooms the page and grows the frame just before it shoots, and TipTap
+ * re-places the toolbar 60ms after that resize — mid-capture, and wrongly,
+ * since its placement does not account for a CSS zoom. Captured as the page
+ * stands, a re-place lands the toolbar where it already is.
+ */
+const toolbarParameters = { argos: { fitToContent: false } };
+
+/** Room above the editor, so the toolbar is not pushed off the top of the shot. */
+function ToolbarStage(props: { children: React.ReactNode }) {
+  return <div className="p-16">{props.children}</div>;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Selects the block that reads `text`, which raises the floating toolbar. */
 async function selectBlock(context: PlayContext, text: string) {
   const { canvasElement, userEvent } = context;
@@ -191,8 +209,26 @@ async function selectBlock(context: PlayContext, text: string) {
     {},
     { timeout: 5000 },
   );
+  // 20ms after the editor gains focus, ProseMirror writes its own selection
+  // back over the DOM's if it has not read the DOM's yet. A synthetic triple
+  // click fits all three presses in those 20ms, so the write could land between
+  // the third press and ProseMirror reading it, and the selection fell back to
+  // the word the second press picked. Take focus first and let the timer run.
+  editor.focus();
+  await wait(50);
   await userEvent.tripleClick(within(editor).getByText(text));
   return editor;
+}
+
+/**
+ * Waits for the toolbar to follow the block a command reshaped. TipTap moves it
+ * 250ms after the change, counted again from when focus comes back to the
+ * editor, so a play that stops at the command photographs the toolbar on
+ * either side of the move.
+ */
+async function waitForToolbarToFollow(editor: HTMLElement) {
+  await waitFor(() => expect(editor).toHaveFocus());
+  await wait(500);
 }
 
 /**
@@ -205,7 +241,12 @@ async function selectBlock(context: PlayContext, text: string) {
  */
 export const HeadingFromToolbar: Story = {
   name: "Heading picked from the toolbar",
-  render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
+  parameters: toolbarParameters,
+  render: () => (
+    <ToolbarStage>
+      <ControlledEditor initialValue={TWO_PARAGRAPHS} />
+    </ToolbarStage>
+  ),
   play: async (context) => {
     const { userEvent } = context;
     const editor = await selectBlock(context, "First paragraph");
@@ -218,6 +259,7 @@ export const HeadingFromToolbar: Story = {
     await expect(
       await within(editor).findByRole("heading", { level: 2 }),
     ).toHaveTextContent("First paragraph");
+    await waitForToolbarToFollow(editor);
     // The selection survived, so the toolbar is still up.
     await expect(
       screen.getByRole("button", { name: "Text style" }),
@@ -227,7 +269,12 @@ export const HeadingFromToolbar: Story = {
 
 export const ListFromToolbar: Story = {
   name: "List picked from the toolbar",
-  render: () => <ControlledEditor initialValue={TWO_PARAGRAPHS} />,
+  parameters: toolbarParameters,
+  render: () => (
+    <ToolbarStage>
+      <ControlledEditor initialValue={TWO_PARAGRAPHS} />
+    </ToolbarStage>
+  ),
   play: async (context) => {
     const { userEvent } = context;
     const editor = await selectBlock(context, "First paragraph");
@@ -238,6 +285,7 @@ export const ListFromToolbar: Story = {
     await expect(await within(editor).findByRole("listitem")).toHaveTextContent(
       "First paragraph",
     );
+    await waitForToolbarToFollow(editor);
     await expect(screen.getByRole("button", { name: "Lists" })).toBeVisible();
   },
 };
@@ -267,7 +315,12 @@ const HEADING_AND_PARAGRAPH: EditorValue = {
  */
 export const ListFromHeading: Story = {
   name: "List picked with a heading selected",
-  render: () => <ControlledEditor initialValue={HEADING_AND_PARAGRAPH} />,
+  parameters: toolbarParameters,
+  render: () => (
+    <ToolbarStage>
+      <ControlledEditor initialValue={HEADING_AND_PARAGRAPH} />
+    </ToolbarStage>
+  ),
   play: async (context) => {
     const { userEvent } = context;
     const editor = await selectBlock(context, "A heading");
@@ -278,5 +331,6 @@ export const ListFromHeading: Story = {
     await expect(await within(editor).findByRole("listitem")).toHaveTextContent(
       "A heading",
     );
+    await waitForToolbarToFollow(editor);
   },
 };
