@@ -4,6 +4,7 @@ import { GithubInstallation } from "@/database/models/GithubInstallation";
 import { getInstallationOctokit, getTokenOctokit } from "@/github";
 
 import type { IResolvers } from "../__generated__/resolver-types";
+import { checkUserAdministersLightInstallation } from "../services/github";
 import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
@@ -74,6 +75,14 @@ export const resolvers: IResolvers = {
             per_page: reposPerPage,
             page: args.page,
           });
+        }
+
+        // The installation's own token sees every repository it covers, and
+        // GitHub cannot tell for whom we ask: the check is ours to make.
+        const hasAccessToInstallation =
+          await checkUserAdministersLightInstallation(auth.user, installation);
+        if (!hasAccessToInstallation) {
+          throw forbidden("User does not have access to GitHub installation");
         }
 
         const octokit = await getInstallationOctokit(installation);

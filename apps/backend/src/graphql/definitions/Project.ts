@@ -51,7 +51,10 @@ import {
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
-import { getOrCreateGithubRepository } from "@/graphql/services/github";
+import {
+  checkUserCanUseInstallation,
+  getOrCreateGithubRepository,
+} from "@/graphql/services/github";
 import { checkOriginEnabled } from "@/origin/access";
 import { HTTPError } from "@/util/error";
 import { safeParseTestId } from "@/util/test-id";
@@ -468,6 +471,7 @@ export const typeDefs = gql`
 async function importGithubProject(props: {
   accountSlug: string;
   creator: User;
+  creatorAccount: Account;
   repo: string;
   owner: string;
   installationId: string;
@@ -485,6 +489,15 @@ async function importGithubProject(props: {
   const installation = await GithubInstallation.query()
     .findOne({ githubId: props.installationId })
     .throwIfNotFound();
+
+  const canUseInstallation = await checkUserCanUseInstallation({
+    userAccount: props.creatorAccount,
+    installation,
+    account,
+  });
+  if (!canUseInstallation) {
+    throw forbidden("User does not have access to GitHub installation");
+  }
 
   const octokit = await getInstallationOctokit(installation);
 
@@ -1102,6 +1115,7 @@ export const resolvers: IResolvers = {
         repo: args.input.repo,
         owner: args.input.owner,
         creator: ctx.auth.user,
+        creatorAccount: ctx.auth.account,
         installationId: args.input.installationId,
       });
     },
@@ -1185,6 +1199,15 @@ export const resolvers: IResolvers = {
       const installation = await GithubInstallation.query()
         .findOne({ githubId: args.input.installationId })
         .throwIfNotFound();
+
+      const canUseInstallation = await checkUserCanUseInstallation({
+        userAccount: ctx.auth.account,
+        installation,
+        account: project.account,
+      });
+      if (!canUseInstallation) {
+        throw forbidden("User does not have access to GitHub installation");
+      }
 
       const octokit = await getInstallationOctokit(installation);
 
