@@ -1,6 +1,13 @@
 import type { ClientConfig } from "@argos/config-types";
 
-const clientData = (window as any).clientData;
+declare global {
+  interface Window {
+    /** Inlined by the backend, see `apps/backend/src/web/app-router.ts`. */
+    clientData?: { config: ClientConfig };
+  }
+}
+
+const clientData = window.clientData;
 if (!clientData) {
   throw new Error("Configuration is not available, please reload the page");
 }
