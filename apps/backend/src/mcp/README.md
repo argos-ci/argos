@@ -58,6 +58,10 @@ No operation needs it by default — eligibility is computed from `security`.
 - OAuth scopes are enforced per tool call by the API layer
   (`assertOAuthScopes`); scope failures come back as `isError` tool results,
   not HTTP 401s, so clients don't needlessly re-authenticate.
+- The rate limit (`api.rateLimit`) is counted per credential — OAuth grant or
+  personal access token — because hosted connectors call for all their users
+  from a few shared IPs. Only requests that fail to authenticate are counted
+  per IP.
 
 ## Agent attribution
 

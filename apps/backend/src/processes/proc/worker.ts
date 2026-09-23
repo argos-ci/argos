@@ -14,6 +14,7 @@ import { mediaDiffJob } from "@/media/diff-job";
 import { purgeExpiredMedia } from "@/media/purge";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
+import { purgeAbandonedClients } from "@/oauth/clients";
 import { originPullRequestJob } from "@/origin-pull-request/job";
 import { originInstallationSyncJob } from "@/origin/synchronize-job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
@@ -48,6 +49,12 @@ scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
 // into one pass.
 scheduleCron("media-retention", "15 * * * *", (context) =>
   purgeExpiredMedia(context.date),
+);
+
+// Anonymous client registrations nobody authorized. Hourly, so an abandoned
+// registration outlives its day by an hour at most.
+scheduleCron("oauth-abandoned-clients", "25 * * * *", (context) =>
+  purgeAbandonedClients(context.date),
 );
 
 // The safety net under the invoice webhooks: re-reads a window wide enough to

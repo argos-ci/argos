@@ -9,6 +9,7 @@ import { mcpRouter } from "@/mcp/router";
 
 import { installApiRouter } from "./api";
 import { installAppRouter } from "./app-router";
+import { trustProxyChain } from "./client-ip";
 import { jsonErrorHandler } from "./middlewares/errorHandler";
 import { subdomain } from "./util";
 
@@ -31,7 +32,7 @@ export const createApp = async (): Promise<express.Express> => {
   const app = express();
 
   app.disable("x-powered-by");
-  app.set("trust proxy", 1);
+  trustProxyChain(app);
 
   if (config.get("server.httpLogs")) {
     app.use(

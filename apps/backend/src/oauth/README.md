@@ -73,3 +73,9 @@ DCR. On a `401`, the RS returns
 Well-known agents (Claude, Codex, Cursor, VS Code, …) are matched against the
 curated `known-apps.ts` registry to earn the verified badge + official logo;
 self-asserted metadata never confers verification on its own.
+
+Registration is anonymous. Hosted connectors (claude.ai, ChatGPT, Cursor's cloud
+agents) register one client per user from a few shared egress IPs, so its per-IP
+budget is generous and spam is bounded elsewhere: metadata fields are capped,
+and the `oauth-abandoned-clients` cron deletes clients nobody authorized within
+a day.

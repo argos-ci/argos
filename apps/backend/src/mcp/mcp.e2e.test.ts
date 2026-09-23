@@ -167,6 +167,32 @@ describe("MCP server", () => {
     expect(res.body.error).toContain("project tokens are not accepted");
   });
 
+  // Hosted connectors call on behalf of all their users from a handful of
+  // shared IPs, so a budget per IP would be one budget for all of them.
+  test("rate-limits each credential on its own budget, not its IP's", async ({
+    patToken,
+    userAccount,
+  }) => {
+    const oauthToken = await createOAuthAccessToken({
+      userAccount,
+      scopes: ["profile"],
+      resource: getMcpResourceUrl(),
+    });
+    // `RateLimit-Policy` names the bucket the request was counted in.
+    const bucket = async (token: string | null) =>
+      (await rpc(token, "tools/list")).headers["ratelimit-policy"];
+
+    const pat = await bucket(patToken);
+    expect(await bucket(patToken)).toBe(pat);
+    const oauth = await bucket(oauthToken);
+    expect(oauth).not.toBe(pat);
+
+    // Requests that do not authenticate are all counted against the IP.
+    const anonymous = await bucket(null);
+    expect(await bucket("not-a-token")).toBe(anonymous);
+    expect([pat, oauth]).not.toContain(anonymous);
+  });
+
   test("serves the protected resource metadata", async () => {
     const res = await request(app)
       .get("/.well-known/oauth-protected-resource")

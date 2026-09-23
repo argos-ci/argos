@@ -82,5 +82,11 @@ export async function getAuthPayloadFromUserAccessToken(
     );
   }
 
-  return { type: "pat", account: user.account, user, scope: scopeAccounts };
+  return {
+    type: "pat",
+    account: user.account,
+    user,
+    scope: scopeAccounts,
+    tokenId: userAccessToken.id,
+  };
 }

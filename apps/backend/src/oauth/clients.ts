@@ -1,7 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 
-import { OAuthClient } from "@/database/models";
+import { OAuthClient, OAuthGrant } from "@/database/models";
 import { generateRandomString, hashToken } from "@/database/services/crypto";
+import logger from "@/logger";
 
 import { resolveKnownApp } from "./known-apps";
 
@@ -195,4 +196,57 @@ export async function createDynamicClient(
     clientSecret: secret?.secret ?? null,
     registrationAccessToken,
   };
+}
+
+/** How long a registered client may wait for its first authorization. */
+const ABANDONED_CLIENT_TTL = 24 * 60 * 60 * 1000;
+
+/** Clients deleted per statement, so a pass never holds its locks for long. */
+const PURGE_BATCH_SIZE = 1000;
+
+/**
+ * Delete the dynamically-registered clients nobody authorized within a day.
+ *
+ * Registration is anonymous and its rate limit is sized for hosted connectors,
+ * so this is what bounds what a registration flood leaves behind. A day is
+ * generous: MCP clients send the user to consent right after registering.
+ *
+ * Consent is what creates a grant, and revoking one only stamps `revokedAt`: a
+ * client without grants is one nobody authorized, or whose every user has
+ * since deleted their account.
+ */
+export async function purgeAbandonedClients(
+  now: Date = new Date(),
+): Promise<number> {
+  const registeredBefore = new Date(
+    now.getTime() - ABANDONED_CLIENT_TTL,
+  ).toISOString();
+  let purged = 0;
+
+  for (;;) {
+    const count = await OAuthClient.query()
+      .delete()
+      .whereIn(
+        "id",
+        OAuthClient.query()
+          .select("id")
+          .where("isFirstParty", false)
+          .whereNull("createdByUserId")
+          .where("createdAt", "<", registeredBefore)
+          .whereNotExists(
+            OAuthGrant.query()
+              .select(1)
+              .whereColumn("oauth_grants.oauthClientId", "oauth_clients.id"),
+          )
+          .limit(PURGE_BATCH_SIZE),
+      );
+
+    if (count > 0) {
+      purged += count;
+      logger.info({ count }, "Purged abandoned OAuth clients");
+    }
+    if (count < PURGE_BATCH_SIZE) {
+      return purged;
+    }
+  }
 }

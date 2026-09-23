@@ -25,6 +25,8 @@ export type AuthPATPayload = {
   account: Account;
   user: User;
   scope: Account[];
+  /** Id of the `user_access_tokens` row backing this request. */
+  tokenId: string;
 };
 
 export type AuthOAuthPayload = {
