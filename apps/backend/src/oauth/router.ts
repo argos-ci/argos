@@ -233,27 +233,32 @@ oauthApiRouter.post("/token", async (req: Request, res: Response) => {
   );
 });
 
+// Every field is bounded: registration is anonymous, and the JSON and text
+// columns would otherwise keep whatever fits in the request body.
 const RegistrationSchema = z.object({
   client_name: z.string().min(1).max(255),
-  redirect_uris: z.array(z.url()).min(1),
-  client_uri: z.url().optional(),
-  logo_uri: z.url().optional(),
-  software_id: z.string().optional(),
-  grant_types: z.array(z.string()).optional(),
-  response_types: z.array(z.string()).optional(),
-  scope: z.string().optional(),
+  redirect_uris: z.array(z.url().max(2048)).min(1).max(10),
+  client_uri: z.url().max(255).optional(),
+  logo_uri: z.url().max(255).optional(),
+  software_id: z.string().max(255).optional(),
+  grant_types: z.array(z.string().max(255)).max(10).optional(),
+  response_types: z.array(z.string().max(255)).max(10).optional(),
+  scope: z.string().max(1024).optional(),
   token_endpoint_auth_method: z
     .enum(["none", "client_secret_basic", "client_secret_post"])
     .optional(),
 });
 
 /**
- * Dynamic Client Registration is unauthenticated (RFC 7591), so cap it per IP
- * to prevent anonymous clients from spamming the `oauth_clients` table.
+ * Dynamic Client Registration is unauthenticated (RFC 7591). Hosted MCP
+ * connectors (claude.ai, ChatGPT, Cursor's cloud agents) register a client for
+ * each of their users from a handful of shared egress IPs, so this per-IP
+ * budget has to fit a connector's whole user base. What bounds anonymous spam
+ * is `purgeAbandonedClients`, which drops the clients nobody authorized.
  */
 const registrationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  limit: 20,
+  windowMs: 60 * 1000, // 1 minute
+  limit: 60,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   store: createRedisStore("oauth-register"),

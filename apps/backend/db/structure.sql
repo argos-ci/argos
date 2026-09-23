@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8LAo6ERHoIfM5mB0nDXEzROcaJWmDh9vu7jIjbvcL1UTUQSSqKesp1nSc8kN9Ts
+\restrict XB3AojxYH0d8wfwa6it3dBVR58x844f4n4zizJ7pjWNgNVYUUgSLTv0YhYEC0Nf
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -5197,6 +5197,13 @@ CREATE INDEX oauth_clients_createdbyuserid_index ON public.oauth_clients USING b
 
 
 --
+-- Name: oauth_grants_oauthclientid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX oauth_grants_oauthclientid_index ON public.oauth_grants USING btree ("oauthClientId");
+
+
+--
 -- Name: oauth_grants_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6693,7 +6700,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8LAo6ERHoIfM5mB0nDXEzROcaJWmDh9vu7jIjbvcL1UTUQSSqKesp1nSc8kN9Ts
+\unrestrict XB3AojxYH0d8wfwa6it3dBVR58x844f4n4zizJ7pjWNgNVYUUgSLTv0YhYEC0Nf
 
 -- Knex migrations
 
@@ -6951,3 +6958,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026083
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260902183811_project-soft-delete.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260909153631_overage-alert.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260914151447_lowercase-deployment-slugs.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260923082549_oauth-grants-client-index.js', 1, NOW());

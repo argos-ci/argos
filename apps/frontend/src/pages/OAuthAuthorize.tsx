@@ -449,7 +449,8 @@ function AuthorizeLoader(props: { params: OAuthParams }) {
         <AlertTitle>Unknown application</AlertTitle>
         <AlertText>
           This authorization request references an application Argos does not
-          recognize.
+          recognize. A connection that is not approved within a day expires:
+          remove Argos from the application and connect it again.
         </AlertText>
       </Alert>
     );
