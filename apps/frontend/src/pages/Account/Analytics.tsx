@@ -37,6 +37,7 @@ import {
   PieChart,
   XAxis,
   YAxis,
+  type XAxisTickContentProps,
 } from "recharts";
 
 import { graphql } from "@/gql";
@@ -578,6 +579,7 @@ export function AnalyticsDashboard(props: {
                 from={from}
                 to={to}
                 groupBy={groupBy}
+                totals
               />
             )
           ) : null}
@@ -1070,12 +1072,18 @@ function getProjectChartKeys(
 }
 
 function EvolutionChart(props: {
-  series: { ts: number }[];
+  series: { ts: number; total: number }[];
   keys: EvolutionChartKey[];
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
   legend?: boolean;
+  /**
+   * Print the `total` under each date of the X axis. Only for series whose
+   * `total` is what the stack adds up to, or the number contradicts the chart
+   * above it.
+   */
+  totals?: boolean;
 }) {
   const { series, keys, from, to, groupBy } = props;
   const chartConfig = keys.reduce<ChartConfig>((config, key) => {
@@ -1110,11 +1118,7 @@ function EvolutionChart(props: {
         <YAxis
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value: number) => {
-            return value.toLocaleString(navigator.language, {
-              notation: "compact",
-            });
-          }}
+          tickFormatter={formatCompactNumber}
         />
         <XAxis
           dataKey="ts"
@@ -1126,22 +1130,27 @@ function EvolutionChart(props: {
           tickMargin={12}
           domain={["dataMin", "dataMax"]}
           ticks={ticks}
-          tickFormatter={(value) => {
-            const date = new Date(value);
-            switch (groupBy) {
-              case TimeSeriesGroupBy.Day:
-              case TimeSeriesGroupBy.Week: {
-                return date.toLocaleDateString(navigator.language, {
-                  month: "short",
-                  day: "numeric",
-                });
-              }
-              case TimeSeriesGroupBy.Month:
-                return date.toLocaleDateString(navigator.language, {
-                  month: "short",
-                });
+          height={props.totals ? 48 : undefined}
+          tickFormatter={(value: number) => {
+            const date = formatAxisDate(value, groupBy);
+            if (!props.totals) {
+              return date;
             }
+            // Recharts measures this string to decide which ticks fit, and
+            // with the total printed under the date, the wider line decides.
+            // At equal length, digits are the wider ones.
+            const total = formatCompactNumber(
+              getNearestSerie(series, value).total,
+            );
+            return total.length >= date.length ? total : date;
           }}
+          tick={
+            props.totals
+              ? (tick: XAxisTickContentProps) => (
+                  <TotalTick tick={tick} series={series} groupBy={groupBy} />
+                )
+              : undefined
+          }
         />
         <ChartTooltip
           isAnimationActive={false}
@@ -1173,6 +1182,74 @@ function EvolutionChart(props: {
       </AreaChart>
     </ChartContainer>
   );
+}
+
+function formatCompactNumber(value: number) {
+  return value.toLocaleString(navigator.language, { notation: "compact" });
+}
+
+function formatAxisDate(ts: number, groupBy: TimeSeriesGroupBy) {
+  const date = new Date(ts);
+  switch (groupBy) {
+    case TimeSeriesGroupBy.Day:
+    case TimeSeriesGroupBy.Week: {
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+        day: "numeric",
+      });
+    }
+    case TimeSeriesGroupBy.Month:
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+      });
+  }
+}
+
+/**
+ * A date of the X axis, with the total of its point underneath.
+ *
+ * The point is the nearest one rather than an exact match: ticks fall on
+ * local midnights, while the server cuts buckets on its own.
+ */
+function TotalTick(props: {
+  tick: XAxisTickContentProps;
+  series: { ts: number; total: number }[];
+  groupBy: TimeSeriesGroupBy;
+}) {
+  const { x, y, fill, payload } = props.tick;
+  const serie = getNearestSerie(props.series, payload.value);
+  return (
+    // Recharts reads the font size to measure ticks off this class.
+    <text
+      x={x}
+      y={y}
+      fill={fill}
+      textAnchor="middle"
+      className="recharts-cartesian-axis-tick-value"
+    >
+      <tspan x={x} dy="0.71em">
+        {formatAxisDate(payload.value, props.groupBy)}
+      </tspan>
+      {/* Smaller than the date, and than what recharts measured for the
+          tick: that slack is what keeps two totals apart on a narrow card. */}
+      <tspan x={x} dy="1.7em" className="text-[0.625rem] tabular-nums">
+        {formatCompactNumber(serie.total)}
+      </tspan>
+    </text>
+  );
+}
+
+function getNearestSerie<TSerie extends { ts: number }>(
+  series: TSerie[],
+  ts: number,
+) {
+  const nearest = series.reduce<TSerie | null>(
+    (best, serie) =>
+      !best || Math.abs(serie.ts - ts) < Math.abs(best.ts - ts) ? serie : best,
+    null,
+  );
+  invariant(nearest, "series is empty");
+  return nearest;
 }
 
 type PresetPeriod =
