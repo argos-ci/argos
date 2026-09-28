@@ -298,7 +298,8 @@ loggedTest(
     await page.goto(
       `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
     );
-    await page.getByRole("button", { name: "Switch build" }).click();
+    const trigger = page.getByRole("button", { name: "Switch build" });
+    await trigger.click();
 
     // Every build of the commit is listed with where its review stands, the
     // one being looked at included, and each names the project it ran in — the
@@ -320,6 +321,21 @@ loggedTest(
       name: `Changes detected ${docsBuild.name} #${docsBuild.number} ${team.account.slug}/${docsProject.name}`,
     });
     await expect(docsItem).toBeVisible();
+
+    // The click leaves the pointer on the trigger, and the trigger's tooltip
+    // can be up over the menu: the overview's autofocused "Start review" opens
+    // the shared tooltip on load, so it reaches this trigger with no delay.
+    // Stepping off once is not always enough to close it — Base UI drops a
+    // pending close whenever another tooltip trigger unmounts, which the page
+    // still does as it loads — so step off until it is gone. The menu is
+    // portaled too, hence the tooltip's text rather than its portal.
+    await expect(async () => {
+      await trigger.hover();
+      await page.mouse.move(0, 0);
+      await expect(page.getByText("Switch build")).toBeHidden({
+        timeout: 1_000,
+      });
+    }).toPass();
 
     await screenshot(page, "build-switcher", {
       replacements: {
