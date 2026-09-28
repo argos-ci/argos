@@ -51,3 +51,10 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - "@argos-ci/*"
   - "@modelcontextprotocol/sdk@1.30.0"
+
+# Base UI clears the shared tooltip's pending close whenever any trigger
+# unmounts, leaving a tooltip open after the pointer leaves. Re-check on every
+# upgrade: the Tooltip story "Closes When Another Trigger Unmounts" fails
+# without the patch.
+patchedDependencies:
+  '@base-ui/react@1.7.0': patches/@base-ui__react@1.7.0.patch

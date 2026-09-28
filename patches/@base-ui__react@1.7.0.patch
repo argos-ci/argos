@@ -1,0 +1,69 @@
+diff --git a/floating-ui-react/hooks/useHoverInteractionSharedState.js b/floating-ui-react/hooks/useHoverInteractionSharedState.js
+index 6d19dd2e8565db0a8afca8c428c1437b92ed8238..30c00ca8b01de6674e8c3c18b6c1a8d8b158cfb6 100644
+--- a/floating-ui-react/hooks/useHoverInteractionSharedState.js
++++ b/floating-ui-react/hooks/useHoverInteractionSharedState.js
+@@ -16,6 +16,7 @@ Object.defineProperty(exports, "isInteractiveElement", {
+ exports.useHoverInteractionSharedState = useHoverInteractionSharedState;
+ var _useOnMount = require("@base-ui/utils/useOnMount");
+ var _useRefWithInit = require("@base-ui/utils/useRefWithInit");
++var _useValueAsRef = require("@base-ui/utils/useValueAsRef");
+ var _useTimeout = require("@base-ui/utils/useTimeout");
+ var _utils = require("../utils");
+ class HoverInteraction {
+@@ -88,6 +89,20 @@ function useHoverInteractionSharedState(store) {
+   if (!data.hoverInteractionState) {
+     data.hoverInteractionState = instance;
+   }
+-  (0, _useOnMount.useOnMount)(data.hoverInteractionState.disposeEffect);
++  const storeRef = (0, _useValueAsRef.useValueAsRef)(store);
++  (0, _useOnMount.useOnMount)(() => () => {
++    // All of a popup's triggers share this instance, so this runs whenever any
++    // one of them unmounts. While the popup is open, `openChangeTimeout` can
++    // only hold a pending close, and cancelling it leaves the popup open after
++    // the pointer has left its trigger. A pending rest may be about to open on
++    // the trigger being removed, so that one still goes. The store is read at
++    // unmount: a detached trigger that rendered before its handle attached
++    // captured the handle's placeholder store, which is never open.
++    if (storeRef.current.select('open')) {
++      data.hoverInteractionState.restTimeout.clear();
++      return;
++    }
++    data.hoverInteractionState.dispose();
++  });
+   return data.hoverInteractionState;
+ }
+\ No newline at end of file
+diff --git a/floating-ui-react/hooks/useHoverInteractionSharedState.mjs b/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
+index 835ebe5fb5caa092bc5be3352168513dd1ee444d..6e60af42304581bbbe93ade437a61159e256382e 100644
+--- a/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
++++ b/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
+@@ -2,6 +2,7 @@
+ 
+ import { useOnMount } from '@base-ui/utils/useOnMount';
+ import { useRefWithInit } from '@base-ui/utils/useRefWithInit';
++import { useValueAsRef } from '@base-ui/utils/useValueAsRef';
+ import { Timeout } from '@base-ui/utils/useTimeout';
+ import { isInteractiveElement } from "../utils.mjs";
+ export { isInteractiveElement };
+@@ -74,6 +75,20 @@ export function useHoverInteractionSharedState(store) {
+   if (!data.hoverInteractionState) {
+     data.hoverInteractionState = instance;
+   }
+-  useOnMount(data.hoverInteractionState.disposeEffect);
++  const storeRef = useValueAsRef(store);
++  useOnMount(() => () => {
++    // All of a popup's triggers share this instance, so this runs whenever any
++    // one of them unmounts. While the popup is open, `openChangeTimeout` can
++    // only hold a pending close, and cancelling it leaves the popup open after
++    // the pointer has left its trigger. A pending rest may be about to open on
++    // the trigger being removed, so that one still goes. The store is read at
++    // unmount: a detached trigger that rendered before its handle attached
++    // captured the handle's placeholder store, which is never open.
++    if (storeRef.current.select('open')) {
++      data.hoverInteractionState.restTimeout.clear();
++      return;
++    }
++    data.hoverInteractionState.dispose();
++  });
+   return data.hoverInteractionState;
+ }
