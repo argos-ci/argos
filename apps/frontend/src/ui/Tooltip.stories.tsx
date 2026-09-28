@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, screen, waitFor } from "storybook/test";
 
 import { Button } from "./Button";
 import {
@@ -91,4 +93,62 @@ export const Open: Story = {
       ))}
     </OverlayStage>
   ),
+};
+
+/**
+ * Every tooltip rides one shared root, so all their triggers share Base UI's
+ * hover timers, and Base UI 1.7.0 clears them whenever any trigger unmounts
+ * (see `patches/@base-ui__react@1.7.0.patch`). A trigger going away while
+ * another tooltip was closing left that tooltip open with the pointer gone.
+ * The build page removes one as it finishes loading: the "Loading
+ * snapshots..." indicator.
+ *
+ * Both triggers mount with the story, in the same commit as the shared root.
+ * That matters: such a trigger first renders against the handle's placeholder
+ * store, which the patch has to see past.
+ */
+export const ClosesWhenAnotherTriggerUnmounts: Story = {
+  parameters: {
+    // The play ends with the tooltip gone, so the picture would only show a
+    // button.
+    argos: { modes: { default: { disabled: true } } },
+  },
+  render: function Render() {
+    const [showOther, setShowOther] = useState(true);
+    return (
+      <div className="flex gap-8 p-16">
+        <Tooltip content="Hovered tooltip">
+          <Button
+            variant="secondary"
+            // Well inside the 100ms close delay.
+            onMouseLeave={() => setTimeout(() => setShowOther(false), 20)}
+          >
+            Hover me
+          </Button>
+        </Tooltip>
+        {showOther ? (
+          <Tooltip content="Other tooltip">
+            <Button variant="secondary">Other</Button>
+          </Tooltip>
+        ) : null}
+      </div>
+    );
+  },
+  play: async ({ canvas, userEvent }) => {
+    const trigger = canvas.getByRole("button", { name: "Hover me" });
+    await userEvent.hover(trigger);
+    await expect(
+      await screen.findByText("Hovered tooltip", {}, { timeout: 3_000 }),
+    ).toBeVisible();
+
+    await userEvent.unhover(trigger);
+    await waitFor(() => {
+      expect(
+        canvas.queryByRole("button", { name: "Other" }),
+      ).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Hovered tooltip")).not.toBeInTheDocument();
+    });
+  },
 };

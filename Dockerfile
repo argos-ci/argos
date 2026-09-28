@@ -17,6 +17,8 @@ ARG ASSETS_BASE_URL
 ENV ASSETS_BASE_URL=$ASSETS_BASE_URL
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml /app
+# `pnpm fetch` fails on a `patchedDependencies` entry whose file is missing.
+COPY patches /app/patches
 RUN pnpm fetch
 
 COPY . /app
