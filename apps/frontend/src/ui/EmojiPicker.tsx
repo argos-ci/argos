@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ComponentProps } from "react";
+import { clsx } from "clsx";
 import { SmilePlusIcon } from "lucide-react";
 import {
   useController,
@@ -13,6 +14,11 @@ import { mergeRefs } from "@/util/merge-refs";
 import { Button, type ButtonProps } from "./Button";
 import { Dialog } from "./Dialog";
 import type { Emoji, EmojiPickerProps } from "./EmojiPickerGrid";
+import {
+  PICKER_WIDTH,
+  searchFieldClassName,
+  VIEWPORT_HEIGHT,
+} from "./emojiPickerLayout";
 import { Loader } from "./Loader";
 import { DialogTrigger } from "./Overlay";
 import { Popover } from "./Popover";
@@ -43,11 +49,16 @@ requestIdle(() => {
 /** Placeholder matching the grid's footprint, so the popover does not resize. */
 function EmojiPickerFallback() {
   return (
-    <div
-      aria-busy
-      className="text-primary flex h-80 w-77 items-center justify-center"
-    >
-      <Loader className="size-8" />
+    <div aria-busy style={{ width: PICKER_WIDTH }}>
+      {/* The input always holds a line; empty, this box would collapse to its
+          padding. */}
+      <div className={clsx(searchFieldClassName, "invisible")}>&nbsp;</div>
+      <div
+        className="text-primary flex items-center justify-center"
+        style={{ height: VIEWPORT_HEIGHT }}
+      >
+        <Loader className="size-8" />
+      </div>
     </div>
   );
 }
