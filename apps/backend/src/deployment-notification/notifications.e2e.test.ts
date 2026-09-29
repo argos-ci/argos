@@ -125,6 +125,26 @@ describe("processDeploymentNotification", () => {
     );
   });
 
+  test("posts the status of a pull request deployment on its head commit", async ({
+    deployment,
+    deploymentNotification,
+  }) => {
+    const prHeadCommit = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    await deployment.$query().patch({ prHeadCommit });
+
+    await processDeploymentNotification(deploymentNotification);
+
+    expect(createGhCommitStatusMock).toHaveBeenCalledWith(
+      octokitMock,
+      expect.objectContaining({ sha: prHeadCommit }),
+    );
+    expect(commentGithubPrMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.stringContaining(deployment.url),
+      }),
+    );
+  });
+
   test("points the commit status at the custom domain", async ({
     deployment,
     deploymentNotification,

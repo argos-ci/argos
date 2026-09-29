@@ -45,6 +45,10 @@ const RequestBodySchema = z.object({
   prNumber: GitPRNumberSchema.nullish().meta({
     description: "The pull request number",
   }),
+  prHeadCommit: Sha1HashSchema.nullish().meta({
+    description:
+      "The head commit of the pull request. When `commit` is a merge commit built for the pull request, such as the test-merge commit GitHub Actions checks out, the deployment status is reported on this commit, where the pull request shows it.",
+  }),
   environment: DeploymentEnvironmentSchema.optional().meta({
     description:
       "The deployment environment. When omitted, it is inferred from `branch`: branches matching the configured production-branch glob are treated as `production`; all others default to `preview`.",
@@ -263,6 +267,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       environment,
       branch,
       commitSha: body.commit,
+      prHeadCommit: body.prHeadCommit ?? null,
       slug: generateDeploymentSlug({
         accountSlug: project.account.slug,
         projectName: project.name,
