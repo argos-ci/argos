@@ -108,7 +108,10 @@ export async function processDeploymentNotification(
     createGhCommitStatus(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,
-      sha: deployment.commitSha,
+      // A pull request only shows the statuses of its head commit, and a
+      // deployment built on GitHub's test-merge commit would report where no
+      // one sees it. The comment keeps `commitSha`, the commit builds key it on.
+      sha: deployment.prHeadCommit ?? deployment.commitSha,
       state: notification.github.state,
       target_url: getDeploymentPreferredUrl({
         slug: deployment.slug,

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict XB3AojxYH0d8wfwa6it3dBVR58x844f4n4zizJ7pjWNgNVYUUgSLTv0YhYEC0Nf
+\restrict aEFKgudzvPHSNxTzsC2iIwRwg2BhJ9sx8gJypIGQnb1AC7MwanmvHUZbkeKOrMP
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -827,6 +827,7 @@ CREATE TABLE public.deployments (
     "commitSha" character varying(255) NOT NULL,
     slug character varying(255) NOT NULL,
     "githubPullRequestId" bigint,
+    "prHeadCommit" character varying(255),
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
 );
@@ -6700,7 +6701,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XB3AojxYH0d8wfwa6it3dBVR58x844f4n4zizJ7pjWNgNVYUUgSLTv0YhYEC0Nf
+\unrestrict aEFKgudzvPHSNxTzsC2iIwRwg2BhJ9sx8gJypIGQnb1AC7MwanmvHUZbkeKOrMP
 
 -- Knex migrations
 
@@ -6959,3 +6960,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260909153631_overage-alert.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260914151447_lowercase-deployment-slugs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260923082549_oauth-grants-client-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260929083847_deployment-pr-head-commit.js', 1, NOW());

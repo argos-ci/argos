@@ -45,6 +45,7 @@ export class Deployment extends Model {
             maxLength: DEPLOYMENT_SLUG_MAX_LENGTH,
           },
           githubPullRequestId: { type: ["string", "null"] },
+          prHeadCommit: { type: ["string", "null"] },
         },
       },
     ],
@@ -96,6 +97,7 @@ export class Deployment extends Model {
   commitSha!: string;
   slug!: string;
   githubPullRequestId!: string | null;
+  prHeadCommit!: string | null;
 
   project?: Project;
   aliases?: DeploymentAlias[];
