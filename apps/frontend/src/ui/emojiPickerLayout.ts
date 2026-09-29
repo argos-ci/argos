@@ -16,9 +16,9 @@ export const PICKER_WIDTH = GRID_WIDTH + GRID_PADDING_X * 2;
 /**
  * The box of the search field above the grid.
  *
- * Its height is not a constant: the hairline border rounds to a whole device
- * pixel, so the field is 38.5px tall at 100% zoom and 38px at 200%. Anything
- * that has to match it lays out this same box instead.
+ * Its height is not a constant: the hairline border is never drawn thinner than
+ * one pixel of the zoomed page, so the field is 38.5px tall at zoom 1 and 38px
+ * at zoom 2. Anything that has to match it lays out this same box instead.
  */
 export const searchFieldClassName =
   "border-b-thin px-3 py-2.5 text-sm leading-tight";
