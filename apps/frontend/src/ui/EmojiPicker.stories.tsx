@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SmilePlusIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { screen } from "storybook/test";
 
 import { Button } from "./Button";
 import {
@@ -20,6 +21,16 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/**
+ * The grid is lazy-loaded behind a Suspense fallback, and Argos's Storybook
+ * capture does not wait for `aria-busy` to clear: a story that ends before the
+ * chunk lands is photographed on the fallback, or in a frame still sized to it.
+ * An active emoji is the last thing the grid renders on mount.
+ */
+async function waitForGrid() {
+  await screen.findByRole("option", { selected: true }, { timeout: 10_000 });
+}
 
 function DefaultStory() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -44,6 +55,7 @@ function DefaultStory() {
 
 export const Default: Story = {
   render: () => <DefaultStory />,
+  play: waitForGrid,
 };
 
 type FormValues = { emoji: string };
@@ -88,4 +100,5 @@ export const Open: Story = {
       </EmojiPickerTrigger>
     </OverlayStage>
   ),
+  play: waitForGrid,
 };
