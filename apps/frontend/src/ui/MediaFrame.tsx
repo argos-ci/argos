@@ -44,22 +44,27 @@ export function MediaWell(props: {
 }
 
 /**
- * A video in its frame, with the browser's own controls.
+ * A video in its frame, with the browser's own controls. Held to the frame's
+ * width; the caller caps its height, because what a height can be measured
+ * against depends on the layout around it.
  */
 export function MediaVideo(props: {
   src: string;
   poster: string | null;
+  /** The recording's accessible name — a `<video>` has no alt text. */
+  label: string;
   className?: string;
 }) {
   return (
     <video
       src={props.src}
       poster={props.poster ?? undefined}
+      aria-label={props.label}
       controls
       playsInline
       preload="metadata"
       className={clsx(
-        "block h-auto max-h-full w-auto max-w-full object-contain",
+        "block h-auto w-auto max-w-full object-contain",
         props.className,
       )}
     />

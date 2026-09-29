@@ -34,6 +34,18 @@ export function checkIsBlendViewMode(
 }
 
 /**
+ * The mode a comparison is actually shown in: a stored blend mode it cannot do
+ * falls back to side by side. The viewer and the toggle both go through here,
+ * so the button that reads as pressed is the view on screen.
+ */
+export function getEffectiveViewMode(
+  viewMode: ViewMode,
+  blendEnabled: boolean,
+): ViewMode {
+  return checkIsBlendViewMode(viewMode) && !blendEnabled ? "split" : viewMode;
+}
+
+/**
  * Whether baseline and changes can be blended into a single pane (onion skin
  * or swipe view): requires both screenshots to be images.
  */

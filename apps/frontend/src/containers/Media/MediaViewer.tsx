@@ -17,6 +17,7 @@ import { BuildDiffHighlighterProvider } from "@/containers/Build/BuildDiffHighli
 import {
   buildViewModeAtom,
   checkIsBlendViewMode,
+  getEffectiveViewMode,
   onionOpacityAtom,
   swipeHandleYAtom,
   swipePositionAtom,
@@ -161,7 +162,9 @@ type BlendState = {
  * controls, same shortcuts.
  *
  * Videos keep the native player. Panning a video is not a thing anyone wants,
- * and the controls would fight the drag gesture.
+ * and the controls would fight the drag gesture. A pair of recordings is still
+ * compared with the same toggle — side by side, or either half alone — minus
+ * the blends, which need two images.
  */
 export function MediaViewer(props: {
   media: ViewerMedia;
@@ -182,56 +185,18 @@ export function MediaViewer(props: {
   const [swipePosition, setSwipePosition] = useAtom(swipePositionAtom);
   const [swipeHandleY, setSwipeHandleY] = useAtom(swipeHandleYAtom);
 
-  if (version.isVideo) {
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        {/* A recording has no pane a pin can land on, so a tool armed on the
-            image beside it comes down here as it does on the "before" half
-            alone — and it has to happen above the early return, because this
-            branch is the one page that offers nothing to put it away. */}
-        <DisarmCommentTool enabled={false} />
-        {/* A recording gets the same bar as a screenshot — nothing to compare,
-            and nothing to pin a comment to, but the same name in the same place
-            and the same way out of it. */}
-        <MediaViewToolbar
-          title={media.name}
-          nav={nav}
-          compare={null}
-          commentTool={false}
-        />
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5">
-          <MediaWell
-            aspectRatio={
-              version.width && version.height
-                ? { width: version.width, height: version.height }
-                : null
-            }
-            className="flex max-h-[70dvh] min-h-64 w-auto max-w-full items-center justify-center lg:max-h-full lg:min-h-0"
-          >
-            <MediaVideo src={version.fileUrl} poster={version.posterUrl} />
-          </MediaWell>
-        </div>
-      </div>
-    );
-  }
-
   // Blending lays one half over the other as an image, so it needs two images.
-  // A pair is two uploads under one name and nothing stops one of them being a
-  // recording.
-  const blendEnabled = Boolean(counterpart && !counterpart.version.isVideo);
+  // A pair is two uploads under one name and nothing stops either of them being
+  // a recording.
+  const blendEnabled = Boolean(
+    counterpart && !version.isVideo && !counterpart.version.isVideo,
+  );
 
   // Every mode but one needs the other half; without it the media stands alone,
-  // which is what "changes" means here — this media, on its own. A stored blend
-  // mode that this pair cannot do falls back to side by side rather than
-  // rendering a video where an image should be.
-  const mode: ViewMode = (() => {
-    if (!counterpart) {
-      return "changes";
-    }
-    return checkIsBlendViewMode(storedMode) && !blendEnabled
-      ? "split"
-      : storedMode;
-  })();
+  // which is what "changes" means here — this media, on its own.
+  const mode: ViewMode = counterpart
+    ? getEffectiveViewMode(storedMode, blendEnabled)
+    : "changes";
 
   // Which half is which, whichever one this page is for. A pair is ordered so
   // the "before" is always on the left: one that read right-to-left depending on
@@ -302,10 +267,13 @@ export function MediaViewer(props: {
     }
   })();
 
-  // Looking at the "before" alone puts the commentable half off screen, so
-  // there is nowhere for a pin to land — the tool has to come back down rather
-  // than leave the reviewer clicking at an image that cannot take it.
-  const commentable = panes.some((pane) => pane.interactive);
+  // Looking at the "before" alone puts the commentable half off screen, and a
+  // recording has no still frame to pin to. Either way there is nowhere for a
+  // pin to land — the tool has to come back down rather than leave the
+  // reviewer clicking at something that cannot take it.
+  const commentable = panes.some(
+    (pane) => pane.interactive && !pane.media.version.isVideo,
+  );
 
   // What it takes for the comment tool to be worth offering: a half on screen
   // that can take a pin, and a viewer allowed to add to the discussion.
@@ -317,8 +285,13 @@ export function MediaViewer(props: {
   // media's own shape instead of claiming a fixed slice of the viewport: a
   // wide screenshot on a phone would otherwise sit in a mostly-empty well.
   // On `lg` the page gives the viewer its full column and flex wins.
+  //
+  // Recordings size themselves there: the player lays out at the video's own
+  // shape, which processing never records for a video, so a row of recordings
+  // alone takes the players' height rather than a slice of the viewport.
+  const sizedByPlayers = panes.every((pane) => pane.media.version.isVideo);
   const stackedAspectRatio =
-    version.width && version.height
+    !sizedByPlayers && version.width && version.height
       ? (version.width / version.height) * panes.length
       : null;
 
@@ -343,9 +316,11 @@ export function MediaViewer(props: {
 
           <div
             className={clsx(
-              "flex max-h-[70dvh] min-h-72 w-full gap-3 lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1",
+              "flex w-full gap-3 lg:min-h-0 lg:flex-1",
+              !sizedByPlayers &&
+                "max-h-[70dvh] min-h-72 lg:h-auto lg:max-h-none",
               // No known shape to size from: fall back to a viewport slice.
-              stackedAspectRatio === null && "h-[60dvh]",
+              !sizedByPlayers && stackedAspectRatio === null && "h-[60dvh]",
             )}
             style={
               stackedAspectRatio !== null
@@ -353,43 +328,55 @@ export function MediaViewer(props: {
                 : undefined
             }
           >
-            {panes.map((pane) => (
-              <MediaPane
-                key={pane.media.state ?? "solo"}
-                media={pane.media}
-                // A pair's half names itself beside the other, and still does
-                // when shown alone — it is one side of a comparison either way.
-                // Not when blended: that pane is both halves at once, and its
-                // own controls already name the two layers.
-                labelled={
-                  panes.length > 1 ||
-                  Boolean(
-                    pane.media.state &&
-                    counterpart &&
-                    !checkIsBlendViewMode(mode),
-                  )
-                }
-                blend={pane.changes ? blend : null}
-                // Comments and the version picker belong to the media whose page
-                // this is. Drawing them on the counterpart would attach feedback
-                // to the wrong image.
-                comments={pane.interactive ? comments : null}
-                diff={pane.changes ? diff : null}
-                // Only side by side puts two panes on screen, and only then is
-                // "which one takes the pin" a question the viewer has to answer.
-                // A single pane — alone, or with both halves blended into it —
-                // has nowhere else the pin could land.
-                pinState={
-                  panes.length > 1 &&
-                  canPlacePin &&
-                  commentToolMode === "comment"
-                    ? pane.interactive
-                      ? "target"
-                      : "excluded"
-                    : null
-                }
-              />
-            ))}
+            {panes.map((pane) => {
+              const key = pane.media.state ?? "solo";
+              // A pair's half names itself beside the other, and still does
+              // when shown alone — it is one side of a comparison either way.
+              // Not when blended: that pane is both halves at once, and its own
+              // controls already name the two layers.
+              const labelled =
+                panes.length > 1 ||
+                Boolean(
+                  pane.media.state &&
+                  counterpart &&
+                  !checkIsBlendViewMode(mode),
+                );
+              // Only side by side puts two panes on screen, and only then is
+              // "which one takes the pin" a question the viewer has to answer.
+              // A single pane — alone, or with both halves blended into it —
+              // has nowhere else the pin could land.
+              const pinState =
+                panes.length > 1 && canPlacePin && commentToolMode === "comment"
+                  ? pane.interactive
+                    ? "target"
+                    : "excluded"
+                  : null;
+              if (pane.media.version.isVideo) {
+                // Never the target: a recording is not `commentable`.
+                return (
+                  <MediaVideoPane
+                    key={key}
+                    media={pane.media}
+                    labelled={labelled}
+                    receded={pinState === "excluded"}
+                  />
+                );
+              }
+              return (
+                <MediaPane
+                  key={key}
+                  media={pane.media}
+                  labelled={labelled}
+                  blend={pane.changes ? blend : null}
+                  // Comments and the version picker belong to the media whose
+                  // page this is. Drawing them on the counterpart would attach
+                  // feedback to the wrong image.
+                  comments={pane.interactive ? comments : null}
+                  diff={pane.changes ? diff : null}
+                  pinState={pinState}
+                />
+              );
+            })}
           </div>
         </div>
       </BuildDiffHighlighterProvider>
@@ -399,11 +386,11 @@ export function MediaViewer(props: {
 
 /**
  * Puts the comment tool away when the view has nothing that can take a pin —
- * switching to the "before" alone, whose comments belong to the other half.
+ * switching to the "before" alone, whose comments belong to the other half, or
+ * moving on to a recording.
  *
- * Its own component so the effect can sit under the early return a recording
- * takes, and rendering nothing because there is nothing to say: the tool simply
- * stops being armed, the same as pressing Escape.
+ * Renders nothing because there is nothing to say: the tool simply stops being
+ * armed, the same as pressing Escape.
  */
 function DisarmCommentTool(props: { enabled: boolean }) {
   const { enabled } = props;
@@ -424,15 +411,15 @@ function DisarmCommentTool(props: { enabled: boolean }) {
  * Three of the slots are conditional, each on what it would act on: the compare
  * controls on there being a pair, the overlay controls on Argos having found
  * changes to mark, and the comment tool on a half being on screen that can take
- * a pin. A recording has none of them. What is left — the name, and the arrows
- * out of it — sits where a screenshot's page puts it, which is what makes the
- * two the same page.
+ * a pin. A lone recording has none of them. What is left — the name, and the
+ * arrows out of it — sits where a screenshot's page puts it, which is what makes
+ * the two the same page.
  */
 function MediaViewToolbar(props: {
   title: string;
   /** Moving through the pull request's media, when there is more than one. */
   nav: MediaViewerNav | null;
-  /** The pair's controls, absent when the media stands alone or is a video. */
+  /** The pair's controls, absent when the media stands alone. */
   compare: {
     /** Whether the two halves can be blended into one pane. */
     blendEnabled: boolean;
@@ -591,15 +578,7 @@ function MediaPane(props: {
             pinState === "excluded" && "opacity-50",
           )}
         >
-          {labelled ? (
-            // Floating over the pixels rather than above the frame, so the two
-            // halves stay named while panning, zooming, or leaning in close.
-            // Near-opaque with a hairline edge: readable over any pixels,
-            // light or dark, without hiding much of what it sits on.
-            <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-(--gray-12)/70 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm dark:bg-(--gray-1)/70">
-              {media.state}
-            </div>
-          ) : null}
+          {labelled ? <MediaPaneLabel state={media.state} /> : null}
           <ZoomPane
             surface="bare"
             dimensions={dimensions}
@@ -643,11 +622,7 @@ function MediaPane(props: {
           >
             <MediaImage
               src={version.fileUrl}
-              // The state is part of the alt text, not only the visible label
-              // above: a pair is two images with one name, and a screen reader
-              // reading "checkout.png" twice cannot tell the reader which is
-              // which.
-              alt={media.state ? `${media.name} (${media.state})` : media.name}
+              alt={getMediaAlt(media)}
               dimensions={dimensions}
               blend={blend}
               diff={diff}
@@ -669,6 +644,73 @@ function MediaPane(props: {
 }
 
 /**
+ * A recording's pane: the browser's own player, in a well that hugs it.
+ *
+ * Nothing is drawn over it — no pins, no changes overlay. Both point at the
+ * pixels of a still image, which a recording does not have.
+ */
+function MediaVideoPane(props: {
+  media: ViewerMedia;
+  labelled: boolean;
+  /** Stepping back while the comment tool is armed on the image beside it. */
+  receded: boolean;
+}) {
+  const { media, labelled, receded } = props;
+  const version = media.version;
+  return (
+    <div
+      className="flex min-w-0 flex-1 flex-col items-center justify-center"
+      data-media-pane=""
+    >
+      <MediaWell
+        aspectRatio={
+          version.width && version.height
+            ? { width: version.width, height: version.height }
+            : null
+        }
+        className={clsx(
+          "flex max-h-full w-auto max-w-full items-center justify-center transition-opacity",
+          receded && "opacity-50",
+        )}
+      >
+        {labelled ? <MediaPaneLabel state={media.state} /> : null}
+        <MediaVideo
+          src={version.fileUrl}
+          poster={version.posterUrl}
+          label={getMediaAlt(media)}
+          // Where the page stacks, the row takes the player's height, so there
+          // is no pane to be capped by — the viewport caps it instead.
+          className="max-h-[70dvh] lg:max-h-full"
+        />
+      </MediaWell>
+    </div>
+  );
+}
+
+/**
+ * Which half of a pair a pane shows. Floating over the pixels rather than above
+ * the frame, so the two halves stay named while panning, zooming, or leaning in
+ * close. Near-opaque with a hairline edge: readable over any pixels, light or
+ * dark, without hiding much of what it sits on.
+ */
+function MediaPaneLabel(props: { state: ViewerMedia["state"] }) {
+  return (
+    <div className="text-xxs pointer-events-none absolute top-2 left-2 z-10 rounded bg-(--gray-12)/70 px-1.5 py-0.5 font-semibold tracking-wide text-white uppercase ring-1 ring-white/25 backdrop-blur-sm dark:bg-(--gray-1)/70">
+      {props.state}
+    </div>
+  );
+}
+
+/**
+ * A media's text alternative. The state is part of it, not only the visible
+ * label: a pair is two uploads with one name, and a screen reader reading
+ * "checkout.png" twice cannot tell the reader which is which.
+ */
+function getMediaAlt(media: { name: string; state?: string | null }): string {
+  return media.state ? `${media.name} (${media.state})` : media.name;
+}
+
+/**
  * The pane's floating actions, mirroring the build's snapshot menu: copy the
  * image's stable CDN link or its Markdown embed, or download the bytes under
  * the media's own name. Download is a direct action — a media has exactly one
@@ -678,10 +720,12 @@ function MediaPane(props: {
  */
 function MediaActionsMenu(props: { media: ViewerMedia }) {
   const { media } = props;
-  const alt = media.state ? `${media.name} (${media.state})` : media.name;
   return (
     <ImageActionsMenu tooltip="Media actions" ariaLabel="Media actions">
-      {getCopyImageSubmenu({ publicUrl: media.version.fileUrl, alt })}
+      {getCopyImageSubmenu({
+        publicUrl: media.version.fileUrl,
+        alt: getMediaAlt(media),
+      })}
       <MenuItem
         icon={<DownloadIcon />}
         onAction={() => {
