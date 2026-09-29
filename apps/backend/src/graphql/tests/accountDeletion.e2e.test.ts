@@ -1,7 +1,15 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Account, Build, Project, User, UserPasskey } from "@/database/models";
+import {
+  Account,
+  Build,
+  Project,
+  Subscription,
+  User,
+  UserPasskey,
+} from "@/database/models";
 import { createPasskeys } from "@/database/seeds";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
@@ -317,6 +325,64 @@ describe("GraphQL confirmAccountDeletion", () => {
 
     // Token must be consumed after a successful deletion.
     expect(await getStoredDeletionToken("good-token")).toBeNull();
+  });
+
+  it("deletes a user who started a team's Stripe subscription", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const { user, userId } = userAccount;
+    invariant(user && userId, "userAccount has no user");
+    const coOwnerAccount = await factory.UserAccount.create();
+    invariant(coOwnerAccount.userId, "coOwnerAccount has no user");
+    const teamAccount = await factory.TeamAccount.create();
+    invariant(teamAccount.teamId, "teamAccount has no team");
+
+    await factory.TeamUser.createMany(2, [
+      { teamId: teamAccount.teamId, userId, userLevel: "owner" },
+      {
+        teamId: teamAccount.teamId,
+        userId: coOwnerAccount.userId,
+        userLevel: "owner",
+      },
+    ]);
+    // `check_stripe_fields` rejects a Stripe subscription without a
+    // subscriber, so it keeps pointing at the user, who is only soft-deleted.
+    const subscription = await factory.Subscription.create({
+      accountId: teamAccount.id,
+      provider: "stripe",
+      stripeSubscriptionId: "sub_started_by_user",
+      subscriberId: userId,
+    });
+
+    await seedDeletionToken({
+      token: "subscriber-token",
+      accountId: userAccount.id,
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user, account: userAccount },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation ConfirmAccountDeletion($input: ConfirmAccountDeletionInput!) {
+            confirmAccountDeletion(input: $input)
+          }
+        `,
+        variables: { input: { token: "subscriber-token" } },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.confirmAccountDeletion).toBe(true);
+
+    // The team, now in the co-owner's hands, keeps its subscription.
+    await expect(
+      Subscription.query().findById(subscription.id),
+    ).resolves.toBeDefined();
   });
 
   it("rejects reuse of an already-consumed token", async () => {
