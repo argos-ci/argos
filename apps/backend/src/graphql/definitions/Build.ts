@@ -110,6 +110,8 @@ export const typeDefs = gql`
     pullRequest: PullRequest
     "Build stats"
     stats: BuildStats
+    "Screenshots the build is billed for: every screenshot it uploaded, Storybook ones included. Zero until the build is finalized."
+    billedScreenshotCount: Int!
     "Build type"
     type: BuildType
     "Latest deployment matching the build commit"
@@ -450,6 +452,11 @@ export const resolvers: IResolvers = {
     },
     stats: (build) => {
       return build.getStats();
+    },
+    billedScreenshotCount: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      // Null until the build is finalized, and usage sums it as zero until then.
+      return compareBucket.screenshotCount ?? 0;
     },
     branchApprovedDiffs: async (build, _args, ctx) => {
       if (!ctx.auth) {

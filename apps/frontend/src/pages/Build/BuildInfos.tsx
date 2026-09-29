@@ -38,10 +38,7 @@ const _BuildFragment = graphql(`
     mergeQueue
     subset
     status
-    stats {
-      total
-      removed
-    }
+    billedScreenshotCount
     baseScreenshotBucket {
       id
       commit
@@ -149,21 +146,6 @@ function Description(props: { children: React.ReactNode }) {
 
 function Duration({ start, end }: { start: string; end: string }) {
   return formatDuration(new Date(end).getTime() - new Date(start).getTime());
-}
-
-/**
- * Number of screenshots the build actually uploaded. Removed diffs come from
- * the baseline, not from the build: counting them in a subset build — where
- * they only reflect tests that were not run — inflates the total.
- */
-function getUploadedScreenshotCount(
-  build: DocumentType<typeof _BuildFragment>,
-): number {
-  const { stats } = build;
-  if (!stats) {
-    return 0;
-  }
-  return build.subset ? stats.total - stats.removed : stats.total;
 }
 
 export function BuildInfos(props: {
@@ -314,7 +296,7 @@ export function BuildInfos(props: {
       )}
 
       <Dt>Total screenshots</Dt>
-      <Dd>{build.stats ? getUploadedScreenshotCount(build) : "-"}</Dd>
+      <Dd>{build.billedScreenshotCount}</Dd>
 
       {build.subset ? (
         <>

@@ -140,15 +140,25 @@ loggedTest(
     // deleted": they must not show up as something to review.
     await expect(page.getByText("A single visual change")).toBeVisible();
     await expect(page.getByText("2 removed")).toHaveCount(0);
+  },
+);
 
-    // The total only counts the snapshots the build actually uploaded.
-    await page.getByRole("tab", { name: "Info" }).click();
-    await expect(page.locator("dt:has-text('Scope') + dd")).toContainText(
-      "Subset",
+loggedTest(
+  "total screenshots is what the build is billed for",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    // Four diffs, one of them removed: the build uploaded three screenshots.
+    const { build } = await createVariantSwitchersScenario({
+      projectId: project.id,
+    });
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/overview`,
     );
+
+    await page.getByRole("tab", { name: "Info" }).click();
     await expect(
       page.locator("dt:has-text('Total screenshots') + dd"),
-    ).toHaveText("4");
+    ).toHaveText("3");
   },
 );
 
