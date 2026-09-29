@@ -1072,17 +1072,13 @@ function getProjectChartKeys(
 }
 
 function EvolutionChart(props: {
-  series: { ts: number; total: number }[];
+  series: { ts: number }[];
   keys: EvolutionChartKey[];
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
   legend?: boolean;
-  /**
-   * Print the `total` under each date of the X axis. Only for series whose
-   * `total` is what the stack adds up to, or the number contradicts the chart
-   * above it.
-   */
+  /** Print what the stack adds up to under each date of the X axis. */
   totals?: boolean;
 }) {
   const { series, keys, from, to, groupBy } = props;
@@ -1127,10 +1123,10 @@ function EvolutionChart(props: {
           tickLine={false}
           axisLine={false}
           minTickGap={0}
-          tickMargin={12}
+          tickMargin={props.totals ? 8 : 12}
           domain={["dataMin", "dataMax"]}
           ticks={ticks}
-          height={props.totals ? 48 : undefined}
+          height={props.totals ? 44 : undefined}
           tickFormatter={(value: number) => {
             const date = formatAxisDate(value, groupBy);
             if (!props.totals) {
@@ -1140,14 +1136,19 @@ function EvolutionChart(props: {
             // with the total printed under the date, the wider line decides.
             // At equal length, digits are the wider ones.
             const total = formatCompactNumber(
-              getNearestSerie(series, value).total,
+              getStackTotal(getNearestSerie(series, value), keys),
             );
             return total.length >= date.length ? total : date;
           }}
           tick={
             props.totals
               ? (tick: XAxisTickContentProps) => (
-                  <TotalTick tick={tick} series={series} groupBy={groupBy} />
+                  <TotalTick
+                    tick={tick}
+                    series={series}
+                    keys={keys}
+                    groupBy={groupBy}
+                  />
                 )
               : undefined
           }
@@ -1185,7 +1186,19 @@ function EvolutionChart(props: {
 }
 
 function formatCompactNumber(value: number) {
-  return value.toLocaleString(navigator.language, { notation: "compact" });
+  return (
+    new Intl.NumberFormat(navigator.language, {
+      notation: "compact",
+      // The default drops the decimal past two digits: 13.6M reads "14M".
+      maximumSignificantDigits: 3,
+    })
+      .formatToParts(value)
+      // French separates the number from its unit with a narrow space ("242 k"),
+      // which is room the axis does not have.
+      .filter((part) => part.type !== "literal" || part.value.trim() !== "")
+      .map((part) => part.value)
+      .join("")
+  );
 }
 
 function formatAxisDate(ts: number, groupBy: TimeSeriesGroupBy) {
@@ -1213,7 +1226,8 @@ function formatAxisDate(ts: number, groupBy: TimeSeriesGroupBy) {
  */
 function TotalTick(props: {
   tick: XAxisTickContentProps;
-  series: { ts: number; total: number }[];
+  series: { ts: number }[];
+  keys: EvolutionChartKey[];
   groupBy: TimeSeriesGroupBy;
 }) {
   const { x, y, fill, payload } = props.tick;
@@ -1227,16 +1241,47 @@ function TotalTick(props: {
       textAnchor="middle"
       className="recharts-cartesian-axis-tick-value"
     >
-      <tspan x={x} dy="0.71em">
-        {formatAxisDate(payload.value, props.groupBy)}
-      </tspan>
       {/* Smaller than the date, and than what recharts measured for the
           tick: that slack is what keeps two totals apart on a narrow card. */}
-      <tspan x={x} dy="1.7em" className="text-[0.625rem] tabular-nums">
-        {formatCompactNumber(serie.total)}
+      <tspan
+        x={x}
+        dy="0.2em"
+        className="text-[0.625rem] font-medium tabular-nums"
+      >
+        {formatCompactNumber(getStackTotal(serie, props.keys))}
+      </tspan>
+      <tspan x={x} dy="1.8em" className="fill-(--text-color-default)">
+        {formatAxisDate(payload.value, props.groupBy)}
       </tspan>
     </text>
   );
+}
+
+/**
+ * What the stack adds up to at a point: the keys drawn, rather than the
+ * series' own `total`, which counts builds a chart leaves out — the outcome
+ * charts skip the ones still running — or averages never meant to be summed.
+ */
+function getStackTotal(serie: { ts: number }, keys: EvolutionChartKey[]) {
+  return keys.reduce((total, key) => total + readSeriesValue(serie, key.id), 0);
+}
+
+/**
+ * Reads a key off a point the way recharts reads its `dataKey`, so the number
+ * under the axis is the one drawn above it.
+ */
+function readSeriesValue(serie: { ts: number }, path: string) {
+  const value = path
+    .split(".")
+    .reduce<unknown>(
+      (current, segment) =>
+        current && typeof current === "object" && segment in current
+          ? Reflect.get(current, segment)
+          : undefined,
+      serie,
+    );
+  invariant(typeof value === "number", `no number under "${path}" in a serie`);
+  return value;
 }
 
 function getNearestSerie<TSerie extends { ts: number }>(
