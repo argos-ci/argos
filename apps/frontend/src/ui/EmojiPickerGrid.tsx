@@ -17,6 +17,17 @@ import emojibaseMessages from "emojibase-data/en/messages.json";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
+import {
+  CELL_SIZE,
+  COLUMNS,
+  GRID_PADDING_X,
+  GRID_WIDTH,
+  HEADER_HEIGHT,
+  PICKER_WIDTH,
+  searchFieldClassName,
+  VIEWPORT_HEIGHT,
+} from "./emojiPickerLayout";
+
 /** A single emoji, as exposed by this picker. */
 export type Emoji = {
   /** The emoji character, e.g. `"😀"`. */
@@ -156,13 +167,6 @@ function useRecentEmojis(): [Emoji[], (emoji: Emoji) => void] {
 }
 
 // --- layout -----------------------------------------------------------------
-
-const COLUMNS = 9;
-const CELL_SIZE = 28;
-const HEADER_HEIGHT = 28;
-const VIEWPORT_HEIGHT = 256;
-const GRID_PADDING_X = 8;
-const GRID_WIDTH = COLUMNS * CELL_SIZE;
 
 type Section = { id: string; label: string; emojis: EmojiEntry[] };
 
@@ -461,7 +465,7 @@ function EmojiPickerGrid(props: EmojiPickerProps) {
     <div
       ref={ref}
       className={clsx("isolate flex flex-col select-none", className)}
-      style={{ width: GRID_WIDTH + GRID_PADDING_X * 2 }}
+      style={{ width: PICKER_WIDTH }}
     >
       <input
         type="text"
@@ -477,7 +481,8 @@ function EmojiPickerGrid(props: EmojiPickerProps) {
         onChange={(event) => setQuery(event.target.value)}
         onKeyDown={onKeyDown}
         className={clsx(
-          "text-default placeholder:text-placeholder border-b-thin w-full appearance-none bg-transparent px-3 py-2.5 text-sm leading-tight",
+          searchFieldClassName,
+          "text-default placeholder:text-placeholder w-full appearance-none bg-transparent",
           "focus:outline-hidden",
         )}
       />
