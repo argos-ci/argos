@@ -215,11 +215,6 @@ export async function deleteAccount(args: {
           // to sign in to an account that no longer exists.
           UserPasskey.query(trx).where("userId", userId).delete(),
 
-          // Remove user from all its subscriptions
-          Subscription.query(trx)
-            .where("subscriberId", userId)
-            .patch({ subscriberId: null }),
-
           // Remove user from all its build reviews
           BuildReview.query(trx)
             .where("userId", userId)
