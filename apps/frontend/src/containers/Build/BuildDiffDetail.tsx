@@ -61,6 +61,7 @@ import {
   buildViewModeAtom,
   checkDiffCanBeBlended,
   checkIsBlendViewMode,
+  getEffectiveViewMode,
   onionOpacityAtom,
   swipeHandleYAtom,
   swipePositionAtom,
@@ -1366,13 +1367,13 @@ const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { diff, build } = props;
     const viewMode = useAtomValue(buildViewModeAtom);
-    const canBlend = checkDiffCanBeBlended(diff);
-    const blendMode =
-      checkIsBlendViewMode(viewMode) && canBlend ? viewMode : null;
-    // Blend views only apply to comparable image diffs; fall back to the
-    // split view for the other diffs.
-    const effectiveViewMode =
-      checkIsBlendViewMode(viewMode) && !canBlend ? "split" : viewMode;
+    const effectiveViewMode = getEffectiveViewMode(
+      viewMode,
+      checkDiffCanBeBlended(diff),
+    );
+    const blendMode = checkIsBlendViewMode(effectiveViewMode)
+      ? effectiveViewMode
+      : null;
     const showBaseline =
       effectiveViewMode === "split" || effectiveViewMode === "baseline";
     const showChanges =

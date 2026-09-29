@@ -14,7 +14,11 @@ import {
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useBuildHotkey } from "../BuildHotkeys";
-import { buildViewModeAtom, type ViewMode } from "../BuildViewMode";
+import {
+  buildViewModeAtom,
+  getEffectiveViewMode,
+  type ViewMode,
+} from "../BuildViewMode";
 import { Hotkey } from "../hotkeys";
 import { useZoomerSyncContext } from "../Zoomer";
 
@@ -43,7 +47,8 @@ const DEFAULT_LABELS: ViewToggleLabels = {
 export const ViewToggle = memo(
   (props: { blendEnabled: boolean; labels?: ViewToggleLabels }) => {
     const { blendEnabled, labels = DEFAULT_LABELS } = props;
-    const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
+    const [storedViewMode, setViewMode] = useAtom(buildViewModeAtom);
+    const viewMode = getEffectiveViewMode(storedViewMode, blendEnabled);
     const { reset } = useZoomerSyncContext();
 
     const select = useEventCallback((next: ViewMode) => {

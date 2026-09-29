@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { createMediaScenario } from "../apps/backend/src/database/seeds";
+import {
+  createMediaScenario,
+  createMediaVideoPairScenario,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -521,6 +524,55 @@ loggedTest("media share page for a video", async ({ page, project }) => {
   await expect(video).toBeVisible();
   await expect(video).toHaveAttribute("poster", /ik-thumbnail\.jpg/);
 });
+
+loggedTest(
+  "compares a before/after pair of recordings side by side",
+  async ({ page, project }) => {
+    // A pair of recordings used to show the "after" alone, and the "before"
+    // link redirects to it — so the before half could not be watched at all.
+    const media = await createMediaVideoPairScenario({ projectId: project.id });
+
+    // Arriving with onion skin as the stored preference, as anyone who blends
+    // a build's snapshots does: two players cannot be blended, so the pair
+    // opens side by side, and the toggle has to say so.
+    await page.addInitScript(() => {
+      localStorage.setItem("preferences.diffViewMode", JSON.stringify("onion"));
+    });
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const panes = page.locator("[data-media-pane]");
+    await expect(panes).toHaveCount(2);
+    // The "before" on the left, whichever half the page is for.
+    await expect(
+      panes.nth(0).getByLabel("signup-flow.mp4 (before)"),
+    ).toBeVisible();
+    await expect(
+      panes.nth(1).getByLabel("signup-flow.mp4 (after)"),
+    ).toBeVisible();
+
+    const before = page.getByRole("button", { name: "Before", exact: true });
+    const after = page.getByRole("button", { name: "After", exact: true });
+    const sideBySide = page.getByRole("button", { name: "Side by side" });
+    await expect(sideBySide).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Onion skin" })).toHaveCount(
+      0,
+    );
+
+    // `S` leaves side by side for the "after" alone — relative to the view on
+    // screen, not to the stored blend.
+    await page.keyboard.press("s");
+    await expect(after).toHaveAttribute("aria-pressed", "true");
+    await expect(panes).toHaveCount(1);
+    await expect(page.getByLabel("signup-flow.mp4 (after)")).toBeVisible();
+
+    await before.click();
+    await expect(panes).toHaveCount(1);
+    await expect(page.getByLabel("signup-flow.mp4 (before)")).toBeVisible();
+
+    await sideBySide.click();
+    await expect(panes).toHaveCount(2);
+  },
+);
 
 loggedTest("media share page for an unknown token", async ({ page }) => {
   // Expired, deleted, and never-valid all render the same state: telling them

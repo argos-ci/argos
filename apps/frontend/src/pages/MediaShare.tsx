@@ -373,9 +373,6 @@ function SharePage(props: { media: Media }) {
           version: counterpartVersion,
         }
       : null;
-  // A video keeps one pane whatever it was paired with, so the second half is
-  // only really up for an image with a counterpart.
-  const pairOnScreen = counterpart !== null && !version.isVideo;
 
   const mentionUsers = useMemo(
     () => media.mentionableUsers.map(getMentionUser),
@@ -492,7 +489,7 @@ function SharePage(props: { media: Media }) {
                       <MediaFacts
                         media={media}
                         version={version}
-                        pairOnScreen={pairOnScreen}
+                        pairOnScreen={counterpart !== null}
                       />
                     </div>
                     <MediaVersions

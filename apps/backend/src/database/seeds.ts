@@ -3543,6 +3543,77 @@ export async function createMediaScenario(input: {
 }
 
 /**
+ * A before/after pair of recordings, which the share page compares with the
+ * same toggle as a pair of screenshots, minus the blends.
+ *
+ * The bytes are stand-ins, like {@link createMediaScenario}'s recording: the
+ * test bucket holds no video, so the players never load a frame. What is under
+ * test is which players are on the page, not what they play.
+ */
+export async function createMediaVideoPairScenario(input: {
+  projectId: string;
+}) {
+  const { projectId } = input;
+  const beforeTs = "2026-04-20T08:00:00.000Z";
+  const afterTs = "2026-04-20T09:00:00.000Z";
+
+  const [before, after] = await Media.query().insertAndFetch([
+    {
+      projectId,
+      name: "signup-flow.mp4",
+      state: "before" as const,
+      description: null,
+      visibility: "team" as const,
+      githubPullRequestId: null,
+      shareToken: `seed-media-video-before-${projectId}`,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
+    },
+    {
+      projectId,
+      name: "signup-flow.mp4",
+      state: "after" as const,
+      description: null,
+      visibility: "team" as const,
+      githubPullRequestId: null,
+      shareToken: `seed-media-video-after-${projectId}`,
+      createdAt: afterTs,
+      updatedAt: afterTs,
+    },
+  ]);
+  invariant(before && after, "media should be created");
+
+  await MediaVersion.query().insert([
+    {
+      mediaId: before.id,
+      number: 1,
+      key: "dummy-375x720.png",
+      mimeType: "video/mp4",
+      sizeBytes: "4194304",
+      expiresAt: "2027-04-20T08:00:00.000Z",
+      uploadedAt: beforeTs,
+      billedUnits: 25,
+      createdAt: beforeTs,
+      updatedAt: beforeTs,
+    },
+    {
+      mediaId: after.id,
+      number: 1,
+      key: "dummy-375x1024.png",
+      mimeType: "video/mp4",
+      sizeBytes: "8388608",
+      expiresAt: "2027-04-20T09:00:00.000Z",
+      uploadedAt: afterTs,
+      billedUnits: 25,
+      createdAt: afterTs,
+      updatedAt: afterTs,
+    },
+  ]);
+
+  return { before, after };
+}
+
+/**
  * The demo media files living under `media-seed/` in the **development** bucket
  * (uploaded once by hand — see the keys' `dummy-*` neighbours for the same
  * convention on screenshots). Sizes and dimensions are the real files' and the
@@ -3606,6 +3677,8 @@ const DEMO_MEDIA_TOKENS = [
   "demo-after",
   "demo-versions",
   "demo-video",
+  "demo-video-before",
+  "demo-video-after",
 ] as const;
 
 /**
@@ -3618,6 +3691,9 @@ const DEMO_MEDIA_TOKENS = [
  *   only shows after switching the picker off the latest version.
  * - `/m/demo-video` — a real MP4 the player can actually play, poster derived by
  *   the CDN.
+ * - `/m/demo-video-before` / `/m/demo-video-after` — a before/after pair of
+ *   recordings, compared side by side. Both halves are the same MP4: it is the
+ *   only recording in the bucket.
  *
  * Unlike {@link createMediaScenario} (whose fixed clock keeps Playwright
  * baselines stable), dates here are relative to the seeding run so "Uploaded 2
@@ -3647,7 +3723,7 @@ async function createDemoMediaScenario(input: {
     .delete()
     .whereIn("shareToken", [...DEMO_MEDIA_TOKENS]);
 
-  const [image, before, after, versions, video] =
+  const [image, before, after, versions, video, videoBefore, videoAfter] =
     await Media.query().insertAndFetch([
       {
         projectId,
@@ -3706,8 +3782,33 @@ async function createDemoMediaScenario(input: {
         createdAt: hoursAgo(5),
         updatedAt: hoursAgo(5),
       },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "signup-flow.mp4",
+        state: "before" as const,
+        description: "Sign-up flow before the new stepper.",
+        visibility: "public" as const,
+        shareToken: "demo-video-before",
+        createdAt: hoursAgo(4),
+        updatedAt: hoursAgo(4),
+      },
+      {
+        projectId,
+        createdByUserId: authorUserId,
+        name: "signup-flow.mp4",
+        state: "after" as const,
+        description: "Sign-up flow with the new stepper.",
+        visibility: "public" as const,
+        shareToken: "demo-video-after",
+        createdAt: hoursAgo(3),
+        updatedAt: hoursAgo(3),
+      },
     ]);
-  invariant(image && before && after && versions && video, "media created");
+  invariant(
+    image && before && after && versions && video && videoBefore && videoAfter,
+    "media created",
+  );
 
   const imageVersion = (args: {
     mediaId: string;
@@ -3777,6 +3878,32 @@ async function createDemoMediaScenario(input: {
           at: hoursAgo(5),
           mimeType: "video/mp4",
         }),
+        billedUnits: 25,
+      },
+      {
+        ...imageVersion({
+          mediaId: videoBefore.id,
+          number: 1,
+          file: DEMO_MEDIA_FILES.onboardingVideo,
+          at: hoursAgo(4),
+          mimeType: "video/mp4",
+        }),
+        // Processing reads no dimensions off a video, so an uploaded pair has
+        // none either — and the players size themselves without them.
+        width: null,
+        height: null,
+        billedUnits: 25,
+      },
+      {
+        ...imageVersion({
+          mediaId: videoAfter.id,
+          number: 1,
+          file: DEMO_MEDIA_FILES.onboardingVideo,
+          at: hoursAgo(3),
+          mimeType: "video/mp4",
+        }),
+        width: null,
+        height: null,
         billedUnits: 25,
       },
     ]);
