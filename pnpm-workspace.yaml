@@ -19,7 +19,7 @@ overrides:
   esbuild: ^0.28.1
   file-type: ^21.3.2
   graphql: 16.14.2
-  ip-address: ^10.1.1
+  ip-address: ^10.7.2
   lodash: ^4.17.23
   lodash-es: ^4.18.1
   minimatch: ^10.2.6
@@ -28,7 +28,7 @@ overrides:
   react-router: "catalog:"
   sharp: ^0.35.1
   uuid: ^14.0.0
-  undici: ^8.10.0
+  undici: ^8.11.2
   ws: ^8.20.1
 
 allowBuilds:
