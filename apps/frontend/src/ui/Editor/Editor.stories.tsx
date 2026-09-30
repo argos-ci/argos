@@ -50,6 +50,18 @@ function paragraph(text: string): EditorValue {
   };
 }
 
+/**
+ * Every editor suspends while its chunk loads, and the Argos capture does not
+ * wait on the `aria-busy` fallback holding its place: without this, the first
+ * story to load the chunk photographs empty editors.
+ */
+async function waitForEditors({ canvasElement }: PlayContext) {
+  await waitFor(
+    () => expect(canvasElement.querySelector("[aria-busy]")).toBeNull(),
+    { timeout: 10_000 },
+  );
+}
+
 export const CommitAutolink: Story = {
   name: "Commit autolink",
   render: () => (
@@ -112,6 +124,7 @@ export const CommitAutolink: Story = {
       />
     </div>
   ),
+  play: waitForEditors,
 };
 
 export const Default: Story = {
@@ -165,6 +178,7 @@ export const Default: Story = {
       />
     </div>
   ),
+  play: waitForEditors,
 };
 
 /** Two paragraphs, so a command that loses the selection has somewhere else to land. */
