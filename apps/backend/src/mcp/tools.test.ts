@@ -168,6 +168,17 @@ describe("buildMcpTools", () => {
     expect(tool!.outputSchema).toBeInstanceOf(z.ZodObject);
   });
 
+  it("roots every output schema at an object, as MCP requires", () => {
+    const nonObjectRoots = mcpTools
+      .filter(
+        (tool) =>
+          tool.outputSchema &&
+          z.toJSONSchema(tool.outputSchema, { io: "output" }).type !== "object",
+      )
+      .map((tool) => tool.name);
+    expect(nonObjectRoots).toEqual([]);
+  });
+
   it("nests body keys for operations with a JSON object body", () => {
     const tool = mcpTools.find((tool) => tool.name === "createReview");
     expect(tool).toBeDefined();

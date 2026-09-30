@@ -15,10 +15,11 @@ OpenAPI document and dispatched through the existing API stack:
    `api/schema.ts` whose `security` accepts a personal access token or OAuth
    (`isMcpEligible` in `eligibility.ts`) becomes a tool: name = `operationId`,
    input schema = merged path + query + body Zod schemas, output schema = the
-   2xx response schema. Project-token-only CI operations, `x-internal` and
-   public operations are excluded. The generated OpenAPI document stamps
-   eligible operations with `x-gitbook-mcp` using the same predicate, so docs
-   and tools can never disagree.
+   2xx response schema, stripped of its OpenAPI component id (with it, the JSON
+   Schema root is a `$ref`, and MCP requires an object root). Project-token-only
+   CI operations, `x-internal` and public operations are excluded. The
+   generated OpenAPI document stamps eligible operations with `x-gitbook-mcp`
+   using the same predicate, so docs and tools can never disagree.
 2. **Registration** (`server.ts`) — tools are registered on an SDK `McpServer`
    with their Zod schemas; the SDK converts them to JSON Schema for
    `tools/list` and validates arguments and structured results.

@@ -107,10 +107,21 @@ function getOutputSchema(operation: AnyOperation): z.ZodObject | undefined {
     ).content;
     const schema = asZodObject(content?.["application/json"]?.schema);
     if (schema) {
-      return schema;
+      return withoutComponentId(schema);
     }
   }
   return undefined;
+}
+
+/**
+ * A response schema's OpenAPI component id turns the root of its JSON Schema
+ * into a bare `$ref` into `$defs`, but MCP requires the root of an output
+ * schema to be `type: "object"`: clients reject the whole `tools/list`
+ * otherwise. The copy keeps the rest of the metadata.
+ */
+function withoutComponentId(schema: z.ZodObject): z.ZodObject {
+  const { id: _id, ...meta } = z.globalRegistry.get(schema) ?? {};
+  return schema.extend({}).meta(meta);
 }
 
 function buildTool(
