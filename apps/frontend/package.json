@@ -30,7 +30,7 @@
     "@pierre/diffs": "^1.5.1",
     "@primer/octicons-react": "^19.38.0",
     "@radix-ui/colors": "^3.0.0",
-    "@sentry/react": "^10.75.3",
+    "@sentry/react": "^11.1.0",
     "@sentry/vite-plugin": "^5.4.0",
     "@shikijs/langs": "^4.4.3",
     "@simplewebauthn/browser": "^14.0.0",

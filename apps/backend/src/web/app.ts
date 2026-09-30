@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import * as Sentry from "@sentry/node";
 import express from "express";
 import { pinoHttp } from "pino-http";
 
@@ -75,7 +74,6 @@ export const createApp = async (): Promise<express.Express> => {
   installApiRouter(app);
   app.use(subdomain(mcpRouter, "mcp"));
 
-  Sentry.setupExpressErrorHandler(app);
   app.use(jsonErrorHandler());
 
   return app;

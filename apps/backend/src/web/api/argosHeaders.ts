@@ -13,7 +13,9 @@ const HEADER_TAGS = [
  * appear on both error reports and structured HTTP logs.
  */
 export const argosHeadersMiddleware: RequestHandler = (req, _res, next) => {
-  const scope = Sentry.getCurrentScope();
+  // The request's isolation scope, not the current one: Sentry gives every
+  // Express layer a scope of its own, which the layers after it never see.
+  const scope = Sentry.getIsolationScope();
   const bindings: Record<string, string> = {};
   for (const [header, tag] of HEADER_TAGS) {
     const value = req.headers[header];
