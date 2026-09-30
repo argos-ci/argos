@@ -11,7 +11,7 @@
  */
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import express from "express";
 
 import { openAPIRouter } from "@/api/index";

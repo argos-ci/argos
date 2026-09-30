@@ -15,10 +15,11 @@ OpenAPI document and dispatched through the existing API stack:
    `api/schema.ts` whose `security` accepts a personal access token or OAuth
    (`isMcpEligible` in `eligibility.ts`) becomes a tool: name = `operationId`,
    input schema = merged path + query + body Zod schemas, output schema = the
-   2xx response schema. Project-token-only CI operations, `x-internal` and
-   public operations are excluded. The generated OpenAPI document stamps
-   eligible operations with `x-gitbook-mcp` using the same predicate, so docs
-   and tools can never disagree.
+   2xx response schema, stripped of its OpenAPI component id (with it, the JSON
+   Schema root is a `$ref`, and MCP requires an object root). Project-token-only
+   CI operations, `x-internal` and public operations are excluded. The
+   generated OpenAPI document stamps eligible operations with `x-gitbook-mcp`
+   using the same predicate, so docs and tools can never disagree.
 2. **Registration** (`server.ts`) — tools are registered on an SDK `McpServer`
    with their Zod schemas; the SDK converts them to JSON Schema for
    `tools/list` and validates arguments and structured results.
@@ -27,9 +28,11 @@ OpenAPI document and dispatched through the existing API stack:
    caller's bearer. Validation, authentication, **scope enforcement**,
    serialization and error formatting are the API's own; API errors surface
    verbatim as `isError` tool results.
-4. **Transport** (`router.ts`) — stateless Streamable HTTP at `POST /` (a
-   fresh server + transport per request). Browsers hitting `GET /` are
-   redirected to the documentation.
+4. **Transport** (`router.ts`) — stateless Streamable HTTP at `POST /`,
+   through the SDK's `createMcpHandler`: 2026-07-28 clients carry their
+   protocol version on every request, 2025-era clients open with `initialize`,
+   and both get a fresh server per request from the same factory. Browsers
+   hitting `GET /` are redirected to the documentation.
 
 Adding a REST endpoint automatically adds the MCP tool. The unit test
 snapshot in `tools.test.ts` locks the tool surface; adding an endpoint updates
@@ -78,9 +81,10 @@ same information in a `User-Agent` `agent/<name>` token instead.
 `GET /.well-known/mcp/server-card.json` on the MCP origin serves the canonical
 [SEP-1649 Server Card](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127)
 (`server-card.ts`): endpoint, transport and OAuth entry point for
-pre-connection discovery. Its `serverInfo` is the same `MCP_SERVER_INFO`
-object the server hands to the SDK, and the e2e test checks the card against a
-live `initialize` response, so the card cannot drift from the running server.
+pre-connection discovery. Its `serverInfo` and `capabilities` are the same
+`MCP_SERVER_INFO` and `MCP_SERVER_CAPABILITIES` objects the server hands to the
+SDK, and the e2e test checks the card against what a live client sees on both
+protocol eras, so the card cannot drift from the running server.
 The marketing site serves a copy at
 `argos-ci.com/.well-known/mcp/server-card.json`.
 

@@ -7,10 +7,7 @@
  * MCP clients get the exact same validation the REST API applies.
  */
 import { trimTrailingSlash } from "@argos/util/url";
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 
 import config from "@/config";
 import { getSkillFileUrl, getSkills } from "@/skills/registry";
@@ -36,12 +33,24 @@ export const MCP_SERVER_INFO = {
 } as const;
 
 /**
+ * Nothing ever notifies a change to the tool or resource lists, and
+ * advertising `listChanged` makes 2026-07-28 clients hold a
+ * `subscriptions/listen` stream open for notifications that never come. Also
+ * embedded in the Server Card, like {@link MCP_SERVER_INFO}.
+ */
+export const MCP_SERVER_CAPABILITIES = {
+  tools: { listChanged: false },
+  resources: { listChanged: false },
+} as const;
+
+/**
  * Create an MCP server bound to the caller's authorization. One instance per
  * request (the transport is stateless).
  */
 export function createMcpServer(context: { authorization: string }): McpServer {
   const server = new McpServer(MCP_SERVER_INFO, {
     instructions: MCP_INSTRUCTIONS,
+    capabilities: MCP_SERVER_CAPABILITIES,
   });
 
   for (const tool of mcpTools) {
@@ -54,8 +63,7 @@ export function createMcpServer(context: { authorization: string }): McpServer {
         ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         annotations: tool.annotations,
       },
-      (args) =>
-        callTool(tool, args as Record<string, unknown>, context.authorization),
+      (args) => callTool(tool, args, context.authorization),
     );
   }
 

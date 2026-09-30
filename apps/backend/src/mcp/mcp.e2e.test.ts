@@ -1,3 +1,9 @@
+import { once } from "node:events";
+import { invariant } from "@argos/util/invariant";
+import {
+  Client,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import express from "express";
 import request from "supertest";
 import { test as base, describe, expect, vi } from "vitest";
@@ -39,8 +45,6 @@ type RpcResponse = {
     content?: { type: string; text: string }[];
     structuredContent?: Record<string, unknown>;
     isError?: boolean;
-    serverInfo?: Record<string, unknown>;
-    capabilities?: Record<string, unknown>;
   };
   error?: { code: number; message: string };
 };
@@ -58,7 +62,18 @@ async function rpc(
   if (token) {
     req = req.set("Authorization", `${scheme} ${token}`);
   }
-  return req.send({ jsonrpc: "2.0", id: 1, method, params });
+  const res = await req.send({ jsonrpc: "2.0", id: 1, method, params });
+  return { status: res.status, headers: res.headers, body: readBody(res) };
+}
+
+/** The JSON body, or the message of an SSE response. */
+function readBody(res: request.Response) {
+  if (res.type !== "text/event-stream") {
+    return res.body;
+  }
+  const data = res.text.split("\n").find((line) => line.startsWith("data: "));
+  invariant(data, "SSE response without a message");
+  return JSON.parse(data.slice("data: ".length));
 }
 
 async function createOAuthAccessToken(input: {
@@ -98,12 +113,27 @@ async function createOAuthAccessToken(input: {
   return tokens.accessToken;
 }
 
+async function connectClient(
+  url: URL,
+  token: string,
+  options: ConstructorParameters<typeof Client>[1],
+) {
+  const client = new Client({ name: "test-client", version: "0.0.0" }, options);
+  await client.connect(
+    new StreamableHTTPClientTransport(url, {
+      requestInit: { headers: { Authorization: `Bearer ${token}` } },
+    }),
+  );
+  return client;
+}
+
 const test = base.extend<{
   user: User;
   userAccount: Account;
   patToken: string;
   project: Project;
   build: Build;
+  mcpUrl: URL;
 }>({
   user: async ({}, use) => {
     await setupDatabase();
@@ -147,6 +177,14 @@ const test = base.extend<{
       compareScreenshotBucketId: bucket.id,
     });
     await use(build);
+  },
+  mcpUrl: async ({}, use) => {
+    const server = app.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    invariant(typeof address === "object" && address, "server not listening");
+    await use(new URL(`http://127.0.0.1:${address.port}/`));
+    await new Promise((resolve) => server.close(resolve));
   },
 });
 
@@ -201,9 +239,7 @@ describe("MCP server", () => {
     expect(res.body.authorization_servers).toHaveLength(1);
   });
 
-  test("serves a server card consistent with the live initialize response", async ({
-    patToken,
-  }) => {
+  test("serves the server card", async () => {
     const cardRes = await request(app)
       .get("/.well-known/mcp/server-card.json")
       .expect(200);
@@ -217,17 +253,6 @@ describe("MCP server", () => {
       type: "oauth2",
       resourceMetadata: `${getMcpResourceUrl()}/.well-known/oauth-protected-resource`,
     });
-    // The card is advisory (SEP-1649): what it declares must match what the
-    // server actually reports during the MCP handshake.
-    const res = await rpc(patToken, "initialize", {
-      protocolVersion: "2025-06-18",
-      capabilities: {},
-      clientInfo: { name: "test-client", version: "0.0.0" },
-    });
-    expect(res.status).toBe(200);
-    const body = res.body as RpcResponse;
-    expect(card.serverInfo).toEqual(body.result!.serverInfo);
-    expect(card.capabilities).toEqual(body.result!.capabilities);
   });
 
   test("mirrors the authorization server metadata for legacy MCP clients", async () => {
@@ -498,7 +523,49 @@ describe("MCP server", () => {
     });
     expect(res.status).toBe(200);
     const body = res.body as RpcResponse;
-    expect(body.result!.isError).toBe(true);
-    expect(body.result!.content![0]!.text).toMatch(/not found/i);
+    expect(body.error).toMatchObject({
+      code: -32602,
+      message: expect.stringMatching(/not found/i),
+    });
+  });
+});
+
+describe.for([
+  // Opens with the `initialize` handshake.
+  { era: "2025-11-25", versionNegotiation: undefined },
+  // Never initializes: every request carries its protocol version. Pinned,
+  // the client cannot fall back to the handshake.
+  { era: "2026-07-28", versionNegotiation: { mode: { pin: "2026-07-28" } } },
+] as const)("an MCP client on $era", ({ era, versionNegotiation }) => {
+  const options = versionNegotiation ? { versionNegotiation } : {};
+
+  // The card is advisory (SEP-1649): what it declares must match what the
+  // server actually reports to a client.
+  test("sees what the server card declares", async ({ mcpUrl, patToken }) => {
+    const client = await connectClient(mcpUrl, patToken, options);
+    try {
+      expect(client.getNegotiatedProtocolVersion()).toBe(era);
+      const card = (await request(app).get("/.well-known/mcp/server-card.json"))
+        .body;
+      expect(client.getServerVersion()).toEqual(card.serverInfo);
+      expect(client.getServerCapabilities()).toEqual(card.capabilities);
+    } finally {
+      await client.close();
+    }
+  });
+
+  test("lists and calls the tools", async ({ mcpUrl, patToken }) => {
+    const client = await connectClient(mcpUrl, patToken, options);
+    try {
+      const { tools } = await client.listTools();
+      expect(tools.map((tool) => tool.name)).toEqual(
+        expect.arrayContaining(["getMe", "listBuilds"]),
+      );
+      const result = await client.callTool({ name: "getMe", arguments: {} });
+      expect(result.isError).toBeUndefined();
+      expect(result.structuredContent).toMatchObject({ slug: "jane-doe" });
+    } finally {
+      await client.close();
+    }
   });
 });
