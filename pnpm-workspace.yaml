@@ -18,6 +18,10 @@ overrides:
   dompurify: ^3.4.0
   esbuild: ^0.28.1
   file-type: ^21.3.2
+  # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
+  # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
+  # rewrites that peer range too: pnpm reports no conflict even when it is
+  # raised past what Apollo supports.
   graphql: 16.14.2
   ip-address: ^10.7.2
   lodash: ^4.17.23
