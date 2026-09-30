@@ -4,12 +4,12 @@ packages:
   - infra
 
 catalog:
-  '@types/react': ^19.2.18
-  '@types/react-dom': ^19.2.7
-  react: ^19.2.8
-  react-dom: ^19.2.8
-  react-router: ^8.3.1
-  zod: ^4.5.4
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  react-router: ^8.4.0
+  zod: ^4.6.5
 
 overrides:
   '@types/react': "catalog:"
@@ -18,8 +18,12 @@ overrides:
   dompurify: ^3.4.0
   esbuild: ^0.28.1
   file-type: ^21.3.2
+  # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
+  # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
+  # rewrites that peer range too: pnpm reports no conflict even when it is
+  # raised past what Apollo supports.
   graphql: 16.14.2
-  ip-address: ^10.1.1
+  ip-address: ^10.7.2
   lodash: ^4.17.23
   lodash-es: ^4.18.1
   minimatch: ^10.2.6
@@ -28,7 +32,7 @@ overrides:
   react-router: "catalog:"
   sharp: ^0.35.1
   uuid: ^14.0.0
-  undici: ^8.10.0
+  undici: ^8.11.2
   ws: ^8.20.1
 
 allowBuilds:
@@ -50,7 +54,6 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - "@argos-ci/*"
-  - "@modelcontextprotocol/sdk@1.30.0"
 
 # Base UI clears the shared tooltip's pending close whenever any trigger
 # unmounts, leaving a tooltip open after the pointer leaves. Re-check on every

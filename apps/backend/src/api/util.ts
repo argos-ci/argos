@@ -126,6 +126,29 @@ function convertPath(path: string) {
 
 const DetailsSchema = z.array(z.object({ message: z.string() }));
 
+/**
+ * Sentry's Express integration only reports 5xx errors on its own; the API
+ * also wants its validation errors (400). An error the integration already
+ * reported is not sent twice.
+ */
+const captureApiError: ErrorRequestHandler = (
+  error: unknown,
+  _req,
+  _res,
+  next,
+) => {
+  if (
+    !(error instanceof HTTPError) ||
+    error.statusCode === 400 ||
+    error.statusCode >= 500
+  ) {
+    Sentry.captureException(error, {
+      mechanism: { type: "auto.middleware.express", handled: false },
+    });
+  }
+  next(error);
+};
+
 export const errorHandler: ErrorRequestHandler = (
   error: unknown,
   _req,
@@ -305,17 +328,7 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
         });
       }),
       ...wrappedHandlers,
-      // @ts-expect-error wrong type from Sentry
-      Sentry.expressErrorHandler({
-        shouldHandleError: (error) => {
-          // Capture 400 (to see validation errors) and 500+ errors
-          if (error instanceof HTTPError) {
-            return error.statusCode === 400 || error.statusCode >= 500;
-          }
-          // Capture all other errors
-          return true;
-        },
-      }),
+      captureApiError,
       errorHandler,
     );
   };

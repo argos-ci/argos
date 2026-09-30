@@ -19,7 +19,7 @@
       }
     ],
     // Oxlint 1.79 replaced the `react/react-compiler` nursery rule with 22
-    // category-specific ones, 12 of them in `correctness`. Four of those fire
+    // category-specific ones, 12 of them in `correctness`. Five of those fire
     // on deliberate patterns rather than on bugs, so they stay off until the
     // code they flag is revisited on its own:
     //
@@ -32,10 +32,13 @@
     //   callback refs.
     // - `set-state-in-effect` has five hits worth looking at, but they are
     //   render-loop questions to answer one at a time, not a dependency bump.
+    // - `purity` flags `new Date()` during render, which is how the three
+    //   components that compare against "now" read it.
     "react/incompatible-library": "off",
     "react/refs": "off",
     "react/immutability": "off",
     "react/set-state-in-effect": "off",
+    "react/purity": "off",
     "unicorn/no-thenable": "off",
     "vitest/no-conditional-expect": "off",
     "vitest/no-standalone-expect": "off",

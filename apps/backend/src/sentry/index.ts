@@ -4,16 +4,48 @@ import config from "@/config";
 import { getOctokitErrorStatus } from "@/github/error";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
+const piiKeys = { deny: ["forwarded", "-ip", "remote-", "via", "-user"] };
+
 export function setup() {
   Sentry.init({
     dsn: config.get("sentry.serverDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
-    enableLogs: true,
-    integrations: [Sentry.pinoIntegration()],
+    // What v10 collected without `sendDefaultPii`: its v11 replacement,
+    // `dataCollection`, collects every category unless told otherwise.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: piiKeys, response: piiKeys },
+      httpBodies: [],
+      urlQueryParams: piiKeys,
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      // v10 attached the document with its literals redacted whatever
+      // `sendDefaultPii` said, and never the variables.
+      graphQL: { document: true, variables: false },
+    },
+    // v11 gives `captureMessage` a synthetic stack trace, and Sentry groups on
+    // it: every "GraphQLWrongQuery" would collapse into a single issue.
+    attachStacktrace: false,
+    integrations: [
+      Sentry.pinoIntegration(),
+      // A middleware span only ends once the rest of the chain has returned,
+      // holding a `finish` listener on the response until then: every REST
+      // API request logged a MaxListenersExceededWarning.
+      // https://github.com/getsentry/sentry-javascript/issues/24853
+      Sentry.expressIntegration({ ignoreLayersType: ["middleware"] }),
+    ],
     tracesSampler(samplingContext) {
-      // Reduce sampling of "/github/event-handler", we have a ton.
-      if (samplingContext.name === "POST /github/event-handler") {
+      const { attributes } = samplingContext;
+
+      // Reduce sampling of "/github/event-handler", we have a ton. Match on
+      // attributes: an incoming request's span is only named after its method
+      // when the sampler runs.
+      if (
+        attributes["http.request.method"] === "POST" &&
+        attributes["url.path"] === "/github/event-handler"
+      ) {
         return samplingContext.inheritOrSampleWith(0.0001);
       }
 

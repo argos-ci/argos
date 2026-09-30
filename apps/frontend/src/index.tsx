@@ -9,11 +9,25 @@ import { APIError } from "./util/api";
 import { getSingleErrorCode } from "./util/error";
 import { trackFocusModality } from "./util/focus-modality";
 
+const piiKeys = { deny: ["forwarded", "-ip", "remote-", "via", "-user"] };
+
 if (process.env["NODE_ENV"] === "production") {
   Sentry.init({
     dsn: config.sentry.clientDsn,
     environment: config.sentry.environment,
     release: config.releaseVersion,
+    // What v10 collected without `sendDefaultPii`: its v11 replacement,
+    // `dataCollection`, collects every category unless told otherwise.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: piiKeys, response: piiKeys },
+      httpBodies: [],
+      urlQueryParams: piiKeys,
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      graphQL: { document: false, variables: false },
+    },
     ignoreErrors: [/^Unable to preload CSS/],
     beforeSend(event, hint) {
       const error = hint.originalException;
