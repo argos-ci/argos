@@ -180,7 +180,7 @@ importers:
         version: 14.0.0
       '@slack/bolt':
         specifier: ^5.1.0
-        version: 5.1.0(@types/express@5.0.6)(supports-color@10.2.2)(undici@8.10.1)
+        version: 5.1.0(@types/express@5.0.6)(supports-color@10.2.2)(undici@8.10.2)
       '@tiptap/core':
         specifier: ^3.31.2
         version: 3.31.2(@tiptap/pm@3.31.2)
@@ -345,7 +345,7 @@ importers:
         version: 0.2.7
       undici:
         specifier: ^8.10.0
-        version: 8.10.1
+        version: 8.10.2
       ws:
         specifier: ^8.20.1
         version: 8.21.3
@@ -8048,8 +8048,12 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@8.10.1:
-    resolution: {integrity: sha512-YQ3WlbqjYMmNpdvDH64jAgLjxuAR9+649calDWhbshYaeQGO2bR4nI94ORJmwI3J9YhoKQnpyGOK+0zlWS5N5Q==}
+  undici@8.10.2:
+    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
+    engines: {node: '>=22.19.0'}
+
+  undici@8.11.2:
+    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
     engines: {node: '>=22.19.0'}
 
   unicode-trie@2.0.0:
@@ -11181,11 +11185,11 @@ snapshots:
 
   '@sindresorhus/transliterate@2.3.1': {}
 
-  '@slack/bolt@5.1.0(@types/express@5.0.6)(supports-color@10.2.2)(undici@8.10.1)':
+  '@slack/bolt@5.1.0(@types/express@5.0.6)(supports-color@10.2.2)(undici@8.10.2)':
     dependencies:
       '@slack/logger': 5.0.0
       '@slack/oauth': 4.0.0
-      '@slack/socket-mode': 3.0.1(undici@8.10.1)
+      '@slack/socket-mode': 3.0.1(undici@8.10.2)
       '@slack/types': 3.1.0
       '@slack/web-api': 8.1.1
       '@types/express': 5.0.6
@@ -11209,13 +11213,13 @@ snapshots:
       '@types/node': 26.4.1
       jsonwebtoken: 9.0.3
 
-  '@slack/socket-mode@3.0.1(undici@8.10.1)':
+  '@slack/socket-mode@3.0.1(undici@8.10.2)':
     dependencies:
       '@slack/logger': 5.0.0
       '@slack/web-api': 8.1.1
       '@types/node': 26.4.1
       eventemitter3: 5.0.4
-      undici: 8.10.1
+      undici: 8.10.2
 
   '@slack/types@3.1.0': {}
 
@@ -15078,7 +15082,7 @@ snapshots:
   smee-client@5.0.0:
     dependencies:
       eventsource: 4.1.1
-      undici: 8.10.1
+      undici: 8.11.2
 
   smol-toml@1.8.0: {}
 
@@ -15470,7 +15474,9 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@8.10.1: {}
+  undici@8.10.2: {}
+
+  undici@8.11.2: {}
 
   unicode-trie@2.0.0:
     dependencies:
