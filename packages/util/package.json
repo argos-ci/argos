@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@argos/tsconfig": "workspace:*",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.3",
     "tsdown": "^0.23.0"
   },
   "dependencies": {

@@ -18,11 +18,11 @@
   },
   "devDependencies": {
     "@argos/tsconfig": "workspace:*",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.3",
     "tsdown": "^0.23.0",
-    "vite": "^8.2.2"
+    "vite": "^8.3.1"
   },
   "dependencies": {
-    "magic-string": "^1.2.3"
+    "magic-string": "^1.4.2"
   }
 }
