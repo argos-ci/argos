@@ -1,6 +1,4 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import express from "express";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -181,8 +179,8 @@ describe("MCP resources", () => {
       InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "test", version: "0" });
     await Promise.all([
-      server.connect(serverTransport as unknown as Transport),
-      client.connect(clientTransport as unknown as Transport),
+      server.connect(serverTransport),
+      client.connect(clientTransport),
     ]);
 
     try {

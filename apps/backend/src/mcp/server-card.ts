@@ -10,16 +10,16 @@
  * (`name`, `remotes`). This is the canonical card: the marketing site serves a
  * copy at `argos-ci.com/.well-known/mcp/server-card.json`.
  *
- * `serverInfo` is the very object the server hands to the SDK, and the e2e
- * test pins `serverInfo` and `capabilities` to a live `initialize` response,
- * so the card cannot drift from runtime behavior.
+ * `serverInfo` and `capabilities` are the very objects the server hands to the
+ * SDK, and the e2e test pins them to what a live server reports, so the card
+ * cannot drift from runtime behavior.
  */
 import {
   getMcpProtectedResourceMetadataUrl,
   getMcpResourceUrl,
 } from "@/oauth/metadata";
 
-import { MCP_SERVER_INFO } from "./server";
+import { MCP_SERVER_CAPABILITIES, MCP_SERVER_INFO } from "./server";
 
 export const MCP_DOCS_URL = "https://argos-ci.com/docs/agents/mcp-server";
 
@@ -53,12 +53,6 @@ export function getServerCard() {
         },
       },
     ],
-    // What `initialize` actually reports: the SDK declares `listChanged` for
-    // registered tools and resources (even though the stateless transport
-    // never delivers change notifications).
-    capabilities: {
-      tools: { listChanged: true },
-      resources: { listChanged: true },
-    },
+    capabilities: MCP_SERVER_CAPABILITIES,
   };
 }

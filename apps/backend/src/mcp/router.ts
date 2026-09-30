@@ -2,7 +2,8 @@
  * HTTP surface of the MCP server, served on its own subdomain
  * (`mcp.argos-ci.com`):
  *
- * - `POST /` — the MCP endpoint (streamable HTTP transport, stateless).
+ * - `POST /` — the MCP endpoint (Streamable HTTP, stateless), serving both the
+ *   2026-07-28 protocol revision and 2025-era clients.
  * - `GET /` — humans and non-MCP clients are redirected to the documentation.
  * - `GET /.well-known/oauth-protected-resource` — RFC 9728 metadata pointing
  *   MCP clients at the Authorization Server (the OAuth discovery handshake).
@@ -15,8 +16,12 @@
  * client authorization flow (DCR + consent).
  */
 import { invariant } from "@argos/util/invariant";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { toNodeHandler } from "@modelcontextprotocol/node";
+import {
+  createMcpHandler,
+  ProtocolError,
+  type McpServerFactory,
+} from "@modelcontextprotocol/server";
 import cors from "cors";
 import express, {
   Router,
@@ -29,6 +34,7 @@ import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { getAuthPayloadFromExpressReq } from "@/api/auth/project";
 import { markAcceptedOAuthResources } from "@/auth/oauth-access-token";
 import config from "@/config";
+import logger from "@/logger";
 import {
   getApiResourceUrl,
   getAuthorizationServerMetadata,
@@ -56,6 +62,8 @@ router.use(
       "Authorization",
       "Mcp-Session-Id",
       "Mcp-Protocol-Version",
+      "Mcp-Method",
+      "Mcp-Name",
     ],
   }),
 );
@@ -182,37 +190,51 @@ const requireAuthentication: RequestHandler = (req, res, next) => {
   next();
 };
 
+const createServerForRequest: McpServerFactory = ({ requestInfo }) => {
+  invariant(requestInfo, "MCP server created outside of an HTTP request");
+  // `requireAuthentication` runs first and rejects any request without a
+  // resolvable bearer, so the header is guaranteed to be present here.
+  const authorization = requestInfo.headers.get("authorization");
+  invariant(authorization, "authenticated MCP request without a bearer token");
+  return createMcpServer({ authorization });
+};
+
+/**
+ * Besides its own failures, which it answers with a 500, the SDK reports every
+ * request it turns away: a protocol revision it does not serve, a request
+ * breaking the transport rules, a content type other than JSON. Those are for
+ * the client to fix. Some come as plain errors, matched on their message: a
+ * rewording sends them back to Sentry, it never hides a failure.
+ */
+function reportMcpError(error: Error): void {
+  if (
+    error instanceof ProtocolError ||
+    error.message.startsWith("Rejected inbound request") ||
+    error.message.startsWith("Unsupported Media Type")
+  ) {
+    logger.warn({ error, reportToSentry: false }, "MCP request rejected");
+    return;
+  }
+  logger.error({ error }, "MCP request failed");
+}
+
+// Every request gets a fresh server from the factory, whatever its protocol
+// era, so concurrent requests never collide and no session state has to be
+// replicated across instances.
+const handleMcpRequest = toNodeHandler(
+  createMcpHandler(createServerForRequest, { onerror: reportMcpError }),
+  { onerror: reportMcpError },
+);
+
 router.post(
   "/",
   identifyCaller,
   limiter,
   requireAuthentication,
   express.json({ limit: "1mb" }),
-  asyncHandler(async (req: Request, res: Response) => {
-    // `requireAuthentication` runs first and rejects any request without a
-    // resolvable bearer, so the header is guaranteed to be present here.
-    const authorization = req.headers.authorization;
-    invariant(
-      authorization,
-      "authenticated MCP request without a bearer token",
-    );
-    // Stateless mode (no `sessionIdGenerator`): a fresh server + transport
-    // pair per request, so concurrent requests never collide and no session
-    // state has to be replicated across instances.
-    const server = createMcpServer({ authorization });
-    const transport = new StreamableHTTPServerTransport({
-      enableJsonResponse: true,
-    });
-    res.on("close", () => {
-      void transport.close();
-      void server.close();
-    });
-    // Cast: the SDK types `onclose` as `(() => void) | undefined`, which is
-    // not assignable to the optional `onclose?` of `Transport` under
-    // `exactOptionalPropertyTypes`.
-    await server.connect(transport as unknown as Transport);
-    await transport.handleRequest(req, res, req.body);
-  }),
+  asyncHandler((req: Request, res: Response) =>
+    handleMcpRequest(req, res, req.body),
+  ),
 );
 
 export { router as mcpRouter };
