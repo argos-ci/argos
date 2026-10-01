@@ -17,18 +17,63 @@ type AccountMetricsAggregationInput = {
   from: Date;
   to: Date;
   groupBy: AccountMetricsGroupBy;
+  /**
+   * IANA time zone the buckets are cut in, so a "day" is the caller's day and
+   * not the UTC one. Defaults to UTC.
+   */
+  timeZone?: string | undefined;
 };
 
 export type GetAccountMetricsInput = AccountMetricsFilter & {
   from: Date;
   to?: Date | null | undefined;
   groupBy: AccountMetricsGroupBy;
+  timeZone?: string | null | undefined;
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const ACCOUNT_METRICS_MAX_RANGE_DAYS = 365;
 
 export class InvalidAccountMetricsInputError extends Error {}
+
+function checkIsValidTimeZone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * SQL fragments shared by the metrics queries. Buckets are computed on local
+ * wall-clock timestamps (`AT TIME ZONE`) so they start at the caller's
+ * midnight, and converted back to instants for filtering and output.
+ */
+const LOCAL_FROM = `date_trunc(:groupBy, :from::timestamptz AT TIME ZONE :timeZone)`;
+const SERIES_SQL = `generate_series(
+      ${LOCAL_FROM},
+      :to::timestamptz AT TIME ZONE :timeZone,
+      ('1 ' || :groupBy)::interval
+    )`;
+function getBucketSql(column: string) {
+  return `date_trunc(:groupBy, ${column} AT TIME ZONE :timeZone)`;
+}
+function getRangeFilterSql(column: string) {
+  return `${column} >= (${LOCAL_FROM}) AT TIME ZONE :timeZone
+      AND ${column} <= :to`;
+}
+
+function getQueryBindings(input: AccountMetricsAggregationInput) {
+  return {
+    accountId: input.accountId,
+    projectIds: input.projectIds,
+    from: input.from.toISOString(),
+    to: input.to.toISOString(),
+    groupBy: input.groupBy,
+    timeZone: input.timeZone ?? "UTC",
+  };
+}
 
 function hasProjectFilter(input: AccountMetricsAggregationInput) {
   if (input.projectFilterApplied !== undefined) {
@@ -79,6 +124,13 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
     );
   }
 
+  const timeZone = input.timeZone ?? "UTC";
+  if (!checkIsValidTimeZone(timeZone)) {
+    throw new InvalidAccountMetricsInputError(
+      `Unknown time zone "${timeZone}".`,
+    );
+  }
+
   const projectFilter = await resolveProjectIds(input);
   const params: AccountMetricsAggregationInput = {
     accountId: input.accountId,
@@ -86,6 +138,7 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
     from: input.from,
     to,
     groupBy: input.groupBy,
+    timeZone,
   };
   const [screenshots, builds] = await Promise.all([
     getAccountScreenshotMetrics(params),
@@ -105,19 +158,17 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
 export async function getAccountScreenshotMetrics(
   input: AccountMetricsAggregationInput,
 ) {
-  const interval = `1 ${input.groupBy}`;
   const query = `
   WITH aggregated AS (
     SELECT
-      date_trunc(:groupBy, sb."createdAt") AS date,
+      ${getBucketSql(`sb."createdAt"`)} AS date,
       p.id AS "projectId",
       SUM(sb."screenshotCount") AS value,
       SUM(${clampedStorybookCount("sb")}) AS storybook
     FROM screenshot_buckets sb
     LEFT JOIN projects p ON sb."projectId" = p.id
     WHERE p."accountId" = :accountId
-      AND sb."createdAt" >= date_trunc(:groupBy, :from::timestamp)
-      AND sb."createdAt" <= :to
+      AND ${getRangeFilterSql(`sb."createdAt"`)}
       ${hasProjectFilter(input) ? `AND sb."projectId" = any(:projectIds)` : ""}
     GROUP BY date, p.id
   ),
@@ -128,14 +179,10 @@ export async function getAccountScreenshotMetrics(
     HAVING SUM(value) > 0
   ),
   series AS (
-    SELECT generate_series(
-      date_trunc(:groupBy, :from::timestamp),
-      :to,
-      INTERVAL '${interval}'
-    ) AS date
+    SELECT ${SERIES_SQL} AS date
   )
   SELECT
-    s.date,
+    s.date AT TIME ZONE :timeZone AS date,
     jsonb_object_agg(a."projectId", COALESCE(a.value, 0))
       FILTER (WHERE a."projectId" IS NOT NULL) AS counts,
     COALESCE(SUM(a.storybook), 0)::int AS storybook
@@ -160,13 +207,7 @@ export async function getAccountScreenshotMetrics(
         counts: Record<string, number> | null;
         storybook: number;
       }[];
-    }>(query, {
-      accountId: input.accountId,
-      projectIds: input.projectIds,
-      from: input.from.toISOString(),
-      to: input.to.toISOString(),
-      groupBy: input.groupBy,
-    }),
+    }>(query, getQueryBindings(input)),
     projectsQuery,
   ]);
 
@@ -222,11 +263,10 @@ export async function getAccountScreenshotMetrics(
 export async function getAccountBuildMetrics(
   input: AccountMetricsAggregationInput,
 ) {
-  const interval = `1 ${input.groupBy}`;
   const query = `
     WITH aggregated AS (
     SELECT
-      date_trunc(:groupBy, b."createdAt") AS date,
+      ${getBucketSql(`b."createdAt"`)} AS date,
       p.id AS "projectId",
       COUNT(b.id) AS value,
       COUNT(b.id) FILTER (WHERE b.conclusion = 'changes-detected') AS "changesDetected",
@@ -249,8 +289,7 @@ export async function getAccountBuildMetrics(
         AND lr.state IN ('approved', 'rejected')
     ) r ON TRUE
     WHERE p."accountId" = :accountId
-      AND b."createdAt" >= date_trunc(:groupBy, :from::timestamp)
-      AND b."createdAt" <= :to
+      AND ${getRangeFilterSql(`b."createdAt"`)}
       ${hasProjectFilter(input) ? `AND b."projectId" = any(:projectIds)` : ""}
     GROUP BY date, p.id
   ),
@@ -261,14 +300,10 @@ export async function getAccountBuildMetrics(
     HAVING SUM(value) > 0
   ),
   series AS (
-    SELECT generate_series(
-      date_trunc(:groupBy, :from::timestamp),
-      :to,
-      INTERVAL '${interval}'
-    ) AS date
+    SELECT ${SERIES_SQL} AS date
   )
   SELECT
-    s.date,
+    s.date AT TIME ZONE :timeZone AS date,
     jsonb_object_agg(a."projectId", COALESCE(a.value, 0))
       FILTER (WHERE a."projectId" IS NOT NULL) AS counts,
     COALESCE(SUM(a."changesDetected"), 0)::int AS "changesDetected",
@@ -299,13 +334,7 @@ export async function getAccountBuildMetrics(
         accepted: number;
         rejected: number;
       }[];
-    }>(query, {
-      accountId: input.accountId,
-      projectIds: input.projectIds,
-      from: input.from.toISOString(),
-      to: input.to.toISOString(),
-      groupBy: input.groupBy,
-    }),
+    }>(query, getQueryBindings(input)),
     projectsQuery,
   ]);
 

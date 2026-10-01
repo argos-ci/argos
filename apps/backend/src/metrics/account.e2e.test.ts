@@ -7,6 +7,7 @@ import {
   getAccountBuildMetrics,
   getAccountMetrics,
   getAccountScreenshotMetrics,
+  InvalidAccountMetricsInputError,
 } from "./account";
 
 describe("getAccountScreenshotMetrics", () => {
@@ -304,6 +305,42 @@ describe("getAccountMetrics", () => {
     expect(metrics.builds.all.total).toBe(1);
     expect(metrics.builds.all.projects).toEqual({ [project.id]: 1 });
     expect(metrics.builds.projects).toEqual([currentProject]);
+  });
+
+  it("cuts buckets in the requested time zone", async () => {
+    // 23:30 on Sep 30 in Paris (out), then 01:00 (still Sep 30 in UTC) and
+    // 14:00 on Oct 1 in Paris (in).
+    await factory.Build.createMany(3, [
+      { createdAt: "2026-09-30T21:30:00.000Z", projectId: project.id },
+      { createdAt: "2026-09-30T23:00:00.000Z", projectId: project.id },
+      { createdAt: "2026-10-01T12:00:00.000Z", projectId: project.id },
+    ]);
+
+    // Oct 1 in Paris, as the analytics page sends it.
+    const metrics = await getAccountMetrics({
+      accountId: project.accountId,
+      from: new Date("2026-09-30T22:00:00.000Z"),
+      to: new Date("2026-10-01T21:59:59.999Z"),
+      groupBy: "day",
+      timeZone: "Europe/Paris",
+    });
+
+    expect(metrics.builds.all.total).toBe(2);
+    expect(metrics.builds.series.map((serie) => serie.ts)).toEqual([
+      new Date("2026-09-30T22:00:00.000Z").getTime(),
+    ]);
+  });
+
+  it("rejects an unknown time zone", async () => {
+    await expect(
+      getAccountMetrics({
+        accountId: project.accountId,
+        from: new Date("2026-09-30T22:00:00.000Z"),
+        to: new Date("2026-10-01T21:59:59.999Z"),
+        groupBy: "day",
+        timeZone: "Mars/Olympus",
+      }),
+    ).rejects.toThrow(InvalidAccountMetricsInputError);
   });
 
   it("returns no metrics when no project names match", async () => {
