@@ -307,7 +307,8 @@ export async function synchronizeInstallation(installationId: string) {
     (error) => {
       if (
         error instanceof HTTPError &&
-        error.code === "GITHUB_INSTALLATION_SUSPENDED"
+        (error.code === "GITHUB_INSTALLATION_SUSPENDED" ||
+          error.code === "GITHUB_IP_ALLOW_LIST")
       ) {
         return error.code;
       }
@@ -315,8 +316,11 @@ export async function synchronizeInstallation(installationId: string) {
     },
   );
 
-  // If the installation is suspended, skip synchronization.
-  if (octokit === "GITHUB_INSTALLATION_SUSPENDED") {
+  // If GitHub refuses us the installation, skip synchronization.
+  if (
+    octokit === "GITHUB_INSTALLATION_SUSPENDED" ||
+    octokit === "GITHUB_IP_ALLOW_LIST"
+  ) {
     return;
   }
 

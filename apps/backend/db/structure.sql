@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict aEFKgudzvPHSNxTzsC2iIwRwg2BhJ9sx8gJypIGQnb1AC7MwanmvHUZbkeKOrMP
+\restrict BJkv4NuwUHuA1lRDJYIuZEq73gzwDYsjMSfAUz88kYwnJJnnCk3LBwjepSjagvn
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1029,6 +1029,7 @@ CREATE TABLE public.github_installations (
     "githubTokenExpiresAt" timestamp with time zone,
     app text DEFAULT 'main'::text NOT NULL,
     proxy boolean DEFAULT false NOT NULL,
+    "ipAllowListBlockedAt" timestamp with time zone,
     CONSTRAINT github_installations_app_check CHECK ((app = ANY (ARRAY['main'::text, 'light'::text])))
 );
 
@@ -6701,7 +6702,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aEFKgudzvPHSNxTzsC2iIwRwg2BhJ9sx8gJypIGQnb1AC7MwanmvHUZbkeKOrMP
+\unrestrict BJkv4NuwUHuA1lRDJYIuZEq73gzwDYsjMSfAUz88kYwnJJnnCk3LBwjepSjagvn
 
 -- Knex migrations
 
@@ -6961,3 +6962,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260914151447_lowercase-deployment-slugs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260923082549_oauth-grants-client-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260929083847_deployment-pr-head-commit.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());

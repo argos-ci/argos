@@ -5,6 +5,7 @@ import { Outlet } from "react-router";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
+import { GithubIpAllowListBanner } from "@/containers/Project/GithubIpAllowListBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
@@ -28,23 +29,22 @@ const ProjectQuery = graphql(`
         id
         ...PaymentBanner_Account
       }
+      ...GithubIpAllowListBanner_Project
     }
   }
 `);
 
-type Account = NonNullable<
-  NonNullable<DocumentType<typeof ProjectQuery>["project"]>["account"]
+type ProjectDocument = NonNullable<
+  DocumentType<typeof ProjectQuery>["project"]
 >;
 
 function ProjectTabs(props: {
-  deploymentEnabled: boolean;
-  ignoreEnabled: boolean;
-  permissions: ProjectPermission[];
-  account: Account;
+  project: ProjectDocument;
   children: React.ReactNode;
 }) {
-  const { account, children, permissions, deploymentEnabled, ignoreEnabled } =
-    props;
+  const { project, children } = props;
+  const { account, permissions, deploymentEnabled } = project;
+  const ignoreEnabled = project.ignoreConfig.enabled;
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
@@ -66,6 +66,7 @@ function ProjectTabs(props: {
       </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
+      <GithubIpAllowListBanner project={project} />
       <TabLinkPanel className="flex min-h-0 flex-1 flex-col">
         {children}
       </TabLinkPanel>
@@ -89,12 +90,7 @@ function Project(props: { params: ProjectParams }) {
   }
 
   return (
-    <ProjectTabs
-      account={project.account}
-      permissions={project.permissions}
-      deploymentEnabled={project.deploymentEnabled}
-      ignoreEnabled={project.ignoreConfig.enabled}
-    >
+    <ProjectTabs project={project}>
       <Suspense fallback={<PageLoader />}>
         <Outlet
           context={

@@ -12,6 +12,12 @@ import { GithubInstallation } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { checkOctokitErrorStatus } from "./error";
+import {
+  createIpAllowListError,
+  markInstallationIpAllowListBlocked,
+  parseIpAllowListOwner,
+  type IpAllowListOwner,
+} from "./ip-allow-list";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -155,11 +161,16 @@ export async function getInstallationOctokit(
       });
       return null;
     }
+    case "ip_allow_list_blocked": {
+      await markInstallationIpAllowListBlocked(installation, result.owner);
+      throw createIpAllowListError(result.owner, result.error);
+    }
     case "authenticated": {
       await GithubInstallation.query().findById(installation.id).patch({
         deleted: false,
         githubToken: result.token,
         githubTokenExpiresAt: result.expiresAt,
+        ipAllowListBlockedAt: null,
       });
       return getTokenOctokit({
         token: result.token,
@@ -184,6 +195,7 @@ async function authInstallation(args: {
   installationId: number;
 }): Promise<
   | { status: "deleted" }
+  | { status: "ip_allow_list_blocked"; owner: IpAllowListOwner; error: unknown }
   | { status: "authenticated"; token: string; expiresAt: string }
 > {
   const { octokit, installationId } = args;
@@ -199,8 +211,6 @@ async function authInstallation(args: {
       return { status: "deleted" };
     }
     if (checkOctokitErrorStatus(403, error)) {
-      // If error is a 403 and the error message is not about a suspended
-      // installation, we want to know what is it.
       if (error.message.includes("This installation has been suspended")) {
         throw boom(
           403,
@@ -212,6 +222,11 @@ async function authInstallation(args: {
           },
         );
       }
+      const owner = parseIpAllowListOwner(error.message);
+      if (owner) {
+        return { status: "ip_allow_list_blocked", owner, error };
+      }
+      // Any other 403 is unexpected, we want to know what it is.
     }
     throw error;
   }

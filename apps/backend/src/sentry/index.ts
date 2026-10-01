@@ -62,13 +62,14 @@ export function setup() {
     beforeSend(event, hint) {
       const error = hint.originalException;
 
-      // Ignore suspended GitHub installations, this is expected and actionable
-      // by the user, not by us.
+      // Ignore suspended or IP-restricted GitHub installations, this is
+      // expected and actionable by the user, not by us.
       if (
         error &&
         typeof error === "object" &&
         "code" in error &&
-        error.code === "GITHUB_INSTALLATION_SUSPENDED"
+        (error.code === "GITHUB_INSTALLATION_SUSPENDED" ||
+          error.code === "GITHUB_IP_ALLOW_LIST")
       ) {
         return null;
       }

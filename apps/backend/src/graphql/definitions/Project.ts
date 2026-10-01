@@ -214,6 +214,12 @@ export const typeDefs = gql`
     account: Account!
     "Repository associated to the project"
     repository: Repository
+    """
+    Whether GitHub refuses Argos access to the repository because its owner has
+    an IP allow list enabled that does not include Argos. Only disclosed to
+    project members.
+    """
+    githubIpAllowListBlocked: Boolean!
     "Default base branch"
     defaultBaseBranch: String!
     "Default base branch edited by the user"
@@ -960,6 +966,20 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       return account;
+    },
+    githubIpAllowListBlocked: async (project, _args, ctx) => {
+      if (!project.githubRepositoryId) {
+        return false;
+      }
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("view_settings")) {
+        return false;
+      }
+      const installation =
+        await ctx.loaders.GithubRepositoryBestInstallation.load(
+          project.githubRepositoryId,
+        );
+      return Boolean(installation?.ipAllowListBlockedAt);
     },
     repository: async (project, _args, ctx) => {
       if (project.githubRepositoryId) {

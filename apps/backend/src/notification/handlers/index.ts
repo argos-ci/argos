@@ -5,6 +5,7 @@ import * as comment_reaction from "./comment_reaction";
 import * as comment_replied from "./comment_replied";
 import * as email_added from "./email_added";
 import * as email_removed from "./email_removed";
+import * as github_ip_allow_list from "./github_ip_allow_list";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as overage_alert from "./overage_alert";
 import * as project_deleted from "./project_deleted";
@@ -24,6 +25,7 @@ export const notificationHandlers = [
   comment_mention.handler,
   email_added.handler,
   email_removed.handler,
+  github_ip_allow_list.handler,
   invalid_gitlab_token.handler,
   overage_alert.handler,
   project_deleted.handler,

@@ -19,6 +19,7 @@ export class GithubInstallation extends Model {
           githubTokenExpiresAt: { type: ["string", "null"] },
           app: { type: "string", enum: ["main", "light"] },
           proxy: { type: "boolean" },
+          ipAllowListBlockedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -55,4 +56,11 @@ export class GithubInstallation extends Model {
    * Whether the installation uses a proxy to call the GitHub API.
    */
   proxy!: boolean;
+
+  /**
+   * When GitHub started refusing the installation a token because the
+   * organization's IP allow list does not include Argos. Cleared as soon as a
+   * token is issued again.
+   */
+  ipAllowListBlockedAt!: string | null;
 }
