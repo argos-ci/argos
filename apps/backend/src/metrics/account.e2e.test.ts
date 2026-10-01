@@ -331,17 +331,20 @@ describe("getAccountMetrics", () => {
     ]);
   });
 
-  it("rejects an unknown time zone", async () => {
-    await expect(
-      getAccountMetrics({
-        accountId: project.accountId,
-        from: new Date("2026-09-30T22:00:00.000Z"),
-        to: new Date("2026-10-01T21:59:59.999Z"),
-        groupBy: "day",
-        timeZone: "Mars/Olympus",
-      }),
-    ).rejects.toThrow(InvalidAccountMetricsInputError);
-  });
+  it.each(["Mars/Olympus", "+02:00"])(
+    "rejects %s as a time zone",
+    async (timeZone) => {
+      await expect(
+        getAccountMetrics({
+          accountId: project.accountId,
+          from: new Date("2026-09-30T22:00:00.000Z"),
+          to: new Date("2026-10-01T21:59:59.999Z"),
+          groupBy: "day",
+          timeZone,
+        }),
+      ).rejects.toThrow(InvalidAccountMetricsInputError);
+    },
+  );
 
   it("returns no metrics when no project names match", async () => {
     await factory.ScreenshotBucket.create({

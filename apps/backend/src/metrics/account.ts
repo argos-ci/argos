@@ -36,13 +36,25 @@ const ACCOUNT_METRICS_MAX_RANGE_DAYS = 365;
 
 export class InvalidAccountMetricsInputError extends Error {}
 
-function checkIsValidTimeZone(timeZone: string) {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return true;
-  } catch {
-    return false;
+let timeZoneNamesPromise: Promise<Set<string>> | null = null;
+
+/**
+ * Checked against Postgres rather than `Intl`: Node accepts numeric offsets
+ * that `AT TIME ZONE` reads with the sign inverted (POSIX), and its tzdata can
+ * know names the database does not.
+ */
+async function checkIsValidTimeZone(timeZone: string) {
+  if (!timeZoneNamesPromise) {
+    timeZoneNamesPromise = knex
+      .raw<{ rows: { name: string }[] }>(`SELECT name FROM pg_timezone_names`)
+      .then((result) => new Set(result.rows.map((row) => row.name)))
+      .catch((error: unknown) => {
+        timeZoneNamesPromise = null;
+        throw error;
+      });
   }
+  const names = await timeZoneNamesPromise;
+  return names.has(timeZone);
 }
 
 /**
@@ -125,7 +137,7 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
   }
 
   const timeZone = input.timeZone ?? "UTC";
-  if (!checkIsValidTimeZone(timeZone)) {
+  if (!(await checkIsValidTimeZone(timeZone))) {
     throw new InvalidAccountMetricsInputError(
       `Unknown time zone "${timeZone}".`,
     );
