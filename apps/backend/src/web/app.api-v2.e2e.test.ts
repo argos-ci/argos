@@ -954,4 +954,27 @@ describe("api v2", () => {
       });
     });
   });
+
+  describe("rate limits", () => {
+    it("counts the SDK's upload requests on a budget of their own", async () => {
+      // `RateLimit-Policy` names the budget the request was counted on, and
+      // would list two if it had been counted on both.
+      const budget = async (pending: request.Test) => {
+        const res = await pending.set("Host", "api.argos-ci.dev");
+        return res.headers["ratelimit-policy"]?.match(
+          /^"([^"]+)"; [^,]+$/,
+        )?.[1];
+      };
+
+      expect(await budget(request(app).get("/v2/project"))).toBe("ci");
+      expect(await budget(request(app).post("/v2/builds"))).toBe("ci");
+      expect(await budget(request(app).put("/v2/builds/1"))).toBe("ci");
+      expect(await budget(request(app).post("/v2/builds/finalize"))).toBe("ci");
+
+      expect(await budget(request(app).get("/v2/projects/acme/web"))).toBe(
+        "api",
+      );
+      expect(await budget(request(app).get("/v2/me"))).toBe("api");
+    });
+  });
 });
