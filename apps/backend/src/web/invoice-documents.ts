@@ -23,13 +23,10 @@ async function canReadInvoices(
   user: User,
 ): Promise<boolean> {
   const accounts = await Account.query().where({ stripeCustomerId });
-  for (const account of accounts) {
-    const permissions = await account.$getPermissions(user);
-    if (permissions.includes("admin")) {
-      return true;
-    }
-  }
-  return false;
+  const permissions = await Promise.all(
+    accounts.map((account) => account.$getPermissions(user)),
+  );
+  return permissions.some((granted) => granted.includes("admin"));
 }
 
 const ParamsSchema = z.object({
@@ -65,16 +62,25 @@ router.get(
     if (!user) {
       throw boom(401, "Invalid session");
     }
-    // One answer for "no such invoice" and "not yours": a 403 would confirm to
-    // a stranger that the id exists.
-    if (!invoice || !(await canReadInvoices(invoice.stripeCustomerId, user))) {
+    if (!invoice) {
       throw boom(404, "Invoice not found");
     }
 
-    const stripeInvoice = await stripe.invoices.retrieve(
-      invoice.stripeInvoiceId,
-    );
-    const url = stripeInvoice[INVOICE_DOCUMENTS[document]];
+    // Read from Stripe while the permission is checked, but only settle it
+    // after: a Stripe error must not turn a stranger's 404 into a 500 that
+    // confirms the id exists.
+    const stripeInvoice = Promise.allSettled([
+      stripe.invoices.retrieve(invoice.stripeInvoiceId),
+    ]).then(([result]) => result);
+    if (!(await canReadInvoices(invoice.stripeCustomerId, user))) {
+      throw boom(404, "Invoice not found");
+    }
+    const retrieved = await stripeInvoice;
+    if (retrieved.status === "rejected") {
+      throw retrieved.reason;
+    }
+
+    const url = retrieved.value[INVOICE_DOCUMENTS[document]];
     if (!url) {
       throw boom(404, "This invoice has no document to show");
     }
