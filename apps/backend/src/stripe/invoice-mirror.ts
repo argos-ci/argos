@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type Stripe from "stripe";
 
 import { StripeInvoice, StripeInvoiceSync } from "@/database/models";
@@ -22,6 +23,7 @@ const MERGE_COLUMNS = [
   "totalExcludingTax",
   "totalTaxesAmount",
   "creditedAmountExcludingTax",
+  "refundedAmount",
   "periodStart",
   "periodEnd",
   "number",
@@ -111,6 +113,78 @@ async function resolveCreditedAmount(
 }
 
 /**
+ * The charge that settled a payment of the invoice. A legacy payment made
+ * without a PaymentIntent surfaces the bare charge, which cannot be expanded
+ * from the same path, so it is fetched on its own.
+ */
+async function resolvePaymentCharge(
+  payment: Stripe.InvoicePayment.Payment,
+): Promise<Stripe.Charge | null> {
+  if (payment.payment_intent && typeof payment.payment_intent !== "string") {
+    const charge = payment.payment_intent.latest_charge;
+    invariant(typeof charge !== "string", "latest_charge was not expanded");
+    return charge;
+  }
+  if (payment.charge) {
+    return typeof payment.charge === "string"
+      ? stripe.charges.retrieve(payment.charge)
+      : payment.charge;
+  }
+  return null;
+}
+
+/**
+ * What the invoice's payments gave back, tax included.
+ *
+ * Read from the charges, not the credit notes: a refund made from the payment
+ * leaves no credit note, and a credit note can go to the customer balance
+ * instead of the card. Each charge is capped at what it paid on this invoice,
+ * since one PaymentIntent can settle several.
+ */
+async function resolveRefundedAmount(
+  invoice: Stripe.Invoice & { id: string },
+): Promise<number> {
+  if (invoice.amount_paid === 0) {
+    return 0;
+  }
+
+  let refunded = 0;
+  for await (const invoicePayment of stripe.invoicePayments.list({
+    invoice: invoice.id,
+    status: "paid",
+    expand: ["data.payment.payment_intent.latest_charge"],
+    limit: 100,
+  })) {
+    const charge = await resolvePaymentCharge(invoicePayment.payment);
+    if (charge) {
+      refunded += Math.min(
+        charge.amount_refunded,
+        invoicePayment.amount_paid ?? 0,
+      );
+    }
+  }
+  return refunded;
+}
+
+/**
+ * Re-read every invoice a PaymentIntent paid. A refund is an event on the
+ * payment, never on the invoice, so this is how one reaches the mirror.
+ */
+export async function refreshStripeInvoicesPaidBy(
+  paymentIntentId: string,
+): Promise<void> {
+  for await (const invoicePayment of stripe.invoicePayments.list({
+    payment: { type: "payment_intent", payment_intent: paymentIntentId },
+    limit: 100,
+  })) {
+    const invoice = invoicePayment.invoice;
+    await refreshStripeInvoice(
+      typeof invoice === "string" ? invoice : invoice.id,
+    );
+  }
+}
+
+/**
  * What a Stripe invoice becomes in the mirror, or null for the ones not worth
  * a row: a draft is not an invoice yet — it changes freely and gets deleted —
  * and it will be mirrored when finalization makes it one.
@@ -130,10 +204,12 @@ async function buildStripeInvoiceRow(invoice: Stripe.Invoice) {
 
   const identified = Object.assign(invoice, { id: invoiceId });
   const subscription = invoice.parent?.subscription_details?.subscription;
-  const [period, creditedAmountExcludingTax] = await Promise.all([
-    resolveCoveredPeriod(identified),
-    resolveCreditedAmount(identified),
-  ]);
+  const [period, creditedAmountExcludingTax, refundedAmount] =
+    await Promise.all([
+      resolveCoveredPeriod(identified),
+      resolveCreditedAmount(identified),
+      resolveRefundedAmount(identified),
+    ]);
 
   return {
     stripeInvoiceId: invoiceId,
@@ -153,6 +229,7 @@ async function buildStripeInvoiceRow(invoice: Stripe.Invoice) {
         ? null
         : invoice.total_taxes.reduce((sum, tax) => sum + tax.amount, 0),
     creditedAmountExcludingTax,
+    refundedAmount,
     periodStart: period ? timestampToISOString(period.start) : null,
     periodEnd: period ? timestampToISOString(period.end) : null,
     number: invoice.number,

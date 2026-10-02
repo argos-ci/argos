@@ -31,6 +31,7 @@ const InvoicesQuery = graphql(`
           total
           currency
           status
+          refundedAmount
           hostedUrl
           pdfUrl
         }
@@ -331,9 +332,27 @@ const INVOICE_STATUS_PROPS: Record<
   [InvoiceStatus.Uncollectible]: { label: "Uncollectible", color: "danger" },
 };
 
+/**
+ * Stripe keeps a refunded invoice `paid`, so the refund is read off the amount
+ * given back rather than off the status.
+ */
+function getInvoiceStatusProps(invoice: Invoice): {
+  label: string;
+  color: ChipColor;
+} {
+  if (invoice.status === InvoiceStatus.Paid && invoice.refundedAmount > 0) {
+    return invoice.refundedAmount >= invoice.total
+      ? { label: "Refunded", color: "neutral" }
+      : { label: "Partially refunded", color: "neutral" };
+  }
+  return INVOICE_STATUS_PROPS[invoice.status];
+}
+
 function InvoiceRow(props: { invoice: Invoice }) {
   const { invoice } = props;
-  const status = INVOICE_STATUS_PROPS[invoice.status];
+  const status = getInvoiceStatusProps(invoice);
+  const isPartiallyRefunded =
+    invoice.refundedAmount > 0 && invoice.refundedAmount < invoice.total;
   const date = new Date(invoice.date);
 
   return (
@@ -350,7 +369,17 @@ function InvoiceRow(props: { invoice: Invoice }) {
       // thing telling two invoices of the same month apart.
       subtitle={invoice.number ?? "Argos subscription"}
       amountLabel="Total"
-      amount={formatCurrency(invoice.total, invoice.currency)}
+      amount={
+        <>
+          {formatCurrency(invoice.total, invoice.currency)}
+          {isPartiallyRefunded ? (
+            <div className="text-low text-xs font-normal">
+              {formatCurrency(invoice.refundedAmount, invoice.currency)}{" "}
+              refunded
+            </div>
+          ) : null}
+        </>
+      }
       meta={`Invoiced ${formatDate(date, "date")}`}
       actions={<InvoiceMenu invoice={invoice} />}
     />

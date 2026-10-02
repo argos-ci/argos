@@ -4015,9 +4015,9 @@ function commentDoc(text: string) {
  * it.
  *
  * Fixed dates and amounts, since the invoices page is under visual test and a
- * moving figure would fail it every run. The three statuses cover the shapes a
- * row can take — settled, still due, and one raised in error and canceled. Only
- * the columns that page reads are filled: the tax split and the covered period
+ * moving figure would fail it every run. The rows cover the shapes one can
+ * take: settled, still due, raised in error and canceled, and paid then
+ * refunded in part or in full. Only the columns that page reads are filled: the tax split and the covered period
  * belong to the revenue arithmetic, and inventing them here would be fixture
  * noise pretending to be data.
  */
@@ -4031,25 +4031,41 @@ export async function createInvoicesScenario(input: {
 
   const invoices = [
     {
-      stripeInvoiceId: `in_seed_${accountId}_3`,
-      number: "ARGOS-0003",
+      stripeInvoiceId: `in_seed_${accountId}_5`,
+      number: "ARGOS-0005",
       stripeCreatedAt: "2026-08-01T06:00:00.000Z",
       status: "open",
       total: 24_900,
     },
     {
-      stripeInvoiceId: `in_seed_${accountId}_2`,
-      number: "ARGOS-0002",
+      stripeInvoiceId: `in_seed_${accountId}_4`,
+      number: "ARGOS-0004",
       stripeCreatedAt: "2026-07-01T06:00:00.000Z",
       status: "paid",
       total: 21_500,
     },
     {
-      stripeInvoiceId: `in_seed_${accountId}_1`,
-      number: "ARGOS-0001",
+      stripeInvoiceId: `in_seed_${accountId}_3`,
+      number: "ARGOS-0003",
       stripeCreatedAt: "2026-06-01T06:00:00.000Z",
       status: "void",
       total: 19_900,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_2`,
+      number: "ARGOS-0002",
+      stripeCreatedAt: "2026-05-01T06:00:00.000Z",
+      status: "paid",
+      total: 21_500,
+      refundedAmount: 5_000,
+    },
+    {
+      stripeInvoiceId: `in_seed_${accountId}_1`,
+      number: "ARGOS-0001",
+      stripeCreatedAt: "2026-04-01T06:00:00.000Z",
+      status: "paid",
+      total: 19_900,
+      refundedAmount: 19_900,
     },
   ];
 
