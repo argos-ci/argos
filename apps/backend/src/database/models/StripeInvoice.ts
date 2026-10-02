@@ -37,6 +37,7 @@ export class StripeInvoice extends Model {
           totalExcludingTax: { type: ["number", "null"] },
           totalTaxesAmount: { type: ["number", "null"] },
           creditedAmountExcludingTax: { type: "number" },
+          refundedAmount: { type: "number" },
           periodStart: { type: ["string", "null"] },
           periodEnd: { type: ["string", "null"] },
           number: { type: ["string", "null"] },
@@ -64,6 +65,11 @@ export class StripeInvoice extends Model {
    * taken off, where the invoice's own rollup fields are tax-inclusive.
    */
   creditedAmountExcludingTax!: number;
+  /**
+   * What the payments gave back, tax included: Stripe keeps a refunded
+   * invoice `paid`, so this is the only place a refund shows.
+   */
+  refundedAmount!: number;
   /**
    * The longest stretch one of the invoice's lines covers, resolved at
    * ingest — what tells an annual bill from a true-up.

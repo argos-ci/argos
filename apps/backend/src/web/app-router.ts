@@ -26,6 +26,7 @@ import { getNotificationPreviewMiddleware } from "../notification/express";
 import { installAgentDiscoveryRoutes } from "./agent-discovery";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
+import invoiceDocumentsRouter from "./invoice-documents";
 import { installMediaShareRoutes } from "./media-share";
 import { requireCsrf } from "./middlewares/csrf";
 import { createAppSecurityHeaders } from "./security-headers";
@@ -223,6 +224,8 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(samlAuthRouter);
 
   router.use(deploymentAccessRouter);
+
+  router.use(invoiceDocumentsRouter);
 
   // OAuth 2.1 Authorization Server (metadata + /oauth/*). Mounted before the
   // static handler and SPA catch-all so `GET /oauth/authorize` still falls

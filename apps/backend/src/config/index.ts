@@ -217,6 +217,11 @@ export function createConfig() {
           format: "int",
           default: 500,
         },
+        ciLimit: {
+          doc: "Maximum number of requests to the endpoints the SDK calls from CI to upload builds and deployments, counted apart from `limit`",
+          format: "int",
+          default: 10000,
+        },
       },
     },
     amqp: {

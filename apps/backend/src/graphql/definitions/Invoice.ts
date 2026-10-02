@@ -1,5 +1,7 @@
 import gqlTag from "graphql-tag";
 
+import { getInvoiceDocumentUrl } from "@/stripe/invoice-documents";
+
 import {
   IInvoiceStatus,
   type IResolvers,
@@ -34,8 +36,17 @@ export const typeDefs = gql`
     "The ISO code it was raised in, lowercase, as Stripe states it."
     currency: String!
     status: InvoiceStatus!
-    "Stripe's hosted copy, where it can be read and paid."
+    """
+    What the payments gave back, tax included. Stripe keeps a refunded invoice
+    paid, so this is what tells it apart.
+    """
+    refundedAmount: Float!
+    """
+    Stripe's hosted copy, where it can be read and paid. An Argos URL that
+    redirects to a freshly signed Stripe one, since Stripe's own expire.
+    """
     hostedUrl: String
+    "The PDF, behind the same redirect."
     pdfUrl: String
   }
 
@@ -94,6 +105,7 @@ export const resolvers: IResolvers = {
     // The mirror keeps Stripe's minor units; the reader gets the figure that
     // reads on the document.
     total: (invoice) => invoice.total / 100,
+    refundedAmount: (invoice) => invoice.refundedAmount / 100,
     status: (invoice) => {
       const status = INVOICE_STATUSES[invoice.status];
       if (!status) {
@@ -101,7 +113,11 @@ export const resolvers: IResolvers = {
       }
       return status;
     },
-    hostedUrl: (invoice) => invoice.hostedInvoiceUrl,
-    pdfUrl: (invoice) => invoice.invoicePdfUrl,
+    // The mirrored URLs only say whether Stripe has the document; the link
+    // itself goes through the redirect, which signs a fresh one.
+    hostedUrl: (invoice) =>
+      invoice.hostedInvoiceUrl ? getInvoiceDocumentUrl(invoice, "view") : null,
+    pdfUrl: (invoice) =>
+      invoice.invoicePdfUrl ? getInvoiceDocumentUrl(invoice, "pdf") : null,
   },
 };

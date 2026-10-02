@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict U8yRQXIyU0VrUDvWXgN6WJjmkyy7Q9LS9nZEaPshivnNLudU0DnnGuQXcoYEw6f
+\restrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2614,7 +2614,8 @@ CREATE TABLE public.stripe_invoices (
     "periodEnd" timestamp with time zone,
     number character varying(255),
     "hostedInvoiceUrl" text,
-    "invoicePdfUrl" text
+    "invoicePdfUrl" text,
+    "refundedAmount" integer DEFAULT 0 NOT NULL
 );
 
 
@@ -6704,7 +6705,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict U8yRQXIyU0VrUDvWXgN6WJjmkyy7Q9LS9nZEaPshivnNLudU0DnnGuQXcoYEw6f
+\unrestrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
 
 -- Knex migrations
 
@@ -6966,3 +6967,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026092
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260929083847_deployment-pr-head-commit.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());

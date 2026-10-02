@@ -19,13 +19,17 @@ loggedTest("account invoices - billing history", async ({ page, team }) => {
   // Most recent first, with what tells them apart: the month, the number the
   // customer's accounting quotes, whether it is settled, and the amount.
   const rows = page.getByRole("row");
-  await expect(rows).toHaveCount(3);
+  await expect(rows).toHaveCount(5);
   await expect(rows.first()).toContainText("August 2026");
-  await expect(rows.first()).toContainText("ARGOS-0003");
+  await expect(rows.first()).toContainText("ARGOS-0005");
   await expect(rows.first()).toContainText("Due");
   await expect(rows.first()).toContainText("€249.00");
   await expect(rows.nth(1)).toContainText("Paid");
   await expect(rows.nth(2)).toContainText("Void");
+  // Stripe keeps a refunded invoice paid: the refund has to show regardless.
+  await expect(rows.nth(3)).toContainText("Partially refunded");
+  await expect(rows.nth(3)).toContainText("€50.00 refunded");
+  await expect(rows.nth(4)).toContainText("Refunded");
 
   // Before the menu is touched: a trigger left focused would freeze its own
   // hover state into the baseline.
@@ -33,14 +37,14 @@ loggedTest("account invoices - billing history", async ({ page, team }) => {
 
   // Both ways to the document itself hang off the row's menu.
   await page
-    .getByRole("button", { name: "Invoice ARGOS-0002 actions" })
+    .getByRole("button", { name: "Invoice ARGOS-0004 actions" })
     .click();
   await expect(
     page.getByRole("option", { name: "View invoice" }),
-  ).toHaveAttribute("href", /invoice\.stripe\.com\/i\/in_[^/]+$/);
+  ).toHaveAttribute("href", /\/invoices\/\d+\/view$/);
   await expect(
     page.getByRole("option", { name: "Download PDF" }),
-  ).toHaveAttribute("href", /pdf$/);
+  ).toHaveAttribute("href", /\/invoices\/\d+\/pdf$/);
 });
 
 loggedTest(
