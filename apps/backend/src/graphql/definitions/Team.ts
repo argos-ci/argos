@@ -55,6 +55,10 @@ import {
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
+  checkInstallationUsesProxy,
+  getStaticIpAddresses,
+} from "@/github/static-ip";
+import {
   createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
   getCustomerIdFromUserAccount,
@@ -173,6 +177,10 @@ export const typeDefs = gql`
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
     samlPurchased: Boolean!
+    "Whether Argos reaches GitHub from its static IP addresses for this team"
+    staticIpEnabled: Boolean!
+    "Argos's static IP addresses, for the team to add to its GitHub IP allow list"
+    staticIpAddresses: [String!]!
     samlSpEntityId: String!
     samlAcsUrl: String!
     samlMetadataUrl: String!
@@ -336,6 +344,14 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input EnableStaticIpOnTeamInput {
+    teamAccountId: ID!
+  }
+
+  input DisableStaticIpOnTeamInput {
+    teamAccountId: ID!
+  }
+
   input SetTeamDefaultUserLevelInput {
     teamAccountId: ID!
     level: TeamDefaultUserLevel!
@@ -406,6 +422,10 @@ export const typeDefs = gql`
     enableSAMLSSOOnTeam(input: EnableSAMLSSOOnTeamInput!): Team!
     "Disable SAML SSO"
     disableSAMLSSOOnTeam(input: DisableSAMLSSOOnTeamInput!): Team!
+    "Enable Static IP"
+    enableStaticIpOnTeam(input: EnableStaticIpOnTeamInput!): Team!
+    "Disable Static IP"
+    disableStaticIpOnTeam(input: DisableStaticIpOnTeamInput!): Team!
     "Set team default user level"
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
     "Reset invite link"
@@ -794,6 +814,21 @@ export const resolvers: IResolvers = {
       const team = await ctx.loaders.Team.load(account.teamId);
       invariant(team);
       return team.samlPurchased;
+    },
+    staticIpEnabled: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId);
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+      return team.staticIpEnabled;
+    },
+    staticIpAddresses: (_account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      return getStaticIpAddresses();
     },
     samlSpEntityId: (account) => {
       const values = getTeamSamlPublicValues(account.slug);
@@ -1427,7 +1462,10 @@ export const resolvers: IResolvers = {
           ? "light"
           : "main";
 
-      const appOctokit = getAppOctokit({ app, proxy: installation.proxy });
+      const appOctokit = getAppOctokit({
+        app,
+        proxy: await checkInstallationUsesProxy(installation),
+      });
 
       const ghInstallation = await appOctokit.apps.getInstallation({
         installation_id: installation.githubId,
@@ -1616,6 +1654,81 @@ export const resolvers: IResolvers = {
             enforcedAt: null,
           });
       }
+
+      return teamAccount;
+    },
+    enableStaticIpOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const [plan, subscriptionStatus, subscription] = await Promise.all([
+        manager.getPlan(),
+        manager.getSubscriptionStatus(),
+        manager.getActiveSubscription(),
+      ]);
+
+      if (!checkIsActiveSubscriptionStatus(subscriptionStatus)) {
+        throw forbidden("A valid subscription is required to enable Static IP");
+      }
+
+      if (!plan?.staticIpIncluded) {
+        if (!checkCanBillAddOns(subscription)) {
+          throw forbidden(
+            "Your plan does not allow enabling Static IP, please contact us.",
+          );
+        }
+
+        if (checkIsYearlyPlan(plan)) {
+          throw forbidden(
+            "Static IP cannot be added to a yearly plan, please contact us.",
+          );
+        }
+
+        await addStripeProductToSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.staticIpProductId"),
+        });
+      }
+
+      await Team.query().findById(teamId).patch({ staticIpEnabled: true });
+
+      return teamAccount;
+    },
+    disableStaticIpOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
+
+      const subscription = await teamAccount
+        .$getSubscriptionManager()
+        .getActiveSubscription();
+
+      if (subscription?.stripeSubscriptionId) {
+        await removeStripeProductFromSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.staticIpProductId"),
+        });
+      }
+
+      await Team.query().findById(teamId).patch({ staticIpEnabled: false });
 
       return teamAccount;
     },

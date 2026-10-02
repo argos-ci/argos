@@ -1,16 +1,22 @@
 import clsx from "clsx";
 
-import { GITHUB_SSO_PRICING, SAML_SSO_PRICING } from "@/constants";
+import {
+  GITHUB_SSO_PRICING,
+  SAML_SSO_PRICING,
+  STATIC_IP_PRICING,
+} from "@/constants";
 import { DocumentType, graphql } from "@/gql";
 
 const _TeamFragment = graphql(`
   fragment AddOnsPricingTable_Team on Team {
     id
     samlPurchased
+    staticIpEnabled
     plan {
       id
       githubSsoIncluded
       samlIncluded
+      staticIpIncluded
     }
     ssoGithubAccount {
       id
@@ -18,7 +24,7 @@ const _TeamFragment = graphql(`
   }
 `);
 
-export type AddOn = "github-sso" | "saml-sso";
+export type AddOn = "github-sso" | "saml-sso" | "static-ip";
 
 export type AddOnsPricingTableTeam = DocumentType<typeof _TeamFragment>;
 
@@ -47,6 +53,16 @@ export function AddOnsPricingTable(props: {
     (team.samlPurchased && !team.plan?.samlIncluded)
   ) {
     rows.push({ key: "saml-sso", label: "SAML SSO", price: SAML_SSO_PRICING });
+  }
+  if (
+    enabling === "static-ip" ||
+    (team.staticIpEnabled && !team.plan?.staticIpIncluded)
+  ) {
+    rows.push({
+      key: "static-ip",
+      label: "Static IP",
+      price: STATIC_IP_PRICING,
+    });
   }
   const total = rows.reduce((sum, row) => sum + row.price, 0);
   return (

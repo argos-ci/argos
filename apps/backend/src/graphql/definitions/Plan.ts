@@ -18,5 +18,6 @@ export const typeDefs = gql`
     githubSsoIncluded: Boolean!
     fineGrainedAccessControlIncluded: Boolean!
     samlIncluded: Boolean!
+    staticIpIncluded: Boolean!
   }
 `;

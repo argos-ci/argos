@@ -18,6 +18,7 @@ import {
   parseIpAllowListOwner,
   type IpAllowListOwner,
 } from "./ip-allow-list";
+import { checkInstallationUsesProxy } from "./static-ip";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -133,23 +134,20 @@ export async function getInstallationOctokit(
   installation: GithubInstallation,
   appOctokit?: Octokit,
 ): Promise<Octokit | null> {
+  const proxy = await checkInstallationUsesProxy(installation);
+
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = new Date(installation.githubTokenExpiresAt).getTime();
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
     const isExpired = expiredAt < now + delay;
     if (!isExpired) {
-      return getTokenOctokit({
-        token: installation.githubToken,
-        proxy: installation.proxy,
-      });
+      return getTokenOctokit({ token: installation.githubToken, proxy });
     }
   }
 
   const result = await authInstallation({
-    octokit:
-      appOctokit ??
-      getAppOctokit({ app: installation.app, proxy: installation.proxy }),
+    octokit: appOctokit ?? getAppOctokit({ app: installation.app, proxy }),
     installationId: installation.githubId,
   });
   switch (result.status) {
@@ -162,8 +160,16 @@ export async function getInstallationOctokit(
       return null;
     }
     case "ip_allow_list_blocked": {
-      await markInstallationIpAllowListBlocked(installation, result.owner);
-      throw createIpAllowListError(result.owner, result.error);
+      await markInstallationIpAllowListBlocked({
+        installation,
+        owner: result.owner,
+        proxied: proxy,
+      });
+      throw createIpAllowListError({
+        owner: result.owner,
+        proxied: proxy,
+        cause: result.error,
+      });
     }
     case "authenticated": {
       await GithubInstallation.query().findById(installation.id).patch({
@@ -172,10 +178,7 @@ export async function getInstallationOctokit(
         githubTokenExpiresAt: result.expiresAt,
         ipAllowListBlockedAt: null,
       });
-      return getTokenOctokit({
-        token: result.token,
-        proxy: installation.proxy,
-      });
+      return getTokenOctokit({ token: result.token, proxy });
     }
     default:
       assertNever(result);

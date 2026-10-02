@@ -55,15 +55,18 @@ async function queryBlocked(project: Project, auth: Account | null) {
     .send({
       query: `{
         project(accountSlug: "${project.account.slug}", projectName: "${project.name}") {
-          githubIpAllowListBlocked
+          githubIpAllowListBlock {
+            staticIp
+            staticIpAddresses
+          }
         }
       }`,
     });
   expectNoGraphQLError(res);
-  return res.body.data.project.githubIpAllowListBlocked;
+  return res.body.data.project.githubIpAllowListBlock;
 }
 
-describe("Project.githubIpAllowListBlocked", () => {
+describe("Project.githubIpAllowListBlock", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
@@ -72,10 +75,13 @@ describe("Project.githubIpAllowListBlocked", () => {
     project,
     memberAccount,
   }) => {
-    expect(await queryBlocked(project, memberAccount)).toBe(true);
+    expect(await queryBlocked(project, memberAccount)).toEqual({
+      staticIp: false,
+      staticIpAddresses: [],
+    });
   });
 
   test("is hidden from visitors of a public project", async ({ project }) => {
-    expect(await queryBlocked(project, null)).toBe(false);
+    expect(await queryBlocked(project, null)).toBeNull();
   });
 });

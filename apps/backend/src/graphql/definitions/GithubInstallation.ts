@@ -1,5 +1,7 @@
 import gqlTag from "graphql-tag";
 
+import { checkInstallationUsesProxy } from "@/github/static-ip";
+
 import { IResolvers } from "../__generated__/resolver-types";
 
 const { gql } = gqlTag;
@@ -18,14 +20,14 @@ export const resolvers: IResolvers = {
       return loaders.GhApiInstallation.load({
         app: installation.app,
         installationId: installation.githubId,
-        proxy: installation.proxy,
+        proxy: await checkInstallationUsesProxy(installation),
       });
     },
     ghAccount: async (installation, _args, { loaders }) => {
       const ghInstallation = await loaders.GhApiInstallation.load({
         app: installation.app,
         installationId: installation.githubId,
-        proxy: installation.proxy,
+        proxy: await checkInstallationUsesProxy(installation),
       });
       if (
         !ghInstallation ||

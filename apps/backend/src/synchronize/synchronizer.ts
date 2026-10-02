@@ -9,7 +9,11 @@ import {
   GithubRepositoryInstallation,
   Project,
 } from "@/database/models";
-import { getAppOctokit, getInstallationOctokit } from "@/github";
+import {
+  checkInstallationUsesProxy,
+  getAppOctokit,
+  getInstallationOctokit,
+} from "@/github";
 import { HTTPError } from "@/util/error";
 
 type ApiRepository =
@@ -300,7 +304,7 @@ export async function synchronizeInstallation(installationId: string) {
 
   const appOctokit = getAppOctokit({
     app: installation.app,
-    proxy: installation.proxy,
+    proxy: await checkInstallationUsesProxy(installation),
   });
 
   const octokit = await getInstallationOctokit(installation, appOctokit).catch(

@@ -3,7 +3,7 @@ import { RequestError } from "@octokit/request-error";
 import { Octokit } from "@octokit/rest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { GithubInstallation } from "@/database/models";
+import { GithubInstallation, Team } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 import { HTTPError } from "@/util/error";
@@ -91,6 +91,7 @@ describe("getInstallationOctokit", () => {
     expect(error.code).toBe("GITHUB_IP_ALLOW_LIST");
     expect(error.statusCode).toBe(403);
     expect(error.message).toContain('"acme" GitHub organization');
+    expect(error.message).toContain("Enable Static IP");
 
     const flagged = await GithubInstallation.query().findById(installation.id);
     expect(flagged?.ipAllowListBlockedAt).not.toBeNull();
@@ -100,6 +101,12 @@ describe("getInstallationOctokit", () => {
       type: "github_ip_allow_list",
       data: {
         githubOwner: { name: "acme", kind: "organization" },
+        staticIp: {
+          status: "available",
+          settingsURL: expect.stringContaining(
+            `/${teamAccount.slug}/settings/integrations#static-ip`,
+          ),
+        },
         projects: [
           {
             name: "web",
@@ -115,6 +122,28 @@ describe("getInstallationOctokit", () => {
       getInstallationOctokit(installation, refusedByIpAllowList),
     );
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks for the static IP addresses when the refused call already used them", async () => {
+    const { teamAccount, installation } = await seedBlockedProject();
+    invariant(teamAccount.teamId, "team account has no team");
+    await Team.query()
+      .findById(teamAccount.teamId)
+      .patch({ staticIpEnabled: true });
+
+    const error = await getIpAllowListError(
+      getInstallationOctokit(installation, refusedByIpAllowList),
+    );
+    expect(error.code).toBe("GITHUB_IP_ALLOW_LIST");
+    expect(error.message).toContain("Add Argos's static IP addresses");
+
+    expect(mockSendNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          staticIp: { status: "proxied", addresses: [] },
+        }),
+      }),
+    );
   });
 
   it("clears the flag once GitHub issues a token again", async () => {

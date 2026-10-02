@@ -319,6 +319,12 @@ export function createConfig() {
         default: "",
         env: "GITHUB_PROXY_URL",
       },
+      proxyIpAddresses: {
+        doc: "Public IP addresses GitHub sees on requests sent through the proxy, which teams with Static IP add to their IP allow list",
+        format: "string-array",
+        default: [] as string[],
+        env: "GITHUB_PROXY_IP_ADDRESSES",
+      },
     },
     githubLight: {
       appId: {
@@ -445,6 +451,12 @@ export function createConfig() {
         format: String,
         env: "SAML_SSO_STRIPE_PRODUCT_ID",
         default: "prod_UvaZbxEF2tntAv",
+      },
+      staticIpProductId: {
+        doc: "Static IP Stripe product ID",
+        format: String,
+        env: "STATIC_IP_STRIPE_PRODUCT_ID",
+        default: "",
       },
       screenshotProductId: {
         doc: "Additional screenshots Stripe product ID",

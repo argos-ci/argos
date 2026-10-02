@@ -11,6 +11,8 @@ import {
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { getStaticIpAddresses } from "./static-ip";
+
 /**
  * The GitHub owner whose IP allow list refuses Argos.
  */
@@ -42,13 +44,22 @@ export function parseIpAllowListOwner(
  * The error surfaced to whoever triggered the call: the CLI prints it, and the
  * GraphQL forms show it.
  */
-export function createIpAllowListError(
-  owner: IpAllowListOwner,
-  cause: unknown,
-) {
+export function createIpAllowListError(input: {
+  owner: IpAllowListOwner;
+  /** Whether the refused call already left from Argos's static IP addresses. */
+  proxied: boolean;
+  cause: unknown;
+}) {
+  const { owner, proxied, cause } = input;
+  const addresses = getStaticIpAddresses();
+  const fix = !proxied
+    ? "Enable Static IP in your Argos team settings, then add its IP addresses to the allow list."
+    : addresses.length > 0
+      ? `Add Argos's static IP addresses to the allow list: ${addresses.join(", ")}.`
+      : "Add Argos's static IP addresses, listed in your Argos team settings, to the allow list.";
   return boom(
     403,
-    `The "${owner.name}" GitHub ${owner.kind} has an IP allow list enabled that blocks Argos. An owner of "${owner.name}" needs to add Argos's IP address to the allow list: contact us at https://argos-ci.com/contact to get it.`,
+    `The "${owner.name}" GitHub ${owner.kind} has an IP allow list enabled that blocks Argos. ${fix}`,
     { cause, code: "GITHUB_IP_ALLOW_LIST", retryable: false },
   );
 }
@@ -58,10 +69,13 @@ export function createIpAllowListError(
  * serves. Most calls come from background jobs, so without the email nobody
  * would learn why builds stopped reaching GitHub.
  */
-export async function markInstallationIpAllowListBlocked(
-  installation: GithubInstallation,
-  owner: IpAllowListOwner,
-) {
+export async function markInstallationIpAllowListBlocked(input: {
+  installation: GithubInstallation;
+  owner: IpAllowListOwner;
+  /** Whether the refused call already left from Argos's static IP addresses. */
+  proxied: boolean;
+}) {
+  const { installation, owner, proxied } = input;
   // Only the call that sets the flag notifies: owners get one email per
   // incident, not one per job.
   const flagged = await GithubInstallation.query()
@@ -107,6 +121,17 @@ export async function markInstallationIpAllowListBlocked(
       type: "github_ip_allow_list",
       data: {
         githubOwner: owner,
+        staticIp: proxied
+          ? { status: "proxied", addresses: getStaticIpAddresses() }
+          : account.teamId
+            ? {
+                status: "available",
+                settingsURL: new URL(
+                  `/${account.slug}/settings/integrations#static-ip`,
+                  config.get("server.url"),
+                ).href,
+              }
+            : { status: "unavailable" },
         projects: accountProjects.map((project) => ({
           name: project.name,
           url: new URL(

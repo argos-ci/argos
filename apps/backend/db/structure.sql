@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict BJkv4NuwUHuA1lRDJYIuZEq73gzwDYsjMSfAUz88kYwnJJnnCk3LBwjepSjagvn
+\restrict U8yRQXIyU0VrUDvWXgN6WJjmkyy7Q9LS9nZEaPshivnNLudU0DnnGuQXcoYEw6f
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2096,6 +2096,7 @@ CREATE TABLE public.plans (
     "samlIncluded" boolean DEFAULT false NOT NULL,
     "githubMonthlyPriceCents" integer,
     "customDomainsIncluded" boolean DEFAULT false NOT NULL,
+    "staticIpIncluded" boolean DEFAULT false NOT NULL,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -2843,6 +2844,7 @@ CREATE TABLE public.teams (
     "ssoGithubAccountId" bigint,
     "defaultUserLevel" text NOT NULL,
     "samlPurchased" boolean DEFAULT false NOT NULL,
+    "staticIpEnabled" boolean DEFAULT false NOT NULL,
     CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text])))
 );
 
@@ -6702,7 +6704,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BJkv4NuwUHuA1lRDJYIuZEq73gzwDYsjMSfAUz88kYwnJJnnCk3LBwjepSjagvn
+\unrestrict U8yRQXIyU0VrUDvWXgN6WJjmkyy7Q9LS9nZEaPshivnNLudU0DnnGuQXcoYEw6f
 
 -- Knex migrations
 
@@ -6963,3 +6965,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260923082549_oauth-grants-client-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260929083847_deployment-pr-head-commit.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());

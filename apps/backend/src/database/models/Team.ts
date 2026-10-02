@@ -34,6 +34,7 @@ export class Team extends Model {
           inviteSecret: { type: ["null", "string"] },
           ssoGithubAccountId: { type: ["null", "string"] },
           samlPurchased: { type: "boolean" },
+          staticIpEnabled: { type: "boolean" },
           defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
         },
       },
@@ -43,6 +44,11 @@ export class Team extends Model {
   inviteSecret!: string | null;
   ssoGithubAccountId!: string | null;
   samlPurchased!: boolean;
+  /**
+   * Whether Argos reaches GitHub from its static IP addresses for the
+   * installations this team's projects use.
+   */
+  staticIpEnabled!: boolean;
   defaultUserLevel!: "member" | "contributor";
 
   static override get relationMappings(): RelationMappings {
