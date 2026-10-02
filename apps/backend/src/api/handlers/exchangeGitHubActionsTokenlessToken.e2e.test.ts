@@ -1,101 +1,26 @@
-import type { PartialModelObject } from "objection";
+import { countBy } from "lodash-es";
 import request from "supertest";
-import { test as base, beforeEach, describe, expect, vi } from "vitest";
+import { test as base, describe, expect } from "vitest";
 
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
-import type { Project } from "@/database/models";
+import { FAILED_RUN_LOOKUPS_LIMIT } from "@/auth/tokenless/github-actions";
+import {
+  branch,
+  commitSha,
+  createGithubRepository,
+  createLinkedProject,
+  createTokenlessBearer,
+  setupGithubServer,
+  stubWorkflowRuns,
+  type LinkedProject,
+} from "@/auth/tokenless/github-actions.test-util";
 import { factory, setupDatabase } from "@/database/testing";
-import * as githubModule from "@/github";
 import { setupRedis } from "@/util/redis/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { exchangeGitHubActionsTokenlessToken } from "./exchangeGitHubActionsTokenlessToken";
 
-vi.mock("@/github", async () => {
-  const actual = await vi.importActual<typeof import("@/github")>("@/github");
-  return {
-    ...actual,
-    getInstallationOctokit: vi.fn(),
-    checkOctokitErrorStatus: vi.fn(() => false),
-  };
-});
-
-const getInstallationOctokit = vi.mocked(githubModule.getInstallationOctokit);
-
 const app = createTestHandlerApp(exchangeGitHubActionsTokenlessToken);
-
-const commitSha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
-const branch = "main";
-
-function createTokenlessBearer(authData: {
-  owner: string;
-  repository: string;
-  jobId: string;
-  runId: string;
-  project?: string;
-}) {
-  const payload = Buffer.from(JSON.stringify(authData)).toString("base64");
-  return `tokenless-github-${payload}`;
-}
-
-function mockWorkflowRun(data: {
-  status?: string | null;
-  head_sha?: string;
-  head_branch?: string | null;
-}) {
-  getInstallationOctokit.mockResolvedValue({
-    actions: {
-      getWorkflowRun: vi.fn().mockResolvedValue({
-        data: {
-          status: data.status ?? "in_progress",
-          head_sha: data.head_sha ?? commitSha,
-          head_branch: data.head_branch ?? branch,
-        },
-      }),
-    },
-  } as any);
-}
-
-type LinkedProject = {
-  project: Project;
-  bearer: string;
-};
-
-async function createLinkedProject(
-  attrs: PartialModelObject<Project> = {},
-): Promise<LinkedProject> {
-  const account = await factory.GithubAccount.create({
-    githubId: 456,
-    login: "argos-ci",
-    type: "organization",
-  });
-  const repository = await factory.GithubRepository.create({
-    githubAccountId: account.id,
-    githubId: 123,
-    name: "argos",
-  });
-  const installation = await factory.GithubInstallation.create({
-    githubId: 789,
-  });
-  await factory.GithubRepositoryInstallation.create({
-    githubRepositoryId: repository.id,
-    githubInstallationId: installation.id,
-  });
-  const project = await factory.Project.create({
-    tokenlessAuthEnabled: true,
-    githubRepositoryId: repository.id,
-    ...attrs,
-  });
-
-  const bearer = createTokenlessBearer({
-    owner: "argos-ci",
-    repository: "argos",
-    jobId: "1",
-    runId: "42",
-  });
-
-  return { project, bearer };
-}
 
 const test = base.extend<{
   linkedProject: LinkedProject;
@@ -108,25 +33,21 @@ const test = base.extend<{
 });
 
 setupRedis();
+setupGithubServer();
 
-beforeEach(() => {
-  vi.clearAllMocks();
-});
+function exchange(tokenlessToken: string) {
+  return request(app)
+    .post("/auth/github-actions/tokenless/exchange")
+    .send({ tokenlessToken, commit: commitSha, branch });
+}
 
 describe("exchangeGitHubActionsTokenlessToken", () => {
   test("exchanges a tokenless token for a short-lived project token", async ({
     linkedProject,
   }) => {
-    mockWorkflowRun({});
+    stubWorkflowRuns({ 42: {} });
 
-    const res = await request(app)
-      .post("/auth/github-actions/tokenless/exchange")
-      .send({
-        tokenlessToken: linkedProject.bearer,
-        commit: commitSha,
-        branch,
-      })
-      .expect(200);
+    const res = await exchange(linkedProject.bearer).expect(200);
 
     expect(res.body).toEqual({
       token: expect.stringMatching(/^argos_tmp_/),
@@ -147,9 +68,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       runId: "42",
     });
 
-    await request(app)
-      .post("/auth/github-actions/tokenless/exchange")
-      .send({ tokenlessToken: bearer, commit: commitSha, branch })
+    await exchange(bearer)
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toBe(
@@ -158,41 +77,32 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       });
   });
 
-  test("rejects when tokenless auth is disabled on the project", async ({
+  test("rejects when tokenless auth is disabled on the project, without asking GitHub", async ({
     linkedProject,
   }) => {
-    mockWorkflowRun({});
+    const lookups = stubWorkflowRuns({ 42: {} });
     await linkedProject.project.$query().patch({
       tokenlessAuthEnabled: false,
     });
 
-    await request(app)
-      .post("/auth/github-actions/tokenless/exchange")
-      .send({
-        tokenlessToken: linkedProject.bearer,
-        commit: commitSha,
-        branch,
-      })
+    await exchange(linkedProject.bearer)
       .expect(403)
       .expect((res) => {
         expect(res.body.error).toBe(
-          "Tokenless authentication is not enabled for this project.",
+          "Tokenless authentication is disabled for this project. Set the ARGOS_TOKEN environment variable to authenticate.",
         );
       });
+    expect(lookups).toEqual([]);
   });
 
   test("rejects when the requested commit does not match the workflow run", async ({
     linkedProject,
   }) => {
-    mockWorkflowRun({ head_sha: "0000000000000000000000000000000000000000" });
+    stubWorkflowRuns({
+      42: { head_sha: "0000000000000000000000000000000000000000" },
+    });
 
-    await request(app)
-      .post("/auth/github-actions/tokenless/exchange")
-      .send({
-        tokenlessToken: linkedProject.bearer,
-        commit: commitSha,
-        branch,
-      })
+    await exchange(linkedProject.bearer)
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toBe(
@@ -204,15 +114,9 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
   test("rejects when the requested branch does not match the workflow run", async ({
     linkedProject,
   }) => {
-    mockWorkflowRun({ head_branch: "feature" });
+    stubWorkflowRuns({ 42: { head_branch: "feature" } });
 
-    await request(app)
-      .post("/auth/github-actions/tokenless/exchange")
-      .send({
-        tokenlessToken: linkedProject.bearer,
-        commit: commitSha,
-        branch,
-      })
+    await exchange(linkedProject.bearer)
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toBe(
@@ -221,25 +125,48 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       });
   });
 
+  test("stops asking GitHub once an installation has had too many lookups find no run in progress", async ({
+    linkedProject,
+  }) => {
+    const lookups = stubWorkflowRuns({ 42: {} });
+    const forgeBearer = (runId: number) =>
+      createTokenlessBearer({
+        owner: "argos-ci",
+        repository: "argos",
+        jobId: "1",
+        runId: String(runId),
+      });
+
+    // Found in progress, so it is not counted.
+    await exchange(linkedProject.bearer).expect(200);
+
+    const forged = await Promise.all(
+      Array.from({ length: FAILED_RUN_LOOKUPS_LIMIT + 5 }, (_, index) =>
+        exchange(forgeBearer(1000 + index)),
+      ),
+    );
+    expect(countBy(forged, "status")).toEqual({
+      404: FAILED_RUN_LOOKUPS_LIMIT,
+      429: 5,
+    });
+
+    await exchange(forgeBearer(2000))
+      .expect(429)
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          "Too many failed tokenless authentication attempts for this GitHub installation. Retry later, or set the ARGOS_TOKEN environment variable to authenticate.",
+        );
+      });
+
+    // A run already seen in progress is not looked up again.
+    await exchange(linkedProject.bearer).expect(200);
+
+    expect(lookups).toHaveLength(1 + FAILED_RUN_LOOKUPS_LIMIT);
+  });
+
   describe("when multiple projects are linked to the GitHub repository", () => {
     async function createRepositoryWithProjects() {
-      const account = await factory.GithubAccount.create({
-        githubId: 456,
-        login: "argos-ci",
-        type: "organization",
-      });
-      const repository = await factory.GithubRepository.create({
-        githubAccountId: account.id,
-        githubId: 123,
-        name: "argos",
-      });
-      const installation = await factory.GithubInstallation.create({
-        githubId: 789,
-      });
-      await factory.GithubRepositoryInstallation.create({
-        githubRepositoryId: repository.id,
-        githubInstallationId: installation.id,
-      });
+      const repository = await createGithubRepository();
 
       const teamA = await factory.TeamAccount.create({ slug: "team-a" });
       const teamB = await factory.TeamAccount.create({ slug: "team-b" });
@@ -263,7 +190,6 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     test("rejects when no project slug is provided", async () => {
       await setupDatabase();
       await createRepositoryWithProjects();
-      mockWorkflowRun({});
 
       const bearer = createTokenlessBearer({
         owner: "argos-ci",
@@ -272,9 +198,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
         runId: "42",
       });
 
-      await request(app)
-        .post("/auth/github-actions/tokenless/exchange")
-        .send({ tokenlessToken: bearer, commit: commitSha, branch })
+      await exchange(bearer)
         .expect(400)
         .expect((res) => {
           expect(res.body.error).toBe(
@@ -286,7 +210,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     test("resolves the project matching the provided slug", async () => {
       await setupDatabase();
       const { projectB } = await createRepositoryWithProjects();
-      mockWorkflowRun({});
+      stubWorkflowRuns({ 42: {} });
 
       const bearer = createTokenlessBearer({
         owner: "argos-ci",
@@ -296,10 +220,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
         project: "team-b/project-b",
       });
 
-      const res = await request(app)
-        .post("/auth/github-actions/tokenless/exchange")
-        .send({ tokenlessToken: bearer, commit: commitSha, branch })
-        .expect(200);
+      const res = await exchange(bearer).expect(200);
 
       const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
       expect(auth.project.id).toBe(projectB.id);
@@ -308,7 +229,6 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     test("rejects when the provided slug does not match any linked project", async () => {
       await setupDatabase();
       await createRepositoryWithProjects();
-      mockWorkflowRun({});
 
       const bearer = createTokenlessBearer({
         owner: "argos-ci",
@@ -318,9 +238,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
         project: "team-a/unknown",
       });
 
-      await request(app)
-        .post("/auth/github-actions/tokenless/exchange")
-        .send({ tokenlessToken: bearer, commit: commitSha, branch })
+      await exchange(bearer)
         .expect(400)
         .expect((res) => {
           expect(res.body.error).toBe(

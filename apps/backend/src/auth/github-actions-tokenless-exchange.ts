@@ -23,13 +23,6 @@ export async function exchangeGitHubActionsTokenlessToken(
     );
   }
 
-  if (!context.project.tokenlessAuthEnabled) {
-    throw boom(
-      403,
-      "Tokenless authentication is not enabled for this project.",
-    );
-  }
-
   if (context.run.head_sha !== input.commit) {
     throw boom(401, "GitHub Actions workflow run does not match commit.");
   }

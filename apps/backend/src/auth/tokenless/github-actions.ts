@@ -2,11 +2,28 @@ import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
 import z from "zod";
 
-import { GithubRepository, Project } from "@/database/models";
+import {
+  GithubInstallation,
+  GithubRepository,
+  Project,
+} from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { boom } from "@/util/error";
+import { redisCache } from "@/util/redis";
+import { getRedisClient } from "@/util/redis/client";
 
 const marker = "tokenless-github-";
+
+/**
+ * Anyone can forge a token naming a linked repository, and every run it names
+ * costs a request against the GitHub rate limit of the repository's
+ * installation, the one its status checks and comments draw from. So an
+ * installation gets this many lookups per window that do not find the run in
+ * progress. A lookup that finds it is given back: forged tokens are capped, the
+ * real runs of a busy installation are not.
+ */
+export const FAILED_RUN_LOOKUPS_LIMIT = 100;
+const FAILED_RUN_LOOKUPS_WINDOW_MS = 10 * 60 * 1000;
 
 const AuthTokenPayloadSchema = z.object({
   owner: z.string(),
@@ -57,8 +74,133 @@ export type TokenlessGitHubActionsContext = {
 };
 
 /**
+ * Count a run lookup against the installation, or refuse it once the
+ * installation has used up its failed lookups for the window. Returns a
+ * function giving the lookup back.
+ */
+async function reserveRunLookup(installation: GithubInstallation) {
+  const redis = await getRedisClient();
+  // A lookup given back after its window has ended decrements a key nothing
+  // reads anymore, rather than the next window's. The expiry is set in the same
+  // transaction so that no crash leaves the key without one.
+  const window = Math.floor(Date.now() / FAILED_RUN_LOOKUPS_WINDOW_MS);
+  const key = `tokenless-github-run-lookups:${installation.id}:${window}`;
+  const [count] = await redis
+    .multi()
+    .incr(key)
+    .pExpire(key, FAILED_RUN_LOOKUPS_WINDOW_MS)
+    .execTyped();
+
+  if (count > FAILED_RUN_LOOKUPS_LIMIT) {
+    throw boom(
+      429,
+      "Too many failed tokenless authentication attempts for this GitHub installation. Retry later, or set the ARGOS_TOKEN environment variable to authenticate.",
+    );
+  }
+
+  return async () => {
+    await redis
+      .multi()
+      .decr(key)
+      .pExpire(key, FAILED_RUN_LOOKUPS_WINDOW_MS)
+      .execTyped();
+  };
+}
+
+type WorkflowRunLookup = {
+  bearerToken: string;
+  installation: GithubInstallation;
+  owner: string;
+  repository: string;
+  runId: number;
+};
+
+/**
+ * Runs recently seen in progress. An SDK sending the tokenless token on every
+ * request, and the shards of a run finishing together, would otherwise each
+ * look the run up. Only runs in progress are kept, the other outcomes are
+ * thrown: a run re-run after it completed must not be refused from a stale
+ * answer.
+ *
+ * A run keeps authenticating for up to `maxAge` after it completes, well within
+ * the 10 minutes the short-lived token from the exchange lives anyway.
+ */
+const inProgressRunStore = redisCache.createStore({
+  maxAge: 60 * 1000,
+  // The default (3s) would cut the retries short.
+  timeout: 20 * 1000,
+  getCacheKey: (lookup: WorkflowRunLookup) => [
+    "tokenless-github-run",
+    lookup.owner,
+    lookup.repository,
+    lookup.runId,
+  ],
+  fetch: async (
+    lookup: WorkflowRunLookup,
+  ): Promise<TokenlessGitHubActionsRun> => {
+    const giveBack = await reserveRunLookup(lookup.installation);
+
+    const octokit = await getInstallationOctokit(lookup.installation);
+
+    if (!octokit) {
+      throw boom(
+        503,
+        "Unable to authenticate with GitHub for this installation. Please retry.",
+      );
+    }
+
+    const githubRun = await pRetry(
+      async () => {
+        try {
+          const result = await octokit.actions.getWorkflowRun({
+            owner: lookup.owner,
+            repo: lookup.repository,
+            run_id: lookup.runId,
+            filter: "latest",
+          });
+          return result;
+        } catch (error) {
+          if (checkOctokitErrorStatus(404, error)) {
+            return null;
+          }
+          throw error;
+        }
+      },
+      { retries: 3 },
+    );
+
+    if (!githubRun) {
+      throw boom(404, `GitHub run not found (token: "${lookup.bearerToken}")`);
+    }
+
+    const isRunInProgress =
+      githubRun.data.status === "in_progress" ||
+      // For some reason GitHub sometimes considers the job "queued"
+      // It is not "unsafe" to allow this.
+      githubRun.data.status === "queued";
+
+    if (!isRunInProgress) {
+      throw boom(
+        401,
+        `GitHub job is not in progress (token: "${lookup.bearerToken}")`,
+      );
+    }
+
+    await giveBack();
+
+    return {
+      status: githubRun.data.status,
+      head_sha: githubRun.data.head_sha,
+      head_branch: githubRun.data.head_branch,
+    };
+  },
+});
+
+/**
  * Resolve the Argos project and GitHub workflow run associated with a tokenless
- * GitHub Actions bearer token. Returns null if no project is linked to this repository.
+ * GitHub Actions bearer token. Returns null if no project is linked to this
+ * repository, and throws if the project does not accept tokenless
+ * authentication.
  */
 export async function resolveTokenlessGitHubActionsContext(
   bearerToken: string,
@@ -120,6 +262,15 @@ export async function resolveTokenlessGitHubActionsContext(
     project = projects[0];
   }
 
+  // Before anything reaches GitHub: forging the token takes nothing but the
+  // repository's name, and every lookup spends its installation's rate limit.
+  if (!project.tokenlessAuthEnabled) {
+    throw boom(
+      403,
+      "Tokenless authentication is disabled for this project. Set the ARGOS_TOKEN environment variable to authenticate.",
+    );
+  }
+
   const installation = GithubRepository.pickBestInstallation(repository);
 
   if (!installation) {
@@ -129,57 +280,15 @@ export async function resolveTokenlessGitHubActionsContext(
     );
   }
 
-  const octokit = await getInstallationOctokit(installation);
+  const run = await inProgressRunStore.get({
+    bearerToken,
+    installation,
+    owner: authData.owner,
+    repository: authData.repository,
+    runId: Number(authData.runId),
+  });
 
-  if (!octokit) {
-    throw boom(
-      503,
-      "Unable to authenticate with GitHub for this installation. Please retry.",
-    );
-  }
-
-  const githubRun = await pRetry(
-    async () => {
-      try {
-        const result = await octokit.actions.getWorkflowRun({
-          owner: authData.owner,
-          repo: authData.repository,
-          run_id: Number(authData.runId),
-          filter: "latest",
-        });
-        return result;
-      } catch (error) {
-        if (checkOctokitErrorStatus(404, error)) {
-          return null;
-        }
-        throw error;
-      }
-    },
-    { retries: 3 },
-  );
-
-  if (!githubRun) {
-    throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
-  }
-
-  const isRunInProgress =
-    githubRun.data.status === "in_progress" ||
-    // For some reason GitHub sometimes considers the job "queued"
-    // It is not "unsafe" to allow this.
-    githubRun.data.status === "queued";
-
-  if (!isRunInProgress) {
-    throw boom(401, `GitHub job is not in progress (token: "${bearerToken}")`);
-  }
-
-  return {
-    project,
-    run: {
-      status: githubRun.data.status,
-      head_sha: githubRun.data.head_sha,
-      head_branch: githubRun.data.head_branch,
-    },
-  };
+  return { project, run };
 }
 
 export const tokenlessGitHubActionsStrategy = {
@@ -189,13 +298,6 @@ export const tokenlessGitHubActionsStrategy = {
 
     if (!context) {
       return null;
-    }
-
-    if (!context.project.tokenlessAuthEnabled) {
-      throw boom(
-        403,
-        "Tokenless authentication is disabled for this project. Set the ARGOS_TOKEN environment variable to authenticate.",
-      );
     }
 
     return context.project;
