@@ -5,9 +5,14 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { config } from "@/config";
+import { ResumeSubscriptionButton } from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
-import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
+import {
+  AccountPermission,
+  AccountSubscriptionProvider,
+  AccountSubscriptionStatus,
+} from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -25,6 +30,7 @@ const _PaymentBannerFragment = graphql(`
       id
       trialDaysRemaining
       endDate
+      provider
     }
   }
 `);
@@ -129,14 +135,21 @@ export const PaymentBanner = memo(
             team features until the{" "}
             <Time date={pendingCancelAt} format="longDate" />.
           </p>
-          {userIsAdmin && (
-            <ManageStripeButton
-              stripeCustomerId={stripeCustomerId ?? null}
-              accountId={account.id}
-            >
-              Reactivate {subscriptionTypeLabel}
-            </ManageStripeButton>
-          )}
+          {userIsAdmin &&
+            // The portal's renew control goes away with its cancel section,
+            // which is turned off so the survey is not asked twice.
+            (subscription?.provider === AccountSubscriptionProvider.Stripe ? (
+              <ResumeSubscriptionButton accountId={account.id}>
+                Reactivate {subscriptionTypeLabel}
+              </ResumeSubscriptionButton>
+            ) : (
+              <ManageStripeButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+              >
+                Reactivate {subscriptionTypeLabel}
+              </ManageStripeButton>
+            ))}
         </BannerTemplate>
       );
     }

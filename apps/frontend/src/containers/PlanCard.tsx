@@ -454,11 +454,17 @@ function SubscriptionLifecycleButton(props: {
     <CancelSubscriptionDialog
       accountId={account.id}
       periodEndDate={account.periodEndDate ?? null}
-      trial={
-        account.subscriptionStatus === AccountSubscriptionStatus.Trialing ||
-        account.subscriptionStatus ===
-          AccountSubscriptionStatus.TrialingWithPaymentMethod
-      }
+      period={(() => {
+        switch (account.subscriptionStatus) {
+          case AccountSubscriptionStatus.Trialing:
+          case AccountSubscriptionStatus.TrialingWithPaymentMethod:
+            return "trial";
+          case AccountSubscriptionStatus.PastDue:
+            return "unpaid";
+          default:
+            return "paid";
+        }
+      })()}
     />
   );
 }

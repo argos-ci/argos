@@ -228,46 +228,65 @@ describe("GraphQL resumeSubscription", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls off the scheduled end without touching the recorded reason", async () => {
-    const { account, user } = await createUserAccount();
-    invariant(user.id, "user has no id");
-    const teamAccount = await createSubscribedTeam({
-      userId: user.id,
-      userLevel: "owner",
-      endDate: IN_TWENTY_DAYS,
-    });
-    const update = vi
-      .spyOn(stripe.subscriptions, "update")
-      .mockResolvedValue(
-        CANCEL_RESUMED_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+  it.each([
+    {
+      kind: "at the end of the period",
+      scheduled: { cancel_at_period_end: true },
+      payload: { cancel_at_period_end: false },
+    },
+    {
+      kind: "on a given date",
+      scheduled: { cancel_at_period_end: false },
+      payload: { cancel_at: "" },
+    },
+  ])(
+    "calls off a cancellation scheduled $kind without touching the recorded reason",
+    async ({ scheduled, payload }) => {
+      const { account, user } = await createUserAccount();
+      invariant(user.id, "user has no id");
+      const teamAccount = await createSubscribedTeam({
+        userId: user.id,
+        userLevel: "owner",
+        endDate: IN_TWENTY_DAYS,
+      });
+      vi.spyOn(stripe.subscriptions, "retrieve").mockResolvedValue({
+        ...CANCEL_SCHEDULED_SUBSCRIPTION,
+        ...scheduled,
+      } as Stripe.Response<Stripe.Subscription>);
+      const update = vi
+        .spyOn(stripe.subscriptions, "update")
+        .mockResolvedValue(
+          CANCEL_RESUMED_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+        );
+
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        { user, account },
       );
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: RESUME_MUTATION,
+          variables: { input: { accountId: teamAccount.id } },
+        });
 
-    const res = await request(app)
-      .post("/graphql")
-      .send({
-        query: RESUME_MUTATION,
-        variables: { input: { accountId: teamAccount.id } },
-      });
+      expect(res.body.errors).toBeUndefined();
+      // Exactly this payload: a `cancellation_details` here would wipe the answers
+      // the customer gave on their way out.
+      expect(update).toHaveBeenCalledWith(
+        CANCEL_SCHEDULED_SUBSCRIPTION.id,
+        payload,
+      );
 
-    expect(res.body.errors).toBeUndefined();
-    // Exactly this payload: a `cancellation_details` here would wipe the answers
-    // the customer gave on their way out.
-    expect(update).toHaveBeenCalledWith(CANCEL_SCHEDULED_SUBSCRIPTION.id, {
-      cancel_at_period_end: false,
-    });
-
-    const subscription = await Subscription.query()
-      .findOne({ stripeSubscriptionId: CANCEL_SCHEDULED_SUBSCRIPTION.id })
-      .throwIfNotFound();
-    expect(subscription.endDate).toBeNull();
-    expect(res.body.data.resumeSubscription.subscription.endDate).toBeNull();
-  });
+      const subscription = await Subscription.query()
+        .findOne({ stripeSubscriptionId: CANCEL_SCHEDULED_SUBSCRIPTION.id })
+        .throwIfNotFound();
+      expect(subscription.endDate).toBeNull();
+      expect(res.body.data.resumeSubscription.subscription.endDate).toBeNull();
+    },
+  );
 
   it("refuses a member who is not an admin of the team", async () => {
     const { account, user } = await createUserAccount();

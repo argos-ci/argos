@@ -89,6 +89,15 @@ const REASON_LABELS: Record<string, ReactNode> = Object.fromEntries(
   REASONS.map((reason) => [reason.value, reason.label]),
 );
 
+type CancelledPeriod = "trial" | "paid" | "unpaid";
+
+const PERIOD_SENTENCES: Record<CancelledPeriod, string> = {
+  trial: "Your team keeps every Pro feature until the trial ends",
+  paid: "Your team keeps every Pro feature until the end of the period you have already paid for",
+  unpaid:
+    "Your team keeps every Pro feature until the end of the current billing period",
+};
+
 type Inputs = {
   reason: SubscriptionCancelReason | null;
   comment: string;
@@ -97,8 +106,11 @@ type Inputs = {
 export function CancelSubscriptionDialog(props: {
   accountId: string;
   periodEndDate: string | null;
-  /** A trial has been paid for by nobody, so it cannot be described as one. */
-  trial: boolean;
+  /**
+   * Only a period that was actually paid can be described as one: a trial was
+   * paid by nobody, and a past-due period is still owed.
+   */
+  period: CancelledPeriod;
 }) {
   return (
     <DialogTrigger>
@@ -113,9 +125,9 @@ export function CancelSubscriptionDialog(props: {
 function CancelSubscriptionDialogContent(props: {
   accountId: string;
   periodEndDate: string | null;
-  trial: boolean;
+  period: CancelledPeriod;
 }) {
-  const { accountId, periodEndDate, trial } = props;
+  const { accountId, periodEndDate, period } = props;
   const client = useApolloClient();
   const state = useOverlayTriggerState();
   const reasonId = useId();
@@ -171,9 +183,7 @@ function CancelSubscriptionDialogContent(props: {
         <DialogBody>
           <DialogTitle>Cancel subscription</DialogTitle>
           <DialogText>
-            {trial
-              ? "Your team keeps every Pro feature until the trial ends"
-              : "Your team keeps every Pro feature until the end of the period you have already paid for"}
+            {PERIOD_SENTENCES[period]}
             {periodEndDate ? (
               <>
                 , on <Time date={periodEndDate} format="longDate" />.
@@ -290,7 +300,10 @@ const ResumeSubscriptionMutation = graphql(`
  * portal's renew button belongs to the cancellation section we turned off to
  * keep the survey from being asked twice.
  */
-export function ResumeSubscriptionButton(props: { accountId: string }) {
+export function ResumeSubscriptionButton(props: {
+  accountId: string;
+  children?: ReactNode;
+}) {
   const client = useApolloClient();
 
   return (
@@ -303,7 +316,7 @@ export function ResumeSubscriptionButton(props: { accountId: string }) {
         toast.success("Your subscription will renew as usual.");
       }}
     >
-      Resume subscription
+      {props.children ?? "Resume subscription"}
     </Button>
   );
 }

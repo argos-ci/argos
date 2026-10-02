@@ -43,18 +43,17 @@ function getCancelReason(
     return undefined;
   }
 
-  const reasonCandidates = [
-    cancellationDetails.comment,
-    cancellationDetails.feedback,
-  ]
+  // The comment is the detail behind the picked reason, not a replacement for
+  // it: keep both, so a price churn still reads as one when words came with it.
+  const parts = [cancellationDetails.feedback, cancellationDetails.comment]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));
 
-  if (reasonCandidates.length === 0) {
+  if (parts.length === 0) {
     return null;
   }
 
-  return reasonCandidates[0];
+  return parts.join(": ");
 }
 
 function hasCancellationFeedbackUpdate(
@@ -514,9 +513,16 @@ export async function scheduleStripeSubscriptionCancellation(args: {
 export async function resumeStripeSubscription(
   subscriptionId: string,
 ): Promise<Subscription> {
-  const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
-    cancel_at_period_end: false,
-  });
+  // A cancellation set on a given date (from the Dashboard, or a fixed-term
+  // contract) lives in `cancel_at` alone, which `cancel_at_period_end: false`
+  // leaves in place. Read which kind it is and clear that one.
+  const current = await stripe.subscriptions.retrieve(subscriptionId);
+  const stripeSubscription = await stripe.subscriptions.update(
+    subscriptionId,
+    current.cancel_at_period_end
+      ? { cancel_at_period_end: false }
+      : { cancel_at: "" },
+  );
   return syncArgosSubscriptionFromStripe(stripeSubscription);
 }
 

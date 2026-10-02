@@ -121,6 +121,10 @@ loggedTest(
     await expect(
       page.getByRole("button", { name: "Cancel subscription" }),
     ).toHaveCount(0);
+    // The banner reactivates in the app too: the portal no longer can.
+    await expect(
+      page.getByRole("button", { name: "Reactivate subscription" }),
+    ).toBeVisible();
   },
 );
 
