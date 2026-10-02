@@ -37,10 +37,10 @@ loggedTest("account invoices - billing history", async ({ page, team }) => {
     .click();
   await expect(
     page.getByRole("option", { name: "View invoice" }),
-  ).toHaveAttribute("href", /invoice\.stripe\.com\/i\/in_[^/]+$/);
+  ).toHaveAttribute("href", /\/invoices\/\d+\/view$/);
   await expect(
     page.getByRole("option", { name: "Download PDF" }),
-  ).toHaveAttribute("href", /pdf$/);
+  ).toHaveAttribute("href", /\/invoices\/\d+\/pdf$/);
 });
 
 loggedTest(

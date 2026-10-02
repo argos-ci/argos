@@ -346,6 +346,11 @@ export default defineConfig((args) => {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
               },
+              // Redirects to Stripe's freshly signed invoice documents.
+              "^/invoices/\\d+/(view|pdf)$": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
             },
           }
         : undefined,
