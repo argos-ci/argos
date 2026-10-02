@@ -160,6 +160,8 @@ export const typeDefs = gql`
     from: DateTime!
     to: DateTime
     groupBy: TimeSeriesGroupBy!
+    "IANA time zone the buckets are cut in (e.g. Europe/Paris). Defaults to UTC."
+    timeZone: String
   }
 
   type ScreenshotsCount {
@@ -566,6 +568,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
         from: args.input.from,
         to: args.input.to,
         groupBy: args.input.groupBy,
+        timeZone: args.input.timeZone,
       });
     } catch (error) {
       if (error instanceof InvalidAccountMetricsInputError) {

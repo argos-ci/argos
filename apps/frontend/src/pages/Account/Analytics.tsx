@@ -82,6 +82,7 @@ const AccountQuery = graphql(`
     $from: DateTime!
     $to: DateTime!
     $groupBy: TimeSeriesGroupBy!
+    $timeZone: String!
     $projectNames: [String!]
   ) {
     account(slug: $slug) {
@@ -92,6 +93,7 @@ const AccountQuery = graphql(`
           from: $from
           to: $to
           groupBy: $groupBy
+          timeZone: $timeZone
           projectNames: $projectNames
         }
       ) {
@@ -267,6 +269,8 @@ function Charts(props: {
       from: from.toISOString(),
       to: to.toISOString(),
       groupBy,
+      // Cut days in the viewer's zone, the one the date picker shows.
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       projectNames: projectNames.length > 0 ? projectNames : null,
     },
   });
