@@ -36,25 +36,21 @@ const ACCOUNT_METRICS_MAX_RANGE_DAYS = 365;
 
 export class InvalidAccountMetricsInputError extends Error {}
 
-let timeZoneNamesPromise: Promise<Set<string>> | null = null;
-
 /**
- * Checked against Postgres rather than `Intl`: Node accepts numeric offsets
- * that `AT TIME ZONE` reads with the sign inverted (POSIX), and its tzdata can
- * know names the database does not.
+ * Postgres reads a numeric offset in `AT TIME ZONE` as POSIX, with the sign
+ * inverted ("+02:00" is UTC-2), so it would shift every bucket without failing.
  */
-async function checkIsValidTimeZone(timeZone: string) {
-  if (!timeZoneNamesPromise) {
-    timeZoneNamesPromise = knex
-      .raw<{ rows: { name: string }[] }>(`SELECT name FROM pg_timezone_names`)
-      .then((result) => new Set(result.rows.map((row) => row.name)))
-      .catch((error: unknown) => {
-        timeZoneNamesPromise = null;
-        throw error;
-      });
-  }
-  const names = await timeZoneNamesPromise;
-  return names.has(timeZone);
+function checkIsNumericOffset(timeZone: string) {
+  return /^[+\-\d]/.test(timeZone);
+}
+
+function isUnknownTimeZoneError(error: unknown) {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    error.code === "22023" &&
+    error.message.includes("time zone")
+  );
 }
 
 /**
@@ -137,7 +133,7 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
   }
 
   const timeZone = input.timeZone ?? "UTC";
-  if (!(await checkIsValidTimeZone(timeZone))) {
+  if (checkIsNumericOffset(timeZone)) {
     throw new InvalidAccountMetricsInputError(
       `Unknown time zone "${timeZone}".`,
     );
@@ -152,12 +148,20 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
     groupBy: input.groupBy,
     timeZone,
   };
-  const [screenshots, builds] = await Promise.all([
-    getAccountScreenshotMetrics(params),
-    getAccountBuildMetrics(params),
-  ]);
-
-  return { screenshots, builds };
+  try {
+    const [screenshots, builds] = await Promise.all([
+      getAccountScreenshotMetrics(params),
+      getAccountBuildMetrics(params),
+    ]);
+    return { screenshots, builds };
+  } catch (error) {
+    if (isUnknownTimeZoneError(error)) {
+      throw new InvalidAccountMetricsInputError(
+        `Unknown time zone "${timeZone}".`,
+      );
+    }
+    throw error;
+  }
 }
 
 /**
