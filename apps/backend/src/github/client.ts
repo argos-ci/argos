@@ -1,7 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
-import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
 import { memoize } from "lodash-es";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
@@ -14,8 +13,6 @@ import { boom } from "@/util/error";
 import { checkOctokitErrorStatus } from "./error";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
-
-Octokit.plugin(retry);
 
 export type { Octokit };
 
