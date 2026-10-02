@@ -37,6 +37,11 @@ export const typeDefs = gql`
     currency: String!
     status: InvoiceStatus!
     """
+    What the payments gave back, tax included. Stripe keeps a refunded invoice
+    paid, so this is what tells it apart.
+    """
+    refundedAmount: Float!
+    """
     Stripe's hosted copy, where it can be read and paid. An Argos URL that
     redirects to a freshly signed Stripe one, since Stripe's own expire.
     """
@@ -100,6 +105,7 @@ export const resolvers: IResolvers = {
     // The mirror keeps Stripe's minor units; the reader gets the figure that
     // reads on the document.
     total: (invoice) => invoice.total / 100,
+    refundedAmount: (invoice) => invoice.refundedAmount / 100,
     status: (invoice) => {
       const status = INVOICE_STATUSES[invoice.status];
       if (!status) {

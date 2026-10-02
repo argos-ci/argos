@@ -14,7 +14,11 @@ import {
 import { sendNotification } from "@/notification";
 import { redisLock } from "@/util/redis";
 
-import { deleteStripeInvoice, refreshStripeInvoice } from "./invoice-mirror";
+import {
+  deleteStripeInvoice,
+  refreshStripeInvoice,
+  refreshStripeInvoicesPaidBy,
+} from "./invoice-mirror";
 
 export type { Stripe };
 
@@ -904,7 +908,8 @@ export async function handleStripeEvent({
   // The endpoint needs at least: invoice.created, invoice.updated,
   // invoice.finalized, invoice.paid, invoice.voided,
   // invoice.marked_uncollectible, invoice.deleted, credit_note.created,
-  // credit_note.updated, credit_note.voided.
+  // credit_note.updated, credit_note.voided, charge.refunded,
+  // refund.created, refund.updated, refund.failed.
   if (type === "invoice.deleted") {
     const invoice = data.object as Stripe.Invoice;
     if (invoice.id) {
@@ -928,6 +933,22 @@ export async function handleStripeEvent({
         : creditNote.invoice?.id;
     if (invoiceId) {
       await refreshStripeInvoice(invoiceId);
+    }
+    return;
+  }
+  if (
+    type.startsWith("refund.") ||
+    type === "charge.refunded" ||
+    type === "charge.refund.updated"
+  ) {
+    const object = data.object as Stripe.Refund | Stripe.Charge;
+    const paymentIntent = object.payment_intent;
+    // A charge made without a PaymentIntent predates invoice payments; the
+    // nightly sweep still catches its refund within its window.
+    if (paymentIntent) {
+      await refreshStripeInvoicesPaidBy(
+        typeof paymentIntent === "string" ? paymentIntent : paymentIntent.id,
+      );
     }
     return;
   }
