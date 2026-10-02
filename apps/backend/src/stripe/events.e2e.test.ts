@@ -77,7 +77,9 @@ describe("handleStripeEvent", () => {
       }
       const content = send.mock.calls[0][0].content;
       expect(content).toContain("Subscription canceled");
-      expect(content).toContain("Reason: The price jump was too sporadic.");
+      expect(content).toContain(
+        "Reason: too_expensive: The price jump was too sporadic.",
+      );
     });
   });
 

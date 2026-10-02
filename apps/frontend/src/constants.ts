@@ -2,3 +2,4 @@ export const GITHUB_SSO_PRICING = 50;
 export const SAML_SSO_PRICING = 200;
 export const PRO_PLAN_PRICING = 100;
 export const CONTACT_HREF = "https://argos-ci.com/contact";
+export const BOOK_A_CALL_HREF = "https://cal.com/jsfez";

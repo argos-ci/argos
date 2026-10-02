@@ -47,18 +47,17 @@ function getCancelReason(
     return undefined;
   }
 
-  const reasonCandidates = [
-    cancellationDetails.comment,
-    cancellationDetails.feedback,
-  ]
+  // The comment is the detail behind the picked reason, not a replacement for
+  // it: keep both, so a price churn still reads as one when words came with it.
+  const parts = [cancellationDetails.feedback, cancellationDetails.comment]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));
 
-  if (reasonCandidates.length === 0) {
+  if (parts.length === 0) {
     return null;
   }
 
-  return reasonCandidates[0];
+  return parts.join(": ");
 }
 
 function hasCancellationFeedbackUpdate(
@@ -460,6 +459,75 @@ export async function cancelStripeSubscription(subscriptionId: string) {
     return;
   }
   await stripe.subscriptions.cancel(subscriptionId);
+}
+
+export type StripeCancellationFeedback =
+  Stripe.SubscriptionUpdateParams.CancellationDetails.Feedback;
+
+/**
+ * Write a subscription we just mutated back into our own row instead of waiting
+ * for the webhook that will replay the same change: the caller is answering a
+ * user action, and the screen it refreshes must not show the state from before.
+ */
+async function syncArgosSubscriptionFromStripe(
+  stripeSubscription: Stripe.Subscription,
+): Promise<Subscription> {
+  const argosSubscription = await getArgosSubscriptionFromStripeSubscriptionId(
+    stripeSubscription.id,
+  );
+  invariant(
+    argosSubscription,
+    `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+  );
+  return updateArgosSubscriptionFromStripe(
+    argosSubscription,
+    stripeSubscription,
+  );
+}
+
+/**
+ * Stop a subscription at the end of the period it is already paid for, and
+ * record why.
+ *
+ * The survey answers go into Stripe's own `cancellation_details` rather than a
+ * table of ours because everything downstream already reads that field: the
+ * webhook that alerts Discord (see `getCancelReason`) and Stripe's own churn
+ * reporting.
+ */
+export async function scheduleStripeSubscriptionCancellation(args: {
+  subscriptionId: string;
+  feedback: StripeCancellationFeedback;
+  comment: string | null;
+}): Promise<Subscription> {
+  const { subscriptionId, feedback, comment } = args;
+  const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: true,
+    cancellation_details: { feedback, comment: comment ?? "" },
+  });
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
+}
+
+/**
+ * Undo a scheduled cancellation, leaving the subscription running.
+ *
+ * `cancellation_details` is left alone: the answers the customer gave on their
+ * way out are why we asked, and a team that was talked back is exactly the one
+ * worth being able to look up later.
+ */
+export async function resumeStripeSubscription(
+  subscriptionId: string,
+): Promise<Subscription> {
+  // A cancellation set on a given date (from the Dashboard, or a fixed-term
+  // contract) lives in `cancel_at` alone, which `cancel_at_period_end: false`
+  // leaves in place. Read which kind it is and clear that one.
+  const current = await stripe.subscriptions.retrieve(subscriptionId);
+  const stripeSubscription = await stripe.subscriptions.update(
+    subscriptionId,
+    current.cancel_at_period_end
+      ? { cancel_at_period_end: false }
+      : { cancel_at: "" },
+  );
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
 }
 
 /**
