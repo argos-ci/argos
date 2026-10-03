@@ -461,7 +461,7 @@ export function createConfig() {
         doc: "Static IP Stripe product ID",
         format: String,
         env: "STATIC_IP_STRIPE_PRODUCT_ID",
-        default: "",
+        default: "prod_VNLHBijok5sjll",
       },
       screenshotProductId: {
         doc: "Additional screenshots Stripe product ID",
