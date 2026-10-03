@@ -26,6 +26,7 @@ export class Plan extends Model {
           fineGrainedAccessControlIncluded: { type: "boolean" },
           samlIncluded: { type: "boolean" },
           customDomainsIncluded: { type: "boolean" },
+          staticIpIncluded: { type: "boolean" },
           interval: { type: "string", enum: ["month", "year"] },
         },
       },
@@ -48,6 +49,7 @@ export class Plan extends Model {
   fineGrainedAccessControlIncluded!: boolean;
   samlIncluded!: boolean;
   customDomainsIncluded!: boolean;
+  staticIpIncluded!: boolean;
   interval!: SubscriptionInterval;
 
   static override virtualAttributes = ["displayName"];

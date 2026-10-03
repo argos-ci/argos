@@ -1,7 +1,11 @@
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { LockIcon } from "lucide-react";
+import { LockIcon, NetworkIcon } from "lucide-react";
 
-import { GITHUB_SSO_PRICING, SAML_SSO_PRICING } from "@/constants";
+import {
+  GITHUB_SSO_PRICING,
+  SAML_SSO_PRICING,
+  STATIC_IP_PRICING,
+} from "@/constants";
 import { ConfigureGitHubSSO } from "@/containers/Team/GitHubSSO/Configure";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -20,6 +24,7 @@ import {
   DisableSAMLSSOAddOnButton,
   EnableSAMLSSOAddOnButton,
 } from "./SAMLSSOAddOn";
+import { DisableStaticIpButton, EnableStaticIpButton } from "./StaticIpAddOn";
 
 const _TeamFragment = graphql(`
   fragment TeamAddOns_Team on Team {
@@ -27,6 +32,7 @@ const _TeamFragment = graphql(`
     slug
     subscriptionStatus
     samlPurchased
+    staticIpEnabled
     subscription {
       id
       provider
@@ -35,6 +41,7 @@ const _TeamFragment = graphql(`
       id
       githubSsoIncluded
       samlIncluded
+      staticIpIncluded
       usageBased
       interval
     }
@@ -42,6 +49,7 @@ const _TeamFragment = graphql(`
       id
     }
     ...SAMLSSOAddOn_Team
+    ...StaticIpAddOn_Team
     ...AddOnsPricingTable_Team
   }
 `);
@@ -55,6 +63,7 @@ export function TeamAddOns(props: {
   const samlIncluded = Boolean(team.plan?.samlIncluded);
   const githubSsoEnabled = Boolean(team.ssoGithubAccount);
   const samlEnabled = team.samlPurchased;
+  const staticIpIncluded = Boolean(team.plan?.staticIpIncluded);
   const githubSsoBlockedReason = getAddOnBlockedReason({
     status: team.subscriptionStatus,
     provider: team.subscription?.provider,
@@ -115,12 +124,36 @@ export function TeamAddOns(props: {
               )
             }
           />
+          <AddOnRow
+            icon={<NetworkIcon className="size-6 shrink-0" />}
+            title="Static IP"
+            description="Reach GitHub from static IP addresses your organization can add to its IP allow list."
+            enabled={team.staticIpEnabled}
+            price={
+              staticIpIncluded ? (
+                "Included in your plan"
+              ) : (
+                <>${STATIC_IP_PRICING} / month</>
+              )
+            }
+            action={
+              team.staticIpEnabled ? (
+                <DisableStaticIpButton team={team} />
+              ) : (
+                <EnableStaticIpButton team={team} />
+              )
+            }
+          />
         </div>
       </CardBody>
       <CardFooter>
         Configure Single Sign-On in the{" "}
         <Link href={`/${team.slug}/settings/authentication`}>
           Authentication settings
+        </Link>
+        , and find the static IP addresses in the{" "}
+        <Link href={`/${team.slug}/settings/integrations#static-ip`}>
+          Integrations settings
         </Link>
         .
       </CardFooter>

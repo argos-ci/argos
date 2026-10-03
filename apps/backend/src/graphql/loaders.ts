@@ -1035,6 +1035,25 @@ function createBuildFromCompareScreenshotBucketIdLoader() {
   );
 }
 
+function createGithubRepositoryBestInstallationLoader() {
+  return new DataLoader<string, GithubInstallation | null>(
+    async (repositoryIds) => {
+      const repositories = await GithubRepository.query()
+        .findByIds(repositoryIds as string[])
+        .withGraphFetched("repoInstallations.installation");
+      const repositoryById = new Map(
+        repositories.map((repository) => [repository.id, repository]),
+      );
+      return repositoryIds.map((id) => {
+        const repository = repositoryById.get(id);
+        return repository
+          ? GithubRepository.pickBestInstallation(repository)
+          : null;
+      });
+    },
+  );
+}
+
 function createGhApiInstallationLoader() {
   return new DataLoader<
     { app: GithubInstallation["app"]; installationId: number; proxy: boolean },
@@ -2066,6 +2085,8 @@ export const createLoaders = () => ({
   GithubInstallation: createModelLoader(GithubInstallation),
   GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),
+  GithubRepositoryBestInstallation:
+    createGithubRepositoryBestInstallationLoader(),
   GitlabProject: createModelLoader(GitlabProject),
   OriginInstallation: createModelLoader(OriginInstallation),
   OriginPullRequest: createModelLoader(OriginPullRequest),

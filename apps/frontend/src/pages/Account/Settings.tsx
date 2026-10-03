@@ -31,6 +31,7 @@ import { TeamMsTeams } from "@/containers/Team/MsTeams";
 import { TeamSAMLSSO } from "@/containers/Team/SAMLSSO";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
+import { TeamStaticIp } from "@/containers/Team/StaticIp";
 import { UserAuth } from "@/containers/User/Auth";
 import { UserDelete } from "@/containers/User/Delete";
 import { UserEmails } from "@/containers/User/Emails";
@@ -89,6 +90,7 @@ const AccountQuery = graphql(`
       ...TeamDomains_Team
       ...TeamAccessRole_Team
       ...TeamGitHubLight_Team
+      ...TeamStaticIp_Team
       ...UserAuth_Account
       ...TeamSpendManagement_Account
       ...UserDelete_User
@@ -292,6 +294,7 @@ function PageContent() {
           {isTeam && <TeamMsTeams account={account} />}
           {isTeam && <TeamDiscord account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
+          {isTeam && hasAdminPermission && <TeamStaticIp team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
           {hasAdminPermission && originEnabled && (
             <AccountCursorOrigin account={account} />

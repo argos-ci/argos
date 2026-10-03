@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict kadbc6OxGXul3QidlxBMIET3deMUY0OhnAx3ERMzH8tWlaHaEmdAoGFDcfkUuMh
+\restrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -1029,6 +1029,7 @@ CREATE TABLE public.github_installations (
     "githubTokenExpiresAt" timestamp with time zone,
     app text DEFAULT 'main'::text NOT NULL,
     proxy boolean DEFAULT false NOT NULL,
+    "ipAllowListBlockedAt" timestamp with time zone,
     CONSTRAINT github_installations_app_check CHECK ((app = ANY (ARRAY['main'::text, 'light'::text])))
 );
 
@@ -2095,6 +2096,7 @@ CREATE TABLE public.plans (
     "samlIncluded" boolean DEFAULT false NOT NULL,
     "githubMonthlyPriceCents" integer,
     "customDomainsIncluded" boolean DEFAULT false NOT NULL,
+    "staticIpIncluded" boolean DEFAULT false NOT NULL,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -2843,6 +2845,7 @@ CREATE TABLE public.teams (
     "ssoGithubAccountId" bigint,
     "defaultUserLevel" text NOT NULL,
     "samlPurchased" boolean DEFAULT false NOT NULL,
+    "staticIpEnabled" boolean DEFAULT false NOT NULL,
     CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text])))
 );
 
@@ -6702,7 +6705,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict kadbc6OxGXul3QidlxBMIET3deMUY0OhnAx3ERMzH8tWlaHaEmdAoGFDcfkUuMh
+\unrestrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
 
 -- Knex migrations
 
@@ -6962,4 +6965,6 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260914151447_lowercase-deployment-slugs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260923082549_oauth-grants-client-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260929083847_deployment-pr-head-commit.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());

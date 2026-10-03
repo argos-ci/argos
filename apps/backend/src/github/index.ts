@@ -4,6 +4,7 @@ export * from "./auth";
 export * from "./client";
 export * from "./comment";
 export * from "./error";
+export * from "./static-ip";
 
 /** @public */
 export type GhApiRepository = components["schemas"]["repository"];

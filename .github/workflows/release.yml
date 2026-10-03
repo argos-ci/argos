@@ -358,6 +358,7 @@ jobs:
             GITHUB_LIGHT_APP_URL=/production/github_light_app_url
             GITHUB_LIGHT_WEBHOOK_SECRET=/production/github_light_webhook_secret
             GITHUB_PROXY_URL=/production/github_proxy_url
+            GITHUB_PROXY_IP_ADDRESSES=/production/github_proxy_ip_addresses
             GITHUB_SSO_STRIPE_PRODUCT_ID=/production/github_sso_stripe_product_id
             GITHUB_WEBHOOK_SECRET=/production/github_webhook_secret
             GITLAB_APP_ID=/production/gitlab_app_id
@@ -371,6 +372,7 @@ jobs:
             RESEND_API_KEY=/production/resend_api_key
             RESEND_WEBHOOK_SECRET=/production/resend_webhook_secret
             SAML_SSO_STRIPE_PRODUCT_ID=/production/saml_sso_stripe_product_id
+            STATIC_IP_STRIPE_PRODUCT_ID=/production/static_ip_stripe_product_id
             SCREENSHOT_STRIPE_PRODUCT_ID=/production/screenshot_stripe_product_id
             SENTRY_AUTH_TOKEN=/production/sentry_auth_token
             SENTRY_CLIENT_DSN=/production/sentry_client_dsn

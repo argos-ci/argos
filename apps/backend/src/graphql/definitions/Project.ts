@@ -53,6 +53,10 @@ import {
 } from "@/deployment/custom-domain";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getInstallationOctokit } from "@/github/client";
+import {
+  checkInstallationUsesProxy,
+  getStaticIpAddresses,
+} from "@/github/static-ip";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import {
   checkUserCanUseInstallation,
@@ -186,6 +190,13 @@ export const typeDefs = gql`
     search: String
   }
 
+  type GithubIpAllowListBlock {
+    "Whether GitHub refused calls that already left from Argos's static IP addresses"
+    staticIp: Boolean!
+    "Argos's static IP addresses, to add to the allow list"
+    staticIpAddresses: [String!]!
+  }
+
   type Project implements Node {
     id: ID!
     name: String!
@@ -214,6 +225,12 @@ export const typeDefs = gql`
     account: Account!
     "Repository associated to the project"
     repository: Repository
+    """
+    Set while GitHub refuses Argos access to the repository because its owner
+    has an IP allow list enabled that does not include Argos. Only disclosed to
+    project members.
+    """
+    githubIpAllowListBlock: GithubIpAllowListBlock
     "Default base branch"
     defaultBaseBranch: String!
     "Default base branch edited by the user"
@@ -960,6 +977,26 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       return account;
+    },
+    githubIpAllowListBlock: async (project, _args, ctx) => {
+      if (!project.githubRepositoryId) {
+        return null;
+      }
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("view_settings")) {
+        return null;
+      }
+      const installation =
+        await ctx.loaders.GithubRepositoryBestInstallation.load(
+          project.githubRepositoryId,
+        );
+      if (!installation?.ipAllowListBlockedAt) {
+        return null;
+      }
+      return {
+        staticIp: await checkInstallationUsesProxy(installation),
+        staticIpAddresses: getStaticIpAddresses(),
+      };
     },
     repository: async (project, _args, ctx) => {
       if (project.githubRepositoryId) {

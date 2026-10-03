@@ -11,6 +11,13 @@ import { GithubInstallation } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { checkOctokitErrorStatus } from "./error";
+import {
+  createIpAllowListError,
+  markInstallationIpAllowListBlocked,
+  parseIpAllowListOwner,
+  type IpAllowListOwner,
+} from "./ip-allow-list";
+import { checkInstallationUsesProxy } from "./static-ip";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -124,23 +131,20 @@ export async function getInstallationOctokit(
   installation: GithubInstallation,
   appOctokit?: Octokit,
 ): Promise<Octokit | null> {
+  const proxy = await checkInstallationUsesProxy(installation);
+
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = new Date(installation.githubTokenExpiresAt).getTime();
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
     const isExpired = expiredAt < now + delay;
     if (!isExpired) {
-      return getTokenOctokit({
-        token: installation.githubToken,
-        proxy: installation.proxy,
-      });
+      return getTokenOctokit({ token: installation.githubToken, proxy });
     }
   }
 
   const result = await authInstallation({
-    octokit:
-      appOctokit ??
-      getAppOctokit({ app: installation.app, proxy: installation.proxy }),
+    octokit: appOctokit ?? getAppOctokit({ app: installation.app, proxy }),
     installationId: installation.githubId,
   });
   switch (result.status) {
@@ -152,16 +156,26 @@ export async function getInstallationOctokit(
       });
       return null;
     }
+    case "ip_allow_list_blocked": {
+      await markInstallationIpAllowListBlocked({
+        installation,
+        owner: result.owner,
+        proxied: proxy,
+      });
+      throw createIpAllowListError({
+        owner: result.owner,
+        proxied: proxy,
+        cause: result.error,
+      });
+    }
     case "authenticated": {
       await GithubInstallation.query().findById(installation.id).patch({
         deleted: false,
         githubToken: result.token,
         githubTokenExpiresAt: result.expiresAt,
+        ipAllowListBlockedAt: null,
       });
-      return getTokenOctokit({
-        token: result.token,
-        proxy: installation.proxy,
-      });
+      return getTokenOctokit({ token: result.token, proxy });
     }
     default:
       assertNever(result);
@@ -181,6 +195,7 @@ async function authInstallation(args: {
   installationId: number;
 }): Promise<
   | { status: "deleted" }
+  | { status: "ip_allow_list_blocked"; owner: IpAllowListOwner; error: unknown }
   | { status: "authenticated"; token: string; expiresAt: string }
 > {
   const { octokit, installationId } = args;
@@ -196,8 +211,6 @@ async function authInstallation(args: {
       return { status: "deleted" };
     }
     if (checkOctokitErrorStatus(403, error)) {
-      // If error is a 403 and the error message is not about a suspended
-      // installation, we want to know what is it.
       if (error.message.includes("This installation has been suspended")) {
         throw boom(
           403,
@@ -209,6 +222,11 @@ async function authInstallation(args: {
           },
         );
       }
+      const owner = parseIpAllowListOwner(error.message);
+      if (owner) {
+        return { status: "ip_allow_list_blocked", owner, error };
+      }
+      // Any other 403 is unexpected, we want to know what it is.
     }
     throw error;
   }

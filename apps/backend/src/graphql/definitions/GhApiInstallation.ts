@@ -1,7 +1,11 @@
 import gqlTag from "graphql-tag";
 
 import { GithubInstallation } from "@/database/models/GithubInstallation";
-import { getInstallationOctokit, getTokenOctokit } from "@/github";
+import {
+  checkInstallationUsesProxy,
+  getInstallationOctokit,
+  getTokenOctokit,
+} from "@/github";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { checkUserAdministersLightInstallation } from "../services/github";
@@ -68,7 +72,7 @@ export const resolvers: IResolvers = {
           }
           const octokit = getTokenOctokit({
             token: githubAccount.accessToken,
-            proxy: installation.proxy,
+            proxy: await checkInstallationUsesProxy(installation),
           });
           return octokit.apps.listInstallationReposForAuthenticatedUser({
             installation_id: Number(args.installationId),

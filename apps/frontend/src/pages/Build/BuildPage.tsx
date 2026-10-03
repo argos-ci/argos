@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 
 import { PaymentBanner } from "@/containers/PaymentBanner";
+import { GithubIpAllowListBanner } from "@/containers/Project/GithubIpAllowListBanner";
 import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { graphql } from "@/gql";
@@ -31,6 +32,7 @@ const ProjectQuery = graphql(`
       ...BuildHeader_Project
       ...BuildWorkspace_Project
       ...BuildReviewDialog_Project
+      ...GithubIpAllowListBanner_Project
       permissions
       ignoreConfig {
         enabled
@@ -117,6 +119,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                         />
                       </>
                     )}
+                    {project && <GithubIpAllowListBanner project={project} />}
                     <BuildHeader
                       buildNumber={params.buildNumber}
                       accountSlug={params.accountSlug}

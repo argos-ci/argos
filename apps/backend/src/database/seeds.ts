@@ -2627,6 +2627,7 @@ async function createRevenueScenario(input: {
     fineGrainedAccessControlIncluded: true,
     customDomainsIncluded: true,
     samlIncluded: true,
+    staticIpIncluded: true,
     interval: "year",
   });
 
