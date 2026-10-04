@@ -5,7 +5,7 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database";
 import { Build, BuildShard, File, Screenshot, Test } from "@/database/models";
-import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
+import { checkIsStorybookScreenshot } from "@/util/argos-sdk";
 
 import { getUnknownFileKeys } from "./file";
 
@@ -263,9 +263,8 @@ export async function insertFilesAndScreenshots(
 
     return {
       all: screenshotsToInsert.length,
-      storybook: screenshotsToInsert.filter(
-        (screenshot) =>
-          screenshot.metadata?.sdk.name === ARGOS_STORYBOOK_SDK_NAME,
+      storybook: screenshotsToInsert.filter((screenshot) =>
+        checkIsStorybookScreenshot(screenshot.metadata),
       ).length,
     };
   });

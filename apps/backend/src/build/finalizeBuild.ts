@@ -4,7 +4,10 @@ import { TransactionOrKnex } from "objection";
 
 import { raw, transaction } from "@/database";
 import { Build, BuildShard, Screenshot } from "@/database/models";
-import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
+import {
+  ARGOS_STORYBOOK_SDK_NAME,
+  STORYBOOK_AUTOMATION_LIBRARIES,
+} from "@/util/argos-sdk";
 
 /**
  * Check if the bucket is valid from the metadata.
@@ -70,8 +73,8 @@ function aggregateMetadata(allMetatada: (BuildMetadata | null)[]) {
 }
 
 /**
- * Count the screenshots of a bucket, split between all of them and the ones
- * uploaded by the Storybook SDK.
+ * Count the screenshots of a bucket, split between all of them and the
+ * Storybook ones: the SQL counterpart of `checkIsStorybookScreenshot`.
  *
  * Both numbers come out of a single aggregate on purpose. Counting them with
  * two queries gives them two `READ COMMITTED` snapshots, so a screenshot
@@ -90,8 +93,11 @@ async function countBucketScreenshots(params: {
     .select(
       raw(`count(*)::int as "all"`),
       raw(
-        `count(*) filter (where metadata->'sdk'->>'name' = ?)::int as "storybook"`,
-        [ARGOS_STORYBOOK_SDK_NAME],
+        `count(*) filter (
+          where metadata->'sdk'->>'name' = ?
+            or metadata->'automationLibrary'->>'name' = any(?::text[])
+        )::int as "storybook"`,
+        [ARGOS_STORYBOOK_SDK_NAME, STORYBOOK_AUTOMATION_LIBRARIES],
       ),
     )
     .first()

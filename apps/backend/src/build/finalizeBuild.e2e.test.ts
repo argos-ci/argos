@@ -24,10 +24,13 @@ const test = base.extend<{ build: Build }>({
   },
 });
 
-function screenshotMetadata(sdkName: string) {
+function screenshotMetadata(
+  sdkName: string,
+  automationLibraryName = "playwright",
+) {
   return {
     sdk: { name: sdkName, version: "1.0.0" },
-    automationLibrary: { name: "playwright", version: "1.0.0" },
+    automationLibrary: { name: automationLibraryName, version: "1.0.0" },
   };
 }
 
@@ -56,6 +59,34 @@ describe("#finalizeBuild", () => {
     expect(bucket.complete).toBe(true);
     expect(bucket.screenshotCount).toBe(5);
     expect(bucket.storybookScreenshotCount).toBe(2);
+  });
+
+  test("counts screenshots of stories uploaded by other SDKs as Storybook ones", async ({
+    build,
+  }) => {
+    // `@argos-ci/vitest` reports Storybook as the automation library when the
+    // test renders a story, and Vitest otherwise.
+    await factory.Screenshot.createMany(2, {
+      screenshotBucketId: build.compareScreenshotBucketId,
+      metadata: screenshotMetadata("@argos-ci/vitest", "storybook"),
+    });
+    await factory.Screenshot.create({
+      screenshotBucketId: build.compareScreenshotBucketId,
+      metadata: screenshotMetadata(
+        "@argos-ci/vitest",
+        "@storybook/addon-vitest",
+      ),
+    });
+    await factory.Screenshot.createMany(3, {
+      screenshotBucketId: build.compareScreenshotBucketId,
+      metadata: screenshotMetadata("@argos-ci/vitest", "vitest"),
+    });
+
+    await finalizeBuild({ build });
+
+    const bucket = await getCompareBucket(build);
+    expect(bucket.screenshotCount).toBe(6);
+    expect(bucket.storybookScreenshotCount).toBe(3);
   });
 
   test("reads both counts in a single query", async ({ build }) => {
