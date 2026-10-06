@@ -60,6 +60,40 @@ function getCancelReason(
   return parts.join(": ");
 }
 
+/**
+ * Tell a trial that reached its scheduled end without a payment method (Stripe
+ * closes it through `trial_settings.end_behavior.missing_payment_method`) from
+ * a trial the team canceled: Stripe reports both as a `canceled` subscription
+ * with a `cancellation_requested` reason. A team that cancels ends the trial
+ * before its end date, or schedules it with `cancel_at`; an expiry does neither.
+ */
+function checkTrialExpired(stripeSubscription: Stripe.Subscription): boolean {
+  const { trial_end: trialEnd, ended_at: endedAt } = stripeSubscription;
+  return Boolean(
+    trialEnd && endedAt && endedAt >= trialEnd && !stripeSubscription.cancel_at,
+  );
+}
+
+/**
+ * Status to announce for a Stripe status change, so a trial that simply ran out
+ * is not reported as a team canceling.
+ */
+function getNotifiedStatus(args: {
+  status: Subscription["status"];
+  previousStatus: Subscription["status"];
+  stripeSubscription: Stripe.Subscription;
+}): Subscription["status"] | "trial_expired" {
+  const { status, previousStatus, stripeSubscription } = args;
+  if (
+    status === "canceled" &&
+    previousStatus === "trialing" &&
+    checkTrialExpired(stripeSubscription)
+  ) {
+    return "trial_expired";
+  }
+  return status;
+}
+
 function hasCancellationFeedbackUpdate(
   previousAttributes: Stripe.Event.Data.PreviousAttributes | undefined,
 ): boolean {
@@ -947,7 +981,11 @@ async function updateArgosSubscriptionFromStripe(
           .throwIfNotFound();
         await notifySubscriptionStatusUpdate({
           provider: "stripe",
-          status: data.status,
+          status: getNotifiedStatus({
+            status: data.status,
+            previousStatus: argosSubscription.status,
+            stripeSubscription,
+          }),
           previousStatus: argosSubscription.status,
           account,
         });
@@ -1154,7 +1192,11 @@ export async function handleStripeEvent({
           await notifySubscriptionStatusUpdate({
             provider: "stripe",
             previousStatus: argosSubscription.status,
-            status,
+            status: getNotifiedStatus({
+              status,
+              previousStatus: argosSubscription.status,
+              stripeSubscription,
+            }),
             account,
             cancelReason: getCancelReason(stripeSubscription),
           });

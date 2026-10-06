@@ -5,7 +5,16 @@ import { formatDiscordLink, getAccountUrl, notifyDiscord } from "@/discord";
 
 import { Account, type Subscription } from "../models";
 
-type SubscriptionStatus = Subscription["status"] | "cancel_scheduled";
+/**
+ * Statuses only used in notifications:
+ * - `cancel_scheduled`: the team asked to cancel at the end of the period.
+ * - `trial_expired`: the trial reached its scheduled end without a payment
+ *   method, so the subscription was closed without anyone canceling it.
+ */
+type SubscriptionStatus =
+  | Subscription["status"]
+  | "cancel_scheduled"
+  | "trial_expired";
 
 function getProviderName(provider: Subscription["provider"]) {
   switch (provider) {
@@ -39,10 +48,13 @@ function getStatusMessage(args: {
 
     case "canceled":
       if (previousStatus === "trialing") {
-        return `❌ Trial canceled`;
+        return `❌ Trial canceled by the team`;
       }
 
       return `❌ Subscription canceled`;
+
+    case "trial_expired":
+      return `⌛ Trial expired`;
 
     case "cancel_scheduled":
       return `⏳ Subscription has been marked to cancel`;
