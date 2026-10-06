@@ -8,6 +8,7 @@ import config from "@/config";
 import { Account, Plan, Subscription } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import {
+  type AmountDue,
   notifyPaymentMethodAdded,
   notifySubscriptionStatusUpdate,
 } from "@/database/services/subscription";
@@ -573,6 +574,39 @@ function checkIsBillableStatus(status: Subscription["status"]): boolean {
 }
 
 /**
+ * What a subscription that fell behind on payment owes: the unpaid part of its
+ * latest invoice, the one whose failed payment moved it to `past_due` or
+ * `unpaid`. Null for any other status.
+ *
+ * Best effort: the amount completes a status notification, which must still go
+ * out when Stripe cannot tell it.
+ */
+async function getAmountDue(
+  subscription: Pick<Subscription, "status" | "stripeSubscriptionId">,
+): Promise<AmountDue | null> {
+  const { status, stripeSubscriptionId } = subscription;
+  if ((status !== "past_due" && status !== "unpaid") || !stripeSubscriptionId) {
+    return null;
+  }
+  try {
+    const { latest_invoice: invoice } = await stripe.subscriptions.retrieve(
+      stripeSubscriptionId,
+      { expand: ["latest_invoice"] },
+    );
+    if (!invoice || typeof invoice === "string") {
+      return null;
+    }
+    return {
+      amount: invoice.amount_remaining / 100,
+      currency: invoice.currency,
+    };
+  } catch (error) {
+    captureException(error);
+    return null;
+  }
+}
+
+/**
  * End the trial period of a subscription immediately.
  */
 async function endStripeTrial(
@@ -692,12 +726,17 @@ export async function endTrialToUnlockUsage(
       // transition has never been announced. A transient failure here must
       // not fail the build that triggered the conversion.
       await Promise.all([
-        notifySubscriptionStatusUpdate({
-          provider: "stripe",
-          status: synced.status,
-          previousStatus: "trialing",
-          account,
-        }).catch((error) => captureException(error)),
+        getAmountDue(synced)
+          .then((amountDue) =>
+            notifySubscriptionStatusUpdate({
+              provider: "stripe",
+              status: synced.status,
+              previousStatus: "trialing",
+              account,
+              amountDue,
+            }),
+          )
+          .catch((error) => captureException(error)),
         synced.status === "active"
           ? notifyTrialEnded(account, synced).catch((error) =>
               captureException(error),
@@ -979,6 +1018,7 @@ async function updateArgosSubscriptionFromStripe(
         const account = await Account.query()
           .findById(argosSubscription.accountId)
           .throwIfNotFound();
+        const amountDue = await getAmountDue(data);
         await notifySubscriptionStatusUpdate({
           provider: "stripe",
           status: getNotifiedStatus({
@@ -988,6 +1028,7 @@ async function updateArgosSubscriptionFromStripe(
           }),
           previousStatus: argosSubscription.status,
           account,
+          amountDue,
         });
       } else if (notifyStatusUpdate && paymentMethodAddedDuringTrial) {
         const account = await Account.query()

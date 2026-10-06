@@ -8,6 +8,8 @@ import * as discord from "@/discord";
 import {
   CANCEL_SUBSCRIPTION_EVENT_PAYLOAD,
   CANCELLATION_FEEDBACK_UPDATED_SUBSCRIPTION_EVENT_PAYLOAD,
+  PAST_DUE_SUBSCRIPTION,
+  PAST_DUE_SUBSCRIPTION_EVENT_DATA,
   STRIPE_PRODUCT_ID,
   TRIALING_CUSTOMER_ID,
   TRIALING_SUBSCRIPTION_ID,
@@ -57,6 +59,59 @@ describe("handleStripeEvent", () => {
       const content = send.mock.calls[0][0].content;
       expect(content).toContain("Subscription has been marked to cancel");
       expect(content).toContain("Reason: too_expensive");
+    });
+
+    it("ends the past due notification with the amount due", async () => {
+      const send = vi
+        .spyOn(discord, "notifyDiscord")
+        .mockResolvedValue(undefined);
+      const retrieve = vi
+        .spyOn(stripe.subscriptions, "retrieve")
+        .mockResolvedValue(
+          PAST_DUE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+        );
+
+      await handleStripeEvent({
+        type: "customer.subscription.updated",
+        data: PAST_DUE_SUBSCRIPTION_EVENT_DATA,
+      });
+
+      expect(retrieve).toHaveBeenCalledWith(PAST_DUE_SUBSCRIPTION.id, {
+        expand: ["latest_invoice"],
+      });
+      expect(send).toHaveBeenCalledOnce();
+      if (send.mock.calls[0] === undefined) {
+        throw new Error("Expected notifyDiscord to be called with arguments");
+      }
+      const lines = send.mock.calls[0][0].content.split("\n");
+      expect(lines[0]).toContain("Subscription status changed to *past_due*");
+      expect(lines.at(-1)).toBe("💸 Amount due: $1,240.00");
+    });
+
+    it("still notifies a past due subscription when its invoice cannot be read", async () => {
+      const send = vi
+        .spyOn(discord, "notifyDiscord")
+        .mockResolvedValue(undefined);
+      vi.spyOn(stripe.subscriptions, "retrieve")
+        // The webhook reads the subscription...
+        .mockResolvedValueOnce(
+          PAST_DUE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+        )
+        // ...then Stripe fails when the notification reads the invoice.
+        .mockRejectedValueOnce(new Error("Stripe is unavailable"));
+
+      await handleStripeEvent({
+        type: "customer.subscription.updated",
+        data: PAST_DUE_SUBSCRIPTION_EVENT_DATA,
+      });
+
+      expect(send).toHaveBeenCalledOnce();
+      if (send.mock.calls[0] === undefined) {
+        throw new Error("Expected notifyDiscord to be called with arguments");
+      }
+      const content = send.mock.calls[0][0].content;
+      expect(content).toContain("Subscription status changed to *past_due*");
+      expect(content).not.toContain("Amount due");
     });
   });
 

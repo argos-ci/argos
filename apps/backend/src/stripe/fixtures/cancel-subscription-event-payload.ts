@@ -112,3 +112,25 @@ export const CANCELLATION_FEEDBACK_UPDATED_SUBSCRIPTION_EVENT_PAYLOAD = {
   type: "customer.subscription.updated",
   data: cancellationFeedbackUpdatedEventData,
 };
+
+/**
+ * A renewal whose payment failed: the subscription is past due and its latest
+ * invoice, expanded the way the notification reads it, is the one left unpaid.
+ */
+export const PAST_DUE_SUBSCRIPTION = {
+  ...subscription,
+  status: "past_due",
+  ended_at: null,
+  cancellation_details: { comment: null, feedback: null, reason: null },
+  latest_invoice: {
+    id: "in_past_due_test",
+    object: "invoice",
+    amount_remaining: 124000,
+    currency: "usd",
+  },
+} as unknown as Stripe.Subscription;
+
+export const PAST_DUE_SUBSCRIPTION_EVENT_DATA = {
+  object: PAST_DUE_SUBSCRIPTION,
+  previous_attributes: { status: "active" },
+} as unknown as Stripe.CustomerSubscriptionUpdatedEvent.Data;

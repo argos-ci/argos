@@ -16,6 +16,20 @@ type SubscriptionStatus =
   | "cancel_scheduled"
   | "trial_expired";
 
+/**
+ * What a team behind on payment owes, in the currency's major unit.
+ */
+export type AmountDue = {
+  amount: number;
+  currency: string;
+};
+
+function formatAmount({ amount, currency }: AmountDue): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+    amount,
+  );
+}
+
 function getProviderName(provider: Subscription["provider"]) {
   switch (provider) {
     case "stripe":
@@ -73,6 +87,7 @@ export async function notifySubscriptionStatusUpdate(args: {
   account: Account;
   previousStatus?: SubscriptionStatus;
   cancelReason?: string | undefined | null;
+  amountDue?: AmountDue | null;
 }) {
   const {
     provider,
@@ -80,6 +95,7 @@ export async function notifySubscriptionStatusUpdate(args: {
     account,
     previousStatus,
     cancelReason: reason,
+    amountDue,
   } = args;
 
   const providerName = getProviderName(provider);
@@ -91,6 +107,7 @@ export async function notifySubscriptionStatusUpdate(args: {
         `${providerName} • ${statusMessage}`,
         reason ? `📝 Reason: ${reason}` : "",
         ...formatAccountLines(account, provider),
+        amountDue ? `💸 Amount due: ${formatAmount(amountDue)}` : "",
       ]
         .filter(Boolean)
         .join("\n"),
