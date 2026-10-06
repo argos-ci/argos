@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Plan } from "@/database/models";
+import { Plan, Subscription } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -80,6 +80,68 @@ describe("handleStripeEvent", () => {
       expect(content).toContain(
         "Reason: too_expensive: The price jump was too sporadic.",
       );
+    });
+  });
+
+  describe("customer.subscription.deleted during a trial", () => {
+    const TRIAL_END = 1748458766;
+
+    async function deleteTrialingSubscription(
+      overrides: Partial<Stripe.Subscription>,
+    ) {
+      const send = vi
+        .spyOn(discord, "notifyDiscord")
+        .mockResolvedValue(undefined);
+      await Subscription.query().patch({ status: "trialing" }).where({
+        stripeSubscriptionId: CANCEL_SUBSCRIPTION_EVENT_PAYLOAD.data.object.id,
+      });
+
+      await handleStripeEvent({
+        type: "customer.subscription.deleted",
+        data: {
+          object: {
+            ...CANCEL_SUBSCRIPTION_EVENT_PAYLOAD.data.object,
+            cancellation_details: {
+              comment: null,
+              feedback: null,
+              reason: "cancellation_requested",
+            },
+            trial_end: TRIAL_END,
+            ...overrides,
+          },
+        } as Stripe.CustomerSubscriptionDeletedEvent.Data,
+      });
+
+      expect(send).toHaveBeenCalledOnce();
+      if (send.mock.calls[0] === undefined) {
+        throw new Error("Expected notifyDiscord to be called with arguments");
+      }
+      return send.mock.calls[0][0].content;
+    }
+
+    it("announces a trial that reached its end as ended, not canceled", async () => {
+      const content = await deleteTrialingSubscription({
+        ended_at: TRIAL_END,
+        cancel_at: null,
+      });
+      expect(content).toContain("Trial expired");
+      expect(content).not.toContain("canceled");
+    });
+
+    it("announces a trial the team ended early as canceled", async () => {
+      const content = await deleteTrialingSubscription({
+        ended_at: TRIAL_END - 3 * 24 * 60 * 60,
+        cancel_at: null,
+      });
+      expect(content).toContain("Trial canceled by the team");
+    });
+
+    it("announces a trial the team scheduled to cancel at its end as canceled", async () => {
+      const content = await deleteTrialingSubscription({
+        ended_at: TRIAL_END,
+        cancel_at: TRIAL_END,
+      });
+      expect(content).toContain("Trial canceled by the team");
     });
   });
 
