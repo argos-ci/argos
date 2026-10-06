@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Subscription } from "@/database/models";
 import type { Account, Plan } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import * as discord from "@/discord";
 import * as notification from "@/notification";
 import { redisLock } from "@/util/redis";
 
 import {
   ENDED_TRIAL_STRIPE_SUBSCRIPTION,
+  PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION,
   TRIAL_CONVERSION_TIMESTAMP,
   TRIAL_FLAT_PRICE,
   TRIAL_INCLUDED_SCREENSHOTS,
@@ -109,6 +111,36 @@ describe("endTrialToUnlockUsage", () => {
         recipients: [owner.id],
       }),
     );
+  });
+
+  it("announces the amount due when the conversion payment fails", async () => {
+    vi.spyOn(stripe.subscriptions, "update").mockResolvedValue(
+      PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+    );
+    vi.spyOn(stripe.subscriptions, "retrieve")
+      // Still trialing when the conversion starts...
+      .mockResolvedValueOnce(
+        TRIALING_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+      )
+      // ...and past due once the notification reads the unpaid invoice.
+      .mockResolvedValueOnce(
+        PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+      );
+    const send = vi
+      .spyOn(discord, "notifyDiscord")
+      .mockResolvedValue(undefined);
+    await createSubscription({});
+
+    // A past due subscription is still billable, the usage is unlocked.
+    await expect(endTrialToUnlockUsage(account)).resolves.toBe(true);
+
+    expect(send).toHaveBeenCalledOnce();
+    if (send.mock.calls[0] === undefined) {
+      throw new Error("Expected notifyDiscord to be called with arguments");
+    }
+    const lines = send.mock.calls[0][0].content.split("\n");
+    expect(lines[0]).toContain("Subscription status changed to *past_due*");
+    expect(lines.at(-1)).toBe("💸 Amount due: $250.00");
   });
 
   it("blocks the usage when no payment method is filled", async () => {

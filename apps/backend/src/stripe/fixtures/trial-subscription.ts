@@ -73,3 +73,18 @@ export const ENDED_TRIAL_STRIPE_SUBSCRIPTION = {
     url: "",
   },
 } as unknown as Stripe.Subscription;
+
+/**
+ * The same conversion when the card is declined: the trial still ends, but the
+ * subscription falls past due with its first invoice left unpaid.
+ */
+export const PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION = {
+  ...(ENDED_TRIAL_STRIPE_SUBSCRIPTION as unknown as Record<string, unknown>),
+  status: "past_due",
+  latest_invoice: {
+    id: "in_trial_test",
+    object: "invoice",
+    amount_remaining: TRIAL_FLAT_PRICE * 100,
+    currency: "usd",
+  },
+} as unknown as Stripe.Subscription;
