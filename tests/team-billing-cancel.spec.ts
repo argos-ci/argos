@@ -89,6 +89,11 @@ loggedTest(
     await expect(
       dialog.getByRole("link", { name: "book a 15-minute call" }),
     ).toHaveCount(1);
+    // Clicking an option while the list is still animating in makes Playwright
+    // retry, and every retry scrolls the page with a different alignment, so
+    // it ends up wherever the number of retries left it. The dialog is fixed:
+    // a full-page capture draws it at that offset.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await screenshot(page, "cancel-subscription-price-offer");
   },
 );

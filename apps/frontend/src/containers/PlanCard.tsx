@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { isSameYear } from "@argos/util/date";
-import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { PlusCircleIcon } from "lucide-react";
 
@@ -226,7 +225,7 @@ function PlanStatus(props: {
             return (
               <CardParagraph className="text-low">
                 The next payment will occur on{" "}
-                {formatDate(new Date(account.periodEndDate), "longDate")}.
+                <Time date={account.periodEndDate} format="longDate" />.
               </CardParagraph>
             );
           })()}
