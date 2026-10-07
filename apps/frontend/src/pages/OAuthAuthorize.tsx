@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { isHttpUri, isSafeUri } from "@argos/util/url";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
+import { clsx } from "clsx";
 import {
   Building2Icon,
   CheckCheckIcon,
@@ -14,13 +17,20 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import {
+  useController,
+  useForm,
+  useWatch,
+  type Control,
+  type SubmitHandler,
+} from "react-hook-form";
 import { Navigate, useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAuth } from "@/containers/Auth";
 import { OAuthAppLogo, VerifiedBadge } from "@/containers/OAuthAppLogo";
 import { graphql, type DocumentType } from "@/gql";
+import { OAuthScopeLevel } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Button, LinkButton } from "@/ui/Button";
@@ -31,6 +41,18 @@ import { Container } from "@/ui/Container";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { Tooltip } from "@/ui/Tooltip";
+import {
+  getConsentPresets,
+  getConsentStorageKey,
+  getGrantedScopes,
+  getInitialConsentValues,
+  getRememberedConsent,
+  rememberConsent,
+  REQUIRED_SCOPES,
+  type ConsentAccess,
+  type ConsentPreset,
+  type ConsentValues,
+} from "@/util/oauth-consent";
 
 const ConsentQuery = graphql(`
   query OAuthAuthorize_Consent(
@@ -56,6 +78,7 @@ const ConsentQuery = graphql(`
         scope
         title
         description
+        level
       }
     }
     me {
@@ -108,9 +131,25 @@ type ConsentData = NonNullable<
 >;
 type Me = NonNullable<DocumentType<typeof ConsentQuery>["me"]>;
 
-type Inputs = { accountIds: string[]; scopes: string[] };
-
 type ConsentScope = ConsentData["scopes"][number];
+
+const PRESETS: Record<OAuthScopeLevel, { label: string; description: string }> =
+  {
+    [OAuthScopeLevel.Read]: {
+      label: "Read only",
+      description: "View projects, builds, comments and media.",
+    },
+    [OAuthScopeLevel.Write]: {
+      label: "Read and write",
+      description:
+        "Also upload builds, review changes, comment and upload media.",
+    },
+    [OAuthScopeLevel.Admin]: {
+      label: "Admin",
+      description:
+        "Also create and configure projects, and manage organizations.",
+    },
+  };
 
 /** Presentation for each scope group (keyed by the scope's resource prefix). */
 const SCOPE_GROUPS: Record<string, { label: string; icon: LucideIcon }> = {
@@ -129,12 +168,6 @@ type ScopeGroup = {
   icon: LucideIcon;
   scopes: ConsentScope[];
 };
-
-/**
- * Scopes the user cannot uncheck. `profile` (identity) is always granted so the
- * application knows who authorized it — downgrading it would break every flow.
- */
-const REQUIRED_SCOPES = new Set<string>(["profile"]);
 
 /**
  * Group requested scopes by their resource (the part before `:`) so the consent
@@ -156,6 +189,155 @@ function groupScopes(scopes: readonly ConsentScope[]): ScopeGroup[] {
   return groups;
 }
 
+function AccessOption(props: {
+  value: ConsentAccess;
+  label: string;
+  description: string;
+}) {
+  const { value, label, description } = props;
+  const labelId = useId();
+  const descriptionId = useId();
+  return (
+    // Base UI renders each radio's hidden input beside it: without a wrapper,
+    // the input would count as a row of the list and draw its own divider.
+    <div>
+      <Radio.Root
+        value={value}
+        aria-labelledby={labelId}
+        aria-describedby={descriptionId}
+        className={clsx(
+          "group/option flex w-full cursor-default items-start gap-3 px-4 py-3 select-none",
+          "data-checked:bg-primary-subtle not-data-checked:hover:bg-subtle",
+          "focus-visible:ring-primary-active focus-visible:ring-2 focus-visible:outline-hidden focus-visible:ring-inset",
+        )}
+      >
+        <span
+          aria-hidden="true"
+          className={clsx(
+            "border-primary mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+            "group-data-checked/option:border-primary-active group-data-checked/option:bg-primary-solid",
+          )}
+        >
+          <span className="hidden size-1.5 rounded-full bg-white group-data-checked/option:block" />
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span id={labelId} className="text-sm font-medium">
+            {label}
+          </span>
+          <span id={descriptionId} className="text-low text-xs">
+            {description}
+          </span>
+        </span>
+      </Radio.Root>
+    </div>
+  );
+}
+
+function AccessField(props: {
+  control: Control<ConsentValues>;
+  presets: readonly ConsentPreset[];
+  canCustomize: boolean;
+  onCustomize: (from: OAuthScopeLevel) => void;
+}) {
+  const { control, presets, canCustomize, onCustomize } = props;
+  const { field } = useController({ control, name: "access" });
+  const labelId = useId();
+  return (
+    <div className="flex flex-col gap-2">
+      <div id={labelId} className="text-sm font-semibold">
+        Permissions
+      </div>
+      <RadioGroup
+        aria-labelledby={labelId}
+        value={field.value}
+        onValueChange={(value) => {
+          if (value === "custom" && field.value !== "custom") {
+            onCustomize(field.value);
+          }
+          field.onChange(value);
+        }}
+        className="border-thin divide-y-thin overflow-hidden rounded-lg"
+      >
+        {presets.map((preset) => (
+          <AccessOption
+            key={preset.level}
+            value={preset.level}
+            {...PRESETS[preset.level]}
+          />
+        ))}
+        {canCustomize && (
+          <AccessOption
+            value="custom"
+            label="Custom"
+            description="Pick individual permissions."
+          />
+        )}
+      </RadioGroup>
+    </div>
+  );
+}
+
+function CustomScopesField(props: {
+  control: Control<ConsentValues>;
+  scopes: readonly ConsentScope[];
+  clientName: string;
+}) {
+  const { control, scopes, clientName } = props;
+  return (
+    <CheckboxGroupField
+      control={control}
+      name="customScopes"
+      aria-label="Custom permissions"
+    >
+      <div className="flex flex-col gap-4">
+        {groupScopes(scopes).map((group) => {
+          const Icon = group.icon;
+          return (
+            <section key={group.key} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Icon className="text-low size-4 shrink-0" />
+                <span className="text-sm font-semibold">{group.label}</span>
+              </div>
+              <div className="flex flex-col gap-2 pl-6">
+                {group.scopes.map((scope) => {
+                  // Required scopes (e.g. profile) can't be unchecked: show a
+                  // lock with a tooltip instead of a checkbox.
+                  if (REQUIRED_SCOPES.has(scope.scope)) {
+                    return (
+                      <div
+                        key={scope.scope}
+                        className="flex items-center gap-2"
+                      >
+                        <Tooltip
+                          content={`${clientName} always needs your profile to know who authorized it, so it can’t be turned off.`}
+                        >
+                          <button
+                            type="button"
+                            aria-label="Always granted"
+                            className="text-low focus-visible:ring-primary flex size-4 shrink-0 cursor-help items-center justify-center rounded-sm outline-none focus-visible:ring-2"
+                          >
+                            <LockIcon className="size-3.5" />
+                          </button>
+                        </Tooltip>
+                        <span className="text-sm">{scope.description}</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <Checkbox key={scope.scope} value={scope.scope}>
+                      <span className="text-sm">{scope.description}</span>
+                    </Checkbox>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </CheckboxGroupField>
+  );
+}
+
 function ConsentForm(props: {
   params: OAuthParams;
   consent: ConsentData;
@@ -170,19 +352,26 @@ function ConsentForm(props: {
     ...me.teams,
   ];
   const isSingleAccount = availableAccounts.length === 1;
-
-  const form = useForm<Inputs>({
-    defaultValues: {
-      // All accessible accounts are checked by default; the user may uncheck
-      // any to narrow the grant.
-      accountIds: availableAccounts.map((account) => account.id),
-      // All requested scopes are checked by default; the user may uncheck any to
-      // grant a narrower set (OAuth 2.1 / RFC 6749 §3.3 downscoping).
-      scopes: consent.scopes.map((scope) => scope.scope),
-    },
+  const presets = getConsentPresets(consent.scopes);
+  const canCustomize = consent.scopes.some(
+    (scope) => !REQUIRED_SCOPES.has(scope.scope),
+  );
+  const storageKey = getConsentStorageKey({
+    userId: me.id,
+    client: consent.client,
   });
 
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+  const [defaultValues] = useState(() =>
+    getInitialConsentValues({
+      scopes: consent.scopes,
+      accountIds: availableAccounts.map((account) => account.id),
+      remembered: getRememberedConsent(storageKey),
+    }),
+  );
+  const form = useForm<ConsentValues>({ defaultValues });
+  const access = useWatch({ control: form.control, name: "access" });
+
+  const onSubmit: SubmitHandler<ConsentValues> = async (data) => {
     const accountIds = isSingleAccount ? [me.id] : data.accountIds;
     if (accountIds.length === 0) {
       form.setError("accountIds", {
@@ -191,14 +380,13 @@ function ConsentForm(props: {
       });
       return;
     }
-    // Required scopes (e.g. profile) aren't toggleable checkboxes, so add them
-    // back explicitly — react-aria drops values with no checkbox on change.
-    const requiredScopes = consent.scopes
-      .map((scope) => scope.scope)
-      .filter((scope) => REQUIRED_SCOPES.has(scope));
-    const scopes = Array.from(new Set([...requiredScopes, ...data.scopes]));
+    const scopes = getGrantedScopes({
+      scopes: consent.scopes,
+      access: data.access,
+      customScopes: data.customScopes,
+    });
     if (scopes.length === 0) {
-      form.setError("scopes", {
+      form.setError("customScopes", {
         type: "validate",
         message: "Select at least one permission to grant",
       });
@@ -226,6 +414,12 @@ function ConsentForm(props: {
         setStatus("error");
         return;
       }
+      rememberConsent(storageKey, {
+        access: data.access,
+        scopes,
+        accountIds:
+          accountIds.length === availableAccounts.length ? "all" : accountIds,
+      });
       window.location.href = redirectUri;
     } catch {
       setStatus("error");
@@ -257,7 +451,7 @@ function ConsentForm(props: {
       </div>
 
       <div className="text-center">
-        <h1 className="flex items-center justify-center gap-2 text-2xl font-semibold">
+        <h1 className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-2xl font-semibold">
           Authorize {consent.client.name}
           {consent.client.verified && <VerifiedBadge scale="sm" />}
         </h1>
@@ -269,97 +463,67 @@ function ConsentForm(props: {
 
       <Form form={form} onSubmit={onSubmit} className="w-full">
         <Card className="w-full">
-          <CardBody className="flex flex-col gap-5">
-            <div className="flex flex-col gap-1">
-              <p className="text-sm">
-                <span className="text-default font-medium">
-                  {consent.client.name}
-                </span>{" "}
-                will be able to:
-              </p>
-              <p className="text-low text-xs">
-                Uncheck anything you don’t want to grant.
-              </p>
+          <CardBody className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+              {presets.length > 1 || canCustomize ? (
+                <AccessField
+                  control={form.control}
+                  presets={presets}
+                  canCustomize={canCustomize}
+                  onCustomize={(level) => {
+                    // Start from what the preset grants. Required scopes have
+                    // no checkbox, and are added back on submit.
+                    form.setValue(
+                      "customScopes",
+                      getGrantedScopes({
+                        scopes: consent.scopes,
+                        access: level,
+                        customScopes: [],
+                      }).filter((scope) => !REQUIRED_SCOPES.has(scope)),
+                    );
+                  }}
+                />
+              ) : (
+                <section className="flex flex-col gap-2">
+                  <div className="text-sm font-semibold">Permissions</div>
+                  <ul className="flex flex-col gap-1 text-sm">
+                    {consent.scopes.map((scope) => (
+                      <li key={scope.scope}>{scope.description}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {access === "custom" && (
+                <>
+                  <CustomScopesField
+                    control={form.control}
+                    scopes={consent.scopes}
+                    clientName={consent.client.name}
+                  />
+                  {form.formState.errors.customScopes && (
+                    <ErrorMessage>
+                      {form.formState.errors.customScopes.message}
+                    </ErrorMessage>
+                  )}
+                </>
+              )}
             </div>
 
-            <CheckboxGroupField control={form.control} name="scopes">
-              <div className="flex flex-col gap-4">
-                {groupScopes(consent.scopes).map((group) => {
-                  const Icon = group.icon;
-                  return (
-                    <section key={group.key} className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Icon className="text-low size-4 shrink-0" />
-                        <span className="text-sm font-semibold">
-                          {group.label}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2 pl-6">
-                        {group.scopes.map((scope) => {
-                          // Required scopes (e.g. profile) can't be unchecked:
-                          // show a lock with a tooltip instead of a checkbox.
-                          if (REQUIRED_SCOPES.has(scope.scope)) {
-                            return (
-                              <div
-                                key={scope.scope}
-                                className="flex items-center gap-2"
-                              >
-                                <Tooltip
-                                  content={`${consent.client.name} always needs your profile to know who authorized it, so it can’t be turned off.`}
-                                >
-                                  <button
-                                    type="button"
-                                    aria-label="Always granted"
-                                    className="text-low focus-visible:ring-primary flex size-4 shrink-0 cursor-help items-center justify-center rounded-sm outline-none focus-visible:ring-2"
-                                  >
-                                    <LockIcon className="size-3.5" />
-                                  </button>
-                                </Tooltip>
-                                <span className="text-sm">
-                                  {scope.description}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return (
-                            <Checkbox key={scope.scope} value={scope.scope}>
-                              <span className="text-sm">
-                                {scope.description}
-                              </span>
-                            </Checkbox>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </CheckboxGroupField>
-            {form.formState.errors.scopes && (
-              <ErrorMessage>
-                {form.formState.errors.scopes.message}
-              </ErrorMessage>
-            )}
-
-            <div className="border-default border-t" />
-
             <section className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <Building2Icon className="text-low size-4 shrink-0" />
-                <span className="text-sm font-semibold">Accounts</span>
-              </div>
+              <div className="text-sm font-semibold">Accounts</div>
               {isSingleAccount ? (
-                <div className="flex items-center gap-2 pl-6 text-sm">
+                <div className="flex items-center gap-2 text-sm">
                   <AccountAvatar avatar={me.avatar} className="size-5" />
                   <span>{me.name ?? me.slug}</span>
                   <span className="text-low">@{me.slug}</span>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 pl-6">
-                  <p className="text-low text-xs">
-                    Choose which accounts {consent.client.name} can access.
-                  </p>
-                  <CheckboxGroupField control={form.control} name="accountIds">
+                <>
+                  <CheckboxGroupField
+                    control={form.control}
+                    name="accountIds"
+                    aria-label="Accounts"
+                  >
                     {availableAccounts.map((account) => (
                       <Checkbox key={account.id} value={account.id}>
                         <AccountAvatar
@@ -380,7 +544,7 @@ function ConsentForm(props: {
                       {form.formState.errors.accountIds.message}
                     </ErrorMessage>
                   )}
-                </div>
+                </>
               )}
             </section>
           </CardBody>
@@ -463,6 +627,18 @@ function AuthorizeLoader(props: { params: OAuthParams }) {
         <AlertText>
           The redirect URL is not registered for {consent.client.name}, so this
           request cannot be completed safely.
+        </AlertText>
+      </Alert>
+    );
+  }
+
+  if (consent.scopes.length === 0) {
+    return (
+      <Alert>
+        <AlertTitle>No permissions requested</AlertTitle>
+        <AlertText>
+          {consent.client.name} did not ask for any permission Argos supports,
+          so there is nothing to authorize.
         </AlertText>
       </Alert>
     );

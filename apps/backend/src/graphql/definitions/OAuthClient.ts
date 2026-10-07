@@ -6,13 +6,31 @@ import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
 import { getKnownApp } from "@/oauth/known-apps";
 import { isKnownResource, normalizeResource } from "@/oauth/metadata";
-import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
+import {
+  isOAuthScope,
+  OAUTH_SCOPES,
+  parseScopeString,
+  type OAuthScopeLevel,
+} from "@/oauth/scopes";
 
-import type { IResolvers } from "../__generated__/resolver-types";
+import {
+  IOAuthScopeLevel,
+  type IResolvers,
+} from "../__generated__/resolver-types";
 import { getAccessibleAccounts } from "../services/account";
 import { badUserInput, forbidden } from "../util";
 
 const { gql } = gqlTag;
+
+/**
+ * A string literal is not assignable to a TypeScript string enum, so the
+ * catalog's levels cross into the generated enum here instead of being cast.
+ */
+const SCOPE_LEVELS = {
+  read: IOAuthScopeLevel.Read,
+  write: IOAuthScopeLevel.Write,
+  admin: IOAuthScopeLevel.Admin,
+} as const satisfies Record<OAuthScopeLevel, IOAuthScopeLevel>;
 
 export const typeDefs = gql`
   "Public metadata about an OAuth application."
@@ -30,11 +48,19 @@ export const typeDefs = gql`
     homepage: String
   }
 
+  "How much a scope lets an application do."
+  enum OAuthScopeLevel {
+    read
+    write
+    admin
+  }
+
   "A single scope requested on the consent screen."
   type OAuthConsentScope {
     scope: String!
     title: String!
     description: String!
+    level: OAuthScopeLevel!
   }
 
   "Everything the consent screen needs to render an authorization request."
@@ -103,6 +129,7 @@ export const resolvers: IResolvers = {
         scope,
         title: OAUTH_SCOPES[scope].title,
         description: OAUTH_SCOPES[scope].description,
+        level: SCOPE_LEVELS[OAUTH_SCOPES[scope].level],
       }));
       return {
         client,
