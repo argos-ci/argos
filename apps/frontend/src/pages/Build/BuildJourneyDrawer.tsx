@@ -4,6 +4,7 @@ import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 import {
   type DiffGroupName,
   getDiffGroupDefinition,
+  getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -66,8 +67,11 @@ const ATTENTION_STATUSES = [
  */
 function getAttentionLabels(
   step: ActiveDiffJourney["steps"][number],
+  context: { isSubsetBuild: boolean },
 ): string[] {
-  const statuses = new Set(step.diffs.map((diff) => diff.status));
+  const statuses = new Set(
+    step.diffs.map((diff) => getDiffStatusGroup(diff.status, context)),
+  );
   return ATTENTION_STATUSES.filter((status) => statuses.has(status)).map(
     (status) => getDiffGroupDefinition(status).label,
   );
@@ -81,7 +85,7 @@ function getAttentionLabels(
 export function BuildJourneyDrawer() {
   const { visible } = useJourneyDrawerState();
   const journey = useActiveDiffJourney();
-  const { activeDiff, setActiveDiff } = useBuildDiffState();
+  const { activeDiff, setActiveDiff, isSubsetBuild } = useBuildDiffState();
   if (!visible || !journey || !activeDiff) {
     return null;
   }
@@ -104,7 +108,7 @@ export function BuildJourneyDrawer() {
             return null;
           }
           const isActive = index === journey.stepIndex;
-          const attentionLabels = getAttentionLabels(step);
+          const attentionLabels = getAttentionLabels(step, { isSubsetBuild });
           return (
             <div key={step.key} className="flex shrink-0 items-center gap-0.5">
               {index > 0 && (

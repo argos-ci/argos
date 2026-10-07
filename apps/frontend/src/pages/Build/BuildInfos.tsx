@@ -305,7 +305,8 @@ export function BuildInfos(props: {
             Subset
             <Description>
               This build is marked as "subset", meaning only some snapshots were
-              uploaded. Missing snapshots are ignored when computing changes.
+              uploaded. The ones it did not upload are listed as skipped and
+              ignored when computing changes.
             </Description>
           </Dd>
         </>

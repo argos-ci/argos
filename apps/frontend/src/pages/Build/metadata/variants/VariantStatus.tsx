@@ -1,5 +1,6 @@
 import {
   getDiffGroupDefinition,
+  getDiffStatusGroup,
   type DiffGroupColor,
 } from "@/containers/Build/BuildDiffGroup";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -19,12 +20,16 @@ export type VariantStatus =
   | ScreenshotDiffStatus.Removed;
 
 /** What landing on `diff` would show, or `null` if that is nothing to review. */
-export function getVariantStatus(diff: Diff): VariantStatus | null {
-  switch (diff.status) {
+export function getVariantStatus(
+  diff: Diff,
+  context: { isSubsetBuild: boolean },
+): VariantStatus | null {
+  const group = getDiffStatusGroup(diff.status, context);
+  switch (group) {
     case ScreenshotDiffStatus.Added:
     case ScreenshotDiffStatus.Changed:
     case ScreenshotDiffStatus.Removed:
-      return diff.status;
+      return group;
     default:
       return null;
   }
