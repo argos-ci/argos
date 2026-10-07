@@ -7,52 +7,73 @@
  * do — never widen it.
  */
 
+/**
+ * How much a scope lets an application do. The consent screen offers one
+ * preset per level, each granting every requested scope up to that level.
+ */
+export type OAuthScopeLevel = "read" | "write" | "admin";
+
 export const OAUTH_SCOPES = {
   profile: {
     title: "Profile",
     description: "Read your Argos profile and the list of teams you belong to.",
+    level: "read",
   },
   "projects:read": {
     title: "Read projects",
     description:
       "Read your projects, builds, screenshots, diffs, tests, and analytics.",
+    level: "read",
   },
   "projects:write": {
     title: "Manage projects",
     description: "Create and configure projects and their settings.",
+    // Every endpoint behind it — creating, configuring and transferring a
+    // project, managing its contributors — requires administrator access.
+    level: "admin",
   },
   "builds:write": {
     title: "Upload builds",
     description: "Create and upload builds and screenshots.",
+    level: "write",
   },
   "reviews:write": {
     title: "Review builds",
     description:
       "Approve, reject, or dismiss build reviews and ignore changes.",
+    level: "write",
   },
   "comments:read": {
     title: "Read comments",
     description: "Read build comments and threads.",
+    level: "read",
   },
   "comments:write": {
     title: "Write comments",
     description:
       "Post, edit, and delete comments, add reactions, and manage subscriptions.",
+    level: "write",
   },
   "media:read": {
     title: "Read media",
     description: "Read the images and videos uploaded to your teams.",
+    level: "read",
   },
   "media:write": {
     title: "Upload media",
     description:
       "Upload images and videos, and delete the ones already uploaded.",
+    level: "write",
   },
   "account:admin": {
     title: "Administer organizations",
     description: "Manage organization settings and members.",
+    level: "admin",
   },
-} as const satisfies Record<string, { title: string; description: string }>;
+} as const satisfies Record<
+  string,
+  { title: string; description: string; level: OAuthScopeLevel }
+>;
 
 export type OAuthScope = keyof typeof OAUTH_SCOPES;
 

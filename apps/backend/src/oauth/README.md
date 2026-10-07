@@ -33,8 +33,13 @@ tokens rotate and reuse of a rotated token revokes the whole grant.
 
 See `scopes.ts`. Medium-grained `resource:action`: `profile`, `projects:read`,
 `projects:write`, `builds:write`, `reviews:write`, `comments:read`,
-`comments:write`, `account:admin`. Consent also binds the token to the specific
-organizations the user selects.
+`comments:write`, `media:read`, `media:write`, `account:admin`. Consent also
+binds the token to the specific organizations the user selects.
+
+Each scope has a level — `read`, `write` or `admin` — and the consent screen
+offers one preset per level ("Read only", "Read and write", "Admin"), each
+granting every requested scope up to it, plus a "Custom" choice of individual
+scopes. The browser remembers the last choice per user and application.
 
 ## CLI login (loopback authorization-code + PKCE, RFC 8252)
 
