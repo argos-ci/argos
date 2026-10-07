@@ -45,8 +45,9 @@ function getColorSchemeLabel(colorScheme: ScreenshotMetadataColorScheme) {
 export function ColorSchemeSwitcher(props: {
   diff: Diff;
   siblingDiffs: Diff[];
+  isSubsetBuild: boolean;
 }) {
-  const { diff, siblingDiffs } = props;
+  const { diff, siblingDiffs, isSubsetBuild } = props;
   const getDiffPath = useGetDiffPath();
   const metadata = resolveDiffMetadata(diff);
   const colorSchemes = getUniqueColorSchemes(
@@ -73,7 +74,7 @@ export function ColorSchemeSwitcher(props: {
           <ColorSchemeLinkButton
             key={colorScheme}
             colorScheme={colorScheme}
-            status={getVariantStatus(resolvedDiff)}
+            status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
             href={getDiffPath(resolvedDiff.id) ?? ""}
           />

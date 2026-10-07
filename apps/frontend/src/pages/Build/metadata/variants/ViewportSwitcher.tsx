@@ -28,8 +28,12 @@ import {
   type VariantStatus,
 } from "./VariantStatus";
 
-export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
-  const { diff, siblingDiffs } = props;
+export function ViewportSwitcher(props: {
+  diff: Diff;
+  siblingDiffs: Diff[];
+  isSubsetBuild: boolean;
+}) {
+  const { diff, siblingDiffs, isSubsetBuild } = props;
   const getDiffPath = useGetDiffPath();
   const metadata = resolveDiffMetadata(diff);
   const viewports = getUniqueViewports(
@@ -59,7 +63,7 @@ export function ViewportSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
           <ViewportLinkButton
             key={key}
             viewport={viewport}
-            status={getVariantStatus(resolvedDiff)}
+            status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}

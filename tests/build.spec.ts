@@ -140,6 +140,8 @@ loggedTest(
     // deleted": they must not show up as something to review.
     await expect(page.getByText("A single visual change")).toBeVisible();
     await expect(page.getByText("2 removed")).toHaveCount(0);
+    await expect(page.getByText("Skipped", { exact: true })).toBeVisible();
+    await expect(page.getByText("Removed", { exact: true })).toHaveCount(0);
   },
 );
 

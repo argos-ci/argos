@@ -13,7 +13,7 @@ import { ViewportSwitcher } from "./ViewportSwitcher";
  */
 export function VariantSwitchers(props: { diff: Diff }) {
   const { diff } = props;
-  const { siblingDiffs } = useBuildDiffState();
+  const { siblingDiffs, isSubsetBuild } = useBuildDiffState();
   return (
     // Named, because the switchers would otherwise be a bare run of buttons in
     // the middle of the toolbar, indistinguishable from the pane controls.
@@ -30,10 +30,26 @@ export function VariantSwitchers(props: { diff: Diff }) {
       aria-label="Snapshot variants"
       className="flex min-w-[min(100%,fit-content)] flex-wrap items-center justify-end gap-1.5 empty:hidden"
     >
-      <BrowserSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-      <ViewportSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-      <ColorSchemeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
-      <StoryModeSwitcher diff={diff} siblingDiffs={siblingDiffs} />
+      <BrowserSwitcher
+        diff={diff}
+        siblingDiffs={siblingDiffs}
+        isSubsetBuild={isSubsetBuild}
+      />
+      <ViewportSwitcher
+        diff={diff}
+        siblingDiffs={siblingDiffs}
+        isSubsetBuild={isSubsetBuild}
+      />
+      <ColorSchemeSwitcher
+        diff={diff}
+        siblingDiffs={siblingDiffs}
+        isSubsetBuild={isSubsetBuild}
+      />
+      <StoryModeSwitcher
+        diff={diff}
+        siblingDiffs={siblingDiffs}
+        isSubsetBuild={isSubsetBuild}
+      />
     </div>
   );
 }

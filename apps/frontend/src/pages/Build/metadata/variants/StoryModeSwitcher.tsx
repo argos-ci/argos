@@ -22,8 +22,12 @@ import {
   type VariantStatus,
 } from "./VariantStatus";
 
-export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
-  const { diff, siblingDiffs } = props;
+export function StoryModeSwitcher(props: {
+  diff: Diff;
+  siblingDiffs: Diff[];
+  isSubsetBuild: boolean;
+}) {
+  const { diff, siblingDiffs, isSubsetBuild } = props;
   const getDiffPath = useGetDiffPath();
   const metadata = resolveDiffMetadata(diff);
   const storyModes = getUniqueStoryModes(
@@ -52,7 +56,7 @@ export function StoryModeSwitcher(props: { diff: Diff; siblingDiffs: Diff[] }) {
           <StoryModeLinkButton
             key={mode}
             mode={mode}
-            status={getVariantStatus(resolvedDiff)}
+            status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             aria-current={isActive ? "page" : undefined}
             href={getDiffPath(resolvedDiff.id) ?? ""}
             shortcutEnabled={isNextActive}

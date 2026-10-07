@@ -18,6 +18,8 @@ import { useNavigate } from "react-router";
 import {
   checkIsDiffGroupName,
   DIFF_GROUPS,
+  getDiffStatusGroup,
+  SKIPPED_DIFF_GROUP,
   type DiffGroup,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
@@ -546,13 +548,16 @@ function useDataState(props: {
 function groupDiffs(
   diffs: Diff[],
   reviewStatuses: Record<string, EvaluationStatus>,
+  context: { isSubsetBuild: boolean },
 ): DiffGroup<Diff>[] {
   const diffByGroups = diffs.reduce<
     Partial<Record<DiffGroupName, DiffGroup<Diff>>>
   >((groups, diff) => {
     const reviewStatus = reviewStatuses[diff.id] ?? EvaluationStatus.Pending;
     const diffGroupName =
-      reviewStatus === EvaluationStatus.Pending ? diff.status : reviewStatus;
+      reviewStatus === EvaluationStatus.Pending
+        ? getDiffStatusGroup(diff.status, context)
+        : reviewStatus;
     if (checkIsDiffGroupName(diffGroupName)) {
       const group = groups[diffGroupName] ?? {
         name: diffGroupName,
@@ -633,6 +638,7 @@ const INITIAL_SEARCH_EXPANDED = [
   ScreenshotDiffStatus.Removed,
   ScreenshotDiffStatus.Unchanged,
   ScreenshotDiffStatus.RetryFailure,
+  SKIPPED_DIFF_GROUP,
 ];
 
 const INITIAL_SUBSET_EXPANDED = [
@@ -800,7 +806,21 @@ export function BuildDiffProvider(props: {
 
   const screenshotDiffs = indices.noParentName;
   const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
-  const firstDiff = screenshotDiffs[0] ?? null;
+  const isSubsetBuild = build?.subset ?? false;
+  const firstDiff = useMemo(() => {
+    // The server sorts skipped snapshots with the removed ones, before the
+    // unchanged: the first pages of a subset build can hold nothing else, so
+    // wait for one that brings a snapshot that was run.
+    if (isSubsetBuild) {
+      const candidate = screenshotDiffs.find(
+        (diff) => diff.status !== ScreenshotDiffStatus.Removed,
+      );
+      if (candidate || !complete) {
+        return candidate ?? null;
+      }
+    }
+    return screenshotDiffs[0] ?? null;
+  }, [screenshotDiffs, isSubsetBuild, complete]);
   const firstDiffId = firstDiff?.id ?? null;
 
   const searcher = useMemo(() => {
@@ -869,8 +889,10 @@ export function BuildDiffProvider(props: {
   );
 
   const groups = useMemo(() => {
-    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
-  }, [filteredDiffs, reviewState?.diffStatuses]);
+    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {}, {
+      isSubsetBuild,
+    });
+  }, [filteredDiffs, reviewState?.diffStatuses, isSubsetBuild]);
 
   const sortedDiffs = useMemo(() => {
     return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
@@ -941,8 +963,6 @@ export function BuildDiffProvider(props: {
     results.length === 0 &&
     screenshotDiffs.length > 0,
   );
-
-  const isSubsetBuild = build?.subset ?? false;
 
   const value = useMemo(
     (): BuildDiffContextValue => ({

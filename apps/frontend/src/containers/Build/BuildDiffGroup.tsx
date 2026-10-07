@@ -5,6 +5,7 @@ import {
   MinusCircleIcon,
   PlusCircleIcon,
   RotateCcwIcon,
+  SquareSlashIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
   XCircleIcon,
@@ -16,6 +17,13 @@ import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 
+/**
+ * Where a subset build lists the baseline snapshots it did not upload. Such a
+ * build only runs part of the tests, so a missing snapshot was not run rather
+ * than removed.
+ */
+export const SKIPPED_DIFF_GROUP = "skipped";
+
 export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Failure,
   ScreenshotDiffStatus.Changed,
@@ -26,11 +34,14 @@ export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Unchanged,
   ScreenshotDiffStatus.RetryFailure,
   ScreenshotDiffStatus.Ignored,
+  SKIPPED_DIFF_GROUP,
 ] as const;
 
 export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
   (group) =>
-    group !== EvaluationStatus.Accepted && group !== EvaluationStatus.Rejected,
+    group !== EvaluationStatus.Accepted &&
+    group !== EvaluationStatus.Rejected &&
+    group !== SKIPPED_DIFF_GROUP,
 );
 
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
@@ -43,6 +54,20 @@ export interface DiffGroup<TDiff = BuildDiffDetailDocument> {
 
 export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {
   return DIFF_GROUPS.includes(value as DiffGroupName);
+}
+
+/**
+ * The group a status puts a snapshot in. Name statuses through it rather than
+ * reading them raw, so a snapshot a subset build skipped never reads as removed.
+ */
+export function getDiffStatusGroup(
+  status: ScreenshotDiffStatus,
+  context: { isSubsetBuild: boolean },
+): ScreenshotDiffStatus | typeof SKIPPED_DIFF_GROUP {
+  if (context.isSubsetBuild && status === ScreenshotDiffStatus.Removed) {
+    return SKIPPED_DIFF_GROUP;
+  }
+  return status;
 }
 
 export type DiffGroupColor = "danger" | "warning" | "success" | "neutral";
@@ -78,6 +103,11 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
     color: "warning",
     label: "Removed",
     icon: MinusCircleIcon,
+  },
+  [SKIPPED_DIFF_GROUP]: {
+    color: "neutral",
+    label: "Skipped",
+    icon: SquareSlashIcon,
   },
   [ScreenshotDiffStatus.Ignored]: {
     color: "neutral",

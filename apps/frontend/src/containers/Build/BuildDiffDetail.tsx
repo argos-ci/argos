@@ -52,7 +52,7 @@ import { useTextContent } from "@/util/text";
 
 import { OnionOpacityControl, SwipeDivider } from "./BlendControls";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
-import { getDiffGroupDefinition } from "./BuildDiffGroup";
+import { getDiffGroupDefinition, SKIPPED_DIFF_GROUP } from "./BuildDiffGroup";
 import {
   NoScreenshotsBuildEmptyState,
   SkippedBuildEmptyState,
@@ -93,6 +93,7 @@ const _BuildFragment = graphql(`
     branch
     commit
     type
+    subset
     baseBranch
     baseBuild {
       id
@@ -1034,6 +1035,20 @@ function CompareScreenshot(props: {
       );
     }
     case ScreenshotDiffStatus.Removed: {
+      if (build.subset) {
+        return (
+          <MissingScreenshotInfo
+            title="Skipped screenshot"
+            description={
+              <>
+                This build only uploaded a subset of the screenshots, and this
+                one was not part of it. Its baseline stays as is.
+              </>
+            }
+            icon={getDiffGroupDefinition(SKIPPED_DIFF_GROUP).icon}
+          />
+        );
+      }
       return (
         <MissingScreenshotInfo
           title="Removed screenshot"
