@@ -233,28 +233,58 @@ async function getAnnualUsageReportAccounts(): Promise<Account[]> {
 }
 
 /**
+ * The usage report of an account, and the data its notification renders.
+ * Null when it has none: not on an annual usage-based plan, or still in the
+ * first month of its term.
+ */
+export async function getAccountUsageReport(account: Account, now: Date) {
+  const subscription = await account
+    .$getSubscriptionManager()
+    .getActiveSubscription();
+  // The subscription Argos meters on can differ from the one that matched the
+  // annual plan query: an account holding several picks the largest plan.
+  if (
+    !subscription?.plan ||
+    subscription.status === "trialing" ||
+    subscription.plan.interval !== "year" ||
+    !subscription.plan.usageBased
+  ) {
+    return null;
+  }
+
+  const report = await getAnnualUsageReport(subscription, now);
+  if (!report) {
+    return null;
+  }
+
+  return {
+    report,
+    data: {
+      accountName: account.name,
+      accountSlug: account.slug,
+      currency: report.currency,
+      includedScreenshots: report.includedScreenshots,
+      projectedOverageCost: report.projectedOverageCost,
+      termStartsAt: report.termStartsAt.toISOString(),
+      termEndsAt: report.termEndsAt.toISOString(),
+      months: report.months.map((month) => ({
+        startsAt: month.startsAt.toISOString(),
+        screenshots: month.screenshots.all,
+        projected: month.projected,
+      })),
+    },
+  };
+}
+
+/**
  * Send the monthly usage report to the owners of every annual account whose
  * month just closed.
  */
 export async function sendUsageReports(now: Date) {
   const accounts = await getAnnualUsageReportAccounts();
   for (const account of accounts) {
-    const subscription = await account
-      .$getSubscriptionManager()
-      .getActiveSubscription();
-    // The subscription Argos meters on can differ from the one that matched:
-    // an account holding several picks the largest plan.
-    if (
-      !subscription?.plan ||
-      subscription.status === "trialing" ||
-      subscription.plan.interval !== "year" ||
-      !subscription.plan.usageBased
-    ) {
-      continue;
-    }
-
-    const report = await getAnnualUsageReport(subscription, now);
-    if (!report) {
+    const usageReport = await getAccountUsageReport(account, now);
+    if (!usageReport) {
       continue;
     }
 
@@ -263,26 +293,13 @@ export async function sendUsageReports(now: Date) {
       continue;
     }
 
-    if (!(await claimUsageReport(account, report, now))) {
+    if (!(await claimUsageReport(account, usageReport.report, now))) {
       continue;
     }
 
     await sendNotification({
       type: "usage_report",
-      data: {
-        accountName: account.name,
-        accountSlug: account.slug,
-        currency: report.currency,
-        includedScreenshots: report.includedScreenshots,
-        projectedOverageCost: report.projectedOverageCost,
-        termStartsAt: report.termStartsAt.toISOString(),
-        termEndsAt: report.termEndsAt.toISOString(),
-        months: report.months.map((month) => ({
-          startsAt: month.startsAt.toISOString(),
-          screenshots: month.screenshots.all,
-          projected: month.projected,
-        })),
-      },
+      data: usageReport.data,
       recipients: ownerIds,
     });
   }
