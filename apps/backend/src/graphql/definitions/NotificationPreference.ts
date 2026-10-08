@@ -20,6 +20,7 @@ export const typeDefs = gql`
   enum NotificationCategory {
     review
     billing
+    usage
     project
     integration
   }
