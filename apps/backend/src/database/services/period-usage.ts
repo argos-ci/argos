@@ -153,7 +153,7 @@ type AccountPeriod = {
 };
 
 /** Screenshots uploaded over one window, split by the way they are billed. */
-type ScreenshotTotals = {
+export type ScreenshotTotals = {
   all: number;
   storybook: number;
 };
@@ -192,7 +192,7 @@ function buildPeriodValues(periods: AccountPeriod[]) {
  * The joins are left joins throughout: an account whose projects never produced
  * a bucket still has to come back with zeros rather than vanish from the batch.
  */
-async function getScreenshotTotals(
+export async function getScreenshotTotals(
   periods: AccountPeriod[],
 ): Promise<Map<string, AccountTotals>> {
   // `accounts.id` is a bigint and the bindings arrive as strings, so the values

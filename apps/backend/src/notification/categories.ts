@@ -46,6 +46,12 @@ export const notificationCategoryMetadata: Record<
     description: "Spend limit and overage alerts for teams you own.",
     configurable: true,
   },
+  usage: {
+    label: "Usage reports",
+    description:
+      "A monthly report of your team's usage and where it is heading.",
+    configurable: true,
+  },
   project: {
     label: "Projects",
     description: "Updates about your projects, such as deletions.",
@@ -66,6 +72,7 @@ const CATEGORY_ORDER: NotificationCategory[] = [
   "security",
   "review",
   "billing",
+  "usage",
   "project",
   "integration",
 ];

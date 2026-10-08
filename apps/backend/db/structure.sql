@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
+\restrict CYoBCQ0baQmudYrxodVM8QWBJe7mPShLsfoa6OpIwoUQyvAQdlE9Ma0zulupo4r
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -128,6 +128,7 @@ CREATE TABLE public.accounts (
     "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
     "originInstallationId" bigint,
     "lastOverageAlertThreshold" integer,
+    "lastUsageReportAt" timestamp with time zone,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -6705,7 +6706,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
+\unrestrict CYoBCQ0baQmudYrxodVM8QWBJe7mPShLsfoa6OpIwoUQyvAQdlE9Ma0zulupo4r
 
 -- Knex migrations
 
@@ -6968,3 +6969,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026092
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261008123652_usage-report.js', 1, NOW());
