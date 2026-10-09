@@ -43,3 +43,11 @@ export async function emailToText(rendered: {
     html + `<pre style="padding: 16px;">subject: ${rendered.subject}</pre>`
   );
 }
+
+/**
+ * Extract the first name from a full name.
+ */
+export function extractFirstName(fullName: string): string | null {
+  const parts = fullName.split(" ");
+  return parts[0] || null;
+}

@@ -4,7 +4,10 @@ import { job as automationActionRunJob } from "@/automation/job";
 import { job as buildJob } from "@/build";
 import { job as buildNotificationJob } from "@/build-notification";
 import config from "@/config";
-import { sendUsageReports } from "@/database/services/usage-report";
+import {
+  enqueueUsageReports,
+  usageReportJob,
+} from "@/database/services/usage-report";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
 import { githubPullRequestJob } from "@/github-pull-request/job";
@@ -81,11 +84,11 @@ scheduleCron("github-marketplace-prices", "35 4 * * *", async () => {
 // Daily rather than monthly: each account's month closes on its own
 // subscription anniversary, and the claim on the account keeps it to one
 // report per month.
-scheduleCron("usage-report", "0 8 * * *", async (context) => {
+scheduleCron("usage-report", "0 8 * * *", async () => {
   if (!checkIsStripeConfigured()) {
     return;
   }
-  await sendUsageReports(context.date);
+  await enqueueUsageReports();
 });
 
 createJobWorker(
@@ -101,4 +104,5 @@ createJobWorker(
   originPullRequestJob,
   synchronizeJob,
   screenshotDiffJob,
+  usageReportJob,
 );

@@ -1,22 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Account, Plan, Project } from "@/database/models";
+import { type Account, type Plan, type Project, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { sendNotification } from "@/notification";
+import { sendEmailTemplate } from "@/email/send-email-template";
 
-import { sendUsageReports } from "./usage-report";
+import {
+  enqueueUsageReports,
+  sendAccountUsageReport,
+  usageReportJob,
+} from "./usage-report";
 
-vi.mock("@/notification", () => ({
-  sendNotification: vi.fn(),
+vi.mock("@/email/send-email-template", () => ({
+  sendEmailTemplate: vi.fn(),
 }));
 
-const mockSendNotification = vi.mocked(sendNotification);
+const mockSendEmailTemplate = vi.mocked(sendEmailTemplate);
 
-describe("sendUsageReports", () => {
+describe("sendAccountUsageReport", () => {
   let annualPlan: Plan;
   let account: Account;
   let project: Project;
   let ownerId: string;
+  let ownerEmail: string;
 
   // Fourth month of the term that opened on January 15, 2026: three months
   // have closed.
@@ -32,8 +37,10 @@ describe("sendUsageReports", () => {
     });
     account = await factory.TeamAccount.create();
     project = await factory.Project.create({ accountId: account.id });
-    const owner = await factory.UserAccount.create();
+    const owner = await factory.UserAccount.create({ name: "Jane Doe" });
     ownerId = owner.userId!;
+    const ownerUser = await User.query().findById(ownerId);
+    ownerEmail = ownerUser!.email!;
     await factory.TeamUser.create({
       teamId: account.teamId!,
       userId: ownerId,
@@ -72,17 +79,18 @@ describe("sendUsageReports", () => {
   });
 
   it("reports the term so far and projects the rest from the last three months", async () => {
-    await sendUsageReports(now);
+    await sendAccountUsageReport(account.id, now);
 
-    expect(mockSendNotification).toHaveBeenCalledTimes(1);
-    const [call] = mockSendNotification.mock.calls;
+    expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
+    const [call] = mockSendEmailTemplate.mock.calls;
     const input = call?.[0];
-    expect(input?.type).toBe("usage_report");
-    expect(input?.recipients).toEqual([ownerId]);
-    if (input?.type !== "usage_report") {
+    expect(input?.template).toBe("usage_report");
+    expect(input?.to).toEqual([ownerEmail]);
+    if (input?.template !== "usage_report") {
       return;
     }
     const { data } = input;
+    expect(data.recipientName).toBe("Jane");
     expect(data.includedScreenshots).toBe(1000);
     expect(data.months).toHaveLength(12);
     expect(
@@ -98,11 +106,42 @@ describe("sendUsageReports", () => {
   });
 
   it("sends the report once per month", async () => {
-    await sendUsageReports(now);
-    await sendUsageReports(new Date("2026-04-21T10:00:00.000Z"));
-    expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    await sendAccountUsageReport(account.id, now);
+    await sendAccountUsageReport(
+      account.id,
+      new Date("2026-04-21T10:00:00.000Z"),
+    );
+    expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
 
-    await sendUsageReports(new Date("2026-05-16T10:00:00.000Z"));
-    expect(mockSendNotification).toHaveBeenCalledTimes(2);
+    await sendAccountUsageReport(
+      account.id,
+      new Date("2026-05-16T10:00:00.000Z"),
+    );
+    expect(mockSendEmailTemplate).toHaveBeenCalledTimes(2);
+  });
+
+  it("enqueues the accounts on an annual usage-based plan only", async () => {
+    const monthlyPlan = await factory.Plan.create({
+      usageBased: true,
+      interval: "month",
+    });
+    const monthlyAccount = await factory.TeamAccount.create();
+    const subscriber = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: monthlyAccount.id,
+      planId: monthlyPlan.id,
+      currency: "eur",
+      provider: "stripe",
+      stripeSubscriptionId: "sub_monthly",
+      subscriberId: subscriber.id,
+      startDate: new Date("2025-01-15T12:00:00.000Z").toISOString(),
+      status: "active",
+    });
+    const push = vi.spyOn(usageReportJob, "push").mockResolvedValue();
+
+    await enqueueUsageReports();
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith(account.id);
   });
 });

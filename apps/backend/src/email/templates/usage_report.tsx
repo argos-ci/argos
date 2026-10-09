@@ -11,8 +11,8 @@ import {
   Hi,
   Paragraph,
   Signature,
-} from "../../email/components";
-import { defineNotificationHandler } from "../workflow-types";
+} from "../components";
+import { defineEmailTemplate } from "../template";
 
 const baseUrl = config.get("server.url");
 
@@ -36,10 +36,11 @@ const MonthSchema = z.object({
   projected: z.boolean(),
 });
 
-export const handler = defineNotificationHandler({
+export const handler = defineEmailTemplate({
   type: "usage_report",
-  category: "usage",
   schema: z.object({
+    /** First name of the owner the email goes to. */
+    recipientName: z.string().nullable(),
     accountName: z.string().nullish(),
     accountSlug: z.string(),
     currency: z.enum(["usd", "eur"]),
@@ -53,6 +54,7 @@ export const handler = defineNotificationHandler({
     months: z.array(MonthSchema),
   }),
   previewData: {
+    recipientName: "James",
     accountName: "Acme",
     accountSlug: "acme",
     currency: "eur",
@@ -85,7 +87,7 @@ export const handler = defineNotificationHandler({
   // in screenshots for whoever tunes the test suite and in money for whoever
   // pays.
   email: (props) => {
-    const { ctx, months, includedScreenshots, currency } = props;
+    const { months, includedScreenshots, currency } = props;
     const accountName = props.accountName || props.accountSlug;
 
     const formatCount = (value: number) =>
@@ -170,10 +172,9 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`${formatCount(used)} of ${formatCount(includedScreenshots)} screenshots used, ${elapsedMonths} months into the term.`}
-          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Your monthly usage report</H1>
-          <Hi name={ctx.user.name} />
+          <Hi name={props.recipientName} />
           <Paragraph>
             Here is where <strong>{accountName}</strong> stands, {elapsedMonths}{" "}
             months into its annual plan.

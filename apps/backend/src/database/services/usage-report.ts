@@ -1,13 +1,18 @@
 import { invariant } from "@argos/util/invariant";
 
-import { sendNotification } from "@/notification";
+import { sendEmailTemplate } from "@/email/send-email-template";
+import { extractFirstName } from "@/email/util";
+import { createJob } from "@/job-core";
 
-import { Account, Subscription } from "../models";
+import { Account, Subscription, User } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
 import { getScreenshotTotals, type ScreenshotTotals } from "./period-usage";
 
 /** Closed months the projection of the months to come is averaged over. */
 const PROJECTION_WINDOW = 3;
+
+/** Accounts read per page when enqueueing the reports. */
+const ACCOUNT_BATCH_SIZE = 100;
 
 /**
  * Slack allowed when matching a monthly anniversary against the yearly one.
@@ -209,11 +214,15 @@ async function claimUsageReport(
 }
 
 /**
- * Accounts on an annual usage-based Stripe plan, the ones the monthly report
- * is for.
+ * A page of the accounts on an annual usage-based Stripe plan, the ones the
+ * monthly report is for, in id order after `after`.
  */
-async function getAnnualUsageReportAccounts(): Promise<Account[]> {
-  return Account.query()
+async function getAnnualUsageReportAccountIds(input: {
+  after: string | null;
+  limit: number;
+}): Promise<string[]> {
+  const query = Account.query()
+    .select("accounts.id")
     .whereNull("accounts.forcedPlanId")
     .whereExists(
       Subscription.query()
@@ -229,11 +238,18 @@ async function getAnnualUsageReportAccounts(): Promise<Account[]> {
         )
         .where("plan.interval", "year")
         .where("plan.usageBased", true),
-    );
+    )
+    .orderBy("accounts.id")
+    .limit(input.limit);
+  if (input.after !== null) {
+    query.where("accounts.id", ">", input.after);
+  }
+  const accounts = await query;
+  return accounts.map((account) => account.id);
 }
 
 /**
- * The usage report of an account, and the data its notification renders.
+ * The usage report of an account, and the data its email renders.
  * Null when it has none: not on an annual usage-based plan, or still in the
  * first month of its term.
  */
@@ -277,30 +293,83 @@ export async function getAccountUsageReport(account: Account, now: Date) {
 }
 
 /**
- * Send the monthly usage report to the owners of every annual account whose
- * month just closed.
+ * Send the usage report of an account to its owners, if one is due: the
+ * account is on an annual plan and a month of its term closed since the last
+ * report.
  */
-export async function sendUsageReports(now: Date) {
-  const accounts = await getAnnualUsageReportAccounts();
-  for (const account of accounts) {
-    const usageReport = await getAccountUsageReport(account, now);
-    if (!usageReport) {
-      continue;
-    }
+export async function sendAccountUsageReport(accountId: string, now: Date) {
+  const account = await Account.query().findById(accountId);
+  // Deleted between the enqueueing and this run.
+  if (!account) {
+    return;
+  }
 
-    const ownerIds = await account.$getOwnerIds();
-    if (ownerIds.length === 0) {
-      continue;
-    }
+  const usageReport = await getAccountUsageReport(account, now);
+  if (!usageReport) {
+    return;
+  }
 
-    if (!(await claimUsageReport(account, usageReport.report, now))) {
-      continue;
-    }
+  const ownerIds = await account.$getOwnerIds();
+  const owners = await User.query()
+    .findByIds(ownerIds)
+    .whereNotNull("email")
+    .withGraphFetched("account");
+  if (owners.length === 0) {
+    return;
+  }
 
-    await sendNotification({
-      type: "usage_report",
-      data: usageReport.data,
-      recipients: ownerIds,
+  if (!(await claimUsageReport(account, usageReport.report, now))) {
+    return;
+  }
+
+  // One email per owner, so each is greeted by name and no address is shown
+  // to the others.
+  await Promise.all(
+    owners.map((owner) => {
+      invariant(owner.email, "owners are filtered on their email");
+      return sendEmailTemplate({
+        template: "usage_report",
+        data: {
+          ...usageReport.data,
+          recipientName: owner.account?.name
+            ? extractFirstName(owner.account.name)
+            : null,
+        },
+        to: [owner.email],
+      });
+    }),
+  );
+}
+
+export const usageReportJob = createJob<string>(
+  "usageReport",
+  {
+    perform: async (accountId) => {
+      await sendAccountUsageReport(accountId, new Date());
+    },
+  },
+  { timeout: 60_000 },
+);
+
+/**
+ * Enqueue the usage report of every annual account, a page at a time. Each
+ * account is its own job, so a large or failing one does not hold the others
+ * back, and the work spreads across workers.
+ */
+export async function enqueueUsageReports() {
+  let after: string | null = null;
+  for (;;) {
+    const accountIds = await getAnnualUsageReportAccountIds({
+      after,
+      limit: ACCOUNT_BATCH_SIZE,
     });
+    if (accountIds.length > 0) {
+      await usageReportJob.push(...accountIds);
+    }
+    const last = accountIds.at(-1);
+    if (accountIds.length < ACCOUNT_BATCH_SIZE || last === undefined) {
+      return;
+    }
+    after = last;
   }
 }

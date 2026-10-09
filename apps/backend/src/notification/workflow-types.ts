@@ -22,7 +22,6 @@ export type NotificationCategory =
   | "security"
   | "review"
   | "billing"
-  | "usage"
   | "project"
   | "integration";
 
