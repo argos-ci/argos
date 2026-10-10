@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { getChangelogNews } from "@/changelog/news";
 import { type Account, type Plan, type Project, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendEmailTemplate } from "@/email/send-email-template";
@@ -16,7 +17,13 @@ vi.mock("@/email/send-email-template", () => ({
   sendEmailTemplate: vi.fn(),
 }));
 
+// The changelog is read from argos-ci.com.
+vi.mock("@/changelog/news", () => ({
+  getChangelogNews: vi.fn().mockResolvedValue([]),
+}));
+
 const mockSendEmailTemplate = vi.mocked(sendEmailTemplate);
+const mockGetChangelogNews = vi.mocked(getChangelogNews);
 
 describe("sendAccountUsageReport", () => {
   let annualPlan: Plan;
@@ -147,6 +154,11 @@ describe("sendAccountUsageReport", () => {
       new Date("2026-05-16T10:00:00.000Z"),
     );
     expect(mockSendEmailTemplate).toHaveBeenCalledTimes(2);
+    // The news of the second report start where the first one went out.
+    expect(mockGetChangelogNews).toHaveBeenLastCalledWith({
+      since: now,
+      now: new Date("2026-05-16T10:00:00.000Z"),
+    });
   });
 
   it("enqueues the accounts on an annual usage-based plan only", async () => {

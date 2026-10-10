@@ -92,6 +92,15 @@ const UsageReportSchema = z.object({
   /** Every month of the term, the ones to come included. */
   months: z.array(MonthSchema),
   activity: ActivitySchema,
+  /** What shipped in Argos since the previous report, from its changelog. */
+  news: z.array(
+    z.object({
+      title: z.string(),
+      summary: z.string(),
+      url: z.string(),
+      publishedAt: z.string(),
+    }),
+  ),
   /** Turns the report off for this owner of this team, without signing in. */
   unsubscribeUrl: z.url(),
 });
@@ -176,6 +185,22 @@ export const handler = defineEmailTemplate({
         },
       },
     },
+    news: [
+      {
+        title: "Journeys",
+        summary:
+          "The build review unfolds the journey a screenshot belongs to as a strip of steps, so you see where a change sits in the checkout, the signup or the onboarding your test walked.",
+        url: "https://argos-ci.com/changelog/2026-09-12-journeys",
+        publishedAt: "2026-09-12T00:00:00.000Z",
+      },
+      {
+        title: "Custom domains",
+        summary:
+          "Point your own domain at your production deployments with a single DNS record, and Argos issues and installs the TLS certificate automatically.",
+        url: "https://argos-ci.com/changelog/2026-09-01-custom-domains",
+        publishedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ],
     unsubscribeUrl:
       "https://app.argos-ci.com/unsubscribe/monthly-report?token=xxx",
   },
@@ -395,6 +420,26 @@ function renderMonthlyReport(props: UsageReportData) {
           </>
         ) : null}
         <SectionLink href={usageHref}>See usage details</SectionLink>
+
+        {props.news.length > 0 ? (
+          <>
+            <SectionTitle>What’s new in Argos</SectionTitle>
+            {props.news.map((item) => (
+              <Text key={item.url} style={{ ...bodyStyle, margin: "0 0 12px" }}>
+                <Link href={item.url}>
+                  <strong>{item.title}</strong>
+                </Link>
+                <br />
+                <span style={{ fontSize: 13, color: colors.muted }}>
+                  {item.summary}
+                </span>
+              </Text>
+            ))}
+            <SectionLink href="https://argos-ci.com/changelog">
+              See the changelog
+            </SectionLink>
+          </>
+        ) : null}
 
         <Section style={{ marginTop: 32 }}>
           {overage ? null : (

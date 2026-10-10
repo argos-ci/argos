@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
+import { getChangelogNews } from "@/changelog/news";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { createJob } from "@/job-core";
 
@@ -302,7 +303,15 @@ export async function getAccountUsageReport(account: Account, now: Date) {
     projected: month.projected,
   }));
   const termEndsAt = report.termEndsAt.toISOString();
-  const activity = await getMonthlyReportActivity(account, months, termEndsAt);
+  const [activity, news] = await Promise.all([
+    getMonthlyReportActivity(account, months, termEndsAt),
+    getChangelogNews({
+      since: account.lastUsageReportAt
+        ? new Date(account.lastUsageReportAt)
+        : null,
+      now,
+    }),
+  ]);
   invariant(activity, "a report always has a closed month");
 
   return {
@@ -317,6 +326,7 @@ export async function getAccountUsageReport(account: Account, now: Date) {
       termEndsAt,
       months,
       activity,
+      news,
     },
   };
 }
