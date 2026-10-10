@@ -28,6 +28,10 @@ import {
   UserEmail,
 } from "@/database/models";
 import { createAccount } from "@/database/services/account";
+import {
+  setMonthlyReportSubscription,
+  unsubscribeFromMonthlyReport,
+} from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
   addTeamDomain,
@@ -52,10 +56,6 @@ import {
   setTeamMemberLevel,
   type TeamMembersOrder,
 } from "@/database/services/team-member";
-import {
-  setMonthlyReportSubscription,
-  unsubscribeFromMonthlyReport,
-} from "@/database/services/usage-report";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {

@@ -36,6 +36,7 @@ const RESERVED_SLUGS = [
   "new",
   "invites",
   "account",
+  "unsubscribe",
 ];
 
 type TeamUserAuthMethod = (typeof TeamUser.authMethods)[number];

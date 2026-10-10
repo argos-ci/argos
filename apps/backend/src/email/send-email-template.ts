@@ -12,6 +12,8 @@ import {
 export async function sendEmailTemplate<Type extends EmailTemplateType>(
   input: EmailTemplateProps<Type> & {
     to: string[];
+    headers?: Record<string, string> | undefined;
+    idempotencyKey?: string | undefined;
   },
 ) {
   const template = emailTemplates.find((h) => h.type === input.template);
@@ -23,5 +25,7 @@ export async function sendEmailTemplate<Type extends EmailTemplateType>(
     to: input.to,
     react: rendered.body,
     subject: rendered.subject,
+    headers: input.headers,
+    idempotencyKey: input.idempotencyKey,
   });
 }

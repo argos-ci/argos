@@ -1,20 +1,26 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import config from "@/config";
 import { knex } from "@/database";
 import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { formatTestId } from "@/util/test-id";
 
 import { getMonthlyReportActivity } from "./monthly-report-activity";
 
 const at = (iso: string) => new Date(iso).toISOString();
 
 // The month that just closed is September 15 to October 15.
-const months = [
-  { startsAt: "2026-08-15T00:00:00.000Z", projected: false },
-  { startsAt: "2026-09-15T00:00:00.000Z", projected: false },
-  { startsAt: "2026-10-15T00:00:00.000Z", projected: true },
-];
-const termEndsAt = "2027-01-15T00:00:00.000Z";
+const windows = {
+  current: {
+    from: new Date("2026-09-15T00:00:00.000Z"),
+    to: new Date("2026-10-15T00:00:00.000Z"),
+  },
+  previous: {
+    from: new Date("2026-08-15T00:00:00.000Z"),
+    to: new Date("2026-09-15T00:00:00.000Z"),
+  },
+};
 
 describe("getMonthlyReportActivity", () => {
   let account: Account;
@@ -53,11 +59,13 @@ describe("getMonthlyReportActivity", () => {
   }
 
   async function createPullRequestBuild(input: {
-    pullRequestId: string;
+    pullRequestId: string | null;
     commit: string;
     name?: string;
     createdAt: string;
     conclusion: "changes-detected" | "no-changes";
+    mode?: "ci" | "monitoring";
+    subset?: boolean;
   }) {
     const bucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
@@ -75,6 +83,8 @@ describe("getMonthlyReportActivity", () => {
       conclusion: input.conclusion,
       type: "check",
       githubPullRequestId: input.pullRequestId,
+      mode: input.mode ?? "ci",
+      subset: input.subset ?? false,
     });
   }
 
@@ -113,18 +123,24 @@ describe("getMonthlyReportActivity", () => {
       conclusion: "no-changes",
     });
 
-    // Not fixed: the only change came from a flaky test.
+    // Not fixed: the only change came from a flaky test. The screenshots a
+    // subset build did not take are not changes either.
     const noisy = await factory.PullRequest.create();
     const noisyBuild = await createPullRequestBuild({
       pullRequestId: noisy.id,
       commit: "b1",
       createdAt: "2026-09-22T10:00:00Z",
       conclusion: "changes-detected",
+      subset: true,
     });
     await factory.ScreenshotDiff.create({
       buildId: noisyBuild.id,
       score: 0.3,
       testId: flaky.id,
+    });
+    await factory.ScreenshotDiff.create({
+      buildId: noisyBuild.id,
+      compareScreenshotId: null,
     });
     await createPullRequestBuild({
       pullRequestId: noisy.id,
@@ -133,20 +149,28 @@ describe("getMonthlyReportActivity", () => {
       conclusion: "no-changes",
     });
 
-    const activity = await getMonthlyReportActivity(
-      account,
-      months,
-      termEndsAt,
-    );
+    // Monitoring builds are not pull requests.
+    await createPullRequestBuild({
+      pullRequestId: null,
+      commit: "c1",
+      createdAt: "2026-09-24T10:00:00Z",
+      conclusion: "no-changes",
+      mode: "monitoring",
+    });
 
-    expect(activity?.pullRequests).toEqual({
+    const activity = await getMonthlyReportActivity(account, windows);
+
+    expect(activity.pullRequests).toEqual({
       checked: 2,
       fixedAfterFlag: 1,
       intermediateCommits: 2,
     });
-    expect(activity?.flakyTests.current).toBe(1);
-    expect(activity?.flakyTests.top.map((test) => test.name)).toEqual([
-      "flaky",
+    expect(activity.flakyTests.current).toBe(1);
+    expect(activity.flakyTests.top.map((test) => test.url)).toEqual([
+      new URL(
+        `/${account.slug}/web/tests/${formatTestId({ projectName: "web", testId: flaky.id })}`,
+        config.get("server.url"),
+      ).href,
     ]);
   });
 
@@ -188,14 +212,10 @@ describe("getMonthlyReportActivity", () => {
       { testId: gone?.id, date: at("2026-08-02T00:00:00Z"), value: 1 },
     ]);
 
-    const activity = await getMonthlyReportActivity(
-      account,
-      months,
-      termEndsAt,
-    );
+    const activity = await getMonthlyReportActivity(account, windows);
 
-    expect(activity?.changesReviewed).toEqual({ current: 2, previous: 0 });
-    expect(activity?.tests).toEqual({ covered: 2, added: 1 });
+    expect(activity.changesReviewed).toEqual({ current: 2, previous: 0 });
+    expect(activity.tests).toEqual({ covered: 2, added: 1 });
   });
 
   it("names the build name whose screenshots grew the most", async () => {
@@ -215,13 +235,9 @@ describe("getMonthlyReportActivity", () => {
     // New this month: nothing to compare it with.
     await bucket("mobile", "2026-09-20T10:00:00Z", 5000);
 
-    const activity = await getMonthlyReportActivity(
-      account,
-      months,
-      termEndsAt,
-    );
+    const activity = await getMonthlyReportActivity(account, windows);
 
-    expect(activity?.screenshots.biggestIncrease).toEqual({
+    expect(activity.screenshots.biggestIncrease).toEqual({
       label: "e2e",
       screenshots: 1500,
       previous: 1000,

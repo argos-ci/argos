@@ -234,11 +234,9 @@ function PageContent() {
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />
           ) : null}
-          {isTeam &&
-            hasAdminPermission &&
-            account.plan?.interval === PlanInterval.Year && (
-              <TeamMonthlyReport team={account} />
-            )}
+          {isTeam && hasAdminPermission ? (
+            <TeamMonthlyReport team={account} />
+          ) : null}
         </>
       ),
     },

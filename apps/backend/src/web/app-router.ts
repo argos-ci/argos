@@ -11,6 +11,7 @@ import { z } from "zod";
 import { revokeSessionByToken } from "@/auth/session";
 import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
+import { unsubscribeFromMonthlyReport } from "@/database/services/monthly-report";
 import { checkIsCustomDomainsConfigured } from "@/deployment/cloudfront";
 import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
@@ -226,6 +227,20 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(deploymentAccessRouter);
 
   router.use(invoiceDocumentsRouter);
+
+  // One-click unsubscribe from the mail client (RFC 8058): it posts to the
+  // link of the monthly report, which a click opens as a confirmation page.
+  router.post(
+    "/unsubscribe/monthly-report",
+    asyncHandler(async (req, res) => {
+      const token = req.query["token"];
+      const account =
+        typeof token === "string"
+          ? await unsubscribeFromMonthlyReport(token)
+          : null;
+      res.sendStatus(account ? 200 : 400);
+    }),
+  );
 
   // OAuth 2.1 Authorization Server (metadata + /oauth/*). Mounted before the
   // static handler and SPA catch-all so `GET /oauth/authorize` still falls

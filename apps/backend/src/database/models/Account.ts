@@ -189,7 +189,7 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
-          lastUsageReportAt: { type: ["string", "null"] },
+          lastMonthlyReportAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -221,8 +221,8 @@ export class Account extends Model {
    * configured, not to report usage.
    */
   lastOverageAlertThreshold!: number | null;
-  /** When the owners were last sent the monthly usage report. */
-  lastUsageReportAt!: string | null;
+  /** When the owners were last sent the monthly report. */
+  lastMonthlyReportAt!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

@@ -1,10 +1,21 @@
+import { formatDate } from "@argos/util/date-format";
+import { invariant } from "@argos/util/invariant";
 import { Section, Text } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
 
-import { EmailLayout, H1, Link, Signature } from "../components";
+import {
+  EmailLayout,
+  H1,
+  H2,
+  InfoText,
+  Link,
+  Paragraph,
+  Signature,
+} from "../components";
 import { defineEmailTemplate } from "../template";
+import { formatAmount } from "../util";
 
 const baseUrl = config.get("server.url");
 
@@ -47,15 +58,12 @@ const ActivitySchema = z.object({
     intermediateCommits: z.number(),
   }),
   /** Screenshots a person approved or rejected, automatic approvals left out. */
-  changesReviewed: z.object({
-    current: z.number(),
-    previous: z.number().nullable(),
-  }),
+  changesReviewed: z.object({ current: z.number(), previous: z.number() }),
   /** Tests that ran on the reference branch, and the ones new to it. */
   tests: z.object({ covered: z.number(), added: z.number() }),
   flakyTests: z.object({
     current: z.number(),
-    previous: z.number().nullable(),
+    previous: z.number(),
     top: z.array(
       z.object({
         name: z.string(),
@@ -79,34 +87,56 @@ const ActivitySchema = z.object({
 
 export type MonthlyReportActivity = z.infer<typeof ActivitySchema>;
 
-const UsageReportSchema = z.object({
+const NewsItemSchema = z.object({
+  title: z.string(),
+  summary: z.string(),
+  url: z.string(),
+  publishedAt: z.string(),
+});
+
+export type MonthlyReportNewsItem = z.infer<typeof NewsItemSchema>;
+
+const MonthlyReportSchema = z.object({
   accountName: z.string().nullish(),
   accountSlug: z.string(),
   currency: z.enum(["usd", "eur"]),
   /** Screenshots the plan includes over the whole term. */
   includedScreenshots: z.number(),
-  /** Overage the term would be billed at renewal, at the current pace. */
+  /** Overage the term would be billed when it ends, at the current pace. */
   projectedOverageCost: z.number(),
   termStartsAt: z.string(),
+  /** The renewal, or the end date of a cancelled subscription. */
   termEndsAt: z.string(),
+  /** False once the subscription is cancelled. */
+  renews: z.boolean(),
+  /** The spend limit past which new builds are refused, if the team set one. */
+  blockingSpendLimit: z.number().nullable(),
   /** Every month of the term, the ones to come included. */
   months: z.array(MonthSchema),
   activity: ActivitySchema,
   /** What shipped in Argos since the previous report, from its changelog. */
-  news: z.array(
-    z.object({
-      title: z.string(),
-      summary: z.string(),
-      url: z.string(),
-      publishedAt: z.string(),
-    }),
-  ),
+  news: z.array(NewsItemSchema),
   /** Turns the report off for this owner of this team, without signing in. */
   unsubscribeUrl: z.url(),
 });
 
-type UsageReportData = z.infer<typeof UsageReportSchema>;
-type Month = UsageReportData["months"][number];
+type MonthlyReportData = z.infer<typeof MonthlyReportSchema>;
+type Month = MonthlyReportData["months"][number];
+
+const previewMonths: [string, number, boolean?][] = [
+  ["2026-01-15", 98_000],
+  ["2026-02-15", 105_000],
+  ["2026-03-15", 112_000],
+  ["2026-04-15", 120_000],
+  ["2026-05-15", 118_000],
+  ["2026-06-15", 131_000],
+  ["2026-07-15", 125_000],
+  ["2026-08-15", 138_000],
+  ["2026-09-15", 146_000],
+  ["2026-10-15", 139_833, true],
+  ["2026-11-15", 139_833, true],
+  ["2026-12-15", 139_833, true],
+];
 
 /**
  * The monthly report of a team on an annual plan: what Argos did for it over
@@ -115,8 +145,8 @@ type Month = UsageReportData["months"][number];
  * it coming.
  */
 export const handler = defineEmailTemplate({
-  type: "usage_report",
-  schema: UsageReportSchema,
+  type: "monthly_report",
+  schema: MonthlyReportSchema,
   previewData: {
     accountName: "Acme",
     accountSlug: "acme",
@@ -125,23 +155,12 @@ export const handler = defineEmailTemplate({
     projectedOverageCost: 468.75,
     termStartsAt: "2026-01-15",
     termEndsAt: "2027-01-15",
-    months: [
-      ["2026-01-15", 98_000],
-      ["2026-02-15", 105_000],
-      ["2026-03-15", 112_000],
-      ["2026-04-15", 120_000],
-      ["2026-05-15", 118_000],
-      ["2026-06-15", 131_000],
-      ["2026-07-15", 125_000],
-      ["2026-08-15", 138_000],
-      ["2026-09-15", 146_000],
-      ["2026-10-15", 139_833, true],
-      ["2026-11-15", 139_833, true],
-      ["2026-12-15", 139_833, true],
-    ].map(([startsAt, screenshots, projected]) => ({
-      startsAt: startsAt as string,
-      screenshots: screenshots as number,
-      projected: Boolean(projected),
+    renews: true,
+    blockingSpendLimit: null,
+    months: previewMonths.map(([startsAt, screenshots, projected]) => ({
+      startsAt,
+      screenshots,
+      projected: projected ?? false,
     })),
     activity: {
       from: "2026-09-15",
@@ -161,19 +180,19 @@ export const handler = defineEmailTemplate({
             name: "checkout › payment form",
             buildName: "e2e",
             flakiness: 0.62,
-            url: "https://app.argos-ci.com/acme/web/tests/1",
+            url: "https://app.argos-ci.com/acme/web/tests/WEB-a1b2",
           },
           {
             name: "Button / Loading",
             buildName: "storybook",
             flakiness: 0.48,
-            url: "https://app.argos-ci.com/acme/web/tests/2",
+            url: "https://app.argos-ci.com/acme/web/tests/WEB-c3d4",
           },
           {
             name: "dashboard › charts",
             buildName: "e2e",
             flakiness: 0.41,
-            url: "https://app.argos-ci.com/acme/web/tests/3",
+            url: "https://app.argos-ci.com/acme/web/tests/WEB-e5f6",
           },
         ],
       },
@@ -207,66 +226,35 @@ export const handler = defineEmailTemplate({
   email: (props) => renderMonthlyReport(props),
 });
 
-function renderMonthlyReport(props: UsageReportData) {
-  const { months, includedScreenshots, currency, projectedOverageCost } = props;
-  const { activity } = props;
+function renderMonthlyReport(props: MonthlyReportData) {
+  const { months, includedScreenshots, currency, activity } = props;
   const accountName = props.accountName || props.accountSlug;
-
-  const formatCompact = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(value);
-  const formatCount = (value: number) =>
-    new Intl.NumberFormat("en-US").format(Math.round(value));
-  const formatAmount = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(value);
-  const formatDate = (value: string | Date) =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(value));
-  const formatMonthDate = (value: string | Date) =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(value));
-  const formatShortDate = (value: string | Date) =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(value));
+  const termStartsAt = new Date(props.termStartsAt);
+  const termEndsAt = new Date(props.termEndsAt);
 
   const closed = months.filter((month) => !month.projected);
   const used = sum(closed);
   const projected = sum(months);
   const usedPct = Math.round((used / includedScreenshots) * 100);
   const elapsedPct = Math.round((closed.length / months.length) * 100);
-  const exhaustedAt = getQuotaExhaustionDate(months, includedScreenshots);
   const overage = projected > includedScreenshots;
+  const ratio = formatRatio(projected / includedScreenshots);
+  const termEnd = props.renews ? "renewal" : "the end of the subscription";
   const { biggestIncrease } = activity.screenshots;
+  const { pullRequests, flakyTests } = activity;
 
   const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
     .href;
   const testsHref = new URL(`/${props.accountSlug}/~/tests`, baseUrl).href;
   const analyticsHref = new URL(`/${props.accountSlug}/~/analytics`, baseUrl)
     .href;
-  const period = `${formatShortDate(activity.from)} to ${formatDate(activity.to)}`;
+  const period = `${formatDate(new Date(activity.from), "longMonthDay")} to ${formatDate(new Date(activity.to), "longDate")}`;
 
   return {
     subject: `Your Argos monthly report for ${accountName}`,
     body: (
       <EmailLayout
-        preview={`${formatCount(activity.pullRequests.checked)} pull requests checked, ${formatCount(activity.pullRequests.fixedAfterFlag)} fixed after a visual change was flagged.`}
+        preview={`${countOf(pullRequests.checked, "pull request")} checked, ${formatCount(pullRequests.fixedAfterFlag)} fixed after a visual change was flagged.`}
       >
         <Text style={eyebrowStyle}>Monthly report · {period}</Text>
         <H1>{accountName}’s month on Argos</H1>
@@ -274,27 +262,22 @@ function renderMonthlyReport(props: UsageReportData) {
         <Hero
           stats={[
             {
-              value: formatCount(activity.pullRequests.checked),
-              label: "pull requests checked",
-              detail: `${formatCount(activity.pullRequests.intermediateCommits)} intermediate commits along the way`,
+              value: formatCount(pullRequests.checked),
+              label: `${plural(pullRequests.checked, "pull request")} checked`,
+              detail: `${countOf(pullRequests.intermediateCommits, "intermediate commit")} along the way`,
             },
             {
-              value: formatCount(activity.pullRequests.fixedAfterFlag),
+              value: formatCount(pullRequests.fixedAfterFlag),
               label: "fixed after Argos flagged a visual change",
             },
             {
               value: formatCount(activity.changesReviewed.current),
-              label: "visual changes reviewed",
-              detail: (
-                <Delta
-                  current={activity.changesReviewed.current}
-                  previous={activity.changesReviewed.previous}
-                />
-              ),
+              label: `visual ${plural(activity.changesReviewed.current, "change")} reviewed`,
+              detail: <Delta {...activity.changesReviewed} />,
             },
             {
               value: formatCount(activity.tests.covered),
-              label: "tests covered",
+              label: `${plural(activity.tests.covered, "test")} covered`,
               detail: `${formatCount(activity.tests.added)} new this month`,
             },
           ]}
@@ -302,20 +285,24 @@ function renderMonthlyReport(props: UsageReportData) {
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
 
         <SectionTitle>Test health</SectionTitle>
-        <Text style={{ ...bodyStyle, margin: 0 }}>
+        <Paragraph style={{ margin: 0 }}>
           <strong>
-            {formatCount(activity.flakyTests.current)} flaky tests
+            {flakyTests.current === 0
+              ? "No flaky tests"
+              : countOf(flakyTests.current, "flaky test")}
           </strong>{" "}
           this month{" "}
           <Delta
-            current={activity.flakyTests.current}
-            previous={activity.flakyTests.previous}
+            current={flakyTests.current}
+            previous={flakyTests.previous}
             tone="increaseIsBad"
           />
-          . Their changes come back without a code change, and each one costs a
-          review.
-        </Text>
-        {activity.flakyTests.top.length > 0 ? (
+          .
+          {flakyTests.current > 0
+            ? " Their changes come back without a code change, and each one costs a review."
+            : null}
+        </Paragraph>
+        {flakyTests.top.length > 0 ? (
           <table
             width="100%"
             cellPadding={0}
@@ -324,7 +311,7 @@ function renderMonthlyReport(props: UsageReportData) {
             style={{ marginTop: 8 }}
           >
             <tbody>
-              {activity.flakyTests.top.map((test) => (
+              {flakyTests.top.map((test) => (
                 <tr key={test.url}>
                   <td style={rowCellStyle}>
                     <Link href={test.url}>{test.name}</Link>{" "}
@@ -351,55 +338,57 @@ function renderMonthlyReport(props: UsageReportData) {
         <SectionLink href={testsHref}>See all tests</SectionLink>
 
         <SectionTitle>Usage</SectionTitle>
-        <Text style={{ ...bodyStyle, margin: "0 0 12px" }}>
+        <Paragraph style={{ margin: "0 0 12px" }}>
           <strong>{usedPct}%</strong> of your plan used ·{" "}
           <strong>{elapsedPct}%</strong> of the term elapsed.{" "}
-          {overage ? (
+          {used >= includedScreenshots ? (
+            <>
+              Your team has already used all the screenshots of its plan, and at
+              this pace the term ends at about {formatCompact(projected)}{" "}
+              screenshots, {ratio} your plan.
+            </>
+          ) : overage ? (
             <>
               At this pace, the plan runs out around{" "}
-              {exhaustedAt ? formatShortDate(exhaustedAt) : "renewal"}, and the
-              term ends at about {formatCompact(projected)} screenshots,{" "}
-              {formatRatio(projected / includedScreenshots)} your plan.
+              {formatDate(
+                getQuotaExhaustionDate(months, includedScreenshots),
+                "longMonthDay",
+              )}
+              , and the term ends at about {formatCompact(projected)}{" "}
+              screenshots, {ratio} your plan.
             </>
           ) : (
             <>
-              On track to stay within your plan until renewal on{" "}
-              {formatDate(props.termEndsAt)}.
+              On track to stay within your plan until {termEnd} on{" "}
+              {formatDate(termEndsAt, "longDate")}.
             </>
           )}
-        </Text>
+        </Paragraph>
         <QuotaGauge
           used={used}
           projected={projected}
           included={includedScreenshots}
-          startLabel={formatMonthDate(props.termStartsAt)}
-          endLabel={formatMonthDate(props.termEndsAt)}
-          formatCompact={formatCompact}
+          startLabel={formatDate(termStartsAt, "date")}
+          endLabel={formatDate(termEndsAt, "date")}
         />
-        <GaugeLegend
-          usedOverage={used > includedScreenshots}
-          projectedOverage={overage}
-        />
-        {overage ? (
-          <OverageNote
-            amount={formatAmount(projectedOverageCost)}
-            renewal={formatDate(props.termEndsAt)}
-          />
+        {/* Below one unit of currency, an overage is not worth a note. */}
+        {overage && props.projectedOverageCost >= 1 ? (
+          <OverageNote>
+            <OverageNoteText
+              amount={props.projectedOverageCost}
+              blockingSpendLimit={props.blockingSpendLimit}
+              currency={currency}
+              renews={props.renews}
+              termEndsAt={termEndsAt}
+            />
+          </OverageNote>
         ) : null}
         {biggestIncrease ? (
           <>
-            <Text
-              style={{
-                margin: "24px 0 4px",
-                fontSize: 13,
-                lineHeight: "20px",
-                fontWeight: 600,
-                color: colors.text,
-              }}
-            >
-              Biggest change this month
-            </Text>
-            <Text style={{ ...bodyStyle, margin: 0 }}>
+            <Paragraph style={{ margin: "24px 0 4px" }}>
+              <strong>Biggest change this month</strong>
+            </Paragraph>
+            <Paragraph style={{ margin: 0 }}>
               <strong>{biggestIncrease.label}</strong> used{" "}
               {formatCompact(biggestIncrease.screenshots)} screenshots,{" "}
               <span style={{ color: colors.overageText }}>
@@ -416,7 +405,7 @@ function renderMonthlyReport(props: UsageReportData) {
                 %)
               </span>{" "}
               compared with last month.
-            </Text>
+            </Paragraph>
           </>
         ) : null}
         <SectionLink href={usageHref}>See usage details</SectionLink>
@@ -425,7 +414,7 @@ function renderMonthlyReport(props: UsageReportData) {
           <>
             <SectionTitle>What’s new in Argos</SectionTitle>
             {props.news.map((item) => (
-              <Text key={item.url} style={{ ...bodyStyle, margin: "0 0 12px" }}>
+              <Paragraph key={item.url} style={{ margin: "0 0 12px" }}>
                 <Link href={item.url}>
                   <strong>{item.title}</strong>
                 </Link>
@@ -433,7 +422,7 @@ function renderMonthlyReport(props: UsageReportData) {
                 <span style={{ fontSize: 13, color: colors.muted }}>
                   {item.summary}
                 </span>
-              </Text>
+              </Paragraph>
             ))}
             <SectionLink href="https://argos-ci.com/changelog">
               See the changelog
@@ -442,18 +431,18 @@ function renderMonthlyReport(props: UsageReportData) {
         ) : null}
 
         <Section style={{ marginTop: 32 }}>
-          {overage ? null : (
-            <Text style={{ ...bodyStyle, margin: "0 0 4px" }}>
+          {props.renews && !overage ? (
+            <Paragraph style={{ margin: "0 0 4px" }}>
               If your usage changes, reply to this email: we can adjust your
               plan before your term ends and help you avoid any overage.
-            </Text>
-          )}
+            </Paragraph>
+          ) : null}
           <Signature />
         </Section>
-        <Text style={{ ...smallStyle, margin: "0 0 8px" }}>
+        <InfoText>
           You receive this monthly report as an owner of {accountName}.{" "}
           <Link href={props.unsubscribeUrl}>Unsubscribe</Link>
-        </Text>
+        </InfoText>
       </EmailLayout>
     ),
   };
@@ -468,8 +457,6 @@ const eyebrowStyle = {
   color: colors.muted,
 };
 
-const bodyStyle = { fontSize: 14, lineHeight: "22px", color: colors.text };
-const smallStyle = { fontSize: 12, lineHeight: "18px", color: colors.muted };
 const rowCellStyle = {
   padding: "8px 0",
   borderBottom: `1px solid ${colors.border}`,
@@ -478,16 +465,34 @@ const rowCellStyle = {
   color: colors.text,
 };
 
+const formatCount = (value: number) =>
+  new Intl.NumberFormat("en-US").format(value);
+
+const formatCompact = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+
+function plural(count: number, word: string) {
+  return count === 1 ? word : `${word}s`;
+}
+
+function countOf(count: number, word: string) {
+  return `${formatCount(count)} ${plural(count, word)}`;
+}
+
 function formatRatio(ratio: number) {
   return ratio >= 1.95
     ? `${Math.round(ratio * 10) / 10}×`.replace(".0×", "×")
-    : `${Math.round((ratio - 1) * 100)}% above`;
+    : `${Math.max(1, Math.round((ratio - 1) * 100))}% above`;
 }
 
 function sum(months: Month[]) {
   return months.reduce((total, month) => total + month.screenshots, 0);
 }
 
+/** When the plan runs out, for a team still within it but heading past it. */
 function getQuotaExhaustionDate(months: Month[], included: number) {
   let cumulative = 0;
   for (const [index, month] of months.entries()) {
@@ -502,23 +507,11 @@ function getQuotaExhaustionDate(months: Month[], included: number) {
     }
     cumulative += month.screenshots;
   }
-  return null;
+  invariant(false, "a projection past the plan crosses it in some month");
 }
 
 function SectionTitle(props: { children: React.ReactNode }) {
-  return (
-    <Text
-      style={{
-        margin: "32px 0 10px",
-        fontSize: 15,
-        lineHeight: "22px",
-        fontWeight: 600,
-        color: colors.text,
-      }}
-    >
-      {props.children}
-    </Text>
-  );
+  return <H2 style={{ margin: "32px 0 10px" }}>{props.children}</H2>;
 }
 
 function SectionLink(props: { href: string; children: React.ReactNode }) {
@@ -622,22 +615,19 @@ function Hero(props: {
 
 function Delta(props: {
   current: number;
-  previous: number | null;
+  previous: number;
   tone?: "increaseIsBad";
 }) {
   const { current, previous } = props;
-  if (previous === null) {
-    return null;
-  }
   const change = current - previous;
   if (change === 0) {
     return <span style={{ color: colors.muted }}>(same as last month)</span>;
   }
-  // A raw difference reads well on small counts, a share on large ones.
+  // A raw difference reads well on small counts, a share on large ones, as
+  // long as the share does not round to nothing.
+  const share = Math.abs(Math.round((change / previous) * 100));
   const value =
-    previous >= 20
-      ? `${Math.abs(Math.round((change / previous) * 100))}%`
-      : String(Math.abs(change));
+    previous >= 20 && share > 0 ? `${share}%` : String(Math.abs(change));
   const color =
     props.tone === "increaseIsBad"
       ? change > 0
@@ -651,46 +641,7 @@ function Delta(props: {
   );
 }
 
-function GaugeLegend(props: {
-  usedOverage: boolean;
-  projectedOverage: boolean;
-}) {
-  const items = [
-    { label: "Used", color: colors.violet },
-    ...(props.usedOverage
-      ? [{ label: "Used beyond the plan", color: colors.overage }]
-      : []),
-    { label: "Projected", color: colors.violetLight },
-    ...(props.projectedOverage
-      ? [{ label: "Projected beyond the plan", color: colors.overageLight }]
-      : []),
-  ];
-  return (
-    <Text style={{ ...smallStyle, margin: "8px 0 0" }}>
-      {items.map((item) => (
-        <span
-          key={item.label}
-          style={{ marginRight: 14, whiteSpace: "nowrap" }}
-        >
-          <span
-            style={{
-              display: "inline-block",
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              backgroundColor: item.color,
-              verticalAlign: "-1px",
-              marginRight: 5,
-            }}
-          />
-          {item.label}
-        </span>
-      ))}
-    </Text>
-  );
-}
-
-function OverageNote(props: { amount: string; renewal: string }) {
+function OverageNote(props: { children: React.ReactNode }) {
   return (
     <table
       width="100%"
@@ -712,12 +663,7 @@ function OverageNote(props: { amount: string; renewal: string }) {
               color: colors.text,
             }}
           >
-            <strong style={{ color: colors.overageText }}>
-              About {props.amount} of overage will be billed at renewal, on{" "}
-              {props.renewal}.
-            </strong>{" "}
-            You can commit to a larger plan to lower this amount: reply to this
-            email to discuss it.
+            {props.children}
           </td>
         </tr>
       </tbody>
@@ -725,10 +671,52 @@ function OverageNote(props: { amount: string; renewal: string }) {
   );
 }
 
+function OverageNoteText(props: {
+  amount: number;
+  blockingSpendLimit: number | null;
+  currency: string;
+  renews: boolean;
+  termEndsAt: Date;
+}) {
+  const date = formatDate(props.termEndsAt, "longDate");
+  const { blockingSpendLimit } = props;
+  if (blockingSpendLimit !== null && props.amount > blockingSpendLimit) {
+    return (
+      <>
+        <strong style={{ color: colors.overageText }}>
+          At this pace, your {formatAmount(blockingSpendLimit, props.currency)}{" "}
+          spend limit is reached before {date}, and new builds will be refused
+          from then on.
+        </strong>{" "}
+        You can raise it in your billing settings, or commit to a larger plan:
+        reply to this email to discuss it.
+      </>
+    );
+  }
+  const amount = formatAmount(props.amount, props.currency);
+  if (!props.renews) {
+    return (
+      <strong style={{ color: colors.overageText }}>
+        About {amount} of overage will be billed when the subscription ends, on{" "}
+        {date}.
+      </strong>
+    );
+  }
+  return (
+    <>
+      <strong style={{ color: colors.overageText }}>
+        About {amount} of overage will be billed at renewal, on {date}.
+      </strong>{" "}
+      You can commit to a larger plan to lower this amount: reply to this email
+      to discuss it.
+    </>
+  );
+}
+
 /**
- * The term in one bar, from its start to its renewal: what is used, what is
+ * The term in one bar, from its start to its end: what is used, what is
  * projected, and where the plan ends. Drawn with table cells, the one layout
- * every email client renders.
+ * every email client renders. The legend lists the segments the bar shows.
  */
 function QuotaGauge(props: {
   used: number;
@@ -736,24 +724,29 @@ function QuotaGauge(props: {
   included: number;
   startLabel: string;
   endLabel: string;
-  formatCompact: (value: number) => string;
 }) {
   const { used, projected, included } = props;
   const scale = Math.max(projected, included);
   const pct = (value: number) => (value / scale) * 100;
   const segments = [
-    { value: Math.min(used, included), color: colors.violet },
-    { value: Math.max(0, used - included), color: colors.overage },
+    { label: "Used", value: Math.min(used, included), color: colors.violet },
     {
+      label: "Used beyond the plan",
+      value: Math.max(0, used - included),
+      color: colors.overage,
+    },
+    {
+      label: "Projected",
       value: Math.max(0, Math.min(projected, included) - used),
       color: colors.violetLight,
     },
     {
+      label: "Projected beyond the plan",
       value: Math.max(0, projected - Math.max(used, included)),
       color: colors.overageLight,
     },
-    { value: Math.max(0, scale - projected), color: colors.track },
   ].filter((segment) => segment.value > 0);
+  const track = Math.max(0, scale - projected);
   const includedPct = pct(included);
   const overage = projected > included;
   // Close to the left edge, the plan label goes after its marker so it does
@@ -766,7 +759,7 @@ function QuotaGauge(props: {
     color: colors.muted,
     whiteSpace: "nowrap" as const,
   };
-  const planLabel = <>Plan {props.formatCompact(included)}</>;
+  const planLabel = <>Plan {formatCompact(included)}</>;
 
   return (
     <>
@@ -791,20 +784,25 @@ function QuotaGauge(props: {
       >
         <tbody>
           <tr>
-            {segments.map((segment, index) => (
-              <td
-                key={index}
-                width={`${pct(segment.value)}%`}
-                height={10}
-                style={{
-                  backgroundColor: segment.color,
-                  fontSize: 0,
-                  lineHeight: 0,
-                }}
-              >
-                &nbsp;
-              </td>
-            ))}
+            {[
+              ...segments,
+              { label: "track", value: track, color: colors.track },
+            ]
+              .filter((segment) => segment.value > 0)
+              .map((segment) => (
+                <td
+                  key={segment.label}
+                  width={`${pct(segment.value)}%`}
+                  height={10}
+                  style={{
+                    backgroundColor: segment.color,
+                    fontSize: 0,
+                    lineHeight: 0,
+                  }}
+                >
+                  &nbsp;
+                </td>
+              ))}
           </tr>
         </tbody>
       </table>
@@ -828,7 +826,7 @@ function QuotaGauge(props: {
                 <tbody>
                   <tr>
                     <td style={{ ...labelStyle, color: colors.text }}>
-                      <strong>{props.formatCompact(used)}</strong> used
+                      <strong>{formatCompact(used)}</strong> used
                     </td>
                     {planLabelAfterMarker ? null : (
                       <td style={{ ...labelStyle, textAlign: "right" }}>
@@ -862,8 +860,7 @@ function QuotaGauge(props: {
                             color: colors.overageText,
                           }}
                         >
-                          <strong>{props.formatCompact(projected)}</strong>{" "}
-                          projected
+                          <strong>{formatCompact(projected)}</strong> projected
                         </td>
                       ) : null}
                     </tr>
@@ -874,6 +871,34 @@ function QuotaGauge(props: {
           </tr>
         </tbody>
       </table>
+      <Text
+        style={{
+          margin: "8px 0 0",
+          fontSize: 12,
+          lineHeight: "18px",
+          color: colors.muted,
+        }}
+      >
+        {segments.map((segment) => (
+          <span
+            key={segment.label}
+            style={{ marginRight: 14, whiteSpace: "nowrap" }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: 9,
+                height: 9,
+                borderRadius: 2,
+                backgroundColor: segment.color,
+                verticalAlign: "-1px",
+                marginRight: 5,
+              }}
+            />
+            {segment.label}
+          </span>
+        ))}
+      </Text>
     </>
   );
 }

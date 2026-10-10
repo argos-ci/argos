@@ -60,7 +60,7 @@ describe("GraphQL unsubscribeFromMonthlyReport", () => {
   it("turns the report off for the owner and the team the link names", async () => {
     const { teamAccountId, userId, teamUser } = await setupOwner();
     const token = new URL(
-      getMonthlyReportUnsubscribeUrl({ userId, teamAccountId }),
+      getMonthlyReportUnsubscribeUrl({ userId, teamAccountId }, new Date()),
     ).searchParams.get("token");
     invariant(token, "the unsubscribe URL carries a token");
 

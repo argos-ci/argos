@@ -2,7 +2,6 @@ import { invariant } from "@argos/util/invariant";
 
 import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
-import { extractFirstName } from "@/email/util";
 import { createModelJob } from "@/job-core";
 import {
   getNotificationSettingsUrl,
@@ -68,4 +67,12 @@ async function processMessage(message: NotificationMessage) {
   await message
     .$query()
     .patch({ sentAt: new Date().toISOString(), externalId });
+}
+
+/**
+ * Extract the first name from a full name.
+ */
+function extractFirstName(fullName: string): string | null {
+  const parts = fullName.split(" ");
+  return parts[0] || null;
 }

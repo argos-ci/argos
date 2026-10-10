@@ -22,21 +22,21 @@ const TokenSchema = z.object({
 
 type MonthlyReportUnsubscribeToken = z.infer<typeof TokenSchema>;
 
-function signMonthlyReportUnsubscribeToken(
-  payload: MonthlyReportUnsubscribeToken,
-): string {
-  return jwt.sign(payload, config.get("session.secret"), {
-    algorithm: "HS256",
-    audience: AUDIENCE,
-    expiresIn: TTL_SECONDS,
-  });
-}
-
+/**
+ * The unsubscribe link of a report. Issued at a set date rather than now, so
+ * the same report always carries the same link.
+ */
 export function getMonthlyReportUnsubscribeUrl(
   payload: MonthlyReportUnsubscribeToken,
+  issuedAt: Date,
 ): string {
+  const token = jwt.sign(
+    { ...payload, iat: Math.floor(issuedAt.getTime() / 1000) },
+    config.get("session.secret"),
+    { algorithm: "HS256", audience: AUDIENCE, expiresIn: TTL_SECONDS },
+  );
   const url = new URL("/unsubscribe/monthly-report", config.get("server.url"));
-  url.searchParams.set("token", signMonthlyReportUnsubscribeToken(payload));
+  url.searchParams.set("token", token);
   return url.href;
 }
 

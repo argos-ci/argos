@@ -45,9 +45,13 @@ export async function emailToText(rendered: {
 }
 
 /**
- * Extract the first name from a full name.
+ * An amount of money in whole units of its currency, the way emails state
+ * overage and spend limits.
  */
-export function extractFirstName(fullName: string): string | null {
-  const parts = fullName.split(" ");
-  return parts[0] || null;
+export function formatAmount(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
 }
