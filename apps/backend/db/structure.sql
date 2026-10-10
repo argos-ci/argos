@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
+\restrict JGsUoIeAImcmEG1iTCdfuM7uanVcZni9ooysoigyHoEcbNFoYpX0y6vzxndhbkb
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -128,6 +128,7 @@ CREATE TABLE public.accounts (
     "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
     "originInstallationId" bigint,
     "lastOverageAlertThreshold" integer,
+    "lastMonthlyReportAt" timestamp with time zone,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -2805,6 +2806,7 @@ CREATE TABLE public.team_users (
     "ssoSubject" character varying(255),
     "ssoVerifiedAt" timestamp with time zone,
     "lastAuthMethod" text,
+    "monthlyReportOptedOutAt" timestamp with time zone,
     CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
     CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
@@ -6705,7 +6707,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cAeK4h75sAJHo0ZBGas6Xb04YiTaKwwjb3JhQKbQxNkvzEljJap6a4f9tccGkIt
+\unrestrict JGsUoIeAImcmEG1iTCdfuM7uanVcZni9ooysoigyHoEcbNFoYpX0y6vzxndhbkb
 
 -- Knex migrations
 
@@ -6968,3 +6970,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026092
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260930151350_github-installation-ip-allow-list.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261010094931_monthly-report.js', 1, NOW());

@@ -12,6 +12,7 @@ import {
 export async function sendEmailTemplate<Type extends EmailTemplateType>(
   input: EmailTemplateProps<Type> & {
     to: string[];
+    idempotencyKey?: string | undefined;
   },
 ) {
   const template = emailTemplates.find((h) => h.type === input.template);
@@ -23,5 +24,6 @@ export async function sendEmailTemplate<Type extends EmailTemplateType>(
     to: input.to,
     react: rendered.body,
     subject: rendered.subject,
+    idempotencyKey: input.idempotencyKey,
   });
 }

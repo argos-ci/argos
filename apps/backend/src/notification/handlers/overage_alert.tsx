@@ -14,6 +14,7 @@ import {
   Paragraph,
   Signature,
 } from "../../email/components";
+import { formatAmount } from "../../email/util";
 import { defineNotificationHandler } from "../workflow-types";
 
 const baseUrl = config.get("server.url");
@@ -43,13 +44,7 @@ export const handler = defineNotificationHandler({
   email: (props) => {
     const { threshold, currency, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
-    const formatAmount = (value: number) =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-      }).format(value);
-    const amount = formatAmount(threshold);
+    const amount = formatAmount(threshold, currency);
     const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
       .href;
     const spendManagementHref = new URL(
@@ -108,8 +103,8 @@ export const handler = defineNotificationHandler({
                   <strong>your builds keep running</strong>.
                 </Paragraph>
                 <Paragraph>
-                  Argos sends this heads-up at {formatAmount(200)} and {amount}{" "}
-                  of overage, and{" "}
+                  Argos sends this heads-up at {formatAmount(200, currency)} and{" "}
+                  {amount} of overage, and{" "}
                   <strong>this is the second and last one</strong>. If you would
                   like to keep being notified as your usage grows, you can{" "}
                   <strong>set a spend limit</strong>: Argos will then let you

@@ -56,7 +56,10 @@ export function H1(props: { children: React.ReactNode }) {
   );
 }
 
-export function H2(props: { children: React.ReactNode }) {
+export function H2(props: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
   return (
     <Heading as="h2" className="mb-3 p-0 text-base font-bold" {...props} />
   );

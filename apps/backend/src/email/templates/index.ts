@@ -2,6 +2,7 @@ import type { EmailTemplate } from "../template";
 import * as account_deleted from "./account_deleted";
 import * as account_deletion_request from "./account_deletion_request";
 import * as email_verification from "./email_verification";
+import * as monthly_report from "./monthly_report";
 import * as signin_attempt from "./signin_attempt";
 import * as signin_verification from "./signin_verification";
 import * as signup_signin_verification from "./signup_signin_verification";
@@ -17,6 +18,7 @@ export const emailTemplates = [
   signup_signin_verification.handler,
   signup_verification.handler,
   team_invite.handler,
+  monthly_report.handler,
 ] satisfies EmailTemplate[];
 
 type AnyTemplate = (typeof emailTemplates)[number];

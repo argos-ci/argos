@@ -375,7 +375,7 @@ export async function getTestChangesStats(input: {
  * how many projects the candidate set spans — that is what lets one definition
  * power both the per-project and the account-wide list.
  */
-const TEST_METRICS_LATERAL = `
+export const TEST_METRICS_LATERAL = `
   left join lateral (
     with
       totals as (
