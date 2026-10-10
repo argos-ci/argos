@@ -11,7 +11,6 @@ import {
   monthlyReportJob,
   sendAccountMonthlyReport,
 } from "./monthly-report";
-import { verifyMonthlyReportUnsubscribeToken } from "./monthly-report-unsubscribe";
 
 vi.mock("@/email/send-email-template", () => ({
   sendEmailTemplate: vi.fn(),
@@ -110,17 +109,6 @@ describe("sendAccountMonthlyReport", () => {
     ]);
     // 600 used and 9 × 233 to come: 1697 beyond the plan, at 0.5 each.
     expect(data.projectedOverageCost).toBe(848.5);
-
-    const unsubscribeUrl = new URL(data.unsubscribeUrl);
-    expect(unsubscribeUrl.pathname).toBe("/unsubscribe/monthly-report");
-    expect(
-      verifyMonthlyReportUnsubscribeToken(
-        unsubscribeUrl.searchParams.get("token") ?? "",
-      ),
-    ).toEqual({ userId: ownerId, teamAccountId: account.id });
-    expect(input.headers?.["List-Unsubscribe"]).toBe(
-      `<${data.unsubscribeUrl}>`,
-    );
   });
 
   it("leaves out the owners who turned the report off", async () => {

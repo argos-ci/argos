@@ -198,11 +198,6 @@ export const router: ReturnType<typeof createBrowserRouter> =
           lazy: () => import("./pages/ConfirmAccountDeletion"),
         },
         {
-          path: "/unsubscribe/monthly-report",
-          HydrateFallback,
-          lazy: () => import("./pages/UnsubscribeMonthlyReport"),
-        },
-        {
           // Outside the app layout: the first screen after signup owns the whole
           // viewport, with no nav to click away into. Under `~/` so the path can
           // never collide with an account slug.

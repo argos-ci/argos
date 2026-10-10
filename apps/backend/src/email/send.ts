@@ -30,7 +30,6 @@ export async function sendEmail(options: {
    * Email body as React element.
    */
   react: React.ReactElement;
-  headers?: Record<string, string> | undefined;
   /**
    * Sending again with the same key within a day sends nothing more, so a job
    * can retry an email that may already have gone out.
@@ -45,10 +44,10 @@ export async function sendEmail(options: {
   } else if (!resend) {
     return null;
   }
-  const { idempotencyKey, headers = {}, ...email } = options;
+  const { idempotencyKey, ...email } = options;
   const text = await render(email.react, { plainText: true });
   const result = await resend.emails.send(
-    { ...email, headers, text, from: defaultFrom },
+    { ...email, text, from: defaultFrom },
     idempotencyKey ? { idempotencyKey } : {},
   );
   // Resend reports a failure in the result instead of throwing.

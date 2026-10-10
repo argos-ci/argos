@@ -1,5 +1,4 @@
 import { invariant } from "@argos/util/invariant";
-import { raw } from "objection";
 
 import { getChangelogNews } from "@/changelog/news";
 import { sendEmailTemplate } from "@/email/send-email-template";
@@ -7,10 +6,6 @@ import { createJob } from "@/job-core";
 
 import { Account, Subscription, Team, TeamUser } from "../models";
 import { getMonthlyReportActivity } from "./monthly-report-activity";
-import {
-  getMonthlyReportUnsubscribeUrl,
-  verifyMonthlyReportUnsubscribeToken,
-} from "./monthly-report-unsubscribe";
 import {
   getAdditionalScreenshotCost,
   getIncludedScreenshots,
@@ -188,7 +183,7 @@ async function getTermUsage(term: ReportTerm) {
   };
 }
 
-/** The data the email of a report renders, but its unsubscribe link. */
+/** The data the email of a report renders. */
 async function getMonthlyReportData(
   account: Account,
   term: ReportTerm,
@@ -225,15 +220,6 @@ async function getMonthlyReportData(
 }
 
 /**
- * The monthly report of a team as of `now`, null when it has none. Read-only:
- * this is what the email preview renders.
- */
-export async function getAccountMonthlyReport(account: Account, now: Date) {
-  const term = await getReportTerm(account, now);
-  return term ? getMonthlyReportData(account, term, now) : null;
-}
-
-/**
  * Send the monthly report of a team to its owners who have not turned it off,
  * if one is due: a month of its term closed since the last report.
  *
@@ -267,23 +253,14 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
   }
 
   const data = await getMonthlyReportData(account, term, now);
+  // One email per owner, so no address is shown to the others.
   await Promise.all(
     owners.map((owner) => {
       invariant(owner.email, "owners are filtered on their email");
-      // Signed as of the report, so a retry sends the same email.
-      const unsubscribeUrl = getMonthlyReportUnsubscribeUrl(
-        { userId: owner.id, teamAccountId: account.id },
-        term.dueSince,
-      );
       return sendEmailTemplate({
         template: "monthly_report",
-        data: { ...data, unsubscribeUrl },
+        data,
         to: [owner.email],
-        // The unsubscribe button of mail clients, one click (RFC 8058).
-        headers: {
-          "List-Unsubscribe": `<${unsubscribeUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
         idempotencyKey: `monthly-report/${account.id}/${term.dueSince.toISOString()}/${owner.id}`,
       });
     }),
@@ -296,8 +273,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
 
 /**
  * Turn the monthly report of a team on or off for a member. Each owner chooses
- * for themself, and the date it was first turned off is kept. Null when the
- * user is not a member of the team.
+ * for themself. Null when the user is not a member of the team.
  */
 export async function setMonthlyReportSubscription(input: {
   account: Account;
@@ -312,35 +288,11 @@ export async function setMonthlyReportSubscription(input: {
     .patch({
       monthlyReportOptedOutAt: input.subscribed
         ? null
-        : raw("coalesce(??, now())", "monthlyReportOptedOutAt"),
+        : new Date().toISOString(),
     })
     .where({ teamId, userId: input.userId })
     .returning("*");
   return teamUser ?? null;
-}
-
-/**
- * Turn the monthly report off for the owner and the team an unsubscribe link
- * names. Returns the team, null when the token is invalid or expired, or the
- * user is no longer a member of it.
- */
-export async function unsubscribeFromMonthlyReport(
-  token: string,
-): Promise<Account | null> {
-  const payload = verifyMonthlyReportUnsubscribeToken(token);
-  if (!payload) {
-    return null;
-  }
-  const account = await Account.query().findById(payload.teamAccountId);
-  if (!account) {
-    return null;
-  }
-  const teamUser = await setMonthlyReportSubscription({
-    account,
-    userId: payload.userId,
-    subscribed: false,
-  });
-  return teamUser ? account : null;
 }
 
 export const monthlyReportJob = createJob<string>(

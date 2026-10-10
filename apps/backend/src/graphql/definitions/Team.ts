@@ -28,10 +28,7 @@ import {
   UserEmail,
 } from "@/database/models";
 import { createAccount } from "@/database/services/account";
-import {
-  setMonthlyReportSubscription,
-  unsubscribeFromMonthlyReport,
-} from "@/database/services/monthly-report";
+import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
   addTeamDomain,
@@ -397,11 +394,6 @@ export const typeDefs = gql`
     subscribed: Boolean!
   }
 
-  type UnsubscribeFromMonthlyReportPayload {
-    teamName: String!
-    teamSlug: String!
-  }
-
   extend type Query {
     "Get a invite (specific to a user) by its secret"
     invite(secret: String!): TeamInvite
@@ -468,10 +460,6 @@ export const typeDefs = gql`
     setMonthlyReportSubscription(
       input: SetMonthlyReportSubscriptionInput!
     ): TeamMember!
-    "Turn the monthly report off from the unsubscribe link of the email, which works without a session"
-    unsubscribeFromMonthlyReport(
-      token: String!
-    ): UnsubscribeFromMonthlyReportPayload!
   }
 `;
 
@@ -1985,16 +1973,6 @@ export const resolvers: IResolvers = {
       } catch (error) {
         throw toGraphQLError(error);
       }
-    },
-    unsubscribeFromMonthlyReport: async (_root, args) => {
-      const account = await unsubscribeFromMonthlyReport(args.token);
-      if (!account) {
-        throw badUserInput(
-          "This unsubscribe link has expired or is no longer valid.",
-          { code: "MONTHLY_REPORT_UNSUBSCRIBE_TOKEN_INVALID" },
-        );
-      }
-      return { teamName: account.displayName, teamSlug: account.slug };
     },
     cancelInvite: async (_root, args, ctx) => {
       if (!ctx.auth) {

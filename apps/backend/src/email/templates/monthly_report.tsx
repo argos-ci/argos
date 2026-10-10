@@ -116,8 +116,6 @@ const MonthlyReportSchema = z.object({
   activity: ActivitySchema,
   /** What shipped in Argos since the previous report, from its changelog. */
   news: z.array(NewsItemSchema),
-  /** Turns the report off for this owner of this team, without signing in. */
-  unsubscribeUrl: z.url(),
 });
 
 type MonthlyReportData = z.infer<typeof MonthlyReportSchema>;
@@ -220,8 +218,6 @@ export const handler = defineEmailTemplate({
         publishedAt: "2026-09-01T00:00:00.000Z",
       },
     ],
-    unsubscribeUrl:
-      "https://app.argos-ci.com/unsubscribe/monthly-report?token=xxx",
   },
   email: (props) => renderMonthlyReport(props),
 });
@@ -245,6 +241,10 @@ function renderMonthlyReport(props: MonthlyReportData) {
 
   const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
     .href;
+  const settingsHref = new URL(
+    `/${props.accountSlug}/settings/billing#monthly-report`,
+    baseUrl,
+  ).href;
   const testsHref = new URL(`/${props.accountSlug}/~/tests`, baseUrl).href;
   const analyticsHref = new URL(`/${props.accountSlug}/~/analytics`, baseUrl)
     .href;
@@ -440,8 +440,8 @@ function renderMonthlyReport(props: MonthlyReportData) {
           <Signature />
         </Section>
         <InfoText>
-          You receive this monthly report as an owner of {accountName}.{" "}
-          <Link href={props.unsubscribeUrl}>Unsubscribe</Link>
+          You receive this monthly report as an owner of {accountName}. You can
+          turn it off in the <Link href={settingsHref}>billing settings</Link>.
         </InfoText>
       </EmailLayout>
     ),
