@@ -1,33 +1,30 @@
-import { Section } from "react-email";
+import { Section, Text } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
 
-import {
-  Button,
-  EmailLayout,
-  H1,
-  H2,
-  Hi,
-  InfoText,
-  Link,
-  Paragraph,
-  Signature,
-} from "../components";
+import { EmailLayout, H1, Link, Signature } from "../components";
 import { defineEmailTemplate } from "../template";
 
 const baseUrl = config.get("server.url");
 
-// Radix violet and orange, the scales the app charts are drawn with.
+// Radix violet, orange and slate, the scales the app is drawn with.
 const colors = {
-  included: "#6e56cf",
-  includedProjected: "#e1d9ff",
-  includedProjectedBorder: "#aa99ec",
-  overage: "#f76b15",
-  overageProjected: "#ffdcc3",
-  overageProjectedBorder: "#f5ae73",
-  track: "#f4f4f5",
+  text: "#09090b",
   muted: "#71717a",
+  faint: "#a1a1aa",
+  border: "#e4e4e7",
+  violet: "#6e56cf",
+  violetText: "#5746af",
+  violetTint: "#f7f4ff",
+  violetBorder: "#e4dcfd",
+  violetLight: "#e1d9ff",
+  overage: "#f76b15",
+  overageText: "#cc4e00",
+  overageTint: "#fff8f2",
+  overageLight: "#ffdcc3",
+  track: "#f1f1f3",
+  success: "#218358",
 };
 
 const MonthSchema = z.object({
@@ -38,27 +35,80 @@ const MonthSchema = z.object({
   projected: z.boolean(),
 });
 
+const ActivitySchema = z.object({
+  /** The month the activity covers: the last one of the term that closed. */
+  from: z.string(),
+  to: z.string(),
+  pullRequests: z.object({
+    checked: z.number(),
+    /** Fixed after Argos flagged a change that did not come from flaky tests. */
+    fixedAfterFlag: z.number(),
+    /** Counted once per commit, however many build names it built. */
+    intermediateCommits: z.number(),
+  }),
+  /** Screenshots a person approved or rejected, automatic approvals left out. */
+  changesReviewed: z.object({
+    current: z.number(),
+    previous: z.number().nullable(),
+  }),
+  /** Tests that ran on the reference branch, and the ones new to it. */
+  tests: z.object({ covered: z.number(), added: z.number() }),
+  flakyTests: z.object({
+    current: z.number(),
+    previous: z.number().nullable(),
+    top: z.array(
+      z.object({
+        name: z.string(),
+        buildName: z.string(),
+        flakiness: z.number(),
+        url: z.string(),
+      }),
+    ),
+  }),
+  screenshots: z.object({
+    /** The project and build name whose screenshots grew the most. */
+    biggestIncrease: z
+      .object({
+        label: z.string(),
+        screenshots: z.number(),
+        previous: z.number(),
+      })
+      .nullable(),
+  }),
+});
+
+export type MonthlyReportActivity = z.infer<typeof ActivitySchema>;
+
+const UsageReportSchema = z.object({
+  accountName: z.string().nullish(),
+  accountSlug: z.string(),
+  currency: z.enum(["usd", "eur"]),
+  /** Screenshots the plan includes over the whole term. */
+  includedScreenshots: z.number(),
+  /** Overage the term would be billed at renewal, at the current pace. */
+  projectedOverageCost: z.number(),
+  termStartsAt: z.string(),
+  termEndsAt: z.string(),
+  /** Every month of the term, the ones to come included. */
+  months: z.array(MonthSchema),
+  activity: ActivitySchema,
+  /** Turns the report off for this owner of this team, without signing in. */
+  unsubscribeUrl: z.url(),
+});
+
+type UsageReportData = z.infer<typeof UsageReportSchema>;
+type Month = UsageReportData["months"][number];
+
+/**
+ * The monthly report of a team on an annual plan: what Argos did for it over
+ * the month, then where its plan stands. Annual overage is invoiced once, when
+ * the term ends, so this is where a team that does not watch its usage sees
+ * it coming.
+ */
 export const handler = defineEmailTemplate({
   type: "usage_report",
-  schema: z.object({
-    /** First name of the owner the email goes to. */
-    recipientName: z.string().nullable(),
-    accountName: z.string().nullish(),
-    accountSlug: z.string(),
-    currency: z.enum(["usd", "eur"]),
-    /** Screenshots the plan includes over the whole term. */
-    includedScreenshots: z.number(),
-    /** Overage the term would be billed at renewal, at the current pace. */
-    projectedOverageCost: z.number(),
-    termStartsAt: z.string(),
-    termEndsAt: z.string(),
-    /** Every month of the term, the ones to come included. */
-    months: z.array(MonthSchema),
-    /** Turns the report off for this owner of this team, without signing in. */
-    unsubscribeUrl: z.url(),
-  }),
+  schema: UsageReportSchema,
   previewData: {
-    recipientName: "James",
     accountName: "Acme",
     accountSlug: "acme",
     currency: "eur",
@@ -84,193 +134,315 @@ export const handler = defineEmailTemplate({
       screenshots: screenshots as number,
       projected: Boolean(projected),
     })),
+    activity: {
+      from: "2026-09-15",
+      to: "2026-10-15",
+      pullRequests: {
+        checked: 180,
+        fixedAfterFlag: 41,
+        intermediateCommits: 412,
+      },
+      changesReviewed: { current: 1840, previous: 1620 },
+      tests: { covered: 4320, added: 120 },
+      flakyTests: {
+        current: 14,
+        previous: 11,
+        top: [
+          {
+            name: "checkout › payment form",
+            buildName: "e2e",
+            flakiness: 0.62,
+            url: "https://app.argos-ci.com/acme/web/tests/1",
+          },
+          {
+            name: "Button / Loading",
+            buildName: "storybook",
+            flakiness: 0.48,
+            url: "https://app.argos-ci.com/acme/web/tests/2",
+          },
+          {
+            name: "dashboard › charts",
+            buildName: "e2e",
+            flakiness: 0.41,
+            url: "https://app.argos-ci.com/acme/web/tests/3",
+          },
+        ],
+      },
+      screenshots: {
+        biggestIncrease: {
+          label: "web · e2e",
+          screenshots: 71_000,
+          previous: 52_000,
+        },
+      },
+    },
     unsubscribeUrl:
       "https://app.argos-ci.com/unsubscribe/monthly-report?token=xxx",
   },
-  // Annual overage is invoiced once, when the term ends, so a team that does
-  // not watch its usage meets it for the first time on that invoice. The report
-  // shows where the term is heading while there is still time to act on it,
-  // in screenshots for whoever tunes the test suite and in money for whoever
-  // pays.
-  email: (props) => {
-    const { months, includedScreenshots, currency } = props;
-    const accountName = props.accountName || props.accountSlug;
-
-    const formatCount = (value: number) =>
-      new Intl.NumberFormat("en-US").format(Math.round(value));
-    const formatCompact = (value: number) =>
-      new Intl.NumberFormat("en-US", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-      }).format(value);
-    const formatAmount = (value: number) =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-      }).format(value);
-    const formatDate = (value: string | Date) =>
-      new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(value));
-
-    const used = sum(months.filter((m) => !m.projected));
-    const projected = sum(months);
-    const elapsedMonths = months.filter((m) => !m.projected).length;
-    const usedRatio = used / includedScreenshots;
-    const projectedOverage = Math.max(0, projected - includedScreenshots);
-    const { projectedOverageCost } = props;
-    const exhaustedAt = getQuotaExhaustionDate(months, includedScreenshots);
-    const remaining = Math.max(0, includedScreenshots - used);
-
-    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
-      .href;
-
-    const summary = (() => {
-      if (projectedOverage === 0) {
-        return (
-          <Paragraph>
-            At your current pace, your team will use about{" "}
-            <strong>{formatCount(projected)} screenshots</strong> by the end of
-            its term on {formatDate(props.termEndsAt)}, which{" "}
-            <strong>stays within your plan</strong>. Nothing beyond your
-            subscription should be billed at renewal.
-          </Paragraph>
-        );
-      }
-      return (
-        <>
-          <Paragraph>
-            {remaining > 0 && exhaustedAt ? (
-              <>
-                Your team has{" "}
-                <strong>{formatCount(remaining)} screenshots left</strong> in
-                its plan. At your current pace, they will run out around{" "}
-                <strong>{formatDate(exhaustedAt)}</strong>
-              </>
-            ) : (
-              <>
-                Your team has <strong>used every screenshot</strong> its plan
-                includes for this term
-              </>
-            )}
-            , and the term would end with about{" "}
-            <strong>
-              {formatCount(projectedOverage)} additional screenshots
-            </strong>
-            .
-          </Paragraph>
-          <Paragraph>
-            Your builds keep running beyond the plan. On an annual plan, the
-            overage is <strong>billed once, when the term ends</strong> on{" "}
-            {formatDate(props.termEndsAt)}. At this pace, that would be an
-            estimated <strong>{formatAmount(projectedOverageCost)}</strong>.
-          </Paragraph>
-        </>
-      );
-    })();
-
-    return {
-      subject: `${accountName} has used ${Math.round(usedRatio * 100)}% of its annual plan`,
-      body: (
-        <EmailLayout
-          preview={`${formatCount(used)} of ${formatCount(includedScreenshots)} screenshots used, ${elapsedMonths} months into the term.`}
-        >
-          <H1>Your monthly report</H1>
-          <Hi name={props.recipientName} />
-          <Paragraph>
-            Here is where <strong>{accountName}</strong> stands, {elapsedMonths}{" "}
-            months into its annual plan.
-          </Paragraph>
-
-          <Stats
-            items={[
-              {
-                label: "Used this term",
-                value: formatCompact(used),
-                detail: `of ${formatCompact(includedScreenshots)} included`,
-              },
-              {
-                label: "Term elapsed",
-                value: `${elapsedMonths} of ${months.length}`,
-                detail: "months",
-              },
-              {
-                label: "Projected at renewal",
-                value: formatCompact(projected),
-                detail:
-                  projectedOverage > 0
-                    ? `${formatAmount(projectedOverageCost)} overage`
-                    : "within your plan",
-                highlight: projectedOverage > 0,
-              },
-            ]}
-          />
-
-          <QuotaGauge
-            used={used}
-            projected={projected}
-            included={includedScreenshots}
-            formatCompact={formatCompact}
-          />
-
-          {summary}
-
-          <H2>Screenshots per month</H2>
-          <MonthlyChart
-            months={months}
-            included={includedScreenshots}
-            formatCompact={formatCompact}
-          />
-
-          <Paragraph>
-            The months to come are projected from the last three months, the
-            most recent counting most. Usage is counted across every project of
-            the team.
-          </Paragraph>
-
-          <Section className="my-6 text-center">
-            <Button href={settingsHref}>View usage</Button>
-          </Section>
-          {projectedOverage > 0 ? (
-            <Paragraph>
-              You can reduce this overage by committing to a larger plan before
-              your term ends. Reply to this email or write to us at{" "}
-              <Link href="mailto:contact@argos-ci.com">
-                contact@argos-ci.com
-              </Link>{" "}
-              to discuss it.
-            </Paragraph>
-          ) : (
-            <Paragraph>
-              If you have any questions about these numbers, simply reply to
-              this email.
-            </Paragraph>
-          )}
-          <Signature />
-          <InfoText>
-            You receive this monthly report as an owner of {accountName}.{" "}
-            <Link href={props.unsubscribeUrl}>Unsubscribe</Link>
-          </InfoText>
-        </EmailLayout>
-      ),
-    };
-  },
+  email: (props) => renderMonthlyReport(props),
 });
 
-type Month = z.infer<typeof MonthSchema>;
+function renderMonthlyReport(props: UsageReportData) {
+  const { months, includedScreenshots, currency, projectedOverageCost } = props;
+  const { activity } = props;
+  const accountName = props.accountName || props.accountSlug;
+
+  const formatCompact = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value);
+  const formatCount = (value: number) =>
+    new Intl.NumberFormat("en-US").format(Math.round(value));
+  const formatAmount = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(value);
+  const formatDate = (value: string | Date) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(value));
+  const formatMonthDate = (value: string | Date) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(value));
+  const formatShortDate = (value: string | Date) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(value));
+
+  const closed = months.filter((month) => !month.projected);
+  const used = sum(closed);
+  const projected = sum(months);
+  const usedPct = Math.round((used / includedScreenshots) * 100);
+  const elapsedPct = Math.round((closed.length / months.length) * 100);
+  const exhaustedAt = getQuotaExhaustionDate(months, includedScreenshots);
+  const overage = projected > includedScreenshots;
+  const { biggestIncrease } = activity.screenshots;
+
+  const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
+    .href;
+  const testsHref = new URL(`/${props.accountSlug}/~/tests`, baseUrl).href;
+  const analyticsHref = new URL(`/${props.accountSlug}/~/analytics`, baseUrl)
+    .href;
+  const period = `${formatShortDate(activity.from)} to ${formatDate(activity.to)}`;
+
+  return {
+    subject: `Your Argos monthly report for ${accountName}`,
+    body: (
+      <EmailLayout
+        preview={`${formatCount(activity.pullRequests.checked)} pull requests checked, ${formatCount(activity.pullRequests.fixedAfterFlag)} fixed after a visual change was flagged.`}
+      >
+        <Text style={eyebrowStyle}>Monthly report · {period}</Text>
+        <H1>{accountName}’s month on Argos</H1>
+
+        <Hero
+          stats={[
+            {
+              value: formatCount(activity.pullRequests.checked),
+              label: "pull requests checked",
+              detail: `${formatCount(activity.pullRequests.intermediateCommits)} intermediate commits along the way`,
+            },
+            {
+              value: formatCount(activity.pullRequests.fixedAfterFlag),
+              label: "fixed after Argos flagged a visual change",
+            },
+            {
+              value: formatCount(activity.changesReviewed.current),
+              label: "visual changes reviewed",
+              detail: (
+                <Delta
+                  current={activity.changesReviewed.current}
+                  previous={activity.changesReviewed.previous}
+                />
+              ),
+            },
+            {
+              value: formatCount(activity.tests.covered),
+              label: "tests covered",
+              detail: `${formatCount(activity.tests.added)} new this month`,
+            },
+          ]}
+        />
+        <SectionLink href={analyticsHref}>See analytics</SectionLink>
+
+        <SectionTitle>Test health</SectionTitle>
+        <Text style={{ ...bodyStyle, margin: 0 }}>
+          <strong>
+            {formatCount(activity.flakyTests.current)} flaky tests
+          </strong>{" "}
+          this month{" "}
+          <Delta
+            current={activity.flakyTests.current}
+            previous={activity.flakyTests.previous}
+            tone="increaseIsBad"
+          />
+          . Their changes come back without a code change, and each one costs a
+          review.
+        </Text>
+        {activity.flakyTests.top.length > 0 ? (
+          <table
+            width="100%"
+            cellPadding={0}
+            cellSpacing={0}
+            role="presentation"
+            style={{ marginTop: 8 }}
+          >
+            <tbody>
+              {activity.flakyTests.top.map((test) => (
+                <tr key={test.url}>
+                  <td style={rowCellStyle}>
+                    <Link href={test.url}>{test.name}</Link>{" "}
+                    <span style={{ color: colors.faint }}>
+                      {test.buildName}
+                    </span>
+                  </td>
+                  <td
+                    style={{
+                      ...rowCellStyle,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      paddingLeft: 12,
+                      color: colors.overageText,
+                    }}
+                  >
+                    {Math.round(test.flakiness * 100)}% flaky
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+        <SectionLink href={testsHref}>See all tests</SectionLink>
+
+        <SectionTitle>Usage</SectionTitle>
+        <Text style={{ ...bodyStyle, margin: "0 0 12px" }}>
+          <strong>{usedPct}%</strong> of your plan used ·{" "}
+          <strong>{elapsedPct}%</strong> of the term elapsed.{" "}
+          {overage ? (
+            <>
+              At this pace, the plan runs out around{" "}
+              {exhaustedAt ? formatShortDate(exhaustedAt) : "renewal"}, and the
+              term ends at about {formatCompact(projected)} screenshots,{" "}
+              {formatRatio(projected / includedScreenshots)} your plan.
+            </>
+          ) : (
+            <>
+              On track to stay within your plan until renewal on{" "}
+              {formatDate(props.termEndsAt)}.
+            </>
+          )}
+        </Text>
+        <QuotaGauge
+          used={used}
+          projected={projected}
+          included={includedScreenshots}
+          startLabel={formatMonthDate(props.termStartsAt)}
+          endLabel={formatMonthDate(props.termEndsAt)}
+          formatCompact={formatCompact}
+        />
+        <GaugeLegend
+          usedOverage={used > includedScreenshots}
+          projectedOverage={overage}
+        />
+        {overage ? (
+          <OverageNote
+            amount={formatAmount(projectedOverageCost)}
+            renewal={formatDate(props.termEndsAt)}
+          />
+        ) : null}
+        {biggestIncrease ? (
+          <>
+            <Text
+              style={{
+                margin: "24px 0 4px",
+                fontSize: 13,
+                lineHeight: "20px",
+                fontWeight: 600,
+                color: colors.text,
+              }}
+            >
+              Biggest change this month
+            </Text>
+            <Text style={{ ...bodyStyle, margin: 0 }}>
+              <strong>{biggestIncrease.label}</strong> used{" "}
+              {formatCompact(biggestIncrease.screenshots)} screenshots,{" "}
+              <span style={{ color: colors.overageText }}>
+                +
+                {formatCompact(
+                  biggestIncrease.screenshots - biggestIncrease.previous,
+                )}{" "}
+                (+
+                {Math.round(
+                  ((biggestIncrease.screenshots - biggestIncrease.previous) /
+                    biggestIncrease.previous) *
+                    100,
+                )}
+                %)
+              </span>{" "}
+              compared with last month.
+            </Text>
+          </>
+        ) : null}
+        <SectionLink href={usageHref}>See usage details</SectionLink>
+
+        <Section style={{ marginTop: 32 }}>
+          {overage ? null : (
+            <Text style={{ ...bodyStyle, margin: "0 0 4px" }}>
+              If your usage changes, reply to this email: we can adjust your
+              plan before your term ends and help you avoid any overage.
+            </Text>
+          )}
+          <Signature />
+        </Section>
+        <Text style={{ ...smallStyle, margin: "0 0 8px" }}>
+          You receive this monthly report as an owner of {accountName}.{" "}
+          <Link href={props.unsubscribeUrl}>Unsubscribe</Link>
+        </Text>
+      </EmailLayout>
+    ),
+  };
+}
+
+const eyebrowStyle = {
+  margin: "24px 0 0",
+  fontSize: 11,
+  lineHeight: "16px",
+  letterSpacing: "0.06em",
+  textTransform: "uppercase" as const,
+  color: colors.muted,
+};
+
+const bodyStyle = { fontSize: 14, lineHeight: "22px", color: colors.text };
+const smallStyle = { fontSize: 12, lineHeight: "18px", color: colors.muted };
+const rowCellStyle = {
+  padding: "8px 0",
+  borderBottom: `1px solid ${colors.border}`,
+  fontSize: 13,
+  lineHeight: "18px",
+  color: colors.text,
+};
+
+function formatRatio(ratio: number) {
+  return ratio >= 1.95
+    ? `${Math.round(ratio * 10) / 10}×`.replace(".0×", "×")
+    : `${Math.round((ratio - 1) * 100)}% above`;
+}
 
 function sum(months: Month[]) {
   return months.reduce((total, month) => total + month.screenshots, 0);
 }
 
-/**
- * The day the cumulative usage reaches the included screenshots, assuming
- * usage is spread evenly within a month. Null when it never does.
- */
 function getQuotaExhaustionDate(months: Month[], included: number) {
   let cumulative = 0;
   for (const [index, month] of months.entries()) {
@@ -288,58 +460,220 @@ function getQuotaExhaustionDate(months: Month[], included: number) {
   return null;
 }
 
-function Stats(props: {
-  items: {
-    label: string;
-    value: string;
-    detail: string;
-    highlight?: boolean;
-  }[];
+function SectionTitle(props: { children: React.ReactNode }) {
+  return (
+    <Text
+      style={{
+        margin: "32px 0 10px",
+        fontSize: 15,
+        lineHeight: "22px",
+        fontWeight: 600,
+        color: colors.text,
+      }}
+    >
+      {props.children}
+    </Text>
+  );
+}
+
+function SectionLink(props: { href: string; children: React.ReactNode }) {
+  return (
+    <Text style={{ margin: "10px 0 0", fontSize: 13, lineHeight: "20px" }}>
+      <Link href={props.href}>{props.children} →</Link>
+    </Text>
+  );
+}
+
+/**
+ * The month at a glance: the figures that say what Argos did for the team, in
+ * the brand color, so the top of the report is not a column of grey text.
+ */
+function Hero(props: {
+  stats: { value: string; label: string; detail?: React.ReactNode }[];
 }) {
+  const rows: (typeof props.stats)[] = [];
+  for (let index = 0; index < props.stats.length; index += 2) {
+    rows.push(props.stats.slice(index, index + 2));
+  }
+  return (
+    <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
+      <tbody>
+        <tr>
+          <td
+            style={{
+              backgroundColor: colors.violetTint,
+              border: `1px solid ${colors.violetBorder}`,
+              borderRadius: 10,
+              padding: "18px 20px 6px",
+            }}
+          >
+            <table
+              width="100%"
+              cellPadding={0}
+              cellSpacing={0}
+              role="presentation"
+            >
+              <tbody>
+                {rows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((stat, index) => (
+                      <td
+                        key={stat.label}
+                        width="50%"
+                        style={{
+                          verticalAlign: "top",
+                          paddingBottom: 14,
+                          paddingLeft: index === 0 ? 0 : 16,
+                          paddingRight: 8,
+                          borderLeft:
+                            index === 0
+                              ? undefined
+                              : `1px solid ${colors.violetBorder}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 28,
+                            lineHeight: "34px",
+                            fontWeight: 600,
+                            color: colors.violetText,
+                          }}
+                        >
+                          {stat.value}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            lineHeight: "18px",
+                            color: colors.text,
+                          }}
+                        >
+                          {stat.label}
+                        </div>
+                        {stat.detail ? (
+                          <div
+                            style={{
+                              marginTop: 2,
+                              fontSize: 12,
+                              lineHeight: "17px",
+                              color: colors.muted,
+                            }}
+                          >
+                            {stat.detail}
+                          </div>
+                        ) : null}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+function Delta(props: {
+  current: number;
+  previous: number | null;
+  tone?: "increaseIsBad";
+}) {
+  const { current, previous } = props;
+  if (previous === null) {
+    return null;
+  }
+  const change = current - previous;
+  if (change === 0) {
+    return <span style={{ color: colors.muted }}>(same as last month)</span>;
+  }
+  // A raw difference reads well on small counts, a share on large ones.
+  const value =
+    previous >= 20
+      ? `${Math.abs(Math.round((change / previous) * 100))}%`
+      : String(Math.abs(change));
+  const color =
+    props.tone === "increaseIsBad"
+      ? change > 0
+        ? colors.overageText
+        : colors.success
+      : colors.muted;
+  return (
+    <span style={{ color }}>
+      {change > 0 ? "▲" : "▼"} {value} vs last month
+    </span>
+  );
+}
+
+function GaugeLegend(props: {
+  usedOverage: boolean;
+  projectedOverage: boolean;
+}) {
+  const items = [
+    { label: "Used", color: colors.violet },
+    ...(props.usedOverage
+      ? [{ label: "Used beyond the plan", color: colors.overage }]
+      : []),
+    { label: "Projected", color: colors.violetLight },
+    ...(props.projectedOverage
+      ? [{ label: "Projected beyond the plan", color: colors.overageLight }]
+      : []),
+  ];
+  return (
+    <Text style={{ ...smallStyle, margin: "8px 0 0" }}>
+      {items.map((item) => (
+        <span
+          key={item.label}
+          style={{ marginRight: 14, whiteSpace: "nowrap" }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              width: 9,
+              height: 9,
+              borderRadius: 2,
+              backgroundColor: item.color,
+              verticalAlign: "-1px",
+              marginRight: 5,
+            }}
+          />
+          {item.label}
+        </span>
+      ))}
+    </Text>
+  );
+}
+
+function OverageNote(props: { amount: string; renewal: string }) {
   return (
     <table
       width="100%"
       cellPadding={0}
       cellSpacing={0}
       role="presentation"
-      style={{ marginTop: 8, marginBottom: 20 }}
+      style={{ marginTop: 20 }}
     >
       <tbody>
         <tr>
-          {props.items.map((item, index) => (
-            <td
-              key={item.label}
-              width={`${100 / props.items.length}%`}
-              style={{
-                verticalAlign: "top",
-                paddingLeft: index === 0 ? 0 : 16,
-                borderLeft: index === 0 ? undefined : "1px solid #e4e4e7",
-              }}
-            >
-              <div style={{ fontSize: 12, color: colors.muted }}>
-                {item.label}
-              </div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 600,
-                  lineHeight: "32px",
-                  color: "#09090b",
-                }}
-              >
-                {item.value}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: item.highlight ? "#cc4e00" : colors.muted,
-                  fontWeight: item.highlight ? 600 : 400,
-                }}
-              >
-                {item.detail}
-              </div>
-            </td>
-          ))}
+          <td
+            style={{
+              borderLeft: `3px solid ${colors.overage}`,
+              backgroundColor: colors.overageTint,
+              borderRadius: "0 6px 6px 0",
+              padding: "10px 14px",
+              fontSize: 13,
+              lineHeight: "20px",
+              color: colors.text,
+            }}
+          >
+            <strong style={{ color: colors.overageText }}>
+              About {props.amount} of overage will be billed at renewal, on{" "}
+              {props.renewal}.
+            </strong>{" "}
+            You can commit to a larger plan to lower this amount: reply to this
+            email to discuss it.
+          </td>
         </tr>
       </tbody>
     </table>
@@ -347,43 +681,68 @@ function Stats(props: {
 }
 
 /**
- * Horizontal bar of the whole term: what is used, what is projected, and where
- * the plan ends. Drawn with table cells, the one layout every client renders.
+ * The term in one bar, from its start to its renewal: what is used, what is
+ * projected, and where the plan ends. Drawn with table cells, the one layout
+ * every email client renders.
  */
 function QuotaGauge(props: {
   used: number;
   projected: number;
   included: number;
+  startLabel: string;
+  endLabel: string;
   formatCompact: (value: number) => string;
 }) {
   const { used, projected, included } = props;
   const scale = Math.max(projected, included);
   const pct = (value: number) => (value / scale) * 100;
-
   const segments = [
-    { value: Math.min(used, included), color: colors.included },
+    { value: Math.min(used, included), color: colors.violet },
     { value: Math.max(0, used - included), color: colors.overage },
     {
       value: Math.max(0, Math.min(projected, included) - used),
-      color: colors.includedProjected,
+      color: colors.violetLight,
     },
     {
       value: Math.max(0, projected - Math.max(used, included)),
-      color: colors.overageProjected,
+      color: colors.overageLight,
     },
     { value: Math.max(0, scale - projected), color: colors.track },
   ].filter((segment) => segment.value > 0);
-
   const includedPct = pct(included);
+  const overage = projected > included;
+  // Close to the left edge, the plan label goes after its marker so it does
+  // not run into the used label.
+  const planLabelAfterMarker = includedPct < 40;
+
+  const labelStyle = {
+    fontSize: 11,
+    lineHeight: "14px",
+    color: colors.muted,
+    whiteSpace: "nowrap" as const,
+  };
+  const planLabel = <>Plan {props.formatCompact(included)}</>;
 
   return (
-    <Section className="mb-2">
+    <>
+      <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
+        <tbody>
+          <tr>
+            <td style={{ ...labelStyle, paddingBottom: 4 }}>
+              {props.startLabel}
+            </td>
+            <td style={{ ...labelStyle, paddingBottom: 4, textAlign: "right" }}>
+              {props.endLabel}
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <table
         width="100%"
         cellPadding={0}
         cellSpacing={0}
         role="presentation"
-        style={{ borderRadius: 4, overflow: "hidden" }}
+        style={{ borderRadius: 5, overflow: "hidden" }}
       >
         <tbody>
           <tr>
@@ -391,7 +750,7 @@ function QuotaGauge(props: {
               <td
                 key={index}
                 width={`${pct(segment.value)}%`}
-                height={12}
+                height={10}
                 style={{
                   backgroundColor: segment.color,
                   fontSize: 0,
@@ -410,211 +769,66 @@ function QuotaGauge(props: {
             <td
               width={`${includedPct}%`}
               style={{
-                borderRight: "2px solid #09090b",
-                fontSize: 11,
-                lineHeight: "14px",
-                color: colors.muted,
-                textAlign: "right",
-                paddingRight: 4,
+                borderRight: `2px solid ${colors.text}`,
                 paddingTop: 4,
-                whiteSpace: "nowrap",
+                paddingRight: 4,
               }}
             >
-              Plan: {props.formatCompact(included)}
+              <table
+                width="100%"
+                cellPadding={0}
+                cellSpacing={0}
+                role="presentation"
+              >
+                <tbody>
+                  <tr>
+                    <td style={{ ...labelStyle, color: colors.text }}>
+                      <strong>{props.formatCompact(used)}</strong> used
+                    </td>
+                    {planLabelAfterMarker ? null : (
+                      <td style={{ ...labelStyle, textAlign: "right" }}>
+                        {planLabel}
+                      </td>
+                    )}
+                  </tr>
+                </tbody>
+              </table>
             </td>
             {includedPct < 100 ? (
-              <td
-                style={{
-                  fontSize: 11,
-                  color: colors.muted,
-                  textAlign: "right",
-                  paddingTop: 4,
-                }}
-              >
-                {props.formatCompact(projected)}
+              <td style={{ paddingTop: 4 }}>
+                <table
+                  width="100%"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  role="presentation"
+                >
+                  <tbody>
+                    <tr>
+                      {planLabelAfterMarker ? (
+                        <td style={{ ...labelStyle, paddingLeft: 4 }}>
+                          {planLabel}
+                        </td>
+                      ) : null}
+                      {overage ? (
+                        <td
+                          style={{
+                            ...labelStyle,
+                            textAlign: "right",
+                            color: colors.overageText,
+                          }}
+                        >
+                          <strong>{props.formatCompact(projected)}</strong>{" "}
+                          projected
+                        </td>
+                      ) : null}
+                    </tr>
+                  </tbody>
+                </table>
               </td>
             ) : null}
           </tr>
         </tbody>
       </table>
-      <Legend overage={projected > included} />
-    </Section>
-  );
-}
-
-function Legend(props: { overage: boolean }) {
-  const items = [
-    { label: "Included", color: colors.included },
-    ...(props.overage ? [{ label: "Overage", color: colors.overage }] : []),
-    {
-      label: "Projected",
-      color: colors.includedProjected,
-      border: colors.includedProjectedBorder,
-    },
-  ];
-  return (
-    <table cellPadding={0} cellSpacing={0} role="presentation">
-      <tbody>
-        <tr>
-          {items.map((item) => (
-            <td
-              key={item.label}
-              style={{
-                paddingTop: 10,
-                paddingRight: 16,
-                fontSize: 12,
-                color: colors.muted,
-                whiteSpace: "nowrap",
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 10,
-                  height: 10,
-                  borderRadius: 2,
-                  backgroundColor: item.color,
-                  border: item.border ? `1px dashed ${item.border}` : undefined,
-                  boxSizing: "border-box",
-                  verticalAlign: "-1px",
-                  marginRight: 6,
-                }}
-              />
-              {item.label}
-            </td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
-  );
-}
-
-const CHART_HEIGHT = 120;
-
-/**
- * One bar per month of the term, split where the cumulative usage crosses the
- * plan, so the month the overage starts reads at a glance.
- */
-function MonthlyChart(props: {
-  months: Month[];
-  included: number;
-  formatCompact: (value: number) => string;
-}) {
-  const { months, included } = props;
-  const max = Math.max(...months.map((m) => m.screenshots));
-  const formatMonth = (value: string) =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      timeZone: "UTC",
-    }).format(new Date(value));
-
-  let cumulative = 0;
-  const bars = months.map((month) => {
-    const withinPlan = Math.max(
-      0,
-      Math.min(month.screenshots, included - cumulative),
-    );
-    cumulative += month.screenshots;
-    return {
-      ...month,
-      withinPlan,
-      overage: month.screenshots - withinPlan,
-    };
-  });
-
-  const toHeight = (value: number) => Math.round((value / max) * CHART_HEIGHT);
-
-  return (
-    <table
-      width="100%"
-      cellPadding={0}
-      cellSpacing={0}
-      role="presentation"
-      style={{ marginBottom: 8, tableLayout: "fixed" }}
-    >
-      <tbody>
-        <tr>
-          {bars.map((bar) => {
-            const overageHeight = toHeight(bar.overage);
-            const withinHeight = toHeight(bar.withinPlan);
-            const style = bar.projected
-              ? {
-                  overage: {
-                    backgroundColor: colors.overageProjected,
-                    border: `1px dashed ${colors.overageProjectedBorder}`,
-                  },
-                  within: {
-                    backgroundColor: colors.includedProjected,
-                    border: `1px dashed ${colors.includedProjectedBorder}`,
-                  },
-                }
-              : {
-                  overage: { backgroundColor: colors.overage },
-                  within: { backgroundColor: colors.included },
-                };
-            return (
-              <td
-                key={bar.startsAt}
-                height={CHART_HEIGHT + 18}
-                style={{
-                  verticalAlign: "bottom",
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 10,
-                    lineHeight: "14px",
-                    color: colors.muted,
-                    textAlign: "center",
-                    paddingBottom: 4,
-                  }}
-                >
-                  {props.formatCompact(bar.screenshots)}
-                </div>
-                {overageHeight > 0 ? (
-                  <div
-                    style={{
-                      ...style.overage,
-                      height: overageHeight,
-                      boxSizing: "border-box",
-                      borderRadius: withinHeight > 0 ? "3px 3px 0 0" : 3,
-                      borderBottom: withinHeight > 0 ? "none" : undefined,
-                    }}
-                  />
-                ) : null}
-                {withinHeight > 0 ? (
-                  <div
-                    style={{
-                      ...style.within,
-                      height: withinHeight,
-                      boxSizing: "border-box",
-                      borderRadius: overageHeight > 0 ? 0 : "3px 3px 0 0",
-                    }}
-                  />
-                ) : null}
-              </td>
-            );
-          })}
-        </tr>
-        <tr>
-          {bars.map((bar) => (
-            <td
-              key={bar.startsAt}
-              style={{
-                borderTop: "1px solid #e4e4e7",
-                paddingTop: 6,
-                fontSize: 11,
-                color: bar.projected ? "#a1a1aa" : colors.muted,
-                textAlign: "center",
-              }}
-            >
-              {formatMonth(bar.startsAt)}
-            </td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
+    </>
   );
 }

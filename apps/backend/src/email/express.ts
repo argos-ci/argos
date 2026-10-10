@@ -39,7 +39,6 @@ export function getEmailPreviewMiddleware(options: { path: string }) {
       }
       const rendered = usageReportTemplate.email({
         ...usageReport.data,
-        recipientName: "James",
         unsubscribeUrl: usageReportTemplate.previewData.unsubscribeUrl,
       });
       res.send(await emailToText(rendered));

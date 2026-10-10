@@ -92,7 +92,9 @@ describe("sendAccountUsageReport", () => {
       return;
     }
     const { data } = input;
-    expect(data.recipientName).toBe("Jane");
+    expect(data.activity.from).toBe(
+      new Date("2026-03-15T12:00:00.000Z").toISOString(),
+    );
     expect(data.includedScreenshots).toBe(1000);
     expect(data.months).toHaveLength(12);
     // (300 × 3 + 200 × 2 + 100) / 6 = 233 for each month to come.

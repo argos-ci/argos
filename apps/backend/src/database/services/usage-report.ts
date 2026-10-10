@@ -1,11 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 
 import { sendEmailTemplate } from "@/email/send-email-template";
-import { extractFirstName } from "@/email/util";
 import { createJob } from "@/job-core";
 
 import { Account, Subscription, TeamUser, User } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
+import { getMonthlyReportActivity } from "./monthly-report-activity";
 import {
   getMonthlyReportUnsubscribeUrl,
   verifyMonthlyReportUnsubscribeToken,
@@ -296,6 +296,15 @@ export async function getAccountUsageReport(account: Account, now: Date) {
     return null;
   }
 
+  const months = report.months.map((month) => ({
+    startsAt: month.startsAt.toISOString(),
+    screenshots: month.screenshots.all,
+    projected: month.projected,
+  }));
+  const termEndsAt = report.termEndsAt.toISOString();
+  const activity = await getMonthlyReportActivity(account, months, termEndsAt);
+  invariant(activity, "a report always has a closed month");
+
   return {
     report,
     data: {
@@ -305,12 +314,9 @@ export async function getAccountUsageReport(account: Account, now: Date) {
       includedScreenshots: report.includedScreenshots,
       projectedOverageCost: report.projectedOverageCost,
       termStartsAt: report.termStartsAt.toISOString(),
-      termEndsAt: report.termEndsAt.toISOString(),
-      months: report.months.map((month) => ({
-        startsAt: month.startsAt.toISOString(),
-        screenshots: month.screenshots.all,
-        projected: month.projected,
-      })),
+      termEndsAt,
+      months,
+      activity,
     },
   };
 }
@@ -341,8 +347,7 @@ export async function sendAccountUsageReport(accountId: string, now: Date) {
         .where({ teamId: account.teamId, userLevel: "owner" })
         .whereNull("monthlyReportOptedOutAt"),
     )
-    .whereNotNull("email")
-    .withGraphFetched("account");
+    .whereNotNull("email");
   if (owners.length === 0) {
     return;
   }
@@ -360,9 +365,6 @@ export async function sendAccountUsageReport(accountId: string, now: Date) {
         template: "usage_report",
         data: {
           ...usageReport.data,
-          recipientName: owner.account?.name
-            ? extractFirstName(owner.account.name)
-            : null,
           unsubscribeUrl: getMonthlyReportUnsubscribeUrl({
             userId: owner.id,
             teamAccountId: account.id,
@@ -438,7 +440,8 @@ export const usageReportJob = createJob<string>(
       await sendAccountUsageReport(accountId, new Date());
     },
   },
-  { timeout: 60_000 },
+  // The activity of a large team reads a month of builds and test stats.
+  { timeout: 300_000 },
 );
 
 /**
