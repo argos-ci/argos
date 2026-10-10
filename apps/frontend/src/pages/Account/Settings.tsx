@@ -27,6 +27,7 @@ import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
+import { TeamMonthlyReport } from "@/containers/Team/MonthlyReport";
 import { TeamMsTeams } from "@/containers/Team/MsTeams";
 import { TeamSAMLSSO } from "@/containers/Team/SAMLSSO";
 import { TeamSlack } from "@/containers/Team/Slack";
@@ -93,6 +94,7 @@ const AccountQuery = graphql(`
       ...TeamStaticIp_Team
       ...UserAuth_Account
       ...TeamSpendManagement_Account
+      ...TeamMonthlyReport_Team
       ...UserDelete_User
       ...UserEmail_Account
       ...UserNotificationPreferences_Account
@@ -232,6 +234,11 @@ function PageContent() {
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />
           ) : null}
+          {isTeam &&
+            hasAdminPermission &&
+            account.plan?.interval === PlanInterval.Year && (
+              <TeamMonthlyReport team={account} />
+            )}
         </>
       ),
     },

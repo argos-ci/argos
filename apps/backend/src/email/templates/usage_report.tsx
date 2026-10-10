@@ -9,6 +9,8 @@ import {
   H1,
   H2,
   Hi,
+  InfoText,
+  Link,
   Paragraph,
   Signature,
 } from "../components";
@@ -52,6 +54,8 @@ export const handler = defineEmailTemplate({
     termEndsAt: z.string(),
     /** Every month of the term, the ones to come included. */
     months: z.array(MonthSchema),
+    /** Turns the report off for this owner of this team, without signing in. */
+    unsubscribeUrl: z.url(),
   }),
   previewData: {
     recipientName: "James",
@@ -59,7 +63,7 @@ export const handler = defineEmailTemplate({
     accountSlug: "acme",
     currency: "eur",
     includedScreenshots: 1_200_000,
-    projectedOverageCost: 451.5,
+    projectedOverageCost: 468.75,
     termStartsAt: "2026-01-15",
     termEndsAt: "2027-01-15",
     months: [
@@ -72,14 +76,16 @@ export const handler = defineEmailTemplate({
       ["2026-07-15", 125_000],
       ["2026-08-15", 138_000],
       ["2026-09-15", 146_000],
-      ["2026-10-15", 136_000, true],
-      ["2026-11-15", 136_000, true],
-      ["2026-12-15", 136_000, true],
+      ["2026-10-15", 139_833, true],
+      ["2026-11-15", 139_833, true],
+      ["2026-12-15", 139_833, true],
     ].map(([startsAt, screenshots, projected]) => ({
       startsAt: startsAt as string,
       screenshots: screenshots as number,
       projected: Boolean(projected),
     })),
+    unsubscribeUrl:
+      "https://app.argos-ci.com/unsubscribe/monthly-report?token=xxx",
   },
   // Annual overage is invoiced once, when the term ends, so a team that does
   // not watch its usage meets it for the first time on that invoice. The report
@@ -173,7 +179,7 @@ export const handler = defineEmailTemplate({
         <EmailLayout
           preview={`${formatCount(used)} of ${formatCount(includedScreenshots)} screenshots used, ${elapsedMonths} months into the term.`}
         >
-          <H1>Your monthly usage report</H1>
+          <H1>Your monthly report</H1>
           <Hi name={props.recipientName} />
           <Paragraph>
             Here is where <strong>{accountName}</strong> stands, {elapsedMonths}{" "}
@@ -221,18 +227,34 @@ export const handler = defineEmailTemplate({
           />
 
           <Paragraph>
-            The months to come are projected from the average of the last three.
-            Usage is counted across every project of the team.
+            The months to come are projected from the last three months, the
+            most recent counting most. Usage is counted across every project of
+            the team.
           </Paragraph>
 
           <Section className="my-6 text-center">
             <Button href={settingsHref}>View usage</Button>
           </Section>
-          <Paragraph>
-            If you would like to adjust your plan before the term ends, or have
-            any questions about these numbers, simply reply to this email.
-          </Paragraph>
+          {projectedOverage > 0 ? (
+            <Paragraph>
+              You can reduce this overage by committing to a larger plan before
+              your term ends. Reply to this email or write to us at{" "}
+              <Link href="mailto:contact@argos-ci.com">
+                contact@argos-ci.com
+              </Link>{" "}
+              to discuss it.
+            </Paragraph>
+          ) : (
+            <Paragraph>
+              If you have any questions about these numbers, simply reply to
+              this email.
+            </Paragraph>
+          )}
           <Signature />
+          <InfoText>
+            You receive this monthly report as an owner of {accountName}.{" "}
+            <Link href={props.unsubscribeUrl}>Unsubscribe</Link>
+          </InfoText>
         </EmailLayout>
       ),
     };

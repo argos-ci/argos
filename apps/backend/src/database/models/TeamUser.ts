@@ -35,6 +35,7 @@ export class TeamUser extends Model {
             type: ["string", "null"],
             enum: [...TeamUser.authMethods, null],
           },
+          monthlyReportOptedOutAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -46,6 +47,7 @@ export class TeamUser extends Model {
   ssoSubject!: string | null;
   ssoVerifiedAt!: string | null;
   lastAuthMethod!: (typeof TeamUser.authMethods)[number] | null;
+  monthlyReportOptedOutAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

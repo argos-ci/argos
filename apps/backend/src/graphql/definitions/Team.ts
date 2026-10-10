@@ -52,6 +52,10 @@ import {
   setTeamMemberLevel,
   type TeamMembersOrder,
 } from "@/database/services/team-member";
+import {
+  setMonthlyReportSubscription,
+  unsubscribeFromMonthlyReport,
+} from "@/database/services/usage-report";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
@@ -243,6 +247,8 @@ export const typeDefs = gql`
     level: TeamUserLevel!
     fromSSO: Boolean!
     lastAuthMethod: String
+    "Whether the member has the monthly report on. It is only sent to the owners of a team on an annual plan."
+    receivesMonthlyReport: Boolean!
   }
 
   type TeamGithubMemberConnection implements Connection {
@@ -386,6 +392,16 @@ export const typeDefs = gql`
     signingCertificate: String!
   }
 
+  input SetMonthlyReportSubscriptionInput {
+    teamAccountId: ID!
+    subscribed: Boolean!
+  }
+
+  type UnsubscribeFromMonthlyReportPayload {
+    teamName: String!
+    teamSlug: String!
+  }
+
   extend type Query {
     "Get a invite (specific to a user) by its secret"
     invite(secret: String!): TeamInvite
@@ -448,6 +464,14 @@ export const typeDefs = gql`
     importTeamSamlMetadata(
       input: ImportTeamSamlMetadataInput!
     ): ImportTeamSamlMetadataResult!
+    "Turn the monthly report of a team on or off, for the authenticated user only"
+    setMonthlyReportSubscription(
+      input: SetMonthlyReportSubscriptionInput!
+    ): TeamMember!
+    "Turn the monthly report off from the unsubscribe link of the email, which works without a session"
+    unsubscribeFromMonthlyReport(
+      token: String!
+    ): UnsubscribeFromMonthlyReportPayload!
   }
 `;
 
@@ -620,6 +644,8 @@ export const resolvers: IResolvers = {
 
       return Boolean(githubTeamUser);
     },
+    receivesMonthlyReport: (teamUser) =>
+      teamUser.monthlyReportOptedOutAt === null,
   },
   Team: {
     ...commonAccountResolvers,
@@ -1940,6 +1966,35 @@ export const resolvers: IResolvers = {
       }
 
       return parseIdpMetadataXml(args.input.metadataXml);
+    },
+    setMonthlyReportSubscription: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      try {
+        const account = await loadAccountById(args.input.teamAccountId);
+        const teamUser = await setMonthlyReportSubscription({
+          account,
+          userId: ctx.auth.user.id,
+          subscribed: args.input.subscribed,
+        });
+        if (!teamUser) {
+          throw forbidden("You are not a member of this team.");
+        }
+        return teamUser;
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
+    },
+    unsubscribeFromMonthlyReport: async (_root, args) => {
+      const account = await unsubscribeFromMonthlyReport(args.token);
+      if (!account) {
+        throw badUserInput(
+          "This unsubscribe link has expired or is no longer valid.",
+          { code: "MONTHLY_REPORT_UNSUBSCRIBE_TOKEN_INVALID" },
+        );
+      }
+      return { teamName: account.displayName, teamSlug: account.slug };
     },
     cancelInvite: async (_root, args, ctx) => {
       if (!ctx.auth) {

@@ -12,7 +12,8 @@ export function getEmailPreviewMiddleware(options: { path: string }) {
   const router: Router = Router();
 
   // The usage report computed from a real team's usage, read-only: nothing is
-  // claimed nor sent. `?at=` previews it as of another date.
+  // claimed nor sent, and the unsubscribe link is a placeholder since the
+  // preview is addressed to no one. `?at=` previews it as of another date.
   router.get(
     "/usage_report/:accountSlug",
     asyncHandler(async (req, res) => {
@@ -39,6 +40,7 @@ export function getEmailPreviewMiddleware(options: { path: string }) {
       const rendered = usageReportTemplate.email({
         ...usageReport.data,
         recipientName: "James",
+        unsubscribeUrl: usageReportTemplate.previewData.unsubscribeUrl,
       });
       res.send(await emailToText(rendered));
     }),

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict CYoBCQ0baQmudYrxodVM8QWBJe7mPShLsfoa6OpIwoUQyvAQdlE9Ma0zulupo4r
+\restrict 4Hj1BVfliDcEdHbNMdn9ndgrG3YJl5kHsgtZ8VrmksRuUGgpltI8HNasQdZcczt
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2806,6 +2806,7 @@ CREATE TABLE public.team_users (
     "ssoSubject" character varying(255),
     "ssoVerifiedAt" timestamp with time zone,
     "lastAuthMethod" text,
+    "monthlyReportOptedOutAt" timestamp with time zone,
     CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
     CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
@@ -6706,7 +6707,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CYoBCQ0baQmudYrxodVM8QWBJe7mPShLsfoa6OpIwoUQyvAQdlE9Ma0zulupo4r
+\unrestrict 4Hj1BVfliDcEdHbNMdn9ndgrG3YJl5kHsgtZ8VrmksRuUGgpltI8HNasQdZcczt
 
 -- Knex migrations
 
@@ -6970,3 +6971,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026093
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261008123652_usage-report.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261009102522_monthly-report-opt-out.js', 1, NOW());

@@ -1,9 +1,11 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type Account, type Plan, type Project, User } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendEmailTemplate } from "@/email/send-email-template";
 
+import { verifyMonthlyReportUnsubscribeToken } from "./monthly-report-unsubscribe";
 import {
   enqueueUsageReports,
   sendAccountUsageReport,
@@ -78,7 +80,7 @@ describe("sendAccountUsageReport", () => {
     }
   });
 
-  it("reports the term so far and projects the rest from the last three months", async () => {
+  it("reports the term so far and projects the rest from the last three months, the most recent counting most", async () => {
     await sendAccountUsageReport(account.id, now);
 
     expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
@@ -93,16 +95,41 @@ describe("sendAccountUsageReport", () => {
     expect(data.recipientName).toBe("Jane");
     expect(data.includedScreenshots).toBe(1000);
     expect(data.months).toHaveLength(12);
+    // (300 × 3 + 200 × 2 + 100) / 6 = 233 for each month to come.
     expect(
       data.months.map((month) => [month.screenshots, month.projected]),
     ).toEqual([
       [100, false],
       [200, false],
       [300, false],
-      ...Array.from({ length: 9 }, () => [200, true]),
+      ...Array.from({ length: 9 }, () => [233, true]),
     ]);
-    // 600 used and 9 × 200 to come: 1400 beyond the plan, at 0.5 each.
-    expect(data.projectedOverageCost).toBe(700);
+    // 600 used and 9 × 233 to come: 1697 beyond the plan, at 0.5 each.
+    expect(data.projectedOverageCost).toBe(848.5);
+
+    const unsubscribeUrl = new URL(data.unsubscribeUrl);
+    expect(unsubscribeUrl.pathname).toBe("/unsubscribe/monthly-report");
+    expect(
+      verifyMonthlyReportUnsubscribeToken(
+        unsubscribeUrl.searchParams.get("token") ?? "",
+      ),
+    ).toEqual({ userId: ownerId, teamAccountId: account.id });
+  });
+
+  it("leaves out the owners who turned the report off", async () => {
+    invariant(account.teamId, "a team account has a team");
+    const optedOutOwner = await factory.User.create();
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: optedOutOwner.id,
+      userLevel: "owner",
+      monthlyReportOptedOutAt: "2026-03-01T10:00:00.000Z",
+    });
+
+    await sendAccountUsageReport(account.id, now);
+
+    expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
+    expect(mockSendEmailTemplate.mock.calls[0]?.[0].to).toEqual([ownerEmail]);
   });
 
   it("sends the report once per month", async () => {

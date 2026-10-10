@@ -4,11 +4,19 @@ import { sendEmailTemplate } from "@/email/send-email-template";
 import { extractFirstName } from "@/email/util";
 import { createJob } from "@/job-core";
 
-import { Account, Subscription, User } from "../models";
+import { Account, Subscription, TeamUser, User } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
+import {
+  getMonthlyReportUnsubscribeUrl,
+  verifyMonthlyReportUnsubscribeToken,
+} from "./monthly-report-unsubscribe";
 import { getScreenshotTotals, type ScreenshotTotals } from "./period-usage";
 
-/** Closed months the projection of the months to come is averaged over. */
+/**
+ * Closed months the months to come are projected from, weighted 3, 2 and 1
+ * from the most recent back, so a change of pace shows in the next report
+ * instead of being diluted over the whole window.
+ */
 const PROJECTION_WINDOW = 3;
 
 /** Accounts read per page when enqueueing the reports. */
@@ -76,6 +84,30 @@ function getTermMonths(subscription: Subscription, now: Date) {
   };
 }
 
+function projectMonthUsage(
+  closedMonths: { screenshots: ScreenshotTotals }[],
+): ScreenshotTotals {
+  const window = closedMonths
+    .slice(-PROJECTION_WINDOW)
+    .reverse()
+    .map((month, index) => ({
+      screenshots: month.screenshots,
+      weight: PROJECTION_WINDOW - index,
+    }));
+  const totalWeight = window.reduce((sum, month) => sum + month.weight, 0);
+  const weightedAverage = (pick: (totals: ScreenshotTotals) => number) =>
+    Math.round(
+      window.reduce(
+        (sum, month) => sum + pick(month.screenshots) * month.weight,
+        0,
+      ) / totalWeight,
+    );
+  return {
+    all: weightedAverage((totals) => totals.all),
+    storybook: weightedAverage((totals) => totals.storybook),
+  };
+}
+
 /**
  * Where an annual usage-based term stands and where it is heading.
  *
@@ -121,23 +153,12 @@ async function getAnnualUsageReport(
     projected: false,
   }));
 
-  const window = closedMonths.slice(-PROJECTION_WINDOW);
-  const average = {
-    all: Math.round(
-      window.reduce((sum, month) => sum + month.screenshots.all, 0) /
-        window.length,
-    ),
-    storybook: Math.round(
-      window.reduce((sum, month) => sum + month.screenshots.storybook, 0) /
-        window.length,
-    ),
-  };
-
+  const projectedUsage = projectMonthUsage(closedMonths);
   const months = [
     ...closedMonths,
     ...term.months.slice(closed.length).map((month) => ({
       ...month,
-      screenshots: average,
+      screenshots: projectedUsage,
       projected: true,
     })),
   ];
@@ -214,8 +235,9 @@ async function claimUsageReport(
 }
 
 /**
- * A page of the accounts on an annual usage-based Stripe plan, the ones the
- * monthly report is for, in id order after `after`.
+ * A page of the teams on an annual usage-based Stripe plan, the ones the
+ * monthly report is for, in id order after `after`. Only teams: the choice to
+ * receive it is kept on each owner's membership.
  */
 async function getAnnualUsageReportAccountIds(input: {
   after: string | null;
@@ -223,6 +245,7 @@ async function getAnnualUsageReportAccountIds(input: {
 }): Promise<string[]> {
   const query = Account.query()
     .select("accounts.id")
+    .whereNotNull("accounts.teamId")
     .whereNull("accounts.forcedPlanId")
     .whereExists(
       Subscription.query()
@@ -293,9 +316,9 @@ export async function getAccountUsageReport(account: Account, now: Date) {
 }
 
 /**
- * Send the usage report of an account to its owners, if one is due: the
- * account is on an annual plan and a month of its term closed since the last
- * report.
+ * Send the usage report of a team to its owners who have not turned it off,
+ * if one is due: the team is on an annual plan and a month of its term closed
+ * since the last report.
  */
 export async function sendAccountUsageReport(accountId: string, now: Date) {
   const account = await Account.query().findById(accountId);
@@ -303,15 +326,21 @@ export async function sendAccountUsageReport(accountId: string, now: Date) {
   if (!account) {
     return;
   }
+  invariant(account.teamId, "usage reports are only enqueued for teams");
 
   const usageReport = await getAccountUsageReport(account, now);
   if (!usageReport) {
     return;
   }
 
-  const ownerIds = await account.$getOwnerIds();
   const owners = await User.query()
-    .findByIds(ownerIds)
+    .whereIn(
+      "id",
+      TeamUser.query()
+        .select("userId")
+        .where({ teamId: account.teamId, userLevel: "owner" })
+        .whereNull("monthlyReportOptedOutAt"),
+    )
     .whereNotNull("email")
     .withGraphFetched("account");
   if (owners.length === 0) {
@@ -334,11 +363,72 @@ export async function sendAccountUsageReport(accountId: string, now: Date) {
           recipientName: owner.account?.name
             ? extractFirstName(owner.account.name)
             : null,
+          unsubscribeUrl: getMonthlyReportUnsubscribeUrl({
+            userId: owner.id,
+            teamAccountId: account.id,
+          }),
         },
         to: [owner.email],
       });
     }),
   );
+}
+
+/**
+ * Turn the monthly report of a team on or off for a member, from the team
+ * settings. Each owner chooses for themself. Null when the user is not a
+ * member of the team.
+ */
+export async function setMonthlyReportSubscription(input: {
+  account: Account;
+  userId: string;
+  subscribed: boolean;
+}): Promise<TeamUser | null> {
+  const { teamId } = input.account;
+  if (!teamId) {
+    return null;
+  }
+  const [teamUser] = await TeamUser.query()
+    .patch({
+      monthlyReportOptedOutAt: input.subscribed
+        ? null
+        : new Date().toISOString(),
+    })
+    .where({ teamId, userId: input.userId })
+    .returning("*");
+  return teamUser ?? null;
+}
+
+/**
+ * Turn the monthly report off for the owner and the team an unsubscribe link
+ * names, keeping the date it was first turned off when the link is opened
+ * again. Returns the team, null when the token is invalid or expired, or the
+ * user is no longer a member of it.
+ */
+export async function unsubscribeFromMonthlyReport(
+  token: string,
+): Promise<Account | null> {
+  const payload = verifyMonthlyReportUnsubscribeToken(token);
+  if (!payload) {
+    return null;
+  }
+  const account = await Account.query().findById(payload.teamAccountId);
+  if (!account) {
+    return null;
+  }
+  invariant(account.teamId, "unsubscribe links are only signed for teams");
+  const teamUser = await TeamUser.query().findOne({
+    teamId: account.teamId,
+    userId: payload.userId,
+  });
+  if (!teamUser) {
+    return null;
+  }
+  await TeamUser.query()
+    .findById(teamUser.id)
+    .whereNull("monthlyReportOptedOutAt")
+    .patch({ monthlyReportOptedOutAt: new Date().toISOString() });
+  return account;
 }
 
 export const usageReportJob = createJob<string>(
