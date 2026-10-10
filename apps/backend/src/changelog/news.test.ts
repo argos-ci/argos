@@ -51,11 +51,15 @@ describe("selectChangelogNews", () => {
     expect(selectChangelogNews(items, { since, now })).toEqual([]);
   });
 
-  it("caps the list", () => {
-    const many = Array.from({ length: 8 }, (_, index) =>
+  it("keeps the three latest when more shipped", () => {
+    const many = Array.from({ length: 5 }, (_, index) =>
       item(`2026-09-${String(index + 10).padStart(2, "0")}`),
     );
     const since = new Date("2026-09-01T08:00:00.000Z");
-    expect(selectChangelogNews(many, { since, now })).toHaveLength(5);
+    expect(titles(selectChangelogNews(many, { since, now }))).toEqual([
+      "2026-09-14",
+      "2026-09-13",
+      "2026-09-12",
+    ]);
   });
 });
