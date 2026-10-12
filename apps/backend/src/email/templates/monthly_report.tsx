@@ -315,7 +315,6 @@ function renderMonthlyReport(props: MonthlyReportData) {
                 />
               ) : null,
               label: "screenshots this month",
-              detail: `${formatCompact(used)} so far this term, ${usedPct}% of your plan`,
             },
           ]}
         />
@@ -326,6 +325,10 @@ function renderMonthlyReport(props: MonthlyReportData) {
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
 
         <SectionTitle>Annual plan</SectionTitle>
+        <Paragraph style={{ margin: "0 0 12px" }}>
+          {formatCompact(used)} screenshots so far this term,{" "}
+          <strong>{usedPct}%</strong> of your plan.
+        </Paragraph>
         <QuotaGauge
           used={used}
           projected={projected}
@@ -360,12 +363,6 @@ function renderMonthlyReport(props: MonthlyReportData) {
             suffix=" vs last month"
           />
         </Paragraph>
-        {flakyTests.current > 0 ? (
-          <Paragraph style={{ margin: "4px 0 0" }}>
-            Their changes come back without a code change, and each one costs a
-            review.
-          </Paragraph>
-        ) : null}
         {flakyTests.top.length > 0 ? (
           <Table style={{ marginTop: 8 }}>
             {flakyTests.top.map((test) => (
