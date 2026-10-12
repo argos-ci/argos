@@ -220,7 +220,7 @@ describe("getMonthlyReportActivity", () => {
     expect(activity.tests).toEqual({ covered: 2, added: 1 });
   });
 
-  it("names the build name whose screenshots grew the most", async () => {
+  it("lists the screenshots by build name, the largest first and the rest as Other", async () => {
     const bucket = (name: string, createdAt: string, screenshotCount: number) =>
       factory.ScreenshotBucket.create({
         projectId: project.id,
@@ -231,18 +231,30 @@ describe("getMonthlyReportActivity", () => {
       });
     await bucket("e2e", "2026-08-20T10:00:00Z", 1000);
     await bucket("e2e", "2026-09-20T10:00:00Z", 1500);
-    // Tripled, but by far less in volume.
-    await bucket("storybook", "2026-08-20T10:00:00Z", 100);
-    await bucket("storybook", "2026-09-20T10:00:00Z", 300);
     // New this month: nothing to compare it with.
     await bucket("mobile", "2026-09-20T10:00:00Z", 5000);
+    for (const [name, count] of [
+      ["a", 600],
+      ["b", 500],
+      ["c", 400],
+      ["d", 200],
+      ["e", 100],
+    ] as const) {
+      await bucket(name, "2026-08-20T10:00:00Z", 50);
+      await bucket(name, "2026-09-20T10:00:00Z", count);
+    }
+    // Gone this month: left out.
+    await bucket("legacy", "2026-08-20T10:00:00Z", 300);
 
     const activity = await getMonthlyReportActivity(account, windows);
 
-    expect(activity.screenshots.biggestIncrease).toEqual({
-      label: "e2e",
-      screenshots: 1500,
-      previous: 1000,
-    });
+    expect(activity.screenshots.byBuildName).toEqual([
+      { label: "mobile", current: 5000, previous: 0 },
+      { label: "e2e", current: 1500, previous: 1000 },
+      { label: "a", current: 600, previous: 50 },
+      { label: "b", current: 500, previous: 50 },
+      { label: "c", current: 400, previous: 50 },
+      { label: "Other", current: 300, previous: 100 },
+    ]);
   });
 });

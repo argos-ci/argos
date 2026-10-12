@@ -12,6 +12,9 @@ import { TEST_METRICS_LATERAL } from "./test";
 
 type Window = { from: Date; to: Date };
 
+/** Build names listed by name, the others summed up on one line. */
+const BUILD_NAME_COUNT = 5;
+
 /** The month a report covers, and the one before it to compare with. */
 export type MonthlyReportWindows = { current: Window; previous: Window };
 
@@ -342,16 +345,15 @@ export async function getMonthlyReportActivity(
       : entry.name === "default"
         ? entry.projectName
         : `${entry.projectName} · ${entry.name}`;
-  // Absolute growth rather than relative: a build name tripling from a few
-  // hundred screenshots is not what moves the bill.
-  const [biggestIncrease] = screenshots
-    .filter((entry) => entry.previous > 0 && entry.current > entry.previous)
-    .sort((a, b) => b.current - b.previous - (a.current - a.previous))
+  const byBuildName = screenshots
+    .filter((entry) => entry.current > 0)
+    .sort((a, b) => b.current - a.current)
     .map((entry) => ({
       label: labelOf(entry),
-      screenshots: entry.current,
+      current: entry.current,
       previous: entry.previous,
     }));
+  const others = byBuildName.slice(BUILD_NAME_COUNT);
 
   return {
     from: windows.current.from.toISOString(),
@@ -367,6 +369,21 @@ export async function getMonthlyReportActivity(
         newThisMonth: !previousFlaky.ids.includes(id),
       })),
     },
-    screenshots: { biggestIncrease: biggestIncrease ?? null },
+    screenshots: {
+      byBuildName:
+        others.length > 0
+          ? [
+              ...byBuildName.slice(0, BUILD_NAME_COUNT),
+              {
+                label: "Other",
+                current: others.reduce((sum, entry) => sum + entry.current, 0),
+                previous: others.reduce(
+                  (sum, entry) => sum + entry.previous,
+                  0,
+                ),
+              },
+            ]
+          : byBuildName,
+    },
   };
 }

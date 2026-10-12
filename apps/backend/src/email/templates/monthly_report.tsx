@@ -7,7 +7,6 @@ import config from "@/config";
 
 import {
   EmailLayout,
-  H1,
   H2,
   InfoText,
   Link,
@@ -27,7 +26,6 @@ const colors = {
   border: "#e4e4e7",
   violet: "#6e56cf",
   violetText: "#5746af",
-  violetTint: "#f7f4ff",
   violetBorder: "#e4dcfd",
   violetLight: "#e1d9ff",
   overage: "#f76b15",
@@ -80,14 +78,14 @@ const ActivitySchema = z.object({
     ),
   }),
   screenshots: z.object({
-    /** The project and build name whose screenshots grew the most. */
-    biggestIncrease: z
-      .object({
+    /** Screenshots by project and build name, the largest first. */
+    byBuildName: z.array(
+      z.object({
         label: z.string(),
-        screenshots: z.number(),
+        current: z.number(),
         previous: z.number(),
-      })
-      .nullable(),
+      }),
+    ),
   }),
 });
 
@@ -204,11 +202,13 @@ export const handler = defineEmailTemplate({
         ],
       },
       screenshots: {
-        biggestIncrease: {
-          label: "web · e2e",
-          screenshots: 71_000,
-          previous: 52_000,
-        },
+        byBuildName: [
+          { label: "web · e2e", current: 71_000, previous: 52_000 },
+          { label: "web · storybook", current: 38_000, previous: 39_000 },
+          { label: "admin · e2e", current: 24_000, previous: 21_000 },
+          { label: "mobile · e2e", current: 9_000, previous: 0 },
+          { label: "Other", current: 4_000, previous: 4_500 },
+        ],
       },
     },
     news: [
@@ -241,11 +241,10 @@ function renderMonthlyReport(props: MonthlyReportData) {
   const used = sum(closed);
   const projected = sum(months);
   const usedPct = Math.round((used / includedScreenshots) * 100);
-  const elapsedPct = Math.round((closed.length / months.length) * 100);
+  const lastMonth = closed.at(-1);
+  invariant(lastMonth, "a report covers a closed month");
+  const previousMonth = closed.at(-2);
   const overage = projected > includedScreenshots;
-  const ratio = formatRatio(projected / includedScreenshots);
-  const termEnd = props.renews ? "renewal" : "the end of the subscription";
-  const { biggestIncrease } = activity.screenshots;
   const { pullRequests, flakyTests } = activity;
 
   const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
@@ -264,11 +263,28 @@ function renderMonthlyReport(props: MonthlyReportData) {
     body: (
       <EmailLayout
         preview={`${countOf(pullRequests.checked, "pull request")} checked, ${formatCount(pullRequests.fixedAfterFlag)} fixed after a visual change was flagged.`}
+        header={
+          <>
+            <div
+              style={{
+                fontSize: 14,
+                lineHeight: "20px",
+                fontWeight: 600,
+                color: colors.text,
+              }}
+            >
+              Monthly report for {accountName}
+            </div>
+            <div
+              style={{ fontSize: 13, lineHeight: "20px", color: colors.text }}
+            >
+              {period}
+            </div>
+          </>
+        }
       >
-        <Text style={eyebrowStyle}>Monthly report · {period}</Text>
-        <H1>{accountName}’s month on Argos</H1>
-
-        <Hero
+        <StatGrid
+          style={{ marginTop: 24 }}
           stats={[
             {
               value: formatCount(pullRequests.checked),
@@ -281,8 +297,8 @@ function renderMonthlyReport(props: MonthlyReportData) {
             },
             {
               value: formatCount(activity.changesReviewed.current),
-              label: `visual ${plural(activity.changesReviewed.current, "change")} reviewed`,
               delta: <Delta {...activity.changesReviewed} />,
+              label: `visual ${plural(activity.changesReviewed.current, "change")} reviewed`,
             },
             {
               value: formatCount(activity.tests.covered),
@@ -291,7 +307,50 @@ function renderMonthlyReport(props: MonthlyReportData) {
             },
           ]}
         />
+
+        <SectionTitle>Usage</SectionTitle>
+        <StatGrid
+          stats={[
+            {
+              value: formatCompact(lastMonth.screenshots),
+              delta: previousMonth ? (
+                <Delta
+                  current={lastMonth.screenshots}
+                  previous={previousMonth.screenshots}
+                />
+              ) : null,
+              label: "screenshots this month",
+              detail: `${formatCompact(used)} so far this term, ${usedPct}% of your plan`,
+            },
+          ]}
+        />
+        <MonthlyBars months={months} />
+        {activity.screenshots.byBuildName.length > 1 ? (
+          <BuildNameTable rows={activity.screenshots.byBuildName} />
+        ) : null}
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
+
+        <SectionTitle>Annual plan</SectionTitle>
+        <QuotaGauge
+          used={used}
+          projected={projected}
+          included={includedScreenshots}
+          startLabel={formatDate(termStartsAt, "date")}
+          endLabel={formatDate(termEndsAt, "date")}
+        />
+        {/* Below one unit of currency, an overage is not worth a note. */}
+        {overage && props.projectedOverageCost >= 1 ? (
+          <OverageNote>
+            <OverageNoteText
+              amount={props.projectedOverageCost}
+              blockingSpendLimit={props.blockingSpendLimit}
+              currency={currency}
+              renews={props.renews}
+              termEndsAt={termEndsAt}
+            />
+          </OverageNote>
+        ) : null}
+        <SectionLink href={usageHref}>See usage details</SectionLink>
 
         <SectionTitle>Test health</SectionTitle>
         <Paragraph style={{ margin: 0 }}>
@@ -354,79 +413,6 @@ function renderMonthlyReport(props: MonthlyReportData) {
         ) : null}
         <SectionLink href={testsHref}>See all tests</SectionLink>
 
-        <SectionTitle>Usage</SectionTitle>
-        <Paragraph style={{ margin: "0 0 12px" }}>
-          <strong>{usedPct}%</strong> of your plan used ·{" "}
-          <strong>{elapsedPct}%</strong> of the term elapsed.{" "}
-          {used >= includedScreenshots ? (
-            <>
-              Your team has already used all the screenshots of its plan, and at
-              this pace the term ends at about {formatCompact(projected)}{" "}
-              screenshots, {ratio} your plan.
-            </>
-          ) : overage ? (
-            <>
-              At this pace, the plan runs out around{" "}
-              {formatDate(
-                getQuotaExhaustionDate(months, includedScreenshots),
-                "longMonthDay",
-              )}
-              , and the term ends at about {formatCompact(projected)}{" "}
-              screenshots, {ratio} your plan.
-            </>
-          ) : (
-            <>
-              On track to stay within your plan until {termEnd} on{" "}
-              {formatDate(termEndsAt, "longDate")}.
-            </>
-          )}
-        </Paragraph>
-        <QuotaGauge
-          used={used}
-          projected={projected}
-          included={includedScreenshots}
-          startLabel={formatDate(termStartsAt, "date")}
-          endLabel={formatDate(termEndsAt, "date")}
-        />
-        {/* Below one unit of currency, an overage is not worth a note. */}
-        {overage && props.projectedOverageCost >= 1 ? (
-          <OverageNote>
-            <OverageNoteText
-              amount={props.projectedOverageCost}
-              blockingSpendLimit={props.blockingSpendLimit}
-              currency={currency}
-              renews={props.renews}
-              termEndsAt={termEndsAt}
-            />
-          </OverageNote>
-        ) : null}
-        {biggestIncrease ? (
-          <>
-            <Paragraph style={{ margin: "24px 0 4px" }}>
-              <strong>Biggest change this month</strong>
-            </Paragraph>
-            <Paragraph style={{ margin: 0 }}>
-              <strong>{biggestIncrease.label}</strong> used{" "}
-              {formatCompact(biggestIncrease.screenshots)} screenshots,{" "}
-              <span style={{ color: colors.overageText }}>
-                +
-                {formatCompact(
-                  biggestIncrease.screenshots - biggestIncrease.previous,
-                )}{" "}
-                (+
-                {Math.round(
-                  ((biggestIncrease.screenshots - biggestIncrease.previous) /
-                    biggestIncrease.previous) *
-                    100,
-                )}
-                %)
-              </span>{" "}
-              compared with last month.
-            </Paragraph>
-          </>
-        ) : null}
-        <SectionLink href={usageHref}>See usage details</SectionLink>
-
         {props.news.length > 0 ? (
           <>
             <SectionTitle>What’s new in Argos</SectionTitle>
@@ -465,13 +451,11 @@ function renderMonthlyReport(props: MonthlyReportData) {
   };
 }
 
-const eyebrowStyle = {
-  margin: "24px 0 0",
+const axisLabelStyle = {
   fontSize: 11,
-  lineHeight: "16px",
-  letterSpacing: "0.06em",
-  textTransform: "uppercase" as const,
+  lineHeight: "14px",
   color: colors.muted,
+  whiteSpace: "nowrap" as const,
 };
 
 const rowCellStyle = {
@@ -491,6 +475,13 @@ const formatCompact = (value: number) =>
     maximumFractionDigits: 1,
   }).format(value);
 
+// Three significant digits keep a month's figure narrow enough for its bar.
+const formatBarValue = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumSignificantDigits: 3,
+  }).format(value);
+
 function plural(count: number, word: string) {
   return count === 1 ? word : `${word}s`;
 }
@@ -499,36 +490,14 @@ function countOf(count: number, word: string) {
   return `${formatCount(count)} ${plural(count, word)}`;
 }
 
-function formatRatio(ratio: number) {
-  return ratio >= 1.95
-    ? `${Math.round(ratio * 10) / 10}×`.replace(".0×", "×")
-    : `${Math.max(1, Math.round((ratio - 1) * 100))}% above`;
-}
-
 function sum(months: Month[]) {
   return months.reduce((total, month) => total + month.screenshots, 0);
 }
 
-/** When the plan runs out, for a team still within it but heading past it. */
-function getQuotaExhaustionDate(months: Month[], included: number) {
-  let cumulative = 0;
-  for (const [index, month] of months.entries()) {
-    if (cumulative + month.screenshots >= included) {
-      const start = new Date(month.startsAt).getTime();
-      const next = months[index + 1];
-      const end = next
-        ? new Date(next.startsAt).getTime()
-        : start + 30 * 24 * 3600 * 1000;
-      const share = (included - cumulative) / month.screenshots;
-      return new Date(start + (end - start) * share);
-    }
-    cumulative += month.screenshots;
-  }
-  invariant(false, "a projection past the plan crosses it in some month");
-}
-
 function SectionTitle(props: { children: React.ReactNode }) {
-  return <H2 style={{ margin: "32px 0 10px" }}>{props.children}</H2>;
+  // 35px of margin, plus the leading of the title, leave 40px between the
+  // last line of a section and the title of the next.
+  return <H2 style={{ margin: "35px 0 10px" }}>{props.children}</H2>;
 }
 
 function SectionLink(props: { href: string; children: React.ReactNode }) {
@@ -539,99 +508,204 @@ function SectionLink(props: { href: string; children: React.ReactNode }) {
   );
 }
 
+type Stat = {
+  value: string;
+  /** The trend, next to the figure. */
+  delta?: React.ReactNode;
+  label: string;
+  detail?: React.ReactNode;
+};
+
 /**
- * The month at a glance: the figures that say what Argos did for the team, in
- * the brand color, so the top of the report is not a column of grey text.
+ * Figures two by two, each with its trend, its label and a detail line, in the
+ * brand color so the top of the report is not a column of grey text.
  */
-function Hero(props: {
-  stats: {
-    value: string;
-    /** The trend, next to the figure. */
-    delta?: React.ReactNode;
-    label: string;
-    detail?: React.ReactNode;
-  }[];
-}) {
-  const rows: (typeof props.stats)[] = [];
+function StatGrid(props: { stats: Stat[]; style?: React.CSSProperties }) {
+  const rows: Stat[][] = [];
   for (let index = 0; index < props.stats.length; index += 2) {
     rows.push(props.stats.slice(index, index + 2));
   }
   return (
-    <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
+    <table
+      width="100%"
+      cellPadding={0}
+      cellSpacing={0}
+      role="presentation"
+      style={props.style}
+    >
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {row.map((stat, index) => (
+              <td
+                key={stat.label}
+                width={row.length === 1 ? "100%" : "50%"}
+                style={{
+                  verticalAlign: "top",
+                  // Space between rows only: below the last, the next
+                  // section sets its own.
+                  paddingBottom: rowIndex < rows.length - 1 ? 14 : 0,
+                  paddingLeft: index === 0 ? 0 : 16,
+                  paddingRight: 8,
+                  borderLeft:
+                    index === 0
+                      ? undefined
+                      : `1px solid ${colors.violetBorder}`,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 28,
+                    lineHeight: "34px",
+                    fontWeight: 600,
+                    color: colors.violetText,
+                  }}
+                >
+                  {stat.value}
+                  {stat.delta}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    lineHeight: "18px",
+                    color: colors.text,
+                  }}
+                >
+                  {stat.label}
+                </div>
+                {stat.detail ? (
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      lineHeight: "17px",
+                      color: colors.muted,
+                    }}
+                  >
+                    {stat.detail}
+                  </div>
+                ) : null}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Screenshots of each month of the term, the months to come projected. */
+function MonthlyBars(props: { months: Month[] }) {
+  const height = 72;
+  const max = Math.max(1, ...props.months.map((month) => month.screenshots));
+  return (
+    <table
+      width="100%"
+      cellPadding={0}
+      cellSpacing={0}
+      role="presentation"
+      style={{ marginTop: 16 }}
+    >
       <tbody>
         <tr>
-          <td
-            style={{
-              backgroundColor: colors.violetTint,
-              border: `1px solid ${colors.violetBorder}`,
-              borderRadius: 10,
-              padding: "18px 20px 6px",
-            }}
-          >
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              role="presentation"
+          {props.months.map((month) => (
+            <td
+              key={month.startsAt}
+              height={height + 17}
+              style={{
+                verticalAlign: "bottom",
+                padding: "0 2px",
+                borderBottom: `1px solid ${colors.border}`,
+              }}
             >
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((stat, index) => (
-                      <td
-                        key={stat.label}
-                        width="50%"
-                        style={{
-                          verticalAlign: "top",
-                          paddingBottom: 14,
-                          paddingLeft: index === 0 ? 0 : 16,
-                          paddingRight: 8,
-                          borderLeft:
-                            index === 0
-                              ? undefined
-                              : `1px solid ${colors.violetBorder}`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 28,
-                            lineHeight: "34px",
-                            fontWeight: 600,
-                            color: colors.violetText,
-                          }}
-                        >
-                          {stat.value}
-                          {stat.delta}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            lineHeight: "18px",
-                            color: colors.text,
-                          }}
-                        >
-                          {stat.label}
-                        </div>
-                        {stat.detail ? (
-                          <div
-                            style={{
-                              marginTop: 2,
-                              fontSize: 12,
-                              lineHeight: "17px",
-                              color: colors.muted,
-                            }}
-                          >
-                            {stat.detail}
-                          </div>
-                        ) : null}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </td>
+              <div
+                style={{
+                  ...axisLabelStyle,
+                  fontSize: 10,
+                  textAlign: "center",
+                  paddingBottom: 3,
+                  color: month.projected ? colors.muted : colors.text,
+                }}
+              >
+                {formatBarValue(month.screenshots)}
+              </div>
+              <div
+                style={{
+                  height: Math.max(
+                    2,
+                    Math.round((month.screenshots / max) * height),
+                  ),
+                  borderRadius: "2px 2px 0 0",
+                  backgroundColor: month.projected
+                    ? colors.violetLight
+                    : colors.violet,
+                }}
+              />
+            </td>
+          ))}
         </tr>
+        <tr>
+          {props.months.map((month) => (
+            <td
+              key={month.startsAt}
+              style={{ ...axisLabelStyle, textAlign: "center", paddingTop: 4 }}
+            >
+              {formatDate(new Date(month.startsAt), "month")}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+function BuildNameTable(props: {
+  rows: { label: string; current: number; previous: number }[];
+}) {
+  const headStyle = {
+    ...axisLabelStyle,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.04em",
+    paddingBottom: 6,
+    borderBottom: `1px solid ${colors.border}`,
+  };
+  return (
+    <table
+      width="100%"
+      cellPadding={0}
+      cellSpacing={0}
+      role="presentation"
+      style={{ marginTop: 20 }}
+    >
+      <tbody>
+        <tr>
+          <td style={headStyle}>Build name</td>
+          <td style={{ ...headStyle, textAlign: "right" }}>Screenshots</td>
+          <td style={{ ...headStyle, textAlign: "right" }}>vs last month</td>
+        </tr>
+        {props.rows.map((row) => (
+          <tr key={row.label}>
+            <td style={rowCellStyle}>{row.label}</td>
+            <td style={{ ...rowCellStyle, textAlign: "right" }}>
+              {formatCompact(row.current)}
+            </td>
+            <td
+              style={{
+                ...rowCellStyle,
+                textAlign: "right",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {row.previous === 0 ? (
+                <Pill color={colors.newText} background={colors.newTint}>
+                  New
+                </Pill>
+              ) : (
+                <Delta current={row.current} previous={row.previous} />
+              )}
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );
@@ -809,12 +883,6 @@ function QuotaGauge(props: {
   // not run into the used label.
   const planLabelAfterMarker = includedPct < 40;
 
-  const labelStyle = {
-    fontSize: 11,
-    lineHeight: "14px",
-    color: colors.muted,
-    whiteSpace: "nowrap" as const,
-  };
   const planLabel = <>Plan {formatCompact(included)}</>;
 
   return (
@@ -822,10 +890,16 @@ function QuotaGauge(props: {
       <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
         <tbody>
           <tr>
-            <td style={{ ...labelStyle, paddingBottom: 4 }}>
+            <td style={{ ...axisLabelStyle, paddingBottom: 4 }}>
               {props.startLabel}
             </td>
-            <td style={{ ...labelStyle, paddingBottom: 4, textAlign: "right" }}>
+            <td
+              style={{
+                ...axisLabelStyle,
+                paddingBottom: 4,
+                textAlign: "right",
+              }}
+            >
               {props.endLabel}
             </td>
           </tr>
@@ -881,11 +955,11 @@ function QuotaGauge(props: {
               >
                 <tbody>
                   <tr>
-                    <td style={{ ...labelStyle, color: colors.text }}>
+                    <td style={{ ...axisLabelStyle, color: colors.text }}>
                       <strong>{formatCompact(used)}</strong> used
                     </td>
                     {planLabelAfterMarker ? null : (
-                      <td style={{ ...labelStyle, textAlign: "right" }}>
+                      <td style={{ ...axisLabelStyle, textAlign: "right" }}>
                         {planLabel}
                       </td>
                     )}
@@ -904,14 +978,14 @@ function QuotaGauge(props: {
                   <tbody>
                     <tr>
                       {planLabelAfterMarker ? (
-                        <td style={{ ...labelStyle, paddingLeft: 4 }}>
+                        <td style={{ ...axisLabelStyle, paddingLeft: 4 }}>
                           {planLabel}
                         </td>
                       ) : null}
                       {overage ? (
                         <td
                           style={{
-                            ...labelStyle,
+                            ...axisLabelStyle,
                             textAlign: "right",
                             color: colors.overageText,
                           }}

@@ -251,8 +251,21 @@ export function EmailLayout(props: {
    * When set, a link to the notification preferences is rendered in the footer.
    */
   preferencesUrl?: string | null;
+  /** Shown right of the logo, above a rule. */
+  header?: React.ReactNode;
 }) {
   const { footer = true, children, centered, preview, preferencesUrl } = props;
+  const logo = (
+    <Img
+      src={
+        new URL("/static/emails/argos-logo.png", config.get("server.url")).href
+      }
+      width="40"
+      height="40"
+      alt="Argos"
+      className={clsx("my-0", centered && "mx-auto")}
+    />
+  );
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -261,18 +274,26 @@ export function EmailLayout(props: {
         <Body className="m-auto bg-white font-sans">
           <Container className="mx-auto my-10 rounded-sm border border-solid border-gray-200 p-5">
             <Section>
-              <Img
-                src={
-                  new URL(
-                    "/static/emails/argos-logo.png",
-                    config.get("server.url"),
-                  ).href
-                }
-                width="40"
-                height="40"
-                alt="Argos"
-                className={clsx("my-0", centered && "mx-auto")}
-              />
+              {props.header ? (
+                <table
+                  width="100%"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  role="presentation"
+                  className="border-0 border-b border-solid border-gray-200"
+                >
+                  <tbody>
+                    <tr>
+                      <td className="pb-4 align-middle">{logo}</td>
+                      <td className="pb-4 text-right align-middle">
+                        {props.header}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : (
+                logo
+              )}
             </Section>
             {children}
             {footer && (
