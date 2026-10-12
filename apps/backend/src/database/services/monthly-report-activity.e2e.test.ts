@@ -172,6 +172,8 @@ describe("getMonthlyReportActivity", () => {
         config.get("server.url"),
       ).href,
     ]);
+    // Not flaky the month before.
+    expect(activity.flakyTests.top[0]?.newThisMonth).toBe(true);
   });
 
   it("counts the changes people reviewed and the tests covered", async () => {

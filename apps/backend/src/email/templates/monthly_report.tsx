@@ -36,6 +36,10 @@ const colors = {
   overageLight: "#ffdcc3",
   track: "#f1f1f3",
   success: "#218358",
+  successTint: "#e6f6eb",
+  overagePill: "#ffefd6",
+  newText: "#ab6400",
+  newTint: "#fff4d5",
 };
 
 const MonthSchema = z.object({
@@ -70,6 +74,8 @@ const ActivitySchema = z.object({
         buildName: z.string(),
         flakiness: z.number(),
         url: z.string(),
+        /** Flaky this month, and not the month before. */
+        newThisMonth: z.boolean(),
       }),
     ),
   }),
@@ -179,18 +185,21 @@ export const handler = defineEmailTemplate({
             buildName: "e2e",
             flakiness: 0.62,
             url: "https://app.argos-ci.com/acme/web/tests/WEB-a1b2",
+            newThisMonth: true,
           },
           {
             name: "Button / Loading",
             buildName: "storybook",
             flakiness: 0.48,
             url: "https://app.argos-ci.com/acme/web/tests/WEB-c3d4",
+            newThisMonth: false,
           },
           {
             name: "dashboard › charts",
             buildName: "e2e",
             flakiness: 0.41,
             url: "https://app.argos-ci.com/acme/web/tests/WEB-e5f6",
+            newThisMonth: false,
           },
         ],
       },
@@ -273,7 +282,7 @@ function renderMonthlyReport(props: MonthlyReportData) {
             {
               value: formatCount(activity.changesReviewed.current),
               label: `visual ${plural(activity.changesReviewed.current, "change")} reviewed`,
-              detail: <Delta {...activity.changesReviewed} />,
+              delta: <Delta {...activity.changesReviewed} />,
             },
             {
               value: formatCount(activity.tests.covered),
@@ -291,17 +300,20 @@ function renderMonthlyReport(props: MonthlyReportData) {
               ? "No flaky tests"
               : countOf(flakyTests.current, "flaky test")}
           </strong>{" "}
-          this month{" "}
+          this month
           <Delta
             current={flakyTests.current}
             previous={flakyTests.previous}
             tone="increaseIsBad"
+            suffix=" vs last month"
           />
-          .
-          {flakyTests.current > 0
-            ? " Their changes come back without a code change, and each one costs a review."
-            : null}
         </Paragraph>
+        {flakyTests.current > 0 ? (
+          <Paragraph style={{ margin: "4px 0 0" }}>
+            Their changes come back without a code change, and each one costs a
+            review.
+          </Paragraph>
+        ) : null}
         {flakyTests.top.length > 0 ? (
           <table
             width="100%"
@@ -318,6 +330,11 @@ function renderMonthlyReport(props: MonthlyReportData) {
                     <span style={{ color: colors.faint }}>
                       {test.buildName}
                     </span>
+                    {test.newThisMonth ? (
+                      <Pill color={colors.newText} background={colors.newTint}>
+                        New
+                      </Pill>
+                    ) : null}
                   </td>
                   <td
                     style={{
@@ -527,7 +544,13 @@ function SectionLink(props: { href: string; children: React.ReactNode }) {
  * the brand color, so the top of the report is not a column of grey text.
  */
 function Hero(props: {
-  stats: { value: string; label: string; detail?: React.ReactNode }[];
+  stats: {
+    value: string;
+    /** The trend, next to the figure. */
+    delta?: React.ReactNode;
+    label: string;
+    detail?: React.ReactNode;
+  }[];
 }) {
   const rows: (typeof props.stats)[] = [];
   for (let index = 0; index < props.stats.length; index += 2) {
@@ -578,6 +601,7 @@ function Hero(props: {
                           }}
                         >
                           {stat.value}
+                          {stat.delta}
                         </div>
                         <div
                           style={{
@@ -617,26 +641,58 @@ function Delta(props: {
   current: number;
   previous: number;
   tone?: "increaseIsBad";
+  suffix?: string;
 }) {
-  const { current, previous } = props;
+  const { current, previous, suffix = "" } = props;
   const change = current - previous;
   if (change === 0) {
-    return <span style={{ color: colors.muted }}>(same as last month)</span>;
+    return (
+      <Pill color={colors.muted} background={colors.track}>
+        same as last month
+      </Pill>
+    );
   }
   // A raw difference reads well on small counts, a share on large ones, as
   // long as the share does not round to nothing.
   const share = Math.abs(Math.round((change / previous) * 100));
   const value =
     previous >= 20 && share > 0 ? `${share}%` : String(Math.abs(change));
-  const color =
+  const [color, background] =
     props.tone === "increaseIsBad"
       ? change > 0
-        ? colors.overageText
-        : colors.success
-      : colors.muted;
+        ? [colors.overageText, colors.overagePill]
+        : [colors.success, colors.successTint]
+      : [colors.muted, colors.track];
   return (
-    <span style={{ color }}>
-      {change > 0 ? "▲" : "▼"} {value} vs last month
+    <Pill color={color} background={background}>
+      {change > 0 ? "▲" : "▼"} {value}
+      {suffix}
+    </Pill>
+  );
+}
+
+function Pill(props: {
+  color: string;
+  background: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        marginLeft: 8,
+        padding: "1px 7px",
+        borderRadius: 5,
+        fontSize: 12,
+        lineHeight: "18px",
+        fontWeight: 500,
+        verticalAlign: "middle",
+        whiteSpace: "nowrap",
+        color: props.color,
+        backgroundColor: props.background,
+      }}
+    >
+      {props.children}
     </span>
   );
 }

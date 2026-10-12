@@ -265,6 +265,7 @@ async function getFlakyTests(account: Account, window: Window) {
         testId: row.id,
       });
       return {
+        id: row.id,
         name: row.name,
         buildName: row.buildName,
         flakiness: metrics.flakiness,
@@ -361,7 +362,10 @@ export async function getMonthlyReportActivity(
     flakyTests: {
       current: flaky.count,
       previous: previousFlaky.count,
-      top: flaky.top,
+      top: flaky.top.map(({ id, ...test }) => ({
+        ...test,
+        newThisMonth: !previousFlaky.ids.includes(id),
+      })),
     },
     screenshots: { biggestIncrease: biggestIncrease ?? null },
   };
