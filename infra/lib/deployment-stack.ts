@@ -69,6 +69,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
       bucketName: `argos-deployments-${stage}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
       versioned: isProduction,
       removalPolicy: isProduction
         ? cdk.RemovalPolicy.RETAIN
