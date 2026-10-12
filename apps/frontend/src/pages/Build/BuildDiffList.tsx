@@ -807,21 +807,20 @@ const InternalBuildDiffList = memo(() => {
 
   return (
     <>
-      {stats &&
-        !searchMode && (
-          // The hairline sits on the wrapper, not on the scroller: the fade would
-          // take the separator's ends with it and leave the rule looking broken.
-          <div className="border-b-thin shrink-0">
-            <div className="no-scrollbar scroll-mask-x-from-90% flex items-center gap-2 overflow-x-auto px-2">
-              {hasOverview && <OverviewButton />}
-              <BuildStatsIndicator
-                stats={stats}
-                onClickGroup={openGroup}
-                isSubsetBuild={isSubsetBuild}
-              />
-            </div>
+      {stats && !searchMode && (
+        // The hairline sits on the wrapper, not on the scroller: the fade would
+        // take the separator's ends with it and leave the rule looking broken.
+        <div className="border-b-thin shrink-0">
+          <div className="no-scrollbar scroll-mask-x-from-90% flex items-center gap-2 overflow-x-auto px-2">
+            {hasOverview && <OverviewButton />}
+            <BuildStatsIndicator
+              stats={stats}
+              onClickGroup={openGroup}
+              isSubsetBuild={isSubsetBuild}
+            />
           </div>
-        )}
+        </div>
+      )}
       {/* Bottom edge only: a group header pins itself to the top of this box
           while its screenshots scroll under it, and a top fade would dissolve
           the header that names what you are looking at. */}

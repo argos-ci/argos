@@ -17,7 +17,7 @@ overrides:
   browserslist: ^4.28.7
   dompurify: ^3.4.0
   esbuild: ^0.28.1
-  file-type: ^21.3.2
+  file-type: ^22.1.1
   # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
   # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
   # rewrites that peer range too: pnpm reports no conflict even when it is
@@ -30,7 +30,7 @@ overrides:
   react: "catalog:"
   react-dom: "catalog:"
   react-router: "catalog:"
-  sharp: ^0.35.1
+  sharp: ^0.35.5
   uuid: ^14.0.0
   undici: ^8.11.2
   ws: ^8.20.1
@@ -60,4 +60,4 @@ minimumReleaseAgeExclude:
 # upgrade: the Tooltip story "Closes When Another Trigger Unmounts" fails
 # without the patch.
 patchedDependencies:
-  '@base-ui/react@1.7.0': patches/@base-ui__react@1.7.0.patch
+  '@base-ui/react@1.9.0': patches/@base-ui__react@1.9.0.patch

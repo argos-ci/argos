@@ -12,7 +12,7 @@ import {
 setupRedis();
 
 beforeAll(() => {
-  githubActionsOidcServer.listen({ onUnhandledRequest: "error" });
+  githubActionsOidcServer.listen({ onUnhandledFrame: "error" });
 });
 
 afterEach(() => {
