@@ -8,6 +8,7 @@ import { createJob } from "@/job-core";
 import { Account, Subscription, Team, TeamUser } from "../models";
 import { getMonthlyReportActivity } from "./monthly-report-activity";
 import {
+  checkIsBilledPeriod,
   getAdditionalScreenshotCost,
   getIncludedScreenshots,
   getScreenshotTotals,
@@ -21,6 +22,9 @@ import {
  */
 const PROJECTION_WINDOW = 3;
 
+/** Closed months the report of a monthly plan shows. */
+const MONTHLY_PLAN_HISTORY = 6;
+
 /** Accounts read per page when enqueueing the reports. */
 const ACCOUNT_BATCH_SIZE = 100;
 
@@ -33,23 +37,23 @@ const ACCOUNT_BATCH_SIZE = 100;
 const ANNIVERSARY_TOLERANCE = 2 * 24 * 60 * 60 * 1000;
 
 /**
- * The report of a team on an annual usage-based plan, as of `now`: the months
- * of its term, the one that closed last and the one before it. Null when it
- * has none: not on such a plan, or in the first month of its term.
+ * The report of a team on a usage-based plan, as of `now`: the months it
+ * shows, the one that closed last and the one before it. Null when it has
+ * none: not on such a plan, or before its first month closed.
  *
- * A term is twelve monthly anniversaries rather than the yearly one, which
- * drifts by a day across a February 29.
+ * On a yearly plan, the months are the term: twelve monthly anniversaries
+ * rather than the yearly one, which drifts by a day across a February 29. On
+ * a monthly plan, they are the last billed ones.
  */
 async function getReportTerm(account: Account, now: Date) {
   const subscription = await account
     .$getSubscriptionManager()
     .getActiveSubscription();
   // The subscription Argos meters on can differ from the one that matched the
-  // annual plan query: an account holding several picks the largest plan.
+  // plan query: an account holding several picks the largest plan.
   if (
     !subscription?.plan ||
     subscription.status === "trialing" ||
-    subscription.plan.interval !== "year" ||
     !subscription.plan.usageBased
   ) {
     return null;
@@ -63,11 +67,56 @@ async function getReportTerm(account: Account, now: Date) {
     return null;
   }
 
-  const termStartsAt = subscription.getLastResetDate(now, "year");
   // Indexes count months back from the one holding `now`.
   const monthStart = (index: number) =>
     subscription.getResetDateAt(now, "month", index);
   const currentIndex = subscription.getCurrentPeriodIndex(now, "month");
+  /** The report of a month is due once the next one opens, at its `to`. */
+  const reportedMonth = {
+    from: monthStart(currentIndex + 1),
+    to: monthStart(currentIndex),
+  };
+  const previousMonth = {
+    from: monthStart(currentIndex + 2),
+    to: monthStart(currentIndex + 1),
+  };
+
+  if (subscription.plan.interval === "month") {
+    const months: { startsAt: Date; endsAt: Date }[] = [];
+    for (
+      let index = currentIndex + MONTHLY_PLAN_HISTORY;
+      index > currentIndex;
+      index--
+    ) {
+      const startsAt = monthStart(index);
+      // Trial months, and the ones before the subscription, were not billed.
+      if (
+        checkIsBilledPeriod(
+          { from: startsAt, index: index - currentIndex },
+          subscription,
+        )
+      ) {
+        months.push({ startsAt, endsAt: monthStart(index - 1) });
+      }
+    }
+    // The month that just closed was not billed: no report for it.
+    if (months.at(-1)?.startsAt.getTime() !== reportedMonth.from.getTime()) {
+      return null;
+    }
+    return {
+      interval: "month" as const,
+      subscription,
+      includedScreenshots,
+      months,
+      closedCount: months.length,
+      termStartsAt: reportedMonth.from,
+      termEndsAt: reportedMonth.to,
+      reportedMonth,
+      previousMonth,
+    };
+  }
+
+  const termStartsAt = subscription.getLastResetDate(now, "year");
   let firstIndex = currentIndex;
   while (
     monthStart(firstIndex + 1).getTime() >=
@@ -101,21 +150,15 @@ async function getReportTerm(account: Account, now: Date) {
   }
 
   return {
+    interval: "year" as const,
     subscription,
     includedScreenshots,
     months,
     closedCount: firstIndex - currentIndex,
     termStartsAt: monthStart(firstIndex),
     termEndsAt: lastMonth.endsAt,
-    /** The report of a month is due once the next one opens, at its `to`. */
-    reportedMonth: {
-      from: monthStart(currentIndex + 1),
-      to: monthStart(currentIndex),
-    },
-    previousMonth: {
-      from: monthStart(currentIndex + 2),
-      to: monthStart(currentIndex + 1),
-    },
+    reportedMonth,
+    previousMonth,
   };
 }
 
@@ -138,9 +181,10 @@ function projectMonthUsage(closed: ScreenshotTotals[]): ScreenshotTotals {
 }
 
 /**
- * Where the term stands and where it is heading. Only closed months are read:
- * the report goes out right after a monthly anniversary, when the running
- * month holds a few hours of usage that would only drag the average down.
+ * Where the plan stands, and on a yearly plan where the term is heading. Only
+ * closed months are read: the report goes out right after a monthly
+ * anniversary, when the running month holds a few hours of usage that would
+ * only drag the average down.
  */
 async function getTermUsage(term: ReportTerm) {
   const { subscription } = term;
@@ -186,12 +230,16 @@ async function getTermUsage(term: ReportTerm) {
       projected: month.projected,
     })),
     includedScreenshots,
-    currentOverageCost: overageCost(closed),
+    // A monthly plan's quota resets every month: the overage is the one of the
+    // month the report covers, billed with its invoice.
+    currentOverageCost: overageCost(
+      term.interval === "month" ? closed.slice(-1) : closed,
+    ),
     // Fewer closed months than the projection weighs make a guess too rough
     // to put a price on: a first month busy with the setup would read as an
     // overage.
     projectedOverageCost:
-      closed.length >= PROJECTION_WINDOW
+      term.interval === "year" && closed.length >= PROJECTION_WINDOW
         ? overageCost(usage.map((month) => month.totals))
         : null,
   };
@@ -222,6 +270,7 @@ async function getMonthlyReportData(
     accountName: account.name,
     accountSlug: account.slug,
     currency,
+    interval: term.interval,
     termStartsAt: term.termStartsAt.toISOString(),
     termEndsAt: term.termEndsAt.toISOString(),
     renews: term.subscription.endDate === null,
@@ -322,7 +371,7 @@ export const monthlyReportJob = createJob<string>(
 );
 
 /**
- * A page of the teams on an annual usage-based Stripe plan, the ones the
+ * A page of the teams on a usage-based Stripe plan, the ones the
  * monthly report is for, in id order after `after`. Only teams: the choice to
  * receive it is kept on each owner's membership.
  */
@@ -345,7 +394,6 @@ async function getMonthlyReportAccountIds(
             .whereNull("subscriptions.endDate")
             .orWhereRaw("?? >= now()", "subscriptions.endDate"),
         )
-        .where("plan.interval", "year")
         .where("plan.usageBased", true),
     )
     .orderBy("accounts.id")
@@ -358,7 +406,7 @@ async function getMonthlyReportAccountIds(
 }
 
 /**
- * Enqueue the monthly report of every annual account, a page at a time. Each
+ * Enqueue the monthly report of every usage-based account, a page at a time. Each
  * account is its own job, so a large or failing one does not hold the others
  * back, and the work spreads across workers.
  */

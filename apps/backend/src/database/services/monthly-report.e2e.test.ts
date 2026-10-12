@@ -24,14 +24,17 @@ vi.mock("@/changelog/news", () => ({
 const mockSendEmailTemplate = vi.mocked(sendEmailTemplate);
 const mockGetChangelogNews = vi.mocked(getChangelogNews);
 
-/** A team on an annual usage-based Stripe plan, with one owner. */
-async function createAnnualTeam(input: {
+/** A team on a usage-based Stripe plan, with one owner. */
+async function createTeam(input: {
+  interval?: "month" | "year";
   startDate: string;
+  /** When the subscription began, which bounds the months it billed. */
+  createdAt?: string;
   stripeSubscriptionId: string;
 }) {
   const plan = await factory.Plan.create({
     usageBased: true,
-    interval: "year",
+    interval: input.interval ?? "year",
   });
   const account = await factory.TeamAccount.create();
   invariant(account.teamId, "a team account has a team");
@@ -51,6 +54,7 @@ async function createAnnualTeam(input: {
     stripeSubscriptionId: input.stripeSubscriptionId,
     subscriberId: owner.id,
     startDate: input.startDate,
+    createdAt: input.createdAt ?? input.startDate,
     status: "active",
   });
   return { account, owner };
@@ -76,7 +80,7 @@ describe("sendAccountMonthlyReport", () => {
     await setupDatabase();
     vi.clearAllMocks();
 
-    const team = await createAnnualTeam({
+    const team = await createTeam({
       startDate: "2025-01-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_monthly_report",
     });
@@ -186,19 +190,24 @@ describe("sendAccountMonthlyReport", () => {
     );
   });
 
-  it("enqueues the accounts on an annual usage-based plan only", async () => {
-    const monthlyPlan = await factory.Plan.create({
-      usageBased: true,
+  it("enqueues the accounts on a usage-based plan, monthly or yearly", async () => {
+    const monthly = await createTeam({
+      interval: "month",
+      startDate: "2026-04-15T12:00:00.000Z",
+      stripeSubscriptionId: "sub_monthly",
+    });
+    const flatPlan = await factory.Plan.create({
+      usageBased: false,
       interval: "month",
     });
-    const monthlyAccount = await factory.TeamAccount.create();
+    const flatAccount = await factory.TeamAccount.create();
     const subscriber = await factory.User.create();
     await factory.Subscription.create({
-      accountId: monthlyAccount.id,
-      planId: monthlyPlan.id,
+      accountId: flatAccount.id,
+      planId: flatPlan.id,
       currency: "eur",
       provider: "stripe",
-      stripeSubscriptionId: "sub_monthly",
+      stripeSubscriptionId: "sub_flat",
       subscriberId: subscriber.id,
       startDate: "2025-01-15T12:00:00.000Z",
       status: "active",
@@ -208,7 +217,7 @@ describe("sendAccountMonthlyReport", () => {
     await enqueueMonthlyReports();
 
     expect(push).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledWith(account.id);
+    expect(push).toHaveBeenCalledWith(account.id, monthly.account.id);
   });
 });
 
@@ -219,7 +228,7 @@ describe("the term of an annual plan", () => {
   });
 
   it("ends on the twelfth monthly anniversary across a February 29", async () => {
-    const { account } = await createAnnualTeam({
+    const { account } = await createTeam({
       startDate: "2024-03-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_leap_year",
     });
@@ -239,7 +248,7 @@ describe("the term of an annual plan", () => {
   it("starts on the monthly anniversary when the yearly one drifted a day", async () => {
     // Read from 2024, a leap year, the yearly anniversary lands on June 11 in
     // 2025, the day after the monthly one.
-    const { account } = await createAnnualTeam({
+    const { account } = await createTeam({
       startDate: "2024-06-10T12:00:00.000Z",
       stripeSubscriptionId: "sub_drift",
     });
@@ -252,5 +261,58 @@ describe("the term of an annual plan", () => {
     const { data } = getSentReport();
     expect(data.termStartsAt).toBe("2025-06-10T12:00:00.000Z");
     expect(data.months).toHaveLength(12);
+  });
+});
+
+describe("the report of a monthly plan", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+    vi.clearAllMocks();
+  });
+
+  it("shows the months billed, and the overage of the last one only", async () => {
+    // Stripe moves the start date to each new period; the subscription began
+    // on December 15, so earlier months were never billed.
+    const { account } = await createTeam({
+      interval: "month",
+      startDate: "2026-04-15T12:00:00.000Z",
+      createdAt: "2025-12-15T12:00:00.000Z",
+      stripeSubscriptionId: "sub_monthly_report",
+    });
+    const project = await factory.Project.create({ accountId: account.id });
+    for (const [createdAt, screenshotCount] of [
+      ["2025-11-20T10:00:00.000Z", 9000],
+      ["2025-12-20T10:00:00.000Z", 5000],
+      ["2026-01-20T10:00:00.000Z", 100],
+      ["2026-02-20T10:00:00.000Z", 200],
+      ["2026-03-20T10:00:00.000Z", 1300],
+    ] as const) {
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        createdAt,
+        screenshotCount,
+        storybookScreenshotCount: 0,
+      });
+    }
+
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-04-20T10:00:00.000Z"),
+    );
+
+    const { data } = getSentReport();
+    expect(data.interval).toBe("month");
+    expect(data.activity.from).toBe("2026-03-15T12:00:00.000Z");
+    expect(
+      data.months.map((month) => [month.screenshots, month.projected]),
+    ).toEqual([
+      [5000, false],
+      [100, false],
+      [200, false],
+      [1300, false],
+    ]);
+    // The quota resets every month: only March's 300 past it, at 0.5 each.
+    expect(data.currentOverageCost).toBe(150);
+    expect(data.projectedOverageCost).toBeNull();
   });
 });

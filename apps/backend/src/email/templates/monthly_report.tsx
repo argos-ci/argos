@@ -104,7 +104,12 @@ const MonthlyReportSchema = z.object({
   accountName: z.string().nullish(),
   accountSlug: z.string(),
   currency: z.enum(["usd", "eur"]),
-  /** Screenshots the plan includes over the whole term. */
+  /**
+   * How the plan is billed. A yearly plan's overage is invoiced once, when the
+   * term ends; a monthly plan's every month, with the month's invoice.
+   */
+  interval: z.enum(["month", "year"]),
+  /** Screenshots the plan includes over a term, or a month on a monthly plan. */
   includedScreenshots: z.number(),
   /** Overage the closed months of the term already add up to. */
   currentOverageCost: z.number(),
@@ -146,10 +151,10 @@ const previewMonths: [string, number, boolean?][] = [
 ];
 
 /**
- * The monthly report of a team on an annual plan: what Argos did for it over
- * the month, then where its plan stands. Annual overage is invoiced once, when
- * the term ends, so this is where a team that does not watch its usage sees
- * it coming.
+ * The monthly report of a team on a usage-based plan: what Argos did for it
+ * over the month, then where its plan stands. Annual overage is invoiced once,
+ * when the term ends, so this is where a team that does not watch its usage
+ * sees it coming; on a monthly plan, it says what the month's invoice bills.
  */
 export const handler = defineEmailTemplate({
   type: "monthly_report",
@@ -158,6 +163,7 @@ export const handler = defineEmailTemplate({
     accountName: "Acme",
     accountSlug: "acme",
     currency: "eur",
+    interval: "year",
     includedScreenshots: 1_200_000,
     currentOverageCost: 0,
     projectedOverageCost: 468.75,
@@ -322,6 +328,16 @@ function renderMonthlyReport(props: MonthlyReportData) {
               ) : null,
               label: "screenshots this month",
             },
+            ...(props.interval === "month"
+              ? [
+                  getMonthPlanStat({
+                    used: lastMonth.screenshots,
+                    included: includedScreenshots,
+                    overageCost: props.currentOverageCost,
+                    currency,
+                  }),
+                ]
+              : []),
           ]}
         />
         <MonthlyBars months={months} />
@@ -330,27 +346,33 @@ function renderMonthlyReport(props: MonthlyReportData) {
         ) : null}
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
 
-        <SectionTitle>Annual plan</SectionTitle>
-        <Paragraph style={{ margin: "0 0 12px" }}>
-          {formatCompact(used)} screenshots so far this term,{" "}
-          <strong>{usedPct}%</strong> of your plan.
-        </Paragraph>
-        <QuotaGauge
-          used={used}
-          projected={projected}
-          included={includedScreenshots}
-          startLabel={formatDate(termStartsAt, "date")}
-          endLabel={formatDate(termEndsAt, "date")}
-        />
-        <OverageNote
-          current={props.currentOverageCost}
-          projected={props.projectedOverageCost}
-          blockingSpendLimit={props.blockingSpendLimit}
-          currency={currency}
-          renews={props.renews}
-          termEndsAt={termEndsAt}
-        />
-        <SectionLink href={usageHref}>See usage details</SectionLink>
+        {props.interval === "year" ? (
+          <>
+            <SectionTitle>Annual plan</SectionTitle>
+            <Paragraph style={{ margin: "0 0 12px" }}>
+              {formatCompact(used)} screenshots so far this term,{" "}
+              <strong>{usedPct}%</strong> of your plan.
+            </Paragraph>
+            <QuotaGauge
+              used={used}
+              projected={projected}
+              included={includedScreenshots}
+              startLabel={formatDate(termStartsAt, "date")}
+              endLabel={formatDate(termEndsAt, "date")}
+            />
+            <OverageNote
+              current={props.currentOverageCost}
+              projected={props.projectedOverageCost}
+              blockingSpendLimit={props.blockingSpendLimit}
+              currency={currency}
+              renews={props.renews}
+              termEndsAt={termEndsAt}
+            />
+            <SectionLink href={usageHref}>See usage details</SectionLink>
+          </>
+        ) : (
+          <SectionLink href={usageHref}>See usage details</SectionLink>
+        )}
 
         <SectionTitle>Test health</SectionTitle>
         <Paragraph style={{ margin: 0 }}>
@@ -456,6 +478,35 @@ const { format: formatBarValue } = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumSignificantDigits: 3,
 });
+
+/**
+ * How a closed month of a monthly plan stands against its quota: the part
+ * billed beyond it, or the share of the plan it used.
+ */
+function getMonthPlanStat(input: {
+  used: number;
+  included: number;
+  overageCost: number;
+  currency: string;
+}): Stat {
+  const { used, included } = input;
+  if (used <= included) {
+    return {
+      value: `${Math.round((used / included) * 100)}%`,
+      label: "of your plan used",
+      detail: `${formatCompact(used)} of the ${formatCompact(included)} included`,
+    };
+  }
+  return {
+    value: formatCompact(used - included),
+    label: "beyond your plan",
+    // Below one unit of currency, the cost is not worth stating.
+    detail:
+      input.overageCost >= 1
+        ? `billed ${formatAmount(input.overageCost, input.currency)}`
+        : null,
+  };
+}
 
 function plural(count: number, word: string) {
   return count === 1 ? word : `${word}s`;
