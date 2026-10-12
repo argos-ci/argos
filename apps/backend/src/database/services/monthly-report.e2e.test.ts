@@ -2,7 +2,11 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getChangelogNews } from "@/changelog/news";
-import type { Account, Project } from "@/database/models";
+import {
+  type Account,
+  Subscription,
+  type SubscriptionInterval,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendEmailTemplate } from "@/email/send-email-template";
 
@@ -24,16 +28,18 @@ vi.mock("@/changelog/news", () => ({
 const mockSendEmailTemplate = vi.mocked(sendEmailTemplate);
 const mockGetChangelogNews = vi.mocked(getChangelogNews);
 
-/** A team on a usage-based Stripe plan, with one owner. */
+/** A team on a Stripe plan, usage-based unless told otherwise, with one owner. */
 async function createTeam(input: {
-  interval?: "month" | "year";
+  interval?: SubscriptionInterval;
+  usageBased?: boolean;
   startDate: string;
   /** When the subscription began, which bounds the months it billed. */
   createdAt?: string;
+  trialEndDate?: string;
   stripeSubscriptionId: string;
 }) {
   const plan = await factory.Plan.create({
-    usageBased: true,
+    usageBased: input.usageBased ?? true,
     interval: input.interval ?? "year",
   });
   const account = await factory.TeamAccount.create();
@@ -55,9 +61,26 @@ async function createTeam(input: {
     subscriberId: owner.id,
     startDate: input.startDate,
     createdAt: input.createdAt ?? input.startDate,
+    trialEndDate: input.trialEndDate ?? null,
     status: "active",
   });
   return { account, owner };
+}
+
+/** Buckets of screenshots, uploaded to a new project of the account. */
+async function uploadScreenshots(
+  account: Account,
+  buckets: [createdAt: string, screenshotCount: number][],
+) {
+  const project = await factory.Project.create({ accountId: account.id });
+  await factory.ScreenshotBucket.createMany(
+    buckets.length,
+    buckets.map(([createdAt, screenshotCount]) => ({
+      projectId: project.id,
+      createdAt,
+      screenshotCount,
+    })),
+  );
 }
 
 function getSentReport() {
@@ -66,20 +89,21 @@ function getSentReport() {
   return input;
 }
 
+beforeEach(async () => {
+  await setupDatabase();
+  vi.clearAllMocks();
+});
+
 describe("sendAccountMonthlyReport", () => {
   let account: Account;
-  let project: Project;
   let ownerId: string;
   let ownerEmail: string;
 
   // Fourth month of the term that opened on January 15, 2026: three months
-  // have closed.
-  const now = new Date("2026-04-20T10:00:00.000Z");
+  // have closed, the last one the day before.
+  const now = new Date("2026-04-16T10:00:00.000Z");
 
   beforeEach(async () => {
-    await setupDatabase();
-    vi.clearAllMocks();
-
     const team = await createTeam({
       startDate: "2025-01-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_monthly_report",
@@ -88,24 +112,15 @@ describe("sendAccountMonthlyReport", () => {
     invariant(team.owner.email, "a user is created with an email");
     ownerId = team.owner.id;
     ownerEmail = team.owner.email;
-    project = await factory.Project.create({ accountId: account.id });
-
-    for (const [createdAt, screenshotCount] of [
+    await uploadScreenshots(account, [
       // The previous term, which the report must leave out.
       ["2025-12-20T10:00:00.000Z", 5000],
       ["2026-01-20T10:00:00.000Z", 100],
       ["2026-02-20T10:00:00.000Z", 200],
       ["2026-03-20T10:00:00.000Z", 300],
       // The running month, too young to count.
-      ["2026-04-16T10:00:00.000Z", 50],
-    ] as const) {
-      await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        createdAt,
-        screenshotCount,
-        storybookScreenshotCount: 0,
-      });
-    }
+      ["2026-04-16T08:00:00.000Z", 50],
+    ]);
   });
 
   it("reports the term so far and projects the rest from the last three months, the most recent counting most", async () => {
@@ -154,7 +169,7 @@ describe("sendAccountMonthlyReport", () => {
     await sendAccountMonthlyReport(account.id, now);
     await sendAccountMonthlyReport(
       account.id,
-      new Date("2026-04-21T10:00:00.000Z"),
+      new Date("2026-04-17T10:00:00.000Z"),
     );
     expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
 
@@ -168,6 +183,23 @@ describe("sendAccountMonthlyReport", () => {
       since: now,
       now: new Date("2026-05-16T10:00:00.000Z"),
     });
+  });
+
+  it("leaves out a month that closed days ago", async () => {
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-04-25T10:00:00.000Z"),
+    );
+    expect(mockSendEmailTemplate).not.toHaveBeenCalled();
+  });
+
+  it("leaves out a month without a screenshot", async () => {
+    // Nothing was uploaded from May 15 to June 15.
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-06-16T10:00:00.000Z"),
+    );
+    expect(mockSendEmailTemplate).not.toHaveBeenCalled();
   });
 
   it("sends the same email again when a send failed, so a retry delivers it", async () => {
@@ -196,21 +228,11 @@ describe("sendAccountMonthlyReport", () => {
       startDate: "2026-04-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_monthly",
     });
-    const flatPlan = await factory.Plan.create({
-      usageBased: false,
+    await createTeam({
       interval: "month",
-    });
-    const flatAccount = await factory.TeamAccount.create();
-    const subscriber = await factory.User.create();
-    await factory.Subscription.create({
-      accountId: flatAccount.id,
-      planId: flatPlan.id,
-      currency: "eur",
-      provider: "stripe",
+      usageBased: false,
+      startDate: "2026-04-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_flat",
-      subscriberId: subscriber.id,
-      startDate: "2025-01-15T12:00:00.000Z",
-      status: "active",
     });
     const push = vi.spyOn(monthlyReportJob, "push").mockResolvedValue();
 
@@ -222,20 +244,16 @@ describe("sendAccountMonthlyReport", () => {
 });
 
 describe("the term of an annual plan", () => {
-  beforeEach(async () => {
-    await setupDatabase();
-    vi.clearAllMocks();
-  });
-
   it("ends on the twelfth monthly anniversary across a February 29", async () => {
     const { account } = await createTeam({
       startDate: "2024-03-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_leap_year",
     });
+    await uploadScreenshots(account, [["2024-05-01T10:00:00.000Z", 100]]);
 
     await sendAccountMonthlyReport(
       account.id,
-      new Date("2024-05-20T10:00:00.000Z"),
+      new Date("2024-05-16T10:00:00.000Z"),
     );
 
     const { data } = getSentReport();
@@ -252,10 +270,11 @@ describe("the term of an annual plan", () => {
       startDate: "2024-06-10T12:00:00.000Z",
       stripeSubscriptionId: "sub_drift",
     });
+    await uploadScreenshots(account, [["2025-09-01T10:00:00.000Z", 100]]);
 
     await sendAccountMonthlyReport(
       account.id,
-      new Date("2025-09-20T10:00:00.000Z"),
+      new Date("2025-09-11T10:00:00.000Z"),
     );
 
     const { data } = getSentReport();
@@ -265,11 +284,6 @@ describe("the term of an annual plan", () => {
 });
 
 describe("the report of a monthly plan", () => {
-  beforeEach(async () => {
-    await setupDatabase();
-    vi.clearAllMocks();
-  });
-
   it("shows the months billed, and the overage of the last one only", async () => {
     // Stripe moves the start date to each new period; the subscription began
     // on December 15, so earlier months were never billed.
@@ -279,25 +293,17 @@ describe("the report of a monthly plan", () => {
       createdAt: "2025-12-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_monthly_report",
     });
-    const project = await factory.Project.create({ accountId: account.id });
-    for (const [createdAt, screenshotCount] of [
+    await uploadScreenshots(account, [
       ["2025-11-20T10:00:00.000Z", 9000],
       ["2025-12-20T10:00:00.000Z", 5000],
       ["2026-01-20T10:00:00.000Z", 100],
       ["2026-02-20T10:00:00.000Z", 200],
       ["2026-03-20T10:00:00.000Z", 1300],
-    ] as const) {
-      await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        createdAt,
-        screenshotCount,
-        storybookScreenshotCount: 0,
-      });
-    }
+    ]);
 
     await sendAccountMonthlyReport(
       account.id,
-      new Date("2026-04-20T10:00:00.000Z"),
+      new Date("2026-04-16T10:00:00.000Z"),
     );
 
     const { data } = getSentReport();
@@ -314,5 +320,63 @@ describe("the report of a monthly plan", () => {
     // The quota resets every month: only March's 300 past it, at 0.5 each.
     expect(data.currentOverageCost).toBe(150);
     expect(data.projectedOverageCost).toBeNull();
+  });
+
+  it("sends nothing for the month of the trial", async () => {
+    // Ending the trial on March 15 opened the first billed period.
+    const { account } = await createTeam({
+      interval: "month",
+      startDate: "2026-03-15T12:00:00.000Z",
+      createdAt: "2026-02-15T12:00:00.000Z",
+      trialEndDate: "2026-03-15T12:00:00.000Z",
+      stripeSubscriptionId: "sub_trial",
+    });
+    await uploadScreenshots(account, [["2026-03-01T10:00:00.000Z", 400]]);
+
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-03-16T10:00:00.000Z"),
+    );
+
+    expect(mockSendEmailTemplate).not.toHaveBeenCalled();
+  });
+
+  it("reports a month once Stripe opened the next one, when it bills on the 31st", async () => {
+    // Billed on the 31st, or the last day of a shorter month: the period that
+    // opened on February 28 closes on March 31.
+    const { account } = await createTeam({
+      interval: "month",
+      startDate: "2026-02-28T05:00:00.000Z",
+      createdAt: "2025-10-31T05:00:00.000Z",
+      stripeSubscriptionId: "sub_end_of_month",
+    });
+    await uploadScreenshots(account, [["2026-03-10T10:00:00.000Z", 400]]);
+
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-03-29T08:00:00.000Z"),
+    );
+    expect(mockSendEmailTemplate).not.toHaveBeenCalled();
+
+    await Subscription.query()
+      .where("accountId", account.id)
+      .patch({ startDate: "2026-03-31T05:00:00.000Z" });
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2026-04-01T08:00:00.000Z"),
+    );
+
+    const { data } = getSentReport();
+    expect([data.activity.from, data.activity.to]).toEqual([
+      "2026-02-28T05:00:00.000Z",
+      "2026-03-31T05:00:00.000Z",
+    ]);
+    expect(data.months.map((month) => month.startsAt)).toEqual([
+      "2025-10-31T05:00:00.000Z",
+      "2025-11-30T05:00:00.000Z",
+      "2025-12-31T05:00:00.000Z",
+      "2026-01-31T05:00:00.000Z",
+      "2026-02-28T05:00:00.000Z",
+    ]);
   });
 });

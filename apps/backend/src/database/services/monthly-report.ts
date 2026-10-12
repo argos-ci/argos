@@ -1,3 +1,4 @@
+import { addMonths } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import { sumBy } from "lodash-es";
 
@@ -25,6 +26,14 @@ const PROJECTION_WINDOW = 3;
 /** Closed months the report of a monthly plan shows. */
 const MONTHLY_PLAN_HISTORY = 6;
 
+/**
+ * How long after its month closes a report still goes out. A team that never
+ * got one has a month that closed up to four weeks back: reported that late,
+ * it would land days before the next one. A report still failing by then, or
+ * a renewal Stripe synced that late, skips the month.
+ */
+const MAX_REPORT_DELAY = 3 * 24 * 60 * 60 * 1000;
+
 /** Accounts read per page when enqueueing the reports. */
 const ACCOUNT_BATCH_SIZE = 100;
 
@@ -39,7 +48,7 @@ const ANNIVERSARY_TOLERANCE = 2 * 24 * 60 * 60 * 1000;
 /**
  * The report of a team on a usage-based plan, as of `now`: the months it
  * shows, the one that closed last and the one before it. Null when it has
- * none: not on such a plan, or before its first month closed.
+ * none: not on such a plan, or before its first billed month closed.
  *
  * On a yearly plan, the months are the term: twelve monthly anniversaries
  * rather than the yearly one, which drifts by a day across a February 29. On
@@ -67,56 +76,15 @@ async function getReportTerm(account: Account, now: Date) {
     return null;
   }
 
+  if (subscription.plan.interval === "month") {
+    return getMonthlyPlanTerm(subscription, includedScreenshots);
+  }
+
+  const termStartsAt = subscription.getLastResetDate(now, "year");
   // Indexes count months back from the one holding `now`.
   const monthStart = (index: number) =>
     subscription.getResetDateAt(now, "month", index);
   const currentIndex = subscription.getCurrentPeriodIndex(now, "month");
-  /** The report of a month is due once the next one opens, at its `to`. */
-  const reportedMonth = {
-    from: monthStart(currentIndex + 1),
-    to: monthStart(currentIndex),
-  };
-  const previousMonth = {
-    from: monthStart(currentIndex + 2),
-    to: monthStart(currentIndex + 1),
-  };
-
-  if (subscription.plan.interval === "month") {
-    const months: { startsAt: Date; endsAt: Date }[] = [];
-    for (
-      let index = currentIndex + MONTHLY_PLAN_HISTORY;
-      index > currentIndex;
-      index--
-    ) {
-      const startsAt = monthStart(index);
-      // Trial months, and the ones before the subscription, were not billed.
-      if (
-        checkIsBilledPeriod(
-          { from: startsAt, index: index - currentIndex },
-          subscription,
-        )
-      ) {
-        months.push({ startsAt, endsAt: monthStart(index - 1) });
-      }
-    }
-    // The month that just closed was not billed: no report for it.
-    if (months.at(-1)?.startsAt.getTime() !== reportedMonth.from.getTime()) {
-      return null;
-    }
-    return {
-      interval: "month" as const,
-      subscription,
-      includedScreenshots,
-      months,
-      closedCount: months.length,
-      termStartsAt: reportedMonth.from,
-      termEndsAt: reportedMonth.to,
-      reportedMonth,
-      previousMonth,
-    };
-  }
-
-  const termStartsAt = subscription.getLastResetDate(now, "year");
   let firstIndex = currentIndex;
   while (
     monthStart(firstIndex + 1).getTime() >=
@@ -157,8 +125,61 @@ async function getReportTerm(account: Account, now: Date) {
     closedCount: firstIndex - currentIndex,
     termStartsAt: monthStart(firstIndex),
     termEndsAt: lastMonth.endsAt,
+    /** The report of a month is due once the next one opens, at its `to`. */
+    reportedMonth: {
+      from: monthStart(currentIndex + 1),
+      to: monthStart(currentIndex),
+    },
+    previousMonth: {
+      from: monthStart(currentIndex + 2),
+      to: monthStart(currentIndex + 1),
+    },
+  };
+}
+
+/**
+ * The report of a monthly plan: its last billed months, up to the one that
+ * closed when Stripe opened the running one. Null when that one was not
+ * billed.
+ *
+ * Walked back from `startDate`, which Stripe moves to each period it opens,
+ * on the day it bills or the last day of a shorter month. The anniversary
+ * `getResetDateAt` derives from it would land on the 28th after a February
+ * and close the month days before Stripe does. A `startDate` on the last day
+ * of a shorter month can hide a later billing day: the months before it then
+ * start up to three days early.
+ */
+function getMonthlyPlanTerm(
+  subscription: Subscription,
+  includedScreenshots: number,
+) {
+  const runningStart = new Date(subscription.startDate);
+  // Indexes count months back from the running one.
+  const monthStart = (index: number) => addMonths(runningStart, -index);
+  const reportedMonth = { from: monthStart(1), to: monthStart(0) };
+  // Trial months, and the ones before the subscription, were not billed.
+  if (
+    !checkIsBilledPeriod({ from: reportedMonth.from, index: 1 }, subscription)
+  ) {
+    return null;
+  }
+  const months: { startsAt: Date; endsAt: Date }[] = [];
+  for (let index = MONTHLY_PLAN_HISTORY; index > 0; index--) {
+    const startsAt = monthStart(index);
+    if (checkIsBilledPeriod({ from: startsAt, index }, subscription)) {
+      months.push({ startsAt, endsAt: monthStart(index - 1) });
+    }
+  }
+  return {
+    interval: "month" as const,
+    subscription,
+    includedScreenshots,
+    months,
+    closedCount: months.length,
+    termStartsAt: reportedMonth.from,
+    termEndsAt: reportedMonth.to,
     reportedMonth,
-    previousMonth,
+    previousMonth: { from: monthStart(2), to: monthStart(1) },
   };
 }
 
@@ -245,10 +266,13 @@ async function getTermUsage(term: ReportTerm) {
   };
 }
 
+type TermUsage = Awaited<ReturnType<typeof getTermUsage>>;
+
 /** The data the email of a report renders. */
 async function getMonthlyReportData(
   account: Account,
   term: ReportTerm,
+  usage: TermUsage,
   now: Date,
 ) {
   const { currency } = term.subscription;
@@ -261,7 +285,6 @@ async function getMonthlyReportData(
       : null,
     now,
   });
-  const usage = await getTermUsage(term);
   const activity = await getMonthlyReportActivity(account, {
     current: term.reportedMonth,
     previous: term.previousMonth,
@@ -285,7 +308,8 @@ async function getMonthlyReportData(
 
 /**
  * Send the monthly report of a team to its owners who have not turned it off,
- * if one is due: a month of its term closed since the last report.
+ * if one is due: a month closed since the last report, a few days ago at most,
+ * and the team took screenshots over it.
  *
  * The report is marked sent once every email went out, so a failure is
  * retried. A retry sends to every owner again, and the idempotency key keeps
@@ -302,6 +326,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
   const term = await getReportTerm(account, now);
   if (
     !term ||
+    now.getTime() - term.reportedMonth.to.getTime() > MAX_REPORT_DELAY ||
     (account.lastMonthlyReportAt !== null &&
       new Date(account.lastMonthlyReportAt) >= term.reportedMonth.to)
   ) {
@@ -316,7 +341,16 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
     return;
   }
 
-  const data = await getMonthlyReportData(account, term, now);
+  const usage = await getTermUsage(term);
+  const reportedUsage = usage.months.findLast((month) => !month.projected);
+  invariant(reportedUsage, "a report covers a closed month");
+  // Without a screenshot over the month, the team did not use Argos: there is
+  // nothing to report.
+  if (reportedUsage.screenshots === 0) {
+    return;
+  }
+
+  const data = await getMonthlyReportData(account, term, usage, now);
   // One email per owner, so no address is shown to the others.
   await Promise.all(
     owners.map((owner) => {

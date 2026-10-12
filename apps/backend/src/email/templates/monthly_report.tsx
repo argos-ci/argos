@@ -104,20 +104,21 @@ const MonthlyReportSchema = z.object({
   accountName: z.string().nullish(),
   accountSlug: z.string(),
   currency: z.enum(["usd", "eur"]),
-  /**
-   * How the plan is billed. A yearly plan's overage is invoiced once, when the
-   * term ends; a monthly plan's every month, with the month's invoice.
-   */
+  /** How often the plan is billed. */
   interval: z.enum(["month", "year"]),
   /** Screenshots the plan includes over a term, or a month on a monthly plan. */
   includedScreenshots: z.number(),
-  /** Overage the closed months of the term already add up to. */
+  /**
+   * Overage the closed months of the term already add up to, or the one of
+   * the reported month on a monthly plan.
+   */
   currentOverageCost: z.number(),
   /**
    * Overage the term would be billed when it ends, at the current pace. Null
-   * while too few months have closed to project from.
+   * on a monthly plan, and while too few months have closed to project from.
    */
   projectedOverageCost: z.number().nullable(),
+  /** On a monthly plan, the term is the reported month. */
   termStartsAt: z.string(),
   /** The renewal, or the end date of a cancelled subscription. */
   termEndsAt: z.string(),
@@ -125,7 +126,10 @@ const MonthlyReportSchema = z.object({
   renews: z.boolean(),
   /** The spend limit past which new builds are refused, if the team set one. */
   blockingSpendLimit: z.number().nullable(),
-  /** Every month of the term, the ones to come included. */
+  /**
+   * Every month of the term, the ones to come included. On a monthly plan, the
+   * last billed months.
+   */
   months: z.array(MonthSchema),
   activity: ActivitySchema,
   /** What shipped in Argos since the previous report, from its changelog. */
@@ -242,20 +246,13 @@ export const handler = defineEmailTemplate({
 function renderMonthlyReport(props: MonthlyReportData) {
   const { months, includedScreenshots, currency, activity } = props;
   const accountName = props.accountName || props.accountSlug;
-  const termStartsAt = new Date(props.termStartsAt);
-  const termEndsAt = new Date(props.termEndsAt);
 
   const closed = months.filter((month) => !month.projected);
-  const used = sumBy(closed, "screenshots");
-  const projected = sumBy(months, "screenshots");
-  const usedPct = Math.round((used / includedScreenshots) * 100);
   const lastMonth = closed.at(-1);
   invariant(lastMonth, "a report covers a closed month");
   const previousMonth = closed.at(-2);
   const { pullRequests, flakyTests } = activity;
 
-  const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
-    .href;
   const settingsHref = new URL(
     `/${props.accountSlug}/settings/billing#monthly-report`,
     baseUrl,
@@ -346,33 +343,7 @@ function renderMonthlyReport(props: MonthlyReportData) {
         ) : null}
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
 
-        {props.interval === "year" ? (
-          <>
-            <SectionTitle>Annual plan</SectionTitle>
-            <Paragraph style={{ margin: "0 0 12px" }}>
-              {formatCompact(used)} screenshots so far this term,{" "}
-              <strong>{usedPct}%</strong> of your plan.
-            </Paragraph>
-            <QuotaGauge
-              used={used}
-              projected={projected}
-              included={includedScreenshots}
-              startLabel={formatDate(termStartsAt, "date")}
-              endLabel={formatDate(termEndsAt, "date")}
-            />
-            <OverageNote
-              current={props.currentOverageCost}
-              projected={props.projectedOverageCost}
-              blockingSpendLimit={props.blockingSpendLimit}
-              currency={currency}
-              renews={props.renews}
-              termEndsAt={termEndsAt}
-            />
-            <SectionLink href={usageHref}>See usage details</SectionLink>
-          </>
-        ) : (
-          <SectionLink href={usageHref}>See usage details</SectionLink>
-        )}
+        {props.interval === "year" ? <AnnualPlan report={props} /> : null}
 
         <SectionTitle>Test health</SectionTitle>
         <Paragraph style={{ margin: 0 }}>
@@ -497,14 +468,12 @@ function getMonthPlanStat(input: {
       detail: `${formatCompact(used)} of the ${formatCompact(included)} included`,
     };
   }
+  const cost = getAmountWorthStating(input.overageCost);
   return {
     value: formatCompact(used - included),
     label: "beyond your plan",
-    // Below one unit of currency, the cost is not worth stating.
     detail:
-      input.overageCost >= 1
-        ? `billed ${formatAmount(input.overageCost, input.currency)}`
-        : null,
+      cost === null ? null : `billed ${formatAmount(cost, input.currency)}`,
   };
 }
 
@@ -781,6 +750,50 @@ function Pill(props: {
   );
 }
 
+/** Where the term of an annual plan stands, and the overage it heads to. */
+function AnnualPlan(props: { report: MonthlyReportData }) {
+  const { report } = props;
+  const termEndsAt = new Date(report.termEndsAt);
+  const used = sumBy(
+    report.months.filter((month) => !month.projected),
+    "screenshots",
+  );
+  const projected = sumBy(report.months, "screenshots");
+  const usedPct = Math.round((used / report.includedScreenshots) * 100);
+  const usageHref = new URL(`/${report.accountSlug}/settings/billing`, baseUrl)
+    .href;
+  return (
+    <>
+      <SectionTitle>Annual plan</SectionTitle>
+      <Paragraph style={{ margin: "0 0 12px" }}>
+        {formatCompact(used)} screenshots so far this term,{" "}
+        <strong>{usedPct}%</strong> of your plan.
+      </Paragraph>
+      <QuotaGauge
+        used={used}
+        projected={projected}
+        included={report.includedScreenshots}
+        startLabel={formatDate(new Date(report.termStartsAt), "date")}
+        endLabel={formatDate(termEndsAt, "date")}
+      />
+      <OverageNote
+        current={report.currentOverageCost}
+        projected={report.projectedOverageCost}
+        blockingSpendLimit={report.blockingSpendLimit}
+        currency={report.currency}
+        renews={report.renews}
+        termEndsAt={termEndsAt}
+      />
+      <SectionLink href={usageHref}>See usage details</SectionLink>
+    </>
+  );
+}
+
+/** Below one unit of currency, an amount is not worth stating. */
+function getAmountWorthStating(amount: number | null) {
+  return amount !== null && amount >= 1 ? amount : null;
+}
+
 function OverageNote(props: {
   current: number;
   projected: number | null;
@@ -789,10 +802,8 @@ function OverageNote(props: {
   renews: boolean;
   termEndsAt: Date;
 }) {
-  // Below one unit of currency, an overage is not worth a note.
-  const current = props.current >= 1 ? props.current : null;
-  const projected =
-    props.projected !== null && props.projected >= 1 ? props.projected : null;
+  const current = getAmountWorthStating(props.current);
+  const projected = getAmountWorthStating(props.projected);
   if (current === null && projected === null) {
     return null;
   }
