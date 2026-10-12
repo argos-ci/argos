@@ -19,6 +19,7 @@ import {
   InfoIcon,
   SearchIcon,
 } from "lucide-react";
+import { flushSync } from "react-dom";
 
 import {
   getMenuItemClassName,
@@ -545,7 +546,11 @@ function MenuList(
 
   /** Closes the menu for good — see `MenuOpenState.unmount`. */
   const closeNow = useCallback(() => {
-    openState?.setOpen(false);
+    // Base UI drops an unmount requested while its store still reads the
+    // popover as open, and the store picks up a controlled `open` a commit
+    // after the prop changes. Batched with the close, the unmount is lost and
+    // the exit animation plays with focus still in the popup.
+    flushSync(() => openState?.setOpen(false));
     openState?.unmount();
   }, [openState]);
 

@@ -65,7 +65,7 @@ const test = base.extend<{
 setupRedis();
 
 beforeAll(() => {
-  githubActionsOidcServer.listen({ onUnhandledRequest: "bypass" });
+  githubActionsOidcServer.listen({ onUnhandledFrame: "bypass" });
 });
 
 afterEach(() => {

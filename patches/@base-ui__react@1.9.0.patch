@@ -1,5 +1,5 @@
 diff --git a/floating-ui-react/hooks/useHoverInteractionSharedState.js b/floating-ui-react/hooks/useHoverInteractionSharedState.js
-index 6d19dd2e8565db0a8afca8c428c1437b92ed8238..30c00ca8b01de6674e8c3c18b6c1a8d8b158cfb6 100644
+index 32bc1256e55cb111e1b0996a3bbfaecd52ef1dac..d0570dfdbd5b21a41612379d084b024d4193e4a2 100644
 --- a/floating-ui-react/hooks/useHoverInteractionSharedState.js
 +++ b/floating-ui-react/hooks/useHoverInteractionSharedState.js
 @@ -16,6 +16,7 @@ Object.defineProperty(exports, "isInteractiveElement", {
@@ -10,7 +10,7 @@ index 6d19dd2e8565db0a8afca8c428c1437b92ed8238..30c00ca8b01de6674e8c3c18b6c1a8d8
  var _useTimeout = require("@base-ui/utils/useTimeout");
  var _utils = require("../utils");
  class HoverInteraction {
-@@ -88,6 +89,20 @@ function useHoverInteractionSharedState(store) {
+@@ -86,6 +87,20 @@ function useHoverInteractionSharedState(store) {
    if (!data.hoverInteractionState) {
      data.hoverInteractionState = instance;
    }
@@ -34,7 +34,7 @@ index 6d19dd2e8565db0a8afca8c428c1437b92ed8238..30c00ca8b01de6674e8c3c18b6c1a8d8
  }
 \ No newline at end of file
 diff --git a/floating-ui-react/hooks/useHoverInteractionSharedState.mjs b/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
-index 835ebe5fb5caa092bc5be3352168513dd1ee444d..6e60af42304581bbbe93ade437a61159e256382e 100644
+index 21df34aa63dd82e50a3f946ab9e6c3a2e6bccbe4..6ddb30a05f5a16f0e61ba6f0a24593e5b7111250 100644
 --- a/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
 +++ b/floating-ui-react/hooks/useHoverInteractionSharedState.mjs
 @@ -2,6 +2,7 @@
@@ -45,7 +45,7 @@ index 835ebe5fb5caa092bc5be3352168513dd1ee444d..6e60af42304581bbbe93ade437a61159
  import { Timeout } from '@base-ui/utils/useTimeout';
  import { isInteractiveElement } from "../utils.mjs";
  export { isInteractiveElement };
-@@ -74,6 +75,20 @@ export function useHoverInteractionSharedState(store) {
+@@ -72,6 +73,20 @@ export function useHoverInteractionSharedState(store) {
    if (!data.hoverInteractionState) {
      data.hoverInteractionState = instance;
    }
@@ -67,3 +67,4 @@ index 835ebe5fb5caa092bc5be3352168513dd1ee444d..6e60af42304581bbbe93ade437a61159
 +  });
    return data.hoverInteractionState;
  }
+\ No newline at end of file

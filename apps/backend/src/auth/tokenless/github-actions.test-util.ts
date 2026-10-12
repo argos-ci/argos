@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { HttpNetworkFrame } from "msw/experimental";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll } from "vitest";
 
@@ -17,11 +18,15 @@ const githubServer = setupServer();
 export function setupGithubServer() {
   beforeAll(() => {
     githubServer.listen({
-      onUnhandledRequest: (request, print) => {
+      onUnhandledFrame: ({ frame, defaults }) => {
         // Supertest reaches the app under test through the loopback interface.
-        if (new URL(request.url).hostname !== "127.0.0.1") {
-          print.error();
+        if (
+          frame instanceof HttpNetworkFrame &&
+          new URL(frame.data.request.url).hostname === "127.0.0.1"
+        ) {
+          return;
         }
+        defaults.error();
       },
     });
   });

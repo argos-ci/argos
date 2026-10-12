@@ -1,0 +1,4 @@
+interface:
+  display_name: "Upgrade Dependencies"
+  short_description: "Upgrade every dependency and close all Dependabot alerts in one PR"
+  default_prompt: "Use $upgrade-deps to upgrade all dependencies and fix the open Dependabot alerts."
