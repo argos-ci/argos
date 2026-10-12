@@ -225,11 +225,20 @@ export default defineConfig((args) => {
             org: "argos",
             project: "argos-browser",
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+              // Source maps are for Sentry only, never served. Runs whether or
+              // not the upload did, so a build without a token cannot ship them.
+              filesToDeleteAfterUpload: [
+                fileURLToPath(new URL("./dist/**/*.map", import.meta.url)),
+              ],
+            },
           })
         : null,
     ],
     build: {
-      sourcemap: mode !== "development",
+      // `hidden` drops the `//# sourceMappingURL` comment, which is how the maps
+      // were found. Sentry matches them by the debug ID the plugin injects.
+      sourcemap: mode !== "development" ? "hidden" : false,
       rollupOptions: {
         // Both of these are required by `includeDependenciesRecursively: false`
         // below — Rolldown can otherwise emit chunks whose execution order

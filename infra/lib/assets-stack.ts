@@ -142,14 +142,35 @@ export class ArgosAssetsStack extends cdk.Stack {
     });
 
     // The upload stamps `Cache-Control: public, max-age=31536000, immutable` on
-    // the objects themselves, so only CORS is added here. Response headers
-    // policies are evaluated per request rather than stored with the cached
-    // object, which is why the cache key above can stay path-only even though
-    // the allowed origin is echoed back.
+    // the objects themselves, so only CORS and security headers are added here.
+    // Response headers policies are evaluated per request rather than stored
+    // with the cached object, which is why the cache key above can stay
+    // path-only even though the allowed origin is echoed back.
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
       this,
       "ResponseHeadersPolicy",
       {
+        // The same set the app origin sends on its own static files. The CSP
+        // governs only a file opened as a document — a script, style or font
+        // loaded by the app ignores it — so it denies everything. `nosniff`
+        // relies on `aws s3 sync` typing the uploads correctly, which it does
+        // for `.js`, `.css` and `.woff2`.
+        securityHeadersBehavior: {
+          contentSecurityPolicy: {
+            contentSecurityPolicy: "default-src 'none'; frame-ancestors 'none'",
+            override: true,
+          },
+          contentTypeOptions: { override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          strictTransportSecurity: {
+            accessControlMaxAge: cdk.Duration.days(365),
+            includeSubdomains: true,
+            override: true,
+          },
+        },
         corsBehavior: {
           accessControlAllowCredentials: false,
           accessControlAllowHeaders: ["*"],

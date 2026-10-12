@@ -251,6 +251,15 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(getSlackMiddleware());
 
+  // Ahead of the static handler: it ends the response, so nothing mounted after
+  // it reaches an asset — or the `/assets` 404 below.
+  router.use(
+    createAppSecurityHeaders({
+      configScriptCspHash: shell?.configScriptCspHash ?? null,
+      cspReportUri,
+    }),
+  );
+
   // Static directory
   router.use(
     serveStatic(distDir, {
@@ -273,13 +282,6 @@ export const installAppRouter = async (app: express.Application) => {
   router.use("/assets", (_req, res) => {
     res.status(404).type("txt").send("Not Found");
   });
-
-  router.use(
-    createAppSecurityHeaders({
-      configScriptCspHash: shell?.configScriptCspHash ?? null,
-      cspReportUri,
-    }),
-  );
 
   const sendAppShell: express.RequestHandler = (_req, res) => {
     // The shell names content-hashed assets, so it must always be revalidated.
