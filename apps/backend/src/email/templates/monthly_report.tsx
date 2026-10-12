@@ -240,7 +240,6 @@ function renderMonthlyReport(props: MonthlyReportData) {
   const lastMonth = closed.at(-1);
   invariant(lastMonth, "a report covers a closed month");
   const previousMonth = closed.at(-2);
-  const overage = projected > includedScreenshots;
   const { pullRequests, flakyTests } = activity;
 
   const usageHref = new URL(`/${props.accountSlug}/settings/billing`, baseUrl)
@@ -412,12 +411,6 @@ function renderMonthlyReport(props: MonthlyReportData) {
         ) : null}
 
         <Section style={{ marginTop: 32 }}>
-          {props.renews && !overage ? (
-            <Paragraph style={{ margin: "0 0 4px" }}>
-              If your usage changes, reply to this email: we can adjust your
-              plan before your term ends and help you avoid any overage.
-            </Paragraph>
-          ) : null}
           <Signature />
         </Section>
         <InfoText>
