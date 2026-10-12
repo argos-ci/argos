@@ -186,12 +186,11 @@ function CancelSubscriptionDialogContent(props: {
             {PERIOD_SENTENCES[period]}
             {periodEndDate ? (
               <>
-                , on <Time date={periodEndDate} format="longDate" />.
+                , on <Time date={periodEndDate} format="longDate" />
               </>
             ) : (
               "."
             )}{" "}
-            Nothing is deleted.
           </DialogText>
 
           <div className="my-4 flex flex-col gap-4">

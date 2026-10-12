@@ -139,11 +139,14 @@ const READ_PERIOD_COUNT = 2;
 const PERIOD_BOUNDARY_TOLERANCE = 60 * 60 * 1000;
 
 /** A window of one account's usage, as fed to the aggregate below. */
-type AccountPeriod = {
+type AccountWindow = {
   accountId: string;
   index: number;
   from: Date;
   to: Date;
+};
+
+type AccountPeriod = AccountWindow & {
   /**
    * When the period closes, which the window above stops short of on the
    * running one — `to` is the moment it was read. Carried here rather than
@@ -153,7 +156,7 @@ type AccountPeriod = {
 };
 
 /** Screenshots uploaded over one window, split by the way they are billed. */
-type ScreenshotTotals = {
+export type ScreenshotTotals = {
   all: number;
   storybook: number;
 };
@@ -163,10 +166,43 @@ type AccountTotals = Map<number, ScreenshotTotals>;
 
 const EMPTY_TOTALS: ScreenshotTotals = { all: 0, storybook: 0 };
 
+/**
+ * The quota a usage-based subscription is metered against. Stripe states it on
+ * the subscription when its price carries the metadata, and nothing when it
+ * does not, a GitHub subscription included: the plan's own quota applies then.
+ */
+export function getIncludedScreenshots(subscription: Subscription, plan: Plan) {
+  return subscription.includedScreenshots ?? plan.includedScreenshots;
+}
+
+/**
+ * What the screenshots of one quota period cost beyond the quota. Storybook
+ * screenshots fall back to the neutral price when they have none of their own,
+ * exactly as the per-account cost does.
+ */
+export function getAdditionalScreenshotCost(input: {
+  subscription: Subscription;
+  totals: ScreenshotTotals;
+  included: number;
+}) {
+  const { subscription, totals } = input;
+  const additional = computeAdditionalScreenshots({
+    neutral: totals.all - totals.storybook,
+    storybook: totals.storybook,
+    included: input.included,
+  });
+  const neutralPrice = subscription.additionalScreenshotPrice ?? 0;
+  const storybookPrice =
+    subscription.additionalStorybookScreenshotPrice ?? neutralPrice;
+  return (
+    additional.neutral * neutralPrice + additional.storybook * storybookPrice
+  );
+}
+
 const CLAMPED_STORYBOOK_COUNT = clampedStorybookCount("sb");
 
 /** Rows of `(accountId, index, from, to)` to join the usage tables against. */
-function buildPeriodValues(periods: AccountPeriod[]) {
+function buildPeriodValues(periods: AccountWindow[]) {
   return {
     sql: periods
       .map(() => `(?::bigint, ?::int, ?::timestamptz, ?::timestamptz)`)
@@ -192,8 +228,8 @@ function buildPeriodValues(periods: AccountPeriod[]) {
  * The joins are left joins throughout: an account whose projects never produced
  * a bucket still has to come back with zeros rather than vanish from the batch.
  */
-async function getScreenshotTotals(
-  periods: AccountPeriod[],
+export async function getScreenshotTotals(
+  periods: AccountWindow[],
 ): Promise<Map<string, AccountTotals>> {
   // `accounts.id` is a bigint and the bindings arrive as strings, so the values
   // are cast explicitly — Postgres cannot infer the type of a bare parameter in
@@ -289,7 +325,7 @@ async function getScreenshotTotals(
  * period, over the same windows as the bucket totals.
  */
 async function getMediaUnits(
-  periods: AccountPeriod[],
+  periods: AccountWindow[],
 ): Promise<Map<string, Map<number, number>>> {
   const values = buildPeriodValues(periods);
 
@@ -588,22 +624,7 @@ export async function getAccountBillings(
       "every account with periods has a usage-based subscription and totals",
     );
 
-    // Storybook screenshots fall back to the neutral price when they have none
-    // of their own, exactly as the per-account cost does.
-    const price = {
-      neutral: subscription.additionalScreenshotPrice ?? 0,
-      storybook:
-        subscription.additionalStorybookScreenshotPrice ??
-        subscription.additionalScreenshotPrice ??
-        0,
-    };
-
-    // Stripe states the quota on the subscription when its price carries the
-    // metadata, and nothing when it does not — a GitHub subscription included.
-    // The plan's own quota is what the account is metered against in that case,
-    // so it is what the overage below has to be computed on too.
-    const includedScreenshots =
-      subscription.includedScreenshots ?? plan.includedScreenshots;
+    const includedScreenshots = getIncludedScreenshots(subscription, plan);
 
     // The period holding now, whether or not Stripe bills it.
     const runningTotals = totals.get(0) ?? EMPTY_TOTALS;
@@ -618,23 +639,19 @@ export async function getAccountBillings(
           .filter((period) => checkIsBilledPeriod(period, subscription))
           .map((period) => {
             const periodTotals = totals.get(period.index) ?? EMPTY_TOTALS;
-            // The included quota resets at every period, so the overage is
-            // computed period by period rather than off a running total.
-            const additional = computeAdditionalScreenshots({
-              neutral: periodTotals.all - periodTotals.storybook,
-              storybook: periodTotals.storybook,
-              included: includedScreenshots,
-            });
-
             return {
               from: period.from,
               to: period.to,
               endsAt: period.endsAt,
               closed: period.index > 0,
               screenshotsCount: periodTotals.all,
-              additionalScreenshotCost:
-                additional.neutral * price.neutral +
-                additional.storybook * price.storybook,
+              // The included quota resets at every period, so the overage is
+              // computed period by period rather than off a running total.
+              additionalScreenshotCost: getAdditionalScreenshotCost({
+                subscription,
+                totals: periodTotals,
+                included: includedScreenshots,
+              }),
             };
           }),
       },

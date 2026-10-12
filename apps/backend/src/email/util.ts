@@ -43,3 +43,15 @@ export async function emailToText(rendered: {
     html + `<pre style="padding: 16px;">subject: ${rendered.subject}</pre>`
   );
 }
+
+/**
+ * An amount of money in whole units of its currency, the way emails state
+ * overage and spend limits.
+ */
+export function formatAmount(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
+}

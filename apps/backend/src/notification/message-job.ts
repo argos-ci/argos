@@ -59,6 +59,8 @@ async function processMessage(message: NotificationMessage) {
     to,
     subject: email.subject,
     react: email.body,
+    // A retry of the job does not send the message twice.
+    idempotencyKey: `notification-message/${message.id}`,
   });
 
   const externalId = (await result?.data?.id) ?? null;

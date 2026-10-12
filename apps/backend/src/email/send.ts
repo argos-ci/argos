@@ -2,6 +2,7 @@ import { render } from "react-email";
 import { Resend } from "resend";
 
 import config from "@/config";
+import { UnretryableError } from "@/job-core";
 import logger from "@/logger";
 
 const production = config.get("env") === "production";
@@ -30,6 +31,11 @@ export async function sendEmail(options: {
    * Email body as React element.
    */
   react: React.ReactElement;
+  /**
+   * Sending again with the same key within a day sends nothing more, so a job
+   * can retry an email that may already have gone out.
+   */
+  idempotencyKey?: string | undefined;
 }) {
   if (production) {
     if (!resend) {
@@ -39,6 +45,25 @@ export async function sendEmail(options: {
   } else if (!resend) {
     return null;
   }
-  const text = await render(options.react, { plainText: true });
-  return resend.emails.send({ ...options, text, from: defaultFrom });
+  const { idempotencyKey, ...email } = options;
+  const text = await render(email.react, { plainText: true });
+  const result = await resend.emails.send(
+    { ...email, text, from: defaultFrom },
+    idempotencyKey ? { idempotencyKey } : {},
+  );
+  // Resend reports a failure in the result instead of throwing.
+  if (result.error) {
+    const { message, statusCode } = result.error;
+    // A request Resend rejects fails the same way when retried. A conflict, a
+    // rate limit, an outage or a network error may not.
+    const rejected =
+      statusCode !== null &&
+      statusCode >= 400 &&
+      statusCode < 500 &&
+      statusCode !== 409 &&
+      statusCode !== 429;
+    const ErrorClass = rejected ? UnretryableError : Error;
+    throw new ErrorClass(`Resend failed to send an email: ${message}`);
+  }
+  return result;
 }
