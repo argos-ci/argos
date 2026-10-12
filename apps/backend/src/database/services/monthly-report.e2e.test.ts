@@ -126,6 +126,8 @@ describe("sendAccountMonthlyReport", () => {
     ]);
     // 600 used and 9 × 233 to come: 1697 beyond the plan, at 0.5 each.
     expect(data.projectedOverageCost).toBe(848.5);
+    // Nothing beyond the plan yet.
+    expect(data.currentOverageCost).toBe(0);
   });
 
   it("leaves out the owners who turned the report off", async () => {
@@ -230,6 +232,8 @@ describe("the term of an annual plan", () => {
     const { data } = getSentReport();
     expect(data.months).toHaveLength(12);
     expect(data.termEndsAt).toBe("2025-03-15T12:00:00.000Z");
+    // Two closed months are too few to price a projection.
+    expect(data.projectedOverageCost).toBeNull();
   });
 
   it("starts on the monthly anniversary when the yearly one drifted a day", async () => {

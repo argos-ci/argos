@@ -168,11 +168,16 @@ async function getTermUsage(term: ReportTerm) {
     totals: closed[index] ?? projected,
     projected: index >= closed.length,
   }));
-  const termTotals = {
-    all: sumBy(usage, (month) => month.totals.all),
-    storybook: sumBy(usage, (month) => month.totals.storybook),
-  };
   const { includedScreenshots } = term;
+  const overageCost = (months: ScreenshotTotals[]) =>
+    getAdditionalScreenshotCost({
+      subscription,
+      totals: {
+        all: sumBy(months, "all"),
+        storybook: sumBy(months, "storybook"),
+      },
+      included: includedScreenshots,
+    });
 
   return {
     months: usage.map((month) => ({
@@ -181,11 +186,14 @@ async function getTermUsage(term: ReportTerm) {
       projected: month.projected,
     })),
     includedScreenshots,
-    projectedOverageCost: getAdditionalScreenshotCost({
-      subscription,
-      totals: termTotals,
-      included: includedScreenshots,
-    }),
+    currentOverageCost: overageCost(closed),
+    // Fewer closed months than the projection weighs make a guess too rough
+    // to put a price on: a first month busy with the setup would read as an
+    // overage.
+    projectedOverageCost:
+      closed.length >= PROJECTION_WINDOW
+        ? overageCost(usage.map((month) => month.totals))
+        : null,
   };
 }
 

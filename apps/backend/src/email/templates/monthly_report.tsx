@@ -106,8 +106,13 @@ const MonthlyReportSchema = z.object({
   currency: z.enum(["usd", "eur"]),
   /** Screenshots the plan includes over the whole term. */
   includedScreenshots: z.number(),
-  /** Overage the term would be billed when it ends, at the current pace. */
-  projectedOverageCost: z.number(),
+  /** Overage the closed months of the term already add up to. */
+  currentOverageCost: z.number(),
+  /**
+   * Overage the term would be billed when it ends, at the current pace. Null
+   * while too few months have closed to project from.
+   */
+  projectedOverageCost: z.number().nullable(),
   termStartsAt: z.string(),
   /** The renewal, or the end date of a cancelled subscription. */
   termEndsAt: z.string(),
@@ -154,6 +159,7 @@ export const handler = defineEmailTemplate({
     accountSlug: "acme",
     currency: "eur",
     includedScreenshots: 1_200_000,
+    currentOverageCost: 0,
     projectedOverageCost: 468.75,
     termStartsAt: "2026-01-15",
     termEndsAt: "2027-01-15",
@@ -336,16 +342,14 @@ function renderMonthlyReport(props: MonthlyReportData) {
           startLabel={formatDate(termStartsAt, "date")}
           endLabel={formatDate(termEndsAt, "date")}
         />
-        {/* Below one unit of currency, an overage is not worth a note. */}
-        {props.projectedOverageCost >= 1 ? (
-          <OverageNote
-            amount={props.projectedOverageCost}
-            blockingSpendLimit={props.blockingSpendLimit}
-            currency={currency}
-            renews={props.renews}
-            termEndsAt={termEndsAt}
-          />
-        ) : null}
+        <OverageNote
+          current={props.currentOverageCost}
+          projected={props.projectedOverageCost}
+          blockingSpendLimit={props.blockingSpendLimit}
+          currency={currency}
+          renews={props.renews}
+          termEndsAt={termEndsAt}
+        />
         <SectionLink href={usageHref}>See usage details</SectionLink>
 
         <SectionTitle>Test health</SectionTitle>
@@ -727,15 +731,41 @@ function Pill(props: {
 }
 
 function OverageNote(props: {
-  amount: number;
+  current: number;
+  projected: number | null;
   blockingSpendLimit: number | null;
   currency: string;
   renews: boolean;
   termEndsAt: Date;
 }) {
+  // Below one unit of currency, an overage is not worth a note.
+  const current = props.current >= 1 ? props.current : null;
+  const projected =
+    props.projected !== null && props.projected >= 1 ? props.projected : null;
+  if (current === null && projected === null) {
+    return null;
+  }
+  const format = (value: number) => formatAmount(value, props.currency);
   const date = formatDate(props.termEndsAt, "longDate");
-  const amount = formatAmount(props.amount, props.currency);
+  const when = props.renews ? "at renewal" : "when the subscription ends";
   const { blockingSpendLimit } = props;
+  const blocked =
+    blockingSpendLimit !== null &&
+    projected !== null &&
+    projected > blockingSpendLimit;
+  const getOverageSentence = () => {
+    if (blocked) {
+      return `At this pace, your ${format(blockingSpendLimit)} spend limit is reached before ${date}, and new builds will be refused from then on.`;
+    }
+    if (current === null) {
+      invariant(projected !== null, "an overage note has an amount");
+      return `At this pace, about ${format(projected)} of overage ${when}, on ${date}.`;
+    }
+    if (projected === null) {
+      return `${format(current)} of overage so far, billed ${when}, on ${date}.`;
+    }
+    return `${format(current)} of overage so far, and at this pace about ${format(projected)} ${when}, on ${date}.`;
+  };
   return (
     <Table style={{ marginTop: 20 }}>
       <tr>
@@ -750,31 +780,22 @@ function OverageNote(props: {
             color: colors.text,
           }}
         >
-          {blockingSpendLimit !== null && props.amount > blockingSpendLimit ? (
+          <strong style={{ color: colors.overageText }}>
+            {getOverageSentence()}
+          </strong>
+          {blocked ? (
             <>
-              <strong style={{ color: colors.overageText }}>
-                At this pace, your{" "}
-                {formatAmount(blockingSpendLimit, props.currency)} spend limit
-                is reached before {date}, and new builds will be refused from
-                then on.
-              </strong>{" "}
+              {" "}
               You can raise it in your billing settings, or commit to a larger
               plan: reply to this email to discuss it.
             </>
           ) : props.renews ? (
             <>
-              <strong style={{ color: colors.overageText }}>
-                About {amount} of overage will be billed at renewal, on {date}.
-              </strong>{" "}
+              {" "}
               You can commit to a larger plan to lower this amount: reply to
               this email to discuss it.
             </>
-          ) : (
-            <strong style={{ color: colors.overageText }}>
-              About {amount} of overage will be billed when the subscription
-              ends, on {date}.
-            </strong>
-          )}
+          ) : null}
         </td>
       </tr>
     </Table>
