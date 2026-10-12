@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { selectChangelogNews } from "./news";
 
-const item = (date: string, title = date) => ({
-  url: `https://argos-ci.com/changelog/${date}-${title}`,
-  title,
-  summary: `${title} summary`,
+const item = (date: string) => ({
+  url: `https://argos-ci.com/changelog/${date}`,
+  title: date,
+  summary: `${date} summary`,
   date_published: `${date}T00:00:00.000Z`,
 });
 

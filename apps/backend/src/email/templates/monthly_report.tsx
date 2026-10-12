@@ -1,9 +1,11 @@
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
+import { sumBy } from "lodash-es";
 import { Section, Text } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
+import { chunk } from "@/util/chunk";
 
 import {
   EmailLayout,
@@ -18,7 +20,8 @@ import { formatAmount } from "../util";
 
 const baseUrl = config.get("server.url");
 
-// Radix violet, orange and slate, the scales the app is drawn with.
+// The scales the app is drawn with: Radix violet, orange, green and amber, and
+// Tailwind zinc greys.
 const colors = {
   text: "#09090b",
   muted: "#71717a",
@@ -77,16 +80,14 @@ const ActivitySchema = z.object({
       }),
     ),
   }),
-  screenshots: z.object({
-    /** Screenshots by project and build name, the largest first. */
-    byBuildName: z.array(
-      z.object({
-        label: z.string(),
-        current: z.number(),
-        previous: z.number(),
-      }),
-    ),
-  }),
+  /** Screenshots by project and build name, the largest first. */
+  screenshotsByBuildName: z.array(
+    z.object({
+      label: z.string(),
+      current: z.number(),
+      previous: z.number(),
+    }),
+  ),
 });
 
 export type MonthlyReportActivity = z.infer<typeof ActivitySchema>;
@@ -95,7 +96,6 @@ const NewsItemSchema = z.object({
   title: z.string(),
   summary: z.string(),
   url: z.string(),
-  publishedAt: z.string(),
 });
 
 export type MonthlyReportNewsItem = z.infer<typeof NewsItemSchema>;
@@ -201,15 +201,13 @@ export const handler = defineEmailTemplate({
           },
         ],
       },
-      screenshots: {
-        byBuildName: [
-          { label: "web · e2e", current: 71_000, previous: 52_000 },
-          { label: "web · storybook", current: 38_000, previous: 39_000 },
-          { label: "admin · e2e", current: 24_000, previous: 21_000 },
-          { label: "mobile · e2e", current: 9_000, previous: 0 },
-          { label: "Other", current: 4_000, previous: 4_500 },
-        ],
-      },
+      screenshotsByBuildName: [
+        { label: "web · e2e", current: 71_000, previous: 52_000 },
+        { label: "web · storybook", current: 38_000, previous: 39_000 },
+        { label: "admin · e2e", current: 24_000, previous: 21_000 },
+        { label: "mobile · e2e", current: 9_000, previous: 0 },
+        { label: "Other", current: 4_000, previous: 4_500 },
+      ],
     },
     news: [
       {
@@ -217,18 +215,16 @@ export const handler = defineEmailTemplate({
         summary:
           "The build review unfolds the journey a screenshot belongs to as a strip of steps, so you see where a change sits in the checkout, the signup or the onboarding your test walked.",
         url: "https://argos-ci.com/changelog/2026-09-12-journeys",
-        publishedAt: "2026-09-12T00:00:00.000Z",
       },
       {
         title: "Custom domains",
         summary:
           "Point your own domain at your production deployments with a single DNS record, and Argos issues and installs the TLS certificate automatically.",
         url: "https://argos-ci.com/changelog/2026-09-01-custom-domains",
-        publishedAt: "2026-09-01T00:00:00.000Z",
       },
     ],
   },
-  email: (props) => renderMonthlyReport(props),
+  email: renderMonthlyReport,
 });
 
 function renderMonthlyReport(props: MonthlyReportData) {
@@ -238,8 +234,8 @@ function renderMonthlyReport(props: MonthlyReportData) {
   const termEndsAt = new Date(props.termEndsAt);
 
   const closed = months.filter((month) => !month.projected);
-  const used = sum(closed);
-  const projected = sum(months);
+  const used = sumBy(closed, "screenshots");
+  const projected = sumBy(months, "screenshots");
   const usedPct = Math.round((used / includedScreenshots) * 100);
   const lastMonth = closed.at(-1);
   invariant(lastMonth, "a report covers a closed month");
@@ -325,8 +321,8 @@ function renderMonthlyReport(props: MonthlyReportData) {
           ]}
         />
         <MonthlyBars months={months} />
-        {activity.screenshots.byBuildName.length > 1 ? (
-          <BuildNameTable rows={activity.screenshots.byBuildName} />
+        {activity.screenshotsByBuildName.length > 1 ? (
+          <BuildNameTable rows={activity.screenshotsByBuildName} />
         ) : null}
         <SectionLink href={analyticsHref}>See analytics</SectionLink>
 
@@ -339,16 +335,14 @@ function renderMonthlyReport(props: MonthlyReportData) {
           endLabel={formatDate(termEndsAt, "date")}
         />
         {/* Below one unit of currency, an overage is not worth a note. */}
-        {overage && props.projectedOverageCost >= 1 ? (
-          <OverageNote>
-            <OverageNoteText
-              amount={props.projectedOverageCost}
-              blockingSpendLimit={props.blockingSpendLimit}
-              currency={currency}
-              renews={props.renews}
-              termEndsAt={termEndsAt}
-            />
-          </OverageNote>
+        {props.projectedOverageCost >= 1 ? (
+          <OverageNote
+            amount={props.projectedOverageCost}
+            blockingSpendLimit={props.blockingSpendLimit}
+            currency={currency}
+            renews={props.renews}
+            termEndsAt={termEndsAt}
+          />
         ) : null}
         <SectionLink href={usageHref}>See usage details</SectionLink>
 
@@ -363,7 +357,7 @@ function renderMonthlyReport(props: MonthlyReportData) {
           <Delta
             current={flakyTests.current}
             previous={flakyTests.previous}
-            tone="increaseIsBad"
+            increaseIsBad
             suffix=" vs last month"
           />
         </Paragraph>
@@ -374,42 +368,26 @@ function renderMonthlyReport(props: MonthlyReportData) {
           </Paragraph>
         ) : null}
         {flakyTests.top.length > 0 ? (
-          <table
-            width="100%"
-            cellPadding={0}
-            cellSpacing={0}
-            role="presentation"
-            style={{ marginTop: 8 }}
-          >
-            <tbody>
-              {flakyTests.top.map((test) => (
-                <tr key={test.url}>
-                  <td style={rowCellStyle}>
-                    <Link href={test.url}>{test.name}</Link>{" "}
-                    <span style={{ color: colors.faint }}>
-                      {test.buildName}
-                    </span>
-                    {test.newThisMonth ? (
-                      <Pill color={colors.newText} background={colors.newTint}>
-                        New
-                      </Pill>
-                    ) : null}
-                  </td>
-                  <td
-                    style={{
-                      ...rowCellStyle,
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
-                      paddingLeft: 12,
-                      color: colors.overageText,
-                    }}
-                  >
-                    {Math.round(test.flakiness * 100)}% flaky
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table style={{ marginTop: 8 }}>
+            {flakyTests.top.map((test) => (
+              <tr key={test.url}>
+                <td style={rowCellStyle}>
+                  <Link href={test.url}>{test.name}</Link>{" "}
+                  <span style={{ color: colors.faint }}>{test.buildName}</span>
+                  {test.newThisMonth ? <NewPill /> : null}
+                </td>
+                <td
+                  style={{
+                    ...numericCellStyle,
+                    paddingLeft: 12,
+                    color: colors.overageText,
+                  }}
+                >
+                  {Math.round(test.flakiness * 100)}% flaky
+                </td>
+              </tr>
+            ))}
+          </Table>
         ) : null}
         <SectionLink href={testsHref}>See all tests</SectionLink>
 
@@ -466,21 +444,24 @@ const rowCellStyle = {
   color: colors.text,
 };
 
-const formatCount = (value: number) =>
-  new Intl.NumberFormat("en-US").format(value);
+const numericCellStyle = {
+  ...rowCellStyle,
+  textAlign: "right" as const,
+  whiteSpace: "nowrap" as const,
+};
 
-const formatCompact = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
+const { format: formatCount } = new Intl.NumberFormat("en-US");
+
+const { format: formatCompact } = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 
 // Three significant digits keep a month's figure narrow enough for its bar.
-const formatBarValue = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumSignificantDigits: 3,
-  }).format(value);
+const { format: formatBarValue } = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumSignificantDigits: 3,
+});
 
 function plural(count: number, word: string) {
   return count === 1 ? word : `${word}s`;
@@ -488,10 +469,6 @@ function plural(count: number, word: string) {
 
 function countOf(count: number, word: string) {
   return `${formatCount(count)} ${plural(count, word)}`;
-}
-
-function sum(months: Month[]) {
-  return months.reduce((total, month) => total + month.screenshots, 0);
 }
 
 function SectionTitle(props: { children: React.ReactNode }) {
@@ -521,76 +498,63 @@ type Stat = {
  * brand color so the top of the report is not a column of grey text.
  */
 function StatGrid(props: { stats: Stat[]; style?: React.CSSProperties }) {
-  const rows: Stat[][] = [];
-  for (let index = 0; index < props.stats.length; index += 2) {
-    rows.push(props.stats.slice(index, index + 2));
-  }
+  const rows = chunk(props.stats, 2);
   return (
-    <table
-      width="100%"
-      cellPadding={0}
-      cellSpacing={0}
-      role="presentation"
-      style={props.style}
-    >
-      <tbody>
-        {rows.map((row, rowIndex) => (
-          <tr key={rowIndex}>
-            {row.map((stat, index) => (
-              <td
-                key={stat.label}
-                width={row.length === 1 ? "100%" : "50%"}
+    <Table style={props.style}>
+      {rows.map((row, rowIndex) => (
+        <tr key={rowIndex}>
+          {row.map((stat, index) => (
+            <td
+              key={stat.label}
+              width={row.length === 1 ? "100%" : "50%"}
+              style={{
+                verticalAlign: "top",
+                // Space between rows only: below the last, the next
+                // section sets its own.
+                paddingBottom: rowIndex < rows.length - 1 ? 14 : 0,
+                paddingLeft: index === 0 ? 0 : 16,
+                paddingRight: 8,
+                borderLeft:
+                  index === 0 ? undefined : `1px solid ${colors.violetBorder}`,
+              }}
+            >
+              <div
                 style={{
-                  verticalAlign: "top",
-                  // Space between rows only: below the last, the next
-                  // section sets its own.
-                  paddingBottom: rowIndex < rows.length - 1 ? 14 : 0,
-                  paddingLeft: index === 0 ? 0 : 16,
-                  paddingRight: 8,
-                  borderLeft:
-                    index === 0
-                      ? undefined
-                      : `1px solid ${colors.violetBorder}`,
+                  fontSize: 28,
+                  lineHeight: "34px",
+                  fontWeight: 600,
+                  color: colors.violetText,
                 }}
               >
+                {stat.value}
+                {stat.delta}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: "18px",
+                  color: colors.text,
+                }}
+              >
+                {stat.label}
+              </div>
+              {stat.detail ? (
                 <div
                   style={{
-                    fontSize: 28,
-                    lineHeight: "34px",
-                    fontWeight: 600,
-                    color: colors.violetText,
+                    marginTop: 2,
+                    fontSize: 12,
+                    lineHeight: "17px",
+                    color: colors.muted,
                   }}
                 >
-                  {stat.value}
-                  {stat.delta}
+                  {stat.detail}
                 </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    lineHeight: "18px",
-                    color: colors.text,
-                  }}
-                >
-                  {stat.label}
-                </div>
-                {stat.detail ? (
-                  <div
-                    style={{
-                      marginTop: 2,
-                      fontSize: 12,
-                      lineHeight: "17px",
-                      color: colors.muted,
-                    }}
-                  >
-                    {stat.detail}
-                  </div>
-                ) : null}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+              ) : null}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </Table>
   );
 }
 
@@ -599,63 +563,55 @@ function MonthlyBars(props: { months: Month[] }) {
   const height = 72;
   const max = Math.max(1, ...props.months.map((month) => month.screenshots));
   return (
-    <table
-      width="100%"
-      cellPadding={0}
-      cellSpacing={0}
-      role="presentation"
-      style={{ marginTop: 16 }}
-    >
-      <tbody>
-        <tr>
-          {props.months.map((month) => (
-            <td
-              key={month.startsAt}
-              height={height + 17}
+    <Table style={{ marginTop: 16 }}>
+      <tr>
+        {props.months.map((month) => (
+          <td
+            key={month.startsAt}
+            height={height + 17}
+            style={{
+              verticalAlign: "bottom",
+              padding: "0 2px",
+              borderBottom: `1px solid ${colors.border}`,
+            }}
+          >
+            <div
               style={{
-                verticalAlign: "bottom",
-                padding: "0 2px",
-                borderBottom: `1px solid ${colors.border}`,
+                ...axisLabelStyle,
+                fontSize: 10,
+                textAlign: "center",
+                paddingBottom: 3,
+                color: month.projected ? colors.muted : colors.text,
               }}
             >
-              <div
-                style={{
-                  ...axisLabelStyle,
-                  fontSize: 10,
-                  textAlign: "center",
-                  paddingBottom: 3,
-                  color: month.projected ? colors.muted : colors.text,
-                }}
-              >
-                {formatBarValue(month.screenshots)}
-              </div>
-              <div
-                style={{
-                  height: Math.max(
-                    2,
-                    Math.round((month.screenshots / max) * height),
-                  ),
-                  borderRadius: "2px 2px 0 0",
-                  backgroundColor: month.projected
-                    ? colors.violetLight
-                    : colors.violet,
-                }}
-              />
-            </td>
-          ))}
-        </tr>
-        <tr>
-          {props.months.map((month) => (
-            <td
-              key={month.startsAt}
-              style={{ ...axisLabelStyle, textAlign: "center", paddingTop: 4 }}
-            >
-              {formatDate(new Date(month.startsAt), "month")}
-            </td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
+              {formatBarValue(month.screenshots)}
+            </div>
+            <div
+              style={{
+                height: Math.max(
+                  2,
+                  Math.round((month.screenshots / max) * height),
+                ),
+                borderRadius: "2px 2px 0 0",
+                backgroundColor: month.projected
+                  ? colors.violetLight
+                  : colors.violet,
+              }}
+            />
+          </td>
+        ))}
+      </tr>
+      <tr>
+        {props.months.map((month) => (
+          <td
+            key={month.startsAt}
+            style={{ ...axisLabelStyle, textAlign: "center", paddingTop: 4 }}
+          >
+            {formatDate(new Date(month.startsAt), "month")}
+          </td>
+        ))}
+      </tr>
+    </Table>
   );
 }
 
@@ -670,51 +626,35 @@ function BuildNameTable(props: {
     borderBottom: `1px solid ${colors.border}`,
   };
   return (
-    <table
-      width="100%"
-      cellPadding={0}
-      cellSpacing={0}
-      role="presentation"
-      style={{ marginTop: 20 }}
-    >
-      <tbody>
-        <tr>
-          <td style={headStyle}>Build name</td>
-          <td style={{ ...headStyle, textAlign: "right" }}>Screenshots</td>
-          <td style={{ ...headStyle, textAlign: "right" }}>vs last month</td>
+    <Table style={{ marginTop: 20 }}>
+      <tr>
+        <td style={headStyle}>Build name</td>
+        <td style={{ ...headStyle, textAlign: "right" }}>Screenshots</td>
+        <td style={{ ...headStyle, textAlign: "right" }}>vs last month</td>
+      </tr>
+      {props.rows.map((row) => (
+        <tr key={row.label}>
+          <td style={rowCellStyle}>{row.label}</td>
+          <td style={{ ...rowCellStyle, textAlign: "right" }}>
+            {formatCompact(row.current)}
+          </td>
+          <td style={numericCellStyle}>
+            {row.previous === 0 ? (
+              <NewPill />
+            ) : (
+              <Delta current={row.current} previous={row.previous} />
+            )}
+          </td>
         </tr>
-        {props.rows.map((row) => (
-          <tr key={row.label}>
-            <td style={rowCellStyle}>{row.label}</td>
-            <td style={{ ...rowCellStyle, textAlign: "right" }}>
-              {formatCompact(row.current)}
-            </td>
-            <td
-              style={{
-                ...rowCellStyle,
-                textAlign: "right",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {row.previous === 0 ? (
-                <Pill color={colors.newText} background={colors.newTint}>
-                  New
-                </Pill>
-              ) : (
-                <Delta current={row.current} previous={row.previous} />
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+      ))}
+    </Table>
   );
 }
 
 function Delta(props: {
   current: number;
   previous: number;
-  tone?: "increaseIsBad";
+  increaseIsBad?: boolean;
   suffix?: string;
 }) {
   const { current, previous, suffix = "" } = props;
@@ -731,16 +671,41 @@ function Delta(props: {
   const share = Math.abs(Math.round((change / previous) * 100));
   const value =
     previous >= 20 && share > 0 ? `${share}%` : String(Math.abs(change));
-  const [color, background] =
-    props.tone === "increaseIsBad"
-      ? change > 0
-        ? [colors.overageText, colors.overagePill]
-        : [colors.success, colors.successTint]
-      : [colors.muted, colors.track];
+  const [color, background] = props.increaseIsBad
+    ? change > 0
+      ? [colors.overageText, colors.overagePill]
+      : [colors.success, colors.successTint]
+    : [colors.muted, colors.track];
   return (
     <Pill color={color} background={background}>
       {change > 0 ? "▲" : "▼"} {value}
       {suffix}
+    </Pill>
+  );
+}
+
+/** A layout table, the one structure every email client renders. */
+function Table(props: {
+  style?: React.CSSProperties | undefined;
+  children: React.ReactNode;
+}) {
+  return (
+    <table
+      width="100%"
+      cellPadding={0}
+      cellSpacing={0}
+      role="presentation"
+      style={props.style}
+    >
+      <tbody>{props.children}</tbody>
+    </table>
+  );
+}
+
+function NewPill() {
+  return (
+    <Pill color={colors.newText} background={colors.newTint}>
+      New
     </Pill>
   );
 }
@@ -771,37 +736,7 @@ function Pill(props: {
   );
 }
 
-function OverageNote(props: { children: React.ReactNode }) {
-  return (
-    <table
-      width="100%"
-      cellPadding={0}
-      cellSpacing={0}
-      role="presentation"
-      style={{ marginTop: 20 }}
-    >
-      <tbody>
-        <tr>
-          <td
-            style={{
-              borderLeft: `3px solid ${colors.overage}`,
-              backgroundColor: colors.overageTint,
-              borderRadius: "0 6px 6px 0",
-              padding: "10px 14px",
-              fontSize: 13,
-              lineHeight: "20px",
-              color: colors.text,
-            }}
-          >
-            {props.children}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  );
-}
-
-function OverageNoteText(props: {
+function OverageNote(props: {
   amount: number;
   blockingSpendLimit: number | null;
   currency: string;
@@ -809,37 +744,50 @@ function OverageNoteText(props: {
   termEndsAt: Date;
 }) {
   const date = formatDate(props.termEndsAt, "longDate");
-  const { blockingSpendLimit } = props;
-  if (blockingSpendLimit !== null && props.amount > blockingSpendLimit) {
-    return (
-      <>
-        <strong style={{ color: colors.overageText }}>
-          At this pace, your {formatAmount(blockingSpendLimit, props.currency)}{" "}
-          spend limit is reached before {date}, and new builds will be refused
-          from then on.
-        </strong>{" "}
-        You can raise it in your billing settings, or commit to a larger plan:
-        reply to this email to discuss it.
-      </>
-    );
-  }
   const amount = formatAmount(props.amount, props.currency);
-  if (!props.renews) {
-    return (
-      <strong style={{ color: colors.overageText }}>
-        About {amount} of overage will be billed when the subscription ends, on{" "}
-        {date}.
-      </strong>
-    );
-  }
+  const { blockingSpendLimit } = props;
   return (
-    <>
-      <strong style={{ color: colors.overageText }}>
-        About {amount} of overage will be billed at renewal, on {date}.
-      </strong>{" "}
-      You can commit to a larger plan to lower this amount: reply to this email
-      to discuss it.
-    </>
+    <Table style={{ marginTop: 20 }}>
+      <tr>
+        <td
+          style={{
+            borderLeft: `3px solid ${colors.overage}`,
+            backgroundColor: colors.overageTint,
+            borderRadius: "0 6px 6px 0",
+            padding: "10px 14px",
+            fontSize: 13,
+            lineHeight: "20px",
+            color: colors.text,
+          }}
+        >
+          {blockingSpendLimit !== null && props.amount > blockingSpendLimit ? (
+            <>
+              <strong style={{ color: colors.overageText }}>
+                At this pace, your{" "}
+                {formatAmount(blockingSpendLimit, props.currency)} spend limit
+                is reached before {date}, and new builds will be refused from
+                then on.
+              </strong>{" "}
+              You can raise it in your billing settings, or commit to a larger
+              plan: reply to this email to discuss it.
+            </>
+          ) : props.renews ? (
+            <>
+              <strong style={{ color: colors.overageText }}>
+                About {amount} of overage will be billed at renewal, on {date}.
+              </strong>{" "}
+              You can commit to a larger plan to lower this amount: reply to
+              this email to discuss it.
+            </>
+          ) : (
+            <strong style={{ color: colors.overageText }}>
+              About {amount} of overage will be billed when the subscription
+              ends, on {date}.
+            </strong>
+          )}
+        </td>
+      </tr>
+    </Table>
   );
 }
 
@@ -876,9 +824,8 @@ function QuotaGauge(props: {
       color: colors.overageLight,
     },
   ].filter((segment) => segment.value > 0);
-  const track = Math.max(0, scale - projected);
+  const track = scale - projected;
   const includedPct = pct(included);
-  const overage = projected > included;
   // Close to the left edge, the plan label goes after its marker so it does
   // not run into the used label.
   const planLabelAfterMarker = includedPct < 40;
@@ -887,120 +834,92 @@ function QuotaGauge(props: {
 
   return (
     <>
-      <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
-        <tbody>
-          <tr>
-            <td style={{ ...axisLabelStyle, paddingBottom: 4 }}>
-              {props.startLabel}
-            </td>
+      <Table>
+        <tr>
+          <td style={{ ...axisLabelStyle, paddingBottom: 4 }}>
+            {props.startLabel}
+          </td>
+          <td
+            style={{
+              ...axisLabelStyle,
+              paddingBottom: 4,
+              textAlign: "right",
+            }}
+          >
+            {props.endLabel}
+          </td>
+        </tr>
+      </Table>
+      <Table style={{ borderRadius: 5, overflow: "hidden" }}>
+        <tr>
+          {[
+            ...segments,
+            ...(track > 0
+              ? [{ label: "track", value: track, color: colors.track }]
+              : []),
+          ].map((segment) => (
             <td
+              key={segment.label}
+              width={`${pct(segment.value)}%`}
+              height={10}
               style={{
-                ...axisLabelStyle,
-                paddingBottom: 4,
-                textAlign: "right",
+                backgroundColor: segment.color,
+                fontSize: 0,
+                lineHeight: 0,
               }}
             >
-              {props.endLabel}
+              &nbsp;
             </td>
-          </tr>
-        </tbody>
-      </table>
-      <table
-        width="100%"
-        cellPadding={0}
-        cellSpacing={0}
-        role="presentation"
-        style={{ borderRadius: 5, overflow: "hidden" }}
-      >
-        <tbody>
-          <tr>
-            {[
-              ...segments,
-              { label: "track", value: track, color: colors.track },
-            ]
-              .filter((segment) => segment.value > 0)
-              .map((segment) => (
-                <td
-                  key={segment.label}
-                  width={`${pct(segment.value)}%`}
-                  height={10}
-                  style={{
-                    backgroundColor: segment.color,
-                    fontSize: 0,
-                    lineHeight: 0,
-                  }}
-                >
-                  &nbsp;
+          ))}
+        </tr>
+      </Table>
+      <Table>
+        <tr>
+          <td
+            width={`${includedPct}%`}
+            style={{
+              borderRight: `2px solid ${colors.text}`,
+              paddingTop: 4,
+              paddingRight: 4,
+            }}
+          >
+            <Table>
+              <tr>
+                <td style={{ ...axisLabelStyle, color: colors.text }}>
+                  <strong>{formatCompact(used)}</strong> used
                 </td>
-              ))}
-          </tr>
-        </tbody>
-      </table>
-      <table width="100%" cellPadding={0} cellSpacing={0} role="presentation">
-        <tbody>
-          <tr>
-            <td
-              width={`${includedPct}%`}
-              style={{
-                borderRight: `2px solid ${colors.text}`,
-                paddingTop: 4,
-                paddingRight: 4,
-              }}
-            >
-              <table
-                width="100%"
-                cellPadding={0}
-                cellSpacing={0}
-                role="presentation"
-              >
-                <tbody>
-                  <tr>
-                    <td style={{ ...axisLabelStyle, color: colors.text }}>
-                      <strong>{formatCompact(used)}</strong> used
+                {planLabelAfterMarker ? null : (
+                  <td style={{ ...axisLabelStyle, textAlign: "right" }}>
+                    {planLabel}
+                  </td>
+                )}
+              </tr>
+            </Table>
+          </td>
+          {projected > included ? (
+            <td style={{ paddingTop: 4 }}>
+              <Table>
+                <tr>
+                  {planLabelAfterMarker ? (
+                    <td style={{ ...axisLabelStyle, paddingLeft: 4 }}>
+                      {planLabel}
                     </td>
-                    {planLabelAfterMarker ? null : (
-                      <td style={{ ...axisLabelStyle, textAlign: "right" }}>
-                        {planLabel}
-                      </td>
-                    )}
-                  </tr>
-                </tbody>
-              </table>
+                  ) : null}
+                  <td
+                    style={{
+                      ...axisLabelStyle,
+                      textAlign: "right",
+                      color: colors.overageText,
+                    }}
+                  >
+                    <strong>{formatCompact(projected)}</strong> projected
+                  </td>
+                </tr>
+              </Table>
             </td>
-            {includedPct < 100 ? (
-              <td style={{ paddingTop: 4 }}>
-                <table
-                  width="100%"
-                  cellPadding={0}
-                  cellSpacing={0}
-                  role="presentation"
-                >
-                  <tbody>
-                    <tr>
-                      {planLabelAfterMarker ? (
-                        <td style={{ ...axisLabelStyle, paddingLeft: 4 }}>
-                          {planLabel}
-                        </td>
-                      ) : null}
-                      {overage ? (
-                        <td
-                          style={{
-                            ...axisLabelStyle,
-                            textAlign: "right",
-                            color: colors.overageText,
-                          }}
-                        >
-                          <strong>{formatCompact(projected)}</strong> projected
-                        </td>
-                      ) : null}
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            ) : null}
-          </tr>
-        </tbody>
-      </table>
+          ) : null}
+        </tr>
+      </Table>
       <Text
         style={{
           margin: "8px 0 0",

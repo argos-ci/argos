@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { sumBy } from "lodash-es";
 
 import { getChangelogNews } from "@/changelog/news";
 import { sendEmailTemplate } from "@/email/send-email-template";
@@ -10,7 +11,6 @@ import {
   getAdditionalScreenshotCost,
   getIncludedScreenshots,
   getScreenshotTotals,
-  PERIOD_BOUNDARY_TOLERANCE,
   type ScreenshotTotals,
 } from "./period-usage";
 
@@ -23,6 +23,14 @@ const PROJECTION_WINDOW = 3;
 
 /** Accounts read per page when enqueueing the reports. */
 const ACCOUNT_BATCH_SIZE = 100;
+
+/**
+ * Slack allowed when matching the monthly anniversaries against the yearly
+ * one. The yearly anniversary is an offset from January 1, so it moves by a
+ * day across a February 29 while the monthly one does not. Two days cannot
+ * swallow a month.
+ */
+const ANNIVERSARY_TOLERANCE = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * The report of a team on an annual usage-based plan, as of `now`: the months
@@ -42,10 +50,16 @@ async function getReportTerm(account: Account, now: Date) {
     !subscription?.plan ||
     subscription.status === "trialing" ||
     subscription.plan.interval !== "year" ||
-    !subscription.plan.usageBased ||
-    // Without a quota, there is no plan to measure the usage against.
-    getIncludedScreenshots(subscription, subscription.plan) === 0
+    !subscription.plan.usageBased
   ) {
+    return null;
+  }
+  const includedScreenshots = getIncludedScreenshots(
+    subscription,
+    subscription.plan,
+  );
+  // Without a quota, there is no plan to measure the usage against.
+  if (includedScreenshots === 0) {
     return null;
   }
 
@@ -55,11 +69,9 @@ async function getReportTerm(account: Account, now: Date) {
     subscription.getResetDateAt(now, "month", index);
   const currentIndex = subscription.getCurrentPeriodIndex(now, "month");
   let firstIndex = currentIndex;
-  // The monthly and yearly anniversaries come off the same start date through
-  // different interval offsets, so they can land a moment apart.
   while (
     monthStart(firstIndex + 1).getTime() >=
-    termStartsAt.getTime() - PERIOD_BOUNDARY_TOLERANCE
+    termStartsAt.getTime() - ANNIVERSARY_TOLERANCE
   ) {
     firstIndex++;
   }
@@ -90,13 +102,12 @@ async function getReportTerm(account: Account, now: Date) {
 
   return {
     subscription,
-    plan: subscription.plan,
+    includedScreenshots,
     months,
     closedCount: firstIndex - currentIndex,
     termStartsAt: monthStart(firstIndex),
     termEndsAt: lastMonth.endsAt,
-    /** The report of a month is due once the next one opens. */
-    dueSince: monthStart(currentIndex),
+    /** The report of a month is due once the next one opens, at its `to`. */
     reportedMonth: {
       from: monthStart(currentIndex + 1),
       to: monthStart(currentIndex),
@@ -115,13 +126,10 @@ function projectMonthUsage(closed: ScreenshotTotals[]): ScreenshotTotals {
     .slice(-PROJECTION_WINDOW)
     .reverse()
     .map((totals, index) => ({ totals, weight: PROJECTION_WINDOW - index }));
-  const totalWeight = window.reduce((sum, month) => sum + month.weight, 0);
+  const totalWeight = sumBy(window, "weight");
   const weightedAverage = (pick: (totals: ScreenshotTotals) => number) =>
     Math.round(
-      window.reduce(
-        (sum, month) => sum + pick(month.totals) * month.weight,
-        0,
-      ) / totalWeight,
+      sumBy(window, (month) => pick(month.totals) * month.weight) / totalWeight,
     );
   return {
     all: weightedAverage((totals) => totals.all),
@@ -144,29 +152,27 @@ async function getTermUsage(term: ReportTerm) {
         index,
         from: month.startsAt,
         to: month.endsAt,
-        endsAt: month.endsAt,
       })),
     )
   ).get(subscription.accountId);
   invariant(totals, "every requested account comes back with totals");
 
-  const closed = closedMonths.map(
-    (_month, index) => totals.get(index) ?? { all: 0, storybook: 0 },
-  );
+  const closed = closedMonths.map((_month, index) => {
+    const monthTotals = totals.get(index);
+    invariant(monthTotals, "every requested month comes back with totals");
+    return monthTotals;
+  });
   const projected = projectMonthUsage(closed);
   const usage = term.months.map((month, index) => ({
     startsAt: month.startsAt,
     totals: closed[index] ?? projected,
     projected: index >= closed.length,
   }));
-  const termTotals = usage.reduce(
-    (sum, month) => ({
-      all: sum.all + month.totals.all,
-      storybook: sum.storybook + month.totals.storybook,
-    }),
-    { all: 0, storybook: 0 },
-  );
-  const includedScreenshots = getIncludedScreenshots(subscription, term.plan);
+  const termTotals = {
+    all: sumBy(usage, (month) => month.totals.all),
+    storybook: sumBy(usage, (month) => month.totals.storybook),
+  };
+  const { includedScreenshots } = term;
 
   return {
     months: usage.map((month) => ({
@@ -191,16 +197,18 @@ async function getMonthlyReportData(
 ) {
   const { currency } = term.subscription;
   invariant(currency, "a usage-based Stripe subscription has a currency");
-  const usage = await getTermUsage(term);
-  const activity = await getMonthlyReportActivity(account, {
-    current: term.reportedMonth,
-    previous: term.previousMonth,
-  });
+  // First: when the changelog cannot be read, the report waits, and the
+  // queries below would be wasted.
   const news = await getChangelogNews({
     since: account.lastMonthlyReportAt
       ? new Date(account.lastMonthlyReportAt)
       : null,
     now,
+  });
+  const usage = await getTermUsage(term);
+  const activity = await getMonthlyReportActivity(account, {
+    current: term.reportedMonth,
+    previous: term.previousMonth,
   });
   return {
     accountName: account.name,
@@ -209,7 +217,6 @@ async function getMonthlyReportData(
     termStartsAt: term.termStartsAt.toISOString(),
     termEndsAt: term.termEndsAt.toISOString(),
     renews: term.subscription.endDate === null,
-    // Past it, new builds are refused rather than billed.
     blockingSpendLimit: account.blockWhenSpendLimitIsReached
       ? account.meteredSpendLimitByPeriod
       : null,
@@ -239,7 +246,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
   if (
     !term ||
     (account.lastMonthlyReportAt !== null &&
-      new Date(account.lastMonthlyReportAt) >= term.dueSince)
+      new Date(account.lastMonthlyReportAt) >= term.reportedMonth.to)
   ) {
     return;
   }
@@ -261,7 +268,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
         template: "monthly_report",
         data,
         to: [owner.email],
-        idempotencyKey: `monthly-report/${account.id}/${term.dueSince.toISOString()}/${owner.id}`,
+        idempotencyKey: `monthly-report/${account.id}/${term.reportedMonth.to.toISOString()}/${owner.id}`,
       });
     }),
   );
@@ -311,10 +318,9 @@ export const monthlyReportJob = createJob<string>(
  * monthly report is for, in id order after `after`. Only teams: the choice to
  * receive it is kept on each owner's membership.
  */
-async function getMonthlyReportAccountIds(input: {
-  after: string | null;
-  limit: number;
-}): Promise<string[]> {
+async function getMonthlyReportAccountIds(
+  after: string | null,
+): Promise<string[]> {
   const query = Account.query()
     .select("accounts.id")
     .whereNotNull("accounts.teamId")
@@ -335,9 +341,9 @@ async function getMonthlyReportAccountIds(input: {
         .where("plan.usageBased", true),
     )
     .orderBy("accounts.id")
-    .limit(input.limit);
-  if (input.after !== null) {
-    query.where("accounts.id", ">", input.after);
+    .limit(ACCOUNT_BATCH_SIZE);
+  if (after !== null) {
+    query.where("accounts.id", ">", after);
   }
   const accounts = await query;
   return accounts.map((account) => account.id);
@@ -351,15 +357,13 @@ async function getMonthlyReportAccountIds(input: {
 export async function enqueueMonthlyReports() {
   let after: string | null = null;
   for (;;) {
-    const accountIds = await getMonthlyReportAccountIds({
-      after,
-      limit: ACCOUNT_BATCH_SIZE,
-    });
-    if (accountIds.length > 0) {
-      await monthlyReportJob.push(...accountIds);
-    }
+    const accountIds = await getMonthlyReportAccountIds(after);
     const last = accountIds.at(-1);
-    if (accountIds.length < ACCOUNT_BATCH_SIZE || last === undefined) {
+    if (last === undefined) {
+      return;
+    }
+    await monthlyReportJob.push(...accountIds);
+    if (accountIds.length < ACCOUNT_BATCH_SIZE) {
       return;
     }
     after = last;

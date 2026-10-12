@@ -24,6 +24,44 @@ vi.mock("@/changelog/news", () => ({
 const mockSendEmailTemplate = vi.mocked(sendEmailTemplate);
 const mockGetChangelogNews = vi.mocked(getChangelogNews);
 
+/** A team on an annual usage-based Stripe plan, with one owner. */
+async function createAnnualTeam(input: {
+  startDate: string;
+  stripeSubscriptionId: string;
+}) {
+  const plan = await factory.Plan.create({
+    usageBased: true,
+    interval: "year",
+  });
+  const account = await factory.TeamAccount.create();
+  invariant(account.teamId, "a team account has a team");
+  const owner = await factory.User.create();
+  await factory.TeamUser.create({
+    teamId: account.teamId,
+    userId: owner.id,
+    userLevel: "owner",
+  });
+  await factory.Subscription.create({
+    accountId: account.id,
+    planId: plan.id,
+    includedScreenshots: 1000,
+    currency: "eur",
+    additionalScreenshotPrice: 0.5,
+    provider: "stripe",
+    stripeSubscriptionId: input.stripeSubscriptionId,
+    subscriberId: owner.id,
+    startDate: input.startDate,
+    status: "active",
+  });
+  return { account, owner };
+}
+
+function getSentReport() {
+  const input = mockSendEmailTemplate.mock.calls[0]?.[0];
+  invariant(input?.template === "monthly_report", "a monthly report");
+  return input;
+}
+
 describe("sendAccountMonthlyReport", () => {
   let account: Account;
   let project: Project;
@@ -38,35 +76,15 @@ describe("sendAccountMonthlyReport", () => {
     await setupDatabase();
     vi.clearAllMocks();
 
-    const annualPlan = await factory.Plan.create({
-      usageBased: true,
-      interval: "year",
-    });
-    account = await factory.TeamAccount.create();
-    invariant(account.teamId, "a team account has a team");
-    project = await factory.Project.create({ accountId: account.id });
-    const owner = await factory.User.create();
-    invariant(owner.email, "a user is created with an email");
-    ownerId = owner.id;
-    ownerEmail = owner.email;
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: ownerId,
-      userLevel: "owner",
-    });
-    await factory.Subscription.create({
-      accountId: account.id,
-      planId: annualPlan.id,
-      includedScreenshots: 1000,
-      currency: "eur",
-      additionalScreenshotPrice: 0.5,
-      provider: "stripe",
+    const team = await createAnnualTeam({
+      startDate: "2025-01-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_monthly_report",
-      subscriberId: ownerId,
-      createdAt: new Date("2025-01-15T12:00:00.000Z").toISOString(),
-      startDate: new Date("2025-01-15T12:00:00.000Z").toISOString(),
-      status: "active",
     });
+    account = team.account;
+    invariant(team.owner.email, "a user is created with an email");
+    ownerId = team.owner.id;
+    ownerEmail = team.owner.email;
+    project = await factory.Project.create({ accountId: account.id });
 
     for (const [createdAt, screenshotCount] of [
       // The previous term, which the report must leave out.
@@ -90,8 +108,7 @@ describe("sendAccountMonthlyReport", () => {
     await sendAccountMonthlyReport(account.id, now);
 
     expect(mockSendEmailTemplate).toHaveBeenCalledTimes(1);
-    const input = mockSendEmailTemplate.mock.calls[0]?.[0];
-    invariant(input?.template === "monthly_report", "a monthly report");
+    const input = getSentReport();
     expect(input.to).toEqual([ownerEmail]);
     const { data } = input;
     expect(data.activity.from).toBe("2026-03-15T12:00:00.000Z");
@@ -181,7 +198,7 @@ describe("sendAccountMonthlyReport", () => {
       provider: "stripe",
       stripeSubscriptionId: "sub_monthly",
       subscriberId: subscriber.id,
-      startDate: new Date("2025-01-15T12:00:00.000Z").toISOString(),
+      startDate: "2025-01-15T12:00:00.000Z",
       status: "active",
     });
     const push = vi.spyOn(monthlyReportJob, "push").mockResolvedValue();
@@ -193,37 +210,43 @@ describe("sendAccountMonthlyReport", () => {
   });
 });
 
-it("ends the term on its twelfth monthly anniversary across a February 29", async () => {
-  await setupDatabase();
-  vi.clearAllMocks();
-  const plan = await factory.Plan.create({
-    usageBased: true,
-    interval: "year",
-  });
-  const team = await factory.TeamAccount.create();
-  invariant(team.teamId, "a team account has a team");
-  const owner = await factory.User.create();
-  await factory.TeamUser.create({
-    teamId: team.teamId,
-    userId: owner.id,
-    userLevel: "owner",
-  });
-  await factory.Subscription.create({
-    accountId: team.id,
-    planId: plan.id,
-    includedScreenshots: 1000,
-    currency: "eur",
-    provider: "stripe",
-    stripeSubscriptionId: "sub_leap_year",
-    subscriberId: owner.id,
-    startDate: new Date("2024-03-15T12:00:00.000Z").toISOString(),
-    status: "active",
+describe("the term of an annual plan", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+    vi.clearAllMocks();
   });
 
-  await sendAccountMonthlyReport(team.id, new Date("2024-05-20T10:00:00.000Z"));
+  it("ends on the twelfth monthly anniversary across a February 29", async () => {
+    const { account } = await createAnnualTeam({
+      startDate: "2024-03-15T12:00:00.000Z",
+      stripeSubscriptionId: "sub_leap_year",
+    });
 
-  const input = mockSendEmailTemplate.mock.calls[0]?.[0];
-  invariant(input?.template === "monthly_report", "a monthly report");
-  expect(input.data.months).toHaveLength(12);
-  expect(input.data.termEndsAt).toBe("2025-03-15T12:00:00.000Z");
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2024-05-20T10:00:00.000Z"),
+    );
+
+    const { data } = getSentReport();
+    expect(data.months).toHaveLength(12);
+    expect(data.termEndsAt).toBe("2025-03-15T12:00:00.000Z");
+  });
+
+  it("starts on the monthly anniversary when the yearly one drifted a day", async () => {
+    // Read from 2024, a leap year, the yearly anniversary lands on June 11 in
+    // 2025, the day after the monthly one.
+    const { account } = await createAnnualTeam({
+      startDate: "2024-06-10T12:00:00.000Z",
+      stripeSubscriptionId: "sub_drift",
+    });
+
+    await sendAccountMonthlyReport(
+      account.id,
+      new Date("2025-09-20T10:00:00.000Z"),
+    );
+
+    const { data } = getSentReport();
+    expect(data.termStartsAt).toBe("2025-06-10T12:00:00.000Z");
+    expect(data.months).toHaveLength(12);
+  });
 });

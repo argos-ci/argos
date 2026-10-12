@@ -136,14 +136,17 @@ const READ_PERIOD_COUNT = 2;
  * read the first billed period as part of the trial. Periods are a month long,
  * so an hour of slack cannot swallow a real one.
  */
-export const PERIOD_BOUNDARY_TOLERANCE = 60 * 60 * 1000;
+const PERIOD_BOUNDARY_TOLERANCE = 60 * 60 * 1000;
 
 /** A window of one account's usage, as fed to the aggregate below. */
-type AccountPeriod = {
+type AccountWindow = {
   accountId: string;
   index: number;
   from: Date;
   to: Date;
+};
+
+type AccountPeriod = AccountWindow & {
   /**
    * When the period closes, which the window above stops short of on the
    * running one — `to` is the moment it was read. Carried here rather than
@@ -199,7 +202,7 @@ export function getAdditionalScreenshotCost(input: {
 const CLAMPED_STORYBOOK_COUNT = clampedStorybookCount("sb");
 
 /** Rows of `(accountId, index, from, to)` to join the usage tables against. */
-function buildPeriodValues(periods: AccountPeriod[]) {
+function buildPeriodValues(periods: AccountWindow[]) {
   return {
     sql: periods
       .map(() => `(?::bigint, ?::int, ?::timestamptz, ?::timestamptz)`)
@@ -226,7 +229,7 @@ function buildPeriodValues(periods: AccountPeriod[]) {
  * a bucket still has to come back with zeros rather than vanish from the batch.
  */
 export async function getScreenshotTotals(
-  periods: AccountPeriod[],
+  periods: AccountWindow[],
 ): Promise<Map<string, AccountTotals>> {
   // `accounts.id` is a bigint and the bindings arrive as strings, so the values
   // are cast explicitly — Postgres cannot infer the type of a bare parameter in
@@ -322,7 +325,7 @@ export async function getScreenshotTotals(
  * period, over the same windows as the bucket totals.
  */
 async function getMediaUnits(
-  periods: AccountPeriod[],
+  periods: AccountWindow[],
 ): Promise<Map<string, Map<number, number>>> {
   const values = buildPeriodValues(periods);
 

@@ -2,6 +2,7 @@ import { render } from "react-email";
 import { Resend } from "resend";
 
 import config from "@/config";
+import { UnretryableError } from "@/job-core";
 import logger from "@/logger";
 
 const production = config.get("env") === "production";
@@ -52,7 +53,17 @@ export async function sendEmail(options: {
   );
   // Resend reports a failure in the result instead of throwing.
   if (result.error) {
-    throw new Error(`Resend failed to send an email: ${result.error.message}`);
+    const { message, statusCode } = result.error;
+    // A request Resend rejects fails the same way when retried. A conflict, a
+    // rate limit, an outage or a network error may not.
+    const rejected =
+      statusCode !== null &&
+      statusCode >= 400 &&
+      statusCode < 500 &&
+      statusCode !== 409 &&
+      statusCode !== 429;
+    const ErrorClass = rejected ? UnretryableError : Error;
+    throw new ErrorClass(`Resend failed to send an email: ${message}`);
   }
   return result;
 }

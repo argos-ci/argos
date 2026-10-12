@@ -88,12 +88,26 @@ export class Test extends Model {
     }
     invariant(this.project?.account, "account not found");
 
-    const testId = formatTestId({
+    return getTestUrl({
+      accountSlug: this.project.account.slug,
       projectName: this.project.name,
       testId: this.id,
     });
-    const pathname = `/${this.project.account.slug}/${this.project.name}/tests/${testId}`;
-
-    return `${config.get("server.url")}${pathname}`;
   }
+}
+
+/**
+ * URL of a test page, from the names a query already holds.
+ */
+export function getTestUrl(input: {
+  accountSlug: string;
+  projectName: string;
+  testId: string;
+}) {
+  const testId = formatTestId({
+    projectName: input.projectName,
+    testId: input.testId,
+  });
+  const pathname = `/${input.accountSlug}/${input.projectName}/tests/${testId}`;
+  return `${config.get("server.url")}${pathname}`;
 }

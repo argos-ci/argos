@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { MonthlyReportNewsItem } from "@/email/templates/monthly_report";
+import { redisCache } from "@/util/redis";
 
 /** Served by argos-ci.com, built from the same files as its changelog page. */
 const FEED_URL = "https://argos-ci.com/changelog.json";
@@ -25,22 +26,22 @@ const FeedSchema = z.object({ items: z.array(FeedItemSchema) });
 
 type FeedItem = z.infer<typeof FeedItemSchema>;
 
-let cache: { fetchedAt: number; items: FeedItem[] } | null = null;
-
-async function fetchFeedItems(): Promise<FeedItem[]> {
-  if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.items;
-  }
-  const response = await fetch(FEED_URL, {
-    signal: AbortSignal.timeout(5_000),
-  });
-  if (!response.ok) {
-    throw new Error(`The changelog feed answered ${response.status}`);
-  }
-  const feed = FeedSchema.parse(await response.json());
-  cache = { fetchedAt: Date.now(), items: feed.items };
-  return feed.items;
-}
+const feedItems = redisCache.createStore({
+  fetch: async (): Promise<FeedItem[]> => {
+    const response = await fetch(FEED_URL, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) {
+      throw new Error(`The changelog feed answered ${response.status}`);
+    }
+    return FeedSchema.parse(await response.json()).items;
+  },
+  getCacheKey: () => ["changelog-feed"],
+  maxAge: CACHE_TTL_MS,
+  // The lock around the fetch gives up after this: past the 5s the request
+  // may take.
+  timeout: 10_000,
+});
 
 /**
  * The entries a report lists, newest first: the ones published since the
@@ -68,7 +69,6 @@ export function selectChangelogNews(
     title: item.title,
     summary: item.summary,
     url: item.url,
-    publishedAt: item.date_published,
   }));
 }
 
@@ -81,5 +81,5 @@ export async function getChangelogNews(input: {
   since: Date | null;
   now: Date;
 }): Promise<MonthlyReportNewsItem[]> {
-  return selectChangelogNews(await fetchFeedItems(), input);
+  return selectChangelogNews(await feedItems.get(), input);
 }

@@ -47,18 +47,15 @@ export function TeamMonthlyReport(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  // The report only goes to the teams on an annual usage-based Stripe plan.
   if (
+    // Staff can administer a team they are not a member of, and the setting
+    // belongs to a membership.
+    !team.me ||
     team.hasForcedPlan ||
     team.plan?.interval !== PlanInterval.Year ||
     !team.plan.usageBased ||
     team.subscription?.provider !== AccountSubscriptionProvider.Stripe
   ) {
-    return null;
-  }
-  // Staff can administer a team they are not a member of, and the setting
-  // belongs to a membership.
-  if (!team.me) {
     return null;
   }
   return (

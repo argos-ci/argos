@@ -1,13 +1,12 @@
 import { FLAKY_THRESHOLD } from "@argos/util/flakiness";
 import { invariant } from "@argos/util/invariant";
+import { sumBy } from "lodash-es";
 
-import config from "@/config";
 import { knex } from "@/database";
 import type { MonthlyReportActivity } from "@/email/templates/monthly_report";
 import { computeTestMetrics, type TestMetricsCounts } from "@/metrics/test";
-import { formatTestId } from "@/util/test-id";
 
-import { ScreenshotDiff, type Account } from "../models";
+import { getTestUrl, ScreenshotDiff, type Account } from "../models";
 import { TEST_METRICS_LATERAL } from "./test";
 
 type Window = { from: Date; to: Date };
@@ -16,7 +15,7 @@ type Window = { from: Date; to: Date };
 const BUILD_NAME_COUNT = 5;
 
 /** The month a report covers, and the one before it to compare with. */
-export type MonthlyReportWindows = { current: Window; previous: Window };
+type MonthlyReportWindows = { current: Window; previous: Window };
 
 function getBindings(account: Account, window: Window) {
   return {
@@ -118,7 +117,7 @@ async function getPullRequestActivity(
   const result = await knex.raw<{
     rows: {
       pullRequests: string;
-      intermediateCommits: string | null;
+      intermediateCommits: string;
       fixedPullRequests: string;
     }[];
   }>(
@@ -210,7 +209,7 @@ async function getPullRequestActivity(
     )
     select
       (select count(*) from pull_requests) as "pullRequests",
-      (select sum(commits - 1) from pull_requests) as "intermediateCommits",
+      (select coalesce(sum(commits - 1), 0) from pull_requests) as "intermediateCommits",
       (select count(*) from fixed) as "fixedPullRequests"
     `,
     {
@@ -222,8 +221,7 @@ async function getPullRequestActivity(
   invariant(row, "an aggregate returns one row");
   return {
     checked: Number(row.pullRequests),
-    // Null when there was no pull request to sum over.
-    intermediateCommits: Number(row.intermediateCommits ?? 0),
+    intermediateCommits: Number(row.intermediateCommits),
     fixedAfterFlag: Number(row.fixedPullRequests),
   };
 }
@@ -255,30 +253,10 @@ async function getFlakyTests(account: Account, window: Window) {
     `,
     getBindings(account, window),
   );
-  const flaky = result.rows
+  return result.rows
     .map((row) => ({ row, metrics: computeTestMetrics(row.metrics) }))
     .filter(({ metrics }) => metrics.flakiness >= FLAKY_THRESHOLD)
     .sort((a, b) => b.metrics.flakiness - a.metrics.flakiness);
-  return {
-    ids: flaky.map(({ row }) => row.id),
-    count: flaky.length,
-    top: flaky.slice(0, 3).map(({ row, metrics }) => {
-      const testId = formatTestId({
-        projectName: row.projectName,
-        testId: row.id,
-      });
-      return {
-        id: row.id,
-        name: row.name,
-        buildName: row.buildName,
-        flakiness: metrics.flakiness,
-        url: new URL(
-          `/${account.slug}/${row.projectName}/tests/${testId}`,
-          config.get("server.url"),
-        ).href,
-      };
-    }),
-  };
 }
 
 async function getScreenshotsByBuildName(
@@ -329,21 +307,24 @@ export async function getMonthlyReportActivity(
   const changesReviewed = await getChangesReviewed(account, windows);
   const tests = await getTestCoverage(account, windows.current);
   const flaky = await getFlakyTests(account, windows.current);
-  const previousFlaky = await getFlakyTests(account, windows.previous);
+  const previousFlakyIds = new Set(
+    (await getFlakyTests(account, windows.previous)).map(({ row }) => row.id),
+  );
   // The pull requests fixed over the month leave out its flaky tests.
   const pullRequests = await getPullRequestActivity(
     account,
     windows.current,
-    flaky.ids,
+    flaky.map(({ row }) => row.id),
   );
   const screenshots = await getScreenshotsByBuildName(account, windows);
 
   const projectNames = new Set(screenshots.map((entry) => entry.projectName));
+  // The default build name stands for its project, as everywhere in the app.
   const labelOf = (entry: { projectName: string; name: string }) =>
-    projectNames.size === 1
-      ? entry.name
-      : entry.name === "default"
-        ? entry.projectName
+    entry.name === "default"
+      ? entry.projectName
+      : projectNames.size === 1
+        ? entry.name
         : `${entry.projectName} · ${entry.name}`;
   const byBuildName = screenshots
     .filter((entry) => entry.current > 0)
@@ -362,28 +343,30 @@ export async function getMonthlyReportActivity(
     changesReviewed,
     tests,
     flakyTests: {
-      current: flaky.count,
-      previous: previousFlaky.count,
-      top: flaky.top.map(({ id, ...test }) => ({
-        ...test,
-        newThisMonth: !previousFlaky.ids.includes(id),
+      current: flaky.length,
+      previous: previousFlakyIds.size,
+      top: flaky.slice(0, 3).map(({ row, metrics }) => ({
+        name: row.name,
+        buildName: row.buildName,
+        flakiness: metrics.flakiness,
+        url: getTestUrl({
+          accountSlug: account.slug,
+          projectName: row.projectName,
+          testId: row.id,
+        }),
+        newThisMonth: !previousFlakyIds.has(row.id),
       })),
     },
-    screenshots: {
-      byBuildName:
-        others.length > 0
-          ? [
-              ...byBuildName.slice(0, BUILD_NAME_COUNT),
-              {
-                label: "Other",
-                current: others.reduce((sum, entry) => sum + entry.current, 0),
-                previous: others.reduce(
-                  (sum, entry) => sum + entry.previous,
-                  0,
-                ),
-              },
-            ]
-          : byBuildName,
-    },
+    screenshotsByBuildName:
+      others.length > 0
+        ? [
+            ...byBuildName.slice(0, BUILD_NAME_COUNT),
+            {
+              label: "Other",
+              current: sumBy(others, "current"),
+              previous: sumBy(others, "previous"),
+            },
+          ]
+        : byBuildName,
   };
 }

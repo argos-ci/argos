@@ -1,14 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import config from "@/config";
 import { knex } from "@/database";
 import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { formatTestId } from "@/util/test-id";
 
 import { getMonthlyReportActivity } from "./monthly-report-activity";
-
-const at = (iso: string) => new Date(iso).toISOString();
 
 // The month that just closed is September 15 to October 15.
 const windows = {
@@ -44,14 +40,14 @@ describe("getMonthlyReportActivity", () => {
     // a new change, so flaky.
     await knex("test_stats_builds").insert({
       testId: test.id,
-      date: at("2026-09-16T00:00:00Z"),
+      date: "2026-09-16T00:00:00Z",
       value: 10,
     });
     await knex("test_stats_fingerprints").insert(
       [16, 17, 18].map((day) => ({
         testId: test.id,
         fingerprint: "fp",
-        date: at(`2026-09-${day}T00:00:00Z`),
+        date: `2026-09-${day}T00:00:00Z`,
         value: 1,
       })),
     );
@@ -67,19 +63,20 @@ describe("getMonthlyReportActivity", () => {
     mode?: "ci" | "monitoring";
     subset?: boolean;
   }) {
+    const name = input.name ?? "default";
     const bucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
-      name: input.name ?? "default",
+      name,
       // A full sha, as the model requires.
       commit: input.commit.padEnd(40, "0"),
-      createdAt: at(input.createdAt),
+      createdAt: input.createdAt,
     });
     return factory.Build.create({
       projectId: project.id,
-      name: input.name ?? "default",
+      name,
       compareScreenshotBucketId: bucket.id,
-      createdAt: at(input.createdAt),
-      concludedAt: at(input.createdAt),
+      createdAt: input.createdAt,
+      concludedAt: input.createdAt,
       conclusion: input.conclusion,
       type: "check",
       githubPullRequestId: input.pullRequestId,
@@ -167,10 +164,7 @@ describe("getMonthlyReportActivity", () => {
     });
     expect(activity.flakyTests.current).toBe(1);
     expect(activity.flakyTests.top.map((test) => test.url)).toEqual([
-      new URL(
-        `/${account.slug}/web/tests/${formatTestId({ projectName: "web", testId: flaky.id })}`,
-        config.get("server.url"),
-      ).href,
+      await flaky.getUrl(),
     ]);
     // Not flaky the month before.
     expect(activity.flakyTests.top[0]?.newThisMonth).toBe(true);
@@ -179,7 +173,7 @@ describe("getMonthlyReportActivity", () => {
   it("counts the changes people reviewed and the tests covered", async () => {
     const build = await factory.Build.create({
       projectId: project.id,
-      createdAt: at("2026-09-20T10:00:00Z"),
+      createdAt: "2026-09-20T10:00:00Z",
       conclusion: "changes-detected",
       type: "check",
     });
@@ -202,16 +196,16 @@ describe("getMonthlyReportActivity", () => {
       { buildReviewId: robot.id, screenshotDiffId: third },
     ]);
 
-    const [known, fresh, gone] = await factory.Test.createMany(3, [
-      { projectId: project.id, name: "known" },
-      { projectId: project.id, name: "fresh" },
-      { projectId: project.id, name: "gone" },
-    ]);
+    const test = (name: string) =>
+      factory.Test.create({ projectId: project.id, name });
+    const known = await test("known");
+    const fresh = await test("fresh");
+    const gone = await test("gone");
     await knex("test_stats_builds").insert([
-      { testId: known?.id, date: at("2026-08-01T00:00:00Z"), value: 1 },
-      { testId: known?.id, date: at("2026-09-16T00:00:00Z"), value: 1 },
-      { testId: fresh?.id, date: at("2026-09-20T00:00:00Z"), value: 1 },
-      { testId: gone?.id, date: at("2026-08-02T00:00:00Z"), value: 1 },
+      { testId: known.id, date: "2026-08-01T00:00:00Z", value: 1 },
+      { testId: known.id, date: "2026-09-16T00:00:00Z", value: 1 },
+      { testId: fresh.id, date: "2026-09-20T00:00:00Z", value: 1 },
+      { testId: gone.id, date: "2026-08-02T00:00:00Z", value: 1 },
     ]);
 
     const activity = await getMonthlyReportActivity(account, windows);
@@ -225,7 +219,7 @@ describe("getMonthlyReportActivity", () => {
       factory.ScreenshotBucket.create({
         projectId: project.id,
         name,
-        createdAt: at(createdAt),
+        createdAt,
         screenshotCount,
         storybookScreenshotCount: 0,
       });
@@ -248,7 +242,7 @@ describe("getMonthlyReportActivity", () => {
 
     const activity = await getMonthlyReportActivity(account, windows);
 
-    expect(activity.screenshots.byBuildName).toEqual([
+    expect(activity.screenshotsByBuildName).toEqual([
       { label: "mobile", current: 5000, previous: 0 },
       { label: "e2e", current: 1500, previous: 1000 },
       { label: "a", current: 600, previous: 50 },
