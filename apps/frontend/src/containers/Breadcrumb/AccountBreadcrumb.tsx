@@ -1,6 +1,12 @@
-import { useSuspenseQuery } from "@apollo/client/react";
+import { skipToken, useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
-import { ShieldUserIcon } from "lucide-react";
+import {
+  BanknoteIcon,
+  Building2Icon,
+  ChevronDownIcon,
+  HourglassIcon,
+  ShieldUserIcon,
+} from "lucide-react";
 import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -14,8 +20,9 @@ import {
   BreadcrumbLink,
   BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
-import { LinkButton } from "@/ui/Button";
-import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import { Button, LinkButton } from "@/ui/Button";
+import { ButtonGroup } from "@/ui/ButtonGroup";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
@@ -72,33 +79,62 @@ function HomeBreadcrumbLink() {
 }
 
 /**
- * Takes a staff member from the team they are looking at to its row in the
- * staff directory, which is otherwise reached by searching for it by hand.
+ * The way into the staff pages, from anywhere in the app. On a team, the button
+ * takes a staff member to its row in the staff directory, which is otherwise
+ * reached by searching for it by hand; the menu holds every staff page.
  *
- * Reads the account from the same query the link above already ran, so the
- * cache answers it. Searching by slug rather than name: a name is free text
- * and may be empty, a slug is neither.
+ * Reads the account from the same query the link beside it already ran, so the
+ * cache answers it. Searching by slug rather than name: a name is free text and
+ * may be empty, a slug is neither.
  */
-function StaffTeamLink({ accountSlug }: { accountSlug: string }) {
-  const { data } = useSuspenseQuery(AccountQuery, {
-    variables: { slug: accountSlug },
-  });
-  if (data.account?.__typename !== "Team") {
-    return null;
-  }
-  const search = new URLSearchParams({ search: data.account.slug }).toString();
+function StaffButtonGroup(props: { accountSlug: string | undefined }) {
+  const { accountSlug } = props;
+  const { data } = useSuspenseQuery(
+    AccountQuery,
+    accountSlug ? { variables: { slug: accountSlug } } : skipToken,
+  );
+  const team = data?.account?.__typename === "Team" ? data.account : null;
+  const label = team ? "Open in staff directory" : "Open staff directory";
+  const href = team
+    ? `/staff/teams?${new URLSearchParams({ search: team.slug })}`
+    : "/staff/teams";
   return (
-    <Tooltip content="Open in staff directory">
-      <LinkButton
-        variant="ghost"
-        size="small"
-        iconOnly
-        aria-label="Open in staff directory"
-        href={`/staff/teams?${search}`}
-      >
-        <ShieldUserIcon />
-      </LinkButton>
-    </Tooltip>
+    <ButtonGroup>
+      <Tooltip content={label}>
+        <LinkButton
+          variant="secondary"
+          size="small"
+          iconOnly
+          aria-label={label}
+          href={href}
+        >
+          <ShieldUserIcon />
+        </LinkButton>
+      </Tooltip>
+      <MenuRoot>
+        <MenuTrigger>
+          <Button
+            variant="secondary"
+            size="small"
+            iconOnly
+            aria-label="Staff pages"
+          >
+            <ChevronDownIcon />
+          </Button>
+        </MenuTrigger>
+        <Menu side="bottom" align="start" aria-label="Staff pages">
+          <MenuItem icon={<Building2Icon />} href="/staff/teams">
+            All teams
+          </MenuItem>
+          <MenuItem icon={<HourglassIcon />} href="/staff/trials">
+            Trials
+          </MenuItem>
+          <MenuItem icon={<BanknoteIcon />} href="/staff/revenue">
+            Revenue
+          </MenuItem>
+        </Menu>
+      </MenuRoot>
+    </ButtonGroup>
   );
 }
 
@@ -144,8 +180,9 @@ export function AccountBreadcrumbItem() {
           <AccountBreadcrumbMenu account={me} />
         </MenuRoot>
       ) : null}
-      {accountSlug && me?.staff ? (
-        <StaffTeamLink accountSlug={accountSlug} />
+      {/* The staff area has its own tabs for the same pages. */}
+      {me?.staff && !isStaffArea ? (
+        <StaffButtonGroup accountSlug={accountSlug} />
       ) : null}
     </BreadcrumbItem>
   );

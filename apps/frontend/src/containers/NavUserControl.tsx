@@ -9,7 +9,6 @@ import {
   MoonIcon,
   PlusCircleIcon,
   SettingsIcon,
-  ShieldUserIcon,
   SunIcon,
 } from "lucide-react";
 import { useLocation } from "react-router";
@@ -120,14 +119,6 @@ function UserMenu(props: { account: AuthAccount }) {
         >
           Settings
         </MenuItem>
-        {account.staff ? (
-          <>
-            <MenuSeparator />
-            <MenuItem icon={<ShieldUserIcon />} href="/staff">
-              Staff
-            </MenuItem>
-          </>
-        ) : null}
         <MenuSeparator />
         {getColorModeSubmenu(colorMode ?? "system", setColorMode)}
         <MenuSeparator />
