@@ -23,8 +23,14 @@ RUN pnpm fetch
 
 COPY . /app
 RUN pnpm install --offline --frozen-lockfile --config.confirmModulesPurge=false
+# The frontend build uploads its source maps to Sentry and then deletes them, so
+# they never reach the image or the asset CDN. Without the token they are still
+# deleted, and production stack traces go unsymbolicated.
 RUN --mount=type=secret,id=TURBO_TOKEN \
-  TURBO_TOKEN="$(cat /run/secrets/TURBO_TOKEN)" BUILD_MODE=production pnpm run build
+  --mount=type=secret,id=SENTRY_AUTH_TOKEN \
+  TURBO_TOKEN="$(cat /run/secrets/TURBO_TOKEN)" \
+  SENTRY_AUTH_TOKEN="$(cat /run/secrets/SENTRY_AUTH_TOKEN)" \
+  BUILD_MODE=production pnpm run build
 RUN pnpm run clean-deps
 RUN pnpm install --prod
 

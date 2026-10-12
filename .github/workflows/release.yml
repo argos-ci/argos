@@ -91,6 +91,7 @@ jobs:
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }},mode=max
           secrets: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           build-args: |
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
             ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
@@ -107,6 +108,7 @@ jobs:
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
           secrets: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           build-args: |
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
             ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}

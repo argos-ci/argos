@@ -207,12 +207,10 @@ export function getConnectSrc(): string[] {
   // Sentry posts envelopes to its DSN's ingest host.
   addOrigin(origins, config.get("sentry.clientDsn"));
 
-  // The build ships a `//# sourceMappingURL` next to every chunk, and DevTools
-  // fetches those `.js.map` files through the page's own `connect-src`. They were
-  // same-origin until the assets moved to the CDN, so `'self'` covered them;
-  // without the CDN here, opening DevTools logs one blocked-connection error per
-  // chunk. Nothing else in the app connects to this origin — code, styles and
-  // fonts load through their own directives.
+  // Vite's modulepreload polyfill `fetch()`es chunks from the asset origin in
+  // browsers without native `<link rel="modulepreload">`. Nothing else connects
+  // to it — code, styles and fonts load through their own directives, and the
+  // build no longer publishes source maps for DevTools to fetch.
   for (const origin of getAssetsOrigin()) {
     origins.add(origin);
   }
