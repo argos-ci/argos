@@ -66,6 +66,7 @@ const TeamInvitesQuery = graphql(`
 const _TeamFragment = graphql(`
   fragment InvitesList_Team on Team {
     id
+    inviteLink
     ...InviteDialog_Team
   }
 `);
@@ -266,14 +267,22 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
           <EmptyStateDescription>
             Invite people to your team to give them access to your projects.
           </EmptyStateDescription>
-          <EmptyStateActions>
-            <DialogTrigger>
-              <Button variant="secondary">Invite members</Button>
-              <Modal>
-                <InviteDialog team={props.team} />
-              </Modal>
-            </DialogTrigger>
-          </EmptyStateActions>
+          {/* Gate on the link, not on `amOwner`: after a promotion the cache can
+              hold fresh owner permissions next to the `null` link fetched
+              before it. */}
+          {props.team.inviteLink ? (
+            <EmptyStateActions>
+              <DialogTrigger>
+                <Button variant="secondary">Invite members</Button>
+                <Modal>
+                  <InviteDialog
+                    team={props.team}
+                    inviteLink={props.team.inviteLink}
+                  />
+                </Modal>
+              </DialogTrigger>
+            </EmptyStateActions>
+          ) : null}
         </EmptyState>
       )}
       {data.team.invites.pageInfo.hasNextPage && (
