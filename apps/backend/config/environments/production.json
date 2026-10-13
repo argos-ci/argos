@@ -32,6 +32,6 @@
     "rpId": "argos-ci.com"
   },
   "sentry": {
-    "tracesSampleRate": 0.003
+    "tracesSampleRate": 0.001
   }
 }
