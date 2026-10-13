@@ -331,6 +331,36 @@ describe("getAccountMetrics", () => {
     ]);
   });
 
+  it("counts from the first day of the range, not from the start of its week", async () => {
+    // August 23, 2026 is a Sunday: its week opens on Monday the 17th.
+    await factory.ScreenshotBucket.createMany(2, [
+      {
+        createdAt: "2026-08-20T10:00:00.000Z",
+        projectId: project.id,
+        screenshotCount: 5,
+      },
+      {
+        createdAt: "2026-08-24T10:00:00.000Z",
+        projectId: project.id,
+        screenshotCount: 7,
+      },
+    ]);
+    await factory.Build.createMany(2, [
+      { createdAt: "2026-08-20T10:00:00.000Z", projectId: project.id },
+      { createdAt: "2026-08-24T10:00:00.000Z", projectId: project.id },
+    ]);
+
+    const metrics = await getAccountMetrics({
+      accountId: project.accountId,
+      from: new Date("2026-08-23T00:00:00.000Z"),
+      to: new Date("2026-09-22T23:59:59.999Z"),
+      groupBy: "week",
+    });
+
+    expect(metrics.screenshots.all.total).toBe(7);
+    expect(metrics.builds.all.total).toBe(1);
+  });
+
   it.each(["Mars/Olympus", "+02:00"])(
     "rejects %s as a time zone",
     async (timeZone) => {

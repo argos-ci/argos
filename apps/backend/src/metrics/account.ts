@@ -67,9 +67,11 @@ const SERIES_SQL = `generate_series(
 function getBucketSql(column: string) {
   return `date_trunc(:groupBy, ${column} AT TIME ZONE :timeZone)`;
 }
+// From `from` itself, not from the start of its bucket: a range opening on a
+// Sunday, grouped by week, would otherwise count the six days before it. The
+// first bucket then holds part of a week or a month, the way the last one does.
 function getRangeFilterSql(column: string) {
-  return `${column} >= (${LOCAL_FROM}) AT TIME ZONE :timeZone
-      AND ${column} <= :to`;
+  return `${column} >= :from AND ${column} <= :to`;
 }
 
 function getQueryBindings(input: AccountMetricsAggregationInput) {
