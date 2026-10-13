@@ -251,6 +251,11 @@ function renderMonthlyReport(props: MonthlyReportData) {
   const lastMonth = closed.at(-1);
   invariant(lastMonth, "a report covers a closed month");
   const previousMonth = closed.at(-2);
+  // A monthly plan bills the overage of the month with its invoice.
+  const monthOverage =
+    props.interval === "month"
+      ? getAmountWorthStating(props.currentOverageCost)
+      : null;
   const { pullRequests, flakyTests } = activity;
 
   const settingsHref = new URL(
@@ -324,17 +329,19 @@ function renderMonthlyReport(props: MonthlyReportData) {
                 />
               ) : null,
               label: "screenshots this month",
+              detail:
+                props.interval === "month"
+                  ? `${formatCompact(includedScreenshots)} included in your plan`
+                  : null,
             },
-            ...(props.interval === "month"
-              ? [
-                  getMonthPlanStat({
-                    used: lastMonth.screenshots,
-                    included: includedScreenshots,
-                    overageCost: props.currentOverageCost,
-                    currency,
-                  }),
-                ]
-              : []),
+            ...(monthOverage === null
+              ? []
+              : [
+                  {
+                    value: formatAmount(monthOverage, currency),
+                    label: "beyond your plan",
+                  },
+                ]),
           ]}
         />
         <MonthlyBars months={months} />
@@ -449,33 +456,6 @@ const { format: formatBarValue } = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumSignificantDigits: 3,
 });
-
-/**
- * How a closed month of a monthly plan stands against its quota: the part
- * billed beyond it, or the share of the plan it used.
- */
-function getMonthPlanStat(input: {
-  used: number;
-  included: number;
-  overageCost: number;
-  currency: string;
-}): Stat {
-  const { used, included } = input;
-  if (used <= included) {
-    return {
-      value: `${Math.round((used / included) * 100)}%`,
-      label: "of your plan used",
-      detail: `${formatCompact(used)} of the ${formatCompact(included)} included`,
-    };
-  }
-  const cost = getAmountWorthStating(input.overageCost);
-  return {
-    value: formatCompact(used - included),
-    label: "beyond your plan",
-    detail:
-      cost === null ? null : `billed ${formatAmount(cost, input.currency)}`,
-  };
-}
 
 function plural(count: number, word: string) {
   return count === 1 ? word : `${word}s`;
