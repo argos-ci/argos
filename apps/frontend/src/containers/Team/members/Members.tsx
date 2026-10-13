@@ -148,7 +148,7 @@ export function TeamMembers(props: {
             <DialogTrigger>
               <Button variant="secondary">Invite</Button>
               <Modal>
-                <InviteDialog team={team} />
+                <InviteDialog team={team} inviteLink={team.inviteLink} />
               </Modal>
             </DialogTrigger>
           </>

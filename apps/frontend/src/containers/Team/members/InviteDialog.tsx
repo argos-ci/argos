@@ -1,5 +1,4 @@
 import { useApolloClient } from "@apollo/client/react";
-import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircleIcon } from "lucide-react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -31,7 +30,6 @@ import { MemberLevelSelect } from "./MemberLevelSelect";
 const _TeamFragment = graphql(`
   fragment InviteDialog_Team on Team {
     id
-    inviteLink
     plan {
       id
       fineGrainedAccessControlIncluded
@@ -61,10 +59,10 @@ const FormSchema = z.object({
 
 export function InviteDialog(props: {
   team: DocumentType<typeof _TeamFragment>;
+  inviteLink: string;
 }) {
-  const { team } = props;
+  const { team, inviteLink } = props;
   const client = useApolloClient();
-  invariant(team.inviteLink, "Team invite link is required");
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: { members: [{ email: "", level: TeamUserLevel.Member }] },
@@ -128,9 +126,9 @@ export function InviteDialog(props: {
           <h3 className="text-low mb-2 font-medium">Invite Link</h3>
           <div className="mb-4 flex gap-2 rounded-sm border p-2">
             <pre className="w-0 flex-1 overflow-auto">
-              <code>{team.inviteLink}</code>
+              <code>{inviteLink}</code>
             </pre>
-            <CopyButton text={team.inviteLink} />
+            <CopyButton text={inviteLink} />
           </div>
           <ResetInviteLinkButton
             teamAccountId={team.id}
@@ -211,7 +209,7 @@ const ResetInviteLinkMutation = graphql(`
   mutation ResetInviteLink($teamAccountId: ID!) {
     resetInviteLink(input: { teamAccountId: $teamAccountId }) {
       id
-      ...InviteDialog_Team
+      inviteLink
     }
   }
 `);
