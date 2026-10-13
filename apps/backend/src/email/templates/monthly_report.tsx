@@ -610,11 +610,12 @@ function MonthlyBars(props: { months: Month[] }) {
             key={month.startsAt}
             style={{
               ...axisLabelStyle,
+              fontSize: 10,
               // Twelve dates do not fit a phone's width on one line each: the
               // day goes under the month rather than widening the email.
               whiteSpace: "normal",
               textAlign: "center",
-              paddingTop: 4,
+              padding: "4px 2px 0",
             }}
           >
             {formatDate(new Date(month.startsAt), "monthDay")}
