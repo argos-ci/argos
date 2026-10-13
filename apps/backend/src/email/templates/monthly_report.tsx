@@ -1,3 +1,4 @@
+import { addDays, formatISODay } from "@argos/util/date";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import { sumBy } from "lodash-es";
@@ -263,8 +264,16 @@ function renderMonthlyReport(props: MonthlyReportData) {
     baseUrl,
   ).href;
   const testsHref = new URL(`/${props.accountSlug}/~/tests`, baseUrl).href;
-  const analyticsHref = new URL(`/${props.accountSlug}/~/analytics`, baseUrl)
-    .href;
+  const analyticsUrl = new URL(`/${props.accountSlug}/~/analytics`, baseUrl);
+  // The days of the reported month, so analytics counts the same screenshots
+  // as the report rather than a calendar month. The last day is the one before
+  // the month closes: analytics reads it to its end.
+  analyticsUrl.search = new URLSearchParams({
+    period: "custom",
+    from: formatISODay(new Date(activity.from)),
+    to: formatISODay(addDays(new Date(activity.to), -1)),
+  }).toString();
+  const analyticsHref = analyticsUrl.href;
   const period = `${formatDate(new Date(activity.from), "longMonthDay")} to ${formatDate(new Date(activity.to), "longDate")}`;
 
   return {
@@ -601,7 +610,7 @@ function MonthlyBars(props: { months: Month[] }) {
             key={month.startsAt}
             style={{ ...axisLabelStyle, textAlign: "center", paddingTop: 4 }}
           >
-            {formatDate(new Date(month.startsAt), "month")}
+            {formatDate(new Date(month.startsAt), "monthDay")}
           </td>
         ))}
       </tr>
