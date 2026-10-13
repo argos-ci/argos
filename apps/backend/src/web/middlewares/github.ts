@@ -30,7 +30,11 @@ function createWebhooksHandler(input: {
   });
 
   webhooks.onError((error) => {
-    logger.error({ error }, "GitHub webhook handler error");
+    // @octokit/webhooks wraps handler errors in an AggregateError, which hides
+    // them from the filters in Sentry's beforeSend.
+    for (const handlerError of error.errors) {
+      logger.error({ error: handlerError }, "GitHub webhook handler error");
+    }
   });
 
   return webhooks;
