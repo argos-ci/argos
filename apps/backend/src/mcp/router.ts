@@ -232,9 +232,16 @@ router.post(
   limiter,
   requireAuthentication,
   express.json({ limit: "1mb" }),
-  asyncHandler((req: Request, res: Response) =>
-    handleMcpRequest(req, res, req.body),
-  ),
+  asyncHandler(async (req: Request, res: Response) => {
+    // A client hanging up while it is being identified leaves its body unread:
+    // Node discards it, `express.json()` skips the request, and the SDK would
+    // read the dead stream itself and report Node's "aborted" as a failure.
+    // There is no one left to answer.
+    if (req.readableAborted) {
+      return;
+    }
+    await handleMcpRequest(req, res, req.body);
+  }),
 );
 
 export { router as mcpRouter };
