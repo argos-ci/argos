@@ -248,15 +248,6 @@ GitHub/GitLab/Google login would write dev-app OAuth tokens over the
 production rows, and production passkeys are bound to the `argos-ci.com` RP id,
 so neither works here — email code is the only supported method.
 
-**Preview a team's monthly report** on its production data, as of the last one
-it was sent, from the backend port (the frontend does not proxy it):
-
-```
-https://app.argos-ci.dev:4001/email-preview/monthly_report/<account-slug>
-```
-
-It reads the team's data without a session, so it only answers this machine.
-
 ## ✅ Testing your changes
 
 ### Linting

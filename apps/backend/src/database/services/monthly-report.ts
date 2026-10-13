@@ -375,20 +375,6 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
 }
 
 /**
- * The data of a team's report as of `now`, due or not, for the email preview:
- * nothing is sent and nothing is recorded. Null when the team has no report,
- * not being on a usage-based plan or before its first billed month closed.
- */
-export async function getMonthlyReportPreviewData(account: Account, now: Date) {
-  const term = await getReportTerm(account, now);
-  if (!term) {
-    return null;
-  }
-  const usage = await getTermUsage(term);
-  return getMonthlyReportData(account, term, usage, now);
-}
-
-/**
  * Turn the monthly report of a team on or off for a member. Each owner chooses
  * for themself. Null when the user is not a member of the team.
  */
