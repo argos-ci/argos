@@ -608,7 +608,14 @@ function MonthlyBars(props: { months: Month[] }) {
         {props.months.map((month) => (
           <td
             key={month.startsAt}
-            style={{ ...axisLabelStyle, textAlign: "center", paddingTop: 4 }}
+            style={{
+              ...axisLabelStyle,
+              // Twelve dates do not fit a phone's width on one line each: the
+              // day goes under the month rather than widening the email.
+              whiteSpace: "normal",
+              textAlign: "center",
+              paddingTop: 4,
+            }}
           >
             {formatDate(new Date(month.startsAt), "monthDay")}
           </td>
