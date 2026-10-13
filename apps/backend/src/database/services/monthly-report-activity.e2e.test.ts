@@ -1,3 +1,4 @@
+import type { BuildStats } from "@argos/schemas/build-stats";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { knex } from "@/database";
@@ -16,6 +17,17 @@ const windows = {
     from: new Date("2026-08-15T00:00:00.000Z"),
     to: new Date("2026-09-15T00:00:00.000Z"),
   },
+};
+
+const NO_CHANGES: BuildStats = {
+  added: 0,
+  removed: 0,
+  unchanged: 0,
+  changed: 0,
+  ignored: 0,
+  failure: 0,
+  retryFailure: 0,
+  total: 0,
 };
 
 describe("getMonthlyReportActivity", () => {
@@ -62,6 +74,8 @@ describe("getMonthlyReportActivity", () => {
     conclusion: "changes-detected" | "no-changes";
     mode?: "ci" | "monitoring";
     subset?: boolean;
+    /** What the conclusion counted, a clean build's zeros by default. */
+    stats?: Partial<BuildStats>;
   }) {
     const name = input.name ?? "default";
     const bucket = await factory.ScreenshotBucket.create({
@@ -82,6 +96,7 @@ describe("getMonthlyReportActivity", () => {
       githubPullRequestId: input.pullRequestId,
       mode: input.mode ?? "ci",
       subset: input.subset ?? false,
+      stats: { ...NO_CHANGES, ...input.stats },
     });
   }
 
@@ -100,6 +115,7 @@ describe("getMonthlyReportActivity", () => {
       commit: "a1",
       createdAt: "2026-09-20T10:00:00Z",
       conclusion: "changes-detected",
+      stats: { changed: 1, total: 1 },
     });
     await factory.ScreenshotDiff.create({
       buildId: flagged.id,
@@ -129,6 +145,7 @@ describe("getMonthlyReportActivity", () => {
       createdAt: "2026-09-22T10:00:00Z",
       conclusion: "changes-detected",
       subset: true,
+      stats: { changed: 1, removed: 1, total: 2 },
     });
     await factory.ScreenshotDiff.create({
       buildId: noisyBuild.id,
