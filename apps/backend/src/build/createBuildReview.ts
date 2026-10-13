@@ -25,6 +25,7 @@ import {
 } from "@/database/services/build-notification-subscription";
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { transaction } from "@/database/transaction";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
@@ -91,7 +92,8 @@ const MAX_REPORTED_INVALID_DIFF_IDS = 10;
  * the decisions it made.
  *
  * Unknown ids fail here too, which is what we want — they used to reach the
- * insert and come back as a foreign-key violation, i.e. a 500.
+ * insert and come back as a foreign-key violation, i.e. a 500. So do ids that
+ * are not bigints at all, such as a diff's `change.id` sent in its place.
  */
 async function assertSnapshotReviewsBelongToBuild(input: {
   build: Build;
@@ -106,10 +108,12 @@ async function assertSnapshotReviewsBelongToBuild(input: {
   const diffIds = Array.from(
     new Set(snapshotReviews.map((review) => review.screenshotDiffId)),
   );
+  // Postgres fails the whole query on a single id that does not cast to
+  // bigint, so malformed ids stay out of it and are reported as invalid below.
   const buildDiffs = await ScreenshotDiff.query()
     .select("id")
     .where("buildId", build.id)
-    .whereIn("id", diffIds);
+    .whereIn("id", diffIds.filter(isValidPgBigInt));
 
   if (buildDiffs.length === diffIds.length) {
     return;
@@ -119,10 +123,13 @@ async function assertSnapshotReviewsBelongToBuild(input: {
   const invalidIds = diffIds.filter((id) => !buildDiffIds.has(id));
   const reportedIds = invalidIds.slice(0, MAX_REPORTED_INVALID_DIFF_IDS);
   const omittedCount = invalidIds.length - reportedIds.length;
+  const malformedIdHint = invalidIds.some((id) => !isValidPgBigInt(id))
+    ? " Snapshot ids are numeric: send a snapshot's `id`, not its `test.id` or `change.id`."
+    : "";
 
   throw boom(
     400,
-    `Some reviewed screenshot diffs do not belong to build ${build.number}: ${reportedIds.join(", ")}${omittedCount > 0 ? ` and ${omittedCount} more` : ""}`,
+    `Some reviewed screenshot diffs do not belong to build ${build.number}: ${reportedIds.join(", ")}${omittedCount > 0 ? ` and ${omittedCount} more` : ""}.${malformedIdHint}`,
   );
 }
 

@@ -345,6 +345,28 @@ describe("createReview", () => {
     expect(reviews).toHaveLength(0);
   });
 
+  test("returns 400 when a snapshot id is not a snapshot diff id", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    // A diff's `change.id` sent in place of its `id`: Postgres cannot cast it
+    // to bigint, which used to fail the request with a 500.
+    const changeId = "WEB-MBB76-v122b1dfb2ad638b12";
+
+    await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        event: "APPROVE",
+        snapshots: [{ id: changeId, conclusion: "APPROVE" }],
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toContain(changeId);
+        expect(res.body.error).toContain("not its `test.id` or `change.id`");
+      });
+  });
+
   test("returns 400 when neither event nor conclusion is provided", async ({
     build,
     scopedPatToken,
