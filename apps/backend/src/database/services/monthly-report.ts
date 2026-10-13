@@ -34,6 +34,13 @@ const MONTHLY_PLAN_HISTORY = 6;
  */
 const MAX_REPORT_DELAY = 3 * 24 * 60 * 60 * 1000;
 
+/**
+ * Screenshots the reported month must reach for its report to go out. A team
+ * below it barely used Argos over the month, and the report would mostly point
+ * that out.
+ */
+const MIN_REPORTED_SCREENSHOTS = 20_000;
+
 /** Accounts read per page when enqueueing the reports. */
 const ACCOUNT_BATCH_SIZE = 100;
 
@@ -309,7 +316,7 @@ async function getMonthlyReportData(
 /**
  * Send the monthly report of a team to its owners who have not turned it off,
  * if one is due: a month closed since the last report, a few days ago at most,
- * and the team took screenshots over it.
+ * and the team took enough screenshots over it.
  *
  * The report is marked sent once every email went out, so a failure is
  * retried. A retry sends to every owner again, and the idempotency key keeps
@@ -344,9 +351,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
   const usage = await getTermUsage(term);
   const reportedUsage = usage.months.findLast((month) => !month.projected);
   invariant(reportedUsage, "a report covers a closed month");
-  // Without a screenshot over the month, the team did not use Argos: there is
-  // nothing to report.
-  if (reportedUsage.screenshots === 0) {
+  if (reportedUsage.screenshots < MIN_REPORTED_SCREENSHOTS) {
     return;
   }
 

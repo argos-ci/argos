@@ -53,7 +53,7 @@ async function createTeam(input: {
   await factory.Subscription.create({
     accountId: account.id,
     planId: plan.id,
-    includedScreenshots: 1000,
+    includedScreenshots: 100_000,
     currency: "eur",
     additionalScreenshotPrice: 0.5,
     provider: "stripe",
@@ -114,12 +114,12 @@ describe("sendAccountMonthlyReport", () => {
     ownerEmail = team.owner.email;
     await uploadScreenshots(account, [
       // The previous term, which the report must leave out.
-      ["2025-12-20T10:00:00.000Z", 5000],
-      ["2026-01-20T10:00:00.000Z", 100],
-      ["2026-02-20T10:00:00.000Z", 200],
-      ["2026-03-20T10:00:00.000Z", 300],
+      ["2025-12-20T10:00:00.000Z", 500_000],
+      ["2026-01-20T10:00:00.000Z", 10_000],
+      ["2026-02-20T10:00:00.000Z", 20_000],
+      ["2026-03-20T10:00:00.000Z", 30_000],
       // The running month, too young to count.
-      ["2026-04-16T08:00:00.000Z", 50],
+      ["2026-04-16T08:00:00.000Z", 25_000],
     ]);
   });
 
@@ -133,18 +133,18 @@ describe("sendAccountMonthlyReport", () => {
     expect(data.activity.from).toBe("2026-03-15T12:00:00.000Z");
     expect(data.termEndsAt).toBe("2027-01-15T12:00:00.000Z");
     expect(data.renews).toBe(true);
-    expect(data.includedScreenshots).toBe(1000);
-    // (300 × 3 + 200 × 2 + 100) / 6 = 233 for each month to come.
+    expect(data.includedScreenshots).toBe(100_000);
+    // (30,000 × 3 + 20,000 × 2 + 10,000) / 6 = 23,333 for each month to come.
     expect(
       data.months.map((month) => [month.screenshots, month.projected]),
     ).toEqual([
-      [100, false],
-      [200, false],
-      [300, false],
-      ...Array.from({ length: 9 }, () => [233, true]),
+      [10_000, false],
+      [20_000, false],
+      [30_000, false],
+      ...Array.from({ length: 9 }, () => [23_333, true]),
     ]);
-    // 600 used and 9 × 233 to come: 1697 beyond the plan, at 0.5 each.
-    expect(data.projectedOverageCost).toBe(848.5);
+    // 60,000 used and 9 × 23,333 to come: 169,997 beyond the plan, at 0.5 each.
+    expect(data.projectedOverageCost).toBe(84_998.5);
     // Nothing beyond the plan yet.
     expect(data.currentOverageCost).toBe(0);
   });
@@ -193,8 +193,9 @@ describe("sendAccountMonthlyReport", () => {
     expect(mockSendEmailTemplate).not.toHaveBeenCalled();
   });
 
-  it("leaves out a month without a screenshot", async () => {
-    // Nothing was uploaded from May 15 to June 15.
+  it("leaves out a month under 20,000 screenshots", async () => {
+    await uploadScreenshots(account, [["2026-05-20T10:00:00.000Z", 19_999]]);
+
     await sendAccountMonthlyReport(
       account.id,
       new Date("2026-06-16T10:00:00.000Z"),
@@ -249,7 +250,7 @@ describe("the term of an annual plan", () => {
       startDate: "2024-03-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_leap_year",
     });
-    await uploadScreenshots(account, [["2024-05-01T10:00:00.000Z", 100]]);
+    await uploadScreenshots(account, [["2024-05-01T10:00:00.000Z", 20_000]]);
 
     await sendAccountMonthlyReport(
       account.id,
@@ -270,7 +271,7 @@ describe("the term of an annual plan", () => {
       startDate: "2024-06-10T12:00:00.000Z",
       stripeSubscriptionId: "sub_drift",
     });
-    await uploadScreenshots(account, [["2025-09-01T10:00:00.000Z", 100]]);
+    await uploadScreenshots(account, [["2025-09-01T10:00:00.000Z", 20_000]]);
 
     await sendAccountMonthlyReport(
       account.id,
@@ -294,11 +295,11 @@ describe("the report of a monthly plan", () => {
       stripeSubscriptionId: "sub_monthly_report",
     });
     await uploadScreenshots(account, [
-      ["2025-11-20T10:00:00.000Z", 9000],
-      ["2025-12-20T10:00:00.000Z", 5000],
-      ["2026-01-20T10:00:00.000Z", 100],
-      ["2026-02-20T10:00:00.000Z", 200],
-      ["2026-03-20T10:00:00.000Z", 1300],
+      ["2025-11-20T10:00:00.000Z", 900_000],
+      ["2025-12-20T10:00:00.000Z", 500_000],
+      ["2026-01-20T10:00:00.000Z", 10_000],
+      ["2026-02-20T10:00:00.000Z", 20_000],
+      ["2026-03-20T10:00:00.000Z", 130_000],
     ]);
 
     await sendAccountMonthlyReport(
@@ -312,13 +313,13 @@ describe("the report of a monthly plan", () => {
     expect(
       data.months.map((month) => [month.screenshots, month.projected]),
     ).toEqual([
-      [5000, false],
-      [100, false],
-      [200, false],
-      [1300, false],
+      [500_000, false],
+      [10_000, false],
+      [20_000, false],
+      [130_000, false],
     ]);
-    // The quota resets every month: only March's 300 past it, at 0.5 each.
-    expect(data.currentOverageCost).toBe(150);
+    // The quota resets every month: only March's 30,000 past it, at 0.5 each.
+    expect(data.currentOverageCost).toBe(15_000);
     expect(data.projectedOverageCost).toBeNull();
   });
 
@@ -331,7 +332,7 @@ describe("the report of a monthly plan", () => {
       trialEndDate: "2026-03-15T12:00:00.000Z",
       stripeSubscriptionId: "sub_trial",
     });
-    await uploadScreenshots(account, [["2026-03-01T10:00:00.000Z", 400]]);
+    await uploadScreenshots(account, [["2026-03-01T10:00:00.000Z", 40_000]]);
 
     await sendAccountMonthlyReport(
       account.id,
@@ -350,7 +351,7 @@ describe("the report of a monthly plan", () => {
       createdAt: "2025-10-31T05:00:00.000Z",
       stripeSubscriptionId: "sub_end_of_month",
     });
-    await uploadScreenshots(account, [["2026-03-10T10:00:00.000Z", 400]]);
+    await uploadScreenshots(account, [["2026-03-10T10:00:00.000Z", 40_000]]);
 
     await sendAccountMonthlyReport(
       account.id,
