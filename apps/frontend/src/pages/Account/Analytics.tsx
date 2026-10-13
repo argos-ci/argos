@@ -360,14 +360,13 @@ export function AnalyticsDashboard(props: {
   }, [metrics]);
 
   const groupByLabel = GroupByLabels[groupBy].toLowerCase();
-  const buildsPerPeriod = metrics.builds.series.length
-    ? Math.round(metrics.builds.all.total / metrics.builds.series.length)
-    : 0;
-  const screenshotsPerPeriod = metrics.screenshots.series.length
-    ? Math.round(
-        metrics.screenshots.all.total / metrics.screenshots.series.length,
-      )
-    : 0;
+  // The first and last buckets can each hold part of a group: the averages
+  // divide by the length of the period rather than by the number of buckets.
+  const groupCount = getDurationInDays({ from, to }) / GroupByDays[groupBy];
+  const buildsPerPeriod = Math.round(metrics.builds.all.total / groupCount);
+  const screenshotsPerPeriod = Math.round(
+    metrics.screenshots.all.total / groupCount,
+  );
   const screenshotsPerBuild = metrics.builds.all.total
     ? Math.round(metrics.screenshots.all.total / metrics.builds.all.total)
     : 0;
@@ -1237,6 +1236,13 @@ const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
   [TimeSeriesGroupBy.Day]: "Day",
   [TimeSeriesGroupBy.Week]: "Week",
   [TimeSeriesGroupBy.Month]: "Month",
+};
+
+/** Days in each group, an average month for a month. */
+const GroupByDays: Record<TimeSeriesGroupBy, number> = {
+  [TimeSeriesGroupBy.Day]: 1,
+  [TimeSeriesGroupBy.Week]: 7,
+  [TimeSeriesGroupBy.Month]: 365.25 / 12,
 };
 
 function formatSeriesDateLabel(ts: number, groupBy: TimeSeriesGroupBy) {
