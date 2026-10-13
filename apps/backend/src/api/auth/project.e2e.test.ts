@@ -269,7 +269,7 @@ describe("api/auth/project", () => {
       await expect(
         getAuthPayloadFromExpressReq(createRequest("Basic bearer-token")),
       ).rejects.toMatchObject({
-        statusCode: 400,
+        statusCode: 401,
         message:
           'Invalid authorization header scheme "Basic", please use "Bearer"',
       });

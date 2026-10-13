@@ -6,10 +6,8 @@ import { boom } from "@/util/error";
 function parseAuthHeader(authHeader: string) {
   try {
     return authorization.parse(authHeader);
-  } catch {
-    const httpError = boom(400, `Invalid authorization header`);
-    httpError.cause = httpError;
-    throw httpError;
+  } catch (error) {
+    throw boom(401, `Invalid authorization header`, { cause: error });
   }
 }
 
@@ -23,13 +21,13 @@ export function parseBearerFromHeader(authHeader: string) {
   // lowercased `token_type` send `bearer`.
   if (authorization.scheme.toLowerCase() !== "bearer") {
     throw boom(
-      400,
+      401,
       `Invalid authorization header scheme "${authorization.scheme}", please use "Bearer"`,
     );
   }
 
   if (typeof authorization.token !== "string") {
-    throw boom(400, `Invalid authorization header, no valid Bearer found`);
+    throw boom(401, `Invalid authorization header, no valid Bearer found`);
   }
 
   return authorization.token;

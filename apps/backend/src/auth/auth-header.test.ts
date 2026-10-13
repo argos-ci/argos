@@ -30,7 +30,7 @@ describe("parseBearerFromHeader", () => {
         throw error;
       }
 
-      expect("statusCode" in error ? error.statusCode : undefined).toBe(400);
+      expect("statusCode" in error ? error.statusCode : undefined).toBe(401);
       expect(error.message).toBe("Invalid authorization header");
     }
   });
@@ -45,7 +45,7 @@ describe("parseBearerFromHeader", () => {
         throw error;
       }
 
-      expect("statusCode" in error ? error.statusCode : undefined).toBe(400);
+      expect("statusCode" in error ? error.statusCode : undefined).toBe(401);
       expect(error.message).toBe(
         'Invalid authorization header scheme "Basic", please use "Bearer"',
       );
@@ -62,7 +62,7 @@ describe("parseBearerFromHeader", () => {
         throw error;
       }
 
-      expect("statusCode" in error ? error.statusCode : undefined).toBe(400);
+      expect("statusCode" in error ? error.statusCode : undefined).toBe(401);
       expect(error.message).toBe(
         "Invalid authorization header, no valid Bearer found",
       );
