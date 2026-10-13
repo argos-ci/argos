@@ -124,6 +124,35 @@ function convertPath(path: string) {
   return path.replace(/{([^}]+)}/g, ":$1");
 }
 
+// @argos-ci/core splits a build's screenshots into requests of at most 2MB,
+// counting on this limit to leave room for the rest of the body.
+const parseJsonBody = json({ limit: "3mb" });
+
+/**
+ * Parse the JSON body, turning an oversized one into an `HTTPError`: it is the
+ * client's to fix, and the cause is almost always an SDK older than
+ * @argos-ci/core 6.3.0, which sends a whole build in a single request.
+ */
+const jsonBody: RequestHandler = (req, res, next) => {
+  parseJsonBody(req, res, (error?: unknown) => {
+    if (
+      error instanceof Error &&
+      "type" in error &&
+      error.type === "entity.too.large"
+    ) {
+      next(
+        boom(
+          413,
+          "Request body exceeds the 3MB limit. Upgrade your Argos SDK: versions built on @argos-ci/core 6.3.0 or later split large uploads across several requests.",
+          { cause: error },
+        ),
+      );
+      return;
+    }
+    next(error);
+  });
+};
+
 const DetailsSchema = z.array(z.object({ message: z.string() }));
 
 /**
@@ -241,9 +270,7 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
     );
     router[method](
       convertPath(path),
-      // Temporary increase the limit
-      // we should find a way to split the upload in several requests
-      json({ limit: "3mb" }),
+      jsonBody,
       asyncHandler((req, res, next) => {
         runInRequestScope(() => {
           // Memoized, lazily-resolved auth. Handlers call `req.ctx.auth()`,
