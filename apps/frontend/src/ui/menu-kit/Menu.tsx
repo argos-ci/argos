@@ -153,6 +153,14 @@ type MenuOpenState = {
    * animate away from — the pointer has already left.
    */
   unmount: () => void;
+  /**
+   * Opened with a finger. The caret a menu puts in its search field would
+   * bring up the on-screen keyboard over the menu, for a filter nobody types
+   * into on a phone, so it stays out of the field until it is tapped.
+   */
+  openedByTouch: boolean;
+  /** Read off the press on the trigger, before the menu opens. */
+  setPointerType: (pointerType: string | null) => void;
 };
 
 const MenuOpenContext = createContext<MenuOpenState | null>(null);
@@ -174,18 +182,24 @@ export function MenuRoot(props: {
   const { children, open: openProp, defaultOpen = false, onOpenChange } = props;
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const open = openProp ?? uncontrolled;
+  const pointerTypeRef = useRef<string | null>(null);
+  const [openedByTouch, setOpenedByTouch] = useState(false);
   const setOpen = useCallback(
     (next: boolean) => {
+      setOpenedByTouch(next && pointerTypeRef.current === "touch");
       setUncontrolled(next);
       onOpenChange?.(next);
     },
     [onOpenChange],
   );
+  const setPointerType = useCallback((pointerType: string | null) => {
+    pointerTypeRef.current = pointerType;
+  }, []);
   const actionsRef = useRef<BasePopover.Root.Actions>(null);
   const unmount = useCallback(() => actionsRef.current?.unmount(), []);
   const value = useMemo(
-    () => ({ open, setOpen, unmount }),
-    [open, setOpen, unmount],
+    () => ({ open, setOpen, unmount, openedByTouch, setPointerType }),
+    [open, setOpen, unmount, openedByTouch, setPointerType],
   );
   return (
     <MenuOpenContext value={value}>
@@ -206,8 +220,23 @@ export function MenuTrigger(
     children: ReactElement;
   },
 ) {
-  const { children, ...rest } = props;
-  return <BasePopover.Trigger render={children} {...rest} />;
+  const { children, onPointerDown, onKeyDown, ...rest } = props;
+  const openState = use(MenuOpenContext);
+  return (
+    <BasePopover.Trigger
+      render={children}
+      onPointerDown={(event) => {
+        openState?.setPointerType(event.pointerType);
+        onPointerDown?.(event);
+      }}
+      // A key opens it too, after whatever pointer last pressed it.
+      onKeyDown={(event) => {
+        openState?.setPointerType(null);
+        onKeyDown?.(event);
+      }}
+      {...rest}
+    />
+  );
 }
 
 /**
@@ -344,7 +373,9 @@ function MenuSearchField(props: {
         data-1p-ignore
         data-lpignore
         onChange={(event) => search.setQuery(event.target.value)}
-        className="text-menu placeholder:text-placeholder w-full bg-transparent outline-none"
+        // At 16px on touch: Safari zooms the page into any field it focuses
+        // with smaller text.
+        className="text-menu placeholder:text-placeholder w-full bg-transparent outline-none pointer-coarse:text-base"
       />
     </div>
   );
@@ -494,6 +525,7 @@ function MenuList(
     : setRootFocusedId;
   const isFocused = focusedId === id;
   const openState = use(MenuOpenContext);
+  const holdsCaret = isFocused && !openState?.openedByTouch;
   const isOpen = openProp ?? openState?.open ?? true;
   const listId = `${id}-list`;
   const inputRef = useRef<HTMLInputElement>(null);
@@ -708,10 +740,10 @@ function MenuList(
   // The real caret follows the focused menu: each menu has a field, and
   // whichever menu the keyboard is driving holds the focus on its own.
   useLayoutEffect(() => {
-    if (isOpen && isFocused) {
+    if (isOpen && holdsCaret) {
       inputRef.current?.focus();
     }
-  }, [isOpen, isFocused]);
+  }, [isOpen, holdsCaret]);
 
   // A submenu that closes while focused — scrolled away, or dismissed by Base
   // UI — hands the keyboard back to its parent instead of leaving it nowhere.
@@ -913,7 +945,7 @@ function MenuList(
         <MenuSearchField
           label={searchLabel}
           hidden={!showSearch}
-          focused={isFocused}
+          focused={holdsCaret}
           inputRef={inputRef}
           listId={listId}
           activeId={activeId}
