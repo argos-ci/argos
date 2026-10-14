@@ -17,12 +17,14 @@ const _AccountFragment = graphql(`
 export const AccountPlanChip = (props: {
   account: DocumentType<typeof _AccountFragment>;
   className?: string;
+  /** Only the statuses that call for attention, where room is short. */
+  alertsOnly?: boolean;
 }) => {
-  const { account } = props;
+  const { account, alertsOnly = false } = props;
   const chipProps: { color: ChipColor; children: string } | null = (() => {
     switch (account.subscriptionStatus) {
       case AccountSubscriptionStatus.Active:
-        return account.plan
+        return account.plan && !alertsOnly
           ? { color: "info", children: account.plan.displayName }
           : null;
       case AccountSubscriptionStatus.Trialing:
@@ -34,7 +36,7 @@ export const AccountPlanChip = (props: {
       case AccountSubscriptionStatus.PastDue:
         return { color: "danger", children: "Past Due" };
       case null:
-        return { color: "neutral", children: "Hobby" };
+        return alertsOnly ? null : { color: "neutral", children: "Hobby" };
       case AccountSubscriptionStatus.Canceled:
       case AccountSubscriptionStatus.TrialExpired:
       case AccountSubscriptionStatus.Unpaid:
