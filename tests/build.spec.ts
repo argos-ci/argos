@@ -335,11 +335,9 @@ loggedTest(
     await expect(docsItem).toBeVisible();
 
     // The click leaves the pointer on the trigger, and the trigger's tooltip
-    // can be up over the menu: the overview's autofocused "Start review" opens
-    // the shared tooltip on load, so it reaches this trigger with no delay.
-    // Step off and wait for it to go, because the capture's own step-off lands
-    // inside the tooltip's close delay. The menu is portaled too, hence the
-    // tooltip's text rather than its portal.
+    // can be up over the menu. Step off and wait for it to go, because the
+    // capture's own step-off lands inside the tooltip's close delay. The menu
+    // is portaled too, hence the tooltip's text rather than its portal.
     await page.mouse.move(0, 0);
     await expect(page.getByText("Switch build")).toBeHidden();
 

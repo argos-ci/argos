@@ -63,7 +63,6 @@ function BrowseSnapshotSection(props: { build: Build }) {
           control, and it is the same hint the row beside it already gives. */}
       <HotkeyTooltip description={label} keys={["↵"]}>
         <Button
-          autoFocus
           variant={canStartReview ? "primary" : "secondary"}
           onClick={browse}
         >
