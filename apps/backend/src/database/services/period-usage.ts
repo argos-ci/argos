@@ -451,9 +451,12 @@ export async function getAccountStorybookTotals(
   return result;
 }
 
-/** Whether a period is one Stripe invoices. */
-function checkIsBilledPeriod(
-  period: AccountPeriod,
+/**
+ * Whether a period is one Stripe invoices. `index` counts periods back from
+ * the running one, 0.
+ */
+export function checkIsBilledPeriod(
+  period: { from: Date; index: number },
   subscription: Subscription,
 ): boolean {
   const from = period.from.getTime();

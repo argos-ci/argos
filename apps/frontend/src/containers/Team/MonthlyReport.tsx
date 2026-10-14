@@ -2,7 +2,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { AccountSubscriptionProvider, PlanInterval } from "@/gql/graphql";
+import { AccountSubscriptionProvider } from "@/gql/graphql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
@@ -14,7 +14,6 @@ const _TeamFragment = graphql(`
     hasForcedPlan
     plan {
       id
-      interval
       usageBased
     }
     subscription {
@@ -52,8 +51,7 @@ export function TeamMonthlyReport(props: {
     // belongs to a membership.
     !team.me ||
     team.hasForcedPlan ||
-    team.plan?.interval !== PlanInterval.Year ||
-    !team.plan.usageBased ||
+    !team.plan?.usageBased ||
     team.subscription?.provider !== AccountSubscriptionProvider.Stripe
   ) {
     return null;

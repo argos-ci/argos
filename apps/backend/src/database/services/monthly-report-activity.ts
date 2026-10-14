@@ -6,7 +6,7 @@ import { knex } from "@/database";
 import type { MonthlyReportActivity } from "@/email/templates/monthly_report";
 import { computeTestMetrics, type TestMetricsCounts } from "@/metrics/test";
 
-import { getTestUrl, ScreenshotDiff, type Account } from "../models";
+import { getTestUrl, type Account } from "../models";
 import { TEST_METRICS_LATERAL } from "./test";
 
 type Window = { from: Date; to: Date };
@@ -176,31 +176,31 @@ async function getPullRequestActivity(
       where conclusion = 'changes-detected' and clean_later
     ),
     fixed as (
-      -- The changes the build conclusion is drawn from, a changed flaky test
-      -- left out.
+      -- The changes the conclusion was drawn from, as the build counted them.
+      -- Only a build whose changes are all "changed" ones is read diff by
+      -- diff, to leave its flaky tests out.
       select distinct f."projectId", f.pr_key
       from flagged f
-      where exists (
-        select 1
-        from screenshot_diffs sd
-        left join screenshots cs on cs.id = sd."compareScreenshotId"
-        cross join lateral (
-          select ${ScreenshotDiff.selectDiffStatus} as status
-        ) diff
-        where sd."buildId" = f.id
-          and cs."parentName" is null
-          and (
-            diff.status = 'added'
-            or (diff.status = 'removed' and not f.subset)
-            or (
-              diff.status = 'changed'
+      join builds b on b.id = f.id
+      where (b.stats->>'added')::int > 0
+        or ((b.stats->>'removed')::int > 0 and not f.subset)
+        or (
+          (b.stats->>'changed')::int > 0
+          and exists (
+            select 1
+            from screenshot_diffs sd
+            join screenshots cs on cs.id = sd."compareScreenshotId"
+            where sd."buildId" = f.id
+              and sd."baseScreenshotId" is not null
+              and sd.score > 0
+              and sd.ignored is not true
+              and cs."parentName" is null
               and (
                 sd."testId" is null
                 or sd."testId" <> all(:flakyTestIds::bigint[])
               )
-            )
           )
-      )
+        )
     ),
     pull_requests as (
       select "projectId", pr_key, count(distinct commit) as commits
