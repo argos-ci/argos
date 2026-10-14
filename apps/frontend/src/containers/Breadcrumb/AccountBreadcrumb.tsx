@@ -33,7 +33,6 @@ import {
   MenuTrigger,
 } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
-import { useMediaQuery } from "@/ui/useMediaQuery";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
@@ -238,23 +237,13 @@ export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
   const auth = useAuth();
   const isStaffArea = Boolean(useMatch("/staff/*"));
-  // Tailwind's `max-md:` query, so the markup switches where the classes do.
-  const isPhone = useMediaQuery("(width < 48rem)");
   // Not just authenticated: the menu needs the resolved account, because its
   // rows must all exist the moment it can be opened. The button appears with
   // the answer, a beat after the trail does.
   const me = auth.status === "authenticated" ? auth.account : null;
 
-  if (isPhone && me && !isStaffArea) {
-    return (
-      <BreadcrumbItem>
-        <AccountSwitcher me={me} accountSlug={accountSlug ?? me.slug} />
-      </BreadcrumbItem>
-    );
-  }
-
-  return (
-    <BreadcrumbItem>
+  const trail = (
+    <>
       {isStaffArea ? (
         <StaffBreadcrumbLink />
       ) : accountSlug ? (
@@ -274,6 +263,19 @@ export function AccountBreadcrumbItem() {
       {me?.staff && !isStaffArea ? (
         <StaffButtonGroup accountSlug={accountSlug} />
       ) : null}
+    </>
+  );
+
+  if (!me || isStaffArea) {
+    return <BreadcrumbItem>{trail}</BreadcrumbItem>;
+  }
+
+  return (
+    <BreadcrumbItem>
+      <div className="contents md:hidden">
+        <AccountSwitcher me={me} accountSlug={accountSlug ?? me.slug} />
+      </div>
+      <div className="contents max-md:hidden">{trail}</div>
     </BreadcrumbItem>
   );
 }
