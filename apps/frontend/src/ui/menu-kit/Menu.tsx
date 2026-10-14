@@ -1413,7 +1413,14 @@ function SubMenuRow(props: { node: ItemNode }) {
         if (!next && eventDetails.reason === "trigger-press") {
           return;
         }
-        menu.requestSubmenu(next);
+        // Opening highlights the row too: a submenu only shows for the
+        // highlighted row, and a finger reaches the row without hovering it
+        // first. The row's own press handler never runs, Base UI's replaces it.
+        if (next) {
+          menu.openSubmenu(node.id);
+        } else {
+          menu.requestSubmenu(false);
+        }
       }}
     >
       <BasePopover.Trigger
