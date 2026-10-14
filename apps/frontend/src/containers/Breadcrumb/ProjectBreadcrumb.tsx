@@ -7,6 +7,7 @@ import { graphql } from "@/gql";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
+  BreadcrumbLabel,
   BreadcrumbLink,
   BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
@@ -57,7 +58,7 @@ export function ProjectBreadcrumbItem(props: {
         <BreadcrumbItemIcon>
           <FolderCode size={18} />
         </BreadcrumbItemIcon>
-        {projectName}
+        <BreadcrumbLabel>{projectName}</BreadcrumbLabel>
       </BreadcrumbLink>
       {auth.status === "authenticated" && data?.account ? (
         <MenuRoot>
