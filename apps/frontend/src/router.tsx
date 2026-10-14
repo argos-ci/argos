@@ -11,6 +11,10 @@ import {
 } from "react-router";
 
 import { Layout } from "@/containers/Layout";
+import {
+  ResponsiveViewport,
+  responsiveRouteHandle,
+} from "@/containers/ResponsiveViewport";
 
 import { AuthenticationError, logout } from "./containers/Auth";
 import { ErrorPage } from "./pages/ErrorPage";
@@ -26,6 +30,7 @@ function Root() {
     // tooltip, and one shared provider is also what gives them their warm-up:
     // once any tooltip has opened, the next opens immediately.
     <TooltipProvider>
+      <ResponsiveViewport />
       <Outlet />
     </TooltipProvider>
   );
@@ -365,6 +370,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   index: true,
                   HydrateFallback,
+                  handle: responsiveRouteHandle,
                   lazy: () => import("./pages/Account/Projects"),
                 },
                 {

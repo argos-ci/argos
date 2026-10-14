@@ -53,7 +53,7 @@ export function getMenuItemClassName(options?: {
 }) {
   const { variant = "default", interactive = false } = options ?? {};
   return clsx(
-    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-[450] outline-hidden",
+    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-[450] outline-hidden pointer-coarse:py-2.5",
     interactive ? "cursor-pointer" : "cursor-default",
     variant === "danger"
       ? clsx("text-danger-low/90", activeDangerRowSelectors)

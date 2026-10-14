@@ -3,6 +3,7 @@ import { FileImageIcon } from "lucide-react";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
+  BreadcrumbLabel,
   BreadcrumbLink,
 } from "@/ui/Breadcrumb";
 
@@ -22,7 +23,7 @@ export function TestBreadcrumbItem(props: {
         <BreadcrumbItemIcon>
           <FileImageIcon size={18} />
         </BreadcrumbItemIcon>
-        {testId}
+        <BreadcrumbLabel>{testId}</BreadcrumbLabel>
       </BreadcrumbLink>
     </BreadcrumbItem>
   );

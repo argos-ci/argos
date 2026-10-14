@@ -42,7 +42,10 @@ function getAccountMenuItems(accounts: Account[], pathname: string) {
  * never be seen by the filter. The accounts travel with the session for
  * exactly this reason.
  */
-export function AccountBreadcrumbMenu(props: { account: AuthAccount }) {
+export function AccountBreadcrumbMenu(props: {
+  account: AuthAccount;
+  children?: React.ReactNode;
+}) {
   const { account } = props;
   const location = useLocation();
 
@@ -59,6 +62,7 @@ export function AccountBreadcrumbMenu(props: { account: AuthAccount }) {
           Create a Team
         </MenuItem>
       </MenuSection>
+      {props.children}
     </Menu>
   );
 }
