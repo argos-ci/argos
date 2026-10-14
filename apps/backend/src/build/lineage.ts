@@ -37,3 +37,37 @@ export function queryBuildLineage(args: LineageArgs) {
 
   return query;
 }
+
+/**
+ * The latest build of this build's lineage, when it is not this build itself.
+ *
+ * Only builds someone reviews against a pull request or a branch get one:
+ * reference builds (the base branch, auto-approved) and monitoring builds both
+ * have a newer build almost all the time, and pointing at it would only be
+ * noise. Merge queue builds sit on a branch of their own.
+ */
+export async function getNewerBuild(args: LineageArgs): Promise<Build | null> {
+  const { build, compareBucket } = args;
+
+  if (
+    !compareBucket.branch ||
+    build.type === "reference" ||
+    build.mode !== "ci" ||
+    build.mergeQueue
+  ) {
+    return null;
+  }
+
+  const newerBuild = await queryBuildLineage({ build, compareBucket })
+    .select("builds.*")
+    // The bucket already carries this name, the build repeats it: filtering on
+    // the build too lets the scan run on `builds_projectid_name_createdat_idx`
+    // instead of every build of the project.
+    .where("builds.name", build.name)
+    .where("builds.createdAt", ">", build.createdAt)
+    .orderBy("builds.createdAt", "desc")
+    .orderBy("builds.id", "desc")
+    .first();
+
+  return newerBuild ?? null;
+}

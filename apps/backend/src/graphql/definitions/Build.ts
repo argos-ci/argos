@@ -8,6 +8,7 @@ import {
   type BuildBaselineIneligibilityReason,
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
+import { getNewerBuild } from "@/build/lineage";
 import { getSiblingBuilds } from "@/build/siblings";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
@@ -146,6 +147,8 @@ export const typeDefs = gql`
     project: Project!
     "The commit's other suites on this branch, across every project the viewer can reach: one build per name, latest run, this build's own suite excluded"
     siblingBuilds: [Build!]!
+    "The latest build of the same suite on this branch or pull request, when it is newer than this one"
+    newerBuild: Build
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
     "Indicates whether this build contains only a subset of screenshots"
@@ -487,6 +490,10 @@ export const resolvers: IResolvers = {
         compareBucket,
         user: ctx.auth?.user ?? null,
       });
+    },
+    newerBuild: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return getNewerBuild({ build, compareBucket });
     },
     project: async (build, _args, ctx) => {
       return getProject(ctx, build);

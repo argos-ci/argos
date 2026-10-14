@@ -18,6 +18,7 @@ import { BuildReviewStateProvider } from "./BuildReviewState";
 import { BuildReviewUndoHotkeys } from "./BuildReviewUndoHotkeys";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildHeader } from "./header/BuildHeader";
+import { NewerBuildBanner } from "./NewerBuildBanner";
 import { OvercapacityBanner } from "./OvercapacityBanner";
 import { RejectCommentDialogProvider } from "./RejectCommentDialog";
 
@@ -120,6 +121,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                       </>
                     )}
                     {project && <GithubIpAllowListBanner project={project} />}
+                    <NewerBuildBanner params={params} />
                     <BuildHeader
                       buildNumber={params.buildNumber}
                       accountSlug={params.accountSlug}

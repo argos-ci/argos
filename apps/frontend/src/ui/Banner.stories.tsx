@@ -15,6 +15,7 @@ export const Default: Story = {
   render: () => (
     <div className="flex flex-col gap-4">
       <Banner color="neutral">Neutral banner message</Banner>
+      <Banner color="info">Info banner message</Banner>
       <Banner color="danger">Danger banner message</Banner>
       <Banner color="warning">Warning banner message</Banner>
     </div>

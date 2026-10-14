@@ -39,6 +39,8 @@ const _BuildFragment = graphql(`
     id
     # Invalidate the cache for the build status chip
     ...BuildStatusChip_Build
+    # The newer-build banner stops warning once the review is in
+    viewerHasSubmittedReview
     # Ensure the comment added by the review (if any) lands in the cache,
     # so it appears in the review activity section.
     comments {
