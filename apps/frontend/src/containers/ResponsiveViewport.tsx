@@ -39,8 +39,11 @@ export function ResponsiveViewport() {
     invariant(meta, "index.html declares the viewport");
     const desktopContent = meta.content;
     meta.content = "width=device-width, initial-scale=1";
+    // Read by the `phone-layout:` variant.
+    document.documentElement.dataset.phoneLayout = "";
     return () => {
       meta.content = desktopContent;
+      delete document.documentElement.dataset.phoneLayout;
     };
   }, [responsive]);
 
