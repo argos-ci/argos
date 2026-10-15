@@ -49,28 +49,41 @@ export function ProjectBreadcrumbItem(props: {
     throw error;
   }
 
+  const content = (
+    <>
+      <BreadcrumbItemIcon>
+        <FolderCode size={18} />
+      </BreadcrumbItemIcon>
+      <BreadcrumbLabel>{projectName}</BreadcrumbLabel>
+    </>
+  );
+
   return (
     <BreadcrumbItem>
-      <BreadcrumbLink
-        href={`${accountSlug}/${projectName}/builds`}
-        aria-current={isCurrent ? "page" : undefined}
-      >
-        <BreadcrumbItemIcon>
-          <FolderCode size={18} />
-        </BreadcrumbItemIcon>
-        <BreadcrumbLabel>{projectName}</BreadcrumbLabel>
-      </BreadcrumbLink>
       {auth.status === "authenticated" && data?.account ? (
         <MenuRoot>
           <MenuTrigger>
-            <BreadcrumbMenuButton />
+            <BreadcrumbMenuButton
+              current={Boolean(isCurrent)}
+              // A phone drops the test after it, so the project ends its trail.
+              className="max-md:text-default"
+            >
+              {content}
+            </BreadcrumbMenuButton>
           </MenuTrigger>
           <ProjectBreadcrumbMenu
             accountSlug={accountSlug}
             projectNames={data.account.projects.edges.map(({ name }) => name)}
           />
         </MenuRoot>
-      ) : null}
+      ) : (
+        <BreadcrumbLink
+          href={`${accountSlug}/${projectName}/builds`}
+          aria-current={isCurrent ? "page" : undefined}
+        >
+          {content}
+        </BreadcrumbLink>
+      )}
     </BreadcrumbItem>
   );
 }
