@@ -18,10 +18,10 @@ function checkIsResponsiveHandle(handle: unknown) {
 }
 
 /**
- * Pages move to phones one at a time. Until a page opts in, a phone keeps
- * rendering it at the desktop width declared in `index.html`, scaled down:
- * tiny, but whole, where the device width would cut a layout nobody
- * designed for it.
+ * A page renders at the device width on a phone once a route it matches sets
+ * `responsiveRouteHandle`. The others (the build page, a shared media) keep
+ * the desktop width declared in `index.html`, scaled down: tiny, but whole,
+ * where the device width would cut a layout nobody designed for it.
  */
 export function ResponsiveViewport() {
   const matches = useMatches();
