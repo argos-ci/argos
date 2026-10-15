@@ -116,7 +116,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
   const invites = data.team.invites.edges;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {invites.length > 0 ? (

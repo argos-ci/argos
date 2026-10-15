@@ -113,7 +113,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
         <MemberLevelFilter
           value={level}
