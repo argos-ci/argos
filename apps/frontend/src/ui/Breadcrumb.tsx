@@ -10,7 +10,7 @@ export function BreadcrumbItem({
 }: HTMLProps<HTMLLIElement>) {
   return (
     <li
-      className={clsx("flex min-w-0 items-center gap-2 md:shrink-0", className)}
+      className={clsx("flex min-w-0 items-center gap-2", className)}
       {...props}
     />
   );
