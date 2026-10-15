@@ -35,7 +35,8 @@ export function DialogFooter(props: ComponentPropsWithRef<"div">) {
         "bg-subtle border-t-thin flex items-center gap-4 p-4",
         role === "alertdialog"
           ? "flex-wrap justify-center *:[[role=alert]]:basis-full *:[[role=alert]]:text-center"
-          : "justify-end",
+          : // Wraps on a phone: two long buttons would overflow to the left.
+            "justify-end max-md:flex-wrap",
         props.className,
       )}
     />

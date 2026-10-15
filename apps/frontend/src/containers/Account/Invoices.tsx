@@ -173,14 +173,16 @@ function InvoiceRowLayout(props: {
     <ListRow className="p-4">
       <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 font-medium">
+          {/* The status chip wraps under the month on a phone, instead of
+              shrinking to its first letter. */}
+          <div className="flex items-center gap-2 font-medium max-md:flex-wrap max-md:gap-y-1">
             {props.title}
           </div>
           <div className="text-low mt-0.5 truncate text-sm">
             {props.subtitle}
           </div>
         </div>
-        <div className="w-32 shrink-0">
+        <div className="w-32 shrink-0 max-md:w-24">
           <div className="text-low text-sm">{props.amountLabel}</div>
           <div className="mt-0.5 font-medium tabular-nums">{props.amount}</div>
         </div>
