@@ -1,6 +1,5 @@
 import { skipToken, useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
-import { clsx } from "clsx";
 import {
   BanknoteIcon,
   Building2Icon,
@@ -60,9 +59,8 @@ type AccountBreadcrumbAccount = DocumentType<typeof AccountQuery>["account"];
 function AccountCrumbContent(props: {
   account: AccountBreadcrumbAccount;
   accountSlug: string;
-  compact: boolean;
 }) {
-  const { account, accountSlug, compact } = props;
+  const { account, accountSlug } = props;
   return (
     <>
       <BreadcrumbItemIcon className="max-md:hidden">
@@ -77,7 +75,7 @@ function AccountCrumbContent(props: {
         <AccountPlanChip
           account={account}
           phoneAlertsOnly
-          className={clsx("shrink-0", compact && "max-md:hidden")}
+          className="shrink-0"
         />
       )}
     </>
@@ -109,11 +107,7 @@ function AccountBreadcrumbLink(props: {
         href={accountURL}
         aria-current={isCurrent ? "page" : undefined}
       >
-        <AccountCrumbContent
-          account={data.account}
-          accountSlug={accountSlug}
-          compact={compact}
-        />
+        <AccountCrumbContent account={data.account} accountSlug={accountSlug} />
       </BreadcrumbLink>
     </BreadcrumbItem>
   );
@@ -126,6 +120,24 @@ function AccountBreadcrumbLink(props: {
  */
 function getStaffDirectoryURL(teamSlug: string) {
   return `/staff/teams?${new URLSearchParams({ search: teamSlug })}`;
+}
+
+/** The staff shortcuts, for the menus a phone reaches them from. */
+export function getStaffMenuSection(teamSlug: string | null) {
+  return (
+    <MenuSection>
+      <MenuHeading>Staff</MenuHeading>
+      {teamSlug ? (
+        <MenuItem
+          icon={<ShieldUserIcon />}
+          href={getStaffDirectoryURL(teamSlug)}
+        >
+          Open in staff directory
+        </MenuItem>
+      ) : null}
+      {getStaffPageMenuItems()}
+    </MenuSection>
+  );
 }
 
 function getStaffPageMenuItems() {
@@ -235,25 +247,11 @@ function AccountSwitcher(props: {
             <AccountCrumbContent
               account={data.account}
               accountSlug={accountSlug}
-              compact={compact}
             />
           </BreadcrumbMenuButton>
         </MenuTrigger>
         <AccountBreadcrumbMenu account={me}>
-          {me.staff ? (
-            <MenuSection>
-              <MenuHeading>Staff</MenuHeading>
-              {team ? (
-                <MenuItem
-                  icon={<ShieldUserIcon />}
-                  href={getStaffDirectoryURL(team.slug)}
-                >
-                  Open in staff directory
-                </MenuItem>
-              ) : null}
-              {getStaffPageMenuItems()}
-            </MenuSection>
-          ) : null}
+          {me.staff ? getStaffMenuSection(team?.slug ?? null) : null}
         </AccountBreadcrumbMenu>
       </MenuRoot>
     </BreadcrumbItem>
@@ -261,11 +259,14 @@ function AccountSwitcher(props: {
 }
 
 /**
- * With a project after it, a long account name gives up the room first when
- * the names do not fit, the project being what the page is about, down to a
- * few letters; only then does the project's name shrink. A short name never
- * shrinks: a minimum width that keeps a long one recognizable would leave a
- * gap after a short one, and CSS cannot take the smaller of the two.
+ * With a project after it, the account crumb goes on a phone: the project's
+ * button names the team and switches it.
+ *
+ * Elsewhere, a long account name gives up the room first when the names do
+ * not fit, the project being what the page is about, down to a few letters;
+ * only then does the project's name shrink. A short name never shrinks: a
+ * minimum width that keeps a long one recognizable would leave a gap after a
+ * short one, and CSS cannot take the smaller of the two.
  */
 function getCrumbShrinkClassName(props: { name: string; compact: boolean }) {
   if (!props.compact) {
@@ -274,8 +275,8 @@ function getCrumbShrinkClassName(props: { name: string; compact: boolean }) {
   return props.name.length > 12
     ? // The weight is extreme on purpose: a project shrinking by a fraction of
       // a pixel already cuts its name to an ellipsis.
-      "min-w-40 shrink-[10000] max-md:min-w-20"
-    : "shrink-0";
+      "min-w-40 shrink-[10000] max-md:hidden"
+    : "shrink-0 max-md:hidden";
 }
 
 export function AccountBreadcrumbItem() {
