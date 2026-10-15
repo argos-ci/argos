@@ -490,9 +490,7 @@ function PageContent(props: {
             <TextInput
               type="search"
               placeholder="Search branch, commit…"
-              // 16px on a phone, where Safari zooms into a smaller field on
-              // focus; the line height keeps it as tall as the filters.
-              className="md:text-sm md:leading-5"
+              scale="sm"
               value={filters.search ?? ""}
               onChange={(event) =>
                 setFilters({ search: event.target.value || null })
