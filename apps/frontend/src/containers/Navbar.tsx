@@ -29,7 +29,7 @@ export function Navbar() {
               <AccountBreadcrumbItem />
               {accountSlug && projectName ? (
                 <>
-                  <BreadcrumbSeparator />
+                  <BreadcrumbSeparator className="max-md:hidden" />
                   <ProjectBreadcrumbItem
                     accountSlug={accountSlug}
                     projectName={projectName}
