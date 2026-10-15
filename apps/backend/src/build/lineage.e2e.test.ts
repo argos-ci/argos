@@ -7,6 +7,8 @@ import { factory, setupDatabase } from "@/database/testing";
 import { getNewerBuild } from "./lineage";
 
 const BRANCH = "feat/sparkle";
+const COMMIT_A = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
+const COMMIT_B = "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1";
 
 /**
  * A build of the project, `minutesAgo` minutes old, with its own compare bucket.
@@ -16,6 +18,7 @@ async function createBuild(input: {
   minutesAgo: number;
   name?: string;
   branch?: string;
+  commit?: string;
   type?: Build["type"];
 }): Promise<Build> {
   const name = input.name ?? "default";
@@ -23,6 +26,7 @@ async function createBuild(input: {
     projectId: input.projectId,
     name,
     branch: input.branch ?? BRANCH,
+    ...(input.commit ? { commit: input.commit } : {}),
   });
   return factory.Build.create({
     projectId: input.projectId,
@@ -63,6 +67,47 @@ describe("getNewerBuild", () => {
 
     const newerBuild = await getNewerBuildOf(build);
     expect(newerBuild?.id).toBe(latest.id);
+  });
+
+  test("points a re-run of the same commit to its latest run", async ({
+    project,
+  }) => {
+    const build = await createBuild({
+      projectId: project.id,
+      minutesAgo: 30,
+      commit: COMMIT_B,
+    });
+    const rerun = await createBuild({
+      projectId: project.id,
+      minutesAgo: 10,
+      commit: COMMIT_B,
+    });
+
+    const newerBuild = await getNewerBuildOf(build);
+    expect(newerBuild?.id).toBe(rerun.id);
+  });
+
+  test("ignores a re-run of an older commit", async ({ project }) => {
+    const first = await createBuild({
+      projectId: project.id,
+      minutesAgo: 30,
+      commit: COMMIT_A,
+    });
+    const head = await createBuild({
+      projectId: project.id,
+      minutesAgo: 20,
+      commit: COMMIT_B,
+    });
+    // CI ran the workflow of the first commit again, after the second one.
+    const rerunOfFirst = await createBuild({
+      projectId: project.id,
+      minutesAgo: 10,
+      commit: COMMIT_A,
+    });
+
+    expect(await getNewerBuildOf(head)).toBeNull();
+    expect((await getNewerBuildOf(first))?.id).toBe(head.id);
+    expect((await getNewerBuildOf(rerunOfFirst))?.id).toBe(head.id);
   });
 
   test("returns nothing for the latest build itself", async ({ project }) => {

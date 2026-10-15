@@ -1,3 +1,5 @@
+import { raw } from "objection";
+
 import { Build, type ScreenshotBucket } from "@/database/models";
 
 type LineageArgs = {
@@ -43,7 +45,13 @@ export function queryBuildLineage(args: LineageArgs) {
 }
 
 /**
- * The latest build of this build's lineage, when it is not this build itself.
+ * The build to look at instead of this one, when there is one: the latest run
+ * of the most recent commit of its lineage.
+ *
+ * A commit is as recent as its first build, not its latest. CI can re-run the
+ * workflow of an older commit after newer ones were pushed, and that run, the
+ * newest build of the lineage, holds code the pull request has moved past:
+ * pointing at it would send the reviewer back.
  *
  * Only builds someone reviews against a pull request or a branch get one:
  * reference builds (the base branch, auto-approved) and monitoring builds both
@@ -62,16 +70,40 @@ export async function getNewerBuild(args: LineageArgs): Promise<Build | null> {
     return null;
   }
 
-  const newerBuild = await queryBuildLineage({ build, compareBucket })
-    .select("builds.*")
+  const lineage = queryBuildLineage({ build, compareBucket })
+    .select(
+      "builds.id",
+      "builds.createdAt",
+      // The commit a build reviews, as `Build.commit` resolves it.
+      raw("coalesce(??, ??) as ??", [
+        "builds.prHeadCommit",
+        "compareScreenshotBucket.commit",
+        "commit",
+      ]),
+    )
     // The bucket already carries this name, the build repeats it: filtering on
-    // the build too lets the scan run on `builds_projectid_name_createdat_idx`
-    // instead of every build of the project.
-    .where("builds.name", build.name)
-    .where("builds.createdAt", ">", build.createdAt)
+    // the build too lets the builds indexes that carry the name narrow the
+    // join, instead of reading every build of the project's buckets.
+    .where("builds.name", build.name);
+
+  const latestBuild = await Build.query()
+    .with("lineage", lineage)
+    .with("commits", (qb) =>
+      qb
+        .from("lineage")
+        .select("commit", raw("min(??) as ??", ["createdAt", "firstBuiltAt"]))
+        .groupBy("commit"),
+    )
+    .join("lineage", "lineage.id", "builds.id")
+    .join("commits", "commits.commit", "lineage.commit")
+    .select("builds.*")
+    .orderBy("commits.firstBuiltAt", "desc")
     .orderBy("builds.createdAt", "desc")
     .orderBy("builds.id", "desc")
     .first();
 
-  return newerBuild ?? null;
+  if (!latestBuild || latestBuild.id === build.id) {
+    return null;
+  }
+  return latestBuild;
 }
