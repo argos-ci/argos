@@ -88,7 +88,8 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
     showCommentTool || (canComment && checkCanCommentOnTextDiff(diff));
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5">
+    // Wraps on a phone, where its buttons outnumber the width.
+    <div className="flex shrink-0 items-center gap-1.5 max-md:shrink max-md:flex-wrap">
       <ViewToggle blendEnabled={checkDiffCanBeBlended(diff)} />
       <FitToggle />
       {fitControls}
