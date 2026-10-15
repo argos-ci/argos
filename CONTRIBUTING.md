@@ -116,6 +116,40 @@ pnpm run --filter @argos/backend db:seed
 pnpm run dev
 ```
 
+### Opening the dev app on a phone
+
+A phone reaches the dev app through an [ngrok](https://ngrok.com) tunnel, the
+only way to review the mobile layouts on a real device:
+
+```sh
+ngrok http https://app.argos-ci.dev:4002 --host-header=rewrite
+```
+
+`--host-header=rewrite` hands each request over as `app.argos-ci.dev:4002`:
+Vite refuses any other host, and the backend mounts its router behind
+`subdomain(..., "app")`. ngrok prints the tunnel's URL
+(`Forwarding https://<your-domain>.ngrok-free.app`); a free account keeps the
+same one.
+
+Then start the dev server for that URL:
+
+```sh
+SERVER_URL=https://<your-domain>.ngrok-free.app SESSION_DOMAIN= pnpm run dev
+```
+
+The session cookie is scoped to `.argos-ci.dev`, which a browser on the
+tunnel's domain rejects, and the SPA sends signed-out visitors to
+`new URL("/login", config.server.url)`. Both variables are declared in
+`turbo.json`: `envMode` is strict, so a variable the task does not list never
+reaches it.
+
+On the phone, open the tunnel's URL, go past ngrok's warning page, and sign in
+with an email code, which needs `RESEND_API_KEY` in `.env`. GitHub, GitLab and
+Google only send you back to the callback registered for `app.argos-ci.dev`.
+
+The tunnel puts the dev server on the internet: never open one on
+`pnpm run dev:prod-ro`, which serves production data.
+
 ## 🧰 Troubleshooting
 
 If you encounter this error:

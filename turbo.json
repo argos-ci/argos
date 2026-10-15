@@ -57,7 +57,9 @@
         "ARGOS_TARGET",
         "PG_IAM_AUTH",
         "REDIS_URL",
-        "AMQP_URL"
+        "AMQP_URL",
+        "SERVER_URL",
+        "SESSION_DOMAIN"
       ],
       "passThroughEnv": [
         "AWS_PROFILE",
