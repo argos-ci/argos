@@ -430,7 +430,10 @@ function PageContent(props: { params: ProjectParams }) {
               </PageHeaderHeadline>
             </PageHeaderContent>
           </PageHeader>
-          <div className="relative flex-1">
+          {/* On a phone the table keeps a minimum width and scrolls
+              sideways inside this box, rather than squeezing the change's
+              name away. */}
+          <div className="relative flex-1 max-md:overflow-x-auto">
             <IgnoredChangesList
               ignoredChanges={ignoredChanges}
               params={params}
@@ -627,7 +630,7 @@ function IgnoredChangesList(props: {
     <List
       aria-busy={isUpdating}
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-224",
         isUpdating && "animate-pulse",
       )}
     >
