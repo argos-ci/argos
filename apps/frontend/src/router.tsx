@@ -24,6 +24,15 @@ import { Loader } from "./ui/Loader";
 import { TooltipProvider } from "./ui/Tooltip";
 import { checkIsErrorCode } from "./util/error";
 
+function ViewportRoot() {
+  return (
+    <>
+      <ResponsiveViewport />
+      <Outlet />
+    </>
+  );
+}
+
 function Root() {
   return (
     // Base UI reads tooltip delays from a provider rather than from each
@@ -146,28 +155,36 @@ function RedirectToTeamInvite() {
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
-      ErrorBoundary: RootErrorBoundary,
-      path: `/auth/:provider/callback`,
-      HydrateFallback,
-      lazy: () => import("./pages/AuthCallback"),
-    },
-    {
-      ErrorBoundary: RootErrorBoundary,
-      path: `/auth/cli`,
-      HydrateFallback,
-      lazy: () => import("./pages/AuthCLI"),
-    },
-    {
-      ErrorBoundary: RootErrorBoundary,
-      path: `/auth/cli/success`,
-      HydrateFallback,
-      lazy: () => import("./pages/AuthCLISuccess"),
-    },
-    {
-      ErrorBoundary: RootErrorBoundary,
-      path: `/oauth/authorize`,
-      HydrateFallback,
-      lazy: () => import("./pages/OAuthAuthorize"),
+      // Outside `Root`, which mounts the viewport switch for the rest of the
+      // app: these pages need one of their own.
+      element: <ViewportRoot />,
+      handle: responsiveRouteHandle,
+      children: [
+        {
+          ErrorBoundary: RootErrorBoundary,
+          path: `/auth/:provider/callback`,
+          HydrateFallback,
+          lazy: () => import("./pages/AuthCallback"),
+        },
+        {
+          ErrorBoundary: RootErrorBoundary,
+          path: `/auth/cli`,
+          HydrateFallback,
+          lazy: () => import("./pages/AuthCLI"),
+        },
+        {
+          ErrorBoundary: RootErrorBoundary,
+          path: `/auth/cli/success`,
+          HydrateFallback,
+          lazy: () => import("./pages/AuthCLISuccess"),
+        },
+        {
+          ErrorBoundary: RootErrorBoundary,
+          path: `/oauth/authorize`,
+          HydrateFallback,
+          lazy: () => import("./pages/OAuthAuthorize"),
+        },
+      ],
     },
     {
       path: "/",
@@ -188,6 +205,8 @@ export const router: ReturnType<typeof createBrowserRouter> =
           // Outside the app layout, and deliberately short: this URL is pasted
           // into pull requests and chat messages, and read by people who have
           // never signed in.
+          // Kept at the desktop width, like the build page whose viewer it
+          // shares.
           path: "/m/:shareToken",
           HydrateFallback,
           lazy: () => import("./pages/MediaShare"),
@@ -195,11 +214,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
         {
           path: "/verify",
           HydrateFallback,
+          handle: responsiveRouteHandle,
           lazy: () => import("./pages/VerifyEmail"),
         },
         {
           path: "/account/delete",
           HydrateFallback,
+          handle: responsiveRouteHandle,
           lazy: () => import("./pages/ConfirmAccountDeletion"),
         },
         {
@@ -208,15 +229,20 @@ export const router: ReturnType<typeof createBrowserRouter> =
           // never collide with an account slug.
           path: "/~/welcome",
           HydrateFallback,
+          handle: responsiveRouteHandle,
           lazy: () => import("./pages/Welcome"),
         },
         {
           path: "/",
           HydrateFallback,
+          handle: responsiveRouteHandle,
           lazy: () => import("./pages/Home"),
         },
         {
           path: "/",
+          // Every page of the app layout is laid out for phones. The build page
+          // is not one of them: it keeps the desktop width, outside the layout.
+          handle: responsiveRouteHandle,
           element: (
             <Layout>
               <Outlet />
@@ -370,7 +396,6 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   index: true,
                   HydrateFallback,
-                  handle: responsiveRouteHandle,
                   lazy: () => import("./pages/Account/Projects"),
                 },
                 {
