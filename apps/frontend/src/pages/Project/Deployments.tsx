@@ -180,9 +180,11 @@ function DeploymentRow(props: {
     <ListRow
       ref={measureElement}
       data-index={index}
-      className="flex items-start gap-6 p-4 text-sm"
+      // A phone wraps the columns: the id, status and build share a line,
+      // the URLs take one of their own, then the pull request and the commit.
+      className="flex items-start gap-6 p-4 text-sm max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2"
     >
-      <div className="flex w-40 shrink-0 flex-col items-start gap-1">
+      <div className="flex w-40 shrink-0 flex-col items-start gap-1 max-md:w-auto max-md:min-w-0 max-md:flex-1">
         <div className="font-medium">{deployment.id}</div>
         <div className="text-low flex max-w-full flex-wrap items-center gap-1">
           <span>{EnvironmentLabel[deployment.environment]}</span>
@@ -191,7 +193,7 @@ function DeploymentRow(props: {
           ) : null}
         </div>
       </div>
-      <div className="text-low flex w-28 shrink-0 items-center gap-2">
+      <div className="text-low flex w-28 shrink-0 items-center gap-2 max-md:w-auto">
         <div
           className={clsx(
             "size-2.5 rounded-full",
@@ -200,7 +202,7 @@ function DeploymentRow(props: {
         />
         {statusDef.label}
       </div>
-      <div className="w-28 shrink-0">
+      <div className="w-28 shrink-0 max-md:w-auto">
         {deployment.build ? (
           <Link
             variant="neutral"
@@ -213,7 +215,7 @@ function DeploymentRow(props: {
           </Link>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1 truncate">
+      <div className="flex flex-1 flex-col gap-1 truncate max-md:basis-full">
         {deployment.aliases.map((alias) => (
           <DeploymentTargetLink
             key={alias.id}
@@ -227,7 +229,7 @@ function DeploymentRow(props: {
           {deployment.url}
         </DeploymentTargetLink>
       </div>
-      <div className="flex w-70 shrink-0">
+      <div className="flex w-70 shrink-0 max-md:w-auto max-md:max-w-full max-md:empty:hidden">
         {deployment.pullRequest && (
           <PullRequestButton
             size="small"
@@ -237,7 +239,7 @@ function DeploymentRow(props: {
           />
         )}
       </div>
-      <div className="flex w-40 shrink-0 flex-col gap-1 text-xs">
+      <div className="flex w-40 shrink-0 flex-col gap-1 text-xs max-md:w-auto max-md:min-w-0 max-md:flex-1">
         <div>
           <ProjectBranchLink
             className="inline-flex max-w-full items-center"
@@ -254,7 +256,7 @@ function DeploymentRow(props: {
         </div>
       </div>
       <div
-        className="text-low w-24 shrink-0 truncate overflow-hidden text-right text-xs whitespace-nowrap"
+        className="text-low w-24 shrink-0 truncate overflow-hidden text-right text-xs whitespace-nowrap max-md:w-auto"
         data-visual-test="transparent"
       >
         <Time date={deployment.createdAt} />

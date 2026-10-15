@@ -68,7 +68,7 @@ function AccountTypeField<
         <RadioAccordion value="hobby">
           <div className="flex items-center justify-between gap-4">
             I’m working on personal projects
-            <Chip color="neutral" scale="sm">
+            <Chip color="neutral" scale="sm" className="shrink-0">
               Hobby
             </Chip>
           </div>
@@ -76,7 +76,7 @@ function AccountTypeField<
         <RadioAccordion value="pro">
           <div className="flex items-center justify-between gap-4">
             I’m working on team projects
-            <Chip color="info" scale="sm">
+            <Chip color="info" scale="sm" className="shrink-0">
               Pro
             </Chip>
           </div>
@@ -84,7 +84,7 @@ function AccountTypeField<
         <RadioAccordion value="existing-team">
           <div className="flex items-center justify-between gap-4">
             I’m joining an existing team
-            <Chip color="success" scale="sm">
+            <Chip color="success" scale="sm" className="shrink-0">
               Member
             </Chip>
           </div>
