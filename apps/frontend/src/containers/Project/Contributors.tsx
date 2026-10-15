@@ -64,7 +64,7 @@ export function ProjectContributors(props: {
           teamAccountId={project.account.id}
         />
       </CardBody>
-      <CardFooter className="flex items-center justify-between gap-4">
+      <CardFooter className="flex items-center justify-between gap-4 max-md:flex-wrap">
         {hasAdminPermission ? (
           <>
             <div>
@@ -77,7 +77,7 @@ export function ProjectContributors(props: {
               </Link>
               .
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-md:flex-wrap">
               <ProjectDefaultUserLevel project={project} />
               <ProjectContributorsAdd
                 projectId={project.id}

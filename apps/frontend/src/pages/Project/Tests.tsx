@@ -272,7 +272,7 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
-          <TextInputGroup className="w-64">
+          <TextInputGroup className="w-64 max-md:w-full">
             <TextInputIcon>
               <SearchIcon />
             </TextInputIcon>
@@ -371,25 +371,27 @@ function TestsList(props: {
         isUpdating && "animate-pulse",
       )}
     >
-      <ListHeaderRow>
+      {/* A phone keeps the test and its flakiness, which the list is sorted
+          by; the test's own page has the rest. */}
+      <ListHeaderRow className="max-md:gap-3 max-md:px-3">
         <div className="flex-1 truncate">Test</div>
-        <div className="w-30 text-right">Last change</div>
-        <div className="w-20 text-center">
+        <div className="w-30 text-right max-md:hidden">Last change</div>
+        <div className="w-20 text-center max-md:w-14">
           <Tooltip content={<FlakinessTooltip />}>
             <span className="underline-emphasis">Flakiness</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right">
+        <div className="w-20 text-right max-md:hidden">
           <Tooltip content={<TestsChangesTooltip />}>
             <span className="underline-emphasis">Changes</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right">
+        <div className="w-20 text-right max-md:hidden">
           <Tooltip content={<StabilityTooltip />}>
             <span className="underline-emphasis">Stability</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right">
+        <div className="w-20 text-right max-md:hidden">
           <Tooltip content={<ConsistencyTooltip />}>
             <span className="underline-emphasis">Consistency</span>
           </Tooltip>
@@ -466,7 +468,7 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
   return (
     <ListRowLink
       href={resolvedTest.pathname}
-      className="flex items-center gap-6 p-4 text-sm"
+      className="flex items-center gap-6 p-4 text-sm max-md:gap-3 max-md:p-3"
       style={style}
     >
       <div className="flex flex-1 gap-4 truncate">
@@ -503,23 +505,23 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
           ) : null}
         </div>
       </div>
-      <div className="w-30 text-right">
+      <div className="w-30 text-right max-md:hidden">
         <SeenChange params={params} diff={test.lastSeenDiff ?? null} />
       </div>
-      <div className="flex w-20 justify-center">
+      <div className="flex w-20 justify-center max-md:w-14">
         <FlakinessCircleIndicator
           value={test.metrics.all.flakiness}
           className="size-12"
         />
       </div>
-      <div className="w-20 text-right tabular-nums">
+      <div className="w-20 text-right tabular-nums max-md:hidden">
         {test.metrics.all.changes}
       </div>
-      <div className="w-20 text-right tabular-nums">
+      <div className="w-20 text-right tabular-nums max-md:hidden">
         {compactNumberFormatter.format(test.metrics.all.stability * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
-      <div className="w-20 text-right tabular-nums">
+      <div className="w-20 text-right tabular-nums max-md:hidden">
         {compactNumberFormatter.format(test.metrics.all.consistency * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>

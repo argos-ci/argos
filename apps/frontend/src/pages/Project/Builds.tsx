@@ -477,7 +477,7 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
-          <TextInputGroup className="w-64">
+          <TextInputGroup className="w-64 max-md:w-full">
             <TextInputIcon>
               <SearchIcon />
             </TextInputIcon>
