@@ -25,9 +25,17 @@ export function BreadcrumbLink(props: HeadlessLinkProps) {
   );
 }
 
-export function BreadcrumbItemIcon(props: { children: React.ReactNode }) {
+export function BreadcrumbItemIcon(props: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex size-6 shrink-0 items-center justify-center">
+    <div
+      className={clsx(
+        "flex size-6 shrink-0 items-center justify-center",
+        props.className,
+      )}
+    >
       {props.children}
     </div>
   );

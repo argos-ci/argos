@@ -53,9 +53,10 @@ const AccountQuery = graphql(`
 type AccountBreadcrumbAccount = DocumentType<typeof AccountQuery>["account"];
 
 /**
- * What names the account in its crumb. Once a project follows, a phone keeps
- * only the avatar: the project's name needs the room, and the avatar still says
- * whose it is.
+ * What names the account in its crumb. Once a project follows, a phone shows
+ * the name alone: the avatar is mostly an initial on a color, which tells one
+ * account from another less than its name does, and the room goes to the
+ * names.
  */
 function AccountCrumbContent(props: {
   account: AccountBreadcrumbAccount;
@@ -65,16 +66,14 @@ function AccountCrumbContent(props: {
   const { account, accountSlug, compact } = props;
   return (
     <>
-      <BreadcrumbItemIcon>
+      <BreadcrumbItemIcon className={compact ? "max-md:hidden" : undefined}>
         {account ? (
           <AccountAvatar avatar={account.avatar} className="size-6" />
         ) : (
           <OrganizationIcon size={18} />
         )}
       </BreadcrumbItemIcon>
-      <BreadcrumbLabel className={compact ? "max-md:sr-only" : undefined}>
-        {account?.name || accountSlug}
-      </BreadcrumbLabel>
+      <BreadcrumbLabel>{account?.name || accountSlug}</BreadcrumbLabel>
       {account && (
         <AccountPlanChip
           account={account}
@@ -248,6 +247,15 @@ function AccountSwitcher(props: {
   );
 }
 
+/**
+ * With a project after it, a phone's account crumb gives up most of the room
+ * when both names do not fit, the project being what the page is about, but
+ * keeps a few letters of its name.
+ */
+function getCrumbShrinkClassName(compact: boolean) {
+  return compact ? "max-md:min-w-20 max-md:shrink-[3]" : undefined;
+}
+
 export function AccountBreadcrumbItem() {
   const { accountSlug, projectName } = useParams();
   const auth = useAuth();
@@ -282,7 +290,7 @@ export function AccountBreadcrumbItem() {
 
   if (!me) {
     return (
-      <BreadcrumbItem>
+      <BreadcrumbItem className={getCrumbShrinkClassName(compact)}>
         {accountSlug ? (
           <AccountBreadcrumbLink accountSlug={accountSlug} compact={compact} />
         ) : null}
@@ -291,7 +299,7 @@ export function AccountBreadcrumbItem() {
   }
 
   return (
-    <BreadcrumbItem>
+    <BreadcrumbItem className={getCrumbShrinkClassName(compact)}>
       <AccountSwitcher
         me={me}
         accountSlug={accountSlug ?? me.slug}
