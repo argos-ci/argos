@@ -288,7 +288,11 @@ function PageContent(props: {
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
-      <div className="relative flex-1">
+      {/* On a phone the table keeps a minimum width and scrolls sideways
+          inside this box, rather than squeezing its columns until the test
+          name disappears. The box, not the table, holds the screen width:
+          a minimum on it would scroll the whole page instead. */}
+      <div className="relative flex-1 max-md:overflow-x-auto">
         {hasFilters && tests.pageInfo.totalCount === 0 ? (
           <EmptyState>
             <EmptyStateIcon>
@@ -367,31 +371,29 @@ function TestsList(props: {
   return (
     <List
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-224",
         isUpdating && "animate-pulse",
       )}
     >
-      {/* A phone keeps the test and its flakiness, which the list is sorted
-          by; the test's own page has the rest. */}
-      <ListHeaderRow className="max-md:gap-3 max-md:px-3">
+      <ListHeaderRow>
         <div className="flex-1 truncate">Test</div>
-        <div className="w-30 text-right max-md:hidden">Last change</div>
-        <div className="w-20 text-center max-md:w-14">
+        <div className="w-30 text-right">Last change</div>
+        <div className="w-20 text-center">
           <Tooltip content={<FlakinessTooltip />}>
             <span className="underline-emphasis">Flakiness</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right max-md:hidden">
+        <div className="w-20 text-right">
           <Tooltip content={<TestsChangesTooltip />}>
             <span className="underline-emphasis">Changes</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right max-md:hidden">
+        <div className="w-20 text-right">
           <Tooltip content={<StabilityTooltip />}>
             <span className="underline-emphasis">Stability</span>
           </Tooltip>
         </div>
-        <div className="w-20 text-right max-md:hidden">
+        <div className="w-20 text-right">
           <Tooltip content={<ConsistencyTooltip />}>
             <span className="underline-emphasis">Consistency</span>
           </Tooltip>
@@ -468,7 +470,7 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
   return (
     <ListRowLink
       href={resolvedTest.pathname}
-      className="flex items-center gap-6 p-4 text-sm max-md:gap-3 max-md:p-3"
+      className="flex items-center gap-6 p-4 text-sm"
       style={style}
     >
       <div className="flex flex-1 gap-4 truncate">
@@ -505,23 +507,23 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
           ) : null}
         </div>
       </div>
-      <div className="w-30 text-right max-md:hidden">
+      <div className="w-30 text-right">
         <SeenChange params={params} diff={test.lastSeenDiff ?? null} />
       </div>
-      <div className="flex w-20 justify-center max-md:w-14">
+      <div className="flex w-20 justify-center">
         <FlakinessCircleIndicator
           value={test.metrics.all.flakiness}
           className="size-12"
         />
       </div>
-      <div className="w-20 text-right tabular-nums max-md:hidden">
+      <div className="w-20 text-right tabular-nums">
         {test.metrics.all.changes}
       </div>
-      <div className="w-20 text-right tabular-nums max-md:hidden">
+      <div className="w-20 text-right tabular-nums">
         {compactNumberFormatter.format(test.metrics.all.stability * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
-      <div className="w-20 text-right tabular-nums max-md:hidden">
+      <div className="w-20 text-right tabular-nums">
         {compactNumberFormatter.format(test.metrics.all.consistency * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
