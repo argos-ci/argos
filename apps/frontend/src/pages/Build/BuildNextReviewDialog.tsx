@@ -30,6 +30,7 @@ const _ListedBuildFragment = graphql(`
     name
     status
     subset
+    viewerHasSubmittedReview
     project {
       id
       slug
@@ -59,8 +60,10 @@ const _BuildFragment = graphql(`
       number
     }
     siblingBuilds {
-      viewerHasSubmittedReview
       ...BuildNextReviewDialog_ListedBuild
+      newerBuild {
+        id
+      }
     }
     newerBuild {
       ...BuildNextReviewDialog_ListedBuild
@@ -74,14 +77,37 @@ export type SiblingBuild = ReviewedBuild["siblingBuilds"][number];
 
 /**
  * The builds still waiting for the viewer to make a call: nobody has concluded
- * them yet, and the viewer hasn't weighed in either.
+ * them yet, the viewer hasn't weighed in either, and no later run of their
+ * suite has replaced them. An outdated sibling is reviewed through the build
+ * that replaced it.
  */
 function getBuildsAwaitingReview(builds: SiblingBuild[]): SiblingBuild[] {
   return builds.filter(
     (build) =>
       build.status === BuildStatus.ChangesDetected &&
-      !build.viewerHasSubmittedReview,
+      !build.viewerHasSubmittedReview &&
+      !build.newerBuild,
   );
+}
+
+/**
+ * The build that replaced the reviewed one, when it leaves the viewer
+ * something to do there: changes nobody has settled, or a run still going
+ * that may bring some. A settled one is no reason to send the reviewer over.
+ */
+function getNewerBuildToReview(build: ReviewedBuild): ListedBuild | null {
+  const { newerBuild } = build;
+  if (!newerBuild || newerBuild.viewerHasSubmittedReview) {
+    return null;
+  }
+  switch (newerBuild.status) {
+    case BuildStatus.ChangesDetected:
+    case BuildStatus.Pending:
+    case BuildStatus.Progress:
+      return newerBuild;
+    default:
+      return null;
+  }
 }
 
 type ContextValue = {
@@ -112,7 +138,7 @@ export function BuildNextReviewDialogProvider(props: {
 
   const promptNextReview = useEventCallback((build: ReviewedBuild) => {
     if (
-      !build.newerBuild &&
+      !getNewerBuildToReview(build) &&
       getBuildsAwaitingReview(build.siblingBuilds).length === 0
     ) {
       return;
@@ -143,10 +169,9 @@ export function BuildNextReviewDialogProvider(props: {
 
 function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
   const { build } = props;
-  // An outdated build's siblings are outdated too: they ran on the same old
-  // commit. What is left to review is on the newer one.
-  if (build.newerBuild) {
-    return <NewerBuildDialog build={build} newerBuild={build.newerBuild} />;
+  const newerBuild = getNewerBuildToReview(build);
+  if (newerBuild) {
+    return <NewerBuildDialog build={build} newerBuild={newerBuild} />;
   }
   const builds = build.siblingBuilds;
   const awaitingReview = getBuildsAwaitingReview(builds);
@@ -199,12 +224,20 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
  * Where the reviewer goes after reviewing a build their pull request or branch
  * has moved past: the latest build of the same suite. Opening it offers to
  * reapply the approvals just given, so only what changed since is left.
+ *
+ * The commit's other suites are listed too when they still await a review and
+ * nothing replaced them: the new commit may not run every suite, and those
+ * builds are still the latest of their own.
  */
 function NewerBuildDialog(props: {
   build: ReviewedBuild;
   newerBuild: ListedBuild;
 }) {
   const { build, newerBuild } = props;
+  const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
+  const showProject = awaitingReview.some(
+    (sibling) => sibling.project.id !== build.project.id,
+  );
   const subject = (() => {
     if (build.pullRequest) {
       return `pull request #${build.pullRequest.number}`;
@@ -220,9 +253,21 @@ function NewerBuildDialog(props: {
         <DialogText>
           Build {newerBuild.number} is the latest of {subject}. Approvals that
           still apply can be reapplied there.
+          {awaitingReview.length === 0
+            ? null
+            : awaitingReview.length === 1
+              ? " Another suite of this commit still needs your review."
+              : ` ${awaitingReview.length} other suites of this commit still need your review.`}
         </DialogText>
         <List>
-          <ListedBuildRow build={newerBuild} showProject={false} />
+          <ListedBuildRow build={newerBuild} showProject={showProject} />
+          {awaitingReview.map((sibling) => (
+            <ListedBuildRow
+              key={sibling.id}
+              build={sibling}
+              showProject={showProject}
+            />
+          ))}
         </List>
       </DialogBody>
       <DialogFooter>
