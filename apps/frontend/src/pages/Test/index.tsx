@@ -248,7 +248,10 @@ export function Component() {
                     </Heading>
                     <ChangesFilterToggle state={filterState} />
                   </div>
-                  <Panel spacing={false}>
+                  {/* On a phone the changes and the diff keep a desktop width
+                    and scroll sideways inside the card, which holds the
+                    screen width: side by side, as they are meant to be read. */}
+                  <Panel spacing={false} className="max-md:overflow-x-auto">
                     <ProjectIgnoreEnabledProvider
                       enabled={project.ignoreConfig.enabled}
                     >
@@ -407,10 +410,9 @@ function ChangesExplorer(props: {
   }
   return (
     // The surrounding panel provides the card; this only lays the two sides out
-    // and gives the scrollable columns a height to work against. A phone has
-    // no room for two sides: the changes become a strip above the diff.
-    <div className="flex max-md:flex-col" style={{ height }}>
-      <div className="border-r-thin max-md:border-b-thin flex min-w-60 max-md:min-w-0 max-md:shrink-0 max-md:border-r-0">
+    // and gives the scrollable columns a height to work against.
+    <div className="flex max-md:min-w-224" style={{ height }}>
+      <div className="border-r-thin flex min-w-60">
         <ChangesList
           test={test}
           onSelect={setActiveChangeId}
@@ -542,16 +544,12 @@ function ChangesList(props: {
     <div
       role="region"
       aria-label="Changes"
-      className="group/sidebar flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4 max-md:h-36 max-md:flex-row max-md:gap-3 max-md:p-3"
+      className="group/sidebar flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4"
     >
       {test.changes.edges.map((change) => {
         const isActive = activeChange?.id === change.id;
         return (
-          <ListItemButton
-            key={change.id}
-            onClick={() => onSelect(change.id)}
-            className="max-md:h-full max-md:w-24 max-md:shrink-0"
-          >
+          <ListItemButton key={change.id} onClick={() => onSelect(change.id)}>
             <DiffCard isActive={isActive} variant="primary">
               <DiffImage
                 diff={change.stats.lastSeenDiff}
