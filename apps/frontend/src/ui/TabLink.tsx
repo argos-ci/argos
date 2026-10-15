@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { clsx } from "clsx";
 import { useHref, useLocation, useResolvedPath } from "react-router";
 
 import { RouterLink } from "./RouterLink";
 import { tabClassName, tabListClassName } from "./Tab";
-import { useResizeObserver } from "./useResizeObserver";
+import { useRevealSelected } from "./useRevealSelected";
 
 function stripAfterFirstSegment(pathname: string): string {
   // Do not consider /~/ as a segment
@@ -38,45 +38,16 @@ export function TabsLink(props: { children: ReactNode; className?: string }) {
   return <div {...props} />;
 }
 
-/** Scrolls a row of tabs, when it scrolls at all, until the selected one shows. */
-function revealSelectedTab(list: HTMLElement) {
-  const tab = list.querySelector<HTMLElement>('[aria-selected="true"]');
-  if (!tab) {
-    return;
-  }
-  if (tab.offsetLeft < list.scrollLeft) {
-    list.scrollLeft = tab.offsetLeft;
-  } else if (
-    tab.offsetLeft + tab.offsetWidth >
-    list.scrollLeft + list.clientWidth
-  ) {
-    list.scrollLeft = tab.offsetLeft + tab.offsetWidth - list.clientWidth;
-  }
-}
-
 export function TabLinkList(props: {
   children: ReactNode;
   className?: string;
   "aria-label"?: string;
 }) {
   const { className, ...rest } = props;
-  const { pathname } = useLocation();
-  const listRef = useRef<HTMLDivElement>(null);
-  // On resize too: a page that opts into the phone layout narrows the row
-  // after it first rendered at the desktop width.
-  const resizeRef = useResizeObserver(() => {
-    if (listRef.current) {
-      revealSelectedTab(listRef.current);
-    }
-  }, listRef);
-  useLayoutEffect(() => {
-    if (listRef.current) {
-      revealSelectedTab(listRef.current);
-    }
-  }, [pathname]);
+  const ref = useRevealSelected('[aria-selected="true"]');
   return (
     <div
-      ref={resizeRef}
+      ref={ref}
       role="tablist"
       {...rest}
       className={clsx(
