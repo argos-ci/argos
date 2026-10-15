@@ -44,7 +44,7 @@ function BuildConclusionCondition(props: {
   ];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 max-md:flex-wrap">
       <label htmlFor={id}>Build conclusion</label>
       <OperatorSelector form={form} name={name} />
       <SelectField
@@ -95,7 +95,7 @@ function BuildBranchCondition(props: {
       : "main";
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2 max-md:flex-wrap">
       <span>Branch</span>
       <BranchOperatorSelector form={form} name={conditionName} />
       <FormTextInput
@@ -130,7 +130,7 @@ function BuildNameCondition(props: {
   }, [value, projectBuildNames]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 max-md:flex-wrap">
       <label htmlFor={id}>Build name</label>
       <OperatorSelector form={form} name={name} />
       <SelectField
@@ -197,7 +197,7 @@ function BuildModeCondition(props: {
   }, [condition, conditionName, form]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 max-md:flex-wrap">
       <label htmlFor={id}>Build mode</label>
       <span>is</span>
       <SelectField
@@ -237,7 +237,7 @@ function BuildTypeCondition(props: {
   const id = useId();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 max-md:flex-wrap">
       <label htmlFor={id}>Build type</label>
       <OperatorSelector form={form} name={name} />
       <SelectField
