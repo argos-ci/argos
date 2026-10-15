@@ -53,10 +53,9 @@ const AccountQuery = graphql(`
 type AccountBreadcrumbAccount = DocumentType<typeof AccountQuery>["account"];
 
 /**
- * What names the account in its crumb. Once a project follows, a phone shows
- * the name alone: the avatar is mostly an initial on a color, which tells one
- * account from another less than its name does, and the room goes to the
- * names.
+ * What names the account in its crumb. A phone shows the name alone, on every
+ * page: the avatar is mostly an initial on a color, which tells one account
+ * from another less than its name does.
  */
 function AccountCrumbContent(props: {
   account: AccountBreadcrumbAccount;
@@ -66,7 +65,7 @@ function AccountCrumbContent(props: {
   const { account, accountSlug, compact } = props;
   return (
     <>
-      <BreadcrumbItemIcon className={compact ? "max-md:hidden" : undefined}>
+      <BreadcrumbItemIcon className="max-md:hidden">
         {account ? (
           <AccountAvatar avatar={account.avatar} className="size-6" />
         ) : (
