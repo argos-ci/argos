@@ -36,7 +36,7 @@ export function Navbar() {
                   />
                   {testId && (
                     <>
-                      <BreadcrumbSeparator />
+                      <BreadcrumbSeparator className="max-md:hidden" />
                       <TestBreadcrumbItem
                         accountSlug={accountSlug}
                         projectName={projectName}
