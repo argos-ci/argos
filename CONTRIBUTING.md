@@ -119,22 +119,27 @@ pnpm run dev
 ### Opening the dev app on a phone
 
 A phone reaches the dev app through an [ngrok](https://ngrok.com) tunnel, the
-only way to review the mobile layouts on a real device:
+only way to review the mobile layouts on a real device. Give the tunnel your
+account's dev domain, listed on the
+[Domains](https://dashboard.ngrok.com/domains) page of the ngrok dashboard.
+Without it, ngrok gives the tunnel a random URL, and `SERVER_URL` below would
+have to follow it.
 
 ```sh
-ngrok http https://app.argos-ci.dev:4002 --host-header=rewrite
+pnpm run dev:ngrok --url=https://<your-dev-domain>.ngrok-free.app
 ```
 
+The script runs
+`ngrok http https://app.argos-ci.dev:4002 --host-header=rewrite`.
 `--host-header=rewrite` hands each request over as `app.argos-ci.dev:4002`:
 Vite refuses any other host, and the backend mounts its router behind
-`subdomain(..., "app")`. ngrok prints the tunnel's URL
-(`Forwarding https://<your-domain>.ngrok-free.app`); a free account keeps the
-same one.
+`subdomain(..., "app")`. A dev domain serves one tunnel at a time, so stop
+`pnpm run grok-proxy` first if it uses the same one.
 
 Then start the dev server for that URL:
 
 ```sh
-SERVER_URL=https://<your-domain>.ngrok-free.app SESSION_DOMAIN= pnpm run dev
+SERVER_URL=https://<your-dev-domain>.ngrok-free.app SESSION_DOMAIN= pnpm run dev
 ```
 
 The session cookie is scoped to `.argos-ci.dev`, which a browser on the

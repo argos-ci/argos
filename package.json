@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "dev:prod-ro": "scripts/require-aws-session.sh && op run --env-file=.env.prod-ro -- pnpm run dev",
+    "dev:ngrok": "ngrok http https://app.argos-ci.dev:4002 --host-header=rewrite",
     "build": "turbo run build",
     "test": "vitest",
     "test:unit": "pnpm run test -c vitest/vitest.unit.config.mts",
