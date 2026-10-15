@@ -99,16 +99,23 @@ function AccountBreadcrumbLink(props: {
     variables: { slug: accountSlug },
   });
   return (
-    <BreadcrumbLink
-      href={accountURL}
-      aria-current={isCurrent ? "page" : undefined}
+    <BreadcrumbItem
+      className={getCrumbShrinkClassName({
+        name: data.account?.name || accountSlug,
+        compact,
+      })}
     >
-      <AccountCrumbContent
-        account={data.account}
-        accountSlug={accountSlug}
-        compact={compact}
-      />
-    </BreadcrumbLink>
+      <BreadcrumbLink
+        href={accountURL}
+        aria-current={isCurrent ? "page" : undefined}
+      >
+        <AccountCrumbContent
+          account={data.account}
+          accountSlug={accountSlug}
+          compact={compact}
+        />
+      </BreadcrumbLink>
+    </BreadcrumbItem>
   );
 }
 
@@ -216,43 +223,59 @@ function AccountSwitcher(props: {
   });
   const team = data.account?.__typename === "Team" ? data.account : null;
   return (
-    <MenuRoot>
-      <MenuTrigger>
-        <BreadcrumbMenuButton current={current}>
-          <AccountCrumbContent
-            account={data.account}
-            accountSlug={accountSlug}
-            compact={compact}
-          />
-        </BreadcrumbMenuButton>
-      </MenuTrigger>
-      <AccountBreadcrumbMenu account={me}>
-        {me.staff ? (
-          <MenuSection>
-            <MenuHeading>Staff</MenuHeading>
-            {team ? (
-              <MenuItem
-                icon={<ShieldUserIcon />}
-                href={getStaffDirectoryURL(team.slug)}
-              >
-                Open in staff directory
-              </MenuItem>
-            ) : null}
-            {getStaffPageMenuItems()}
-          </MenuSection>
-        ) : null}
-      </AccountBreadcrumbMenu>
-    </MenuRoot>
+    <BreadcrumbItem
+      className={getCrumbShrinkClassName({
+        name: data.account?.name || accountSlug,
+        compact,
+      })}
+    >
+      <MenuRoot>
+        <MenuTrigger>
+          <BreadcrumbMenuButton current={current}>
+            <AccountCrumbContent
+              account={data.account}
+              accountSlug={accountSlug}
+              compact={compact}
+            />
+          </BreadcrumbMenuButton>
+        </MenuTrigger>
+        <AccountBreadcrumbMenu account={me}>
+          {me.staff ? (
+            <MenuSection>
+              <MenuHeading>Staff</MenuHeading>
+              {team ? (
+                <MenuItem
+                  icon={<ShieldUserIcon />}
+                  href={getStaffDirectoryURL(team.slug)}
+                >
+                  Open in staff directory
+                </MenuItem>
+              ) : null}
+              {getStaffPageMenuItems()}
+            </MenuSection>
+          ) : null}
+        </AccountBreadcrumbMenu>
+      </MenuRoot>
+    </BreadcrumbItem>
   );
 }
 
 /**
- * With a project after it, a phone's account crumb gives up most of the room
- * when both names do not fit, the project being what the page is about, but
- * keeps a few letters of its name.
+ * With a project after it, a long account name gives up the room first when
+ * the names do not fit, the project being what the page is about, down to a
+ * few letters; only then does the project's name shrink. A short name never
+ * shrinks: a minimum width that keeps a long one recognizable would leave a
+ * gap after a short one, and CSS cannot take the smaller of the two.
  */
-function getCrumbShrinkClassName(compact: boolean) {
-  return compact ? "max-md:min-w-20 max-md:shrink-[3]" : undefined;
+function getCrumbShrinkClassName(props: { name: string; compact: boolean }) {
+  if (!props.compact) {
+    return undefined;
+  }
+  return props.name.length > 12
+    ? // The weight is extreme on purpose: a project shrinking by a fraction of
+      // a pixel already cuts its name to an ellipsis.
+      "min-w-40 shrink-[10000] max-md:min-w-20"
+    : "shrink-0";
 }
 
 export function AccountBreadcrumbItem() {
@@ -288,17 +311,13 @@ export function AccountBreadcrumbItem() {
   }
 
   if (!me) {
-    return (
-      <BreadcrumbItem className={getCrumbShrinkClassName(compact)}>
-        {accountSlug ? (
-          <AccountBreadcrumbLink accountSlug={accountSlug} compact={compact} />
-        ) : null}
-      </BreadcrumbItem>
-    );
+    return accountSlug ? (
+      <AccountBreadcrumbLink accountSlug={accountSlug} compact={compact} />
+    ) : null;
   }
 
   return (
-    <BreadcrumbItem className={getCrumbShrinkClassName(compact)}>
+    <>
       <AccountSwitcher
         me={me}
         accountSlug={accountSlug ?? me.slug}
@@ -306,12 +325,13 @@ export function AccountBreadcrumbItem() {
         current={Boolean(accountSlug) && !projectName}
       />
       {me.staff ? (
-        // Beside the crumb where there is room: the team's directory row stays
-        // one click away.
-        <div className="contents max-md:hidden">
+        // Beside the crumb where there is room, so the team's directory row
+        // stays one click away; an item of its own, so the account's minimum
+        // width does not depend on it.
+        <BreadcrumbItem className="shrink-0 max-md:hidden">
           <StaffButtonGroup accountSlug={accountSlug} />
-        </div>
+        </BreadcrumbItem>
       ) : null}
-    </BreadcrumbItem>
+    </>
   );
 }
