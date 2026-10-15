@@ -118,37 +118,38 @@ pnpm run dev
 
 ### Opening the dev app on a phone
 
-A phone reaches the dev app through an [ngrok](https://ngrok.com) tunnel, the
-only way to review the mobile layouts on a real device:
+The only way to review the mobile layouts on a real device:
 
 ```sh
-ngrok http https://app.argos-ci.dev:4002 --host-header=rewrite
+pnpm run dev:mobile
 ```
 
-`--host-header=rewrite` hands each request over as `app.argos-ci.dev:4002`:
-Vite refuses any other host, and the backend mounts its router behind
-`subdomain(..., "app")`. ngrok prints the tunnel's URL
-(`Forwarding https://<your-domain>.ngrok-free.app`); a free account keeps the
-same one.
+It opens an [ngrok](https://ngrok.com) tunnel to the dev app, starts the dev
+server for the tunnel's URL and prints that URL. Open it on the phone, go past
+ngrok's warning page, and sign in with an email code, which needs
+`RESEND_API_KEY` in `.env`: GitHub, GitLab and Google only send you back to the
+callback registered for `app.argos-ci.dev`. Ctrl+C stops both.
 
-Then start the dev server for that URL:
+The URL changes on every run unless you give the script your ngrok account's
+dev domain, listed on the [Domains](https://dashboard.ngrok.com/domains) page of
+the ngrok dashboard, in `.env`:
 
 ```sh
-SERVER_URL=https://<your-domain>.ngrok-free.app SESSION_DOMAIN= pnpm run dev
+NGROK_URL=https://<your-dev-domain>.ngrok-free.app
 ```
 
-The session cookie is scoped to `.argos-ci.dev`, which a browser on the
-tunnel's domain rejects, and the SPA sends signed-out visitors to
-`new URL("/login", config.server.url)`. Both variables are declared in
-`turbo.json`: `envMode` is strict, so a variable the task does not list never
-reaches it.
+A dev domain serves one tunnel at a time: stop `pnpm run grok-proxy` first if
+it uses the same one.
 
-On the phone, open the tunnel's URL, go past ngrok's warning page, and sign in
-with an email code, which needs `RESEND_API_KEY` in `.env`. GitHub, GitLab and
-Google only send you back to the callback registered for `app.argos-ci.dev`.
-
-The tunnel puts the dev server on the internet: never open one on
-`pnpm run dev:prod-ro`, which serves production data.
+How it works, in `scripts/dev-mobile.mjs`: the tunnel rewrites the `Host`
+header to `app.argos-ci.dev:4002`, the only host Vite and the backend's
+`subdomain(..., "app")` router accept. The dev server runs with `SERVER_URL`
+set to the tunnel, where the SPA sends signed-out visitors, and an empty
+`SESSION_DOMAIN`, since the session cookie is scoped to `.argos-ci.dev`. Both
+variables are declared in `turbo.json`: `envMode` is strict, so a variable the
+task does not list never reaches it. The tunnel puts the dev server on the
+internet, which is why the script only ever runs `pnpm run dev`, never
+`dev:prod-ro`.
 
 ## 🧰 Troubleshooting
 
