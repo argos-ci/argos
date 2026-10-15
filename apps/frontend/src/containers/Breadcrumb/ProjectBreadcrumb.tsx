@@ -51,7 +51,8 @@ export function ProjectBreadcrumbItem(props: {
 
   const content = (
     <>
-      <BreadcrumbItemIcon>
+      {/* A phone's trail is text: the folder adds nothing to the "/" before it. */}
+      <BreadcrumbItemIcon className="max-md:hidden">
         <FolderCode size={18} />
       </BreadcrumbItemIcon>
       <BreadcrumbLabel>{projectName}</BreadcrumbLabel>
