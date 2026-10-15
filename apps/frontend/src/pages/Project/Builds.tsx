@@ -164,10 +164,12 @@ function BuildRow({
   return (
     <ListRowLink
       href={resolvedBuild.pathname}
-      className="flex items-center gap-6 p-4 text-sm"
+      // Tighter on a phone, whose table scrolls sideways: more of it fits on
+      // the first screen.
+      className="flex items-center gap-6 p-4 text-sm max-md:gap-4 max-md:px-3"
       style={style}
     >
-      <div className="w-28 shrink-0">
+      <div className="w-28 shrink-0 max-md:w-20">
         <div className="flex items-center gap-1">
           <BuildModeIndicator mode={build.mode} />
           <div className="tabular-nums">{build.number}</div>
@@ -176,7 +178,7 @@ function BuildRow({
           <Truncable className="text-low mt-1 text-xs">{build.name}</Truncable>
         ) : null}
       </div>
-      <div className="flex w-44 shrink-0 flex-col items-start gap-1">
+      <div className="flex w-44 shrink-0 flex-col items-start gap-1 max-md:w-40">
         <BuildStatusChip build={build} scale="sm" />
       </div>
       <div className="hidden w-28 shrink-0 items-start gap-1 lg:flex">
@@ -286,7 +288,7 @@ function BuildsList(props: {
     <List
       ref={parentRef}
       className={clsx(
-        "absolute max-h-full w-full max-md:min-w-256",
+        "absolute max-h-full w-full max-md:min-w-208",
         isUpdating && "animate-pulse",
       )}
       style={{ display: "block" }}
