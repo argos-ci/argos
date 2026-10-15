@@ -826,7 +826,8 @@ function IgnoredChangeRow(props: {
           <Button
             variant="secondary"
             size="small"
-            className="opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+            // Always shown to a finger, which has no hover to reveal it.
+            className="opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 pointer-coarse:opacity-100"
             onClick={() =>
               onUnignore({
                 changeId: ignoredChange.id,
