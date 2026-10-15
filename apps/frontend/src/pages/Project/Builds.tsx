@@ -184,7 +184,9 @@ function BuildRow({
         <BuildBaselineEligibilityChip build={build} scale="sm" />
       </div>
       <div className="flex grow items-center gap-3">
-        <div className="hidden lg:flex">
+        {/* Hidden on a tablet only: a phone's table keeps a width that has
+            room for them and scrolls sideways. */}
+        <div className="flex md:max-lg:hidden">
           {build.stats ? (
             <BuildStatsIndicator
               stats={build.stats}
@@ -284,7 +286,7 @@ function BuildsList(props: {
     <List
       ref={parentRef}
       className={clsx(
-        "absolute max-h-full w-full max-md:min-w-192",
+        "absolute max-h-full w-full max-md:min-w-256",
         isUpdating && "animate-pulse",
       )}
       style={{ display: "block" }}
