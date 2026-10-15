@@ -246,7 +246,7 @@ function TestsList(props: {
   return (
     <List
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden max-md:min-w-256",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-326",
         isUpdating && "animate-pulse",
       )}
     >
