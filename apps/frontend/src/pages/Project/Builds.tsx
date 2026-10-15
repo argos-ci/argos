@@ -209,7 +209,7 @@ function BuildRow({
           />
         )}
       </div>
-      <div className="relative hidden w-32 flex-col gap-1 text-xs md:flex">
+      <div className="relative flex w-32 flex-col gap-1 text-xs">
         {build.branch && (
           <div>
             <ProjectBranchLink
@@ -284,7 +284,7 @@ function BuildsList(props: {
     <List
       ref={parentRef}
       className={clsx(
-        "absolute max-h-full w-full",
+        "absolute max-h-full w-full max-md:min-w-192",
         isUpdating && "animate-pulse",
       )}
       style={{ display: "block" }}
@@ -496,8 +496,10 @@ function PageContent(props: {
         </PageHeaderActions>
       </PageHeader>
       {/* On a phone the header above takes half the screen: the table keeps
-          three quarters of the visible height, and the page scrolls to it. */}
-      <div className="relative flex-1 max-md:min-h-[75dvh]">
+          three quarters of the visible height, and the page scrolls to it.
+          The table keeps a minimum width too and scrolls sideways inside this
+          box, which holds the screen width. */}
+      <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
         {hasFilters && builds.pageInfo.isEmpty ? (
           <EmptyState>
             <EmptyStateIcon>
