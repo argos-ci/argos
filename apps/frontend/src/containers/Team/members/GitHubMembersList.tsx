@@ -109,7 +109,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
   const members = data.team.githubMembers.edges;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {members.length > 0 ? (

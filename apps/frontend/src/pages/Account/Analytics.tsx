@@ -223,7 +223,9 @@ export function Component() {
             </PageHeaderHeadline>
           </PageHeaderContent>
           <PageHeaderActions>
-            <div className="flex items-center gap-2">
+            {/* Wraps on a phone: the project filter, the period and a custom
+                range do not fit on one line. */}
+            <div className="flex items-center gap-2 max-md:flex-wrap">
               <Suspense fallback={null}>
                 <ProjectFilter
                   accountSlug={accountSlug}
