@@ -15,7 +15,8 @@ export function TestBreadcrumbItem(props: {
   const { accountSlug, projectName, testId } = props;
 
   return (
-    <BreadcrumbItem>
+    // A phone leaves the test out: the page's own title names it.
+    <BreadcrumbItem className="max-md:hidden">
       <BreadcrumbLink
         href={`${accountSlug}/${projectName}/tests/${testId}`}
         aria-current="page"

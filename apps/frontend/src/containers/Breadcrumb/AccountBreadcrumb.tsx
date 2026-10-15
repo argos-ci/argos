@@ -1,10 +1,10 @@
 import { skipToken, useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
+import { clsx } from "clsx";
 import {
   BanknoteIcon,
   Building2Icon,
   ChevronDownIcon,
-  ChevronsUpDownIcon,
   HourglassIcon,
   ShieldUserIcon,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { useMatch, useParams } from "react-router";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { useAuth, type AuthAccount } from "@/containers/Auth";
-import { graphql } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
   BreadcrumbItem,
@@ -50,7 +50,48 @@ const AccountQuery = graphql(`
   }
 `);
 
-function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
+type AccountBreadcrumbAccount = DocumentType<typeof AccountQuery>["account"];
+
+/**
+ * What names the account in its crumb. Once a project follows, a phone keeps
+ * only the avatar: the project's name needs the room, and the avatar still says
+ * whose it is.
+ */
+function AccountCrumbContent(props: {
+  account: AccountBreadcrumbAccount;
+  accountSlug: string;
+  compact: boolean;
+}) {
+  const { account, accountSlug, compact } = props;
+  return (
+    <>
+      <BreadcrumbItemIcon>
+        {account ? (
+          <AccountAvatar avatar={account.avatar} className="size-6" />
+        ) : (
+          <OrganizationIcon size={18} />
+        )}
+      </BreadcrumbItemIcon>
+      <BreadcrumbLabel className={compact ? "max-md:sr-only" : undefined}>
+        {account?.name || accountSlug}
+      </BreadcrumbLabel>
+      {account && (
+        <AccountPlanChip
+          account={account}
+          phoneAlertsOnly
+          className={clsx("shrink-0", compact && "max-md:hidden")}
+        />
+      )}
+    </>
+  );
+}
+
+/** For a viewer with no account menu to open: signed out, or not yet known. */
+function AccountBreadcrumbLink(props: {
+  accountSlug: string;
+  compact: boolean;
+}) {
+  const { accountSlug, compact } = props;
   const accountURL = getAccountURL({ accountSlug });
   const isRoot = useMatch(accountURL);
   const isAnalytics = useMatch(`${accountURL}/~/analytics`);
@@ -64,29 +105,13 @@ function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
       href={accountURL}
       aria-current={isCurrent ? "page" : undefined}
     >
-      <BreadcrumbItemIcon>
-        {data.account ? (
-          <AccountAvatar avatar={data.account.avatar} className="size-6" />
-        ) : (
-          <OrganizationIcon size={18} />
-        )}
-      </BreadcrumbItemIcon>
-      <BreadcrumbLabel>{data.account?.name || accountSlug}</BreadcrumbLabel>
-      {data.account && (
-        <AccountPlanChip account={data.account} className="shrink-0" />
-      )}
+      <AccountCrumbContent
+        account={data.account}
+        accountSlug={accountSlug}
+        compact={compact}
+      />
     </BreadcrumbLink>
   );
-}
-
-function HomeBreadcrumbLink() {
-  const auth = useAuth();
-  const account = auth.status === "authenticated" ? auth.account : null;
-  // Nothing to link to until the account lands; the trail fills in after.
-  if (!account) {
-    return null;
-  }
-  return <AccountBreadcrumbLink accountSlug={account.slug} />;
 }
 
 /**
@@ -178,12 +203,16 @@ function StaffBreadcrumbLink() {
 }
 
 /**
- * A phone gets one button where the desktop trail has three: the name opens
- * the switcher, and the staff shortcuts move into it. The link it replaces led
- * to the account's projects, which the tabs below reach as well.
+ * The account crumb opens the account switcher. Staff shortcuts sit in its
+ * menu too, the only place a phone has for them.
  */
-function AccountSwitcher(props: { me: AuthAccount; accountSlug: string }) {
-  const { me, accountSlug } = props;
+function AccountSwitcher(props: {
+  me: AuthAccount;
+  accountSlug: string;
+  compact: boolean;
+  current: boolean;
+}) {
+  const { me, accountSlug, compact, current } = props;
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
@@ -191,27 +220,13 @@ function AccountSwitcher(props: { me: AuthAccount; accountSlug: string }) {
   return (
     <MenuRoot>
       <MenuTrigger>
-        <button
-          type="button"
-          className="text-default focus-ring aria-expanded:bg-active flex h-10 min-w-0 cursor-default items-center gap-1.5 rounded-lg px-1.5 font-medium transition"
-        >
-          <BreadcrumbItemIcon>
-            {data.account ? (
-              <AccountAvatar avatar={data.account.avatar} className="size-6" />
-            ) : (
-              <OrganizationIcon size={18} />
-            )}
-          </BreadcrumbItemIcon>
-          <BreadcrumbLabel>{data.account?.name || accountSlug}</BreadcrumbLabel>
-          {data.account && (
-            <AccountPlanChip
-              account={data.account}
-              alertsOnly
-              className="shrink-0"
-            />
-          )}
-          <ChevronsUpDownIcon className="text-low size-4 shrink-0" />
-        </button>
+        <BreadcrumbMenuButton current={current}>
+          <AccountCrumbContent
+            account={data.account}
+            accountSlug={accountSlug}
+            compact={compact}
+          />
+        </BreadcrumbMenuButton>
       </MenuTrigger>
       <AccountBreadcrumbMenu account={me}>
         {me.staff ? (
@@ -234,48 +249,62 @@ function AccountSwitcher(props: { me: AuthAccount; accountSlug: string }) {
 }
 
 export function AccountBreadcrumbItem() {
-  const { accountSlug } = useParams();
+  const { accountSlug, projectName } = useParams();
   const auth = useAuth();
   const isStaffArea = Boolean(useMatch("/staff/*"));
   // Not just authenticated: the menu needs the resolved account, because its
   // rows must all exist the moment it can be opened. The button appears with
   // the answer, a beat after the trail does.
   const me = auth.status === "authenticated" ? auth.account : null;
+  const compact = Boolean(projectName);
 
-  const trail = (
-    <>
-      {isStaffArea ? (
-        <StaffBreadcrumbLink />
-      ) : accountSlug ? (
-        <AccountBreadcrumbLink accountSlug={accountSlug} />
-      ) : (
-        <HomeBreadcrumbLink />
-      )}
-      {me ? (
-        <MenuRoot>
-          <MenuTrigger>
-            <BreadcrumbMenuButton />
-          </MenuTrigger>
-          <AccountBreadcrumbMenu account={me} />
-        </MenuRoot>
-      ) : null}
-      {/* The staff area has its own tabs for the same pages. */}
-      {me?.staff && !isStaffArea ? (
-        <StaffButtonGroup accountSlug={accountSlug} />
-      ) : null}
-    </>
-  );
+  if (isStaffArea) {
+    return (
+      <BreadcrumbItem>
+        {me ? (
+          <MenuRoot>
+            <MenuTrigger>
+              <BreadcrumbMenuButton current>
+                <BreadcrumbItemIcon>
+                  <ShieldUserIcon className="size-5" />
+                </BreadcrumbItemIcon>
+                Staff
+              </BreadcrumbMenuButton>
+            </MenuTrigger>
+            <AccountBreadcrumbMenu account={me} />
+          </MenuRoot>
+        ) : (
+          <StaffBreadcrumbLink />
+        )}
+      </BreadcrumbItem>
+    );
+  }
 
-  if (!me || isStaffArea) {
-    return <BreadcrumbItem>{trail}</BreadcrumbItem>;
+  if (!me) {
+    return (
+      <BreadcrumbItem>
+        {accountSlug ? (
+          <AccountBreadcrumbLink accountSlug={accountSlug} compact={compact} />
+        ) : null}
+      </BreadcrumbItem>
+    );
   }
 
   return (
     <BreadcrumbItem>
-      <div className="contents md:hidden">
-        <AccountSwitcher me={me} accountSlug={accountSlug ?? me.slug} />
-      </div>
-      <div className="contents max-md:hidden">{trail}</div>
+      <AccountSwitcher
+        me={me}
+        accountSlug={accountSlug ?? me.slug}
+        compact={compact}
+        current={Boolean(accountSlug) && !projectName}
+      />
+      {me.staff ? (
+        // Beside the crumb where there is room: the team's directory row stays
+        // one click away.
+        <div className="contents max-md:hidden">
+          <StaffButtonGroup accountSlug={accountSlug} />
+        </div>
+      ) : null}
     </BreadcrumbItem>
   );
 }

@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import { clsx } from "clsx";
 
 import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
@@ -17,26 +18,34 @@ const _AccountFragment = graphql(`
 export const AccountPlanChip = (props: {
   account: DocumentType<typeof _AccountFragment>;
   className?: string;
-  /** Only the statuses that call for attention, where room is short. */
-  alertsOnly?: boolean;
+  /**
+   * Below `md`, only the statuses that call for attention: a phone has no room
+   * for the plan's name.
+   */
+  phoneAlertsOnly?: boolean;
 }) => {
-  const { account, alertsOnly = false } = props;
-  const chipProps: { color: ChipColor; children: string } | null = (() => {
+  const { account, phoneAlertsOnly = false } = props;
+  const chip: {
+    color: ChipColor;
+    children: string;
+    alert: boolean;
+  } | null = (() => {
     switch (account.subscriptionStatus) {
       case AccountSubscriptionStatus.Active:
-        return account.plan && !alertsOnly
-          ? { color: "info", children: account.plan.displayName }
+        return account.plan
+          ? { color: "info", children: account.plan.displayName, alert: false }
           : null;
       case AccountSubscriptionStatus.Trialing:
       case AccountSubscriptionStatus.TrialingWithPaymentMethod:
         return {
           color: "info",
           children: `${account.plan?.displayName} Trial`,
+          alert: true,
         };
       case AccountSubscriptionStatus.PastDue:
-        return { color: "danger", children: "Past Due" };
+        return { color: "danger", children: "Past Due", alert: true };
       case null:
-        return alertsOnly ? null : { color: "neutral", children: "Hobby" };
+        return { color: "neutral", children: "Hobby", alert: false };
       case AccountSubscriptionStatus.Canceled:
       case AccountSubscriptionStatus.TrialExpired:
       case AccountSubscriptionStatus.Unpaid:
@@ -48,8 +57,19 @@ export const AccountPlanChip = (props: {
         assertNever(account.subscriptionStatus);
     }
   })();
-  if (!chipProps) {
+  if (!chip) {
     return null;
   }
-  return <Chip scale="xs" className={props.className} {...chipProps} />;
+  return (
+    <Chip
+      scale="xs"
+      color={chip.color}
+      className={clsx(
+        props.className,
+        phoneAlertsOnly && !chip.alert && "max-md:hidden",
+      )}
+    >
+      {chip.children}
+    </Chip>
+  );
 };
