@@ -288,11 +288,13 @@ function PageContent(props: {
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
-      {/* On a phone the table keeps a minimum width and scrolls sideways
-          inside this box, rather than squeezing its columns until the test
-          name disappears. The box, not the table, holds the screen width:
-          a minimum on it would scroll the whole page instead. */}
-      <div className="relative flex-1 max-md:overflow-x-auto">
+      {/* On a phone the table keeps a minimum size. Its width: it scrolls
+          sideways inside this box rather than squeezing its columns until the
+          test name disappears (the box, not the table, holds the screen width:
+          a minimum on it would scroll the whole page). And three quarters of
+          the visible height, the header above taking half the screen: the page
+          scrolls to it. */}
+      <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
         {hasFilters && tests.pageInfo.totalCount === 0 ? (
           <EmptyState>
             <EmptyStateIcon>

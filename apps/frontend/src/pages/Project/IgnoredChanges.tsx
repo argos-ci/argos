@@ -430,10 +430,11 @@ function PageContent(props: { params: ProjectParams }) {
               </PageHeaderHeadline>
             </PageHeaderContent>
           </PageHeader>
-          {/* On a phone the table keeps a minimum width and scrolls
-              sideways inside this box, rather than squeezing the change's
-              name away. */}
-          <div className="relative flex-1 max-md:overflow-x-auto">
+          {/* On a phone the table keeps a minimum size. Its width: it scrolls
+              sideways inside this box rather than squeezing the change's name
+              away. And three quarters of the visible height, the header above
+              taking half the screen: the page scrolls to it. */}
+          <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
             <IgnoredChangesList
               ignoredChanges={ignoredChanges}
               params={params}

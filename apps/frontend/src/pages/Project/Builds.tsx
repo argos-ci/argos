@@ -493,7 +493,9 @@ function PageContent(props: {
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
-      <div className="relative flex-1">
+      {/* On a phone the header above takes half the screen: the table keeps
+          three quarters of the visible height, and the page scrolls to it. */}
+      <div className="relative flex-1 max-md:min-h-[75dvh]">
         {hasFilters && builds.pageInfo.isEmpty ? (
           <EmptyState>
             <EmptyStateIcon>
