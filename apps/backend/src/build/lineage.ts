@@ -24,6 +24,10 @@ export function queryBuildLineage(args: LineageArgs) {
     // this scope, a build could inherit approvals from a same-named build of
     // another team.
     .where("builds.projectId", build.projectId)
+    // Always true of a build's own bucket, and stated anyway: without it the
+    // branch lookup cannot use `screenshot_buckets_projectid_branch_name_idx`
+    // and falls back to the trigram index, across every project's buckets.
+    .where("compareScreenshotBucket.projectId", build.projectId)
     .where("builds.mode", build.mode)
     .where("compareScreenshotBucket.name", compareBucket.name)
     .where("compareScreenshotBucket.branch", compareBucket.branch);

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict JGsUoIeAImcmEG1iTCdfuM7uanVcZni9ooysoigyHoEcbNFoYpX0y6vzxndhbkb
+\restrict QmbCfAUSwMXuz1MwcmrBMZNd576cdMMcSfjFJgWcaec46kxFfhw2XZpguANi11L
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -5337,6 +5337,13 @@ CREATE INDEX screenshot_buckets_name_index ON public.screenshot_buckets USING bt
 
 
 --
+-- Name: screenshot_buckets_projectid_branch_name_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_projectid_branch_name_idx ON public.screenshot_buckets USING btree ("projectId", branch, name);
+
+
+--
 -- Name: screenshot_buckets_projectid_branch_trgm_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6707,7 +6714,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict JGsUoIeAImcmEG1iTCdfuM7uanVcZni9ooysoigyHoEcbNFoYpX0y6vzxndhbkb
+\unrestrict QmbCfAUSwMXuz1MwcmrBMZNd576cdMMcSfjFJgWcaec46kxFfhw2XZpguANi11L
 
 -- Knex migrations
 
@@ -6971,3 +6978,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026093
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002072942_static-ip.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261010094931_monthly-report.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261015104600_screenshot-buckets-project-branch-name-index.js', 1, NOW());
