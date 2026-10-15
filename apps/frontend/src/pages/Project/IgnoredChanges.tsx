@@ -631,7 +631,7 @@ function IgnoredChangesList(props: {
     <List
       aria-busy={isUpdating}
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden max-md:min-w-224",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-284",
         isUpdating && "animate-pulse",
       )}
     >
