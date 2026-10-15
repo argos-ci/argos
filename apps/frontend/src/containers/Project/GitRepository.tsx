@@ -349,16 +349,20 @@ export const ProjectGitRepository = (props: {
         </CardParagraph>
         {project.repository && RepoIcon ? (
           <div>
-            <div className="border-thin flex items-center gap-2 rounded-lg p-4">
-              <RepoIcon className="size-6 shrink-0" />
-              <div className="flex-1 font-semibold">
-                <Link
-                  variant="neutral"
-                  href={project.repository.url}
-                  target="_blank"
-                >
-                  {project.repository.fullName}
-                </Link>
+            <div className="border-thin flex items-center gap-2 rounded-lg p-4 max-md:flex-wrap">
+              {/* The icon and the name stay together: on a phone, the button
+                  goes under them when the three do not fit on a line. */}
+              <div className="flex flex-1 items-center gap-2 font-semibold max-md:flex-auto">
+                <RepoIcon className="size-6 shrink-0" />
+                <div className="max-md:wrap-anywhere">
+                  <Link
+                    variant="neutral"
+                    href={project.repository.url}
+                    target="_blank"
+                  >
+                    {project.repository.fullName}
+                  </Link>
+                </div>
               </div>
               {(() => {
                 switch (project.repository.__typename) {
