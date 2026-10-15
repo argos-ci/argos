@@ -14,7 +14,8 @@ import {
 
 import { Button } from "@/ui/Button";
 import { DialogTrigger } from "@/ui/Dialog";
-import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
+import { HeadlessLink } from "@/ui/Link";
+import { List, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
@@ -68,14 +69,7 @@ function LastTriggerStatusIcon({
   return (
     <DialogTrigger>
       <Tooltip content="View latest automation runs">
-        <Button
-          variant="secondary"
-          iconOnly
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
+        <Button variant="secondary" iconOnly className="relative">
           <AutomationRunStatusIcon status={automationRun.status} />
         </Button>
       </Tooltip>
@@ -116,13 +110,18 @@ function AutomationRow(props: AutomationRowProps) {
   const url = getAutomationURL({ ...params, automationId: automationRule.id });
 
   return (
-    <ListRowLink
-      href={url}
-      className="flex items-center gap-6 px-4 py-2 text-sm"
+    <ListRow
+      // Not a `ListRowLink`: a link around the row's menu and runs buttons
+      // would take their clicks. The link is stretched over the row instead,
+      // the buttons sit above it, and the row rebuilds the link's feedback.
+      className="group/row hover:bg-hover has-[a:focus-visible]:bg-hover relative flex items-center gap-6 px-4 py-2 text-sm"
     >
-      <div className="w-44 shrink-0 py-2 md:w-auto md:grow">
+      <HeadlessLink
+        href={url}
+        className="w-44 shrink-0 py-2 after:absolute after:inset-0 focus:outline-hidden md:w-auto md:grow"
+      >
         <div className="truncate">{automationRule.name}</div>
-      </div>
+      </HeadlessLink>
       <div className="text-low flex w-32 shrink-0 flex-col truncate overflow-hidden py-2 text-sm whitespace-nowrap">
         {automationRule.on.map((rawEvent) => {
           const event = AutomationEventSchema.parse(rawEvent);
@@ -150,7 +149,7 @@ function AutomationRow(props: AutomationRowProps) {
       >
         <Time date={automationRule.createdAt} className="text-low" />
       </div>
-      <div className="w-8 shrink-0 py-2">
+      <div className="relative w-8 shrink-0 py-2">
         <MenuRoot>
           <MenuTrigger>
             <Button variant="secondary" iconOnly>
@@ -171,7 +170,7 @@ function AutomationRow(props: AutomationRowProps) {
           </Menu>
         </MenuRoot>
       </div>
-    </ListRowLink>
+    </ListRow>
   );
 }
 
