@@ -16,7 +16,7 @@ export function Navbar() {
   const { accountSlug, projectName, testId } = useParams();
   return (
     <nav className="container mx-auto flex items-center justify-between gap-4 p-4">
-      <div className="flex min-w-0 items-center md:shrink-0">
+      <div className="flex min-w-0 items-center">
         <Tooltip content="Go to home">
           <HomeLink className="shrink-0 transition hover:brightness-125">
             <BrandLogo height={32} className="max-w-none max-md:hidden" />
@@ -25,7 +25,7 @@ export function Navbar() {
         </Tooltip>
         <Suspense fallback={<BreadcrumbContainer aria-busy />}>
           <BreadcrumbContainer>
-            <ol className="flex items-center gap-2 font-light md:flex-wrap">
+            <ol className="flex items-center gap-2 font-light">
               <AccountBreadcrumbItem />
               {accountSlug && projectName ? (
                 <>
