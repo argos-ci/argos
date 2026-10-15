@@ -1100,7 +1100,9 @@ function EvolutionChart(props: {
   return (
     <ChartContainer
       config={chartConfig}
-      className="h-full md:flex-1"
+      // `flex-1` at every width: the card lays its body out as a row, so
+      // without it the chart had no width below `md` and never drew.
+      className="h-full flex-1"
       data-visual-test="transparent"
     >
       <AreaChart
