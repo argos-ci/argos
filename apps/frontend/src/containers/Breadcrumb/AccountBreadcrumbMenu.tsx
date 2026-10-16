@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { PlusCircleIcon } from "lucide-react";
 import { matchPath, useLocation } from "react-router";
 
@@ -63,13 +64,14 @@ export function getAccountMenuSections(account: AuthAccount, pathname: string) {
  */
 export function AccountBreadcrumbMenu(props: {
   account: AuthAccount;
+  anchor?: ComponentProps<typeof Menu>["anchor"];
   children?: React.ReactNode;
 }) {
   const { account } = props;
   const location = useLocation();
 
   return (
-    <Menu side="bottom" align="start">
+    <Menu side="bottom" align="start" anchor={props.anchor}>
       {getAccountMenuSections(account, location.pathname)}
       {props.children}
     </Menu>
