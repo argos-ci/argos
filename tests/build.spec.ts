@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 
 import {
+  Build,
   BuildReview,
   ScreenshotDiff,
 } from "../apps/backend/src/database/models";
@@ -296,6 +297,144 @@ loggedTest(
     await expect(dialog).toBeVisible({ timeout: 15_000 });
     await expect(
       dialog.getByRole("link", { name: "Review next build" }),
+    ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "points an outdated build to the latest build of its suite",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, newerDefaultBuild } =
+      await createSiblingBuildsScenario({
+        projectId: project.id,
+        withNewerBuild: true,
+      });
+    if (!newerDefaultBuild) {
+      throw new Error("The scenario was seeded with a newer build");
+    }
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    const banner = page
+      .getByRole("alert")
+      .filter({ hasText: "A newer build exists for branch feat/sparkle." });
+    await expect(banner).toBeVisible();
+    await expect(
+      banner.getByRole("link", {
+        name: `Go to build ${newerDefaultBuild.number}`,
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/${team.account.slug}/${project.name}/builds/${newerDefaultBuild.number}/overview`,
+    );
+
+    await screenshot(page, "build-newer-build-banner", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    // The latest build has nothing newer to point to.
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${newerDefaultBuild.number}`,
+    );
+    await expect(
+      page.getByRole("link", {
+        name: `Build ${newerDefaultBuild.number}`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("A newer build exists")).toHaveCount(0);
+  },
+);
+
+loggedTest(
+  "offers the latest build once an outdated one is reviewed",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, newerDefaultBuild } =
+      await createSiblingBuildsScenario({
+        projectId: project.id,
+        withNewerBuild: true,
+      });
+    if (!newerDefaultBuild) {
+      throw new Error("The scenario was seeded with a newer build");
+    }
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Submit review" }).click();
+    await page.getByRole("button", { name: "Approve" }).click();
+
+    const dialog = page.getByRole("dialog", {
+      name: "Review the latest build",
+    });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(
+      dialog.getByText(
+        `Build ${newerDefaultBuild.number} is the latest of branch feat/sparkle.`,
+      ),
+    ).toBeVisible();
+    // The later commit only ran `default`: the commit's other suites are still
+    // the latest of their own and wait for a review, so they stay listed.
+    await expect(
+      dialog.getByText("2 other suites of this commit still need your review."),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("link", {
+        name: `storybook ${team.account.slug}/${project.name} Changes detected`,
+      }),
+    ).toBeVisible();
+
+    await screenshot(page, "build-newer-build-dialog", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await dialog.getByRole("link", { name: "Review latest build" }).click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${newerDefaultBuild.number}/overview$`),
+    );
+    // Both directions of the suite's history agree: the build the reviewer is
+    // sent to offers to carry over what they just approved.
+    await expect(
+      page.getByRole("dialog", { name: "Previous approvals detected" }),
+    ).toBeVisible();
+  },
+);
+
+loggedTest(
+  "does not send the reviewer to a newer build with nothing to review",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, newerDefaultBuild } =
+      await createSiblingBuildsScenario({
+        projectId: project.id,
+        withNewerBuild: true,
+      });
+    if (!newerDefaultBuild) {
+      throw new Error("The scenario was seeded with a newer build");
+    }
+    await Build.query()
+      .findById(newerDefaultBuild.id)
+      .patch({ conclusion: "no-changes" });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Submit review" }).click();
+    await page.getByRole("button", { name: "Approve" }).click();
+
+    // The latest build has no changes: the prompt falls back to the commit's
+    // suites still awaiting a review.
+    const dialog = page.getByRole("dialog", { name: "Review the next build" });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(
+      dialog.getByText("2 more builds ran on this commit"),
     ).toBeVisible();
   },
 );

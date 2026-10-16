@@ -2,11 +2,12 @@ import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
 export type BannerProps = Omit<ComponentPropsWithRef<"div">, "color"> & {
-  color: "neutral" | "danger" | "warning";
+  color: "neutral" | "info" | "danger" | "warning";
 };
 
 const colorClassNames = {
   neutral: "bg-ui text",
+  info: "bg-info-ui text-info-low",
   danger: "bg-danger-ui text-danger-low",
   warning: "bg-warning-ui text-warning-low",
 };

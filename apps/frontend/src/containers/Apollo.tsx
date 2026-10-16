@@ -133,7 +133,7 @@ export const ApolloInitializer = (props: { children: React.ReactNode }) => {
  * A hook that refetches data when the document becomes visible or the window gains focus.
  */
 export function useRefetchWhenActive(props: {
-  refetch: () => void;
+  refetch: () => unknown;
   skip?: boolean;
 }) {
   const { refetch, skip = false } = props;
@@ -142,14 +142,22 @@ export function useRefetchWhenActive(props: {
       return;
     }
 
+    function refresh() {
+      // A failed refresh already lands in the query's own `error`, and the
+      // next return to the tab tries again. Left unhandled, the rejected
+      // promise would also reach Sentry, once per tab every time a laptop
+      // wakes up offline.
+      Promise.resolve(refetch()).catch(() => {});
+    }
+
     function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
-        refetch();
+        refresh();
       }
     }
 
     function handleFocus() {
-      refetch();
+      refresh();
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);

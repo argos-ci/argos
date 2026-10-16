@@ -1,13 +1,15 @@
 import { raw, type QueryBuilder } from "objection";
 
 import {
-  Build,
   BuildReview,
   IgnoredChange,
   ScreenshotDiff,
   ScreenshotDiffReview,
+  type Build,
   type ScreenshotBucket,
 } from "@/database/models";
+
+import { queryBuildLineage } from "./lineage";
 
 type GetPreviousDiffApprovalIdsArgs = GetPreviousFilesApprovalQueryArgs;
 
@@ -79,41 +81,18 @@ type GetPreviousFilesApprovalQueryArgs = PreviousBuildsScope & {
 };
 
 /**
- * Query for builds that precede the given build on the same screenshot bucket
- * name/branch (and pull request, if any) and mode, and that detected changes.
- * These are the builds whose approvals can be reapplied to the current build.
+ * Query for the builds of the same lineage (see {@link queryBuildLineage})
+ * that precede the given build and detected changes. These are the builds
+ * whose approvals can be reapplied to the current build.
  */
 function getPreviousBuildsQuery(args: {
   build: Build;
   compareBucket: ScreenshotBucket;
 }) {
-  const { build, compareBucket } = args;
-
-  const buildQuery = Build.query()
+  return queryBuildLineage(args)
     .select("builds.id")
-    .joinRelated("compareScreenshotBucket")
-    // Scope to the current build's project. Bucket names ("default", …) are
-    // only unique within a project, so without this a build could inherit
-    // approvals from a same-named build in another project — and therefore
-    // another team. Scoping by project keeps automatic reviews isolated per
-    // project and per team.
-    .where("builds.projectId", build.projectId)
-    .where("builds.createdAt", "<", build.createdAt)
-    .where("builds.mode", build.mode)
-    .where("builds.conclusion", "changes-detected")
-    .where("compareScreenshotBucket.name", compareBucket.name)
-    .where("compareScreenshotBucket.branch", compareBucket.branch);
-
-  // If a pull request is specified, then only look for builds in this specific
-  // pull request.
-  if (build.githubPullRequestId) {
-    buildQuery.where("builds.githubPullRequestId", build.githubPullRequestId);
-  }
-  if (build.originPullRequestId) {
-    buildQuery.where("builds.originPullRequestId", build.originPullRequestId);
-  }
-
-  return buildQuery;
+    .where("builds.createdAt", "<", args.build.createdAt)
+    .where("builds.conclusion", "changes-detected");
 }
 
 /**

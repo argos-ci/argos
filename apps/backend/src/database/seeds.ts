@@ -1677,14 +1677,19 @@ export async function createJourneyScenario(input: {
  * `default` name, which is what a build name alone cannot disambiguate. All
  * three end up with changes waiting, so finishing one leaves the others to
  * review.
+ *
+ * With `withNewerBuild`, the `default` suite also ran on a later commit of the
+ * branch, which leaves the first `default` build outdated.
  */
 export async function createSiblingBuildsScenario(input: {
   projectId: string;
+  withNewerBuild?: boolean;
 }): Promise<{
   defaultBuild: Build;
   storybookBuild: Build;
   docsBuild: Build;
   docsProject: Project;
+  newerDefaultBuild: Build | null;
 }> {
   const { projectId } = input;
   const seededAt = getSeedInstant();
@@ -1720,8 +1725,16 @@ export async function createSiblingBuildsScenario(input: {
     name: string;
     number: number;
     projectId?: string;
+    commit?: string;
+    createdAt?: string;
   }) {
-    const { name, number, projectId = input.projectId } = options;
+    const {
+      name,
+      number,
+      projectId = input.projectId,
+      commit = headCommit,
+      createdAt = seededAt,
+    } = options;
     const bucketProps = {
       name,
       projectId,
@@ -1729,21 +1742,21 @@ export async function createSiblingBuildsScenario(input: {
       valid: true,
       screenshotCount: 1,
       storybookScreenshotCount: 0,
-      createdAt: seededAt,
-      updatedAt: seededAt,
+      createdAt,
+      updatedAt: createdAt,
     };
     const [baseBucket, compareBucket] =
       await ScreenshotBucket.query().insertAndFetch([
         { ...bucketProps, branch: "main", commit: baseCommit },
-        { ...bucketProps, branch, commit: headCommit },
+        { ...bucketProps, branch, commit },
       ]);
     invariant(baseBucket && compareBucket);
 
-    const test = await Test.query().insertAndFetch({
-      name: "home.png",
-      buildName: name,
-      projectId,
-    });
+    // A later run of a suite reports on the same test as the earlier one.
+    const testProps = { name: "home.png", buildName: name, projectId };
+    const test =
+      (await Test.query().findOne(testProps)) ??
+      (await Test.query().insertAndFetch(testProps));
 
     const [baseScreenshot, compareScreenshot] =
       await Screenshot.query().insertAndFetch([
@@ -1772,8 +1785,8 @@ export async function createSiblingBuildsScenario(input: {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId,
-      createdAt: seededAt,
-      updatedAt: seededAt,
+      createdAt,
+      updatedAt: createdAt,
     });
 
     await ScreenshotDiff.query().insert({
@@ -1785,8 +1798,8 @@ export async function createSiblingBuildsScenario(input: {
       jobStatus: "complete" as const,
       s3Id: diffFile.key,
       fileId: diffFile.id,
-      createdAt: seededAt,
-      updatedAt: seededAt,
+      createdAt,
+      updatedAt: createdAt,
     });
 
     // Computes the build stats and conclusion the build page relies on.
@@ -1813,6 +1826,14 @@ export async function createSiblingBuildsScenario(input: {
       projectId: docsProject.id,
     }),
     docsProject,
+    newerDefaultBuild: input.withNewerBuild
+      ? await createSiblingBuild({
+          name: "default",
+          number: 3,
+          commit: "d3c9c6c3a7b2e5f4d1c0a9b8e7f6d5c4b3a2f1e0",
+          createdAt: new Date(Date.parse(seededAt) + 60_000).toISOString(),
+        })
+      : null,
   };
 }
 
