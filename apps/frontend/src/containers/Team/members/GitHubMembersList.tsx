@@ -1,11 +1,10 @@
 import { useDeferredValue, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { clsx } from "clsx";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAssertAuthAccount } from "@/containers/Auth";
-import { TeamMemberLabel } from "@/containers/UserList";
+import { TeamMemberLabel, UserList } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -15,7 +14,7 @@ import {
   EmptyStateActions,
   EmptyStateDescription,
 } from "@/ui/Layout";
-import { List, ListLoadMore, ListRow } from "@/ui/List";
+import { ListLoadMore, ListRow } from "@/ui/List";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -114,70 +113,62 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {members.length > 0 ? (
-        <div className="max-md:overflow-x-auto">
-          {/* On a phone the list keeps a minimum width and scrolls sideways
-              in this box, which holds the card's width: side by side, the
-              columns left the name a word per line. */}
-          <List
-            className={clsx(
-              "max-md:min-w-128",
-              search !== deferredSearch && "opacity-disabled",
-            )}
-          >
-            {members.map((member) => {
-              const teamMember = member.teamMember ?? null;
-              const user = teamMember?.user ?? null;
-              const isMe = Boolean(user && authAccount.id === user.id);
-              return (
-                <ListRow
-                  key={member.id}
-                  className="flex items-center gap-4 px-4 py-2"
-                >
-                  <AccountAvatar
-                    avatar={user?.avatar ?? member.githubAccount.avatar}
-                    className="size-9 shrink-0"
-                  />
-                  {user ? (
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-semibold">{user.name}</div>
-                      </div>
-                      <div className="text-low text-xs">{user.slug}</div>
+        <UserList
+          className={search !== deferredSearch ? "opacity-disabled" : undefined}
+        >
+          {members.map((member) => {
+            const teamMember = member.teamMember ?? null;
+            const user = teamMember?.user ?? null;
+            const isMe = Boolean(user && authAccount.id === user.id);
+            return (
+              <ListRow
+                key={member.id}
+                className="flex items-center gap-4 px-4 py-2"
+              >
+                <AccountAvatar
+                  avatar={user?.avatar ?? member.githubAccount.avatar}
+                  className="size-9 shrink-0"
+                />
+                {user ? (
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-semibold">{user.name}</div>
                     </div>
-                  ) : (
-                    <div className="flex-1 text-sm font-semibold">
-                      {member.githubAccount.login}
-                    </div>
-                  )}
-                  {isMe || !props.amOwner || !teamMember ? (
-                    <div className="text-low text-sm">
-                      {teamMember ? (
-                        TeamMemberLabel[teamMember.level]
-                      ) : (
-                        <Tooltip content="This user isn’t part of the team yet. If they log in with GitHub, they’ll be added automatically.">
-                          <Chip scale="sm" color="neutral">
-                            Pending
-                          </Chip>
-                        </Tooltip>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <MemberLevelEditor
-                        teamId={props.teamId}
-                        member={teamMember}
-                        hasFineGrainedAccessControl={
-                          props.hasFineGrainedAccessControl
-                        }
-                      />
-                    </div>
-                  )}
-                  <div className="w-4" />
-                </ListRow>
-              );
-            })}
-          </List>
-        </div>
+                    <div className="text-low text-xs">{user.slug}</div>
+                  </div>
+                ) : (
+                  <div className="flex-1 text-sm font-semibold">
+                    {member.githubAccount.login}
+                  </div>
+                )}
+                {isMe || !props.amOwner || !teamMember ? (
+                  <div className="text-low text-sm">
+                    {teamMember ? (
+                      TeamMemberLabel[teamMember.level]
+                    ) : (
+                      <Tooltip content="This user isn’t part of the team yet. If they log in with GitHub, they’ll be added automatically.">
+                        <Chip scale="sm" color="neutral">
+                          Pending
+                        </Chip>
+                      </Tooltip>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <MemberLevelEditor
+                      teamId={props.teamId}
+                      member={teamMember}
+                      hasFineGrainedAccessControl={
+                        props.hasFineGrainedAccessControl
+                      }
+                    />
+                  </div>
+                )}
+                <div className="w-4" />
+              </ListRow>
+            );
+          })}
+        </UserList>
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No GitHub members found</Heading>
