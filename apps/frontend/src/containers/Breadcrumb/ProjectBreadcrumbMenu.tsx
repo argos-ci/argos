@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
 
 import { getAccountURL } from "@/pages/Account/AccountParams";
@@ -61,9 +62,10 @@ export function getProjectMenuSection(
 export function ProjectBreadcrumbMenu(props: {
   accountSlug: string;
   projectNames: string[];
+  anchor?: ComponentProps<typeof Menu>["anchor"];
 }) {
   return (
-    <Menu side="bottom" align="start">
+    <Menu side="bottom" align="start" anchor={props.anchor}>
       {getProjectMenuSection(props.accountSlug, props.projectNames)}
     </Menu>
   );

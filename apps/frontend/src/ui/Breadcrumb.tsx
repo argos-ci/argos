@@ -1,8 +1,10 @@
-import { HTMLProps } from "react";
+import { HTMLProps, useRef, type RefObject } from "react";
 import { clsx } from "clsx";
 import { ChevronsUpDownIcon } from "lucide-react";
+import { useMatch } from "react-router";
 
 import { HeadlessLink, HeadlessLinkProps } from "./Link";
+import { MenuRoot, MenuTrigger } from "./menu-kit";
 
 export function BreadcrumbItem({
   className,
@@ -67,9 +69,8 @@ export function BreadcrumbSeparator(props: { className?: string }) {
 }
 
 /**
- * A crumb that opens the menu of its siblings, all of it: a chevron beside a
- * link was too small a target, and the link only led where the logo or the
- * tabs below already do.
+ * A crumb that opens the menu of its siblings, all of it: how a phone has it,
+ * where a finger needs the whole crumb as a target.
  */
 export function BreadcrumbMenuButton({
   current = false,
@@ -95,5 +96,57 @@ export function BreadcrumbMenuButton({
       {children}
       <ChevronsUpDownIcon className="text-low size-4 shrink-0" />
     </button>
+  );
+}
+
+/**
+ * A crumb that links to its page, with a chevron beside it that opens the menu
+ * of its siblings: one shape, two targets, each lit on its own when pointed at.
+ */
+export function BreadcrumbSplitButton(props: {
+  href: string;
+  /** The page is this crumb's, rather than one of its children's. */
+  current?: boolean;
+  /** Names the chevron, which has no text of its own. */
+  menuLabel: string;
+  children: React.ReactNode;
+  /**
+   * The sibling menu, lined up with the whole crumb: anchored to the chevron,
+   * it would open off to the right of the names it lists.
+   */
+  renderMenu: (anchor: RefObject<HTMLDivElement | null>) => React.ReactNode;
+  className?: string;
+}) {
+  const { href, current = false, menuLabel, children, renderMenu } = props;
+  const anchor = useRef<HTMLDivElement>(null);
+  const isPage = Boolean(useMatch(href));
+  return (
+    <div
+      ref={anchor}
+      className={clsx("flex min-w-0 items-center", props.className)}
+    >
+      <HeadlessLink
+        href={href}
+        aria-current={isPage ? "page" : undefined}
+        className={clsx(
+          "hover:bg-hover pointer-coarse:h-10 flex h-8 min-w-0 items-center gap-1.5 rounded-l-lg pr-1 pl-1.5 font-medium transition",
+          current ? "text-default" : "text-low hover:text-default",
+        )}
+      >
+        {children}
+      </HeadlessLink>
+      <MenuRoot>
+        <MenuTrigger>
+          <button
+            type="button"
+            aria-label={menuLabel}
+            className="focus-ring enabled-hover:bg-hover aria-expanded:bg-active text-low enabled-hover:text-default aria-expanded:text-default flex h-8 w-7 shrink-0 cursor-default items-center justify-center rounded-r-lg transition pointer-coarse:h-10 pointer-coarse:w-9"
+          >
+            <ChevronsUpDownIcon className="size-4" />
+          </button>
+        </MenuTrigger>
+        {renderMenu(anchor)}
+      </MenuRoot>
+    </div>
   );
 }

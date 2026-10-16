@@ -4,12 +4,14 @@ import { useLocation, useMatch } from "react-router";
 
 import { useAuth } from "@/containers/Auth";
 import { graphql } from "@/gql";
+import { getProjectURL } from "@/pages/Project/ProjectParams";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLabel,
   BreadcrumbLink,
   BreadcrumbMenuButton,
+  BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
 import { Menu, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
@@ -81,19 +83,21 @@ export function ProjectBreadcrumbItem(props: {
     <BreadcrumbItem>
       {me && projectNames ? (
         <>
-          <div className="contents max-md:hidden">
-            <MenuRoot>
-              <MenuTrigger>
-                <BreadcrumbMenuButton current={Boolean(isCurrent)}>
-                  {content}
-                </BreadcrumbMenuButton>
-              </MenuTrigger>
+          <BreadcrumbSplitButton
+            href={getProjectURL({ accountSlug, projectName })}
+            current={Boolean(isCurrent)}
+            menuLabel="Switch project"
+            renderMenu={(anchor) => (
               <ProjectBreadcrumbMenu
                 accountSlug={accountSlug}
                 projectNames={projectNames}
+                anchor={anchor}
               />
-            </MenuRoot>
-          </div>
+            )}
+            className="max-md:hidden"
+          >
+            {content}
+          </BreadcrumbSplitButton>
           {/* On a phone the same button switches the team too, as the
               account crumb is gone. It ends the trail there: the test after
               it is left out. */}
