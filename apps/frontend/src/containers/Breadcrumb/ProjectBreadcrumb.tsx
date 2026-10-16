@@ -87,12 +87,13 @@ export function ProjectBreadcrumbItem(props: {
             href={getProjectURL({ accountSlug, projectName })}
             current={Boolean(isCurrent)}
             menuLabel="Switch project"
-            menu={
+            renderMenu={(anchor) => (
               <ProjectBreadcrumbMenu
                 accountSlug={accountSlug}
                 projectNames={projectNames}
+                anchor={anchor}
               />
-            }
+            )}
             className="max-md:hidden"
           >
             {content}

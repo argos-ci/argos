@@ -253,11 +253,11 @@ function AccountSwitcher(props: {
         href={getAccountURL({ accountSlug })}
         current={current}
         menuLabel="Switch account"
-        menu={
-          <AccountBreadcrumbMenu account={me}>
+        renderMenu={(anchor) => (
+          <AccountBreadcrumbMenu account={me} anchor={anchor}>
             {staffSection}
           </AccountBreadcrumbMenu>
-        }
+        )}
         className="max-md:hidden"
       >
         {content}
@@ -326,7 +326,9 @@ export function AccountBreadcrumbItem() {
               href="/staff"
               current
               menuLabel="Switch account"
-              menu={<AccountBreadcrumbMenu account={me} />}
+              renderMenu={(anchor) => (
+                <AccountBreadcrumbMenu account={me} anchor={anchor} />
+              )}
               className="max-md:hidden"
             >
               {content}

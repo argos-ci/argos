@@ -1,4 +1,4 @@
-import { HTMLProps } from "react";
+import { HTMLProps, useRef, type RefObject } from "react";
 import { clsx } from "clsx";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { useMatch } from "react-router";
@@ -111,14 +111,19 @@ export function BreadcrumbSplitButton(props: {
   /** Names the chevron, which has no text of its own. */
   menuLabel: string;
   children: React.ReactNode;
-  /** The sibling menu, opened from the chevron. */
-  menu: React.ReactNode;
+  /**
+   * The sibling menu, lined up with the whole crumb: anchored to the chevron,
+   * it would open off to the right of the names it lists.
+   */
+  renderMenu: (anchor: RefObject<HTMLDivElement | null>) => React.ReactNode;
   className?: string;
 }) {
-  const { href, current = false, menuLabel, children, menu } = props;
+  const { href, current = false, menuLabel, children, renderMenu } = props;
+  const anchor = useRef<HTMLDivElement>(null);
   const isPage = Boolean(useMatch(href));
   return (
     <div
+      ref={anchor}
       className={clsx("group/crumb flex min-w-0 items-center", props.className)}
     >
       <HeadlessLink
@@ -143,7 +148,7 @@ export function BreadcrumbSplitButton(props: {
             <ChevronsUpDownIcon className="size-4" />
           </button>
         </MenuTrigger>
-        {menu}
+        {renderMenu(anchor)}
       </MenuRoot>
     </div>
   );
