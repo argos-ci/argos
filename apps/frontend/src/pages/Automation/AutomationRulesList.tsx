@@ -154,7 +154,7 @@ function AutomationRow(props: AutomationRowProps) {
       <div className="relative w-8 shrink-0 py-2">
         <MenuRoot>
           <MenuTrigger>
-            <Button variant="secondary" iconOnly>
+            <Button variant="ghost" size="small" iconOnly>
               <MoreVerticalIcon />
             </Button>
           </MenuTrigger>
