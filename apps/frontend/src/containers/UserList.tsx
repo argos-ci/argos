@@ -35,8 +35,10 @@ export function RemoveMenu(props: {
             props.onRemove();
           }}
           disabled={props.disabled}
+          suffix={
+            props.tooltip ? <MenuItemTooltip content={props.tooltip} /> : null
+          }
         >
-          {props.tooltip && <MenuItemTooltip content={props.tooltip} />}
           {props.actionLabel}
         </MenuItem>
       </Menu>

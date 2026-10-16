@@ -125,6 +125,11 @@ export function UserEmails(props: {
                       {!isPrimary && (
                         <MenuItem
                           disabled={!email.verified}
+                          suffix={
+                            email.verified ? null : (
+                              <MenuItemTooltip content="Verify email before setting as primary" />
+                            )
+                          }
                           onAction={() => {
                             client
                               .mutate({
@@ -143,22 +148,21 @@ export function UserEmails(props: {
                               });
                           }}
                         >
-                          {!email.verified && (
-                            <MenuItemTooltip content="Verify email before setting as primary" />
-                          )}
                           Set as primary
                         </MenuItem>
                       )}
                       <MenuItem
                         variant="danger"
                         disabled={isPrimary}
+                        suffix={
+                          isPrimary ? (
+                            <MenuItemTooltip content="Primary email cannot be deleted" />
+                          ) : null
+                        }
                         onAction={() => {
                           deleting.open(email.email);
                         }}
                       >
-                        {isPrimary && (
-                          <MenuItemTooltip content="Primary email cannot be deleted" />
-                        )}
                         Delete
                       </MenuItem>
                     </Menu>
