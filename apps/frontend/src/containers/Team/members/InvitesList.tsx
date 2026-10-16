@@ -2,6 +2,7 @@ import { useDeferredValue, useState } from "react";
 import type { Reference } from "@apollo/client";
 import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { clsx } from "clsx";
 import {
   CircleXIcon,
   ClockAlertIcon,
@@ -120,130 +121,140 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {invites.length > 0 ? (
-        <List className={search !== deferredSearch ? "opacity-disabled" : ""}>
-          {invites.map((invite) => {
-            return (
-              <ListRow
-                key={invite.id}
-                className="flex items-center gap-4 px-4 py-2"
-              >
-                <AccountAvatar
-                  avatar={invite.avatar}
-                  className="size-9 shrink-0"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      Pending invitation
-                      <MailIcon className="text-low size-4" />
+        <div className="max-md:overflow-x-auto">
+          {/* On a phone the list keeps a minimum width and scrolls sideways
+              in this box, which holds the card's width: side by side, the
+              columns left the name a word per line. */}
+          <List
+            className={clsx(
+              "max-md:min-w-128",
+              search !== deferredSearch && "opacity-disabled",
+            )}
+          >
+            {invites.map((invite) => {
+              return (
+                <ListRow
+                  key={invite.id}
+                  className="flex items-center gap-4 px-4 py-2"
+                >
+                  <AccountAvatar
+                    avatar={invite.avatar}
+                    className="size-9 shrink-0"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        Pending invitation
+                        <MailIcon className="text-low size-4" />
+                      </div>
                     </div>
+                    <div className="text-low text-xs">{invite.email}</div>
                   </div>
-                  <div className="text-low text-xs">{invite.email}</div>
-                </div>
-                {invite.expired ? (
-                  <Chip icon={<ClockAlertIcon />} scale="sm" color="warning">
-                    Expired
-                  </Chip>
-                ) : null}
-                <div className="text-low text-sm">
-                  {TeamMemberLabel[invite.userLevel]}
-                </div>
+                  {invite.expired ? (
+                    <Chip icon={<ClockAlertIcon />} scale="sm" color="warning">
+                      Expired
+                    </Chip>
+                  ) : null}
+                  <div className="text-low text-sm">
+                    {TeamMemberLabel[invite.userLevel]}
+                  </div>
 
-                {props.amOwner ? (
-                  <MenuRoot>
-                    <MenuTrigger>
-                      <Button variant="ghost" iconOnly>
-                        <MoreVerticalIcon />
-                      </Button>
-                    </MenuTrigger>
-                    <Menu aria-label="Actions">
-                      <MenuItem
-                        icon={<CircleXIcon />}
-                        variant="danger"
-                        onAction={() => {
-                          toast.promise(
-                            client.mutate({
-                              mutation: TeamInviteCancelMutation,
-                              variables: { teamInviteId: invite.id },
-                              update(cache, { data }) {
-                                if (data?.cancelInvite) {
-                                  cache.modify({
-                                    id: cache.identify({
-                                      __typename: "Team",
-                                      id: props.team.id,
-                                    }),
-                                    fields: {
-                                      invites: (
-                                        existingInvites,
-                                        { readField },
-                                      ) => {
-                                        return {
-                                          ...existingInvites,
-                                          edges: existingInvites.edges.filter(
-                                            (ref: Reference) =>
-                                              readField("id", ref) !==
-                                              invite.id,
-                                          ),
-                                          pageInfo: {
-                                            ...existingInvites.pageInfo,
-                                            totalCount:
-                                              existingInvites.pageInfo
-                                                .totalCount - 1,
-                                          },
-                                        };
+                  {props.amOwner ? (
+                    <MenuRoot>
+                      <MenuTrigger>
+                        <Button variant="ghost" iconOnly>
+                          <MoreVerticalIcon />
+                        </Button>
+                      </MenuTrigger>
+                      <Menu aria-label="Actions">
+                        <MenuItem
+                          icon={<CircleXIcon />}
+                          variant="danger"
+                          onAction={() => {
+                            toast.promise(
+                              client.mutate({
+                                mutation: TeamInviteCancelMutation,
+                                variables: { teamInviteId: invite.id },
+                                update(cache, { data }) {
+                                  if (data?.cancelInvite) {
+                                    cache.modify({
+                                      id: cache.identify({
+                                        __typename: "Team",
+                                        id: props.team.id,
+                                      }),
+                                      fields: {
+                                        invites: (
+                                          existingInvites,
+                                          { readField },
+                                        ) => {
+                                          return {
+                                            ...existingInvites,
+                                            edges: existingInvites.edges.filter(
+                                              (ref: Reference) =>
+                                                readField("id", ref) !==
+                                                invite.id,
+                                            ),
+                                            pageInfo: {
+                                              ...existingInvites.pageInfo,
+                                              totalCount:
+                                                existingInvites.pageInfo
+                                                  .totalCount - 1,
+                                            },
+                                          };
+                                        },
                                       },
-                                    },
-                                  });
-                                }
-                              },
-                            }),
-                            {
-                              loading: "Canceling invitation…",
-                              success: "Invitation canceled",
-                              error: "Failed to cancel invitation",
-                            },
-                          );
-                        }}
-                      >
-                        Cancel Invitation
-                      </MenuItem>
-                      <MenuItem
-                        icon={<MailIcon />}
-                        onAction={() => {
-                          toast.promise(
-                            client.mutate({
-                              mutation: ResendInviteMutation,
-                              variables: {
-                                input: {
-                                  teamAccountId: props.team.id,
-                                  members: [
-                                    {
-                                      email: invite.email,
-                                      level: invite.userLevel,
-                                    },
-                                  ],
+                                    });
+                                  }
                                 },
+                              }),
+                              {
+                                loading: "Canceling invitation…",
+                                success: "Invitation canceled",
+                                error: "Failed to cancel invitation",
                               },
-                            }),
-                            {
-                              loading: "Resending invitation…",
-                              success: "Invitation resent",
-                              error: "Failed to resend invitation",
-                            },
-                          );
-                        }}
-                      >
-                        Resend Invitation
-                      </MenuItem>
-                    </Menu>
-                  </MenuRoot>
-                ) : (
-                  <div className="w-4" />
-                )}
-              </ListRow>
-            );
-          })}
-        </List>
+                            );
+                          }}
+                        >
+                          Cancel Invitation
+                        </MenuItem>
+                        <MenuItem
+                          icon={<MailIcon />}
+                          onAction={() => {
+                            toast.promise(
+                              client.mutate({
+                                mutation: ResendInviteMutation,
+                                variables: {
+                                  input: {
+                                    teamAccountId: props.team.id,
+                                    members: [
+                                      {
+                                        email: invite.email,
+                                        level: invite.userLevel,
+                                      },
+                                    ],
+                                  },
+                                },
+                              }),
+                              {
+                                loading: "Resending invitation…",
+                                success: "Invitation resent",
+                                error: "Failed to resend invitation",
+                              },
+                            );
+                          }}
+                        >
+                          Resend Invitation
+                        </MenuItem>
+                      </Menu>
+                    </MenuRoot>
+                  ) : (
+                    <div className="w-4" />
+                  )}
+                </ListRow>
+              );
+            })}
+          </List>
+        </div>
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No pending invitations found</Heading>
