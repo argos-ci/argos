@@ -36,6 +36,12 @@ loggedTest("automations", async ({ page, team, project }) => {
   ).toBeVisible();
   await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
   await screenshot(page, "project-automations");
+
+  // The whole row opens the rule, but its menu opens instead of following it.
+  const listURL = page.url();
+  await page.locator("button:has(.lucide-ellipsis-vertical)").click();
+  await expect(page.getByRole("option", { name: "Delete" })).toBeVisible();
+  expect(page.url()).toBe(listURL);
 });
 
 loggedTest("new automation", async ({ page, team, project }) => {
