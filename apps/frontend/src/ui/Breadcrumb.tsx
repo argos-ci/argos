@@ -102,7 +102,7 @@ export function BreadcrumbMenuButton({
 /**
  * A crumb that links to its page, with a chevron beside it that opens the menu
  * of its siblings: one shape, two targets. Pointing at either lights both, the
- * one under the pointer darker, so the shape reads as one control in two.
+ * one under the pointer more, so the shape reads as one control in two.
  */
 export function BreadcrumbSplitButton(props: {
   href: string;
@@ -130,7 +130,7 @@ export function BreadcrumbSplitButton(props: {
         href={href}
         aria-current={isPage ? "page" : undefined}
         className={clsx(
-          "hover:bg-active group-hover/crumb:not-hover:bg-hover group-has-[[aria-expanded=true]]/crumb:not-hover:bg-hover pointer-coarse:h-10 flex h-8 min-w-0 items-center gap-1.5 rounded-l-lg pr-1 pl-1.5 font-medium transition",
+          "hover:bg-hover group-hover/crumb:not-hover:bg-hover/50 group-has-[[aria-expanded=true]]/crumb:not-hover:bg-hover/50 pointer-coarse:h-10 flex h-8 min-w-0 items-center gap-1.5 rounded-l-lg pr-1 pl-1.5 font-medium transition",
           current
             ? "text-default"
             : "text-low group-hover/crumb:text-default group-has-[[aria-expanded=true]]/crumb:text-default",
@@ -143,7 +143,7 @@ export function BreadcrumbSplitButton(props: {
           <button
             type="button"
             aria-label={menuLabel}
-            className="focus-ring enabled-hover:bg-active group-hover/crumb:not-hover:not-aria-expanded:bg-hover aria-expanded:bg-active text-low group-hover/crumb:text-default aria-expanded:text-default flex h-8 w-7 shrink-0 cursor-default items-center justify-center rounded-r-lg transition pointer-coarse:h-10 pointer-coarse:w-9"
+            className="focus-ring enabled-hover:not-aria-expanded:bg-hover group-hover/crumb:not-hover:not-aria-expanded:bg-hover/50 aria-expanded:bg-active text-low group-hover/crumb:text-default aria-expanded:text-default flex h-8 w-7 shrink-0 cursor-default items-center justify-center rounded-r-lg transition pointer-coarse:h-10 pointer-coarse:w-9"
           >
             <ChevronsUpDownIcon className="size-4" />
           </button>
