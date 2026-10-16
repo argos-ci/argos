@@ -118,7 +118,9 @@ function AutomationRow(props: AutomationRowProps) {
     >
       <HeadlessLink
         href={url}
-        className="w-44 shrink-0 py-2 after:absolute after:inset-0 focus:outline-hidden md:w-auto md:grow"
+        // Sized by the row, never by its name: a name wider than its share
+        // would push this row's other columns out of line with the header's.
+        className="min-w-44 flex-1 py-2 after:absolute after:inset-0 focus:outline-hidden"
       >
         <div className="truncate">{automationRule.name}</div>
       </HeadlessLink>
@@ -228,7 +230,7 @@ export function AutomationRulesList(
     <List ref={parentRef} className="absolute max-h-full w-full">
       <div className="relative">
         <ListHeaderRow>
-          <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
+          <div className="min-w-44 flex-1">Name</div>
           <div className="w-32 shrink-0">Triggers</div>
           <div className="w-36 shrink-0">Last triggered</div>
           <div className="w-28 shrink-0">Created</div>
