@@ -253,7 +253,6 @@ function MenuSurface(props: {
   submenu?: boolean;
   side?: BasePopover.Positioner.Props["side"];
   align?: BasePopover.Positioner.Props["align"];
-  anchor?: BasePopover.Positioner.Props["anchor"];
   fitContent?: boolean;
   className?: string;
 }) {
@@ -262,7 +261,6 @@ function MenuSurface(props: {
     submenu = false,
     side = "bottom",
     align = "start",
-    anchor,
     fitContent = false,
     className,
     popupId,
@@ -278,7 +276,6 @@ function MenuSurface(props: {
       <BasePopover.Positioner
         side={side}
         align={align}
-        anchor={anchor}
         sideOffset={4}
         // A dropdown holds its side: its height is bounded to the room below
         // the trigger, so it always fits, and holding the side keeps the top
@@ -471,11 +468,6 @@ export function Menu(props: {
   side?: BasePopover.Positioner.Props["side"];
   align?: BasePopover.Positioner.Props["align"];
   /**
-   * What the menu lines up with, when not its trigger: a trigger that is only
-   * part of the control it opens from.
-   */
-  anchor?: BasePopover.Positioner.Props["anchor"];
-  /**
    * Let the menu shrink to its rows.
    *
    * The floor is there so a dropdown holds its width while a query filters the
@@ -515,7 +507,6 @@ function MenuList(
     checkedIndicator = "icon",
     side,
     align,
-    anchor,
     fitContent = false,
     className,
     popupId,
@@ -928,7 +919,6 @@ function MenuList(
     <MenuSurface
       side={side}
       align={align}
-      anchor={anchor}
       fitContent={fitContent}
       className={className}
       popupId={popupId}
