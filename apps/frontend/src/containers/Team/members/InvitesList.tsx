@@ -151,7 +151,12 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                     <div className="text-low text-xs">{invite.email}</div>
                   </div>
                   {invite.expired ? (
-                    <Chip icon={<ClockAlertIcon />} scale="sm" color="warning">
+                    <Chip
+                      icon={<ClockAlertIcon />}
+                      scale="sm"
+                      color="warning"
+                      className="shrink-0"
+                    >
                       Expired
                     </Chip>
                   ) : null}

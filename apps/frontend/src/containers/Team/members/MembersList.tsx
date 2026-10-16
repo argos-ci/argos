@@ -148,6 +148,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
                         icon={<MarkGithubIcon />}
                         scale="sm"
                         color="neutral"
+                        className="shrink-0"
                       >
                         Synced
                       </Chip>
