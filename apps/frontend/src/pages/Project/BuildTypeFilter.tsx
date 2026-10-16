@@ -30,7 +30,9 @@ export function BuildTypeFilter(props: {
     <MenuRoot>
       <MenuTrigger>
         <SelectStyleButton className="text-sm">
-          <StackedItems>
+          {/* The count says as much, in room a phone has: both filters then
+              share a line. */}
+          <StackedItems className="max-md:hidden">
             {BuildTypes.map((type) => {
               return (
                 <div

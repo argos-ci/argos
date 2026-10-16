@@ -430,7 +430,11 @@ function PageContent(props: { params: ProjectParams }) {
               </PageHeaderHeadline>
             </PageHeaderContent>
           </PageHeader>
-          <div className="relative flex-1">
+          {/* On a phone the table keeps a minimum size. Its width: it scrolls
+              sideways inside this box rather than squeezing the change's name
+              away. And three quarters of the visible height, the header above
+              taking half the screen: the page scrolls to it. */}
+          <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
             <IgnoredChangesList
               ignoredChanges={ignoredChanges}
               params={params}
@@ -627,7 +631,7 @@ function IgnoredChangesList(props: {
     <List
       aria-busy={isUpdating}
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-284",
         isUpdating && "animate-pulse",
       )}
     >
@@ -826,7 +830,8 @@ function IgnoredChangeRow(props: {
           <Button
             variant="secondary"
             size="small"
-            className="opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+            // Always shown to a finger, which has no hover to reveal it.
+            className="opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 pointer-coarse:opacity-100"
             onClick={() =>
               onUnignore({
                 changeId: ignoredChange.id,

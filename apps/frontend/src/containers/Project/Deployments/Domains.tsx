@@ -256,10 +256,12 @@ function InternalDomainRow(props: { project: Project }) {
   const { project } = props;
 
   return (
-    <ListRow className="flex items-center justify-between gap-4 p-4 text-sm">
-      <div className="flex items-center gap-3">
+    <ListRow className="flex items-center justify-between gap-4 p-4 text-sm max-md:flex-wrap">
+      <div className="flex items-center gap-3 max-md:flex-wrap">
         {project.domain ? (
-          <span className="font-medium">{project.domain}</span>
+          <span className="font-medium max-md:wrap-anywhere">
+            {project.domain}
+          </span>
         ) : (
           <span className="text-low">Assigned on first deployment</span>
         )}
@@ -449,9 +451,11 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
 
   return (
     <ListRow className="flex flex-col items-stretch gap-2 p-4 text-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="font-medium">{customDomain.domain}</span>
+      <div className="flex items-center justify-between gap-4 max-md:flex-wrap">
+        <div className="flex items-center gap-3 max-md:flex-wrap">
+          <span className="font-medium max-md:wrap-anywhere">
+            {customDomain.domain}
+          </span>
           <Chip color={status.color} scale="xs">
             {customDomain.pendingReason
               ? PENDING_LABELS[customDomain.pendingReason]

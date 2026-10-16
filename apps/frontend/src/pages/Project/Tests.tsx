@@ -272,7 +272,7 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
-          <TextInputGroup className="w-64">
+          <TextInputGroup className="w-64 max-md:w-full">
             <TextInputIcon>
               <SearchIcon />
             </TextInputIcon>
@@ -288,7 +288,13 @@ function PageContent(props: {
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
-      <div className="relative flex-1">
+      {/* On a phone the table keeps a minimum size. Its width: it scrolls
+          sideways inside this box rather than squeezing its columns until the
+          test name disappears (the box, not the table, holds the screen width:
+          a minimum on it would scroll the whole page). And three quarters of
+          the visible height, the header above taking half the screen: the page
+          scrolls to it. */}
+      <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
         {hasFilters && tests.pageInfo.totalCount === 0 ? (
           <EmptyState>
             <EmptyStateIcon>
@@ -367,7 +373,7 @@ function TestsList(props: {
   return (
     <List
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-280",
         isUpdating && "animate-pulse",
       )}
     >

@@ -283,9 +283,9 @@ export function TeamSAMLSSO(props: {
             )}
           </div>
         ) : (
-          <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm">
+          <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm max-md:flex-wrap">
             <LockIcon className="size-6 shrink-0" />
-            <div className="flex-1">
+            <div className="flex-1 max-md:min-w-[calc(100%-2.5rem)]">
               <div className="font-medium">SAML</div>
               <p className="text-low">
                 Allow Team Members to login using an Identity Provider.

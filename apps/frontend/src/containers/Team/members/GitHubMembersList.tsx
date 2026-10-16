@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAssertAuthAccount } from "@/containers/Auth";
-import { TeamMemberLabel } from "@/containers/UserList";
+import { TeamMemberLabel, UserList } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -14,7 +14,7 @@ import {
   EmptyStateActions,
   EmptyStateDescription,
 } from "@/ui/Layout";
-import { List, ListLoadMore, ListRow } from "@/ui/List";
+import { ListLoadMore, ListRow } from "@/ui/List";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -109,11 +109,13 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
   const members = data.team.githubMembers.edges;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {members.length > 0 ? (
-        <List className={search !== deferredSearch ? "opacity-disabled" : ""}>
+        <UserList
+          className={search !== deferredSearch ? "opacity-disabled" : undefined}
+        >
           {members.map((member) => {
             const teamMember = member.teamMember ?? null;
             const user = teamMember?.user ?? null;
@@ -166,7 +168,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
               </ListRow>
             );
           })}
-        </List>
+        </UserList>
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No GitHub members found</Heading>

@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
 
 import { getAccountURL } from "@/pages/Account/AccountParams";
@@ -31,20 +32,14 @@ function getProjectItems(accountSlug: string, projectNames: string[]) {
   });
 }
 
-/**
- * Renders from a list the breadcrumb has already resolved, never from a query
- * of its own: a menu's rows are read when it opens and filtered as you type,
- * so they have to all be there from the start.
- */
-export function ProjectBreadcrumbMenu(props: {
-  accountSlug: string;
-  projectNames: string[];
-}) {
-  const { accountSlug, projectNames } = props;
+/** The project rows and "Create a Project", for a menu built elsewhere too. */
+export function getProjectMenuSection(
+  accountSlug: string,
+  projectNames: string[],
+) {
   const sortedNames = [...projectNames].sort((sa, sb) => sa.localeCompare(sb));
-
   return (
-    <Menu side="bottom" align="start">
+    <>
       <MenuSection>
         <MenuHeading>Switch project</MenuHeading>
         {getProjectItems(accountSlug, sortedNames)}
@@ -55,6 +50,23 @@ export function ProjectBreadcrumbMenu(props: {
       >
         Create a Project
       </MenuItem>
+    </>
+  );
+}
+
+/**
+ * Renders from a list the breadcrumb has already resolved, never from a query
+ * of its own: a menu's rows are read when it opens and filtered as you type,
+ * so they have to all be there from the start.
+ */
+export function ProjectBreadcrumbMenu(props: {
+  accountSlug: string;
+  projectNames: string[];
+  anchor?: ComponentProps<typeof Menu>["anchor"];
+}) {
+  return (
+    <Menu side="bottom" align="start" anchor={props.anchor}>
+      {getProjectMenuSection(props.accountSlug, props.projectNames)}
     </Menu>
   );
 }

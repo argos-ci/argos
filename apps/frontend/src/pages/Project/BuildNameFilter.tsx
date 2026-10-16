@@ -51,10 +51,7 @@ export function BuildNameFilter(props: {
     >
       <Combobox.Trigger
         aria-label="Build name"
-        className={clsx(
-          getSelectButtonClassName({ size: "sm" }),
-          "min-w-[8em]",
-        )}
+        className={clsx(getSelectButtonClassName(), "min-w-[8em] text-sm")}
       >
         <span className={selectButtonValueClassName}>
           {getBuildNameLabel(value)}

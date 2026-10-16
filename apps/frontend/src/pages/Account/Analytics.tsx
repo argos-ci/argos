@@ -223,7 +223,9 @@ export function Component() {
             </PageHeaderHeadline>
           </PageHeaderContent>
           <PageHeaderActions>
-            <div className="flex items-center gap-2">
+            {/* Wraps on a phone: the project filter, the period and a custom
+                range do not fit on one line. */}
+            <div className="flex items-center gap-2 max-md:flex-wrap">
               <Suspense fallback={null}>
                 <ProjectFilter
                   accountSlug={accountSlug}
@@ -373,7 +375,7 @@ export function AnalyticsDashboard(props: {
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 lg:grid-cols-4">
         <StatTile
           icon={LayersIcon}
           color="primary"
@@ -1100,7 +1102,9 @@ function EvolutionChart(props: {
   return (
     <ChartContainer
       config={chartConfig}
-      className="h-full md:flex-1"
+      // `flex-1` at every width: the card lays its body out as a row, so
+      // without it the chart had no width below `md` and never drew.
+      className="h-full flex-1"
       data-visual-test="transparent"
     >
       <AreaChart

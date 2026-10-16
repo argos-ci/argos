@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { TeamMemberLabel } from "@/containers/UserList";
+import { TeamMemberLabel, UserList } from "@/containers/UserList";
 import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -21,7 +21,7 @@ import {
   EmptyStateActions,
   EmptyStateDescription,
 } from "@/ui/Layout";
-import { List, ListLoadMore, ListRow } from "@/ui/List";
+import { ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { toast } from "@/ui/Toaster";
@@ -116,11 +116,13 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
   const invites = data.team.invites.edges;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
       </div>
       {invites.length > 0 ? (
-        <List className={search !== deferredSearch ? "opacity-disabled" : ""}>
+        <UserList
+          className={search !== deferredSearch ? "opacity-disabled" : undefined}
+        >
           {invites.map((invite) => {
             return (
               <ListRow
@@ -141,7 +143,12 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                   <div className="text-low text-xs">{invite.email}</div>
                 </div>
                 {invite.expired ? (
-                  <Chip icon={<ClockAlertIcon />} scale="sm" color="warning">
+                  <Chip
+                    icon={<ClockAlertIcon />}
+                    scale="sm"
+                    color="warning"
+                    className="shrink-0"
+                  >
                     Expired
                   </Chip>
                 ) : null}
@@ -243,7 +250,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
               </ListRow>
             );
           })}
-        </List>
+        </UserList>
       ) : deferredSearch !== "" ? (
         <EmptyState>
           <Heading>No pending invitations found</Heading>

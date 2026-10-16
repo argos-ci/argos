@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
-import { RemoveMenu, UserListRow } from "@/containers/UserList";
+import { RemoveMenu, UserList, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
 import { useDialogValueState } from "@/ui/Dialog";
 import {
@@ -79,7 +79,7 @@ export function ProjectContributorsList(props: {
           return (
             <>
               {contributors.length > 0 ? (
-                <List>
+                <UserList>
                   {contributors.map((contributor) => {
                     const isMe = authAccount.id === contributor.user.id;
                     const user = contributor.user;
@@ -110,7 +110,7 @@ export function ProjectContributorsList(props: {
                       </UserListRow>
                     );
                   })}
-                </List>
+                </UserList>
               ) : (
                 <ListEmpty>There's no contributors yet.</ListEmpty>
               )}
