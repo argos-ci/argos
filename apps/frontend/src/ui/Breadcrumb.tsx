@@ -84,7 +84,7 @@ export function BreadcrumbMenuButton({
     <button
       type="button"
       className={clsx(
-        "focus-ring enabled-hover:bg-hover aria-expanded:bg-active pointer-coarse:h-10 flex h-8 min-w-0 cursor-default items-center gap-1.5 rounded-lg px-1.5 font-medium transition",
+        "focus-ring enabled-hover:bg-hover aria-expanded:bg-active pointer-coarse:h-10 pointer-coarse:px-2 flex h-8 min-w-0 cursor-default items-center gap-1.5 rounded-lg px-1.5 font-medium transition",
         current
           ? "text-default"
           : "text-low hover:text-default aria-expanded:text-default",

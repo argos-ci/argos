@@ -67,10 +67,10 @@ export function ProjectBreadcrumbItem(props: {
       {/* On a phone the account crumb goes, and the team names itself here
           instead, on a line above the project's: each name gets the width. */}
       <span className="flex min-w-0 flex-col text-left">
-        <BreadcrumbLabel className="text-low text-xs leading-4 font-normal md:hidden">
+        <BreadcrumbLabel className="text-low text-xs leading-3.5 font-normal md:hidden">
           {data?.account?.name || accountSlug}
         </BreadcrumbLabel>
-        <BreadcrumbLabel className="max-md:leading-5">
+        <BreadcrumbLabel className="max-md:leading-4.5">
           {projectName}
         </BreadcrumbLabel>
       </span>
