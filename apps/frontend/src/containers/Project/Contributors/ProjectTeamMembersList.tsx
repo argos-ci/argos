@@ -2,7 +2,7 @@ import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
-import { TeamMemberLabel, UserListRow } from "@/containers/UserList";
+import { TeamMemberLabel, UserList, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
 import { List, ListLoadMore, ListRowLoader, ListTitle } from "@/ui/List";
 
@@ -70,24 +70,19 @@ export function ProjectTeamMembersList(props: {
 
         return (
           <>
-            <div className="max-md:overflow-x-auto">
-              {/* On a phone the list keeps a minimum width and scrolls sideways
-                  in this box, which holds the card's width: side by side, the
-                  columns left the name a word per line. */}
-              <List className="max-md:min-w-128">
-                {members.map((member) => {
-                  const user = member.user;
-                  return (
-                    <UserListRow key={user.id} user={user}>
-                      <div className="text-sm">
-                        Team {TeamMemberLabel[member.level]} → Project{" "}
-                        {ProjectContributorLevelLabel.admin}
-                      </div>
-                    </UserListRow>
-                  );
-                })}
-              </List>
-            </div>
+            <UserList>
+              {members.map((member) => {
+                const user = member.user;
+                return (
+                  <UserListRow key={user.id} user={user}>
+                    <div className="text-sm">
+                      Team {TeamMemberLabel[member.level]} → Project{" "}
+                      {ProjectContributorLevelLabel.admin}
+                    </div>
+                  </UserListRow>
+                );
+              })}
+            </UserList>
             {data.team.members.pageInfo.hasNextPage && (
               <ListLoadMore
                 onClick={() => {

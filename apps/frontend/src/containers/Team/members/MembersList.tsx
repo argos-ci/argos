@@ -2,12 +2,12 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { clsx } from "clsx";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import {
   RemoveMenu,
   TeamMemberLabel,
+  UserList,
   UserListRow,
 } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -20,7 +20,7 @@ import {
   EmptyStateActions,
   EmptyStateDescription,
 } from "@/ui/Layout";
-import { List, ListLoadMore } from "@/ui/List";
+import { ListLoadMore } from "@/ui/List";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -127,70 +127,64 @@ export function TeamMembersList(props: TeamMembersListProps) {
         <SortFilter value={orderBy} onChange={setOrderBy} />
       </div>
       {members.length > 0 ? (
-        <div className="max-md:overflow-x-auto">
-          {/* On a phone the list keeps a minimum width and scrolls sideways
-              in this box, which holds the card's width: side by side, the
-              columns left the name a word per line. */}
-          <List
-            className={clsx(
-              "max-md:min-w-128",
-              filters !== deferredFilters && "opacity-disabled",
-            )}
-          >
-            {members.map((member) => {
-              const { user } = member;
-              const isMe = authAccount.id === user.id;
-              return (
-                <UserListRow key={user.id} user={user}>
-                  {member.fromSSO ? (
-                    <Tooltip content="This user is synced from GitHub SSO and cannot be removed until SSO is disabled.">
-                      <Chip
-                        icon={<MarkGithubIcon />}
-                        scale="sm"
-                        color="neutral"
-                        className="shrink-0"
-                      >
-                        Synced
-                      </Chip>
-                    </Tooltip>
-                  ) : null}
-                  {isMe || !props.amOwner ? (
-                    <div className="text-low text-sm">
-                      {TeamMemberLabel[member.level]}
-                    </div>
-                  ) : (
-                    <div>
-                      <MemberLevelEditor
-                        teamId={props.teamId}
-                        member={member}
-                        hasFineGrainedAccessControl={
-                          props.hasFineGrainedAccessControl
-                        }
-                      />
-                    </div>
-                  )}
-                  {isMe || props.amOwner ? (
-                    <RemoveMenu
-                      disabled={lastOne || member.fromSSO}
-                      tooltip={
-                        isMe && lastOne
-                          ? "You are the last user of this team, you can't leave it"
-                          : member.fromSSO
-                            ? "Disable GitHub SSO to remove this member"
-                            : undefined
+        <UserList
+          className={
+            filters !== deferredFilters ? "opacity-disabled" : undefined
+          }
+        >
+          {members.map((member) => {
+            const { user } = member;
+            const isMe = authAccount.id === user.id;
+            return (
+              <UserListRow key={user.id} user={user}>
+                {member.fromSSO ? (
+                  <Tooltip content="This user is synced from GitHub SSO and cannot be removed until SSO is disabled.">
+                    <Chip
+                      icon={<MarkGithubIcon />}
+                      scale="sm"
+                      color="neutral"
+                      className="shrink-0"
+                    >
+                      Synced
+                    </Chip>
+                  </Tooltip>
+                ) : null}
+                {isMe || !props.amOwner ? (
+                  <div className="text-low text-sm">
+                    {TeamMemberLabel[member.level]}
+                  </div>
+                ) : (
+                  <div>
+                    <MemberLevelEditor
+                      teamId={props.teamId}
+                      member={member}
+                      hasFineGrainedAccessControl={
+                        props.hasFineGrainedAccessControl
                       }
-                      label="Member actions"
-                      actionLabel={isMe ? "Leave Team" : "Remove from Team"}
-                      onRemove={() => props.onRemove(user as RemovedUser)}
                     />
-                  ) : (
-                    <div className="w-8" />
-                  )}
-                </UserListRow>
-              );
-            })}
-          </List>
-        </div>
+                  </div>
+                )}
+                {isMe || props.amOwner ? (
+                  <RemoveMenu
+                    disabled={lastOne || member.fromSSO}
+                    tooltip={
+                      isMe && lastOne
+                        ? "You are the last user of this team, you can't leave it"
+                        : member.fromSSO
+                          ? "Disable GitHub SSO to remove this member"
+                          : undefined
+                    }
+                    label="Member actions"
+                    actionLabel={isMe ? "Leave Team" : "Remove from Team"}
+                    onRemove={() => props.onRemove(user as RemovedUser)}
+                  />
+                ) : (
+                  <div className="w-8" />
+                )}
+              </UserListRow>
+            );
+          })}
+        </UserList>
       ) : (
         <EmptyState>
           <Heading>No members found</Heading>
