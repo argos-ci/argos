@@ -79,38 +79,47 @@ export function ProjectContributorsList(props: {
           return (
             <>
               {contributors.length > 0 ? (
-                <List>
-                  {contributors.map((contributor) => {
-                    const isMe = authAccount.id === contributor.user.id;
-                    const user = contributor.user;
-                    return (
-                      <UserListRow key={contributor.id} user={user}>
-                        <div>
-                          {props.readOnly ? (
-                            <div className="text-sm">
-                              {ProjectContributorLevelLabel[contributor.level]}
-                            </div>
-                          ) : (
-                            <ProjectContributorLevelSelect
-                              projectId={props.projectId}
-                              userId={user.id}
-                              level={contributor.level}
+                <div className="max-md:overflow-x-auto">
+                  {/* On a phone the list keeps a minimum width and scrolls sideways
+                      in this box, which holds the card's width: side by side, the
+                      columns left the name a word per line. */}
+                  <List className="max-md:min-w-128">
+                    {contributors.map((contributor) => {
+                      const isMe = authAccount.id === contributor.user.id;
+                      const user = contributor.user;
+                      return (
+                        <UserListRow key={contributor.id} user={user}>
+                          <div>
+                            {props.readOnly ? (
+                              <div className="text-sm">
+                                {
+                                  ProjectContributorLevelLabel[
+                                    contributor.level
+                                  ]
+                                }
+                              </div>
+                            ) : (
+                              <ProjectContributorLevelSelect
+                                projectId={props.projectId}
+                                userId={user.id}
+                                level={contributor.level}
+                              />
+                            )}
+                          </div>
+                          {(isMe || !props.readOnly) && (
+                            <RemoveMenu
+                              label="Contributor actions"
+                              actionLabel={
+                                isMe ? "Leave Project" : "Remove from Project"
+                              }
+                              onRemove={() => removing.open(user)}
                             />
                           )}
-                        </div>
-                        {(isMe || !props.readOnly) && (
-                          <RemoveMenu
-                            label="Contributor actions"
-                            actionLabel={
-                              isMe ? "Leave Project" : "Remove from Project"
-                            }
-                            onRemove={() => removing.open(user)}
-                          />
-                        )}
-                      </UserListRow>
-                    );
-                  })}
-                </List>
+                        </UserListRow>
+                      );
+                    })}
+                  </List>
+                </div>
               ) : (
                 <ListEmpty>There's no contributors yet.</ListEmpty>
               )}
