@@ -70,19 +70,24 @@ export function ProjectTeamMembersList(props: {
 
         return (
           <>
-            <List>
-              {members.map((member) => {
-                const user = member.user;
-                return (
-                  <UserListRow key={user.id} user={user}>
-                    <div className="text-sm">
-                      Team {TeamMemberLabel[member.level]} → Project{" "}
-                      {ProjectContributorLevelLabel.admin}
-                    </div>
-                  </UserListRow>
-                );
-              })}
-            </List>
+            <div className="max-md:overflow-x-auto">
+              {/* On a phone the list keeps a minimum width and scrolls sideways
+                  in this box, which holds the card's width: side by side, the
+                  columns left the name a word per line. */}
+              <List className="max-md:min-w-128">
+                {members.map((member) => {
+                  const user = member.user;
+                  return (
+                    <UserListRow key={user.id} user={user}>
+                      <div className="text-sm">
+                        Team {TeamMemberLabel[member.level]} → Project{" "}
+                        {ProjectContributorLevelLabel.admin}
+                      </div>
+                    </UserListRow>
+                  );
+                })}
+              </List>
+            </div>
             {data.team.members.pageInfo.hasNextPage && (
               <ListLoadMore
                 onClick={() => {
