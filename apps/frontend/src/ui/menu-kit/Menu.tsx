@@ -57,6 +57,20 @@ const MENU_MAX_WIDTH = 512;
 /** Tallest the list gets before it scrolls, room permitting. */
 const MENU_MAX_HEIGHT = 416;
 
+/**
+ * A menu is at least as wide as what it opens from, so the pointer can move
+ * straight down from any part of it into the rows. Not a submenu: its anchor
+ * is a row of the menu beside it, as wide as that whole menu.
+ */
+function getMenuMinWidth(options: { submenu: boolean; fitContent: boolean }) {
+  if (options.submenu) {
+    return options.fitContent ? undefined : MENU_MIN_WIDTH;
+  }
+  return options.fitContent
+    ? "var(--anchor-width)"
+    : `max(${MENU_MIN_WIDTH}px, var(--anchor-width))`;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Search state                                                               */
 /* -------------------------------------------------------------------------- */
@@ -316,7 +330,7 @@ function MenuSurface(props: {
             className,
           )}
           style={{
-            minWidth: fitContent ? undefined : MENU_MIN_WIDTH,
+            minWidth: getMenuMinWidth({ submenu, fitContent }),
             maxWidth: MENU_MAX_WIDTH,
           }}
         >
