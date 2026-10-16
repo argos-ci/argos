@@ -51,12 +51,14 @@ export function Navbar() {
         </Suspense>
       </div>
 
+      {/* Help and Docs wait for 1024px: the user menu has both, and up to
+          there the nav is held to 768px, which the trail needs. */}
       <div className="flex shrink-0 items-center gap-6">
         <a
           href="https://argos-ci.com/discord"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-low hover:text-default font-medium transition max-md:hidden"
+          className="text-low hover:text-default font-medium transition max-lg:hidden"
         >
           Help & Community
         </a>
@@ -64,7 +66,7 @@ export function Navbar() {
           href="https://argos-ci.com/docs"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-low hover:text-default font-medium transition max-md:hidden"
+          className="text-low hover:text-default font-medium transition max-lg:hidden"
         >
           Docs
         </a>
