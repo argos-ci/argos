@@ -20,6 +20,7 @@ import {
   BreadcrumbLabel,
   BreadcrumbLink,
   BreadcrumbMenuButton,
+  BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
 import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -220,8 +221,9 @@ function StaffBreadcrumbLink() {
 }
 
 /**
- * The account crumb opens the account switcher. Staff shortcuts sit in its
- * menu too, the only place a phone has for them.
+ * The account crumb links to the account, and its chevron opens the account
+ * switcher; a phone has one button for both. Staff shortcuts sit in the menu
+ * too, the only place a phone has for them.
  */
 function AccountSwitcher(props: {
   me: AuthAccount;
@@ -234,6 +236,12 @@ function AccountSwitcher(props: {
     variables: { slug: accountSlug },
   });
   const team = data.account?.__typename === "Team" ? data.account : null;
+  const content = (
+    <AccountCrumbContent account={data.account} accountSlug={accountSlug} />
+  );
+  const staffSection = me.staff
+    ? getStaffMenuSection(team?.slug ?? null)
+    : null;
   return (
     <BreadcrumbItem
       className={getCrumbShrinkClassName({
@@ -241,19 +249,31 @@ function AccountSwitcher(props: {
         compact,
       })}
     >
-      <MenuRoot>
-        <MenuTrigger>
-          <BreadcrumbMenuButton current={current}>
-            <AccountCrumbContent
-              account={data.account}
-              accountSlug={accountSlug}
-            />
-          </BreadcrumbMenuButton>
-        </MenuTrigger>
-        <AccountBreadcrumbMenu account={me}>
-          {me.staff ? getStaffMenuSection(team?.slug ?? null) : null}
-        </AccountBreadcrumbMenu>
-      </MenuRoot>
+      <BreadcrumbSplitButton
+        href={getAccountURL({ accountSlug })}
+        current={current}
+        menuLabel="Switch account"
+        renderMenu={(anchor) => (
+          <AccountBreadcrumbMenu account={me} anchor={anchor}>
+            {staffSection}
+          </AccountBreadcrumbMenu>
+        )}
+        className="max-md:hidden"
+      >
+        {content}
+      </BreadcrumbSplitButton>
+      <div className="contents md:hidden">
+        <MenuRoot>
+          <MenuTrigger>
+            <BreadcrumbMenuButton current={current}>
+              {content}
+            </BreadcrumbMenuButton>
+          </MenuTrigger>
+          <AccountBreadcrumbMenu account={me}>
+            {staffSection}
+          </AccountBreadcrumbMenu>
+        </MenuRoot>
+      </div>
     </BreadcrumbItem>
   );
 }
@@ -290,20 +310,38 @@ export function AccountBreadcrumbItem() {
   const compact = Boolean(projectName);
 
   if (isStaffArea) {
+    const content = (
+      <>
+        <BreadcrumbItemIcon>
+          <ShieldUserIcon className="size-5" />
+        </BreadcrumbItemIcon>
+        Staff
+      </>
+    );
     return (
       <BreadcrumbItem>
         {me ? (
-          <MenuRoot>
-            <MenuTrigger>
-              <BreadcrumbMenuButton current>
-                <BreadcrumbItemIcon>
-                  <ShieldUserIcon className="size-5" />
-                </BreadcrumbItemIcon>
-                Staff
-              </BreadcrumbMenuButton>
-            </MenuTrigger>
-            <AccountBreadcrumbMenu account={me} />
-          </MenuRoot>
+          <>
+            <BreadcrumbSplitButton
+              href="/staff"
+              current
+              menuLabel="Switch account"
+              renderMenu={(anchor) => (
+                <AccountBreadcrumbMenu account={me} anchor={anchor} />
+              )}
+              className="max-md:hidden"
+            >
+              {content}
+            </BreadcrumbSplitButton>
+            <div className="contents md:hidden">
+              <MenuRoot>
+                <MenuTrigger>
+                  <BreadcrumbMenuButton current>{content}</BreadcrumbMenuButton>
+                </MenuTrigger>
+                <AccountBreadcrumbMenu account={me} />
+              </MenuRoot>
+            </div>
+          </>
         ) : (
           <StaffBreadcrumbLink />
         )}
