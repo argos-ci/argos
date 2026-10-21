@@ -44,6 +44,22 @@ type AccountAuthResult = {
   creation: boolean;
 };
 
+/**
+ * Find the user an email links to. Only a verified email links: anyone can add
+ * an unverified email to their account, and linking on it would hand them the
+ * login meant for the email's owner.
+ */
+async function findUserByVerifiedEmail(email: string) {
+  return User.query()
+    .withGraphFetched("account")
+    .whereExists(
+      UserEmail.query()
+        .whereRaw('user_emails."userId" = users.id')
+        .where({ email, verified: true }),
+    )
+    .first();
+}
+
 export async function markUserLastAuthMethod(args: {
   userId: string;
   method: TeamUserAuthMethod;
@@ -122,17 +138,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
     return teamUser.user.account;
   }
 
-  // Only a verified email links to an existing user: anyone can add an
-  // unverified email to their account, and linking on it would hand them the
-  // team membership and the login meant for the email's owner.
-  const existingUser = await User.query()
-    .withGraphFetched("account")
-    .whereExists(
-      UserEmail.query()
-        .whereRaw('user_emails."userId" = users.id')
-        .where({ email, verified: true }),
-    )
-    .first();
+  const existingUser = await findUserByVerifiedEmail(email);
 
   if (existingUser) {
     invariant(existingUser.account, "Account not fetched");
@@ -158,10 +164,6 @@ export async function getOrCreateUserAccountFromSaml(input: {
     }
     return existingUser.account;
   }
-
-  // Freed as adding the email to another account would: unverified, it may not
-  // belong to that user, and the email is the table's primary key.
-  await UserEmail.query().delete().where({ email, verified: false });
 
   const slug = getSlugFromEmail(email);
   const { account, user } = await createAccount({
@@ -424,12 +426,10 @@ async function getOrCreateUserAccountFromThirdParty<
     .where((qb) => {
       if (allEmails.length) {
         qb.orWhereExists(
-          UserEmail.query().where((qb) => {
-            qb.whereRaw('user_emails."userId" = users.id').whereIn(
-              "email",
-              allEmails,
-            );
-          }),
+          UserEmail.query()
+            .whereRaw('user_emails."userId" = users.id')
+            .whereIn("email", allEmails)
+            .where("verified", true),
         );
       }
 
@@ -465,7 +465,9 @@ async function getOrCreateUserAccountFromThirdParty<
           acc ??
           existingUsers.find((user) => {
             invariant(user.emails, "Expected user.emails to be defined");
-            return user.emails.some((userEmail) => userEmail.email === email);
+            return user.emails.some(
+              (userEmail) => userEmail.verified && userEmail.email === email,
+            );
           }) ??
           null
         );
@@ -561,6 +563,10 @@ export async function createAccount(args: {
   const email = sanitizeEmail(args.email);
   const slug = await resolveAccountSlug(slugify(args.slug));
   const { account, user } = await transaction(async (trx) => {
+    // Callers have proven the email belongs to whoever signs up. Unverified, it
+    // may not belong to the user holding it, so it is freed as adding it to
+    // another account would: the email is the table's primary key.
+    await UserEmail.query(trx).delete().where({ email, verified: false });
     const userData: PartialModelObject<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);
 
@@ -638,14 +644,7 @@ export async function requestEmailSignup(args: {
 }): Promise<void> {
   const { requestLocation } = args;
   const email = sanitizeEmail(args.email);
-  const user = await User.query()
-    .withGraphFetched("account")
-    .whereExists(
-      UserEmail.query()
-        .whereRaw('user_emails."userId" = users.id')
-        .where("email", email),
-    )
-    .first();
+  const user = await findUserByVerifiedEmail(email);
 
   const code = await generateAuthEmailCode(email);
 
@@ -681,14 +680,7 @@ export async function requestEmailSignin(args: {
 }): Promise<void> {
   const { requestLocation } = args;
   const email = sanitizeEmail(args.email);
-  const user = await User.query()
-    .withGraphFetched("account")
-    .whereExists(
-      UserEmail.query()
-        .whereRaw('user_emails."userId" = users.id')
-        .where("email", email),
-    )
-    .first();
+  const user = await findUserByVerifiedEmail(email);
 
   if (!user) {
     await sendEmailTemplate({
@@ -753,14 +745,7 @@ export async function authenticateWithEmail(args: {
     });
   }
 
-  const existingUser = await User.query()
-    .withGraphFetched("account")
-    .whereExists(
-      UserEmail.query()
-        .whereRaw('user_emails."userId" = users.id')
-        .where("email", email),
-    )
-    .first();
+  const existingUser = await findUserByVerifiedEmail(email);
 
   if (existingUser) {
     invariant(existingUser.account, "Account not fetched");
