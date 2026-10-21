@@ -37,7 +37,6 @@ async function addEmail(args: { account: Account; verified: boolean }) {
 }
 
 async function expectEmailVerifiedOn(account: Account) {
-  invariant(account.userId, "account has no user");
   expect(await UserEmail.query().findById(EMAIL)).toMatchObject({
     userId: account.userId,
     verified: true,
@@ -97,56 +96,33 @@ describe("getOrCreateUserAccountFromSaml", () => {
   );
 });
 
-describe("authenticateWithEmail", () => {
-  async function authenticate() {
-    const code = await generateAuthEmailCode(EMAIL);
-    return authenticateWithEmail({ email: EMAIL, code });
-  }
-
-  withAccounts(
-    "logs into the user holding the email verified",
-    async ({ userAccount }) => {
-      await addEmail({ account: userAccount, verified: true });
-
-      expect(await authenticate()).toMatchObject({
-        account: { id: userAccount.id },
-        creation: false,
-      });
-    },
-  );
-
-  withAccounts(
-    "creates an account rather than log into the user holding the email unverified",
-    async ({ userAccount }) => {
-      await addEmail({ account: userAccount, verified: false });
-
-      const { account, creation } = await authenticate();
-
-      expect(creation).toBe(true);
-      expect(account.id).not.toBe(userAccount.id);
-      await expectEmailVerifiedOn(account);
-    },
-  );
-});
-
-describe("getOrCreateUserAccountFromGhAccount", () => {
-  async function signInWithGithub() {
-    const ghAccount = await factory.GithubAccount.create({
-      email: EMAIL,
-      emails: [EMAIL],
-    });
-    return getOrCreateUserAccountFromGhAccount({
-      ghAccount,
-      attachToAccount: null,
-    });
-  }
-
+describe.each([
+  {
+    name: "authenticateWithEmail",
+    signIn: async () =>
+      authenticateWithEmail({
+        email: EMAIL,
+        code: await generateAuthEmailCode(EMAIL),
+      }),
+  },
+  {
+    name: "getOrCreateUserAccountFromGhAccount",
+    signIn: async () =>
+      getOrCreateUserAccountFromGhAccount({
+        ghAccount: await factory.GithubAccount.create({
+          email: EMAIL,
+          emails: [EMAIL],
+        }),
+        attachToAccount: null,
+      }),
+  },
+])("$name", ({ signIn }) => {
   withAccounts(
     "links the user holding the email verified",
     async ({ userAccount }) => {
       await addEmail({ account: userAccount, verified: true });
 
-      expect(await signInWithGithub()).toMatchObject({
+      expect(await signIn()).toMatchObject({
         account: { id: userAccount.id },
         creation: false,
       });
@@ -158,7 +134,7 @@ describe("getOrCreateUserAccountFromGhAccount", () => {
     async ({ userAccount }) => {
       await addEmail({ account: userAccount, verified: false });
 
-      const { account, creation } = await signInWithGithub();
+      const { account, creation } = await signIn();
 
       expect(creation).toBe(true);
       expect(account.id).not.toBe(userAccount.id);
