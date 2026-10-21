@@ -27,10 +27,7 @@ import {
   TeamUser,
   UserEmail,
 } from "@/database/models";
-import {
-  createAccount,
-  findUserByVerifiedEmail,
-} from "@/database/services/account";
+import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -71,7 +68,7 @@ import {
   getSubscriptionData,
   stripe,
 } from "@/stripe";
-import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
+import { sanitizeEmail } from "@/util/email";
 
 import {
   ITeamMembersOrderBy,
@@ -1289,9 +1286,7 @@ export const resolvers: IResolvers = {
       const { auth } = ctx;
 
       if (!auth) {
-        const user =
-          (await findUserByVerifiedEmail(email)) ??
-          (await createAccount({ email, slug: getSlugFromEmail(email) })).user;
+        const { user } = await getOrCreateUserByVerifiedEmail(email);
 
         // Add user to the team and delete the invite in a transaction.
         await transaction(async (trx) => {
