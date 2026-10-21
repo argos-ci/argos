@@ -208,8 +208,11 @@ export async function waitForDiffListToSettle(page: Page) {
   );
 }
 
-/** The phone a page laid out for phones is also captured at: an iPhone 15. */
-const PHONE_VIEWPORT = { width: 393, height: 852 };
+/**
+ * The phone a page laid out for phones is also captured at: the one the email
+ * and notification previews use, so the build has a single phone width.
+ */
+const PHONE_VIEWPORT = "iphone-x";
 
 /**
  * Whether the page renders at the device width on a phone, as
