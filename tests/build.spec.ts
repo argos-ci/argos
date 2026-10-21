@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import {
   Build,
@@ -13,7 +13,7 @@ import {
   createVariantSwitchersScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, screenshot } from "./util";
+import { ensureTeamOwner, phoneScreenshot, screenshot } from "./util";
 
 const buildExamples: {
   name: string;
@@ -26,6 +26,8 @@ const buildExamples: {
    * their whole stabilization budget waiting on the CDN to answer the miss.
    */
   expectLoadedImages?: true;
+  /** Also capture the build as a phone shows it: once is enough. */
+  phone?: true;
 }[] = [
   { name: "orphan", getNumber: (b) => b.orphanBuild.number },
   { name: "reference", getNumber: (b) => b.referenceBuild.number },
@@ -44,6 +46,7 @@ const buildExamples: {
     name: "changes detected",
     getNumber: (b) => b.diffDetectedBuild.number,
     expectLoadedImages: true,
+    phone: true,
   },
   { name: "rejected", getNumber: (b) => b.rejectedBuild.number },
   {
@@ -69,6 +72,12 @@ const buildExamples: {
   { name: "subset", getNumber: (b) => b.subsetBuild.number },
 ];
 
+function getStartButton(page: Page) {
+  return page.getByRole("button", {
+    name: /^(Start review|Browse snapshots|Browse test failures)/,
+  });
+}
+
 buildExamples.forEach((build) => {
   loggedTest(build.name, async ({ page, auth, team, project, builds }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
@@ -77,10 +86,7 @@ buildExamples.forEach((build) => {
     await expect(page.getByText(`Build ${number}`)).toBeVisible();
     if (build.compare !== false) {
       await expect(page).toHaveURL(new RegExp(`/builds/${number}/overview$`));
-      const startButton = page.getByRole("button", {
-        name: /^(Start review|Browse snapshots|Browse test failures)/,
-      });
-      await expect(startButton).toBeVisible();
+      await expect(getStartButton(page)).toBeVisible();
       if (build.expectLoadedImages) {
         // `shown` guards against passing before the virtualized diff list has
         // mounted any thumbnail, and `broken` names the offending URLs rather
@@ -106,6 +112,12 @@ buildExamples.forEach((build) => {
           [team.account.slug]: "acme",
         },
       });
+      if (build.phone) {
+        await phoneScreenshot(page, `build-overview-${build.name}`, {
+          ready: (phone) => expect(getStartButton(phone)).toBeVisible(),
+          replacements: { [team.account.slug]: "acme" },
+        });
+      }
       // Starting the review replaces the overview in history (the whole build
       // view is a single history entry), so navigate forward rather than relying
       // on `goBack` to return to the overview.
@@ -124,6 +136,15 @@ buildExamples.forEach((build) => {
         [team.account.slug]: "acme",
       },
     });
+    if (build.phone) {
+      await phoneScreenshot(page, `build-${build.name}`, {
+        ready: (phone) =>
+          expect(
+            phone.getByRole("heading", { name: "Changes", exact: true }),
+          ).toBeVisible(),
+        replacements: { [team.account.slug]: "acme" },
+      });
+    }
   });
 });
 

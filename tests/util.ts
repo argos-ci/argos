@@ -3,7 +3,13 @@ import {
   argosScreenshot,
   type ArgosScreenshotOptions,
 } from "@argos-ci/playwright";
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import {
+  devices,
+  expect,
+  test,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 import {
   TeamUser,
@@ -281,5 +287,51 @@ export async function screenshot(
       ...argosOptions,
       viewports: [PHONE_VIEWPORT],
     });
+  }
+}
+
+/**
+ * Capture the page as a phone shows it, for a page that keeps the desktop
+ * width there: `screenshot` only captures a phone layout. A desktop browser
+ * ignores the viewport tag, so the page is opened again in an emulated phone,
+ * where the desktop layout is zoomed out to the screen. Chromium only: Firefox
+ * cannot emulate one.
+ */
+export async function phoneScreenshot(
+  page: Page,
+  name: string,
+  options: {
+    ready: (phone: Page) => Promise<void>;
+    replacements?: Record<string, string>;
+  },
+) {
+  if (test.info().project.name !== "chromium") {
+    return;
+  }
+  const browser = page.context().browser();
+  if (!browser) {
+    throw new Error("The page should belong to a launched browser");
+  }
+  const { defaultBrowserType: _, ...phone } = devices["iPhone X"];
+  const context = await browser.newContext({
+    ...phone,
+    storageState: await page.context().storageState(),
+  });
+  try {
+    const phonePage = await context.newPage();
+    await phonePage.goto(page.url());
+    await options.ready(phonePage);
+    if (await checkIsPhoneLayout(phonePage)) {
+      throw new Error(
+        `"${name}" is laid out for phones now: \`screenshot\` captures it on one already`,
+      );
+    }
+    // The screen, as on the phone: the page is not scrolled to be captured.
+    await screenshot(phonePage, `${name} vw-${phone.viewport.width}`, {
+      fullPage: false,
+      replacements: options.replacements,
+    });
+  } finally {
+    await context.close();
   }
 }

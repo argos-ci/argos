@@ -8,7 +8,7 @@ import {
 } from "../apps/backend/src/database/seeds";
 import { formatTestId } from "../apps/backend/src/util/test-id";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, screenshot } from "./util";
+import { ensureTeamOwner, phoneScreenshot, screenshot } from "./util";
 
 /** A one-line rich-text comment body. */
 function doc(text: string) {
@@ -62,6 +62,11 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
   }
   const testId = match[1];
   await screenshot(page, "test-detail", maskTestId(testId));
+  await phoneScreenshot(page, "test-detail", {
+    ready: (phone) =>
+      expect(phone.getByRole("heading", { name: /Changes/ })).toBeVisible(),
+    ...maskTestId(testId),
+  });
 });
 
 loggedTest("test view with a change", async ({ page, team, project }) => {
