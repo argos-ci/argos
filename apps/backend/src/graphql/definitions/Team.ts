@@ -53,6 +53,7 @@ import {
   setTeamMemberLevel,
   type TeamMembersOrder,
 } from "@/database/services/team-member";
+import { claimVerifiedEmail } from "@/database/services/user-email";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
@@ -1312,7 +1313,7 @@ export const resolvers: IResolvers = {
 
       // If the user is logged in:
       // - Add the user to the team
-      // - Add the email to the user if not already present
+      // - Give the email to the user, verified: the invite proves they own it
       // - Delete the invite
       await transaction(async (trx) => {
         await Promise.all([
@@ -1325,15 +1326,7 @@ export const resolvers: IResolvers = {
             })
             .onConflict()
             .ignore(),
-          // Add the email to the user if not already present.
-          UserEmail.query(trx)
-            .insert({
-              email,
-              verified: true,
-              userId: auth.user.id,
-            })
-            .onConflict()
-            .ignore(),
+          claimVerifiedEmail({ trx, email, userId: auth.user.id }),
           // Delete the invite.
           teamInvite.$query(trx).delete(),
         ]);
