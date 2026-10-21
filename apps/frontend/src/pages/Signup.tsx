@@ -102,9 +102,10 @@ function RadioAccordion(props: { value: string; children: ReactNode }) {
       className={clsx(
         "bg-app group peer flex items-center gap-4 border p-4 text-sm",
         "hover:bg-subtle",
-        "first:rounded-t first:border-b-0",
-        "last:rounded-b",
-        "not-first:not-last:border-b-0",
+        // Each row is followed by Base UI's hidden `<input>`, so the last row
+        // is never `:last-child`.
+        "first-of-type:rounded-t last-of-type:rounded-b",
+        "not-last-of-type:border-b-0",
       )}
     >
       {/* react-aria handed the row its `isSelected`; Base UI publishes it as
