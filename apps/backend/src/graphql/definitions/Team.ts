@@ -1289,16 +1289,9 @@ export const resolvers: IResolvers = {
       const { auth } = ctx;
 
       if (!auth) {
-        // Get or create the user account based on the email of the invite.
-        const user = await (async () => {
-          const existingUser = await findUserByVerifiedEmail(email);
-          if (existingUser) {
-            return existingUser;
-          }
-          const slug = getSlugFromEmail(teamInvite.email);
-          const { user } = await createAccount({ email, slug });
-          return user;
-        })();
+        const user =
+          (await findUserByVerifiedEmail(email)) ??
+          (await createAccount({ email, slug: getSlugFromEmail(email) })).user;
 
         // Add user to the team and delete the invite in a transaction.
         await transaction(async (trx) => {

@@ -21,7 +21,7 @@ const EMAIL = "jane@acme.com";
 const withInvite = test.extend<{
   teamAccount: Account;
   invite: TeamInvite;
-  holderAccount: Account;
+  holderId: string;
 }>({
   teamAccount: async ({}, use) => {
     await setupDatabase();
@@ -41,8 +41,10 @@ const withInvite = test.extend<{
       }),
     );
   },
-  holderAccount: async ({ teamAccount: _teamAccount }, use) => {
-    await use(await factory.UserAccount.create());
+  holderId: async ({ teamAccount: _teamAccount }, use) => {
+    const { userId } = await factory.UserAccount.create();
+    invariant(userId, "user account has no user");
+    await use(userId);
   },
 });
 
@@ -70,44 +72,34 @@ async function acceptInviteSignedOut(invite: TeamInvite) {
   expect(res.status).toBe(200);
 }
 
-async function expectOnlyMemberAndSession(args: {
-  teamAccount: Account;
-  userId: string;
-}) {
-  const teamUsers = await TeamUser.query().where({
-    teamId: args.teamAccount.teamId,
-  });
-  expect(teamUsers.map((teamUser) => teamUser.userId)).toEqual([args.userId]);
+async function expectOnlyMemberAndSession(teamId: string, userId: string) {
+  const teamUsers = await TeamUser.query().where({ teamId });
+  expect(teamUsers.map((teamUser) => teamUser.userId)).toEqual([userId]);
   const sessions = await UserSession.query();
-  expect(sessions.map((session) => session.userId)).toEqual([args.userId]);
+  expect(sessions.map((session) => session.userId)).toEqual([userId]);
 }
 
 describe("acceptInvite signed out", () => {
   withInvite(
     "signs in the user holding the email verified",
-    async ({ teamAccount, invite, holderAccount }) => {
-      invariant(holderAccount.userId, "user account has no user");
+    async ({ invite, holderId }) => {
       await factory.UserEmail.create({
-        userId: holderAccount.userId,
+        userId: holderId,
         email: EMAIL,
         verified: true,
       });
 
       await acceptInviteSignedOut(invite);
 
-      await expectOnlyMemberAndSession({
-        teamAccount,
-        userId: holderAccount.userId,
-      });
+      await expectOnlyMemberAndSession(invite.teamId, holderId);
     },
   );
 
   withInvite(
     "creates an account rather than sign in the user holding the email unverified",
-    async ({ teamAccount, invite, holderAccount }) => {
-      invariant(holderAccount.userId, "user account has no user");
+    async ({ invite, holderId }) => {
       await factory.UserEmail.create({
-        userId: holderAccount.userId,
+        userId: holderId,
         email: EMAIL,
         verified: false,
       });
@@ -117,11 +109,8 @@ describe("acceptInvite signed out", () => {
       const userEmail = await UserEmail.query().findById(EMAIL);
       invariant(userEmail, "email not found");
       expect(userEmail.verified).toBe(true);
-      expect(userEmail.userId).not.toBe(holderAccount.userId);
-      await expectOnlyMemberAndSession({
-        teamAccount,
-        userId: userEmail.userId,
-      });
+      expect(userEmail.userId).not.toBe(holderId);
+      await expectOnlyMemberAndSession(invite.teamId, userEmail.userId);
     },
   );
 });
