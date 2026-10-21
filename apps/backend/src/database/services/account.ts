@@ -49,7 +49,7 @@ type AccountAuthResult = {
  * an unverified email to their account, and linking on it would hand them the
  * login meant for the email's owner.
  */
-async function findUserByVerifiedEmail(email: string) {
+export async function findUserByVerifiedEmail(email: string) {
   return User.query()
     .withGraphFetched("account")
     .whereExists(

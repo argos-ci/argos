@@ -27,7 +27,10 @@ import {
   TeamUser,
   UserEmail,
 } from "@/database/models";
-import { createAccount } from "@/database/services/account";
+import {
+  createAccount,
+  findUserByVerifiedEmail,
+} from "@/database/services/account";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -1287,21 +1290,14 @@ export const resolvers: IResolvers = {
 
       if (!auth) {
         // Get or create the user account based on the email of the invite.
-        const { user } = await (async () => {
-          const userEmail = await UserEmail.query()
-            .where("email", email)
-            .withGraphFetched("user.account")
-            .first();
-          if (userEmail) {
-            invariant(userEmail.user?.account, "Account relation not loaded");
-            return {
-              account: userEmail.user.account,
-              user: userEmail.user,
-            };
+        const user = await (async () => {
+          const existingUser = await findUserByVerifiedEmail(email);
+          if (existingUser) {
+            return existingUser;
           }
           const slug = getSlugFromEmail(teamInvite.email);
-          const { account, user } = await createAccount({ email, slug });
-          return { account, user };
+          const { user } = await createAccount({ email, slug });
+          return user;
         })();
 
         // Add user to the team and delete the invite in a transaction.
