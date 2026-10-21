@@ -1,5 +1,6 @@
 import { AccountNameSchema } from "@argos/schemas/account";
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import type { TransactionOrKnex } from "objection";
 
 import { checkHasAccessToSAML } from "@/auth/saml";
@@ -23,6 +24,7 @@ import {
 } from "@/database/services/team-member";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { formatDiscordLink, getAccountUrl, notifyDiscord } from "@/discord";
 import {
   checkIsValidEmail,
   getSlugFromEmail,
@@ -256,7 +258,7 @@ export async function updateScimUser(args: {
   update: (current: ScimUserAttributes) => ScimUserAttributes;
 }): Promise<TeamScimUser> {
   const { team } = args;
-  return rejectDuplicate(() =>
+  const { updated, leftWithoutOwner } = await rejectDuplicate(() =>
     transaction(async (trx) => {
       const scimUser = await getScimUser({ teamId: team.id, id: args.id, trx });
       const { userId, active: wasActive, role: previousRole } = scimUser;
@@ -266,9 +268,10 @@ export async function updateScimUser(args: {
         .where("id", scimUser.id)
         .returning("*");
       invariant(updated, "Patched user not returned");
+      let leftWithoutOwner = false;
       if (!attributes.active) {
         if (wasActive) {
-          await removeMembership({ team, userId, trx });
+          leftWithoutOwner = await removeMembership({ team, userId, trx });
         }
       } else if (!wasActive) {
         await addMembership({ team, userId, role: attributes.role, trx });
@@ -280,9 +283,13 @@ export async function updateScimUser(args: {
           trx,
         });
       }
-      return updated;
+      return { updated, leftWithoutOwner };
     }),
   );
+  if (leftWithoutOwner) {
+    await notifyTeamWithoutOwner(team);
+  }
+  return updated;
 }
 
 /**
@@ -293,11 +300,19 @@ export async function deleteScimUser(args: {
   id: string;
 }): Promise<void> {
   const { team } = args;
-  await transaction(async (trx) => {
+  const leftWithoutOwner = await transaction(async (trx) => {
     const scimUser = await getScimUser({ teamId: team.id, id: args.id, trx });
-    await removeMembership({ team, userId: scimUser.userId, trx });
+    const leftWithoutOwner = await removeMembership({
+      team,
+      userId: scimUser.userId,
+      trx,
+    });
     await scimUser.$query(trx).delete();
+    return leftWithoutOwner;
   });
+  if (leftWithoutOwner) {
+    await notifyTeamWithoutOwner(team);
+  }
 }
 
 /**
@@ -354,19 +369,53 @@ async function addMembership(args: {
   }
 }
 
+/**
+ * Remove a member, and tell whether that left the team without an owner:
+ * offboarding goes through even for the last owner, as long as other members
+ * remain.
+ */
 async function removeMembership(args: {
   team: Team;
   userId: string;
   trx: TransactionOrKnex;
-}) {
-  const teamUser = await TeamUser.query(args.trx)
+}): Promise<boolean> {
+  const { team, userId, trx } = args;
+  const teamUser = await TeamUser.query(trx)
+    .select("id", "userLevel")
+    .findOne({ teamId: team.id, userId });
+  if (!teamUser) {
+    return false;
+  }
+  await deleteTeamMembership({
+    teamId: team.id,
+    teamUserId: teamUser.id,
+    trx,
+  });
+  if (teamUser.userLevel !== "owner") {
+    return false;
+  }
+  const owner = await TeamUser.query(trx)
     .select("id")
-    .findOne({ teamId: args.team.id, userId: args.userId });
-  if (teamUser) {
-    await deleteTeamMembership({
-      teamId: args.team.id,
-      teamUserId: teamUser.id,
-      trx: args.trx,
+    .findOne({ teamId: team.id, userLevel: "owner" });
+  return !owner;
+}
+
+/**
+ * Nobody can manage a team without an owner until its Identity Provider
+ * assigns the owner role to someone, if it maps roles at all: tell Argos, so
+ * support can step in.
+ */
+async function notifyTeamWithoutOwner(team: Team) {
+  const { account } = team;
+  invariant(account, "team.account not fetched");
+  try {
+    await notifyDiscord({
+      content: [
+        "SCIM • ⚠️ Team left without an owner",
+        `👥 ${formatDiscordLink(account.displayName, getAccountUrl(account.slug))} (ID: ${account.id})`,
+      ].join("\n"),
     });
+  } catch (error) {
+    captureException(error);
   }
 }

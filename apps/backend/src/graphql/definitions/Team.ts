@@ -158,6 +158,7 @@ export const typeDefs = gql`
       orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
     membersCount: Int!
+    ownersCount: Int!
     last30DaysScreenshots: Int!
     lastBuildDate: DateTime
     githubMembers(
@@ -689,6 +690,10 @@ export const resolvers: IResolvers = {
     membersCount: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.TeamMembersCountByTeamId.load(account.teamId);
+    },
+    ownersCount: async (account, _args, ctx) => {
+      invariant(account.teamId, "not a team account");
+      return ctx.loaders.TeamOwnersCountByTeamId.load(account.teamId);
     },
     last30DaysScreenshots: async (account, _args, ctx) => {
       return ctx.loaders.AccountLast30DaysScreenshotsByAccountId.load(

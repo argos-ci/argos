@@ -685,13 +685,17 @@ function createTeamMembersByTeamIdLoader() {
   });
 }
 
-function createTeamMembersCountByTeamIdLoader() {
+function createTeamMembersCountByTeamIdLoader(level?: TeamUser["userLevel"]) {
   return new DataLoader<string, number>(async (teamIds) => {
-    const rows = await TeamUser.query()
+    const query = TeamUser.query()
       .select("teamId")
       .count("* as count")
       .whereIn("teamId", teamIds as string[])
       .groupBy("teamId");
+    if (level) {
+      query.where("userLevel", level);
+    }
+    const rows = await query;
 
     const counts = new Map<string, number>();
     for (const row of rows as unknown as Array<{
@@ -2113,6 +2117,7 @@ export const createLoaders = () => ({
   SeenDiffsLoader: createSeenDiffsLoader(),
   Team: createModelLoader(Team),
   TeamMembersCountByTeamId: createTeamMembersCountByTeamIdLoader(),
+  TeamOwnersCountByTeamId: createTeamMembersCountByTeamIdLoader("owner"),
   TeamMembersByTeamId: createTeamMembersByTeamIdLoader(),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),

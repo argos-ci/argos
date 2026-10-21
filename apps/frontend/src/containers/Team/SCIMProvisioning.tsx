@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { KeyRoundIcon } from "lucide-react";
+import { KeyRoundIcon, TriangleAlertIcon } from "lucide-react";
 
 import { CreatedTokenDialog } from "@/containers/CreatedTokenDialog";
 import { CopyableInputGroup } from "@/containers/Team/CopyableInputGroup";
@@ -44,6 +44,7 @@ const _TeamFragment = graphql(`
       createdAt
       lastUsedAt
     }
+    ownersCount
   }
 `);
 
@@ -143,6 +144,17 @@ export function TeamSCIMProvisioning(props: {
               </Button>
             )}
           </div>
+          {scimToken && team.ownersCount < 2 ? (
+            <div className="border-t-thin text-warning-low flex items-start gap-2 p-4">
+              <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <p>
+                Your team has a single owner. If your Identity Provider
+                deprovisions them, nobody is left to manage the team: add a
+                second owner, or assign the owner role from your Identity
+                Provider.
+              </p>
+            </div>
+          ) : null}
         </div>
       </CardBody>
       <CardFooter>

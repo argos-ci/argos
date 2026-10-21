@@ -95,6 +95,8 @@ loggedTest(
     await createdDialog.getByRole("button", { name: "Close" }).click();
     await expect(createdDialog).toBeHidden();
     await expect(page.getByText("never used")).toBeVisible();
+    await expect(page.getByText("Your team has a single owner.")).toBeVisible();
+    await screenshot(page, "team-settings-scim");
 
     // What the Identity Provider does with it.
     const headers = {

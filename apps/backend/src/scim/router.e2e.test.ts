@@ -457,6 +457,30 @@ describe("SCIM API", () => {
     });
   });
 
+  test("deprovisions the last owner while other members remain", async ({
+    token,
+    teamAccount,
+    ownerEmail,
+  }) => {
+    const api = scim(token);
+    const { body: ownerUser } = await api.post("/Users", oktaUser(ownerEmail));
+    await api.post("/Users", oktaUser("jane@acme.com"));
+    await api.post("/Users", oktaUser("fox@acme.com"));
+
+    // Offboarding wins: the team is left without an owner, and Argos is told.
+    const res = await api.patch(
+      `/Users/${ownerUser.id}`,
+      patchOp([{ op: "replace", path: "active", value: false }]),
+    );
+    expect(res.status).toBe(200);
+    expect(await getMembership(teamAccount, ownerEmail)).toBeNull();
+    expect(
+      await TeamUser.query()
+        .where({ teamId: teamAccount.teamId, userLevel: "owner" })
+        .resultSize(),
+    ).toBe(0);
+  });
+
   test("serves the discovery endpoints without a token", async () => {
     for (const path of [
       "/ServiceProviderConfig",
