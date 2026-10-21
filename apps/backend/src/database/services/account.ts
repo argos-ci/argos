@@ -49,11 +49,25 @@ type AccountAuthResult = {
  * an unverified email to their account, and linking on it would hand them the
  * login meant for the email's owner.
  */
-export async function findUserByVerifiedEmail(email: string) {
+async function findUserByVerifiedEmail(email: string) {
   return User.query()
     .withGraphFetched("account")
     .whereExists(User.relatedQuery("verifiedEmails").where("email", email))
     .first();
+}
+
+/**
+ * Get the user an email links to, or create one for it. The caller must have
+ * proven the email belongs to whoever it acts for.
+ */
+export async function getOrCreateUserByVerifiedEmail(email: string) {
+  const user = await findUserByVerifiedEmail(email);
+  if (user) {
+    invariant(user.account, "Account not fetched");
+    return { user, account: user.account, creation: false };
+  }
+  const created = await createAccount({ email, slug: getSlugFromEmail(email) });
+  return { ...created, creation: true };
 }
 
 export async function markUserLastAuthMethod(args: {
@@ -550,7 +564,7 @@ async function getOrCreateUserAccountFromThirdParty<
 /**
  * Create a new user account.
  */
-export async function createAccount(args: {
+async function createAccount(args: {
   email: string;
   slug: string;
   accountData?: PartialModelObject<Account>;
@@ -741,29 +755,8 @@ export async function authenticateWithEmail(args: {
     });
   }
 
-  const existingUser = await findUserByVerifiedEmail(email);
-
-  if (existingUser) {
-    invariant(existingUser.account, "Account not fetched");
-    await markUserLastAuthMethod({
-      userId: existingUser.id,
-      method: "email",
-    });
-    return { account: existingUser.account, creation: false };
-  }
-
-  const slug = getSlugFromEmail(email);
-
-  const { account } = await createAccount({
-    email,
-    slug,
-  });
-
-  invariant(account.userId, "Expected account to have userId");
-  await markUserLastAuthMethod({
-    userId: account.userId,
-    method: "email",
-  });
-
-  return { account, creation: true };
+  const { user, account, creation } =
+    await getOrCreateUserByVerifiedEmail(email);
+  await markUserLastAuthMethod({ userId: user.id, method: "email" });
+  return { account, creation };
 }
