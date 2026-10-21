@@ -27,7 +27,7 @@ import {
   TeamUser,
   UserEmail,
 } from "@/database/models";
-import { createAccount } from "@/database/services/account";
+import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -53,6 +53,7 @@ import {
   setTeamMemberLevel,
   type TeamMembersOrder,
 } from "@/database/services/team-member";
+import { claimVerifiedEmail } from "@/database/services/user-email";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
@@ -68,7 +69,7 @@ import {
   getSubscriptionData,
   stripe,
 } from "@/stripe";
-import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
+import { sanitizeEmail } from "@/util/email";
 
 import {
   ITeamMembersOrderBy,
@@ -1286,23 +1287,7 @@ export const resolvers: IResolvers = {
       const { auth } = ctx;
 
       if (!auth) {
-        // Get or create the user account based on the email of the invite.
-        const { user } = await (async () => {
-          const userEmail = await UserEmail.query()
-            .where("email", email)
-            .withGraphFetched("user.account")
-            .first();
-          if (userEmail) {
-            invariant(userEmail.user?.account, "Account relation not loaded");
-            return {
-              account: userEmail.user.account,
-              user: userEmail.user,
-            };
-          }
-          const slug = getSlugFromEmail(teamInvite.email);
-          const { account, user } = await createAccount({ email, slug });
-          return { account, user };
-        })();
+        const { user } = await getOrCreateUserByVerifiedEmail(email);
 
         // Add user to the team and delete the invite in a transaction.
         await transaction(async (trx) => {
@@ -1328,7 +1313,7 @@ export const resolvers: IResolvers = {
 
       // If the user is logged in:
       // - Add the user to the team
-      // - Add the email to the user if not already present
+      // - Give the email to the user, verified: the invite proves they own it
       // - Delete the invite
       await transaction(async (trx) => {
         await Promise.all([
@@ -1341,15 +1326,7 @@ export const resolvers: IResolvers = {
             })
             .onConflict()
             .ignore(),
-          // Add the email to the user if not already present.
-          UserEmail.query(trx)
-            .insert({
-              email,
-              verified: true,
-              userId: auth.user.id,
-            })
-            .onConflict()
-            .ignore(),
+          claimVerifiedEmail({ trx, email, userId: auth.user.id }),
           // Delete the invite.
           teamInvite.$query(trx).delete(),
         ]);
