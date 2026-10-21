@@ -330,15 +330,6 @@
 @custom-variant search-cancel (&::-webkit-search-cancel-button);
 
 /**
- * On a page laid out for phones, as `ResponsiveViewport` marks it.
- *
- * For the components the build page renders too. The build page keeps the
- * desktop width, so a phone style behind this variant leaves it as it is,
- * touch screens included, where `pointer-coarse:` alone would reach it.
- */
-@custom-variant phone-layout (&:where(html[data-phone-layout] *));
-
-/**
  * Focused, and reached by keyboard.
  *
  * For everything that is not a text field, `focus-visible:` already means

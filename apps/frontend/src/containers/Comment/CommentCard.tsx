@@ -653,10 +653,7 @@ function CommentMessage(props: {
               {comment.pending ? <PendingCommentBadge /> : null}
             </div>
           </div>
-          {/* Shown to a finger, which has no hover to reveal them; only on
-              pages laid out for phones, as the build page and a shared media
-              render this too. */}
-          <div className="phone-layout:pointer-coarse:pointer-events-auto phone-layout:pointer-coarse:opacity-100 bg-app before:from-app pointer-events-none absolute top-1 right-1 flex items-center gap-0.5 rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 before:absolute before:inset-y-0 before:right-full before:w-8 before:bg-linear-to-l before:to-transparent before:content-[''] has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
+          <div className="bg-app before:from-app pointer-events-none absolute top-1 right-1 flex items-center gap-0.5 rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 before:absolute before:inset-y-0 before:right-full before:w-8 before:bg-linear-to-l before:to-transparent before:content-[''] has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
             <CommentAddReactionButton comment={comment} />
             <CommentActionsMenu
               onCopyLink={copyLink}

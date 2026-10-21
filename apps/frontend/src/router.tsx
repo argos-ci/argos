@@ -12,6 +12,7 @@ import {
 
 import { Layout } from "@/containers/Layout";
 import {
+  desktopRouteHandle,
   ResponsiveViewport,
   responsiveRouteHandle,
 } from "@/containers/ResponsiveViewport";
@@ -351,6 +352,9 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   id: "test",
                   path: "tests/:testId",
+                  // Not laid out for phones yet: it shares the build page's
+                  // diff viewer, and keeps the desktop width like it.
+                  handle: desktopRouteHandle,
                   HydrateFallback,
                   lazy: () => import("./pages/Test"),
                 },

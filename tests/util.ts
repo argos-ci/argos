@@ -213,12 +213,18 @@ const PHONE_VIEWPORT = { width: 393, height: 852 };
 
 /**
  * Whether the page renders at the device width on a phone, as
- * `ResponsiveViewport` marks it. The build page and a shared media keep the
- * desktop width there, so a narrow capture of them would show a layout no
- * phone ever gets.
+ * `ResponsiveViewport` sets the viewport. The build page, a test's page and a
+ * shared media keep the desktop width there, so a narrow capture of them would
+ * show a layout no phone ever gets.
  */
 function checkIsPhoneLayout(page: Page) {
-  return page.evaluate(() => "phoneLayout" in document.documentElement.dataset);
+  return page.evaluate(() =>
+    Boolean(
+      document
+        .querySelector<HTMLMetaElement>('meta[name="viewport"]')
+        ?.content.includes("device-width"),
+    ),
+  );
 }
 
 export async function screenshot(

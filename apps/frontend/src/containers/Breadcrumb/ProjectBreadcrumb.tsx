@@ -99,8 +99,7 @@ export function ProjectBreadcrumbItem(props: {
             {content}
           </BreadcrumbSplitButton>
           {/* On a phone the same button switches the team too, as the
-              account crumb is gone. It ends the trail there: the test after
-              it is left out. */}
+              account crumb is gone, and it always ends the trail. */}
           <div className="contents md:hidden">
             <MenuRoot>
               <MenuTrigger>

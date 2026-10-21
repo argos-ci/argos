@@ -248,10 +248,7 @@ export function Component() {
                     </Heading>
                     <ChangesFilterToggle state={filterState} />
                   </div>
-                  {/* On a phone the changes and the diff keep a desktop width
-                    and scroll sideways inside the card, which holds the
-                    screen width: side by side, as they are meant to be read. */}
-                  <Panel spacing={false} className="max-md:overflow-x-auto">
+                  <Panel spacing={false}>
                     <ProjectIgnoreEnabledProvider
                       enabled={project.ignoreConfig.enabled}
                     >
@@ -411,7 +408,7 @@ function ChangesExplorer(props: {
   return (
     // The surrounding panel provides the card; this only lays the two sides out
     // and gives the scrollable columns a height to work against.
-    <div className="flex max-md:min-w-224" style={{ height }}>
+    <div className="flex" style={{ height }}>
       <div className="border-r-thin flex min-w-60">
         <ChangesList
           test={test}
