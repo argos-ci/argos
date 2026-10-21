@@ -40,6 +40,22 @@ export function ListRowLink(props: Omit<HeadlessLinkProps, "external">) {
   );
 }
 
+export function ListRowButton(
+  props: Omit<ComponentPropsWithRef<"button">, "type">,
+) {
+  return (
+    <button
+      {...props}
+      type="button"
+      className={clsx(
+        listRowClassName,
+        "hover:bg-hover focus-visible:bg-hover focus:outline-hidden",
+        props.className,
+      )}
+    />
+  );
+}
+
 type ListRowProps = Omit<ComponentPropsWithRef<"div">, "role">;
 
 export function ListRow(props: ListRowProps) {

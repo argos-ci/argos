@@ -302,6 +302,69 @@ loggedTest(
 );
 
 loggedTest(
+  "lists only the builds awaiting a review, five at most",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, docsProject, extraBuilds } =
+      await createSiblingBuildsScenario({
+        projectId: project.id,
+        extraSuites: [
+          "a11y",
+          "e2e-chrome",
+          "e2e-firefox",
+          "e2e-webkit",
+          "unit",
+        ],
+      });
+    const [a11yBuild, chromeBuild] = extraBuilds;
+    if (!a11yBuild || !chromeBuild) {
+      throw new Error("The scenario was seeded with the extra suites");
+    }
+    await Build.query()
+      .findById(a11yBuild.id)
+      .patch({ conclusion: "no-changes" });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Submit review" }).click();
+    await page.getByRole("button", { name: "Approve" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Review the next build" });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(
+      dialog.getByText("6 more builds ran on this commit"),
+    ).toBeVisible();
+    // A suite with nothing to review is no stop on the way, so it stays out.
+    const rows = dialog.getByRole("table").getByRole("link");
+    await expect(rows.filter({ hasText: "a11y" })).toHaveCount(0);
+    // Six builds await a review and five are listed, led by the one the
+    // dialog's action goes to: the last one, in the other project, folds.
+    await expect(rows).toHaveCount(5);
+    await expect(rows.first()).toHaveAccessibleName(/^e2e-chrome /);
+    await expect(
+      dialog.getByRole("link", { name: "Review next build" }),
+    ).toHaveAttribute(
+      "href",
+      `/${team.account.slug}/${project.name}/builds/${chromeBuild.number}/overview`,
+    );
+    const docsRow = rows.filter({ hasText: docsProject.name });
+    await expect(docsRow).toHaveCount(0);
+
+    await screenshot(page, "build-next-review-dialog-folded", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await dialog.getByRole("button", { name: "Show 1 more build" }).click();
+    await expect(rows).toHaveCount(6);
+    // The button is gone, so focus moves to the build it was hiding.
+    await expect(docsRow).toBeFocused();
+  },
+);
+
+loggedTest(
   "points an outdated build to the latest build of its suite",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });

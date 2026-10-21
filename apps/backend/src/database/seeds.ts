@@ -1684,14 +1684,17 @@ export async function createJourneyScenario(input: {
 export async function createSiblingBuildsScenario(input: {
   projectId: string;
   withNewerBuild?: boolean;
+  /** Further suites the commit ran in this project. */
+  extraSuites?: string[];
 }): Promise<{
   defaultBuild: Build;
   storybookBuild: Build;
   docsBuild: Build;
   docsProject: Project;
   newerDefaultBuild: Build | null;
+  extraBuilds: Build[];
 }> {
-  const { projectId } = input;
+  const { projectId, extraSuites = [] } = input;
   const seededAt = getSeedInstant();
   const branch = "feat/sparkle";
   const baseCommit = "b1a7a4a1e5f0c3d2b9a8e7f6c5d4b3a2f1e0d9c8";
@@ -1834,6 +1837,11 @@ export async function createSiblingBuildsScenario(input: {
           createdAt: new Date(Date.parse(seededAt) + 60_000).toISOString(),
         })
       : null,
+    extraBuilds: await Promise.all(
+      extraSuites.map((name, index) =>
+        createSiblingBuild({ name, number: 10 + index }),
+      ),
+    ),
   };
 }
 
