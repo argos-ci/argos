@@ -364,7 +364,11 @@ export const resolvers: IResolvers = {
           data: { email },
           recipients: [ctx.auth.user.id],
         }),
-        sendVerificationEmail({ account: ctx.auth.account, email }),
+        sendVerificationEmail({
+          account: ctx.auth.account,
+          userId: ctx.auth.user.id,
+          email,
+        }),
       ]);
 
       return ctx.auth.account;
@@ -417,7 +421,11 @@ export const resolvers: IResolvers = {
         throw badUserInput("Email is already verified");
       }
 
-      await sendVerificationEmail({ account: ctx.auth.account, email });
+      await sendVerificationEmail({
+        account: ctx.auth.account,
+        userId: ctx.auth.user.id,
+        email,
+      });
 
       return ctx.auth.account;
     },
@@ -446,21 +454,7 @@ export const resolvers: IResolvers = {
       return ctx.auth.account;
     },
     verifyEmail: async (_root, args) => {
-      const { email, token } = args;
-
-      const existingEmail = await UserEmail.query().findOne({
-        email,
-      });
-
-      if (!existingEmail) {
-        return false;
-      }
-
-      if (existingEmail.verified) {
-        return false;
-      }
-
-      return markEmailAsVerified({ email, token });
+      return markEmailAsVerified({ email: args.email, token: args.token });
     },
     completeWelcome: async (_root, args, ctx) => {
       const { auth } = ctx;
