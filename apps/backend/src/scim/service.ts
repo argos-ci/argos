@@ -9,12 +9,11 @@ import {
   TeamScimToken,
   TeamScimUser,
   TeamUser,
-  UserEmail,
   type Account,
   type Team,
   type User,
 } from "@/database/models";
-import { createAccount } from "@/database/services/account";
+import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { hashToken } from "@/database/services/crypto";
 import {
   assertTeamAdmin,
@@ -25,11 +24,7 @@ import {
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { formatDiscordLink, getAccountUrl, notifyDiscord } from "@/discord";
-import {
-  checkIsValidEmail,
-  getSlugFromEmail,
-  sanitizeEmail,
-} from "@/util/email";
+import { checkIsValidEmail, sanitizeEmail } from "@/util/email";
 import { boom } from "@/util/error";
 
 import { invalidValue, ScimError } from "./error";
@@ -230,10 +225,14 @@ export async function createScimUser(args: {
   }
 
   return rejectDuplicate(async () => {
-    const userId = await getOrCreateUserId({
-      email: sanitizeEmail(email),
-      name: attributes.displayName ?? formatName(attributes),
-    });
+    const name = attributes.displayName ?? formatName(attributes);
+    const { user } = await getOrCreateUserByVerifiedEmail(
+      sanitizeEmail(email),
+      {
+        name: AccountNameSchema.safeParse(name).data ?? null,
+      },
+    );
+    const userId = user.id;
     return transaction(async (trx) => {
       const scimUser = await TeamScimUser.query(trx)
         .insert({ teamId: team.id, userId, ...attributes })
@@ -313,34 +312,6 @@ export async function deleteScimUser(args: {
   if (leftWithoutOwner) {
     await notifyTeamWithoutOwner(team);
   }
-}
-
-/**
- * Find the Argos user owning `email`, or create one.
- *
- * Only a verified email links to an existing user: anyone can add an
- * unverified email to their account, and linking on it would hand them the
- * team membership meant for the email's owner.
- */
-async function getOrCreateUserId(args: {
-  email: string;
-  name: string;
-}): Promise<string> {
-  const userEmail = await UserEmail.query().findById(args.email);
-  if (userEmail?.verified) {
-    return userEmail.userId;
-  }
-  if (userEmail) {
-    // Freed as adding the email to another account would: unverified, it may
-    // not belong to that user, and the email is the table's primary key.
-    await userEmail.$query().delete();
-  }
-  const { user } = await createAccount({
-    email: args.email,
-    slug: getSlugFromEmail(args.email),
-    accountData: { name: AccountNameSchema.safeParse(args.name).data ?? null },
-  });
-  return user.id;
 }
 
 async function addMembership(args: {
