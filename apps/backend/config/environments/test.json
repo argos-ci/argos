@@ -22,7 +22,7 @@
   },
   "app": {
     "rateLimit": {
-      "limit": 10000
+      "limit": 100000
     }
   },
   "api": {
