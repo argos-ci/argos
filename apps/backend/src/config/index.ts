@@ -222,6 +222,11 @@ export function createConfig() {
           format: "int",
           default: 10000,
         },
+        scimLimit: {
+          doc: "Maximum number of SCIM requests per team, counted apart from `limit`: an Identity Provider's initial sync sends several requests per user",
+          format: "int",
+          default: 3000,
+        },
       },
     },
     amqp: {

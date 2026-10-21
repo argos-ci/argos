@@ -11,6 +11,7 @@ import {
   Subscription,
   Team,
   TeamInvite,
+  TeamScimUser,
   TeamUser,
   User,
   UserAccessToken,
@@ -202,6 +203,10 @@ export async function deleteAccount(args: {
         await Promise.all([
           // Remove user from all of its teams
           TeamUser.query(trx).where("userId", userId).delete(),
+
+          // Unlink the user from the teams that provisioned it through SCIM,
+          // or reactivating it there would add the deleted user back.
+          TeamScimUser.query(trx).where("userId", userId).delete(),
 
           // Remove all user access tokens owned by the user
           deleteUserAccessTokensByUserId({ userId, trx }),

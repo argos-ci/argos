@@ -97,6 +97,7 @@ const config: CodegenConfig = {
           TeamDomain: "../../database/models/index.js#TeamDomain",
           TeamInvite: "../../database/models/index.js#TeamInvite",
           TeamSamlConfig: "../../database/models/index.js#TeamSamlConfig",
+          TeamScimToken: "../../database/models/index.js#TeamScimToken",
           TeamMember: "../../database/models/index.js#TeamUser",
           TeamGithubMember:
             "../../database/models/index.js#GithubAccountMember",

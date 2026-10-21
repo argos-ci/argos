@@ -30,6 +30,7 @@ import { TeamMembers } from "@/containers/Team/members/Members";
 import { TeamMonthlyReport } from "@/containers/Team/MonthlyReport";
 import { TeamMsTeams } from "@/containers/Team/MsTeams";
 import { TeamSAMLSSO } from "@/containers/Team/SAMLSSO";
+import { TeamSCIMProvisioning } from "@/containers/Team/SCIMProvisioning";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { TeamStaticIp } from "@/containers/Team/StaticIp";
@@ -88,6 +89,7 @@ const AccountQuery = graphql(`
       ...AccountCursorOrigin_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
+      ...TeamSCIMProvisioning_Team
       ...TeamDomains_Team
       ...TeamAccessRole_Team
       ...TeamGitHubLight_Team
@@ -256,6 +258,9 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamDomains team={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
           {isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}
+          {isTeam && hasAdminPermission && (
+            <TeamSCIMProvisioning team={account} />
+          )}
         </>
       ),
     },

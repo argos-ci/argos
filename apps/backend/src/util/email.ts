@@ -18,7 +18,7 @@ const EmailSchema = z.email();
 /**
  * Check if the email is valid.
  */
-function checkIsValidEmail(email: string) {
+export function checkIsValidEmail(email: string) {
   return EmailSchema.safeParse(email).success;
 }
 

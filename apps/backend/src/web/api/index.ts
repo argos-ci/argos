@@ -2,6 +2,7 @@ import cors from "cors";
 import { Application, Router } from "express";
 
 import { getProtectedResourceMetadata } from "@/oauth/metadata";
+import scim from "@/scim/router";
 
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github";
 import { apiMiddleware as originApiMiddleware } from "../middlewares/origin";
@@ -32,6 +33,7 @@ export const installApiRouter = (app: Application) => {
     },
   );
   router.use("/v2", v2);
+  router.use("/scim/v2", scim);
   router.use(builds);
   router.use(auth);
   router.use(stripe);
