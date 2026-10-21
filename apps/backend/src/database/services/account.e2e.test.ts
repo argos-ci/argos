@@ -1,8 +1,14 @@
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import { describe, expect, test } from "vitest";
 
 import { generateAuthEmailCode } from "@/auth/email";
-import { type Account, TeamUser, UserEmail } from "@/database/models";
+import {
+  type Account,
+  TeamInvite,
+  TeamUser,
+  UserEmail,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import {
@@ -92,6 +98,33 @@ describe("getOrCreateUserAccountFromSaml", () => {
         await findTeamUser({ teamAccount, userId: account.userId }),
       ).toMatchObject({ ssoSubject: SSO_SUBJECT });
       await expectEmailVerifiedOn(account);
+    },
+  );
+
+  withAccounts(
+    "creates an account for a person invited to the team",
+    async ({ teamAccount, userAccount }) => {
+      invariant(teamAccount.teamId, "team account has no team");
+      invariant(userAccount.userId, "user account has no user");
+      await TeamInvite.query().insert({
+        teamId: teamAccount.teamId,
+        email: EMAIL,
+        secret: TeamInvite.generateSecret(),
+        userLevel: "member",
+        invitedById: userAccount.userId,
+        expiresAt: addDays(new Date(), 1).toISOString(),
+      });
+
+      const account = await getOrCreateUserAccountFromSaml({
+        email: EMAIL,
+        teamAccount,
+        ssoSubject: SSO_SUBJECT,
+      });
+
+      invariant(account.userId, "account has no user");
+      expect(
+        await findTeamUser({ teamAccount, userId: account.userId }),
+      ).toMatchObject({ ssoSubject: SSO_SUBJECT });
     },
   );
 });

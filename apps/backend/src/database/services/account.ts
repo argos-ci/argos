@@ -148,46 +148,20 @@ export async function getOrCreateUserAccountFromSaml(input: {
     return teamUser.user.account;
   }
 
-  const existingUser = await findUserByVerifiedEmail(email);
-
-  if (existingUser) {
-    invariant(existingUser.account, "Account not fetched");
-    const teamUser = await TeamUser.query().findOne({
+  const { user, account } = await getOrCreateUserByVerifiedEmail(email);
+  // Even a user created just now may be a member: creating it accepts the
+  // invites pending for its email.
+  await TeamUser.query()
+    .insert({
       teamId: team.id,
-      userId: existingUser.id,
-    });
-    if (!teamUser) {
-      await TeamUser.query().insert({
-        teamId: team.id,
-        userId: existingUser.id,
-        userLevel: team.defaultUserLevel,
-        ssoSubject: input.ssoSubject,
-        ssoVerifiedAt: now,
-        lastAuthMethod: "saml",
-      });
-    } else {
-      await teamUser.$query().patch({
-        ssoSubject: input.ssoSubject,
-        ssoVerifiedAt: now,
-        lastAuthMethod: "saml",
-      });
-    }
-    return existingUser.account;
-  }
-
-  const slug = getSlugFromEmail(email);
-  const { account, user } = await createAccount({
-    email,
-    slug,
-  });
-  await TeamUser.query().insert({
-    teamId: team.id,
-    userId: user.id,
-    userLevel: team.defaultUserLevel,
-    ssoSubject: input.ssoSubject,
-    ssoVerifiedAt: now,
-    lastAuthMethod: "saml",
-  });
+      userId: user.id,
+      userLevel: team.defaultUserLevel,
+      ssoSubject: input.ssoSubject,
+      ssoVerifiedAt: now,
+      lastAuthMethod: "saml",
+    })
+    .onConflict(["teamId", "userId"])
+    .merge(["ssoSubject", "ssoVerifiedAt", "lastAuthMethod", "updatedAt"]);
   return account;
 }
 
