@@ -35,8 +35,11 @@ export function DialogFooter(props: ComponentPropsWithRef<"div">) {
         "bg-subtle border-t-thin flex items-center gap-4 p-4",
         role === "alertdialog"
           ? "flex-wrap justify-center *:[[role=alert]]:basis-full *:[[role=alert]]:text-center"
-          : // Wraps on a phone: two long buttons would overflow to the left.
-            "justify-end max-md:flex-wrap",
+          : "justify-end",
+        // A phone stacks the buttons, full width and 44px tall, as a finger
+        // needs: the main action on top, then the way out, with any error
+        // above them all.
+        "max-md:flex-col-reverse max-md:items-stretch max-md:gap-2 max-md:*:w-full max-md:*:[[role=alert]]:order-last max-md:[&>:is(button,a)]:min-h-11 max-md:[&>:is(button,a)]:justify-center",
         props.className,
       )}
     />
