@@ -1,3 +1,4 @@
+import type { TransactionOrKnex } from "objection";
 import { z } from "zod";
 
 import config from "@/config";
@@ -60,6 +61,28 @@ async function consumeEmailVerificationToken(args: {
   }
   await redis.del(key);
   return verification.userId;
+}
+
+/**
+ * Give a user an email they have proven to own, as verified. Whoever holds it
+ * unverified loses it: that proves nothing, and the email is the table's
+ * primary key. A verified holder keeps it.
+ *
+ * Returns `false` when the email was already verified, by this user or another.
+ */
+export async function claimVerifiedEmail(input: {
+  email: string;
+  userId: string;
+  trx?: TransactionOrKnex;
+}): Promise<boolean> {
+  const { email, userId, trx } = input;
+  await UserEmail.query(trx).delete().where({ email, verified: false });
+  const inserted = await UserEmail.query(trx)
+    .insert([{ email, userId, verified: true }])
+    .onConflict("email")
+    .ignore()
+    .returning("email");
+  return inserted.length > 0;
 }
 
 /**

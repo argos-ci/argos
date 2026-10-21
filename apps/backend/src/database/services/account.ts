@@ -20,10 +20,10 @@ import { Team } from "../models/Team";
 import { TeamInvite } from "../models/TeamInvite";
 import { TeamUser } from "../models/TeamUser";
 import { User } from "../models/User";
-import { UserEmail } from "../models/UserEmail";
 import { transaction } from "../transaction";
 import { Model } from "../util/model";
 import { getPartialModelUpdate } from "../util/update";
+import { claimVerifiedEmail } from "./user-email";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -486,15 +486,16 @@ async function getOrCreateUserAccountFromThirdParty<
         (async () => {
           // If the existing user doesn't have an email, and we have one, we add it,
           // and we also accept all invites for this email.
-          if (!existingUser.email && email) {
-            await Promise.all([
-              UserEmail.query(trx).insert({
-                userId: existingUser.id,
-                email,
-                verified: true,
-              }),
-              acceptAllInvitesForEmail({ trx, email, userId: existingUser.id }),
-            ]);
+          if (
+            !existingUser.email &&
+            email &&
+            (await claimVerifiedEmail({ trx, email, userId: existingUser.id }))
+          ) {
+            await acceptAllInvitesForEmail({
+              trx,
+              email,
+              userId: existingUser.id,
+            });
           }
         })(),
         accountData
@@ -547,10 +548,6 @@ async function createAccount(args: {
   const email = sanitizeEmail(args.email);
   const slug = await resolveAccountSlug(slugify(args.slug));
   const { account, user } = await transaction(async (trx) => {
-    // Callers have proven the email belongs to whoever signs up. Freed as
-    // `addUserEmail` does: unverified, it may not belong to its holder, and the
-    // email is the table's primary key.
-    await UserEmail.query(trx).delete().where({ email, verified: false });
     const userData: PartialModelObject<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);
 
@@ -559,16 +556,11 @@ async function createAccount(args: {
       slug,
       ...args.accountData,
     };
-    const [account] = await Promise.all([
-      // Create the account
+    const [account, claimed] = await Promise.all([
       Account.query(trx).insertAndFetch(accountData),
-      // Add the email to the user as verified
-      UserEmail.query(trx).insert({
-        userId: user.id,
-        email,
-        verified: true,
-      }),
+      claimVerifiedEmail({ trx, email, userId: user.id }),
     ]);
+    invariant(claimed, `Email ${email} is already verified on another user`);
     return { account, user };
   });
 
