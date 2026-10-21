@@ -7,6 +7,7 @@ import {
   type Account,
   TeamInvite,
   TeamUser,
+  type User,
   UserEmail,
   UserSession,
 } from "@/database/models";
@@ -22,6 +23,7 @@ const withInvite = test.extend<{
   teamAccount: Account;
   invite: TeamInvite;
   holderId: string;
+  viewer: { user: User; account: Account };
 }>({
   teamAccount: async ({}, use) => {
     await setupDatabase();
@@ -46,13 +48,22 @@ const withInvite = test.extend<{
     invariant(userId, "user account has no user");
     await use(userId);
   },
+  viewer: async ({ teamAccount: _teamAccount }, use) => {
+    const account = await factory.UserAccount.create();
+    await account.$fetchGraph("user");
+    invariant(account.user, "user not fetched");
+    await use({ user: account.user, account });
+  },
 });
 
-async function acceptInviteSignedOut(invite: TeamInvite) {
+async function acceptInvite(
+  invite: TeamInvite,
+  auth: { user: User; account: Account } | null,
+) {
   const app = await createApolloServerApp(
     apolloServer,
     createApolloMiddleware,
-    null,
+    auth,
   );
   const res = await request(app)
     .post("/graphql")
@@ -89,7 +100,7 @@ describe("acceptInvite signed out", () => {
         verified: true,
       });
 
-      await acceptInviteSignedOut(invite);
+      await acceptInvite(invite, null);
 
       await expectOnlyMemberAndSession(invite.teamId, holderId);
     },
@@ -104,13 +115,33 @@ describe("acceptInvite signed out", () => {
         verified: false,
       });
 
-      await acceptInviteSignedOut(invite);
+      await acceptInvite(invite, null);
 
       const userEmail = await UserEmail.query().findById(EMAIL);
       invariant(userEmail, "email not found");
       expect(userEmail.verified).toBe(true);
       expect(userEmail.userId).not.toBe(holderId);
       await expectOnlyMemberAndSession(invite.teamId, userEmail.userId);
+    },
+  );
+});
+
+describe("acceptInvite signed in", () => {
+  withInvite(
+    "gives the email verified to the user, even held unverified by another",
+    async ({ invite, holderId, viewer }) => {
+      await factory.UserEmail.create({
+        userId: holderId,
+        email: EMAIL,
+        verified: false,
+      });
+
+      await acceptInvite(invite, viewer);
+
+      expect(await UserEmail.query().findById(EMAIL)).toMatchObject({
+        userId: viewer.user.id,
+        verified: true,
+      });
     },
   );
 });
