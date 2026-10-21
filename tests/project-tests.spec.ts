@@ -39,6 +39,13 @@ loggedTest("tests", async ({ page, team, project, builds }) => {
     page.getByRole("link", { name: /penelope-argos\.jpg/ }),
   ).toBeVisible();
   await screenshot(page, "project-tests");
+
+  // The team's tests page lists the same tests across its projects.
+  await page.goto(`/${team.account.slug}/~/tests`);
+  await expect(
+    page.getByRole("link", { name: /penelope-argos\.jpg/ }),
+  ).toBeVisible();
+  await screenshot(page, "account-tests");
 });
 
 loggedTest("test detail", async ({ page, team, project, builds }) => {

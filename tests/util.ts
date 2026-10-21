@@ -3,7 +3,7 @@ import {
   argosScreenshot,
   type ArgosScreenshotOptions,
 } from "@argos-ci/playwright";
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import {
   TeamUser,
@@ -41,6 +41,10 @@ export function getUniqueTestIdentifier(testInfo: TestInfo) {
 async function replaceText(
   page: Page,
   replacements: Record<string, string>,
+  options: {
+    /** Replace the texts that are there, without requiring each to show. */
+    lenient?: boolean;
+  } = {},
 ): Promise<() => Promise<void>> {
   const storeKey = `__replaceTextStore_${Date.now()}`;
 
@@ -50,9 +54,11 @@ async function replaceText(
 
   for (const [search, replace] of Object.entries(replacements)) {
     // Expect that at least one text is visible.
-    await expect(
-      page.getByText(search, { exact: false }).first(),
-    ).toBeVisible();
+    if (!options.lenient) {
+      await expect(
+        page.getByText(search, { exact: false }).first(),
+      ).toBeVisible();
+    }
     await page.getByText(search, { exact: false }).evaluateAll(
       (elements, { search, replace, storeKey }) => {
         type TextMod = { type: "text"; node: Text; original: string };
@@ -202,6 +208,19 @@ export async function waitForDiffListToSettle(page: Page) {
   );
 }
 
+/** The phone a page laid out for phones is also captured at: an iPhone 15. */
+const PHONE_VIEWPORT = { width: 393, height: 852 };
+
+/**
+ * Whether the page renders at the device width on a phone, as
+ * `ResponsiveViewport` marks it. The build page and a shared media keep the
+ * desktop width there, so a narrow capture of them would show a layout no
+ * phone ever gets.
+ */
+function checkIsPhoneLayout(page: Page) {
+  return page.evaluate(() => "phoneLayout" in document.documentElement.dataset);
+}
+
 export async function screenshot(
   page: Page,
   name: string,
@@ -210,11 +229,16 @@ export async function screenshot(
   } = {},
 ) {
   const { replacements, ...otherOptions } = options;
-  const ctx: { restore: (() => Promise<void>) | null } = { restore: null };
-  await argosScreenshot(page, name, {
+  const ctx: {
+    restore: (() => Promise<void>) | null;
+    lenient: boolean;
+  } = { restore: null, lenient: false };
+  const argosOptions: ArgosScreenshotOptions = {
     beforeScreenshot: async () => {
       if (replacements) {
-        ctx.restore = await replaceText(page, replacements);
+        ctx.restore = await replaceText(page, replacements, {
+          lenient: ctx.lenient,
+        });
       }
     },
     afterScreenshot: async () => {
@@ -230,5 +254,23 @@ export async function screenshot(
     ${otherOptions.argosCSS ?? ""}
     `,
     ...otherOptions,
-  });
+  };
+  await argosScreenshot(page, name, argosOptions);
+  // A page laid out for phones is captured at a phone's width too, in the same
+  // test: one more screenshot instead of a second run of the suite. Chromium
+  // only, and whole pages only, which is what the layout changes.
+  if (
+    test.info().project.name === "chromium" &&
+    !options.element &&
+    !options.viewports &&
+    (await checkIsPhoneLayout(page))
+  ) {
+    // A phone hides some of what the desktop shows, the test crumb among
+    // them: a text to replace may not be there.
+    ctx.lenient = true;
+    await argosScreenshot(page, name, {
+      ...argosOptions,
+      viewports: [PHONE_VIEWPORT],
+    });
+  }
 }

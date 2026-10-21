@@ -42,6 +42,12 @@ loggedTest("automations", async ({ page, team, project }) => {
   await page.locator("button:has(.lucide-ellipsis-vertical)").click();
   await expect(page.getByRole("option", { name: "Delete" })).toBeVisible();
   expect(page.url()).toBe(listURL);
+
+  await page.getByRole("option", { name: /Edit|View/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Save Changes" }),
+  ).toBeVisible();
+  await screenshot(page, "project-automation-edit");
 });
 
 loggedTest("new automation", async ({ page, team, project }) => {
