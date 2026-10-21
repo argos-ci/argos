@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
-import { AlertCircleIcon, TriangleAlertIcon } from "lucide-react";
+import { AlertCircleIcon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { CreatedTokenDialog } from "@/containers/CreatedTokenDialog";
 import { graphql, type DocumentType } from "@/gql";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
@@ -22,7 +23,6 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
-import { Pre } from "@/ui/Pre";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
 const CreateUserAccessTokenMutation = graphql(`
@@ -96,47 +96,6 @@ type Inputs = {
   name: string;
   accountIds: string[];
   expireInDays: string;
-};
-
-const CreatedTokenDialog = ({
-  createdToken,
-  createdExpireAt,
-}: {
-  createdToken: string;
-  createdExpireAt: string | null;
-}) => {
-  return (
-    <Dialog size="medium">
-      <DialogBody>
-        <DialogTitle>Token Created</DialogTitle>
-        <DialogText>
-          This token grants full API access to your account.{" "}
-          <span className="font-medium">Keep it secure</span>.
-        </DialogText>
-        <Pre code={createdToken} className="mt-4" />
-        <div className="text-warning-low flex items-start gap-2 p-2 text-sm">
-          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
-          <p>Copy your token now. You won’t be able to see it again.</p>
-        </div>
-        {createdExpireAt && (
-          <p className="text-low mt-2 text-sm">
-            This token expires on{" "}
-            <strong>
-              {new Date(createdExpireAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </strong>
-            .
-          </p>
-        )}
-      </DialogBody>
-      <DialogFooter>
-        <DialogDismiss>Close</DialogDismiss>
-      </DialogFooter>
-    </Dialog>
-  );
 };
 
 export function CreateTokenDialog(props: {
@@ -243,9 +202,29 @@ export function CreateTokenDialog(props: {
   if (createdToken) {
     return (
       <CreatedTokenDialog
-        createdToken={createdToken}
-        createdExpireAt={createdExpireAt}
-      />
+        title="Token Created"
+        token={createdToken}
+        description={
+          <>
+            This token grants full API access to your account.{" "}
+            <span className="font-medium">Keep it secure</span>.
+          </>
+        }
+      >
+        {createdExpireAt && (
+          <p className="text-low mt-2 text-sm">
+            This token expires on{" "}
+            <strong>
+              {new Date(createdExpireAt).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </strong>
+            .
+          </p>
+        )}
+      </CreatedTokenDialog>
     );
   }
 

@@ -1,8 +1,10 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { KeyRoundIcon, TriangleAlertIcon } from "lucide-react";
+import { KeyRoundIcon } from "lucide-react";
 
+import { CreatedTokenDialog } from "@/containers/CreatedTokenDialog";
+import { CopyableInputGroup } from "@/containers/Team/CopyableInputGroup";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
@@ -12,7 +14,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
   DialogActionButton,
@@ -24,11 +25,8 @@ import {
   useDialogValueState,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
-import { Label } from "@/ui/Label";
 import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
-import { Pre } from "@/ui/Pre";
-import { TextInput, TextInputAddon, TextInputGroup } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 
@@ -54,12 +52,7 @@ const GenerateTokenMutation = graphql(`
     generateTeamScimToken(teamAccountId: $teamAccountId) {
       token
       team {
-        id
-        scimToken {
-          id
-          createdAt
-          lastUsedAt
-        }
+        ...TeamSCIMProvisioning_Team
       }
     }
   }
@@ -68,10 +61,7 @@ const GenerateTokenMutation = graphql(`
 const RevokeTokenMutation = graphql(`
   mutation TeamSCIMProvisioning_revokeToken($teamAccountId: ID!) {
     revokeTeamScimToken(teamAccountId: $teamAccountId) {
-      id
-      scimToken {
-        id
-      }
+      ...TeamSCIMProvisioning_Team
     }
   }
 `);
@@ -84,7 +74,6 @@ export function TeamSCIMProvisioning(props: {
   const { team } = props;
   const { scimToken } = team;
   const hasAccess = Boolean(team.plan?.samlIncluded || team.samlPurchased);
-  const baseUrlId = useId();
   // Hosted here rather than under each button: generating or revoking the
   // token swaps the buttons, and would unmount the dialog still showing.
   const dialog = useDialogValueState<TokenDialog | null>(null);
@@ -100,18 +89,10 @@ export function TeamSCIMProvisioning(props: {
         </CardParagraph>
         <div className="border-thin rounded-lg text-sm">
           <div className="p-4">
-            <Label htmlFor={baseUrlId}>SCIM base URL</Label>
-            <TextInputGroup>
-              <TextInput
-                id={baseUrlId}
-                readOnly
-                value={team.scimBaseUrl}
-                scale="sm"
-              />
-              <TextInputAddon>
-                <CopyButton text={team.scimBaseUrl} />
-              </TextInputAddon>
-            </TextInputGroup>
+            <CopyableInputGroup
+              title="SCIM base URL"
+              value={team.scimBaseUrl}
+            />
           </div>
           <div className="border-t-thin flex items-center gap-4 p-4">
             <KeyRoundIcon className="size-6 shrink-0" />
@@ -201,24 +182,17 @@ function GenerateTokenDialog(props: {
 
   if (token) {
     return (
-      <Dialog size="medium">
-        <DialogBody>
-          <DialogTitle>SCIM Token Generated</DialogTitle>
-          <DialogText>
+      <CreatedTokenDialog
+        title="SCIM Token Generated"
+        token={token}
+        description={
+          <>
             Set it in your Identity Provider as the bearer token, along with the
             SCIM base URL. It can add and remove members of your team:{" "}
             <span className="font-medium">keep it secure</span>.
-          </DialogText>
-          <Pre code={token} className="mt-4" />
-          <div className="text-warning-low flex items-start gap-2 p-2 text-sm">
-            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
-            <p>Copy your token now. You won’t be able to see it again.</p>
-          </div>
-        </DialogBody>
-        <DialogFooter>
-          <DialogDismiss>Close</DialogDismiss>
-        </DialogFooter>
-      </Dialog>
+          </>
+        }
+      />
     );
   }
 

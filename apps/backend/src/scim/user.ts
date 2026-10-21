@@ -1,4 +1,6 @@
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
+import { invariant } from "@argos/util/invariant";
+import { pick } from "lodash-es";
 import { z } from "zod";
 
 import config from "@/config";
@@ -10,7 +12,6 @@ import { invalidValue } from "./error";
 export const SCIM_SCHEMAS = {
   user: "urn:ietf:params:scim:schemas:core:2.0:User",
   listResponse: "urn:ietf:params:scim:api:messages:2.0:ListResponse",
-  patchOp: "urn:ietf:params:scim:api:messages:2.0:PatchOp",
   error: "urn:ietf:params:scim:api:messages:2.0:Error",
   serviceProviderConfig:
     "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig",
@@ -22,21 +23,24 @@ export function getScimBaseUrl() {
   return new URL("/scim/v2", config.get("api.baseUrl")).href;
 }
 
+const USER_ATTRIBUTES = [
+  "userName",
+  "externalId",
+  "email",
+  "displayName",
+  "givenName",
+  "familyName",
+  "active",
+  "role",
+] as const;
+
 /**
- * The user attributes Argos keeps from a SCIM User resource. Everything else
- * the Identity Provider sends (phone numbers, the enterprise extension, …) is
- * accepted and dropped.
+ * The user attributes Argos keeps from a SCIM User resource.
  */
-export type ScimUserAttributes = {
-  userName: string;
-  externalId: string | null;
-  email: string | null;
-  displayName: string | null;
-  givenName: string | null;
-  familyName: string | null;
-  active: boolean;
-  role: TeamUserLevel | null;
-};
+export type ScimUserAttributes = Pick<
+  TeamScimUser,
+  (typeof USER_ATTRIBUTES)[number]
+>;
 
 /**
  * Microsoft Entra ID sends booleans as the strings "True" and "False".
@@ -90,10 +94,9 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) {
     const [issue] = result.error.issues;
-    const path = issue?.path.join(".");
-    throw invalidValue(
-      path ? `${path}: ${issue?.message}` : (issue?.message ?? "Invalid value"),
-    );
+    invariant(issue, "A failed parse has an issue");
+    const path = issue.path.join(".");
+    throw invalidValue(path ? `${path}: ${issue.message}` : issue.message);
   }
   return result.data;
 }
@@ -160,12 +163,12 @@ export function pickRole(value: unknown): TeamUserLevel | null {
 /**
  * Read the attributes of a User resource sent on `POST` or `PUT`.
  *
- * `active` is left to `current` when absent: a `PUT` that omits it must not
- * reactivate a user the Identity Provider deactivated.
+ * `active` falls back to `defaultActive` when absent: a `PUT` that omits it
+ * must not reactivate a user the Identity Provider deactivated.
  */
 export function parseUserInput(
   body: unknown,
-  current: ScimUserAttributes | null,
+  defaultActive: boolean,
 ): ScimUserAttributes {
   const input = parse(UserInputSchema, body);
   return {
@@ -175,22 +178,19 @@ export function parseUserInput(
     givenName: input.name?.givenName ?? null,
     familyName: input.name?.familyName ?? null,
     email: input.emails ? pickPrimaryEmail(input.emails) : null,
-    active: input.active ?? current?.active ?? true,
+    active: input.active ?? defaultActive,
     role: pickRole(input.roles),
   };
 }
 
 export function getUserAttributes(scimUser: TeamScimUser): ScimUserAttributes {
-  return {
-    userName: scimUser.userName,
-    externalId: scimUser.externalId,
-    email: scimUser.email,
-    displayName: scimUser.displayName,
-    givenName: scimUser.givenName,
-    familyName: scimUser.familyName,
-    active: scimUser.active,
-    role: scimUser.role,
-  };
+  return pick(scimUser, USER_ATTRIBUTES);
+}
+
+export function formatName(
+  user: Pick<ScimUserAttributes, "givenName" | "familyName">,
+) {
+  return [user.givenName, user.familyName].filter(Boolean).join(" ");
 }
 
 /**
@@ -198,9 +198,7 @@ export function getUserAttributes(scimUser: TeamScimUser): ScimUserAttributes {
  * are omitted rather than sent as `null` (RFC 7643 §2.5).
  */
 export function serializeUser(scimUser: TeamScimUser) {
-  const formatted = [scimUser.givenName, scimUser.familyName]
-    .filter(Boolean)
-    .join(" ");
+  const formatted = formatName(scimUser);
   return {
     schemas: [SCIM_SCHEMAS.user],
     id: scimUser.id,

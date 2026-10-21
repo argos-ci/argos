@@ -1,5 +1,4 @@
 /* oxlint-disable react/react-compiler */
-import { useId } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -18,6 +17,7 @@ import {
 import z from "zod";
 
 import { SAML_SSO_PRICING } from "@/constants";
+import { CopyableInputGroup } from "@/containers/Team/CopyableInputGroup";
 import {
   DisableSAMLSSOAddOnButton,
   EnableSAMLSSOAddOnButton,
@@ -31,7 +31,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
   DialogBody,
@@ -52,7 +51,6 @@ import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Separator } from "@/ui/Separator";
 import { Switch } from "@/ui/Switch";
-import { TextInput, TextInputAddon, TextInputGroup } from "@/ui/TextInput";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -602,27 +600,6 @@ function CertificateField(props: { control: Control<Inputs, any, Inputs> }) {
       {typeof error?.message === "string" && (
         <ErrorMessage className="mt-2">{error.message}</ErrorMessage>
       )}
-    </div>
-  );
-}
-
-function CopyableInputGroup(props: {
-  title: React.ReactNode;
-  description: React.ReactNode;
-  value: string;
-}) {
-  const { title, description, value } = props;
-  const inputId = useId();
-  return (
-    <div>
-      <Label htmlFor={inputId}>{title}</Label>
-      <TextInputGroup className="mb-2">
-        <TextInput id={inputId} readOnly value={value} scale="sm" />
-        <TextInputAddon>
-          <CopyButton text={value} />
-        </TextInputAddon>
-      </TextInputGroup>
-      <p className="text-low text-xs">{description}</p>
     </div>
   );
 }

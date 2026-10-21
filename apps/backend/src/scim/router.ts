@@ -7,6 +7,7 @@ import { invariant } from "@argos/util/invariant";
 import express, {
   Router,
   type ErrorRequestHandler,
+  type NextFunction,
   type Request,
   type RequestHandler,
   type Response,
@@ -15,10 +16,8 @@ import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 
 import { safeParseBearerFromHeader } from "@/auth/auth-header";
 import config from "@/config";
-import { isUniqueViolationError } from "@/database/error";
-import type { Team } from "@/database/models";
+import type { Team, TeamScimToken } from "@/database/models";
 import logger from "@/logger";
-import { HTTPError } from "@/util/error";
 import { createRedisStore } from "@/util/rate-limit";
 import { asyncHandler } from "@/web/util";
 
@@ -26,10 +25,11 @@ import { ScimError } from "./error";
 import { parseUserFilter } from "./filter";
 import { applyPatch, parsePatchOperations } from "./patch";
 import {
+  authorizeScimToken,
   createScimUser,
   deleteScimUser,
+  findScimToken,
   getScimUser,
-  getTeamFromScimToken,
   listScimUsers,
   updateScimUser,
 } from "./service";
@@ -46,11 +46,15 @@ function sendScim(res: Response, status: number, body: unknown) {
   res.status(status).type("application/scim+json").send(JSON.stringify(body));
 }
 
-function sendList(res: Response, resources: unknown[]) {
+function sendList(
+  res: Response,
+  resources: unknown[],
+  page: { totalResults?: number; startIndex?: number } = {},
+) {
   sendScim(res, 200, {
     schemas: [SCIM_SCHEMAS.listResponse],
-    totalResults: resources.length,
-    startIndex: 1,
+    totalResults: page.totalResults ?? resources.length,
+    startIndex: page.startIndex ?? 1,
     itemsPerPage: resources.length,
     Resources: resources,
   });
@@ -75,25 +79,21 @@ function getId(req: Request): string {
   return id;
 }
 
-type ScimCaller = { team: Team } | { error: ScimError };
+type ScimCaller = { scimToken: TeamScimToken } | { error: ScimError };
 
 const callers = new WeakMap<Request, ScimCaller>();
+const teams = new WeakMap<Request, Team>();
 
 async function resolveCaller(req: Request): Promise<ScimCaller> {
   const token = safeParseBearerFromHeader(req.get("authorization") ?? "");
   if (!token) {
-    return {
-      error: new ScimError(401, "A bearer token is required."),
-    };
+    return { error: new ScimError(401, "A bearer token is required.") };
   }
-  try {
-    return { team: await getTeamFromScimToken(token) };
-  } catch (error) {
-    if (error instanceof ScimError) {
-      return { error };
-    }
-    throw error;
+  const scimToken = await findScimToken(token);
+  if (!scimToken) {
+    return { error: new ScimError(401, "Invalid SCIM token.") };
   }
+  return { scimToken };
 }
 
 function getCaller(req: Request): ScimCaller {
@@ -103,43 +103,66 @@ function getCaller(req: Request): ScimCaller {
 }
 
 function getTeam(req: Request): Team {
-  const caller = getCaller(req);
-  invariant("team" in caller, "SCIM caller not authenticated");
-  return caller.team;
+  const team = teams.get(req);
+  invariant(team, "SCIM caller not authorized");
+  return team;
 }
 
 /**
- * Authenticate before rate-limiting, so the budget is per team: Entra ID
- * provisions every tenant from the same pool of addresses.
+ * Identify the token before rate-limiting, so the budget is per team: Entra ID
+ * provisions every tenant from the same pool of addresses. The rest of the
+ * authorization waits behind the limiter.
  */
 const identifyCaller = asyncHandler(async (req, _res, next) => {
   callers.set(req, await resolveCaller(req));
   next();
 });
 
+function tooManyRequests(_req: Request, _res: Response, next: NextFunction) {
+  next(new ScimError(429, "Too many requests."));
+}
+
+/**
+ * Counts rejected tokens only, per address, ahead of the token lookup: a client
+ * guessing tokens is stopped before it reaches the database, while an Identity
+ * Provider with a valid token never spends this budget.
+ */
+const authFailureLimiter = rateLimit({
+  windowMs: config.get("api.rateLimit.window"),
+  limit: () => config.get("api.rateLimit.limit"),
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  store: createRedisStore("scim-auth"),
+  skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.statusCode !== 401,
+  handler: tooManyRequests,
+});
+
 const limiter = rateLimit({
   windowMs: config.get("api.rateLimit.window"),
-  limit: config.get("api.rateLimit.scimLimit"),
+  limit: () => config.get("api.rateLimit.scimLimit"),
   standardHeaders: "draft-8",
   legacyHeaders: false,
   store: createRedisStore("scim"),
   keyGenerator: (req) => {
     const caller = getCaller(req);
-    if ("team" in caller) {
-      return `team:${caller.team.id}`;
+    if ("scimToken" in caller) {
+      return `team:${caller.scimToken.teamId}`;
     }
     invariant(req.ip, "SCIM request without a remote address");
     return ipKeyGenerator(req.ip);
   },
-  handler: (_req, _res, next) => {
-    next(new ScimError(429, "Too many requests."));
-  },
+  handler: tooManyRequests,
 });
 
-const requireTeam: RequestHandler = (req, _res, next) => {
+const requireTeam: RequestHandler = asyncHandler(async (req, _res, next) => {
   const caller = getCaller(req);
-  next("error" in caller ? caller.error : undefined);
-};
+  if ("error" in caller) {
+    throw caller.error;
+  }
+  teams.set(req, await authorizeScimToken(caller.scimToken));
+  next();
+});
 
 const router: Router = Router();
 
@@ -191,28 +214,20 @@ router.get("/ResourceTypes", (_req, res) => {
   ]);
 });
 
-function stringAttribute(name: string, options?: { required?: boolean }) {
+function attribute(name: string, type: string, extra?: object) {
   return {
     name,
-    type: "string",
-    multiValued: false,
-    required: options?.required ?? false,
-    caseExact: false,
-    mutability: "readWrite",
-    returned: "default",
-    uniqueness: options?.required ? "server" : "none",
-  };
-}
-
-function booleanAttribute(name: string) {
-  return {
-    name,
-    type: "boolean",
+    type,
     multiValued: false,
     required: false,
     mutability: "readWrite",
     returned: "default",
+    ...extra,
   };
+}
+
+function stringAttribute(name: string) {
+  return attribute(name, "string", { caseExact: false, uniqueness: "none" });
 }
 
 router.get("/Schemas", (_req, res) => {
@@ -223,48 +238,36 @@ router.get("/Schemas", (_req, res) => {
       name: "User",
       description: "A member of the team",
       attributes: [
-        stringAttribute("userName", { required: true }),
         {
-          name: "name",
-          type: "complex",
-          multiValued: false,
-          required: false,
-          mutability: "readWrite",
-          returned: "default",
+          ...stringAttribute("userName"),
+          required: true,
+          uniqueness: "server",
+        },
+        attribute("name", "complex", {
           subAttributes: [
             stringAttribute("givenName"),
             stringAttribute("familyName"),
           ],
-        },
+        }),
         stringAttribute("displayName"),
-        {
-          name: "emails",
-          type: "complex",
+        attribute("emails", "complex", {
           multiValued: true,
-          required: false,
-          mutability: "readWrite",
-          returned: "default",
           subAttributes: [
             stringAttribute("value"),
             stringAttribute("type"),
-            booleanAttribute("primary"),
+            attribute("primary", "boolean"),
           ],
-        },
-        booleanAttribute("active"),
-        {
-          name: "roles",
-          type: "complex",
+        }),
+        attribute("active", "boolean"),
+        attribute("roles", "complex", {
           multiValued: true,
-          required: false,
-          mutability: "readWrite",
-          returned: "default",
           description:
             "The level of the member in the team: owner, member or contributor. Without a role, the member's level is left as it is.",
           subAttributes: [
             stringAttribute("value"),
-            booleanAttribute("primary"),
+            attribute("primary", "boolean"),
           ],
-        },
+        }),
       ],
       meta: {
         resourceType: "Schema",
@@ -274,7 +277,7 @@ router.get("/Schemas", (_req, res) => {
   ]);
 });
 
-router.use(identifyCaller, limiter, requireTeam);
+router.use(authFailureLimiter, identifyCaller, limiter, requireTeam);
 
 router.get(
   "/Users",
@@ -294,13 +297,7 @@ router.get(
       startIndex,
       count,
     });
-    sendScim(res, 200, {
-      schemas: [SCIM_SCHEMAS.listResponse],
-      totalResults,
-      startIndex,
-      itemsPerPage: users.length,
-      Resources: users.map(serializeUser),
-    });
+    sendList(res, users.map(serializeUser), { totalResults, startIndex });
   }),
 );
 
@@ -309,7 +306,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const scimUser = await createScimUser({
       team: getTeam(req),
-      attributes: parseUserInput(req.body, null),
+      attributes: parseUserInput(req.body, true),
     });
     const resource = serializeUser(scimUser);
     res.location(resource.meta.location);
@@ -334,7 +331,7 @@ router.put(
     const scimUser = await updateScimUser({
       team: getTeam(req),
       id: getId(req),
-      update: (current) => parseUserInput(req.body, current),
+      update: (current) => parseUserInput(req.body, current.active),
     });
     sendScim(res, 200, serializeUser(scimUser));
   }),
@@ -366,18 +363,11 @@ router.use((_req, _res, next) => {
 });
 
 function getStatusCode(error: unknown): number {
-  if (error instanceof HTTPError) {
-    return error.statusCode;
-  }
-  // The JSON body parser rejects a malformed body with a `status`.
-  if (
-    error instanceof Error &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status;
-  }
-  return 500;
+  return error instanceof Error &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number"
+    ? error.statusCode
+    : 500;
 }
 
 const errorHandler: ErrorRequestHandler = (
@@ -387,17 +377,6 @@ const errorHandler: ErrorRequestHandler = (
   _next,
 ) => {
   if (res.headersSent) {
-    return;
-  }
-  if (isUniqueViolationError(error)) {
-    // The userName, or the person behind the email, is already provisioned:
-    // the check before insert lost a race, or the email was another user's.
-    sendScim(res, 409, {
-      schemas: [SCIM_SCHEMAS.error],
-      status: "409",
-      scimType: "uniqueness",
-      detail: "A user with the same userName or email already exists.",
-    });
     return;
   }
   const status = getStatusCode(error);

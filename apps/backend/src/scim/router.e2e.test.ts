@@ -1,8 +1,9 @@
 import { invariant } from "@argos/util/invariant";
 import express from "express";
 import request from "supertest";
-import { test as base, describe, expect } from "vitest";
+import { afterEach, test as base, describe, expect } from "vitest";
 
+import config from "@/config";
 import {
   Account,
   Plan,
@@ -14,6 +15,7 @@ import {
   UserEmail,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { getRedisClient } from "@/util/redis/client";
 
 import router from "./router";
 import { generateTeamScimToken } from "./service";
@@ -25,6 +27,7 @@ const SCIM_JSON = "application/scim+json";
 
 const test = base.extend<{
   owner: User;
+  ownerEmail: string;
   teamAccount: Account;
   token: string;
 }>({
@@ -33,6 +36,14 @@ const test = base.extend<{
     const owner = await factory.User.create();
     await factory.UserAccount.create({ userId: owner.id });
     await use(owner);
+  },
+  ownerEmail: async ({ owner }, use) => {
+    const { email } = await factory.UserEmail.create({
+      userId: owner.id,
+      email: "owner@acme.com",
+      verified: true,
+    });
+    await use(email);
   },
   teamAccount: async ({ owner }, use) => {
     const teamAccount = await factory.TeamAccount.create();
@@ -223,7 +234,7 @@ describe("SCIM API", () => {
     expect(deactivated.status).toBe(200);
     expect(deactivated.body.active).toBe(false);
     expect(await getMembership(teamAccount, "jane@acme.com")).toBeNull();
-    // The account stays: it belongs to the person.
+    // The account stays.
     expect(await UserEmail.query().findById("jane@acme.com")).toBeDefined();
 
     // Still known to the IdP, which reactivates it by the same id.
@@ -303,21 +314,13 @@ describe("SCIM API", () => {
     token,
     teamAccount,
     owner,
+    ownerEmail,
   }) => {
-    await factory.UserEmail.create({
-      userId: owner.id,
-      email: "owner@acme.com",
-      verified: true,
-    });
-
-    const created = await scim(token).post(
-      "/Users",
-      oktaUser("owner@acme.com"),
-    );
+    const created = await scim(token).post("/Users", oktaUser(ownerEmail));
     expect(created.status).toBe(201);
 
     expect(await User.query().resultSize()).toBe(1);
-    expect(await getMembership(teamAccount, "owner@acme.com")).toMatchObject({
+    expect(await getMembership(teamAccount, ownerEmail)).toMatchObject({
       userId: owner.id,
       userLevel: "owner",
     });
@@ -363,15 +366,10 @@ describe("SCIM API", () => {
   test("keeps the last member of the team", async ({
     token,
     teamAccount,
-    owner,
+    ownerEmail,
   }) => {
-    await factory.UserEmail.create({
-      userId: owner.id,
-      email: "owner@acme.com",
-      verified: true,
-    });
     const api = scim(token);
-    const created = await api.post("/Users", oktaUser("owner@acme.com"));
+    const created = await api.post("/Users", oktaUser(ownerEmail));
 
     const res = await api.patch(
       `/Users/${created.body.id}`,
@@ -381,7 +379,7 @@ describe("SCIM API", () => {
     expect(res.body.detail).toBe("Can't remove the last user of a team.");
     // Nothing changed: the IdP sees the user as still active.
     expect((await api.get(`/Users/${created.body.id}`)).body.active).toBe(true);
-    expect(await getMembership(teamAccount, "owner@acme.com")).not.toBeNull();
+    expect(await getMembership(teamAccount, ownerEmail)).not.toBeNull();
   });
 
   test("sets the member's level from their role", async ({
@@ -432,42 +430,100 @@ describe("SCIM API", () => {
   test("never takes the owner role from the last owner", async ({
     token,
     teamAccount,
-    owner,
+    ownerEmail,
   }) => {
-    await factory.UserEmail.create({
-      userId: owner.id,
-      email: "owner@acme.com",
-      verified: true,
-    });
     const api = scim(token);
-    const { body: ownerUser } = await api.post(
-      "/Users",
-      oktaUser("owner@acme.com"),
-    );
+    const { body: ownerUser } = await api.post("/Users", oktaUser(ownerEmail));
     const demote = () =>
       api.patch(
         `/Users/${ownerUser.id}`,
         patchOp([{ op: "replace", path: "roles", value: ["member"] }]),
       );
 
-    const refused = await demote();
-    expect(refused.status).toBe(403);
-    expect(refused.body.detail).toBe(
-      "Can't change the role of the last owner of a team.",
-    );
-    expect(await getMembership(teamAccount, "owner@acme.com")).toMatchObject({
+    // Skipped, without failing the rest of the update.
+    expect((await demote()).status).toBe(200);
+    expect(await getMembership(teamAccount, ownerEmail)).toMatchObject({
       userLevel: "owner",
     });
-    // Rolled back with it: the IdP does not see the role as applied.
-    expect(
-      (await api.get(`/Users/${ownerUser.id}`)).body.roles,
-    ).toBeUndefined();
 
-    // With another owner, the demotion goes through.
+    // With another owner, the next role change goes through.
     await api.post("/Users", oktaUser("jane@acme.com", { roles: ["owner"] }));
-    expect((await demote()).status).toBe(200);
-    expect(await getMembership(teamAccount, "owner@acme.com")).toMatchObject({
-      userLevel: "member",
+    await api.patch(
+      `/Users/${ownerUser.id}`,
+      patchOp([{ op: "replace", path: "roles", value: ["contributor"] }]),
+    );
+    expect(await getMembership(teamAccount, ownerEmail)).toMatchObject({
+      userLevel: "contributor",
+    });
+  });
+
+  test("serves the discovery endpoints without a token", async () => {
+    for (const path of [
+      "/ServiceProviderConfig",
+      "/ResourceTypes",
+      "/Schemas",
+    ]) {
+      const res = await request(app).get(`/scim/v2${path}`);
+      expect(res.status).toBe(200);
+      expect(res.headers["content-type"]).toContain(SCIM_JSON);
+    }
+  });
+
+  describe("rate limiting", () => {
+    const { limit, scimLimit } = config.get("api.rateLimit");
+
+    afterEach(() => {
+      config.set("api.rateLimit.limit", limit);
+      config.set("api.rateLimit.scimLimit", scimLimit);
+    });
+
+    // Counted in Redis, which the database truncation between tests leaves.
+    async function resetRateLimits() {
+      const redis = await getRedisClient();
+      const keys = await redis.keys("rl:scim*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    }
+
+    test("budgets each team apart", async ({ token, owner }) => {
+      await resetRateLimits();
+      config.set("api.rateLimit.scimLimit", 1);
+      expect((await scim(token).get("/Users")).status).toBe(200);
+      const limited = await scim(token).get("/Users");
+      expect(limited.status).toBe(429);
+      expect(limited.body).toMatchObject({
+        schemas: ["urn:ietf:params:scim:api:messages:2.0:Error"],
+        status: "429",
+      });
+
+      const otherTeam = await factory.TeamAccount.create();
+      invariant(otherTeam.teamId);
+      await factory.TeamUser.create({
+        teamId: otherTeam.teamId,
+        userId: owner.id,
+        userLevel: "owner",
+      });
+      await factory.Subscription.create({
+        accountId: otherTeam.id,
+        planId: (await factory.Plan.create({ samlIncluded: true })).id,
+        status: "active",
+        endDate: null,
+      });
+      const otherToken = await generateTeamScimToken({
+        account: otherTeam,
+        user: owner,
+      });
+      expect((await scim(otherToken).get("/Users")).status).toBe(200);
+    });
+
+    test("stops a client guessing tokens", async () => {
+      await setupDatabase();
+      await resetRateLimits();
+      config.set("api.rateLimit.limit", 1);
+      const guess = () => scim(`argos_scim_${"x".repeat(40)}`).get("/Users");
+      expect((await guess()).status).toBe(401);
+      expect((await guess()).status).toBe(429);
     });
   });
 });

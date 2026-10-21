@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
 import { checkHasAccessToSAML } from "@/auth/saml";
+import { isUniqueViolationError } from "@/database/error";
 import {
   TeamScimToken,
   TeamScimUser,
@@ -16,6 +17,7 @@ import { createAccount } from "@/database/services/account";
 import { hashToken } from "@/database/services/crypto";
 import {
   assertTeamAdmin,
+  changeTeamMembershipLevel,
   deleteTeamMembership,
   type TeamUserLevel,
 } from "@/database/services/team-member";
@@ -30,7 +32,7 @@ import { boom } from "@/util/error";
 
 import { invalidValue, ScimError } from "./error";
 import type { ScimUserFilter } from "./filter";
-import { getUserAttributes, type ScimUserAttributes } from "./user";
+import { formatName, getUserAttributes, type ScimUserAttributes } from "./user";
 
 const SAML_REQUIRED_MESSAGE =
   "SCIM provisioning is part of SAML SSO, which is not included in your plan. Enable the SAML SSO add-on to use it.";
@@ -63,42 +65,57 @@ export async function revokeTeamScimToken(args: {
   await TeamScimToken.query().where({ teamId }).delete();
 }
 
+/**
+ * Find a SCIM token, with the team it provisions.
+ */
+export async function findScimToken(
+  token: string,
+): Promise<TeamScimToken | undefined> {
+  if (!TeamScimToken.isScimToken(token)) {
+    return undefined;
+  }
+  return TeamScimToken.query()
+    .withGraphJoined("team.account")
+    .findOne("team_scim_tokens.tokenHash", hashToken(token));
+}
+
+/**
+ * Check that the team of a SCIM token may still provision — the token outlives
+ * a plan downgrade — and record that the token is in use.
+ */
+export async function authorizeScimToken(
+  scimToken: TeamScimToken,
+): Promise<Team> {
+  const { team } = scimToken;
+  invariant(team?.account, "team.account not fetched");
+  const [hasAccess] = await Promise.all([
+    // `checkHasAccessToSAML` reads `samlPurchased` again, after the plan.
+    team.samlPurchased || checkHasAccessToSAML(team.account),
+    touchScimToken(scimToken),
+  ]);
+  if (!hasAccess) {
+    throw new ScimError(403, SAML_REQUIRED_MESSAGE);
+  }
+  return team;
+}
+
 const LAST_USED_AT_PRECISION_MS = 60 * 1000;
 
 /**
- * Resolve the team a SCIM token provisions. The token outlives a plan
- * downgrade, so access to SAML SSO is checked on every request.
+ * An initial sync sends several requests per user; one write a minute is
+ * enough to tell the token is in use.
  */
-export async function getTeamFromScimToken(token: string): Promise<Team> {
-  const scimToken = TeamScimToken.isScimToken(token)
-    ? await TeamScimToken.query()
-        .findOne({ tokenHash: hashToken(token) })
-        .withGraphFetched("team.account")
-    : undefined;
-  if (!scimToken) {
-    throw new ScimError(401, "Invalid SCIM token.");
+async function touchScimToken(scimToken: TeamScimToken) {
+  const now = Date.now();
+  if (
+    scimToken.lastUsedAt &&
+    now - new Date(scimToken.lastUsedAt).getTime() < LAST_USED_AT_PRECISION_MS
+  ) {
+    return;
   }
-  const { team } = scimToken;
-  invariant(team?.account, "team.account not fetched");
-  if (!(await checkHasAccessToSAML(team.account))) {
-    throw new ScimError(403, SAML_REQUIRED_MESSAGE);
-  }
-  // An initial sync sends several requests per user; one write a minute is
-  // enough to tell the token is in use.
-  const now = new Date();
   await TeamScimToken.query()
     .findById(scimToken.id)
-    .where((qb) =>
-      qb
-        .whereNull("lastUsedAt")
-        .orWhere(
-          "lastUsedAt",
-          "<",
-          new Date(now.getTime() - LAST_USED_AT_PRECISION_MS).toISOString(),
-        ),
-    )
-    .patch({ lastUsedAt: now.toISOString() });
-  return team;
+    .patch({ lastUsedAt: new Date(now).toISOString() });
 }
 
 export async function listScimUsers(args: {
@@ -107,8 +124,8 @@ export async function listScimUsers(args: {
   startIndex: number;
   count: number;
 }): Promise<{ totalResults: number; users: TeamScimUser[] }> {
-  const { filter } = args;
-  const query = TeamScimUser.query().where("teamId", args.teamId);
+  const { filter, startIndex, count } = args;
+  const query = TeamScimUser.query().where("teamId", args.teamId).orderBy("id");
   if (filter) {
     switch (filter.attribute) {
       case "id":
@@ -119,46 +136,67 @@ export async function listScimUsers(args: {
         }
         break;
       case "userName":
-        query.whereRaw(`lower("userName") = lower(?)`, [filter.value]);
+      case "email":
+        query.whereRaw("lower(??) = lower(?)", [
+          filter.attribute,
+          filter.value,
+        ]);
         break;
       case "externalId":
         query.where("externalId", filter.value);
         break;
-      case "email":
-        query.whereRaw(`lower("email") = lower(?)`, [filter.value]);
-        break;
     }
   }
-  const [totalResults, users] = await Promise.all([
-    query.clone().resultSize(),
-    args.count > 0
-      ? query
-          .clone()
-          .orderBy("id")
-          .offset(args.startIndex - 1)
-          .limit(args.count)
-      : [],
-  ]);
-  return { totalResults, users };
+  const { results, total } = await query.range(
+    startIndex - 1,
+    startIndex + count - 2,
+  );
+  return { totalResults: total, users: results };
 }
 
+/**
+ * Find a provisioned user of the team, locked when read in a transaction.
+ */
 export async function getScimUser(args: {
   teamId: string;
   id: string;
   trx?: TransactionOrKnex;
-  forUpdate?: boolean;
 }): Promise<TeamScimUser> {
-  const query = isValidPgBigInt(args.id)
-    ? TeamScimUser.query(args.trx).findOne({ teamId: args.teamId, id: args.id })
-    : null;
-  if (query && args.forUpdate) {
-    query.forUpdate();
-  }
-  const scimUser = await query;
+  const query = TeamScimUser.query(args.trx).findOne({
+    teamId: args.teamId,
+    id: args.id,
+  });
+  const scimUser = isValidPgBigInt(args.id)
+    ? await (args.trx ? query.forUpdate() : query)
+    : undefined;
   if (!scimUser) {
     throw new ScimError(404, `User ${args.id} not found.`);
   }
   return scimUser;
+}
+
+function duplicateError() {
+  return new ScimError(
+    409,
+    "A user with the same userName or email already exists.",
+    "uniqueness",
+  );
+}
+
+/**
+ * The userName is unique in a team, and so is the person behind the email.
+ * Two requests provisioning the same new email at once also collide, on the
+ * account the first one creates.
+ */
+async function rejectDuplicate<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (isUniqueViolationError(error)) {
+      throw duplicateError();
+    }
+    throw error;
+  }
 }
 
 /**
@@ -171,45 +209,38 @@ export async function createScimUser(args: {
   attributes: ScimUserAttributes;
 }): Promise<TeamScimUser> {
   const { team, attributes } = args;
-  const email =
-    attributes.email ??
-    (checkIsValidEmail(attributes.userName) ? attributes.userName : null);
-  if (!email || !checkIsValidEmail(email)) {
+  const email = attributes.email ?? attributes.userName;
+  if (!checkIsValidEmail(email)) {
     throw invalidValue(
       "The user needs a valid email, sent in emails or as the userName.",
     );
   }
 
+  // Checked before linking the email, which may create an account; the insert
+  // below still catches a concurrent request.
   const existing = await TeamScimUser.query()
     .select("id")
     .where("teamId", team.id)
     .whereRaw(`lower("userName") = lower(?)`, [attributes.userName])
     .first();
   if (existing) {
-    throw new ScimError(
-      409,
-      `A user with userName "${attributes.userName}" already exists.`,
-      "uniqueness",
-    );
+    throw duplicateError();
   }
 
-  const userId = await getOrCreateUserId({
-    email: sanitizeEmail(email),
-    name:
-      attributes.displayName ??
-      [attributes.givenName, attributes.familyName].filter(Boolean).join(" "),
-  });
-
-  return transaction(async (trx) => {
-    const scimUser = await TeamScimUser.query(trx).insertAndFetch({
-      teamId: team.id,
-      userId,
-      ...attributes,
+  return rejectDuplicate(async () => {
+    const userId = await getOrCreateUserId({
+      email: sanitizeEmail(email),
+      name: attributes.displayName ?? formatName(attributes),
     });
-    if (attributes.active) {
-      await addMembership({ team, userId, role: attributes.role, trx });
-    }
-    return scimUser;
+    return transaction(async (trx) => {
+      const scimUser = await TeamScimUser.query(trx)
+        .insert({ teamId: team.id, userId, ...attributes })
+        .returning("*");
+      if (attributes.active) {
+        await addMembership({ team, userId, role: attributes.role, trx });
+      }
+      return scimUser;
+    });
   });
 }
 
@@ -225,35 +256,37 @@ export async function updateScimUser(args: {
   update: (current: ScimUserAttributes) => ScimUserAttributes;
 }): Promise<TeamScimUser> {
   const { team } = args;
-  return transaction(async (trx) => {
-    const scimUser = await getScimUser({
-      teamId: team.id,
-      id: args.id,
-      trx,
-      forUpdate: true,
-    });
-    const attributes = args.update(getUserAttributes(scimUser));
-    const updated = await TeamScimUser.query(trx).patchAndFetchById(
-      scimUser.id,
-      attributes,
-    );
-    const { userId } = scimUser;
-    if (!attributes.active) {
-      if (scimUser.active) {
-        await removeMembership({ team, userId, trx });
+  return rejectDuplicate(() =>
+    transaction(async (trx) => {
+      const scimUser = await getScimUser({ teamId: team.id, id: args.id, trx });
+      const { userId, active: wasActive, role: previousRole } = scimUser;
+      const attributes = args.update(getUserAttributes(scimUser));
+      const [updated] = await TeamScimUser.query(trx)
+        .patch(attributes)
+        .where("id", scimUser.id)
+        .returning("*");
+      invariant(updated, "Patched user not returned");
+      if (!attributes.active) {
+        if (wasActive) {
+          await removeMembership({ team, userId, trx });
+        }
+      } else if (!wasActive) {
+        await addMembership({ team, userId, role: attributes.role, trx });
+      } else if (attributes.role && attributes.role !== previousRole) {
+        await changeTeamMembershipLevel({
+          teamId: team.id,
+          userId,
+          level: attributes.role,
+          trx,
+        });
       }
-    } else if (!scimUser.active) {
-      await addMembership({ team, userId, role: attributes.role, trx });
-    } else if (attributes.role && attributes.role !== scimUser.role) {
-      await setMemberLevel({ team, userId, level: attributes.role, trx });
-    }
-    return updated;
-  });
+      return updated;
+    }),
+  );
 }
 
 /**
- * Deprovision a user: remove them from the team and forget them. The Argos
- * account stays, it belongs to the person.
+ * Deprovision a user: remove them from the team and forget them.
  */
 export async function deleteScimUser(args: {
   team: Team;
@@ -261,12 +294,7 @@ export async function deleteScimUser(args: {
 }): Promise<void> {
   const { team } = args;
   await transaction(async (trx) => {
-    const scimUser = await getScimUser({
-      teamId: team.id,
-      id: args.id,
-      trx,
-      forUpdate: true,
-    });
+    const scimUser = await getScimUser({ teamId: team.id, id: args.id, trx });
     await removeMembership({ team, userId: scimUser.userId, trx });
     await scimUser.$query(trx).delete();
   });
@@ -307,51 +335,23 @@ async function addMembership(args: {
   trx: TransactionOrKnex;
 }) {
   const { team, userId, role, trx } = args;
-  await TeamUser.query(trx)
-    .insert({
+  // On an ignored conflict Objection hands back the input, without an id.
+  const [inserted] = await TeamUser.query(trx)
+    .insert([
+      { teamId: team.id, userId, userLevel: role ?? team.defaultUserLevel },
+    ])
+    .onConflict(["teamId", "userId"])
+    .ignore()
+    .returning("id");
+  // Already a member, the role still applies.
+  if (!inserted?.id && role) {
+    await changeTeamMembershipLevel({
       teamId: team.id,
       userId,
-      userLevel: role ?? team.defaultUserLevel,
-    })
-    .onConflict(["teamId", "userId"])
-    .ignore();
-  // Already a member, the role still applies.
-  if (role) {
-    await setMemberLevel({ team, userId, level: role, trx });
+      level: role,
+      trx,
+    });
   }
-}
-
-/**
- * Set a member's level from their role. The IdP never takes the owner role
- * away from the last owner: nobody would be left to manage the team.
- */
-async function setMemberLevel(args: {
-  team: Team;
-  userId: string;
-  level: TeamUserLevel;
-  trx: TransactionOrKnex;
-}) {
-  const { team, userId, level, trx } = args;
-  const teamUser = await TeamUser.query(trx)
-    .select("id", "userLevel")
-    .findOne({ teamId: team.id, userId });
-  if (!teamUser || teamUser.userLevel === level) {
-    return;
-  }
-  if (teamUser.userLevel === "owner") {
-    // Locked, so two demotions can't each count the other owner and both pass.
-    const owners = await TeamUser.query(trx)
-      .select("id")
-      .where({ teamId: team.id, userLevel: "owner" })
-      .forUpdate();
-    if (owners.length <= 1) {
-      throw new ScimError(
-        403,
-        "Can't change the role of the last owner of a team.",
-      );
-    }
-  }
-  await TeamUser.query(trx).findById(teamUser.id).patch({ userLevel: level });
 }
 
 async function removeMembership(args: {

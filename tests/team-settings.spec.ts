@@ -97,20 +97,29 @@ loggedTest(
     await expect(page.getByText("never used")).toBeVisible();
 
     // What the Identity Provider does with it.
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/scim+json",
+    };
     const provisioned = await page.request.post("/scim/v2/Users", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/scim+json",
-      },
-      data: JSON.stringify({
+      headers,
+      data: {
         schemas: ["urn:ietf:params:scim:schemas:core:2.0:User"],
         userName: `fox-${id}@acme.com`,
         displayName: "Fox Mulder",
         emails: [{ value: `fox-${id}@acme.com`, primary: true }],
         active: true,
-      }),
+      },
     });
     expect(provisioned.status()).toBe(201);
+
+    // This server is single-domain, where the app's own routes come first.
+    const filter = encodeURIComponent(`userName eq "fox-${id}@acme.com"`);
+    const lookup = await page.request.get(`/scim/v2/Users?filter=${filter}`, {
+      headers,
+    });
+    expect(lookup.headers()["content-type"]).toContain("application/scim+json");
+    expect((await lookup.json()).totalResults).toBe(1);
 
     await page.goto(`/${team.account.slug}/settings/members`);
     await expect(
@@ -129,14 +138,11 @@ loggedTest(
     const rejected = await page.request.patch(
       `/scim/v2/Users/${(await provisioned.json()).id}`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/scim+json",
-        },
-        data: JSON.stringify({
+        headers,
+        data: {
           schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
           Operations: [{ op: "replace", value: { active: false } }],
-        }),
+        },
       },
     );
     expect(rejected.status()).toBe(401);

@@ -58,9 +58,9 @@ export async function assertTeamAdmin(args: {
  * Load an account by id, for the GraphQL API, which routes on account ids. The
  * REST API resolves the account from the token scope instead.
  *
- * Deliberately does *not* authorize: every mutation below calls
- * {@link assertTeamAdmin} itself, so authorization happens exactly once and
- * cannot be skipped by a caller that forgot it.
+ * Deliberately does *not* authorize: every mutation below that takes the
+ * account calls {@link assertTeamAdmin} itself, so authorization happens
+ * exactly once and cannot be skipped by a caller that forgot it.
  */
 export async function loadAccountById(id: string): Promise<Account> {
   if (!isValidPgBigInt(id)) {
@@ -266,6 +266,44 @@ export async function deleteTeamMembership(args: {
     if (members.length === 2) {
       await TeamUser.query(trx).where({ teamId }).patch({ userLevel: "owner" });
     }
+  });
+}
+
+/**
+ * Change the level of a member, without any authorization, like
+ * {@link deleteTeamMembership}. Does nothing for a user who is not a member.
+ *
+ * A team must keep an owner, or nobody is left to administer it: demoting the
+ * last one is skipped rather than refused, so it never fails the rest of the
+ * caller's work — an Identity Provider retrying a rejected provisioning would
+ * never get the person in at all.
+ */
+export async function changeTeamMembershipLevel(args: {
+  teamId: string;
+  userId: string;
+  level: TeamUserLevel;
+  trx?: TransactionOrKnex;
+}): Promise<void> {
+  const { teamId, userId, level } = args;
+  await transaction(args.trx, async (trx) => {
+    const teamUser = await TeamUser.query(trx)
+      .select("id", "userLevel")
+      .findOne({ teamId, userId });
+    if (!teamUser || teamUser.userLevel === level) {
+      return;
+    }
+    if (teamUser.userLevel === "owner") {
+      // Locked, so two demotions can't each count the other owner and both
+      // pass.
+      const owners = await TeamUser.query(trx)
+        .select("id")
+        .where({ teamId, userLevel: "owner" })
+        .forUpdate();
+      if (owners.length <= 1) {
+        return;
+      }
+    }
+    await TeamUser.query(trx).findById(teamUser.id).patch({ userLevel: level });
   });
 }
 

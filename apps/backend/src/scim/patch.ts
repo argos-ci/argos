@@ -65,31 +65,32 @@ export function applyPatch(
 ): ScimUserAttributes {
   const next = { ...user };
   for (const { op, path, value } of operations) {
+    const remove = op === "remove";
     if (path) {
-      applyToPath(next, op, path, value);
+      applyToPath(next, remove, path, value);
       continue;
     }
     // Without a path, the value maps paths to their new value — Okta
     // deactivates with `{ "op": "replace", "value": { "active": false } }`.
-    if (op === "remove") {
+    if (remove) {
       throw new ScimError(400, "A remove operation needs a path.", "noTarget");
     }
     if (!isRecord(value)) {
       throw invalidValue("Without a path, the value must be an object.");
     }
     for (const [key, attributeValue] of Object.entries(value)) {
-      applyToPath(next, op, key, attributeValue);
+      applyToPath(next, remove, key, attributeValue);
     }
   }
   return next;
 }
 
 /** `attribute[filter].subAttribute`, the filter and sub-attribute optional. */
-const PATH_REGEX = /^([a-z][\w-]*)(?:\[(.+)\])?(?:\.([a-z][\w-]*))?$/i;
+const PATH_REGEX = /^([a-z][\w-]*)(?:\[.+\])?(?:\.([a-z][\w-]*))?$/i;
 
 function applyToPath(
   user: ScimUserAttributes,
-  op: PatchOperation["op"],
+  remove: boolean,
   rawPath: string,
   value: unknown,
 ) {
@@ -103,8 +104,7 @@ function applyToPath(
     }
     throw new ScimError(400, `Invalid path "${rawPath}".`, "invalidPath");
   }
-  const [, attribute = "", , subAttribute] = match;
-  const remove = op === "remove";
+  const [, attribute = "", subAttribute] = match;
   switch (attribute.toLowerCase()) {
     case "active": {
       if (!remove) {
@@ -128,7 +128,7 @@ function applyToPath(
       return;
     }
     case "name": {
-      applyToName(user, op, subAttribute, value);
+      applyToName(user, remove, subAttribute, value);
       return;
     }
     case "emails": {
@@ -149,18 +149,15 @@ function applyToPath(
       user.role = remove ? null : getRoleValue(subAttribute, value);
       return;
     }
-    default:
-      return;
   }
 }
 
 function applyToName(
   user: ScimUserAttributes,
-  op: PatchOperation["op"],
+  remove: boolean,
   subAttribute: string | undefined,
   value: unknown,
 ) {
-  const remove = op === "remove";
   if (subAttribute) {
     switch (subAttribute.toLowerCase()) {
       case "givenname":
@@ -183,7 +180,7 @@ function applyToName(
   }
   // Sub-attributes left out of the value stay unchanged (RFC 7644 §3.5.2.3).
   for (const [key, subValue] of Object.entries(value)) {
-    applyToName(user, op, key, subValue);
+    applyToName(user, remove, key, subValue);
   }
 }
 
