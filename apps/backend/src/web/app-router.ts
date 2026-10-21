@@ -249,6 +249,12 @@ export const installAppRouter = async (app: express.Application) => {
     res.status(404).json({ error: "Not found" });
   });
 
+  // On a single-domain deployment, the API router comes after this one: left
+  // here, an Identity Provider's SCIM lookups would get the SPA shell.
+  router.use("/scim/v2", (_req, _res, next) => {
+    next("router");
+  });
+
   router.use(getSlackMiddleware());
 
   // Ahead of the static handler: it ends the response, so nothing mounted after

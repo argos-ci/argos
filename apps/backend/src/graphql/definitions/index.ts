@@ -48,6 +48,7 @@ import * as ScreenshotDiff from "./ScreenshotDiff";
 import * as SlackInstallation from "./SlackInstallation";
 import * as Staff from "./Staff";
 import * as Team from "./Team";
+import * as TeamScim from "./TeamScim";
 import * as Test from "./Test";
 import * as TestChange from "./TestChange";
 import * as TestNotificationSubscription from "./TestNotificationSubscription";
@@ -107,6 +108,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   SlackInstallation,
   Staff,
   Team,
+  TeamScim,
   Test,
   TestChange,
   TestNotificationSubscription,

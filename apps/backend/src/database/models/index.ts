@@ -63,6 +63,8 @@ export * from "./Team";
 export * from "./TeamDomain";
 export * from "./TeamInvite";
 export * from "./TeamSamlConfig";
+export * from "./TeamScimToken";
+export * from "./TeamScimUser";
 export * from "./TeamUser";
 export * from "./Test";
 export * from "./TestNotificationSubscription";

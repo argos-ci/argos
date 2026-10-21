@@ -12,7 +12,7 @@
  */
 import type { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { invariant } from "@argos/util/invariant";
-import type { QueryBuilder } from "objection";
+import type { QueryBuilder, TransactionOrKnex } from "objection";
 import type { z } from "zod";
 
 import { boom } from "@/util/error";
@@ -58,9 +58,9 @@ export async function assertTeamAdmin(args: {
  * Load an account by id, for the GraphQL API, which routes on account ids. The
  * REST API resolves the account from the token scope instead.
  *
- * Deliberately does *not* authorize: every mutation below calls
- * {@link assertTeamAdmin} itself, so authorization happens exactly once and
- * cannot be skipped by a caller that forgot it.
+ * Deliberately does *not* authorize: every mutation below that takes the
+ * account calls {@link assertTeamAdmin} itself, so authorization happens
+ * exactly once and cannot be skipped by a caller that forgot it.
  */
 export async function loadAccountById(id: string): Promise<Account> {
   if (!isValidPgBigInt(id)) {
@@ -207,10 +207,6 @@ export async function setTeamMemberLevel(args: {
 
 /**
  * Remove a member from a team.
- *
- * A team must always keep at least one member, and at least one owner: removing
- * the second-to-last member promotes the remaining one to owner, so a team can
- * never end up with members but nobody able to administer it.
  */
 export async function removeTeamMember(args: {
   account: Account;
@@ -222,8 +218,25 @@ export async function removeTeamMember(args: {
     teamId,
     userAccountId: args.userAccountId,
   });
+  await deleteTeamMembership({ teamId, teamUserId: teamUser.id });
+  return { teamMemberId: teamUser.id };
+}
 
-  return transaction(async (trx) => {
+/**
+ * Delete a team membership, without any authorization: callers decide who may
+ * remove whom (an administrator, the team's Identity Provider).
+ *
+ * A team must always keep at least one member, and at least one owner: removing
+ * the second-to-last member promotes the remaining one to owner, so a team can
+ * never end up with members but nobody able to administer it.
+ */
+export async function deleteTeamMembership(args: {
+  teamId: string;
+  teamUserId: string;
+  trx?: TransactionOrKnex;
+}): Promise<void> {
+  const { teamId, teamUserId } = args;
+  await transaction(args.trx, async (trx) => {
     // Both rules below are statements about the whole membership, so the set
     // has to be read under a lock: counting outside the transaction lets two
     // concurrent removals each see two members, each pass the guard, and each
@@ -244,7 +257,7 @@ export async function removeTeamMember(args: {
       throw boom(403, "Can't remove the last user of a team.");
     }
 
-    const deleted = await TeamUser.query(trx).findById(teamUser.id).delete();
+    const deleted = await TeamUser.query(trx).findById(teamUserId).delete();
     if (deleted === 0) {
       throw boom(404, "This user is not a member of the team.");
     }
@@ -253,8 +266,44 @@ export async function removeTeamMember(args: {
     if (members.length === 2) {
       await TeamUser.query(trx).where({ teamId }).patch({ userLevel: "owner" });
     }
+  });
+}
 
-    return { teamMemberId: teamUser.id };
+/**
+ * Change the level of a member, without any authorization, like
+ * {@link deleteTeamMembership}. Does nothing for a user who is not a member.
+ *
+ * A team must keep an owner, or nobody is left to administer it: demoting the
+ * last one is skipped rather than refused, so it never fails the rest of the
+ * caller's work — an Identity Provider retrying a rejected provisioning would
+ * never get the person in at all.
+ */
+export async function changeTeamMembershipLevel(args: {
+  teamId: string;
+  userId: string;
+  level: TeamUserLevel;
+  trx?: TransactionOrKnex;
+}): Promise<void> {
+  const { teamId, userId, level } = args;
+  await transaction(args.trx, async (trx) => {
+    const teamUser = await TeamUser.query(trx)
+      .select("id", "userLevel")
+      .findOne({ teamId, userId });
+    if (!teamUser || teamUser.userLevel === level) {
+      return;
+    }
+    if (teamUser.userLevel === "owner") {
+      // Locked, so two demotions can't each count the other owner and both
+      // pass.
+      const owners = await TeamUser.query(trx)
+        .select("id")
+        .where({ teamId, userLevel: "owner" })
+        .forUpdate();
+      if (owners.length <= 1) {
+        return;
+      }
+    }
+    await TeamUser.query(trx).findById(teamUser.id).patch({ userLevel: level });
   });
 }
 

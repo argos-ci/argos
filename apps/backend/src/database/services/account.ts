@@ -57,16 +57,23 @@ async function findUserByVerifiedEmail(email: string) {
 }
 
 /**
- * Get the user an email links to, or create one for it. The caller must have
- * proven the email belongs to whoever it acts for.
+ * Get the user an email links to, or create one for it, with `accountData`.
+ * The caller must have proven the email belongs to whoever it acts for.
  */
-export async function getOrCreateUserByVerifiedEmail(email: string) {
+export async function getOrCreateUserByVerifiedEmail(
+  email: string,
+  accountData?: PartialModelObject<Account>,
+) {
   const user = await findUserByVerifiedEmail(email);
   if (user) {
     invariant(user.account, "Account not fetched");
     return { user, account: user.account, creation: false };
   }
-  const created = await createAccount({ email, slug: getSlugFromEmail(email) });
+  const created = await createAccount({
+    email,
+    slug: getSlugFromEmail(email),
+    ...(accountData && { accountData }),
+  });
   return { ...created, creation: true };
 }
 

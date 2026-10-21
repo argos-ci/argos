@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict QmbCfAUSwMXuz1MwcmrBMZNd576cdMMcSfjFJgWcaec46kxFfhw2XZpguANi11L
+\restrict 7VW81RVeaPbsOZScpWFW3znxFaDDldZ0RJQGzSmrdKrTwZuJGXQj3oekK3an0qL
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.6 (Homebrew)
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2793,6 +2793,88 @@ ALTER SEQUENCE public.team_saml_configs_id_seq OWNED BY public.team_saml_configs
 
 
 --
+-- Name: team_scim_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_scim_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    "tokenHash" character varying(64) NOT NULL,
+    "lastUsedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.team_scim_tokens OWNER TO postgres;
+
+--
+-- Name: team_scim_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_scim_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_scim_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: team_scim_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_scim_tokens_id_seq OWNED BY public.team_scim_tokens.id;
+
+
+--
+-- Name: team_scim_users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_scim_users (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "userName" character varying(255) NOT NULL,
+    "externalId" character varying(255),
+    email character varying(255),
+    "displayName" character varying(255),
+    "givenName" character varying(255),
+    "familyName" character varying(255),
+    active boolean DEFAULT true NOT NULL,
+    role text,
+    CONSTRAINT team_scim_users_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
+);
+
+
+ALTER TABLE public.team_scim_users OWNER TO postgres;
+
+--
+-- Name: team_scim_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_scim_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_scim_users_id_seq OWNER TO postgres;
+
+--
+-- Name: team_scim_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_scim_users_id_seq OWNED BY public.team_scim_users.id;
+
+
+--
 -- Name: team_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3627,6 +3709,20 @@ ALTER TABLE ONLY public.team_domains ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 ALTER TABLE ONLY public.team_saml_configs ALTER COLUMN id SET DEFAULT nextval('public.team_saml_configs_id_seq'::regclass);
+
+
+--
+-- Name: team_scim_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_tokens ALTER COLUMN id SET DEFAULT nextval('public.team_scim_tokens_id_seq'::regclass);
+
+
+--
+-- Name: team_scim_users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_users ALTER COLUMN id SET DEFAULT nextval('public.team_scim_users_id_seq'::regclass);
 
 
 --
@@ -4562,6 +4658,46 @@ ALTER TABLE ONLY public.team_saml_configs
 
 ALTER TABLE ONLY public.team_saml_configs
     ADD CONSTRAINT team_saml_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_scim_tokens team_scim_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_tokens
+    ADD CONSTRAINT team_scim_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_scim_tokens team_scim_tokens_teamid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_tokens
+    ADD CONSTRAINT team_scim_tokens_teamid_unique UNIQUE ("teamId");
+
+
+--
+-- Name: team_scim_tokens team_scim_tokens_tokenhash_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_tokens
+    ADD CONSTRAINT team_scim_tokens_tokenhash_unique UNIQUE ("tokenHash");
+
+
+--
+-- Name: team_scim_users team_scim_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_users
+    ADD CONSTRAINT team_scim_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_scim_users team_scim_users_teamid_userid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_users
+    ADD CONSTRAINT team_scim_users_teamid_userid_unique UNIQUE ("teamId", "userId");
 
 
 --
@@ -5544,6 +5680,20 @@ CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btre
 --
 
 CREATE INDEX team_domains_domain_index ON public.team_domains USING btree (domain);
+
+
+--
+-- Name: team_scim_users_teamid_lower_username_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_scim_users_teamid_lower_username_unique ON public.team_scim_users USING btree ("teamId", lower(("userName")::text));
+
+
+--
+-- Name: team_scim_users_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_scim_users_userid_index ON public.team_scim_users USING btree ("userId");
 
 
 --
@@ -6575,6 +6725,30 @@ ALTER TABLE ONLY public.team_saml_configs
 
 
 --
+-- Name: team_scim_tokens team_scim_tokens_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_tokens
+    ADD CONSTRAINT team_scim_tokens_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_scim_users team_scim_users_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_users
+    ADD CONSTRAINT team_scim_users_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_scim_users team_scim_users_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_scim_users
+    ADD CONSTRAINT team_scim_users_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: team_users team_users_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6714,7 +6888,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict QmbCfAUSwMXuz1MwcmrBMZNd576cdMMcSfjFJgWcaec46kxFfhw2XZpguANi11L
+\unrestrict 7VW81RVeaPbsOZScpWFW3znxFaDDldZ0RJQGzSmrdKrTwZuJGXQj3oekK3an0qL
 
 -- Knex migrations
 
@@ -6979,3 +7153,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026100
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261002083127_stripe-invoices-refunded-amount.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261010094931_monthly-report.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261015104600_screenshot-buckets-project-branch-name-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261021120000_team-scim.js', 1, NOW());
