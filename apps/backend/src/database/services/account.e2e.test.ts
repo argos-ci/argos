@@ -5,8 +5,10 @@ import { describe, expect, test } from "vitest";
 import { generateAuthEmailCode } from "@/auth/email";
 import {
   type Account,
+  GithubAccount,
   TeamInvite,
   TeamUser,
+  User,
   UserEmail,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -183,6 +185,28 @@ describe("getOrCreateUserAccountFromGhAccount", () => {
         account: { id: userAccount.id },
         creation: false,
       });
+    },
+  );
+
+  withAccounts(
+    "verifies the email on the user it links by GitHub account",
+    async ({ userAccount }) => {
+      invariant(userAccount.userId, "user account has no user");
+      invariant(userAccount.githubAccountId, "user account has no GitHub");
+      await User.query().findById(userAccount.userId).patch({ email: null });
+      await addEmail({ account: userAccount, verified: false });
+      const ghAccount = await GithubAccount.query().patchAndFetchById(
+        userAccount.githubAccountId,
+        { email: EMAIL, emails: [EMAIL] },
+      );
+
+      expect(
+        await getOrCreateUserAccountFromGhAccount({
+          ghAccount,
+          attachToAccount: null,
+        }),
+      ).toMatchObject({ account: { id: userAccount.id }, creation: false });
+      await expectEmailVerifiedOn(userAccount);
     },
   );
 
