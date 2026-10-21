@@ -122,12 +122,15 @@ export async function getOrCreateUserAccountFromSaml(input: {
     return teamUser.user.account;
   }
 
+  // Only a verified email links to an existing user: anyone can add an
+  // unverified email to their account, and linking on it would hand them the
+  // team membership and the login meant for the email's owner.
   const existingUser = await User.query()
     .withGraphFetched("account")
     .whereExists(
       UserEmail.query()
         .whereRaw('user_emails."userId" = users.id')
-        .where("email", email),
+        .where({ email, verified: true }),
     )
     .first();
 
@@ -155,6 +158,10 @@ export async function getOrCreateUserAccountFromSaml(input: {
     }
     return existingUser.account;
   }
+
+  // Freed as adding the email to another account would: unverified, it may not
+  // belong to that user, and the email is the table's primary key.
+  await UserEmail.query().delete().where({ email, verified: false });
 
   const slug = getSlugFromEmail(email);
   const { account, user } = await createAccount({
