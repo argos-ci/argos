@@ -6,6 +6,7 @@ import {
   CardFooter,
   CardParagraph,
   CardTitle,
+  CardFooterActions,
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 
@@ -64,7 +65,7 @@ export function ProjectContributors(props: {
           teamAccountId={project.account.id}
         />
       </CardBody>
-      <CardFooter className="flex items-center justify-between gap-4 max-md:flex-wrap">
+      <CardFooter className="flex items-center justify-between gap-4">
         {hasAdminPermission ? (
           <>
             <div>
@@ -77,13 +78,13 @@ export function ProjectContributors(props: {
               </Link>
               .
             </div>
-            <div className="flex gap-2 max-md:flex-wrap">
+            <CardFooterActions>
               <ProjectDefaultUserLevel project={project} />
               <ProjectContributorsAdd
                 projectId={project.id}
                 teamAccountId={project.account.id}
               />
-            </div>
+            </CardFooterActions>
           </>
         ) : (
           <div>

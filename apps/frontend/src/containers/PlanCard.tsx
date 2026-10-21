@@ -485,7 +485,7 @@ function PlanCardFooter(props: {
   switch (account.__typename) {
     case "User": {
       return (
-        <CardFooter className="flex items-center justify-between gap-4 max-md:flex-wrap">
+        <CardFooter className="flex items-center justify-between gap-4">
           <div>
             Custom needs?{" "}
             <Link href={CONTACT_HREF} target="_blank">
@@ -508,7 +508,7 @@ function PlanCardFooter(props: {
       switch (account.subscriptionStatus) {
         case AccountSubscriptionStatus.Canceled: {
           return (
-            <CardFooter className="flex items-center justify-between gap-4 max-md:flex-wrap">
+            <CardFooter className="flex items-center justify-between gap-4">
               <div>
                 Custom needs?{" "}
                 <Link href={CONTACT_HREF} target="_blank">
