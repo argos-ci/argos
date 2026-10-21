@@ -1,6 +1,7 @@
-import { createContext, use, useMemo } from "react";
+import { createContext, use, useId, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
+import { ChevronDownIcon } from "lucide-react";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
@@ -15,7 +16,7 @@ import {
   DialogTitle,
   useDialogValueState,
 } from "@/ui/Dialog";
-import { List, ListRowLink } from "@/ui/List";
+import { List, ListRowButton, ListRowLink, ListTitle } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -173,17 +174,9 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
   if (newerBuild) {
     return <NewerBuildDialog build={build} newerBuild={newerBuild} />;
   }
-  const builds = build.siblingBuilds;
-  const awaitingReview = getBuildsAwaitingReview(builds);
-  const [nextBuild] = awaitingReview;
+  const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
+  const [nextBuild, ...otherBuilds] = awaitingReview;
   invariant(nextBuild, "The dialog only opens when a build awaits a review");
-  // A commit can spread its suites over several projects, and then the build
-  // name alone stops being enough to tell them apart — both projects of a
-  // monorepo call theirs `default`. Named only when it is somewhere else than
-  // the project being reviewed, so the usual case stays quiet.
-  const showProject = builds.some(
-    (sibling) => sibling.project.id !== build.project.id,
-  );
 
   return (
     <Dialog size="medium">
@@ -194,15 +187,11 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
             ? "One more build ran on this commit and still needs your review."
             : `${awaitingReview.length} more builds ran on this commit and still need your review.`}
         </DialogText>
-        <List>
-          {builds.map((sibling) => (
-            <ListedBuildRow
-              key={sibling.id}
-              build={sibling}
-              showProject={showProject}
-            />
-          ))}
-        </List>
+        <BuildsToReview
+          nextBuild={nextBuild}
+          otherBuilds={otherBuilds}
+          projectId={build.project.id}
+        />
       </DialogBody>
       <DialogFooter>
         <DialogDismiss>Not now</DialogDismiss>
@@ -235,9 +224,6 @@ function NewerBuildDialog(props: {
 }) {
   const { build, newerBuild } = props;
   const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
-  const showProject = awaitingReview.some(
-    (sibling) => sibling.project.id !== build.project.id,
-  );
   const subject = (() => {
     if (build.pullRequest) {
       return `pull request #${build.pullRequest.number}`;
@@ -259,16 +245,11 @@ function NewerBuildDialog(props: {
               ? " Another suite of this commit still needs your review."
               : ` ${awaitingReview.length} other suites of this commit still need your review.`}
         </DialogText>
-        <List>
-          <ListedBuildRow build={newerBuild} showProject={showProject} />
-          {awaitingReview.map((sibling) => (
-            <ListedBuildRow
-              key={sibling.id}
-              build={sibling}
-              showProject={showProject}
-            />
-          ))}
-        </List>
+        <BuildsToReview
+          nextBuild={newerBuild}
+          otherBuilds={awaitingReview}
+          projectId={build.project.id}
+        />
       </DialogBody>
       <DialogFooter>
         <DialogDismiss>Not now</DialogDismiss>
@@ -286,10 +267,96 @@ function NewerBuildDialog(props: {
   );
 }
 
-function ListedBuildRow(props: { build: ListedBuild; showProject: boolean }) {
-  const { build, showProject } = props;
+/**
+ * A commit can run dozens of suites. Past this many builds, the next one
+ * included, the others fold behind a button.
+ */
+const VISIBLE_BUILDS_LIMIT = 5;
+
+/**
+ * The build the dialog's action leads to, set apart from the others still
+ * awaiting a review. The action does not name it, so this is where the
+ * reviewer sees which build they are about to land on.
+ */
+function BuildsToReview(props: {
+  nextBuild: ListedBuild;
+  otherBuilds: ListedBuild[];
+  projectId: string;
+}) {
+  const { nextBuild, otherBuilds, projectId } = props;
+  const nextTitleId = useId();
+  const othersTitleId = useId();
+  const [expanded, setExpanded] = useState(false);
+  // A commit can spread its suites over several projects, and then the build
+  // name alone stops being enough to tell them apart — both projects of a
+  // monorepo call theirs `default`. Named only when it is somewhere else than
+  // the project being reviewed, so the usual case stays quiet.
+  const showProject = [nextBuild, ...otherBuilds].some(
+    (build) => build.project.id !== projectId,
+  );
+  const unfoldedCount = VISIBLE_BUILDS_LIMIT - 1;
+  const shownOtherBuilds = expanded
+    ? otherBuilds
+    : otherBuilds.slice(0, unfoldedCount);
+  const foldedCount = otherBuilds.length - shownOtherBuilds.length;
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <ListTitle id={nextTitleId}>Up next</ListTitle>
+        <List
+          aria-labelledby={nextTitleId}
+          className="border-primary ring-primary ring-1"
+        >
+          <ListedBuildRow build={nextBuild} showProject={showProject} />
+        </List>
+      </div>
+      {otherBuilds.length > 0 ? (
+        <div>
+          <ListTitle id={othersTitleId}>Also awaiting your review</ListTitle>
+          <List aria-labelledby={othersTitleId}>
+            {shownOtherBuilds.map((build, index) => (
+              <ListedBuildRow
+                key={build.id}
+                ref={index === unfoldedCount ? focusOnMount : undefined}
+                build={build}
+                showProject={showProject}
+              />
+            ))}
+            {foldedCount > 0 ? (
+              <ListRowButton
+                className="text-low hover:text-default flex items-center justify-center gap-1.5 p-3 text-sm"
+                onClick={() => setExpanded(true)}
+              >
+                Show {foldedCount} more {foldedCount === 1 ? "build" : "builds"}
+                <ChevronDownIcon className="size-4" />
+              </ListRowButton>
+            ) : null}
+          </List>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Hands focus to the first build "Show more" revealed: the button leaves with
+ * the click, and focus would otherwise fall back to the dialog. Declared at
+ * module level so its identity is stable, since React calls a callback ref
+ * again whenever it changes.
+ */
+function focusOnMount(element: HTMLElement | null) {
+  element?.focus();
+}
+
+function ListedBuildRow(props: {
+  ref?: React.Ref<HTMLAnchorElement>;
+  build: ListedBuild;
+  showProject: boolean;
+}) {
+  const { ref, build, showProject } = props;
   return (
     <ListRowLink
+      ref={ref}
       href={getBuildOverviewURL(getBuildParams(build))}
       className="flex items-center gap-4 p-3 text-sm"
     >
