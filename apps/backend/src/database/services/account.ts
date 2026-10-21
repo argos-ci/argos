@@ -52,11 +52,7 @@ type AccountAuthResult = {
 async function findUserByVerifiedEmail(email: string) {
   return User.query()
     .withGraphFetched("account")
-    .whereExists(
-      UserEmail.query()
-        .whereRaw('user_emails."userId" = users.id')
-        .where({ email, verified: true }),
-    )
+    .whereExists(User.relatedQuery("verifiedEmails").where("email", email))
     .first();
 }
 
@@ -421,15 +417,12 @@ async function getOrCreateUserAccountFromThirdParty<
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
   const existingUsers = await User.query()
-    .withGraphFetched("[account, emails]")
+    .withGraphFetched("[account, verifiedEmails]")
     .whereNull("deletedAt")
     .where((qb) => {
       if (allEmails.length) {
         qb.orWhereExists(
-          UserEmail.query()
-            .whereRaw('user_emails."userId" = users.id')
-            .whereIn("email", allEmails)
-            .where("verified", true),
+          User.relatedQuery("verifiedEmails").whereIn("email", allEmails),
         );
       }
 
@@ -464,9 +457,12 @@ async function getOrCreateUserAccountFromThirdParty<
         return (
           acc ??
           existingUsers.find((user) => {
-            invariant(user.emails, "Expected user.emails to be defined");
-            return user.emails.some(
-              (userEmail) => userEmail.verified && userEmail.email === email,
+            invariant(
+              user.verifiedEmails,
+              "Expected user.verifiedEmails to be defined",
+            );
+            return user.verifiedEmails.some(
+              (userEmail) => userEmail.email === email,
             );
           }) ??
           null
@@ -563,9 +559,9 @@ export async function createAccount(args: {
   const email = sanitizeEmail(args.email);
   const slug = await resolveAccountSlug(slugify(args.slug));
   const { account, user } = await transaction(async (trx) => {
-    // Callers have proven the email belongs to whoever signs up. Unverified, it
-    // may not belong to the user holding it, so it is freed as adding it to
-    // another account would: the email is the table's primary key.
+    // Callers have proven the email belongs to whoever signs up. Freed as
+    // `addUserEmail` does: unverified, it may not belong to its holder, and the
+    // email is the table's primary key.
     await UserEmail.query(trx).delete().where({ email, verified: false });
     const userData: PartialModelObject<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);

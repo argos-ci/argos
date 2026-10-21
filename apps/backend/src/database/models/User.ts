@@ -131,6 +131,15 @@ export class User extends Model {
           to: "user_emails.userId",
         },
       },
+      verifiedEmails: {
+        relation: Model.HasManyRelation,
+        modelClass: UserEmail,
+        join: {
+          from: "users.id",
+          to: "user_emails.userId",
+        },
+        modify: (query) => query.where("verified", true),
+      },
       teamInvites: {
         relation: Model.HasManyRelation,
         modelClass: TeamInvite,
@@ -182,6 +191,7 @@ export class User extends Model {
   gitlabUser?: GitlabUser;
   googleUser?: GoogleUser;
   emails?: UserEmail[];
+  verifiedEmails?: UserEmail[];
   userAccessTokens?: UserAccessToken[];
   passkeys?: UserPasskey[];
   comments?: Comment[];
