@@ -302,7 +302,7 @@ loggedTest(
 );
 
 loggedTest(
-  "lists only the builds awaiting a review, five at most",
+  "sets the next build apart from the others awaiting a review",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     const { defaultBuild, docsProject, extraBuilds } =
@@ -338,16 +338,18 @@ loggedTest(
     // A suite with nothing to review is no stop on the way, so it stays out.
     const rows = dialog.getByRole("table").getByRole("link");
     await expect(rows.filter({ hasText: "a11y" })).toHaveCount(0);
-    // Six builds await a review and five are listed, led by the one the
-    // dialog's action goes to: the last one, in the other project, folds.
-    await expect(rows).toHaveCount(5);
-    await expect(rows.first()).toHaveAccessibleName(/^e2e-chrome /);
+    // The dialog's action does not name the build it goes to, so that build
+    // is listed on its own.
+    const chromeBuildURL = `/${team.account.slug}/${project.name}/builds/${chromeBuild.number}/overview`;
+    await expect(
+      dialog.getByRole("table", { name: "Up next" }).getByRole("link"),
+    ).toHaveAttribute("href", chromeBuildURL);
     await expect(
       dialog.getByRole("link", { name: "Review next build" }),
-    ).toHaveAttribute(
-      "href",
-      `/${team.account.slug}/${project.name}/builds/${chromeBuild.number}/overview`,
-    );
+    ).toHaveAttribute("href", chromeBuildURL);
+    // Six builds await a review and five are listed: the last one, in the
+    // other project, folds.
+    await expect(rows).toHaveCount(5);
     const docsRow = rows.filter({ hasText: docsProject.name });
     await expect(docsRow).toHaveCount(0);
 

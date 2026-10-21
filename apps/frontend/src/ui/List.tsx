@@ -26,16 +26,16 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
 }
 
 const listRowClassName = "bg-app min-w-0 border-b-thin last:border-b-0";
+const interactiveListRowClassName = clsx(
+  listRowClassName,
+  "hover:bg-hover focus-visible:bg-hover focus:outline-hidden",
+);
 
 export function ListRowLink(props: Omit<HeadlessLinkProps, "external">) {
   return (
     <HeadlessLink
       {...props}
-      className={clsx(
-        listRowClassName,
-        "hover:bg-hover focus-visible:bg-hover focus:outline-hidden",
-        props.className,
-      )}
+      className={clsx(interactiveListRowClassName, props.className)}
     />
   );
 }
@@ -47,11 +47,7 @@ export function ListRowButton(
     <button
       {...props}
       type="button"
-      className={clsx(
-        listRowClassName,
-        "hover:bg-hover focus-visible:bg-hover focus:outline-hidden",
-        props.className,
-      )}
+      className={clsx(interactiveListRowClassName, props.className)}
     />
   );
 }
