@@ -1033,7 +1033,7 @@ function MenuNodeRenderer(props: { node: MenuNode }) {
           type="button"
           className={clsx(
             menuHeadingClassName,
-            "hover:text-default flex cursor-pointer items-center gap-1 text-left",
+            "hover:bg-hover/70 flex cursor-pointer items-center gap-1 rounded-lg text-left",
           )}
           onClick={onBack}
         >
