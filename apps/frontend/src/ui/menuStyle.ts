@@ -84,7 +84,8 @@ export const menuItemSuffixClassName = "text-low shrink-0 text-xs";
 export const menuSeparatorClassName = "border-t-thin -mx-1.5 my-1.5";
 
 /** A heading naming the group of rows under it. */
-export const menuHeadingClassName = "text-low px-2 py-1.5 text-xs font-medium";
+export const menuHeadingClassName =
+  "text-low truncate px-2 py-1.5 text-xs font-medium";
 
 /** A line of prose among the rows — a loader, an empty state, a hint. */
 export const menuTextClassName = "text-low px-2.5 py-1.5 text-xs";

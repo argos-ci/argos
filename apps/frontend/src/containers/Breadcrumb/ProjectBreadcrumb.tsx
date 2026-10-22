@@ -3,7 +3,6 @@ import { useQuery } from "@apollo/client/react";
 import { ChevronRightIcon, FolderCode } from "lucide-react";
 import { useLocation, useMatch } from "react-router";
 
-import { AccountItem } from "@/containers/AccountItem";
 import { useAuth, type AuthAccount } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";
@@ -15,13 +14,7 @@ import {
   BreadcrumbMenuButton,
   BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
-import {
-  Menu,
-  MenuItem,
-  MenuRoot,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/ui/menu-kit";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { getAccountMenuSections } from "./AccountBreadcrumbMenu";
 import {
@@ -129,9 +122,9 @@ export function ProjectBreadcrumbItem(props: {
 
 /**
  * On a phone the project's button switches the team too, as the account crumb
- * is gone. It lists the team's projects under the team itself, whose row leads
- * to the viewer's accounts, rather than both lists at once: together they ran
- * past the screen.
+ * is gone. It lists the team's projects under a heading naming the team, which
+ * leads to the viewer's accounts when there are others, rather than both lists
+ * at once: together they ran past the screen.
  */
 function PhoneProjectSwitcher(props: {
   me: AuthAccount;
@@ -146,11 +139,7 @@ function PhoneProjectSwitcher(props: {
   // The personal account counts: with a single team, there is still another
   // account to go to.
   const hasOtherAccounts = me.teams.length > 0;
-  // Not the viewer's own when staff look at another team's project.
-  const account =
-    me.slug === accountSlug
-      ? me
-      : me.teams.find((team) => team.slug === accountSlug);
+  const heading = `${accountName} projects`;
   return (
     <MenuRoot
       // Reset as it opens: on the way out, the closing popup would flash the
@@ -170,24 +159,26 @@ function PhoneProjectSwitcher(props: {
         {view === "projects" ? (
           <>
             {hasOtherAccounts ? (
-              <>
-                <MenuItem
-                  textValue={accountName}
-                  suffix={
-                    <span className="flex items-center gap-1">
-                      Switch
-                      <ChevronRightIcon className="size-4" />
-                    </span>
-                  }
-                  keepOpen
-                  onAction={() => setView("teams")}
-                >
-                  {account ? <AccountItem account={account} /> : accountName}
-                </MenuItem>
-                <MenuSeparator className="mb-3" />
-              </>
+              // The heading itself, made a row to press.
+              <MenuItem
+                textValue={heading}
+                suffix={
+                  <span className="flex items-center gap-1">
+                    Switch
+                    <ChevronRightIcon className="size-4" />
+                  </span>
+                }
+                keepOpen
+                onAction={() => setView("teams")}
+              >
+                <span className="text-low text-xs font-medium">{heading}</span>
+              </MenuItem>
             ) : null}
-            {getProjectMenuSection(accountSlug, projectNames, "Projects")}
+            {getProjectMenuSection(
+              accountSlug,
+              projectNames,
+              hasOtherAccounts ? null : heading,
+            )}
           </>
         ) : (
           getAccountMenuSections(me, pathname)
