@@ -222,8 +222,8 @@ function StaffBreadcrumbLink() {
 
 /**
  * The account crumb links to the account, and its chevron opens the account
- * switcher; a phone has one button for both. Staff shortcuts sit in the menu
- * too, the only place a phone has for them.
+ * switcher; a phone has one button for both. Its menu also holds the staff
+ * shortcuts there, the staff button beside the crumb being desktop only.
  */
 function AccountSwitcher(props: {
   me: AuthAccount;
@@ -254,9 +254,7 @@ function AccountSwitcher(props: {
         current={current}
         menuLabel="Switch account"
         renderMenu={(anchor) => (
-          <AccountBreadcrumbMenu account={me} anchor={anchor}>
-            {staffSection}
-          </AccountBreadcrumbMenu>
+          <AccountBreadcrumbMenu account={me} anchor={anchor} />
         )}
         className="max-md:hidden"
       >
