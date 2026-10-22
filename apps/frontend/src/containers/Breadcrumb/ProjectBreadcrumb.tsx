@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
-import { ChevronRightIcon, FolderCode } from "lucide-react";
+import { ChevronLeftIcon, FolderCode } from "lucide-react";
 import { useLocation, useMatch } from "react-router";
 
 import { useAuth, type AuthAccount } from "@/containers/Auth";
@@ -139,7 +139,6 @@ function PhoneProjectSwitcher(props: {
   // The personal account counts: with a single team, there is still another
   // account to go to.
   const hasOtherAccounts = me.teams.length > 0;
-  const heading = `${accountName} projects`;
   return (
     <MenuRoot
       // Reset as it opens: on the way out, the closing popup would flash the
@@ -159,25 +158,22 @@ function PhoneProjectSwitcher(props: {
         {view === "projects" ? (
           <>
             {hasOtherAccounts ? (
-              // The heading itself, made a row to press.
+              // In place of the list's heading: a row back to the accounts.
               <MenuItem
-                textValue={heading}
-                suffix={
-                  <span className="flex items-center gap-1">
-                    Switch
-                    <ChevronRightIcon className="size-4" />
-                  </span>
-                }
+                textValue={accountName}
+                icon={<ChevronLeftIcon />}
                 keepOpen
                 onAction={() => setView("teams")}
               >
-                <span className="text-low text-xs font-medium">{heading}</span>
+                <span className="text-low text-xs font-medium">
+                  {accountName}
+                </span>
               </MenuItem>
             ) : null}
             {getProjectMenuSection(
               accountSlug,
               projectNames,
-              hasOtherAccounts ? null : heading,
+              hasOtherAccounts ? null : `${accountName} projects`,
             )}
           </>
         ) : (
