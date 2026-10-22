@@ -70,7 +70,10 @@ function BannerTemplate(props: {
   children: React.ReactNode;
 }) {
   return (
-    <Banner className="flex justify-center" color={props.color ?? "neutral"}>
+    <Banner
+      className="flex justify-center max-md:px-0 max-md:py-3"
+      color={props.color ?? "neutral"}
+    >
       {/* On a phone the message takes the width and the button goes under
           it, on the right: beside it, the message ran to a word or two per
           line. */}
