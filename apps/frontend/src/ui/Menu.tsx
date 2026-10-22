@@ -19,7 +19,7 @@ export function UpDownMenuButton({
     <button
       type="button"
       className={clsx(
-        "text-low hover:border-hover hover:text-default aria-expanded:bg-active aria-expanded:text-default focus-ring border-thin cursor-default rounded-lg p-0.5",
+        "text-low hover:border-hover hover:text-default aria-expanded:bg-active aria-expanded:text-default focus-ring border-thin cursor-default rounded-lg p-0.5 pointer-coarse:p-2",
         className,
       )}
       {...props}

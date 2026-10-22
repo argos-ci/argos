@@ -246,7 +246,7 @@ function TestsList(props: {
   return (
     <List
       className={clsx(
-        "absolute max-h-full w-full overflow-hidden",
+        "absolute max-h-full w-full overflow-hidden max-md:min-w-326",
         isUpdating && "animate-pulse",
       )}
     >
@@ -428,7 +428,7 @@ export function Component() {
           </PageHeaderContent>
           <PageHeaderActions>
             <PeriodSelect state={periodState} />
-            <TextInputGroup className="w-64">
+            <TextInputGroup className="w-64 max-md:w-full">
               <TextInputIcon>
                 <SearchIcon />
               </TextInputIcon>
@@ -444,7 +444,13 @@ export function Component() {
             </TextInputGroup>
           </PageHeaderActions>
         </PageHeader>
-        <div className="relative flex-1">
+        {/* On a phone the table keeps a minimum size. Its width: it scrolls
+            sideways inside this box rather than squeezing its columns until the
+            test name disappears (the box, not the table, holds the screen width:
+            a minimum on it would scroll the whole page). And three quarters of
+            the visible height, the header above taking half the screen: the page
+            scrolls to it. */}
+        <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
           <Suspense fallback={<PageLoader />}>
             <PageContent accountSlug={params.accountSlug} />
           </Suspense>

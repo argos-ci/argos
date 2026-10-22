@@ -281,7 +281,7 @@ export function TeamSAMLSSO(props: {
             )}
           </div>
         ) : (
-          <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm">
+          <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm max-md:grid max-md:grid-cols-[auto_1fr]">
             <LockIcon className="size-6 shrink-0" />
             <div className="flex-1">
               <div className="font-medium">SAML</div>
@@ -290,7 +290,11 @@ export function TeamSAMLSSO(props: {
               </p>
             </div>
             <DialogTrigger>
-              <Button variant="secondary" disabled={!hasSamlAccess}>
+              <Button
+                variant="secondary"
+                disabled={!hasSamlAccess}
+                className="max-md:col-span-2 max-md:justify-self-start"
+              >
                 Configure
               </Button>
               <Modal>

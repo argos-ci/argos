@@ -30,7 +30,17 @@ export function PageHeaderHeadline(props: ComponentPropsWithRef<"span">) {
 }
 
 export function PageHeaderActions(props: ComponentPropsWithRef<"div">) {
-  return <div {...props} className={clsx("flex gap-4", props.className)} />;
+  return (
+    <div
+      {...props}
+      // A phone puts the actions on lines of their own under the title: the
+      // full width lets a search field take a line and the filters share one.
+      className={clsx(
+        "flex gap-4 max-md:w-full max-md:flex-wrap max-md:gap-2",
+        props.className,
+      )}
+    />
+  );
 }
 
 export function PageContainer(props: ComponentPropsWithRef<"div">) {

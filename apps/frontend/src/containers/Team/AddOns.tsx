@@ -170,9 +170,11 @@ function AddOnRow(props: {
   action: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 p-4">
+    // On a phone the description takes the width, and the price and the
+    // action move under it: side by side, the text was a word per line.
+    <div className="flex items-center gap-4 p-4 max-md:grid max-md:grid-cols-[auto_1fr_auto] max-md:gap-y-3">
       {props.icon}
-      <div className="flex-1">
+      <div className="flex-1 max-md:col-span-2">
         <div className="flex items-center gap-2 font-medium">
           {props.title}
           {props.enabled && (
@@ -183,7 +185,7 @@ function AddOnRow(props: {
         </div>
         <p className="text-low">{props.description}</p>
       </div>
-      <div className="text-low">{props.price}</div>
+      <div className="text-low max-md:col-start-2">{props.price}</div>
       {props.action}
     </div>
   );

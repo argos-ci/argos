@@ -6,6 +6,7 @@ import {
   CardFooter,
   CardParagraph,
   CardTitle,
+  CardFooterActions,
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 
@@ -77,13 +78,13 @@ export function ProjectContributors(props: {
               </Link>
               .
             </div>
-            <div className="flex gap-2">
+            <CardFooterActions>
               <ProjectDefaultUserLevel project={project} />
               <ProjectContributorsAdd
                 projectId={project.id}
                 teamAccountId={project.account.id}
               />
-            </div>
+            </CardFooterActions>
           </>
         ) : (
           <div>

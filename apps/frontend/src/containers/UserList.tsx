@@ -1,9 +1,10 @@
+import { clsx } from "clsx";
 import { MoreVerticalIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
-import { ListRow } from "@/ui/List";
+import { List, ListRow } from "@/ui/List";
 import {
   Menu,
   MenuItem,
@@ -56,6 +57,24 @@ const _UserListRowFragment = graphql(`
     }
   }
 `);
+
+/**
+ * The list a page of people is shown in. On a phone it keeps a minimum width
+ * and scrolls sideways inside a box that holds the card's width: side by side,
+ * a row's role and actions left the name a word per line.
+ */
+export function UserList(props: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="max-md:overflow-x-auto">
+      <List className={clsx("max-md:min-w-128", props.className)}>
+        {props.children}
+      </List>
+    </div>
+  );
+}
 
 export function UserListRow(props: {
   user: DocumentType<typeof _UserListRowFragment>;

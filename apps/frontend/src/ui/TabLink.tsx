@@ -4,6 +4,7 @@ import { useHref, useLocation, useResolvedPath } from "react-router";
 
 import { RouterLink } from "./RouterLink";
 import { tabClassName, tabListClassName } from "./Tab";
+import { useRevealSelected } from "./useRevealSelected";
 
 function stripAfterFirstSegment(pathname: string): string {
   // Do not consider /~/ as a segment
@@ -43,11 +44,22 @@ export function TabLinkList(props: {
   "aria-label"?: string;
 }) {
   const { className, ...rest } = props;
+  const ref = useRevealSelected('[aria-selected="true"]');
   return (
     <div
+      ref={ref}
       role="tablist"
       {...rest}
-      className={clsx(tabListClassName, className)}
+      className={clsx(
+        tabListClassName,
+        // One row on a phone, scrolled sideways, rather than tabs wrapping onto
+        // a second line. The padding and the margin that cancels it keep the
+        // selected tab's border over the rule below, as when nothing clips it.
+        // A row that scrolls no longer holds its height in a flex column: a
+        // tall page would squeeze it to nothing without `shrink-0`.
+        "max-md:-mb-px max-md:flex max-md:shrink-0 max-md:overflow-x-auto max-md:pb-px max-md:[scrollbar-width:none] max-md:*:shrink-0",
+        className,
+      )}
     />
   );
 }

@@ -514,8 +514,8 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
   switch (props.variant) {
     case "link": {
       return (
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex gap-4">
+        <div className="flex items-center justify-between gap-4 max-md:flex-wrap">
+          <div className="flex gap-4 max-md:flex-wrap">
             <GitHubButton
               onClick={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}

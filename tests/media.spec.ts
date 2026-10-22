@@ -5,7 +5,7 @@ import {
   createMediaVideoPairScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, screenshot } from "./util";
+import { ensureTeamOwner, phoneScreenshot, screenshot } from "./util";
 
 /**
  * The team slug is seeded from the test id and, on a retry, suffixed with the
@@ -86,6 +86,13 @@ loggedTest("media share page", async ({ team, page, auth, project }) => {
   );
 
   await screenshot(page, "media-share-page", maskTeamSlug(team));
+  await phoneScreenshot(page, "media-share-page", {
+    ready: (phone) =>
+      expect(
+        phone.getByRole("img", { name: "checkout.png (after)" }),
+      ).toBeVisible(),
+    ...maskTeamSlug(team),
+  });
 });
 
 loggedTest(

@@ -164,10 +164,12 @@ function BuildRow({
   return (
     <ListRowLink
       href={resolvedBuild.pathname}
-      className="flex items-center gap-6 p-4 text-sm"
+      // Tighter on a phone, whose table scrolls sideways: more of it fits on
+      // the first screen.
+      className="flex items-center gap-6 p-4 text-sm max-md:gap-4 max-md:px-3"
       style={style}
     >
-      <div className="w-28 shrink-0">
+      <div className="w-28 shrink-0 max-md:w-20">
         <div className="flex items-center gap-1">
           <BuildModeIndicator mode={build.mode} />
           <div className="tabular-nums">{build.number}</div>
@@ -176,15 +178,19 @@ function BuildRow({
           <Truncable className="text-low mt-1 text-xs">{build.name}</Truncable>
         ) : null}
       </div>
-      <div className="flex w-44 shrink-0 flex-col items-start gap-1">
+      <div className="flex w-44 shrink-0 flex-col items-start gap-1 max-md:w-40">
         <BuildStatusChip build={build} scale="sm" />
       </div>
       <div className="hidden w-28 shrink-0 items-start gap-1 lg:flex">
         <BuildTestStatusChip build={build} scale="sm" />
         <BuildBaselineEligibilityChip build={build} scale="sm" />
       </div>
-      <div className="flex grow items-center gap-3">
-        <div className="hidden lg:flex">
+      {/* On a phone the stats wrap in a column as wide as the status's,
+          rather than one that leaves most rows blank to fit the busiest. */}
+      <div className="flex grow items-center gap-3 max-md:w-40 max-md:shrink-0 max-md:grow-0">
+        {/* Hidden on a tablet only: a phone's table keeps a width that has
+            room for them and scrolls sideways. */}
+        <div className="flex md:max-lg:hidden">
           {build.stats ? (
             <BuildStatsIndicator
               stats={build.stats}
@@ -209,7 +215,7 @@ function BuildRow({
           />
         )}
       </div>
-      <div className="relative hidden w-32 flex-col gap-1 text-xs md:flex">
+      <div className="relative flex w-32 flex-col gap-1 text-xs">
         {build.branch && (
           <div>
             <ProjectBranchLink
@@ -284,7 +290,7 @@ function BuildsList(props: {
     <List
       ref={parentRef}
       className={clsx(
-        "absolute max-h-full w-full",
+        "absolute max-h-full w-full max-md:min-w-180",
         isUpdating && "animate-pulse",
       )}
       style={{ display: "block" }}
@@ -477,7 +483,7 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
-          <TextInputGroup className="w-64">
+          <TextInputGroup className="w-64 max-md:w-full">
             <TextInputIcon>
               <SearchIcon />
             </TextInputIcon>
@@ -493,7 +499,11 @@ function PageContent(props: {
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
-      <div className="relative flex-1">
+      {/* On a phone the header above takes half the screen: the table keeps
+          three quarters of the visible height, and the page scrolls to it.
+          The table keeps a minimum width too and scrolls sideways inside this
+          box, which holds the screen width. */}
+      <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
         {hasFilters && builds.pageInfo.isEmpty ? (
           <EmptyState>
             <EmptyStateIcon>

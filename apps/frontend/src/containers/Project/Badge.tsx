@@ -52,7 +52,7 @@ export const ProjectBadge = (props: {
           <span className="font-medium">README.md</span> to have a quick link to
           the latest auto-approved build of your project.
         </CardParagraph>
-        <div className="flex gap-4">
+        <div className="flex gap-4 max-md:flex-col">
           <BadgeBlock
             title="Standard"
             url="https://argos-ci.com/badge.svg"

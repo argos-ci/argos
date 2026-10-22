@@ -8,7 +8,9 @@ export interface TextInputProps extends ComponentPropsWithRef<"input"> {
 }
 
 const sizeClassNames: Record<TextInputScale, string> = {
-  sm: "text-sm px-3 py-1.5 rounded-lg leading-tight",
+  // As tall as a select, 34px, as it mostly sits beside them: a search next to
+  // filters. 16px on a phone, where Safari zooms into a smaller field on focus.
+  sm: "text-base md:text-sm px-3 py-1.5 rounded-lg leading-5",
   md: "text-base px-3 py-1.5 rounded-lg leading-tight",
   lg: "text-base p-3 rounded-xl",
 };

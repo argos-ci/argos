@@ -2,13 +2,23 @@ import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
 import { NavLink as RouterNavLink, type NavLinkProps } from "react-router";
 
+import { useRevealSelected } from "./useRevealSelected";
+
 export function Nav(props: ComponentPropsWithRef<"nav">) {
   return <nav {...props} />;
 }
 
 export function NavList(props: ComponentPropsWithRef<"ul">) {
+  const ref = useRevealSelected('[aria-current="page"]');
   return (
-    <ul {...props} className={clsx("flex flex-col gap-px", props.className)} />
+    <ul
+      {...props}
+      ref={ref}
+      className={clsx(
+        "relative flex flex-col gap-px max-md:flex-row max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:*:shrink-0",
+        props.className,
+      )}
+    />
   );
 }
 

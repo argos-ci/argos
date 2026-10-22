@@ -53,7 +53,7 @@ export function getMenuItemClassName(options?: {
 }) {
   const { variant = "default", interactive = false } = options ?? {};
   return clsx(
-    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-[450] outline-hidden",
+    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-[450] outline-hidden pointer-coarse:py-2.5",
     interactive ? "cursor-pointer" : "cursor-default",
     variant === "danger"
       ? clsx("text-danger-low/90", activeDangerRowSelectors)
@@ -83,8 +83,12 @@ export const menuItemSuffixClassName = "text-low shrink-0 text-xs";
 /** The hairline between groups of rows. */
 export const menuSeparatorClassName = "border-t-thin -mx-1.5 my-1.5";
 
-/** A heading naming the group of rows under it. */
-export const menuHeadingClassName = "text-low px-2 py-1.5 text-xs font-medium";
+/**
+ * A heading naming the group of rows under it. Never what sets the menu's
+ * width: a long one is cut to the rows' width rather than widening the menu.
+ */
+export const menuHeadingClassName =
+  "text-low w-0 min-w-full truncate px-2 py-1.5 text-xs font-medium";
 
 /** A line of prose among the rows — a loader, an empty state, a hint. */
 export const menuTextClassName = "text-low px-2.5 py-1.5 text-xs";

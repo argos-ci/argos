@@ -16,6 +16,9 @@ export function Pre({ code, copyRef, ...rest }: PreProps) {
       className={clsx(
         rest.className,
         "bg-ui relative truncate rounded-lg p-4 whitespace-pre-wrap",
+        // A phone keeps the code clear of the copy button laid over it, and
+        // breaks a long token or URL rather than cutting it off.
+        "max-md:pr-10 max-md:wrap-anywhere",
       )}
     >
       <CopyButton

@@ -95,12 +95,15 @@ function UserMenu(props: { account: AuthAccount }) {
         <button
           type="button"
           className={clsx(
-            "focus-ring bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
+            "focus-ring bg-ui pointer-coarse:size-10 size-8 shrink-0 cursor-default rounded-full border-2 transition",
             "enabled-hover:border-primary-hover active:border-primary-active aria-expanded:border-primary-active",
           )}
           aria-label="User settings"
         >
-          <AccountAvatar avatar={account.avatar} className="size-7" />
+          <AccountAvatar
+            avatar={account.avatar}
+            className="size-7 pointer-coarse:size-9"
+          />
         </button>
       </MenuTrigger>
       <Menu side="bottom" align="end" className="w-60">

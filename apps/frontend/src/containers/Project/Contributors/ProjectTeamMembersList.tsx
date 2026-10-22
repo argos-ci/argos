@@ -2,7 +2,7 @@ import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
-import { TeamMemberLabel, UserListRow } from "@/containers/UserList";
+import { TeamMemberLabel, UserList, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
 import { List, ListLoadMore, ListRowLoader, ListTitle } from "@/ui/List";
 
@@ -70,7 +70,7 @@ export function ProjectTeamMembersList(props: {
 
         return (
           <>
-            <List>
+            <UserList>
               {members.map((member) => {
                 const user = member.user;
                 return (
@@ -82,7 +82,7 @@ export function ProjectTeamMembersList(props: {
                   </UserListRow>
                 );
               })}
-            </List>
+            </UserList>
             {data.team.members.pageInfo.hasNextPage && (
               <ListLoadMore
                 onClick={() => {

@@ -185,7 +185,11 @@ function PageContentFound(props: { project: ProjectDocument }) {
               <AddAutomationButton variant="secondary" />
             </PageHeaderActions>
           </PageHeader>
-          <div className="relative flex-1">
+          {/* On a phone the header above takes half the screen: the table keeps
+              three quarters of the visible height, and the page scrolls to it.
+              The table keeps a minimum width too and scrolls sideways inside
+              this box, which holds the screen width. */}
+          <div className="relative flex-1 max-md:min-h-[75dvh] max-md:overflow-x-auto">
             <AutomationRulesList
               automationRules={project.automationRules.edges}
               onDelete={deleteAutomationState.setDeletedId}

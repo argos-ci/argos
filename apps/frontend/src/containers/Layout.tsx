@@ -52,7 +52,9 @@ export function SettingsLayout(props: ComponentPropsWithRef<"div">) {
       {...props}
       className={clsx(
         props.className,
-        "grid grid-cols-[12rem_minmax(0,1fr)] gap-16",
+        // A phone has no room beside the page for the sections: they sit
+        // above it, on a row that scrolls.
+        "grid grid-cols-[12rem_minmax(0,1fr)] gap-16 max-md:grid-cols-1 max-md:gap-6",
       )}
     />
   );

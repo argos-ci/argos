@@ -7,6 +7,7 @@ import { useAssertAuthAccount } from "@/containers/Auth";
 import {
   RemoveMenu,
   TeamMemberLabel,
+  UserList,
   UserListRow,
 } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -19,7 +20,7 @@ import {
   EmptyStateActions,
   EmptyStateDescription,
 } from "@/ui/Layout";
-import { List, ListLoadMore } from "@/ui/List";
+import { ListLoadMore } from "@/ui/List";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
@@ -113,7 +114,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
   return (
     <div>
-      <div aria-label="Filters" className="mb-2 flex gap-2">
+      <div aria-label="Filters" className="mb-2 flex gap-2 max-md:flex-wrap">
         <SearchFilter value={search} onChange={setSearch} />
         <MemberLevelFilter
           value={level}
@@ -126,7 +127,11 @@ export function TeamMembersList(props: TeamMembersListProps) {
         <SortFilter value={orderBy} onChange={setOrderBy} />
       </div>
       {members.length > 0 ? (
-        <List className={filters !== deferredFilters ? "opacity-disabled" : ""}>
+        <UserList
+          className={
+            filters !== deferredFilters ? "opacity-disabled" : undefined
+          }
+        >
           {members.map((member) => {
             const { user } = member;
             const isMe = authAccount.id === user.id;
@@ -134,7 +139,12 @@ export function TeamMembersList(props: TeamMembersListProps) {
               <UserListRow key={user.id} user={user}>
                 {member.fromSSO ? (
                   <Tooltip content="This user is synced from GitHub SSO and cannot be removed until SSO is disabled.">
-                    <Chip icon={<MarkGithubIcon />} scale="sm" color="neutral">
+                    <Chip
+                      icon={<MarkGithubIcon />}
+                      scale="sm"
+                      color="neutral"
+                      className="shrink-0"
+                    >
                       Synced
                     </Chip>
                   </Tooltip>
@@ -174,7 +184,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
               </UserListRow>
             );
           })}
-        </List>
+        </UserList>
       ) : (
         <EmptyState>
           <Heading>No members found</Heading>
