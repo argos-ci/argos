@@ -83,9 +83,12 @@ export const menuItemSuffixClassName = "text-low shrink-0 text-xs";
 /** The hairline between groups of rows. */
 export const menuSeparatorClassName = "border-t-thin -mx-1.5 my-1.5";
 
-/** A heading naming the group of rows under it. */
+/**
+ * A heading naming the group of rows under it. Never what sets the menu's
+ * width: a long one is cut to the rows' width rather than widening the menu.
+ */
 export const menuHeadingClassName =
-  "text-low truncate px-2 py-1.5 text-xs font-medium";
+  "text-low w-0 min-w-full truncate px-2 py-1.5 text-xs font-medium";
 
 /** A line of prose among the rows — a loader, an empty state, a hint. */
 export const menuTextClassName = "text-low px-2.5 py-1.5 text-xs";

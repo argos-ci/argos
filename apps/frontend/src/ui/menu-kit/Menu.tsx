@@ -15,6 +15,7 @@ import { Popover as BasePopover } from "@base-ui/react/popover";
 import { clsx } from "clsx";
 import {
   CheckIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   InfoIcon,
   SearchIcon,
@@ -1025,8 +1026,24 @@ function MenuNodeRenderer(props: { node: MenuNode }) {
   switch (node.type) {
     case "separator":
       return <div className={menuSeparatorClassName} />;
-    case "heading":
-      return <div className={menuHeadingClassName}>{node.title}</div>;
+    case "heading": {
+      const { onBack } = node.element.props as MenuHeadingProps;
+      return onBack ? (
+        <button
+          type="button"
+          className={clsx(
+            menuHeadingClassName,
+            "hover:text-default flex cursor-pointer items-center gap-1 text-left",
+          )}
+          onClick={onBack}
+        >
+          <ChevronLeftIcon className="size-[1em] shrink-0" aria-hidden />
+          <span className="min-w-0 truncate">{node.title}</span>
+        </button>
+      ) : (
+        <div className={menuHeadingClassName}>{node.title}</div>
+      );
+    }
     case "placeholder":
       return node.element;
     case "item":
@@ -1073,11 +1090,6 @@ export type MenuItemProps = {
   onCheckedChange?: (checked: boolean) => void;
   /** Run on activation. Returning a promise holds the menu open until it settles. */
   onAction?: () => void | Promise<unknown>;
-  /**
-   * Leaves the menu open once `onAction` ran: for a row that changes what the
-   * menu lists rather than doing anything.
-   */
-  keepOpen?: boolean;
   href?: string;
   /** Where a link row opens, e.g. `"_blank"` for one that leaves the app. */
   target?: string;
@@ -1093,7 +1105,17 @@ export function MenuSection(_props: { children: ReactNode }): null {
 }
 MenuSection[MENU_PART] = "section" satisfies MenuPartKind;
 
-export function MenuHeading(_props: { children: ReactNode }): null {
+type MenuHeadingProps = {
+  children: ReactNode;
+  /**
+   * Makes the heading the way back up a level, to the list this one was
+   * reached from: a chevron before it, and pressing it runs this. The menu
+   * stays open.
+   */
+  onBack?: () => void;
+};
+
+export function MenuHeading(_props: MenuHeadingProps): null {
   return null;
 }
 MenuHeading[MENU_PART] = "heading" satisfies MenuPartKind;
@@ -1146,10 +1168,6 @@ function MenuItemRow(
     }
     if (itemProps.checkbox && !checkboxIsOwnTarget) {
       toggle();
-      return;
-    }
-    if (itemProps.keepOpen) {
-      itemProps.onAction?.();
       return;
     }
     const result = itemProps.onAction?.();
