@@ -1073,6 +1073,11 @@ export type MenuItemProps = {
   onCheckedChange?: (checked: boolean) => void;
   /** Run on activation. Returning a promise holds the menu open until it settles. */
   onAction?: () => void | Promise<unknown>;
+  /**
+   * Leaves the menu open once `onAction` ran: for a row that changes what the
+   * menu lists rather than doing anything.
+   */
+  keepOpen?: boolean;
   href?: string;
   /** Where a link row opens, e.g. `"_blank"` for one that leaves the app. */
   target?: string;
@@ -1141,6 +1146,10 @@ function MenuItemRow(
     }
     if (itemProps.checkbox && !checkboxIsOwnTarget) {
       toggle();
+      return;
+    }
+    if (itemProps.keepOpen) {
+      itemProps.onAction?.();
       return;
     }
     const result = itemProps.onAction?.();

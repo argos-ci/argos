@@ -65,7 +65,6 @@ export function getAccountMenuSections(account: AuthAccount, pathname: string) {
 export function AccountBreadcrumbMenu(props: {
   account: AuthAccount;
   anchor?: ComponentProps<typeof Menu>["anchor"];
-  children?: React.ReactNode;
 }) {
   const { account } = props;
   const location = useLocation();
@@ -73,7 +72,6 @@ export function AccountBreadcrumbMenu(props: {
   return (
     <Menu side="bottom" align="start" anchor={props.anchor}>
       {getAccountMenuSections(account, location.pathname)}
-      {props.children}
     </Menu>
   );
 }

@@ -1,8 +1,9 @@
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
-import { FolderCode } from "lucide-react";
+import { ChevronLeftIcon, FolderCode } from "lucide-react";
 import { useLocation, useMatch } from "react-router";
 
-import { useAuth } from "@/containers/Auth";
+import { useAuth, type AuthAccount } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";
 import {
@@ -13,9 +14,14 @@ import {
   BreadcrumbMenuButton,
   BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
-import { Menu, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import {
+  Menu,
+  MenuItem,
+  MenuRoot,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/ui/menu-kit";
 
-import { getStaffMenuSection } from "./AccountBreadcrumb";
 import { getAccountMenuSections } from "./AccountBreadcrumbMenu";
 import {
   getProjectMenuSection,
@@ -45,7 +51,6 @@ export function ProjectBreadcrumbItem(props: {
 
   const auth = useAuth();
   const me = auth.status === "authenticated" ? auth.account : null;
-  const { pathname } = useLocation();
   const isCurrent = useMatch("/:accountSlug/:projectName/:any?");
   // Resolved here rather than inside the menu: a menu's rows are read when it
   // opens and filtered as you type, so they have to all be there from the
@@ -98,25 +103,14 @@ export function ProjectBreadcrumbItem(props: {
           >
             {content}
           </BreadcrumbSplitButton>
-          {/* On a phone the same button switches the team too, as the
-              account crumb is gone, and it always ends the trail. */}
           <div className="contents md:hidden">
-            <MenuRoot>
-              <MenuTrigger>
-                <BreadcrumbMenuButton current className="max-md:h-10">
-                  {content}
-                </BreadcrumbMenuButton>
-              </MenuTrigger>
-              <Menu side="bottom" align="start">
-                {getProjectMenuSection(accountSlug, projectNames)}
-                {getAccountMenuSections(me, pathname)}
-                {me.staff
-                  ? getStaffMenuSection(
-                      data?.account?.__typename === "Team" ? accountSlug : null,
-                    )
-                  : null}
-              </Menu>
-            </MenuRoot>
+            <PhoneProjectSwitcher
+              me={me}
+              accountSlug={accountSlug}
+              projectNames={projectNames}
+            >
+              {content}
+            </PhoneProjectSwitcher>
           </div>
         </>
       ) : (
@@ -128,5 +122,62 @@ export function ProjectBreadcrumbItem(props: {
         </BreadcrumbLink>
       )}
     </BreadcrumbItem>
+  );
+}
+
+/**
+ * On a phone the project's button switches the team too, as the account crumb
+ * is gone. It lists the team's projects, and the viewer's accounts one step
+ * back, rather than both at once: together they ran past the screen.
+ */
+function PhoneProjectSwitcher(props: {
+  me: AuthAccount;
+  accountSlug: string;
+  projectNames: string[];
+  children: ReactNode;
+}) {
+  const { me, accountSlug, projectNames, children } = props;
+  const { pathname } = useLocation();
+  const [view, setView] = useState<"projects" | "teams">("projects");
+  // The personal account counts: with a single team, there is still another
+  // account to go to.
+  const hasOtherAccounts = me.teams.length > 0;
+  return (
+    <MenuRoot
+      // Reset as it opens: on the way out, the closing popup would flash the
+      // projects again.
+      onOpenChange={(open) => {
+        if (open) {
+          setView("projects");
+        }
+      }}
+    >
+      <MenuTrigger>
+        <BreadcrumbMenuButton current className="max-md:h-10">
+          {children}
+        </BreadcrumbMenuButton>
+      </MenuTrigger>
+      <Menu side="bottom" align="start">
+        {view === "projects" ? (
+          <>
+            {hasOtherAccounts ? (
+              <>
+                <MenuItem
+                  icon={<ChevronLeftIcon />}
+                  keepOpen
+                  onAction={() => setView("teams")}
+                >
+                  All teams
+                </MenuItem>
+                <MenuSeparator />
+              </>
+            ) : null}
+            {getProjectMenuSection(accountSlug, projectNames)}
+          </>
+        ) : (
+          getAccountMenuSections(me, pathname)
+        )}
+      </Menu>
+    </MenuRoot>
   );
 }

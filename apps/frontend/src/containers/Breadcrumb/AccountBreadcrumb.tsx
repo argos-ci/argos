@@ -24,14 +24,7 @@ import {
 } from "@/ui/Breadcrumb";
 import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import {
-  Menu,
-  MenuHeading,
-  MenuItem,
-  MenuRoot,
-  MenuSection,
-  MenuTrigger,
-} from "@/ui/menu-kit";
+import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
@@ -123,24 +116,6 @@ function getStaffDirectoryURL(teamSlug: string) {
   return `/staff/teams?${new URLSearchParams({ search: teamSlug })}`;
 }
 
-/** The staff shortcuts, for the menus a phone reaches them from. */
-export function getStaffMenuSection(teamSlug: string | null) {
-  return (
-    <MenuSection>
-      <MenuHeading>Staff</MenuHeading>
-      {teamSlug ? (
-        <MenuItem
-          icon={<ShieldUserIcon />}
-          href={getStaffDirectoryURL(teamSlug)}
-        >
-          Open in staff directory
-        </MenuItem>
-      ) : null}
-      {getStaffPageMenuItems()}
-    </MenuSection>
-  );
-}
-
 function getStaffPageMenuItems() {
   return [
     <MenuItem key="teams" icon={<Building2Icon />} href="/staff/teams">
@@ -158,7 +133,7 @@ function getStaffPageMenuItems() {
 /**
  * The way into the staff pages, from anywhere in the app. On a team, the button
  * takes a staff member to its row in the staff directory; the menu holds every
- * staff page.
+ * staff page. A phone has room for one button: it opens a menu holding both.
  *
  * Reads the account from the same query the link beside it already ran, so the
  * cache answers it.
@@ -173,34 +148,60 @@ function StaffButtonGroup(props: { accountSlug: string | undefined }) {
   const label = team ? "Open in staff directory" : "Open staff directory";
   const href = team ? getStaffDirectoryURL(team.slug) : "/staff/teams";
   return (
-    <ButtonGroup>
-      <Tooltip content={label}>
-        <LinkButton
-          variant="secondary"
-          size="small"
-          iconOnly
-          aria-label={label}
-          href={href}
-        >
-          <ShieldUserIcon />
-        </LinkButton>
-      </Tooltip>
-      <MenuRoot>
-        <MenuTrigger>
-          <Button
-            variant="secondary"
-            size="small"
-            iconOnly
-            aria-label="Staff pages"
-          >
-            <ChevronDownIcon />
-          </Button>
-        </MenuTrigger>
-        <Menu side="bottom" align="start" aria-label="Staff pages">
-          {getStaffPageMenuItems()}
-        </Menu>
-      </MenuRoot>
-    </ButtonGroup>
+    <>
+      <div className="contents max-md:hidden">
+        <ButtonGroup>
+          <Tooltip content={label}>
+            <LinkButton
+              variant="secondary"
+              size="small"
+              iconOnly
+              aria-label={label}
+              href={href}
+            >
+              <ShieldUserIcon />
+            </LinkButton>
+          </Tooltip>
+          <MenuRoot>
+            <MenuTrigger>
+              <Button
+                variant="secondary"
+                size="small"
+                iconOnly
+                aria-label="Staff pages"
+              >
+                <ChevronDownIcon />
+              </Button>
+            </MenuTrigger>
+            <Menu side="bottom" align="start" aria-label="Staff pages">
+              {getStaffPageMenuItems()}
+            </Menu>
+          </MenuRoot>
+        </ButtonGroup>
+      </div>
+      <div className="contents md:hidden">
+        <MenuRoot>
+          <MenuTrigger>
+            <Button
+              variant="secondary"
+              iconOnly
+              aria-label="Staff pages"
+              className="pointer-coarse:size-10"
+            >
+              <ShieldUserIcon />
+            </Button>
+          </MenuTrigger>
+          <Menu side="bottom" align="end" aria-label="Staff pages">
+            {team ? (
+              <MenuItem icon={<ShieldUserIcon />} href={href}>
+                {label}
+              </MenuItem>
+            ) : null}
+            {getStaffPageMenuItems()}
+          </Menu>
+        </MenuRoot>
+      </div>
+    </>
   );
 }
 
@@ -222,8 +223,7 @@ function StaffBreadcrumbLink() {
 
 /**
  * The account crumb links to the account, and its chevron opens the account
- * switcher; a phone has one button for both. Its menu also holds the staff
- * shortcuts there, the staff button beside the crumb being desktop only.
+ * switcher; a phone has one button for both.
  */
 function AccountSwitcher(props: {
   me: AuthAccount;
@@ -235,13 +235,9 @@ function AccountSwitcher(props: {
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
-  const team = data.account?.__typename === "Team" ? data.account : null;
   const content = (
     <AccountCrumbContent account={data.account} accountSlug={accountSlug} />
   );
-  const staffSection = me.staff
-    ? getStaffMenuSection(team?.slug ?? null)
-    : null;
   return (
     <BreadcrumbItem
       className={getCrumbShrinkClassName({
@@ -267,9 +263,7 @@ function AccountSwitcher(props: {
               {content}
             </BreadcrumbMenuButton>
           </MenuTrigger>
-          <AccountBreadcrumbMenu account={me}>
-            {staffSection}
-          </AccountBreadcrumbMenu>
+          <AccountBreadcrumbMenu account={me} />
         </MenuRoot>
       </div>
     </BreadcrumbItem>
@@ -362,10 +356,11 @@ export function AccountBreadcrumbItem() {
         current={Boolean(accountSlug) && !projectName}
       />
       {me.staff ? (
-        // Beside the crumb where there is room, so the team's directory row
-        // stays one click away; an item of its own, so the account's minimum
-        // width does not depend on it.
-        <BreadcrumbItem className="shrink-0 max-md:hidden">
+        // Beside the crumb, so the team's directory row stays one click away;
+        // an item of its own, so the account's minimum width does not depend
+        // on it. A phone puts it after the project's button, which names the
+        // team there.
+        <BreadcrumbItem className="shrink-0 max-md:order-last">
           <StaffButtonGroup accountSlug={accountSlug} />
         </BreadcrumbItem>
       ) : null}
