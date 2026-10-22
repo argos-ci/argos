@@ -50,7 +50,7 @@ type HeadingNode = {
   element: ReactElement;
 };
 
-type SeparatorNode = { type: "separator"; id: string };
+type SeparatorNode = { type: "separator"; id: string; className?: string };
 
 /**
  * The text a node contributes to search, flattened out of whatever React node
@@ -174,7 +174,11 @@ export function getMenuNodes(
         return;
       }
       case "separator": {
-        nodes.push({ type: "separator", id });
+        nodes.push({
+          type: "separator",
+          id,
+          className: (child.props as { className?: string }).className,
+        });
         return;
       }
       case "placeholder": {

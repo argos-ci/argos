@@ -1024,7 +1024,7 @@ function MenuNodeRenderer(props: { node: MenuNode }) {
   const { node } = props;
   switch (node.type) {
     case "separator":
-      return <div className={menuSeparatorClassName} />;
+      return <div className={clsx(menuSeparatorClassName, node.className)} />;
     case "heading":
       return <div className={menuHeadingClassName}>{node.title}</div>;
     case "placeholder":
@@ -1098,7 +1098,7 @@ export function MenuHeading(_props: { children: ReactNode }): null {
 }
 MenuHeading[MENU_PART] = "heading" satisfies MenuPartKind;
 
-export function MenuSeparator(): null {
+export function MenuSeparator(_props: { className?: string }): null {
   return null;
 }
 MenuSeparator[MENU_PART] = "separator" satisfies MenuPartKind;

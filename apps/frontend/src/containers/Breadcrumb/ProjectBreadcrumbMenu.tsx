@@ -36,12 +36,13 @@ function getProjectItems(accountSlug: string, projectNames: string[]) {
 export function getProjectMenuSection(
   accountSlug: string,
   projectNames: string[],
+  heading = "Switch project",
 ) {
   const sortedNames = [...projectNames].sort((sa, sb) => sa.localeCompare(sb));
   return (
     <>
       <MenuSection>
-        <MenuHeading>Switch project</MenuHeading>
+        <MenuHeading>{heading}</MenuHeading>
         {getProjectItems(accountSlug, sortedNames)}
       </MenuSection>
       <MenuItem
