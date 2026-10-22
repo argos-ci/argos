@@ -133,7 +133,7 @@ function getStaffPageMenuItems() {
 /**
  * The way into the staff pages, from anywhere in the app. On a team, the button
  * takes a staff member to its row in the staff directory; the menu holds every
- * staff page. A phone has room for one button: it opens a menu holding both.
+ * staff page.
  *
  * Reads the account from the same query the link beside it already ran, so the
  * cache answers it.
@@ -148,60 +148,34 @@ function StaffButtonGroup(props: { accountSlug: string | undefined }) {
   const label = team ? "Open in staff directory" : "Open staff directory";
   const href = team ? getStaffDirectoryURL(team.slug) : "/staff/teams";
   return (
-    <>
-      <div className="contents max-md:hidden">
-        <ButtonGroup>
-          <Tooltip content={label}>
-            <LinkButton
-              variant="secondary"
-              size="small"
-              iconOnly
-              aria-label={label}
-              href={href}
-            >
-              <ShieldUserIcon />
-            </LinkButton>
-          </Tooltip>
-          <MenuRoot>
-            <MenuTrigger>
-              <Button
-                variant="secondary"
-                size="small"
-                iconOnly
-                aria-label="Staff pages"
-              >
-                <ChevronDownIcon />
-              </Button>
-            </MenuTrigger>
-            <Menu side="bottom" align="start" aria-label="Staff pages">
-              {getStaffPageMenuItems()}
-            </Menu>
-          </MenuRoot>
-        </ButtonGroup>
-      </div>
-      <div className="contents md:hidden">
-        <MenuRoot>
-          <MenuTrigger>
-            <Button
-              variant="secondary"
-              iconOnly
-              aria-label="Staff pages"
-              className="pointer-coarse:size-10"
-            >
-              <ShieldUserIcon />
-            </Button>
-          </MenuTrigger>
-          <Menu side="bottom" align="end" aria-label="Staff pages">
-            {team ? (
-              <MenuItem icon={<ShieldUserIcon />} href={href}>
-                {label}
-              </MenuItem>
-            ) : null}
-            {getStaffPageMenuItems()}
-          </Menu>
-        </MenuRoot>
-      </div>
-    </>
+    <ButtonGroup>
+      <Tooltip content={label}>
+        <LinkButton
+          variant="secondary"
+          size="small"
+          iconOnly
+          aria-label={label}
+          href={href}
+        >
+          <ShieldUserIcon />
+        </LinkButton>
+      </Tooltip>
+      <MenuRoot>
+        <MenuTrigger>
+          <Button
+            variant="secondary"
+            size="small"
+            iconOnly
+            aria-label="Staff pages"
+          >
+            <ChevronDownIcon />
+          </Button>
+        </MenuTrigger>
+        <Menu side="bottom" align="start" aria-label="Staff pages">
+          {getStaffPageMenuItems()}
+        </Menu>
+      </MenuRoot>
+    </ButtonGroup>
   );
 }
 
