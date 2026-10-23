@@ -95,7 +95,7 @@ export function TeamSCIMProvisioning(props: {
               value={team.scimBaseUrl}
             />
           </div>
-          <div className="border-t-thin flex items-center gap-4 p-4">
+          <div className="border-t-thin flex items-center gap-4 p-4 max-md:grid max-md:grid-cols-[auto_1fr]">
             <KeyRoundIcon className="size-6 shrink-0" />
             <div className="flex-1">
               <div className="font-medium">
@@ -119,7 +119,7 @@ export function TeamSCIMProvisioning(props: {
               </p>
             </div>
             {scimToken ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 max-md:col-span-2">
                 <Button
                   variant="secondary"
                   disabled={!hasAccess}
@@ -139,6 +139,7 @@ export function TeamSCIMProvisioning(props: {
                 variant="secondary"
                 disabled={!hasAccess}
                 onClick={() => dialog.open("generate")}
+                className="max-md:col-span-2 max-md:justify-self-start"
               >
                 Generate token
               </Button>
