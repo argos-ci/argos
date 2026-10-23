@@ -135,6 +135,48 @@ function DeploymentTargetLink(props: {
   );
 }
 
+const AliasLabel: Record<Deployment["aliases"][number]["type"], string> = {
+  domain: "Domain",
+  branch: "Branch URL",
+};
+
+/**
+ * The deployment's URLs as a phone lists them, each under the name the docs
+ * give it. Only the host is shown, since every URL starts with the same
+ * `https://` and a phone crops the end.
+ */
+function DeploymentUrlList(props: { deployment: Deployment }) {
+  const { deployment } = props;
+  const targets = [
+    ...deployment.aliases.map((alias) => ({
+      key: alias.id,
+      label: AliasLabel[alias.type],
+      url: alias.url,
+    })),
+    { key: "deployment", label: "Deployment URL", url: deployment.url },
+  ];
+
+  return (
+    <div className="flex flex-col gap-3">
+      {targets.map((target) => (
+        <div key={target.key} className="flex flex-col items-start">
+          <div className="text-low text-xs">{target.label}</div>
+          <Link
+            className="inline-flex max-w-full min-w-0 items-center"
+            variant="neutral"
+            target="_blank"
+            href={target.url}
+          >
+            <span className="truncate">
+              {target.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </span>
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CurrentDeploymentBadge(props: { createdAt: string }) {
   return (
     <Tooltip
@@ -215,7 +257,7 @@ function DeploymentRow(props: {
           </Link>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1 truncate max-md:basis-full">
+      <div className="flex flex-1 flex-col gap-1 truncate max-md:hidden">
         {deployment.aliases.map((alias) => (
           <DeploymentTargetLink
             key={alias.id}
@@ -229,6 +271,9 @@ function DeploymentRow(props: {
           {deployment.url}
         </DeploymentTargetLink>
       </div>
+      <div className="min-w-0 basis-full py-1 md:hidden">
+        <DeploymentUrlList deployment={deployment} />
+      </div>
       <div className="flex w-70 shrink-0 max-md:w-auto max-md:max-w-full max-md:empty:hidden">
         {deployment.pullRequest && (
           <PullRequestButton
@@ -239,24 +284,24 @@ function DeploymentRow(props: {
           />
         )}
       </div>
-      <div className="flex w-40 shrink-0 flex-col gap-1 text-xs max-md:w-auto max-md:min-w-0 max-md:flex-1">
-        <div>
+      <div className="flex w-40 shrink-0 flex-col gap-1 text-xs max-md:w-auto max-md:min-w-0 max-md:flex-1 max-md:flex-row max-md:gap-4">
+        <div className="max-md:min-w-0">
           <ProjectBranchLink
-            className="inline-flex max-w-full items-center"
+            className="inline-flex max-w-full items-center max-md:h-8"
             repository={project.repository}
             branch={deployment.branch}
           />
         </div>
-        <div>
+        <div className="max-md:shrink-0">
           <ProjectCommitLink
-            className="inline-flex max-w-full items-center"
+            className="inline-flex max-w-full items-center max-md:h-8"
             repository={project.repository}
             commit={deployment.commitSha}
           />
         </div>
       </div>
       <div
-        className="text-low w-24 shrink-0 truncate overflow-hidden text-right text-xs whitespace-nowrap max-md:w-auto"
+        className="text-low w-24 shrink-0 truncate overflow-hidden text-right text-xs whitespace-nowrap max-md:w-auto max-md:self-center"
         data-visual-test="transparent"
       >
         <Time date={deployment.createdAt} />
