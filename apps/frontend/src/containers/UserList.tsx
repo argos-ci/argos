@@ -95,6 +95,24 @@ export function UserListRow(props: {
   );
 }
 
+/**
+ * A row's role, as wide whether it is a select or a plain label, so the chips
+ * and menus beside it stay in line from one row to the next.
+ */
+export function UserListRole(props: { children: React.ReactNode }) {
+  return <div className="w-32 shrink-0">{props.children}</div>;
+}
+
+/** A role that cannot be changed, its text in line with a select's. */
+export function UserListRoleLabel(props: { children: React.ReactNode }) {
+  return <div className="text-low px-2 text-sm">{props.children}</div>;
+}
+
+/** Holds a row's place when it has no actions menu, as wide as the menu. */
+export function UserListNoActions() {
+  return <div className="w-6 shrink-0" />;
+}
+
 export const TeamMemberLabel: Record<TeamUserLevel, string> = {
   owner: "Owner",
   member: "Member",

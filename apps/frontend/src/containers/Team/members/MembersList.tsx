@@ -8,6 +8,9 @@ import {
   RemoveMenu,
   TeamMemberLabel,
   UserList,
+  UserListNoActions,
+  UserListRole,
+  UserListRoleLabel,
   UserListRow,
 } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -149,12 +152,12 @@ export function TeamMembersList(props: TeamMembersListProps) {
                     </Chip>
                   </Tooltip>
                 ) : null}
-                {isMe || !props.amOwner ? (
-                  <div className="text-low text-sm">
-                    {TeamMemberLabel[member.level]}
-                  </div>
-                ) : (
-                  <div>
+                <UserListRole>
+                  {isMe || !props.amOwner ? (
+                    <UserListRoleLabel>
+                      {TeamMemberLabel[member.level]}
+                    </UserListRoleLabel>
+                  ) : (
                     <MemberLevelEditor
                       teamId={props.teamId}
                       member={member}
@@ -162,8 +165,8 @@ export function TeamMembersList(props: TeamMembersListProps) {
                         props.hasFineGrainedAccessControl
                       }
                     />
-                  </div>
-                )}
+                  )}
+                </UserListRole>
                 {isMe || props.amOwner ? (
                   <RemoveMenu
                     disabled={lastOne || member.fromSSO}
@@ -179,7 +182,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
                     onRemove={() => props.onRemove(user as RemovedUser)}
                   />
                 ) : (
-                  <div className="w-8" />
+                  <UserListNoActions />
                 )}
               </UserListRow>
             );
