@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { isSameYear } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
+import clsx from "clsx";
 import { PlusCircleIcon } from "lucide-react";
 
 import { config } from "@/config";
@@ -268,7 +269,13 @@ function PlanStatus(props: {
  * The parts add up to the total, which is why media units come back out of the
  * classic figure: they are folded into `neutral` on the way in.
  */
-function UsageBreakdown({ screenshots }: { screenshots: ScreenshotsCount }) {
+function UsageBreakdown({
+  screenshots,
+  className,
+}: {
+  screenshots: ScreenshotsCount;
+  className?: string;
+}) {
   const { storybook, media } = screenshots;
 
   if (storybook === 0 && media.count === 0) {
@@ -287,19 +294,16 @@ function UsageBreakdown({ screenshots }: { screenshots: ScreenshotsCount }) {
   ].filter(Boolean);
 
   return (
-    <span className="text-low ml-4 text-sm font-normal">
+    <span className={clsx("text-low text-sm font-normal", className)}>
       ({parts.join(" + ")})
     </span>
   );
 }
 
-/** "1,234 screenshots", with the breakdown when there is one to give. */
-function UsageCount({ screenshots }: { screenshots: ScreenshotsCount }) {
+function UsageTotal({ count }: { count: number }) {
   return (
     <>
-      {screenshots.all.toLocaleString()}{" "}
-      {screenshots.all > 1 ? "screenshots" : "screenshot"}{" "}
-      <UsageBreakdown screenshots={screenshots} />
+      {count.toLocaleString()} {count > 1 ? "screenshots" : "screenshot"}
     </>
   );
 }
@@ -331,11 +335,17 @@ function ConsumptionBlock({
     <div className="border-thin flex flex-col gap-2 rounded-lg p-4">
       <div className="font-medium">Projects</div>
       <div className="flex flex-col gap-1">
-        <div className="flex justify-between font-medium">
+        <div className="flex flex-wrap items-baseline gap-x-4 font-medium">
           <div>
-            <UsageCount screenshots={screenshotsSum} />
+            <UsageTotal count={screenshotsSum.all} />
           </div>
-          <div className="text-low">
+          {/* Under the total and the limit until the settings sidebar leaves
+              room beside them: squeezed in between, it breaks all three. */}
+          <UsageBreakdown
+            screenshots={screenshotsSum}
+            className="max-lg:order-last max-lg:basis-full lg:flex-1"
+          />
+          <div className="text-low ml-auto whitespace-nowrap">
             / {includedScreenshots.toLocaleString()}
           </div>
         </div>
@@ -358,12 +368,13 @@ function ConsumptionBlock({
               return (
                 <li
                   key={project.id}
-                  className="flex items-center justify-between border-b p-1 last:border-b-0"
+                  className="flex flex-wrap items-baseline gap-x-4 border-b p-1 last:border-b-0"
                 >
-                  <span>{project.name}</span>
+                  <span className="flex-1">{project.name}</span>
                   <span className={plain ? "tabular-nums" : undefined}>
-                    <UsageCount screenshots={screenshots} />
+                    <UsageTotal count={screenshots.all} />
                   </span>
+                  <UsageBreakdown screenshots={screenshots} />
                 </li>
               );
             })}
