@@ -35,6 +35,7 @@ import {
   Label,
   Pie,
   PieChart,
+  useXAxisScale,
   XAxis,
   YAxis,
 } from "recharts";
@@ -1123,33 +1124,7 @@ function EvolutionChart(props: {
             });
           }}
         />
-        <XAxis
-          dataKey="ts"
-          type="number"
-          scale="time"
-          tickLine={false}
-          axisLine={false}
-          minTickGap={0}
-          tickMargin={12}
-          domain={["dataMin", "dataMax"]}
-          ticks={ticks}
-          tickFormatter={(value) => {
-            const date = new Date(value);
-            switch (groupBy) {
-              case TimeSeriesGroupBy.Day:
-              case TimeSeriesGroupBy.Week: {
-                return date.toLocaleDateString(navigator.language, {
-                  month: "short",
-                  day: "numeric",
-                });
-              }
-              case TimeSeriesGroupBy.Month:
-                return date.toLocaleDateString(navigator.language, {
-                  month: "short",
-                });
-            }
-          }}
-        />
+        <TimeXAxis ticks={ticks} groupBy={groupBy} />
         <ChartTooltip
           isAnimationActive={false}
           content={
@@ -1179,6 +1154,79 @@ function EvolutionChart(props: {
         })}
       </AreaChart>
     </ChartContainer>
+  );
+}
+
+/**
+ * Room a tick label needs, gap included: "28 mars" or "28. Sept." for days
+ * and weeks, "mars" for months.
+ */
+const MIN_TICK_SPACING: Record<TimeSeriesGroupBy, number> = {
+  [TimeSeriesGroupBy.Day]: 56,
+  [TimeSeriesGroupBy.Week]: 56,
+  [TimeSeriesGroupBy.Month]: 36,
+};
+
+const TIME_AXIS_DOMAIN = ["dataMin", "dataMax"];
+
+/**
+ * Labels every nth tick, counted back from the last one, n being the smallest
+ * step the chart's width has room for. Left to Recharts, colliding labels are
+ * dropped one by one, which leaves uneven gaps on a phone ("nov. janv. mars
+ * avr. mai juin").
+ */
+function TimeXAxis(props: { ticks: number[]; groupBy: TimeSeriesGroupBy }) {
+  const { ticks, groupBy } = props;
+  const scale = useXAxisScale();
+  const step = useMemo(() => {
+    const start = scale?.(ticks[0]);
+    const end = scale?.(ticks.at(-1));
+    // No scale until the axis has registered, on the first render.
+    if (start === undefined || end === undefined || ticks.length < 2) {
+      return 1;
+    }
+    const spacing = (end - start) / (ticks.length - 1);
+    return Math.ceil(MIN_TICK_SPACING[groupBy] / spacing);
+  }, [scale, ticks, groupBy]);
+  const shownTicks = useMemo(
+    () => ticks.filter((_, index) => (ticks.length - 1 - index) % step === 0),
+    [ticks, step],
+  );
+  // The scale changes with the axis settings and re-renders this component,
+  // so every prop given to `XAxis` keeps its identity or the two update each
+  // other forever.
+  const tickFormatter = useCallback(
+    (value: number) => {
+      const date = new Date(value);
+      switch (groupBy) {
+        case TimeSeriesGroupBy.Day:
+        case TimeSeriesGroupBy.Week: {
+          return date.toLocaleDateString(navigator.language, {
+            month: "short",
+            day: "numeric",
+          });
+        }
+        case TimeSeriesGroupBy.Month:
+          return date.toLocaleDateString(navigator.language, {
+            month: "short",
+          });
+      }
+    },
+    [groupBy],
+  );
+  return (
+    <XAxis
+      dataKey="ts"
+      type="number"
+      scale="time"
+      tickLine={false}
+      axisLine={false}
+      minTickGap={0}
+      tickMargin={12}
+      domain={TIME_AXIS_DOMAIN}
+      ticks={shownTicks}
+      tickFormatter={tickFormatter}
+    />
   );
 }
 
