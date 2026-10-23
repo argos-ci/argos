@@ -4,7 +4,13 @@ import { invariant } from "@argos/util/invariant";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAssertAuthAccount } from "@/containers/Auth";
-import { TeamMemberLabel, UserList } from "@/containers/UserList";
+import {
+  TeamMemberLabel,
+  UserList,
+  UserListNoActions,
+  UserListRole,
+  UserListRoleLabel,
+} from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -123,7 +129,7 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
             return (
               <ListRow
                 key={member.id}
-                className="flex items-center gap-4 px-4 py-2"
+                className="flex items-center gap-6 px-4 py-2"
               >
                 <AccountAvatar
                   avatar={user?.avatar ?? member.githubAccount.avatar}
@@ -141,20 +147,18 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
                     {member.githubAccount.login}
                   </div>
                 )}
-                {isMe || !props.amOwner || !teamMember ? (
-                  <div className="text-low text-sm">
-                    {teamMember ? (
-                      TeamMemberLabel[teamMember.level]
-                    ) : (
-                      <Tooltip content="This user isn’t part of the team yet. If they log in with GitHub, they’ll be added automatically.">
-                        <Chip scale="sm" color="neutral">
-                          Pending
-                        </Chip>
-                      </Tooltip>
-                    )}
-                  </div>
-                ) : (
-                  <div>
+                <UserListRole>
+                  {!teamMember ? (
+                    <Tooltip content="This user isn’t part of the team yet. If they log in with GitHub, they’ll be added automatically.">
+                      <Chip scale="sm" color="neutral">
+                        Pending
+                      </Chip>
+                    </Tooltip>
+                  ) : isMe || !props.amOwner ? (
+                    <UserListRoleLabel>
+                      {TeamMemberLabel[teamMember.level]}
+                    </UserListRoleLabel>
+                  ) : (
                     <MemberLevelEditor
                       teamId={props.teamId}
                       member={teamMember}
@@ -162,9 +166,9 @@ export function TeamGithubMembersList(props: TeamGithubMembersListProps) {
                         props.hasFineGrainedAccessControl
                       }
                     />
-                  </div>
-                )}
-                <div className="w-4" />
+                  )}
+                </UserListRole>
+                <UserListNoActions />
               </ListRow>
             );
           })}

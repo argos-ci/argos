@@ -10,7 +10,13 @@ import {
 } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { TeamMemberLabel, UserList } from "@/containers/UserList";
+import {
+  TeamMemberLabel,
+  UserList,
+  UserListNoActions,
+  UserListRole,
+  UserListRoleLabel,
+} from "@/containers/UserList";
 import { graphql, type DocumentType } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -127,7 +133,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
             return (
               <ListRow
                 key={invite.id}
-                className="flex items-center gap-4 px-4 py-2"
+                className="flex items-center gap-6 px-4 py-2"
               >
                 <AccountAvatar
                   avatar={invite.avatar}
@@ -152,14 +158,16 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                     Expired
                   </Chip>
                 ) : null}
-                <div className="text-low text-sm">
-                  {TeamMemberLabel[invite.userLevel]}
-                </div>
+                <UserListRole>
+                  <UserListRoleLabel>
+                    {TeamMemberLabel[invite.userLevel]}
+                  </UserListRoleLabel>
+                </UserListRole>
 
                 {props.amOwner ? (
                   <MenuRoot>
                     <MenuTrigger>
-                      <Button variant="ghost" iconOnly>
+                      <Button variant="ghost" size="small" iconOnly>
                         <MoreVerticalIcon />
                       </Button>
                     </MenuTrigger>
@@ -245,7 +253,7 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                     </Menu>
                   </MenuRoot>
                 ) : (
-                  <div className="w-4" />
+                  <UserListNoActions />
                 )}
               </ListRow>
             );
