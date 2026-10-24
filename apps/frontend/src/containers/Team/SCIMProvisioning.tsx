@@ -119,7 +119,7 @@ export function TeamSCIMProvisioning(props: {
               </p>
             </div>
             {scimToken ? (
-              <div className="flex items-center gap-2 max-md:col-span-2">
+              <div className="flex items-center gap-2 max-md:col-span-2 max-md:justify-self-end">
                 <Button
                   variant="secondary"
                   disabled={!hasAccess}
@@ -139,7 +139,7 @@ export function TeamSCIMProvisioning(props: {
                 variant="secondary"
                 disabled={!hasAccess}
                 onClick={() => dialog.open("generate")}
-                className="max-md:col-span-2 max-md:justify-self-start"
+                className="max-md:col-span-2 max-md:justify-self-end"
               >
                 Generate token
               </Button>
