@@ -293,7 +293,7 @@ export function TeamSAMLSSO(props: {
               <Button
                 variant="secondary"
                 disabled={!hasSamlAccess}
-                className="max-md:col-span-2 max-md:justify-self-start"
+                className="max-md:col-span-2 max-md:justify-self-end"
               >
                 Configure
               </Button>
