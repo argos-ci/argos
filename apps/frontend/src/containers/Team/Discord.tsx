@@ -143,9 +143,11 @@ export function TeamDiscord(props: { account: Account }) {
               {account.discordWebhooks.map((webhook) => (
                 <ListRow
                   key={webhook.id}
-                  className="flex items-center justify-between gap-8 p-4 text-sm"
+                  className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 p-4 text-sm"
                 >
-                  <div className="flex min-w-0 items-center gap-3">
+                  {/* The name keeps at least 10rem: below that, the date and
+                      the menu go under it, on the right. */}
+                  <div className="flex min-w-40 flex-1 items-center gap-3">
                     <DiscordLogo className="size-6 shrink-0" />
                     <div className="min-w-0">
                       <Truncable className="font-medium">
@@ -156,7 +158,7 @@ export function TeamDiscord(props: { account: Account }) {
                       </Truncable>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="ml-auto flex shrink-0 items-center gap-2">
                     <div className="text-low text-sm">
                       Connected <Time date={webhook.connectedAt} />
                     </div>
