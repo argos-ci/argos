@@ -349,9 +349,10 @@ export const ProjectGitRepository = (props: {
         </CardParagraph>
         {project.repository && RepoIcon ? (
           <div>
-            <div className="border-thin flex items-center gap-2 rounded-lg p-4 max-md:flex-wrap">
+            <div className="border-thin flex items-center gap-2 rounded-lg p-4 max-md:flex-wrap max-md:*:last:ml-auto">
               {/* The icon and the name stay together: on a phone, the button
-                  goes under them when the three do not fit on a line. */}
+                  goes under them, on the right, when the three do not fit on a
+                  line. */}
               <div className="flex flex-1 items-center gap-2 font-semibold max-md:flex-auto">
                 <RepoIcon className="size-6 shrink-0" />
                 <div className="max-md:wrap-anywhere">
