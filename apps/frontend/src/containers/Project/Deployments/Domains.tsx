@@ -127,7 +127,7 @@ export function Domains(props: { project: Project }) {
         <CardTitle>Domains</CardTitle>
         <CardParagraph>
           The domains this project's production deployment is served from. They
-          always point at the latest production deployment — preview deployments
+          always point at the latest production deployment. Preview deployments
           keep their own per-deployment URLs.
         </CardParagraph>
         <List>
@@ -270,7 +270,7 @@ function InternalDomainRow(props: { project: Project }) {
         </Chip>
       </div>
       <DialogTrigger>
-        <Button variant="secondary">
+        <Button variant="secondary" className="ml-auto">
           <ButtonIcon>
             <PencilIcon />
           </ButtonIcon>
@@ -462,7 +462,7 @@ function CustomDomainRow(props: { customDomain: CustomDomain }) {
               : status.label}
           </Chip>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           <CheckCustomDomainButton customDomain={customDomain} />
           <DialogTrigger>
             <Button
@@ -555,7 +555,7 @@ function CheckCustomDomainButton(props: { customDomain: CustomDomain }) {
             data.checkProjectCustomDomain.pendingReason ===
               ProjectCustomDomainPendingReason.Dns
               ? "DNS record not found yet"
-              : "DNS is set — waiting on the certificate",
+              : "DNS is set, waiting on the certificate",
             { id: "custom-domain-pending" },
           );
         }

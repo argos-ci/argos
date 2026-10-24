@@ -541,7 +541,7 @@ function PlanCardFooter(props: {
                 </ManageSubscriptionButton>
                 <SubscriptionLifecycleButton account={account} />
               </div>
-              <div className="flex items-center gap-4">
+              <div className="ml-auto flex items-center gap-4">
                 Custom needs?{" "}
                 <LinkButton
                   variant="secondary"

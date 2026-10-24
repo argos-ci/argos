@@ -64,18 +64,20 @@ export function TeamSlack(props: {
           previews when sharing build URLs.
         </CardParagraph>
         {account.slackInstallation && (
-          <Card className="flex justify-between p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <SlackColoredLogo className="size-6" />{" "}
+          <Card className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 p-4">
+            {/* The name keeps at least 10rem: below that, the date and the
+                menu go under it, on the right. */}
+            <div className="flex min-w-40 flex-1 items-center gap-2 font-semibold">
+              <SlackColoredLogo className="size-6 shrink-0" />{" "}
               <Link
-                className="!text"
+                className="!text min-w-0 truncate"
                 href={`https://${account.slackInstallation.teamDomain}.slack.com`}
                 target="_blank"
               >
                 {account.slackInstallation.teamName}
               </Link>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <div className="text-low text-sm">
                 Connected <Time date={account.slackInstallation.connectedAt} />
               </div>
