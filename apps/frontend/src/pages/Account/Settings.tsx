@@ -16,7 +16,7 @@ import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
 import { useAuth } from "@/containers/Auth";
-import { SettingsLayout, SettingsPage } from "@/containers/Layout";
+import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
@@ -51,7 +51,6 @@ import {
   PageHeaderContent,
   PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
@@ -320,20 +319,12 @@ function PageContent() {
 
   return (
     <SettingsLayout>
-      <Nav>
-        <NavList>
-          {matchedRoutes.map((route, index) => (
-            <NavListItem key={route.slug}>
-              <NavLink
-                to={`${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`}
-                end
-              >
-                {route.name}
-              </NavLink>
-            </NavListItem>
-          ))}
-        </NavList>
-      </Nav>
+      <SettingsNav
+        sections={matchedRoutes.map((route, index) => ({
+          name: route.name,
+          href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
+        }))}
+      />
       <SettingsPage>
         <Routes>
           {matchedRoutes.map((route, index) => {

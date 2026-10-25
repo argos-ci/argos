@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Navigate, Route, Routes } from "react-router";
 
-import { SettingsLayout, SettingsPage } from "@/containers/Layout";
+import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
@@ -35,7 +35,6 @@ import {
   PageHeaderContent,
   PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
@@ -211,20 +210,12 @@ function PageContent() {
 
   return (
     <SettingsLayout>
-      <Nav>
-        <NavList>
-          {matchedRoutes.map((route, index) => (
-            <NavListItem key={route.slug}>
-              <NavLink
-                to={`${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`}
-                end
-              >
-                {route.name}
-              </NavLink>
-            </NavListItem>
-          ))}
-        </NavList>
-      </Nav>
+      <SettingsNav
+        sections={matchedRoutes.map((route, index) => ({
+          name: route.name,
+          href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
+        }))}
+      />
       <SettingsPage>
         <Routes>
           {matchedRoutes.map((route, index) => {
