@@ -14,7 +14,7 @@ import {
 import { DialogTrigger, useDialogValueState } from "@/ui/Dialog";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
-import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tab";
+import { Tab, TabList, tabListScrollClassName, TabPanel, Tabs } from "@/ui/Tab";
 
 import { TeamGithubMembersList } from "./GitHubMembersList";
 import { InviteDialog } from "./InviteDialog";
@@ -87,13 +87,14 @@ export function TeamMembers(props: {
           Add members to your team to give them access to your projects.
         </CardParagraph>
         <Tabs defaultValue="members">
-          <TabList className="border-b">
+          <TabList className={tabListScrollClassName}>
             <Tab value="members">Members</Tab>
             {team.ssoGithubAccount ? (
               <Tab value="pending-github-members">Pending GitHub Members</Tab>
             ) : null}
             {amOwner ? <Tab value="pending">Pending Invitations</Tab> : null}
           </TabList>
+          <hr className="border-t" />
           <TabPanel value="members" className="my-4">
             <Suspense fallback={<ListPlaceholder />}>
               <TeamMembersList

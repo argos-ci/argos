@@ -33,6 +33,12 @@ export type GetAccountMetricsInput = AccountMetricsFilter & {
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const ACCOUNT_METRICS_MAX_RANGE_DAYS = 365;
+/**
+ * Slack for the hour a range gains when it crosses the end of daylight saving
+ * time. Without it, the app's "last 365 days" (local midnight to the end of
+ * today) measures 366 days for the two days after the clocks go back.
+ */
+const DST_SHIFT_IN_MS = 60 * 60 * 1000;
 
 export class InvalidAccountMetricsInputError extends Error {}
 
@@ -126,7 +132,7 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
   }
 
   const durationDays = Math.floor(
-    (to.getTime() - input.from.getTime()) / DAY_IN_MS,
+    (to.getTime() - input.from.getTime() - DST_SHIFT_IN_MS) / DAY_IN_MS,
   );
   if (durationDays > ACCOUNT_METRICS_MAX_RANGE_DAYS) {
     throw new InvalidAccountMetricsInputError(

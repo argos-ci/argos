@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { useHref, useLocation, useResolvedPath } from "react-router";
 
 import { RouterLink } from "./RouterLink";
-import { tabClassName } from "./Tab";
+import { tabClassName, tabListScrollClassName } from "./Tab";
 import { useRevealSelected } from "./useRevealSelected";
 
 function stripAfterFirstSegment(pathname: string): string {
@@ -68,15 +68,7 @@ export function TabLinkList(props: {
         ref={ref}
         role="tablist"
         {...rest}
-        className={clsx(
-          "relative min-w-0 flex-1",
-          // One row on a phone, scrolled sideways, rather than tabs wrapping onto
-          // a second line. The padding and the margin that cancels it keep the
-          // selected tab's border over the rule below, as when nothing clips it.
-          // A row that scrolls no longer holds its height in a flex column: a
-          // tall page would squeeze it to nothing without `shrink-0`.
-          "max-md:-mb-px max-md:flex max-md:shrink-0 max-md:overflow-x-auto max-md:pb-px max-md:[scrollbar-width:none] max-md:*:shrink-0",
-        )}
+        className={clsx("relative min-w-0 flex-1", tabListScrollClassName)}
       />
     </div>
   );

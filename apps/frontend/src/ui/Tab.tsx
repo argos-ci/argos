@@ -26,7 +26,7 @@ export function TabList(
   return (
     <BaseTabs.List
       {...props}
-      className={clsx("relative container mx-auto", props.className)}
+      className={clsx(tabListClassName, props.className)}
     />
   );
 }
@@ -40,6 +40,23 @@ export function TabPanel(
 /** How a tab looks. Shared with `TabLink`, which is one wearing a link. */
 export const tabClassName =
   "text-low hover:text-default aria-selected:text-default focus-visible:ring-default z-10 -mb-px inline-block cursor-pointer rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition focus:outline-hidden aria-selected:cursor-default aria-selected:border-b-current focus-visible:ring-2";
+
+/** The row a set of tabs sits in. */
+const tabListClassName = "relative container mx-auto";
+
+/**
+ * One row on a phone, scrolled sideways, rather than tabs wrapping onto a
+ * second line. The padding and the margin that cancels it keep the selected
+ * tab's border over the rule below, as when nothing clips it, so the rule must
+ * be drawn after the row rather than as the row's own border. A row that
+ * scrolls no longer holds its height in a flex column: a tall page would
+ * squeeze it to nothing without `shrink-0`.
+ *
+ * Not part of `tabListClassName`: the pill tabs of the build sidebars share
+ * `TabList` and keep their own padding.
+ */
+export const tabListScrollClassName =
+  "max-md:-mb-px max-md:flex max-md:shrink-0 max-md:overflow-x-auto max-md:pb-px max-md:[scrollbar-width:none] max-md:*:shrink-0";
 
 export function Tab(props: BaseTabs.Tab.Props & { value: string }) {
   return (
