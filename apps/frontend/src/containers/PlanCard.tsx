@@ -614,11 +614,7 @@ function PlanCardFooter(props: {
               Contact Sales
             </Link>
           </div>
-          {/* Under the note on a phone, the action stays on the left, where
-              `CardFooter` would push it right. */}
-          <div className="max-md:ml-0!">
-            <PlanAction account={account} />
-          </div>
+          <PlanAction account={account} />
         </CardFooter>
       );
     }
