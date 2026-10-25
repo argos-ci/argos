@@ -26,7 +26,7 @@ export function TabList(
   return (
     <BaseTabs.List
       {...props}
-      className={clsx(tabListClassName, props.className)}
+      className={clsx("relative container mx-auto", props.className)}
     />
   );
 }
@@ -40,9 +40,6 @@ export function TabPanel(
 /** How a tab looks. Shared with `TabLink`, which is one wearing a link. */
 export const tabClassName =
   "text-low hover:text-default aria-selected:text-default focus-visible:ring-default z-10 -mb-px inline-block cursor-pointer rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition focus:outline-hidden aria-selected:cursor-default aria-selected:border-b-current focus-visible:ring-2";
-
-/** The row a set of tabs sits in. Shared with `TabLink`'s own list. */
-export const tabListClassName = "relative container mx-auto";
 
 export function Tab(props: BaseTabs.Tab.Props & { value: string }) {
   return (

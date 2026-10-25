@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { FolderCode } from "lucide-react";
 import { Outlet } from "react-router";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -50,7 +51,11 @@ function ProjectTabs(props: {
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabLinkList className="px-4" aria-label="Project navigation">
+      <TabLinkList
+        className="px-4"
+        aria-label="Project navigation"
+        owner={<FolderCode size={18} />}
+      >
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
         {/* The ignore ledger is only meaningful while the feature is on; the

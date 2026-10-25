@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Outlet, useOutletContext, useParams } from "react-router";
 
+import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
@@ -18,6 +19,9 @@ const AccountQuery = graphql(`
       id
       slug
       permissions
+      avatar {
+        ...AccountAvatarFragment
+      }
       ...PaymentBanner_Account
     }
   }
@@ -36,7 +40,11 @@ export const useAccountContext = () => {
 function AccountTabs({ account }: { account: Account }) {
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabLinkList className="px-4" aria-label="Account navigation">
+      <TabLinkList
+        className="px-4"
+        aria-label="Account navigation"
+        owner={<AccountAvatar avatar={account.avatar} className="size-5" />}
+      >
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="~/tests">Tests</TabLink>
