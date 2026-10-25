@@ -64,49 +64,49 @@ export function TeamSlack(props: {
           previews when sharing build URLs.
         </CardParagraph>
         {account.slackInstallation && (
-          <Card className="flex justify-between p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <SlackColoredLogo className="size-6" />{" "}
-              <Link
-                className="!text"
-                href={`https://${account.slackInstallation.teamDomain}.slack.com`}
-                target="_blank"
-              >
-                {account.slackInstallation.teamName}
-              </Link>
-            </div>
-            <div className="flex items-center gap-2">
+          <Card className="flex items-center gap-3 p-4">
+            <SlackColoredLogo className="size-6 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold">
+                <Link
+                  className="!text"
+                  href={`https://${account.slackInstallation.teamDomain}.slack.com`}
+                  target="_blank"
+                >
+                  {account.slackInstallation.teamName}
+                </Link>
+              </div>
               <div className="text-low text-sm">
                 Connected <Time date={account.slackInstallation.connectedAt} />
               </div>
-              <MenuRoot>
-                <MenuTrigger>
-                  <Button variant="ghost" iconOnly className="shrink-0">
-                    <MoreVerticalIcon />
-                  </Button>
-                </MenuTrigger>
-                <Menu aria-label="Slack options">
-                  <MenuItem
-                    icon={<ExternalLinkIcon />}
-                    href={`https://${account.slackInstallation.teamDomain}.slack.com/apps/manage`}
-                    target="_blank"
-                  >
-                    Manage on Slack
-                  </MenuItem>
-                  <MenuItem href={authURL} target="_blank">
-                    Re-connect Slack
-                  </MenuItem>
-                  <MenuItem
-                    variant="danger"
-                    onAction={() => {
-                      uninstallSlack().catch(() => {});
-                    }}
-                  >
-                    Disconnect
-                  </MenuItem>
-                </Menu>
-              </MenuRoot>
             </div>
+            <MenuRoot>
+              <MenuTrigger>
+                <Button variant="ghost" iconOnly className="shrink-0">
+                  <MoreVerticalIcon />
+                </Button>
+              </MenuTrigger>
+              <Menu aria-label="Slack options">
+                <MenuItem
+                  icon={<ExternalLinkIcon />}
+                  href={`https://${account.slackInstallation.teamDomain}.slack.com/apps/manage`}
+                  target="_blank"
+                >
+                  Manage on Slack
+                </MenuItem>
+                <MenuItem href={authURL} target="_blank">
+                  Re-connect Slack
+                </MenuItem>
+                <MenuItem
+                  variant="danger"
+                  onAction={() => {
+                    uninstallSlack().catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </MenuItem>
+              </Menu>
+            </MenuRoot>
           </Card>
         )}
         {account.slackInstallation && !account.slackInstallation.isUpToDate ? (
