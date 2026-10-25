@@ -143,27 +143,23 @@ export function TeamDiscord(props: { account: Account }) {
               {account.discordWebhooks.map((webhook) => (
                 <ListRow
                   key={webhook.id}
-                  className="flex items-center justify-between gap-8 p-4 text-sm"
+                  className="flex items-center gap-3 p-4 text-sm"
                 >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <DiscordLogo className="size-6 shrink-0" />
-                    <div className="min-w-0">
-                      <Truncable className="font-medium">
-                        {webhook.name}
-                      </Truncable>
-                      <Truncable className="text-low text-xs">
-                        {webhook.url}
-                      </Truncable>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <div className="text-low text-sm">
+                  <DiscordLogo className="size-6 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <Truncable className="font-medium">
+                      {webhook.name}
+                    </Truncable>
+                    <Truncable className="text-low text-xs">
+                      {webhook.url}
+                    </Truncable>
+                    <div className="text-low text-xs">
                       Connected <Time date={webhook.connectedAt} />
                     </div>
-                    {hasAdminPermission ? (
-                      <WebhookActionsMenu webhook={webhook} />
-                    ) : null}
                   </div>
+                  {hasAdminPermission ? (
+                    <WebhookActionsMenu webhook={webhook} />
+                  ) : null}
                 </ListRow>
               ))}
             </List>
