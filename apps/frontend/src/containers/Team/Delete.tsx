@@ -24,6 +24,7 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -102,7 +103,8 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
             Settings and other resources belonging to your Team.
           </DialogText>
           <DialogText>
-            Your existing subscription will be cancelled, and you will no
+            Your existing subscription will be cancelled, and you will no longer
+            be billed.
           </DialogText>
           <DialogText>
             Argos recommends that you transfer projects you want to keep to
@@ -173,15 +175,17 @@ export function TeamDelete(props: {
         <CardTitle>Delete Team</CardTitle>
         <CardParagraph>
           Permanently remove your Team and all of its contents from the Argos
-          platform. This action is not reversible — please continue with
-          caution.
+          platform. This action is not reversible, please continue with caution.
         </CardParagraph>
       </CardBody>
       {hasActiveNonCanceledSubscription ? (
         <CardFooter className="flex items-center justify-between gap-4">
           <div>
-            A subscription is active on the team. Please cancel your
-            subscription before deleting the team.
+            A subscription is active on the team.{" "}
+            <Link href={`/${team.slug}/settings/billing`}>
+              Cancel it in Billing
+            </Link>{" "}
+            before deleting the team.
           </div>
           <Tooltip content="Cancel your subscription before deleting the team.">
             <div className="flex">

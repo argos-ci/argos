@@ -18,7 +18,7 @@ import { AccountInvoices } from "@/containers/Account/Invoices";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
-import { PlanCard } from "@/containers/PlanCard";
+import { PlanCancellationCard, PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamAddOns } from "@/containers/Team/AddOns";
 import { TeamDelete } from "@/containers/Team/Delete";
@@ -237,6 +237,9 @@ function PageContent() {
           ) : null}
           {isTeam && hasAdminPermission ? (
             <TeamMonthlyReport team={account} />
+          ) : null}
+          {isTeam && hasAdminPermission ? (
+            <PlanCancellationCard account={account} />
           ) : null}
         </>
       ),

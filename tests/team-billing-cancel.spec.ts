@@ -120,16 +120,14 @@ loggedTest(
     await expect(
       page.getByText("Your subscription is canceled."),
     ).toBeVisible();
+    // The cancellation card turns into the way back, and the banner offers
+    // the same action under the same name: the portal no longer can.
     await expect(
       page.getByRole("button", { name: "Resume subscription" }),
-    ).toBeVisible();
+    ).toHaveCount(2);
     await expect(
       page.getByRole("button", { name: "Cancel subscription" }),
     ).toHaveCount(0);
-    // The banner reactivates in the app too: the portal no longer can.
-    await expect(
-      page.getByRole("button", { name: "Reactivate subscription" }),
-    ).toBeVisible();
   },
 );
 
@@ -144,8 +142,18 @@ loggedTest(
       trial: true,
     });
 
+    // A trial with no card ends on its own: there is nothing to cancel.
     await page.goto(`/${team.account.slug}/settings/billing`);
-    await page.getByRole("button", { name: "Cancel subscription" }).click();
+    await expect(
+      page.getByRole("button", { name: "Add payment method" }).first(),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Cancel/ })).toHaveCount(0);
+
+    await Subscription.query()
+      .patch({ paymentMethodFilled: true })
+      .where({ accountId: team.account.id });
+    await page.reload();
+    await page.getByRole("button", { name: "Cancel trial" }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("until the trial ends")).toBeVisible();

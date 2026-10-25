@@ -47,11 +47,13 @@ export function StripePortalLink({
   stripeCustomerId,
   accountId,
   asButton,
+  variant,
   children,
 }: {
   stripeCustomerId: string;
   accountId: string;
   asButton?: boolean;
+  variant?: ButtonProps["variant"];
   children: React.ReactNode;
 }) {
   const { redirect, status } = useRedirectToStripePortal();
@@ -64,6 +66,7 @@ export function StripePortalLink({
 
   return asButton ? (
     <Button
+      variant={variant}
       disabled={disabled}
       onClick={handlePress}
       className="!cursor-pointer"
