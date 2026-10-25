@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { Account, Subscription } from "../apps/backend/src/database/models";
 import { loggedTest } from "./logged-test";
@@ -7,6 +7,20 @@ import { ensureTeamOwner, screenshot } from "./util";
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
+
+/**
+ * Capture the page with the survey open, scrolled back to the top first.
+ *
+ * The dialog and its backdrop are fixed, so a full-page capture draws them
+ * wherever the page was scrolled. Opening the survey scrolls down to the cancel
+ * card at the bottom of Billing, and picking an option while the list is still
+ * animating in makes Playwright retry with a different alignment each time, so
+ * the offset changes from run to run.
+ */
+async function screenshotSurvey(page: Page, name: string) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await screenshot(page, name);
+}
 
 /**
  * Put the team on a real Stripe subscription.
@@ -60,7 +74,7 @@ loggedTest(
     await expect(
       dialog.getByRole("heading", { name: "Cancel subscription" }),
     ).toBeVisible();
-    await screenshot(page, "cancel-subscription-survey");
+    await screenshotSurvey(page, "cancel-subscription-survey");
 
     // Neither picked nor written: the survey asks again rather than letting the
     // cancelation through with no reason at all.
@@ -89,12 +103,7 @@ loggedTest(
     await expect(
       dialog.getByRole("link", { name: "book a 15-minute call" }),
     ).toHaveCount(1);
-    // Clicking an option while the list is still animating in makes Playwright
-    // retry, and every retry scrolls the page with a different alignment, so
-    // it ends up wherever the number of retries left it. The dialog is fixed:
-    // a full-page capture draws it at that offset.
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await screenshot(page, "cancel-subscription-price-offer");
+    await screenshotSurvey(page, "cancel-subscription-price-offer");
   },
 );
 
