@@ -376,6 +376,31 @@ describe("getAccountMetrics", () => {
     },
   );
 
+  it("accepts the last 365 days on the day the clocks go back", async () => {
+    // What the app sends from Paris on Oct 25, 2026: local midnight a year
+    // ago, in summer time, to the end of today, in winter time.
+    await expect(
+      getAccountMetrics({
+        accountId: project.accountId,
+        from: new Date("2025-10-24T22:00:00.000Z"),
+        to: new Date("2026-10-25T22:59:59.999Z"),
+        groupBy: "month",
+        timeZone: "Europe/Paris",
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  it("rejects a range longer than 365 days", async () => {
+    await expect(
+      getAccountMetrics({
+        accountId: project.accountId,
+        from: new Date("2025-01-01T00:00:00.000Z"),
+        to: new Date("2026-01-03T00:00:00.000Z"),
+        groupBy: "month",
+      }),
+    ).rejects.toThrow(InvalidAccountMetricsInputError);
+  });
+
   it("returns no metrics when no project names match", async () => {
     await factory.ScreenshotBucket.create({
       createdAt: new Date("2021-01-01").toISOString(),
