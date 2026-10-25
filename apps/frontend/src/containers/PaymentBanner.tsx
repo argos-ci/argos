@@ -146,7 +146,7 @@ export const PaymentBanner = memo(
             // which is turned off so the survey is not asked twice.
             (subscription?.provider === AccountSubscriptionProvider.Stripe ? (
               <ResumeSubscriptionButton accountId={account.id}>
-                Reactivate {subscriptionTypeLabel}
+                Resume {subscriptionTypeLabel}
               </ResumeSubscriptionButton>
             ) : (
               <ManageStripeButton

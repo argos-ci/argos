@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { checkIsTrialingSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { assertNever } from "@argos/util/assertNever";
 import { isSameYear } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
@@ -9,7 +10,9 @@ import { config } from "@/config";
 import { CONTACT_HREF } from "@/constants";
 import {
   CancelSubscriptionDialog,
+  getCancelledNoun,
   ResumeSubscriptionButton,
+  type CancelledPeriod,
 } from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
@@ -17,7 +20,7 @@ import {
   AccountSubscriptionProvider,
   AccountSubscriptionStatus,
 } from "@/gql/graphql";
-import { ButtonIcon, LinkButton } from "@/ui/Button";
+import { ButtonIcon, LinkButton, type ButtonVariant } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -154,13 +157,7 @@ function PlanStatus(props: {
               {!carded && (
                 <>
                   {countdown ? " " : null}
-                  <StripePortalLink
-                    stripeCustomerId={account.stripeCustomerId}
-                    accountId={account.id}
-                  >
-                    Add a payment method
-                  </StripePortalLink>{" "}
-                  to retain access to team features.
+                  Add a payment method to retain access to team features.
                 </>
               )}
             </CardParagraph>
@@ -220,6 +217,16 @@ function PlanStatus(props: {
                 </CardParagraph>
               );
             }
+            if (
+              account.subscriptionStatus === AccountSubscriptionStatus.PastDue
+            ) {
+              return (
+                <CardParagraph className="text-low">
+                  The latest payment failed. Update your payment method to keep
+                  team features.
+                </CardParagraph>
+              );
+            }
             if (!account.periodEndDate) {
               return null;
             }
@@ -241,8 +248,15 @@ function PlanStatus(props: {
         </CardParagraph>
       );
     }
+    case AccountSubscriptionStatus.Unpaid: {
+      return (
+        <CardParagraph>
+          Your subscription is unpaid. Proceed to payment to use team features
+          again.
+        </CardParagraph>
+      );
+    }
     case AccountSubscriptionStatus.Canceled:
-    case AccountSubscriptionStatus.Unpaid:
     case AccountSubscriptionStatus.Incomplete:
     case AccountSubscriptionStatus.IncompleteExpired:
     case AccountSubscriptionStatus.Paused: {
@@ -385,47 +399,65 @@ function ConsumptionBlock({
   );
 }
 
-function ManageSubscriptionButton({
-  account,
-  children = "Manage your subscription",
-}: {
+/**
+ * The one thing the plan asks of the team in its current state, if anything.
+ *
+ * Cancelling is not one of them: it has a card of its own at the bottom of
+ * Billing, `PlanCancellationCard`.
+ */
+function PlanAction(props: {
   account: DocumentType<typeof _PlanCardFragment>;
-  children: ReactNode;
 }) {
-  const provider = account.subscription?.provider ?? null;
-  switch (provider) {
-    case AccountSubscriptionProvider.Github:
+  const { account } = props;
+
+  if (account.subscription?.provider === AccountSubscriptionProvider.Github) {
+    return (
+      <LinkButton
+        variant="secondary"
+        href={config.github.marketplaceUrl}
+        target="_blank"
+      >
+        Manage on GitHub
+      </LinkButton>
+    );
+  }
+
+  const portal = (label: ReactNode, variant: ButtonVariant) =>
+    account.stripeCustomerId ? (
+      <StripePortalLink
+        stripeCustomerId={account.stripeCustomerId}
+        accountId={account.id}
+        asButton
+        variant={variant}
+      >
+        {label}
+      </StripePortalLink>
+    ) : null;
+
+  switch (account.subscriptionStatus) {
+    case AccountSubscriptionStatus.Canceled:
+    case AccountSubscriptionStatus.TrialExpired:
       return (
-        <Link href={config.github.marketplaceUrl} target="_blank">
-          {children}
-        </Link>
+        <TeamSubscribeDialog initialAccountId={account.id}>
+          Subscribe
+        </TeamSubscribeDialog>
       );
-    case AccountSubscriptionProvider.Stripe: {
-      if (!account.stripeCustomerId) {
-        return (
-          <LinkButton href={CONTACT_HREF} target="_blank">
-            {children}
-          </LinkButton>
-        );
-      }
-      return (
-        <StripePortalLink
-          stripeCustomerId={account.stripeCustomerId}
-          accountId={account.id}
-        >
-          {children}
-        </StripePortalLink>
-      );
-    }
-    case null: {
-      return (
-        <LinkButton href={CONTACT_HREF} target="_blank">
-          {children}
-        </LinkButton>
-      );
-    }
+    case AccountSubscriptionStatus.Trialing:
+      return portal("Add payment method", "primary");
+    case AccountSubscriptionStatus.PastDue:
+      return portal("Update payment method", "primary");
+    case AccountSubscriptionStatus.Unpaid:
+      return portal("Proceed to payment", "primary");
+    case AccountSubscriptionStatus.TrialingWithPaymentMethod:
+    case AccountSubscriptionStatus.Active:
+    case AccountSubscriptionStatus.Incomplete:
+    case AccountSubscriptionStatus.IncompleteExpired:
+    case AccountSubscriptionStatus.Paused:
+      return portal("Payment and billing details", "secondary");
+    case null:
+      return null;
     default:
-      assertNever(provider);
+      assertNever(account.subscriptionStatus);
   }
 }
 
@@ -440,42 +472,100 @@ function Period({ start, end }: { start: string; end: string }) {
   );
 }
 
+const CANCEL_SENTENCES: Record<CancelledPeriod, string> = {
+  trial:
+    "If you cancel, the trial does not turn into a paid plan, and your team keeps every Pro feature until it ends",
+  paid: "If you cancel, your team keeps every Pro feature until the end of the period you have already paid for",
+  unpaid:
+    "If you cancel, your team keeps every Pro feature until the end of the current billing period",
+};
+
 /**
- * The one control that starts or calls off a cancellation.
+ * Cancelling sits at the bottom of Billing, away from the plan's everyday
+ * actions, and the same card is the way back once a cancellation is scheduled.
  *
  * Only Stripe subscriptions get it: a GitHub Marketplace plan is canceled on
- * GitHub, and a forced plan never reaches this footer at all.
+ * GitHub, a forced plan through us, and a trial with no card ends on its own.
  */
-function SubscriptionLifecycleButton(props: {
+export function PlanCancellationCard(props: {
   account: DocumentType<typeof _PlanCardFragment>;
 }) {
   const { account } = props;
   const { subscription } = account;
 
-  if (subscription?.provider !== AccountSubscriptionProvider.Stripe) {
+  if (
+    account.hasForcedPlan ||
+    subscription?.provider !== AccountSubscriptionProvider.Stripe
+  ) {
     return null;
   }
 
+  const trialing = checkIsTrialingSubscriptionStatus(
+    account.subscriptionStatus,
+  );
+
+  // The plan card already gives the date it ends on, so this card only offers
+  // the way back.
   if (subscription.endDate) {
-    return <ResumeSubscriptionButton accountId={account.id} />;
+    return (
+      <Card>
+        <CardBody>
+          <CardTitle>{trialing ? "Trial" : "Subscription"} canceled</CardTitle>
+          <CardParagraph>
+            {trialing
+              ? "The trial will not turn into a paid plan. Resume it to keep the plan after the trial."
+              : "Your subscription will not renew. Resume it to keep the plan."}
+          </CardParagraph>
+        </CardBody>
+        <CardFooter className="flex items-center justify-end">
+          <ResumeSubscriptionButton accountId={account.id}>
+            Resume {trialing ? "trial" : "subscription"}
+          </ResumeSubscriptionButton>
+        </CardFooter>
+      </Card>
+    );
   }
 
+  if (account.subscriptionStatus === AccountSubscriptionStatus.Trialing) {
+    return null;
+  }
+
+  const period = ((): CancelledPeriod => {
+    switch (account.subscriptionStatus) {
+      case AccountSubscriptionStatus.TrialingWithPaymentMethod:
+        return "trial";
+      case AccountSubscriptionStatus.PastDue:
+        return "unpaid";
+      default:
+        return "paid";
+    }
+  })();
+
   return (
-    <CancelSubscriptionDialog
-      accountId={account.id}
-      periodEndDate={account.periodEndDate ?? null}
-      period={(() => {
-        switch (account.subscriptionStatus) {
-          case AccountSubscriptionStatus.Trialing:
-          case AccountSubscriptionStatus.TrialingWithPaymentMethod:
-            return "trial";
-          case AccountSubscriptionStatus.PastDue:
-            return "unpaid";
-          default:
-            return "paid";
-        }
-      })()}
-    />
+    <Card intent="danger">
+      <CardBody>
+        <CardTitle>Cancel {getCancelledNoun(period)}</CardTitle>
+        <CardParagraph>
+          {CANCEL_SENTENCES[period]}
+          {account.periodEndDate ? (
+            <>
+              , on{" "}
+              <strong>
+                <Time date={account.periodEndDate} format="longDate" />
+              </strong>
+            </>
+          ) : null}
+          .
+        </CardParagraph>
+      </CardBody>
+      <CardFooter className="flex items-center justify-end">
+        <CancelSubscriptionDialog
+          accountId={account.id}
+          periodEndDate={account.periodEndDate ?? null}
+          period={period}
+        />
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -516,45 +606,17 @@ function PlanCardFooter(props: {
       );
     }
     case "Team": {
-      switch (account.subscriptionStatus) {
-        case AccountSubscriptionStatus.Canceled: {
-          return (
-            <CardFooter className="flex items-center justify-between gap-4">
-              <div>
-                Custom needs?{" "}
-                <Link href={CONTACT_HREF} target="_blank">
-                  Contact Sales
-                </Link>
-              </div>
-              <TeamSubscribeDialog initialAccountId={account.id}>
-                Subscribe
-              </TeamSubscribeDialog>
-            </CardFooter>
-          );
-        }
-        default: {
-          return (
-            <CardFooter className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <ManageSubscriptionButton account={account}>
-                  Manage subscription
-                </ManageSubscriptionButton>
-                <SubscriptionLifecycleButton account={account} />
-              </div>
-              <div className="flex items-center gap-4">
-                Custom needs?{" "}
-                <LinkButton
-                  variant="secondary"
-                  target="_blank"
-                  href={CONTACT_HREF}
-                >
-                  Contact Sales
-                </LinkButton>
-              </div>
-            </CardFooter>
-          );
-        }
-      }
+      return (
+        <CardFooter className="flex items-center justify-between gap-4">
+          <div>
+            Custom needs?{" "}
+            <Link href={CONTACT_HREF} target="_blank">
+              Contact Sales
+            </Link>
+          </div>
+          <PlanAction account={account} />
+        </CardFooter>
+      );
     }
     default:
       assertNever(account);

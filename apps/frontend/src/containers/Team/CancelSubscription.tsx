@@ -89,7 +89,12 @@ const REASON_LABELS: Record<string, ReactNode> = Object.fromEntries(
   REASONS.map((reason) => [reason.value, reason.label]),
 );
 
-type CancelledPeriod = "trial" | "paid" | "unpaid";
+export type CancelledPeriod = "trial" | "paid" | "unpaid";
+
+/** What the customer is cancelling, in their words: a trial is not paid for. */
+export function getCancelledNoun(period: CancelledPeriod) {
+  return period === "trial" ? "trial" : "subscription";
+}
 
 const PERIOD_SENTENCES: Record<CancelledPeriod, string> = {
   trial: "Your team keeps every Pro feature until the trial ends",
@@ -114,7 +119,9 @@ export function CancelSubscriptionDialog(props: {
 }) {
   return (
     <DialogTrigger>
-      <Button variant="secondary">Cancel subscription</Button>
+      <Button variant="destructive">
+        Cancel {getCancelledNoun(props.period)}
+      </Button>
       <Modal>
         <CancelSubscriptionDialogContent {...props} />
       </Modal>
@@ -128,6 +135,7 @@ function CancelSubscriptionDialogContent(props: {
   period: CancelledPeriod;
 }) {
   const { accountId, periodEndDate, period } = props;
+  const noun = getCancelledNoun(period);
   const client = useApolloClient();
   const state = useOverlayTriggerState();
   const reasonId = useId();
@@ -173,7 +181,7 @@ function CancelSubscriptionDialogContent(props: {
         },
       },
     });
-    toast.success("Your subscription has been canceled.");
+    toast.success(`Your ${noun} has been canceled.`);
     state.close();
   };
 
@@ -181,16 +189,15 @@ function CancelSubscriptionDialogContent(props: {
     <Dialog size="medium">
       <Form form={form} onSubmit={onSubmit}>
         <DialogBody>
-          <DialogTitle>Cancel subscription</DialogTitle>
+          <DialogTitle>Cancel {noun}</DialogTitle>
           <DialogText>
             {PERIOD_SENTENCES[period]}
             {periodEndDate ? (
               <>
                 , on <Time date={periodEndDate} format="longDate" />
               </>
-            ) : (
-              "."
-            )}{" "}
+            ) : null}
+            .
           </DialogText>
 
           <div className="my-4 flex flex-col gap-4">
@@ -245,9 +252,9 @@ function CancelSubscriptionDialogContent(props: {
         </DialogBody>
         <DialogFooter>
           <FormRootError control={form.control} />
-          <DialogDismiss>Keep my subscription</DialogDismiss>
+          <DialogDismiss>Keep my {noun}</DialogDismiss>
           <FormSubmit control={form.control} variant="destructive">
-            Cancel subscription
+            Cancel {noun}
           </FormSubmit>
         </DialogFooter>
       </Form>
