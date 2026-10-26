@@ -47,7 +47,7 @@ import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "../Account/AccountParams";
 import { getCancellationEmail } from "./Cancellations.email";
-import { PRO_PLAN_NAME } from "./pricing";
+import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
 import { StripeCustomerLink } from "./stripe";
 import { getMailtoUrl } from "./Trials.email";
 
@@ -215,6 +215,26 @@ function checkWasTrial(cancellation: Cancellation) {
   return (
     cancellation.provider === AccountSubscriptionProvider.Stripe &&
     cancellation.monthlyRevenue === null
+  );
+}
+
+/**
+ * Whether the retention discount can be offered: a Stripe subscription to
+ * monthly Pro billed about its flat price, or a trial that never billed.
+ *
+ * A bigger account's bill is mostly overage, which a discount on the plan
+ * barely moves; its price answer gets a call instead. A GitHub subscription is
+ * billed by GitHub, which takes no discount of ours.
+ */
+function checkIsDiscountable(cancellation: Cancellation) {
+  return (
+    cancellation.provider === AccountSubscriptionProvider.Stripe &&
+    cancellation.plan.name === PRO_PLAN_NAME &&
+    cancellation.plan.interval === PlanInterval.Month &&
+    // In euros against Pro's list price in dollars: at or under it, the bill is
+    // the flat price with a few euros of overage at most.
+    (cancellation.monthlyRevenue === null ||
+      cancellation.monthlyRevenue <= PRO_MONTHLY_PRICE)
   );
 }
 
@@ -420,6 +440,7 @@ function ContactCell(props: { cancellation: Cancellation }) {
         : null,
     resumable: cancellation.provider === AccountSubscriptionProvider.Stripe,
     wasTrial: checkWasTrial(cancellation),
+    discountable: checkIsDiscountable(cancellation),
   });
   const mailtoUrl = getMailtoUrl({ owners, subject, body });
   const contactedAt = cancellation.staffContactedAt ?? null;

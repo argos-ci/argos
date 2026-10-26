@@ -31,6 +31,18 @@ const FEEDBACK_QUESTIONS: Record<SubscriptionCancelReason, string> = {
     "Thank you for taking the time to tell us why. Is there anything we could have done to keep you?",
 };
 
+/**
+ * The offer that replaces the question, for the answers a lower price can
+ * change. No figure: the discount is negotiated case by case, and this code is
+ * public, so it would also tell every subscriber what canceling gets them.
+ */
+const DISCOUNT_OFFERS: Partial<Record<SubscriptionCancelReason, string>> = {
+  [SubscriptionCancelReason.TooExpensive]:
+    "You mentioned that Argos cost too much. If it helps, I can offer you a significant discount on the Pro plan for a year. Would that work for you?",
+  [SubscriptionCancelReason.Unused]:
+    "You mentioned that you were not using Argos enough. If cost is part of it, I can offer you a significant discount on the Pro plan for a year. Would that help?",
+};
+
 const NO_ANSWER_QUESTION =
   "I'd love to understand what made you leave. Was something missing, or did your needs change?";
 
@@ -51,6 +63,10 @@ function formatEndDate(date: Date): string {
  * leaves open, and, while the subscription still runs, says it can be resumed:
  * that is the cheapest way back, and it closes on the end date. Only Stripe
  * subscriptions resume from Argos; a GitHub one is managed on GitHub.
+ *
+ * A team the discount is for, whose answer is about price, gets the offer
+ * instead of the question, and no word about resuming: resumed from the
+ * billing page, the subscription would carry on at full price.
  */
 export function getCancellationEmail(input: {
   owners: Owner[];
@@ -62,6 +78,8 @@ export function getCancellationEmail(input: {
   resumable: boolean;
   /** Canceled before its trial converted: it never billed a cycle. */
   wasTrial: boolean;
+  /** Whether the team is one the retention discount can be offered to. */
+  discountable: boolean;
 }): { subject: string; body: string } {
   const greeting = getGreeting(input.owners);
 
@@ -88,6 +106,10 @@ export function getCancellationEmail(input: {
   ]
     .filter(Boolean)
     .join(" ");
+  const offer =
+    input.discountable && input.feedback
+      ? DISCOUNT_OFFERS[input.feedback]
+      : undefined;
 
   return {
     subject: "Quick feedback on Argos",
@@ -96,8 +118,11 @@ export function getCancellationEmail(input: {
       "",
       opener,
       "",
-      input.feedback ? FEEDBACK_QUESTIONS[input.feedback] : NO_ANSWER_QUESTION,
-      ...(input.runsUntil && input.resumable
+      offer ??
+        (input.feedback
+          ? FEEDBACK_QUESTIONS[input.feedback]
+          : NO_ANSWER_QUESTION),
+      ...(input.runsUntil && input.resumable && !offer
         ? [
             "",
             "If you change your mind before then, you can resume it in one click from your team's billing settings.",

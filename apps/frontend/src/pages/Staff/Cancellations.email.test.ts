@@ -16,6 +16,7 @@ const canceled = {
   runsUntil: null,
   resumable: true,
   wasTrial: false,
+  discountable: false,
 };
 
 describe("getCancellationEmail", () => {
