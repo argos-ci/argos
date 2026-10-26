@@ -172,7 +172,14 @@ export const receiver = new ExpressReceiver({
         invariant(req.url, "Expected req.url to be defined");
         const url = new URL(req.url, config.get("server.url"));
         const accountId = url.searchParams.get("accountId");
-        invariant(accountId, 'Expected "accountId" to be defined');
+        // Crawlers hit this path bare. `handleInstallPath` rethrows anything
+        // thrown here as a `GenerateInstallUrlError`, which loses the status
+        // code and ends in a 500: answer the 400 ourselves.
+        if (!accountId) {
+          res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+          res.end('Missing "accountId" parameter.');
+          return false;
+        }
 
         setAccountIdInCookies(req, res, accountId);
 
