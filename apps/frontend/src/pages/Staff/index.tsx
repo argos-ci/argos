@@ -24,6 +24,7 @@ export function Component() {
       >
         <TabLink href="teams">All teams</TabLink>
         <TabLink href="trials">Trials</TabLink>
+        <TabLink href="cancellations">Cancellations</TabLink>
         <TabLink href="revenue">Revenue</TabLink>
       </TabLinkList>
       <hr className="border-t" />

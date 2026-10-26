@@ -53,6 +53,7 @@ import {
   ScreenshotDiff,
   SlackInstallation,
   StaffTeamContact,
+  Subscription,
   Team,
   TeamUser,
   Test,
@@ -65,6 +66,10 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import {
+  getSubscriptionRevenues,
+  type SubscriptionRevenue,
+} from "@/database/services/staff-cancellations";
 import {
   getLatestReferenceBuildIds,
   getTestChangesStats,
@@ -970,6 +975,13 @@ function createStaffTeamContactByTeamIdLoader() {
     );
     return teamIds.map((teamId) => contactByTeamId.get(String(teamId)) ?? null);
   });
+}
+
+function createSubscriptionRevenueLoader() {
+  return new DataLoader<Subscription, SubscriptionRevenue, string>(
+    async (subscriptions) => getSubscriptionRevenues([...subscriptions]),
+    { cacheKeyFn: (subscription) => subscription.id },
+  );
 }
 
 function createAccountSubscriptionStatusByAccountIdLoader() {
@@ -2058,6 +2070,7 @@ export const createLoaders = () => ({
     createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
+  SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),

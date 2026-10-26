@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 7VW81RVeaPbsOZScpWFW3znxFaDDldZ0RJQGzSmrdKrTwZuJGXQj3oekK3an0qL
+\restrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2667,6 +2667,11 @@ CREATE TABLE public.subscriptions (
     "usageUpdatedAt" timestamp with time zone,
     "additionalStorybookScreenshotPrice" real,
     "flatPrice" real,
+    "canceledAt" timestamp with time zone,
+    "cancellationReason" character varying(255),
+    "cancellationFeedback" character varying(255),
+    "cancellationComment" text,
+    "staffContactedAt" timestamp with time zone,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -6888,7 +6893,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7VW81RVeaPbsOZScpWFW3znxFaDDldZ0RJQGzSmrdKrTwZuJGXQj3oekK3an0qL
+\unrestrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
 
 -- Knex migrations
 
@@ -7154,3 +7159,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026100
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261010094931_monthly-report.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261015104600_screenshot-buckets-project-branch-name-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261021120000_team-scim.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261026120000_subscription-cancellations.js', 1, NOW());

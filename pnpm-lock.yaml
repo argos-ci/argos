@@ -47,6 +47,9 @@ importers:
       '@argos-ci/playwright':
         specifier: ^7.7.1
         version: 7.7.1(@types/node@26.6.5)(supports-color@10.2.2)
+      '@graphql-codegen/add':
+        specifier: ^7.1.1
+        version: 7.1.1(graphql@16.14.2)
       '@graphql-codegen/cli':
         specifier: ^7.4.6
         version: 7.4.6(@parcel/watcher@2.6.0)(@types/node@26.6.5)(graphql@16.14.2)(supports-color@10.2.2)(typescript@7.1.0-dev.20260930.4)

@@ -171,6 +171,8 @@ export async function cancelSubscription(
   if (activeSubscription && activeSubscription.provider === "github") {
     const subscriptionData = {
       endDate: payload.effective_date,
+      // GitHub states no date of its own: the event is the request.
+      canceledAt: new Date().toISOString(),
       status: "canceled" as const,
     };
     await Promise.all([
