@@ -42,7 +42,7 @@ import {
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
-import { StatTile } from "@/ui/StatTile";
+import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
@@ -949,7 +949,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const decided = converted + lost;
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <StatTileGroup className="mb-6 grid-cols-2 lg:grid-cols-5">
       <StatTile
         data-visual-test="transparent"
         icon={UsersIcon}
@@ -1008,7 +1008,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
           </Tooltip>
         }
       />
-    </div>
+    </StatTileGroup>
   );
 }
 

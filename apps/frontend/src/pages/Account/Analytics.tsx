@@ -72,7 +72,7 @@ import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton, SelectStyleButton } from "@/ui/Select";
-import { StatTile } from "@/ui/StatTile";
+import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useAccountParams } from "./AccountParams";
@@ -376,7 +376,7 @@ export function AnalyticsDashboard(props: {
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 lg:grid-cols-4">
+      <StatTileGroup className="grid-cols-2 max-md:grid-cols-1 lg:grid-cols-4">
         <StatTile
           icon={LayersIcon}
           color="primary"
@@ -487,7 +487,7 @@ export function AnalyticsDashboard(props: {
             ) : null
           }
         />
-      </div>
+      </StatTileGroup>
 
       <Section
         title="Activity"
