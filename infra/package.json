@@ -8,7 +8,7 @@
     "synth": "cdk synth",
     "deploy": "cdk deploy",
     "diff": "cdk diff",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsrs --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1149.0",

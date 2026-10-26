@@ -52,8 +52,9 @@
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "smee-client": "^5.0.0",
+    "tsrs": "catalog:",
     "turbo": "^2.11.7",
-    "typescript": "^7.0.2",
+    "typescript": "catalog:",
     "vitest": "^5.0.5"
   }
 }

@@ -12,7 +12,12 @@ tells you CI will pass. Fix everything it reports, including unused code found
 by knip.
 
 While iterating, use the fast local checks on what you touched:
-`oxfmt <target>`, `tsc --noEmit`, `oxlint <target>`.
+`oxfmt <target>`, `tsrs --noEmit`, `oxlint <target>`.
+
+Type checking is [tsrs](https://github.com/oxc-project/tsrs), a Rust port of
+the TypeScript compiler. `typescript` is pinned to the exact TypeScript build
+tsrs ports (`tsrs --version` prints it), so the editor and every tool that peers
+on `typescript` see the compiler CI checks with: bump the two together.
 
 Formatting is [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured
 once in `.oxfmtrc.json` at the repository root — there is no per-workspace config
