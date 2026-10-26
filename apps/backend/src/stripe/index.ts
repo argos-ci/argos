@@ -541,32 +541,6 @@ export async function cancelStripeSubscription(subscriptionId: string) {
   await stripe.subscriptions.cancel(subscriptionId);
 }
 
-/**
- * Mirror the cancellation of every subscription Stripe still holds, and return
- * how many rows were written.
- *
- * The backfill for rows that predate the mirror: a subscription that ended
- * before it existed will never receive another webhook to carry its details.
- */
-export async function syncStripeCancellations(): Promise<number> {
-  let count = 0;
-
-  for await (const stripeSubscription of stripe.subscriptions.list({
-    status: "all",
-    limit: 100,
-  })) {
-    const { canceled_at, cancel_at, ended_at } = stripeSubscription;
-    if (!canceled_at && !cancel_at && !ended_at) {
-      continue;
-    }
-    count += await Subscription.query()
-      .patch(getCancellationDataFromStripe(stripeSubscription))
-      .where("stripeSubscriptionId", stripeSubscription.id);
-  }
-
-  return count;
-}
-
 export type StripeCancellationFeedback =
   Stripe.SubscriptionUpdateParams.CancellationDetails.Feedback;
 
