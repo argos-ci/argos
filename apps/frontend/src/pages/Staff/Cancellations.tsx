@@ -37,7 +37,7 @@ import {
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
-import { StatTile } from "@/ui/StatTile";
+import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
@@ -662,7 +662,7 @@ function CancellationsSummary(props: { cancellations: Cancellation[] }) {
   const lost = getLostMonthlyRevenue(cancellations);
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
+    <StatTileGroup className="mb-6 grid-cols-2 lg:grid-cols-3">
       <StatTile
         data-visual-test="transparent"
         icon={CircleXIcon}
@@ -698,7 +698,7 @@ function CancellationsSummary(props: { cancellations: Cancellation[] }) {
         value={contacted}
         hint={`${cancellations.length - contacted} left to contact`}
       />
-    </div>
+    </StatTileGroup>
   );
 }
 

@@ -36,7 +36,7 @@ import {
 import { Link } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
-import { StatTile } from "@/ui/StatTile";
+import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -509,7 +509,7 @@ function RevenueCards(props: {
   };
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <StatTileGroup className="mb-6 grid-cols-1 sm:grid-cols-3">
       <StatTile
         data-visual-test="transparent"
         icon={CalendarCheckIcon}
@@ -568,7 +568,7 @@ function RevenueCards(props: {
           ))
         }
       />
-    </div>
+    </StatTileGroup>
   );
 }
 
