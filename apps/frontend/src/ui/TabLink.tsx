@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { useHref, useLocation, useResolvedPath } from "react-router";
 
 import { RouterLink } from "./RouterLink";
-import { tabClassName, tabListClassName, tabListScrollClassName } from "./Tab";
+import { tabClassName, tabListScrollClassName } from "./Tab";
 import { useRevealSelected } from "./useRevealSelected";
 
 function stripAfterFirstSegment(pathname: string): string {
@@ -42,16 +42,36 @@ export function TabLinkList(props: {
   children: ReactNode;
   className?: string;
   "aria-label"?: string;
+  /**
+   * The icon of what the tabs belong to, the one its crumb wears on a larger
+   * screen, so a team's row and a project's tell themselves apart. Only a
+   * phone shows it: its trail is text, where a larger screen's crumb already
+   * has the icon right above the tabs. It stays put while the tabs scroll.
+   */
+  owner: ReactNode;
 }) {
-  const { className, ...rest } = props;
+  const { className, owner, ...rest } = props;
   const ref = useRevealSelected('[aria-selected="true"]');
   return (
     <div
-      ref={ref}
-      role="tablist"
-      {...rest}
-      className={clsx(tabListClassName, tabListScrollClassName, className)}
-    />
+      className={clsx(
+        "container mx-auto flex shrink-0 items-center",
+        className,
+      )}
+    >
+      <div
+        aria-hidden
+        className="flex shrink-0 items-center gap-3 pr-1 after:h-4 after:w-px after:bg-(--border-color-default) md:hidden"
+      >
+        {owner}
+      </div>
+      <div
+        ref={ref}
+        role="tablist"
+        {...rest}
+        className={clsx("relative min-w-0 flex-1", tabListScrollClassName)}
+      />
+    </div>
   );
 }
 

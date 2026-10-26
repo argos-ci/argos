@@ -41,8 +41,8 @@ export function TabPanel(
 export const tabClassName =
   "text-low hover:text-default aria-selected:text-default focus-visible:ring-default z-10 -mb-px inline-block cursor-pointer rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition focus:outline-hidden aria-selected:cursor-default aria-selected:border-b-current focus-visible:ring-2";
 
-/** The row a set of tabs sits in. Shared with `TabLink`'s own list. */
-export const tabListClassName = "relative container mx-auto";
+/** The row a set of tabs sits in. */
+const tabListClassName = "relative container mx-auto";
 
 /**
  * One row on a phone, scrolled sideways, rather than tabs wrapping onto a
