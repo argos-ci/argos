@@ -8,7 +8,7 @@ import {
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamSlack_AccountFragment } from "@/gql/graphql";
 import { useAccountContext } from "@/pages/Account";
-import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
+import { Button } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -17,11 +17,22 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import {
+  Menu,
+  MenuItem,
+  MenuItemTooltip,
+  MenuRoot,
+  MenuTrigger,
+} from "@/ui/menu-kit";
 import { Time } from "@/ui/Time";
 import { getSlackAuthURL } from "@/util/slack";
 
-import { SlackColoredLogo } from "../Slack";
+import {
+  SLACK_OWNER_ONLY_REASON,
+  SlackColoredLogo,
+  SlackInstallButton,
+  SlackOwnerOnlyTooltip,
+} from "../Slack";
 
 const _AccountFragment = graphql(`
   fragment TeamSlack_Account on Account {
@@ -55,6 +66,9 @@ export function TeamSlack(props: {
       },
     });
   const authURL = getSlackAuthURL({ accountId: props.account.id });
+  const ownerOnlySuffix = hasAdminPermission ? null : (
+    <MenuItemTooltip content={SLACK_OWNER_ONLY_REASON} />
+  );
   return (
     <Card id="slack">
       <CardBody>
@@ -94,21 +108,25 @@ export function TeamSlack(props: {
                 >
                   Manage on Slack
                 </MenuItem>
-                {hasAdminPermission && (
-                  <MenuItem href={authURL} target="_blank">
-                    Re-connect Slack
-                  </MenuItem>
-                )}
-                {hasAdminPermission && (
-                  <MenuItem
-                    variant="danger"
-                    onAction={() => {
-                      uninstallSlack().catch(() => {});
-                    }}
-                  >
-                    Disconnect
-                  </MenuItem>
-                )}
+                <MenuItem
+                  // A link row still navigates when disabled.
+                  href={hasAdminPermission ? authURL : undefined}
+                  target="_blank"
+                  disabled={!hasAdminPermission}
+                  suffix={ownerOnlySuffix}
+                >
+                  Re-connect Slack
+                </MenuItem>
+                <MenuItem
+                  variant="danger"
+                  disabled={!hasAdminPermission}
+                  suffix={ownerOnlySuffix}
+                  onAction={() => {
+                    uninstallSlack().catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </MenuItem>
               </Menu>
             </MenuRoot>
           </Card>
@@ -125,14 +143,13 @@ export function TeamSlack(props: {
                   : "Slack permissions need an update, ask a team owner to reconnect."}
               </p>
             </div>
-            {hasAdminPermission && (
-              <LinkButton target="_blank" href={authURL} variant="google">
-                <ButtonIcon>
-                  <SlackColoredLogo />
-                </ButtonIcon>
-                Reconnect
-              </LinkButton>
-            )}
+            <SlackInstallButton
+              accountId={account.id}
+              hasAdminPermission={hasAdminPermission}
+              target="_blank"
+            >
+              Reconnect
+            </SlackInstallButton>
           </Card>
         ) : null}
       </CardBody>
@@ -146,8 +163,8 @@ export function TeamSlack(props: {
             Slack notifications
           </Link>
         </p>
-        {hasAdminPermission ? (
-          account.slackInstallation ? (
+        {account.slackInstallation ? (
+          hasAdminPermission ? (
             <Button
               variant="secondary"
               onClick={() => {
@@ -157,14 +174,21 @@ export function TeamSlack(props: {
               Disconnect
             </Button>
           ) : (
-            <LinkButton variant="google" target="_parent" href={authURL}>
-              <ButtonIcon>
-                <SlackColoredLogo />
-              </ButtonIcon>
-              Connect to Slack
-            </LinkButton>
+            <SlackOwnerOnlyTooltip>
+              <Button variant="secondary" disabled>
+                Disconnect
+              </Button>
+            </SlackOwnerOnlyTooltip>
           )
-        ) : null}
+        ) : (
+          <SlackInstallButton
+            accountId={account.id}
+            hasAdminPermission={hasAdminPermission}
+            target="_parent"
+          >
+            Connect to Slack
+          </SlackInstallButton>
+        )}
       </CardFooter>
     </Card>
   );
