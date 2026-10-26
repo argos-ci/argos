@@ -2,5 +2,7 @@
 
 set -e
 
-# Run migrations
-pnpm run --filter @argos/backend db:migrate:latest
+# Run migrations. Not through `pnpm run`: the production image has no pnpm, and
+# corepack would download it in the middle of a deploy.
+cd "$(dirname "$0")/../apps/backend"
+exec node_modules/.bin/knex migrate:latest
