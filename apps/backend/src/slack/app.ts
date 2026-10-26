@@ -4,11 +4,28 @@ import * as Bolt from "@slack/bolt";
 import Cookies from "cookies";
 import { PartialModelObject } from "objection";
 
+import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import { Account, SlackInstallation } from "@/database/models";
 import { transaction } from "@/database/transaction";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 
 import { deleteInstallation, slackInstallationQuery } from "./helpers";
+
+/**
+ * End an install request with a plain-text error. `handleInstallPath` rethrows
+ * anything thrown from `beforeRedirection` as a `GenerateInstallUrlError`,
+ * which loses the status code and ends in a 500.
+ */
+function rejectInstall(
+  res: ServerResponse,
+  statusCode: number,
+  message: string,
+): false {
+  res.writeHead(statusCode, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end(message);
+  return false;
+}
 
 /**
  * Set the accountId in the cookies.
@@ -172,13 +189,35 @@ export const receiver = new ExpressReceiver({
         invariant(req.url, "Expected req.url to be defined");
         const url = new URL(req.url, config.get("server.url"));
         const accountId = url.searchParams.get("accountId");
-        // Crawlers hit this path bare. `handleInstallPath` rethrows anything
-        // thrown here as a `GenerateInstallUrlError`, which loses the status
-        // code and ends in a 500: answer the 400 ourselves.
-        if (!accountId) {
-          res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
-          res.end('Missing "accountId" parameter.');
+        if (!accountId || !isValidPgBigInt(accountId)) {
+          return rejectInstall(
+            res,
+            400,
+            'Missing or invalid "accountId" parameter.',
+          );
+        }
+
+        const auth = await safeSessionAuthFromExpressReq(req);
+        if (!auth) {
+          const loginUrl = new URL("/login", config.get("server.url"));
+          loginUrl.searchParams.set("r", url.toString());
+          res.writeHead(302, { Location: loginUrl.toString() });
+          res.end();
           return false;
+        }
+
+        // The signed cookie is all the OAuth callback trusts: whichever
+        // account it names gets the new workspace in `storeInstallation`.
+        const account = await Account.query().findById(accountId);
+        const permissions = account
+          ? await account.$getPermissions(auth.user)
+          : [];
+        if (!permissions.includes("admin")) {
+          return rejectInstall(
+            res,
+            403,
+            "Only an owner of this team can connect Slack.",
+          );
         }
 
         setAccountIdInCookies(req, res, accountId);
