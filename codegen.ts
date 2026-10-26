@@ -91,6 +91,7 @@ const config: CodegenConfig = {
           TeamStaffInfo: "../../database/models/index.js#Account",
           TeamStaffPeriodUsage: "../../database/models/index.js#Account",
           TeamStaffContact: "../../database/models/index.js#StaffTeamContact",
+          StaffCancellation: "../../database/models/index.js#Subscription",
           Project: "../../database/models/index.js#Project",
           ProjectCustomDomain: "../../database/models/index.js#ProjectDomain",
           Team: "../../database/models/index.js#Account",

@@ -9,6 +9,31 @@ import { Plan } from "./Plan";
 
 export type SubscriptionInterval = "month" | "year";
 
+/** Stripe's `cancellation_details.reason` vocabulary. */
+export const CANCELLATION_REASONS = [
+  "cancellation_requested",
+  "payment_failed",
+  "payment_disputed",
+] as const;
+
+export type SubscriptionCancellationReason =
+  (typeof CANCELLATION_REASONS)[number];
+
+/** Stripe's `cancellation_details.feedback` vocabulary. */
+export const CANCELLATION_FEEDBACKS = [
+  "customer_service",
+  "low_quality",
+  "missing_features",
+  "other",
+  "switched_service",
+  "too_complex",
+  "too_expensive",
+  "unused",
+] as const;
+
+export type SubscriptionCancellationFeedback =
+  (typeof CANCELLATION_FEEDBACKS)[number];
+
 export class Subscription extends Model {
   static override tableName = "subscriptions";
 
@@ -60,6 +85,21 @@ export class Subscription extends Model {
           currency: {
             anyOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
           },
+          canceledAt: { type: ["string", "null"] },
+          cancellationReason: {
+            anyOf: [
+              { type: "null" },
+              { type: "string", enum: [...CANCELLATION_REASONS] },
+            ],
+          },
+          cancellationFeedback: {
+            anyOf: [
+              { type: "null" },
+              { type: "string", enum: [...CANCELLATION_FEEDBACKS] },
+            ],
+          },
+          cancellationComment: { type: ["string", "null"] },
+          staffContactedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -96,6 +136,23 @@ export class Subscription extends Model {
   additionalStorybookScreenshotPrice!: number | null;
   usageUpdatedAt!: string | null;
   currency!: "usd" | "eur" | null;
+  /**
+   * When the cancellation was asked for, which on a cancellation scheduled for
+   * the end of the period is long before `endDate`. Null when it never was, and
+   * on rows the provider never stated it for.
+   */
+  canceledAt!: string | null;
+  /** Why the provider ended it: asked to, or after payments failed. */
+  cancellationReason!: SubscriptionCancellationReason | null;
+  /** The answer picked in the cancellation survey. */
+  cancellationFeedback!: SubscriptionCancellationFeedback | null;
+  /** What came with that answer, in the subscriber's own words. */
+  cancellationComment!: string | null;
+  /**
+   * When a staff member wrote to the team about its cancellation. Cleared when
+   * the cancellation is called off, so a later one starts unmarked.
+   */
+  staffContactedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
