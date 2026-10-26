@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ShieldUserIcon } from "lucide-react";
 import { Outlet } from "react-router";
 
 import { PageLoader } from "@/ui/PageLoader";
@@ -16,7 +17,11 @@ export function Component() {
   // tab bar sits on the app background like the account tabs do.
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabLinkList className="px-4" aria-label="Staff navigation">
+      <TabLinkList
+        className="px-4"
+        aria-label="Staff navigation"
+        owner={<ShieldUserIcon className="size-5" />}
+      >
         <TabLink href="teams">All teams</TabLink>
         <TabLink href="trials">Trials</TabLink>
         <TabLink href="revenue">Revenue</TabLink>
