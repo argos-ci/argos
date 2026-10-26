@@ -9,6 +9,11 @@ catalog:
   react: ^19.3.0
   react-dom: ^19.3.0
   react-router: ^8.4.0
+  # tsrs ports one exact TypeScript build (`tsrs --version` prints it), and
+  # `typescript` is pinned to that build so the editor and every tool peering on
+  # it see the compiler CI checks with. Bump the two together.
+  tsrs: 0.18.0-ts7.1.0-dev.20260929
+  typescript: 7.1.0-dev.20260930.4
   zod: ^4.6.5
 
 overrides:
@@ -31,6 +36,9 @@ overrides:
   react-dom: "catalog:"
   react-router: "catalog:"
   sharp: ^0.35.5
+  # A nightly falls outside every peer range, which would pull in a second
+  # TypeScript for msw and tsdown.
+  typescript: "catalog:"
   uuid: ^14.0.0
   undici: ^8.11.2
   ws: ^8.20.1

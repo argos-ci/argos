@@ -19,7 +19,7 @@ export default defineConfig({
   // also patches `express`, `pg` and `http` as they load, so inlining them
   // leaves its instrumentation nothing to hook and tracing quietly stops.
   target: "node26",
-  // Types are covered by `tsc --noEmit`; nothing consumes this package.
+  // Types are covered by `check-types`; nothing consumes this package.
   dts: false,
   // An import tsdown cannot resolve is left external with a warning, and the
   // process would then die on its first import. Make it a build failure.
