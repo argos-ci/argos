@@ -94,17 +94,21 @@ export function TeamSlack(props: {
                 >
                   Manage on Slack
                 </MenuItem>
-                <MenuItem href={authURL} target="_blank">
-                  Re-connect Slack
-                </MenuItem>
-                <MenuItem
-                  variant="danger"
-                  onAction={() => {
-                    uninstallSlack().catch(() => {});
-                  }}
-                >
-                  Disconnect
-                </MenuItem>
+                {hasAdminPermission && (
+                  <MenuItem href={authURL} target="_blank">
+                    Re-connect Slack
+                  </MenuItem>
+                )}
+                {hasAdminPermission && (
+                  <MenuItem
+                    variant="danger"
+                    onAction={() => {
+                      uninstallSlack().catch(() => {});
+                    }}
+                  >
+                    Disconnect
+                  </MenuItem>
+                )}
               </Menu>
             </MenuRoot>
           </Card>
@@ -116,15 +120,19 @@ export function TeamSlack(props: {
                 <TriangleAlertIcon className="inline size-4" /> Action Required
               </div>
               <p className="text-sm">
-                Slack permissions need an update, please reconnect.
+                {hasAdminPermission
+                  ? "Slack permissions need an update, please reconnect."
+                  : "Slack permissions need an update, ask a team owner to reconnect."}
               </p>
             </div>
-            <LinkButton target="_blank" href={authURL} variant="google">
-              <ButtonIcon>
-                <SlackColoredLogo />
-              </ButtonIcon>
-              Reconnect
-            </LinkButton>
+            {hasAdminPermission && (
+              <LinkButton target="_blank" href={authURL} variant="google">
+                <ButtonIcon>
+                  <SlackColoredLogo />
+                </ButtonIcon>
+                Reconnect
+              </LinkButton>
+            )}
           </Card>
         ) : null}
       </CardBody>

@@ -10,6 +10,7 @@ import { DiscordLogo } from "@/containers/DiscordLogo";
 import { MsTeamsLogo } from "@/containers/MsTeamsLogo";
 import { SlackColoredLogo } from "@/containers/Slack";
 import { graphql } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
 import { ButtonIcon, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -30,6 +31,7 @@ const SlackInstallationQuery = graphql(`
   query AutomationFormActionsStep_team($accountSlug: String!) {
     account(slug: $accountSlug) {
       id
+      permissions
       slackInstallation {
         id
         teamName
@@ -68,6 +70,10 @@ function SendSlackMessageAction(props: {
   invariant(data.account, "Account data is required for Slack installation");
 
   const slackInstallation = data.account.slackInstallation;
+  // Project admins build automations, but only a team owner can connect Slack.
+  const hasAdminPermission = data.account.permissions.includes(
+    AccountPermission.Admin,
+  );
 
   // Refetch the Slack installation when the window becomes active again.
   useRefetchWhenActive({
@@ -76,6 +82,14 @@ function SendSlackMessageAction(props: {
   });
 
   if (!slackInstallation) {
+    if (!hasAdminPermission) {
+      return (
+        <p className="p-2">
+          To post to a Slack channel, a team owner needs to connect your Slack
+          workspace first.
+        </p>
+      );
+    }
     return (
       <div className="flex flex-col items-start gap-3 p-2">
         <p>
@@ -93,6 +107,15 @@ function SendSlackMessageAction(props: {
   }
 
   if (!slackInstallation.isUpToDate) {
+    if (!hasAdminPermission) {
+      return (
+        <p className="text-warning-low p-2">
+          <TriangleAlertIcon className="inline size-4" /> Slack permissions need
+          an update, ask a team owner to reconnect Slack to be able to post
+          messages in channels.
+        </p>
+      );
+    }
     return (
       <div className="text-warning-low flex flex-col items-start gap-3 p-2">
         <p>
