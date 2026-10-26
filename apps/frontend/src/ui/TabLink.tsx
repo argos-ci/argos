@@ -43,9 +43,10 @@ export function TabLinkList(props: {
   className?: string;
   "aria-label"?: string;
   /**
-   * The icon of what the tabs belong to, the one its crumb wears, so a team's
-   * row and a project's tell themselves apart. It stays put while a phone
-   * scrolls the tabs.
+   * The icon of what the tabs belong to, the one its crumb wears on a larger
+   * screen, so a team's row and a project's tell themselves apart. Only a
+   * phone shows it: its trail is text, where a larger screen's crumb already
+   * has the icon right above the tabs. It stays put while the tabs scroll.
    */
   owner: ReactNode;
 }) {
@@ -60,7 +61,7 @@ export function TabLinkList(props: {
     >
       <div
         aria-hidden
-        className="flex shrink-0 items-center gap-3 pr-1 after:h-4 after:w-px after:bg-(--border-color-default)"
+        className="flex shrink-0 items-center gap-3 pr-1 after:h-4 after:w-px after:bg-(--border-color-default) md:hidden"
       >
         {owner}
       </div>
