@@ -36,25 +36,20 @@ function whereTeamRenews(builder: QueryBuilder<Subscription>) {
 }
 
 /**
- * The cancellations the staff page lists over the last `days` days.
- *
- * Two kinds of rows. The teams leaving: the latest paid subscription of each
- * team that ended or is scheduled to, asked for within the window, as long as
- * nothing else keeps the team a customer. And the teams a staff member wrote
- * to within the window that are customers again. They would drop out of the
- * first kind, and their coming back is the reason the page exists.
+ * The cancellations the staff page lists over the last `days` days: the latest
+ * paid subscription of each team that ended or is scheduled to, asked for
+ * within the window, as long as nothing else keeps the team a customer.
  */
 export async function getStaffCancellations(
   days: number,
 ): Promise<Subscription[]> {
-  const [leaving, cameBack] = await Promise.all([
+  return (
     Subscription.query()
       .select("subscriptions.*")
       .join("plans", "plans.id", "subscriptions.planId")
       .join("accounts", "accounts.id", "subscriptions.accountId")
       .whereNotNull("accounts.teamId")
-      // A granted plan keeps the team a customer whatever its subscriptions
-      // say.
+      // A granted plan keeps the team a customer whatever its subscriptions say.
       .whereNull("accounts.forcedPlanId")
       .whereNot("plans.name", "free")
       .whereIn("subscriptions.status", ["canceled", ...RUNNING_STATUSES])
@@ -79,33 +74,8 @@ export async function getStaffCancellations(
       .orderBy("subscriptions.accountId")
       .orderByRaw(
         `coalesce(subscriptions."canceledAt", subscriptions."endDate") desc`,
-      ),
-    Subscription.query()
-      .select("subscriptions.*")
-      .join(
-        "staff_cancellation_contacts",
-        "staff_cancellation_contacts.subscriptionId",
-        "subscriptions.id",
       )
-      .whereRaw(
-        `staff_cancellation_contacts."createdAt" >= now() - make_interval(days => ?)`,
-        [days],
-      )
-      .where(whereTeamRenews),
-  ]);
-
-  return [...leaving, ...cameBack];
-}
-
-/** Which of these accounts hold a subscription that runs on, by account id. */
-export async function getRenewingAccountIds(
-  accountIds: string[],
-): Promise<Set<string>> {
-  const rows = await Subscription.query()
-    .distinct("subscriptions.accountId")
-    .whereIn("subscriptions.accountId", accountIds)
-    .where(whereTeamRenews);
-  return new Set(rows.map((row) => row.accountId));
+  );
 }
 
 /** What a subscription brought in, in euros. */

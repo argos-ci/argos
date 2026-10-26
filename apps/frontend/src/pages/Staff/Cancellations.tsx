@@ -2,10 +2,8 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { addDays, startOfDay } from "@argos/util/date";
-import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
-  CircleCheckIcon,
   CircleDollarSignIcon,
   CircleXIcon,
   MailIcon,
@@ -63,7 +61,7 @@ const CancellationsQuery = graphql(`
       cancellationReason
       cancellationFeedback
       cancellationComment
-      cameBack
+      staffContactedAt
       monthlyRevenue
       lifetimeRevenue
       plan {
@@ -71,10 +69,6 @@ const CancellationsQuery = graphql(`
         name
         displayName
         interval
-      }
-      contact {
-        id
-        date
       }
       team {
         id
@@ -107,10 +101,7 @@ const SetStaffCancellationContactMutation = graphql(`
       input: { subscriptionId: $subscriptionId, contacted: $contacted }
     ) {
       id
-      contact {
-        id
-        date
-      }
+      staffContactedAt
     }
   }
 `);
@@ -213,11 +204,7 @@ function checkIsPaymentReason(key: ReasonKey) {
 
 /** Scheduled to end, so still on its plan and still able to resume. */
 function checkIsStillRunning(cancellation: Cancellation) {
-  return (
-    !cancellation.cameBack &&
-    cancellation.endDate !== null &&
-    new Date(cancellation.endDate).getTime() > Date.now()
-  );
+  return new Date(cancellation.endDate).getTime() > Date.now();
 }
 
 /**
@@ -242,23 +229,11 @@ type SortKey =
   | "contacted";
 
 /**
- * Comes first when a cancellation was asked for, falling back on when it ended
- * for the rows the provider gave no date: an end is never earlier than the ask.
+ * When a cancellation was asked for, falling back on when it ended for the
+ * rows the provider gave no date: an end is never earlier than the ask.
  */
 function getCanceledTime(cancellation: Cancellation): number {
-  const date = cancellation.canceledAt ?? cancellation.endDate;
-  return date ? new Date(date).getTime() : 0;
-}
-
-/**
- * Ranked by how much there is left to act on: still running first, then ended,
- * then the teams that came back.
- */
-function getStatusRank(cancellation: Cancellation): number {
-  if (cancellation.cameBack) {
-    return 0;
-  }
-  return checkIsStillRunning(cancellation) ? 2 : 1;
+  return new Date(cancellation.canceledAt ?? cancellation.endDate).getTime();
 }
 
 function getSortValue(
@@ -272,8 +247,9 @@ function getSortValue(
       return new Date(cancellation.team.createdAt).getTime();
     case "canceledAt":
       return getCanceledTime(cancellation);
+    // Still running first: those are the ones left to act on.
     case "status":
-      return getStatusRank(cancellation);
+      return checkIsStillRunning(cancellation) ? 1 : 0;
     case "reason":
       return REASON_LABELS[getReasonKey(cancellation)].toLowerCase();
     case "lastActivity":
@@ -283,7 +259,7 @@ function getSortValue(
     case "monthlyRevenue":
       return cancellation.monthlyRevenue ?? -1;
     case "contacted":
-      return cancellation.contact ? 1 : 0;
+      return cancellation.staffContactedAt ? 1 : 0;
   }
 }
 
@@ -338,20 +314,7 @@ function PlanLine(props: { plan: Cancellation["plan"] }) {
 
 function StatusCell(props: { cancellation: Cancellation }) {
   const { cancellation } = props;
-
-  if (cancellation.cameBack) {
-    return (
-      <Tooltip content="Holds a running subscription again, resumed or new.">
-        <span className="text-success-low inline-flex items-center gap-1 font-medium whitespace-nowrap">
-          <CircleCheckIcon className="size-4 shrink-0" />
-          came back
-        </span>
-      </Tooltip>
-    );
-  }
-
   const { endDate } = cancellation;
-  invariant(endDate, "a team that did not come back is listed by its end date");
 
   if (checkIsStillRunning(cancellation)) {
     return (
@@ -459,7 +422,7 @@ function ContactCell(props: { cancellation: Cancellation }) {
     wasTrial: checkWasTrial(cancellation),
   });
   const mailtoUrl = getMailtoUrl({ owners, subject, body });
-  const contactedAt = cancellation.contact?.date ?? null;
+  const contactedAt = cancellation.staffContactedAt ?? null;
 
   const markContacted = (contacted: boolean) => {
     // Caught so a failed mark never breaks the draft that just opened, and
@@ -652,12 +615,12 @@ function DottedHint(props: { tooltip: string; children: React.ReactNode }) {
 
 /**
  * The money the window walked away with: the Monthly column added up, rounded
- * per row like the column, over the teams that did not come back.
+ * per row like the column.
  */
 function getLostMonthlyRevenue(cancellations: Cancellation[]) {
   return cancellations.reduce(
     (acc, cancellation) => {
-      if (cancellation.cameBack || cancellation.monthlyRevenue === null) {
+      if (cancellation.monthlyRevenue === null) {
         return acc;
       }
       return {
@@ -673,15 +636,12 @@ function CancellationsSummary(props: { cancellations: Cancellation[] }) {
   const { cancellations } = props;
   const stillRunning = cancellations.filter(checkIsStillRunning).length;
   const contacted = cancellations.filter(
-    (cancellation) => cancellation.contact,
-  ).length;
-  const cameBack = cancellations.filter(
-    (cancellation) => cancellation.cameBack,
+    (cancellation) => cancellation.staffContactedAt,
   ).length;
   const lost = getLostMonthlyRevenue(cancellations);
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
       <StatTile
         data-visual-test="transparent"
         icon={CircleXIcon}
@@ -704,7 +664,7 @@ function CancellationsSummary(props: { cancellations: Cancellation[] }) {
         currency="EUR"
         locales="fr-FR"
         hint={
-          <DottedHint tooltip="The Monthly column added up, leaving out the teams that came back. Trials canceled before they converted count nothing.">
+          <DottedHint tooltip="The Monthly column added up. Trials canceled before they converted count nothing.">
             from {lost.payingTeams} paying teams
           </DottedHint>
         }
@@ -716,18 +676,6 @@ function CancellationsSummary(props: { cancellations: Cancellation[] }) {
         label="Contacted"
         value={contacted}
         hint={`${cancellations.length - contacted} left to contact`}
-      />
-      <StatTile
-        data-visual-test="transparent"
-        icon={CircleCheckIcon}
-        color="success"
-        label="Came back"
-        value={cameBack}
-        hint={
-          <DottedHint tooltip="Teams contacted from this page that hold a running subscription again, resumed or new. A team that came back on its own leaves no trace here.">
-            of {contacted} contacted
-          </DottedHint>
-        }
       />
     </div>
   );

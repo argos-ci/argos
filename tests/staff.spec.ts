@@ -7,7 +7,6 @@ import {
   Build,
   Plan as PlanModel,
   ScreenshotBucket,
-  StaffCancellationContact,
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
@@ -715,13 +714,9 @@ async function createCanceledTeams(input: {
       cancellationReason: "cancellation_requested",
       cancellationFeedback: "switched_service",
       cancellationComment: "Moving to in-house tooling.",
+      staffContactedAt: daysFromNow(-10),
       invoices: [100, 100],
-    }).then(({ subscription }) =>
-      StaffCancellationContact.query().insert({
-        subscriptionId: subscription.id,
-        userId: subscriberId,
-      }),
-    ),
+    }),
     // Billed once a year: the column reads a twelfth of the bill.
     createTeam("Hooli", {
       planId: annualPlanId,
@@ -757,18 +752,6 @@ async function createCanceledTeams(input: {
       cancellationReason: "cancellation_requested",
       cancellationFeedback: "missing_features",
     }),
-    // Written to, then called the cancellation off.
-    createTeam("Wayne", {
-      status: "active",
-      endDate: null,
-      cancellationFeedback: "unused",
-      invoices: [100],
-    }).then(({ subscription }) =>
-      StaffCancellationContact.query().insert({
-        subscriptionId: subscription.id,
-        userId: subscriberId,
-      }),
-    ),
     createTeam("Tyrell", {
       status: "canceled",
       canceledAt: daysFromNow(-30),
@@ -830,7 +813,7 @@ staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
     page.getByRole("heading", { name: "Cancellations" }),
   ).toBeVisible();
   await page.getByRole("searchbox").fill(prefix);
-  await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
+  await expect(page.getByText(/^Showing 6 of \d+ teams$/)).toBeVisible();
   // A trial that ran out on its own is the trial pipeline's.
   await expect(page.getByText("Massive Dynamic")).toBeHidden();
 
@@ -851,9 +834,6 @@ staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
     cancellationAmount(1000),
   );
   await expect(page.getByRole("row", { name: /Stark/ })).toContainText("trial");
-  await expect(page.getByRole("row", { name: /Wayne/ })).toContainText(
-    "came back",
-  );
 
   await screenshot(page, "staff-cancellations");
 

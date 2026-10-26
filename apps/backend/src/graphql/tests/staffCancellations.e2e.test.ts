@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { StaffTeamContact, type Subscription } from "@/database/models";
+import type { Subscription } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -21,15 +21,9 @@ const CancellationsQuery = `
       cancellationReason
       cancellationFeedback
       cancellationComment
-      cameBack
+      staffContactedAt
       monthlyRevenue
       lifetimeRevenue
-      contact {
-        id
-        user {
-          id
-        }
-      }
     }
   }
 `;
@@ -43,12 +37,7 @@ const SetContactMutation = `
       input: { subscriptionId: $subscriptionId, contacted: $contacted }
     ) {
       id
-      contact {
-        id
-        user {
-          id
-        }
-      }
+      staffContactedAt
     }
   }
 `;
@@ -106,10 +95,9 @@ async function queryCancellations(viewer: Viewer, days = 90) {
     cancellationReason: string | null;
     cancellationFeedback: string | null;
     cancellationComment: string | null;
-    cameBack: boolean;
+    staffContactedAt: string | null;
     monthlyRevenue: number | null;
     lifetimeRevenue: number | null;
-    contact: { id: string; user: { id: string } } | null;
   }[];
 }
 
@@ -137,8 +125,7 @@ describe("GraphQL staffCancellations", () => {
       cancellationReason: "cancellation_requested",
       cancellationFeedback: "too_expensive",
       cancellationComment: "Over budget this year",
-      cameBack: false,
-      contact: null,
+      staffContactedAt: null,
     });
   });
 
@@ -246,13 +233,9 @@ describe("GraphQL staffCancellations", () => {
     expect(entries.map((entry) => entry.id)).toEqual([latest.id]);
   });
 
-  it("keeps a team written to that came back, marked as such", async () => {
+  it("records that the team was written to, then clears it", async () => {
     const viewer = await createViewer({ staff: true });
-    const { subscription } = await createCanceledTeam({
-      status: "active",
-      canceledAt: daysFromNow(-3),
-      endDate: daysFromNow(20),
-    });
+    const { subscription } = await createCanceledTeam();
     const app = await createApp(viewer);
 
     const marked = await request(app)
@@ -262,16 +245,9 @@ describe("GraphQL staffCancellations", () => {
         variables: { subscriptionId: subscription.id, contacted: true },
       });
     expectNoGraphQLError(marked);
-    expect(marked.body.data.setStaffCancellationContact.contact.user.id).toBe(
-      viewer.userAccount.id,
-    );
-
-    // The team calls the cancellation off: Stripe clears both dates.
-    await subscription.$query().patch({ canceledAt: null, endDate: null });
-
-    const [entry, ...rest] = await queryCancellations(viewer);
-    expect(rest).toHaveLength(0);
-    expect(entry).toMatchObject({ id: subscription.id, cameBack: true });
+    expect(
+      marked.body.data.setStaffCancellationContact.staffContactedAt,
+    ).not.toBeNull();
 
     const cleared = await request(app)
       .post("/graphql")
@@ -280,24 +256,9 @@ describe("GraphQL staffCancellations", () => {
         variables: { subscriptionId: subscription.id, contacted: false },
       });
     expectNoGraphQLError(cleared);
-    expect(cleared.body.data.setStaffCancellationContact.contact).toBeNull();
-    // Without the mark, nothing says it was ever canceled.
-    expect(await queryCancellations(viewer)).toHaveLength(0);
-  });
-
-  it("keeps the cancellation mark apart from the trial one", async () => {
-    const viewer = await createViewer({ staff: true });
-    const { teamAccount } = await createCanceledTeam();
-    invariant(teamAccount.teamId, "team account has no team");
-    await StaffTeamContact.query().insert({
-      teamId: teamAccount.teamId,
-      userId: viewer.user.id,
-    });
-
-    const [entry] = await queryCancellations(viewer);
-
-    invariant(entry, "cancellation missing");
-    expect(entry.contact).toBeNull();
+    expect(
+      cleared.body.data.setStaffCancellationContact.staffContactedAt,
+    ).toBeNull();
   });
 
   it("is refused to non-staff users", async () => {

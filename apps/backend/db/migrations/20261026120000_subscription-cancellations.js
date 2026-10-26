@@ -9,23 +9,8 @@ export const up = async (knex) => {
     table.string("cancellationReason");
     table.string("cancellationFeedback");
     table.text("cancellationComment");
-  });
-
-  await knex.schema.createTable("staff_cancellation_contacts", (table) => {
-    table.bigIncrements("id").primary();
-    table.dateTime("createdAt").notNullable();
-    table.dateTime("updatedAt").notNullable();
-    table.bigInteger("subscriptionId").unsigned().notNullable();
-    table
-      .foreign("subscriptionId")
-      .references("subscriptions.id")
-      .onDelete("cascade");
-    table.bigInteger("userId").unsigned().notNullable();
-    table.foreign("userId").references("users.id").onDelete("cascade");
-
-    // Keyed on the subscription rather than the team: a team that comes back
-    // and cancels again is a new conversation.
-    table.unique("subscriptionId");
+    // When a staff member wrote to the team about its cancellation.
+    table.dateTime("staffContactedAt");
   });
 };
 
@@ -33,11 +18,11 @@ export const up = async (knex) => {
  * @param {import('knex').Knex} knex
  */
 export const down = async (knex) => {
-  await knex.schema.dropTable("staff_cancellation_contacts");
   await knex.schema.alterTable("subscriptions", (table) => {
     table.dropColumn("canceledAt");
     table.dropColumn("cancellationReason");
     table.dropColumn("cancellationFeedback");
     table.dropColumn("cancellationComment");
+    table.dropColumn("staffContactedAt");
   });
 };

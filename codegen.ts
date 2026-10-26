@@ -90,7 +90,7 @@ const config: CodegenConfig = {
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           TeamStaffInfo: "../../database/models/index.js#Account",
           TeamStaffPeriodUsage: "../../database/models/index.js#Account",
-          TeamStaffContact: "../../graphql/definitions/Staff.js#StaffContact",
+          TeamStaffContact: "../../database/models/index.js#StaffTeamContact",
           StaffCancellation: "../../database/models/index.js#Subscription",
           Project: "../../database/models/index.js#Project",
           ProjectCustomDomain: "../../database/models/index.js#ProjectDomain",

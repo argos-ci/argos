@@ -52,7 +52,6 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   SlackInstallation,
-  StaffCancellationContact,
   StaffTeamContact,
   Subscription,
   Team,
@@ -68,7 +67,6 @@ import {
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
 import {
-  getRenewingAccountIds,
   getSubscriptionRevenues,
   type SubscriptionRevenue,
 } from "@/database/services/staff-cancellations";
@@ -976,33 +974,6 @@ function createStaffTeamContactByTeamIdLoader() {
       contacts.map((contact) => [contact.teamId, contact]),
     );
     return teamIds.map((teamId) => contactByTeamId.get(String(teamId)) ?? null);
-  });
-}
-
-function createStaffCancellationContactBySubscriptionIdLoader() {
-  return new DataLoader<string, StaffCancellationContact | null>(
-    async (subscriptionIds) => {
-      const contacts = await StaffCancellationContact.query().whereIn(
-        "subscriptionId",
-        subscriptionIds as string[],
-      );
-      const contactBySubscriptionId = new Map(
-        contacts.map((contact) => [contact.subscriptionId, contact]),
-      );
-      return subscriptionIds.map(
-        (subscriptionId) =>
-          contactBySubscriptionId.get(String(subscriptionId)) ?? null,
-      );
-    },
-  );
-}
-
-function createAccountRenewsByAccountIdLoader() {
-  return new DataLoader<string, boolean>(async (accountIds) => {
-    const renewing = await getRenewingAccountIds([
-      ...new Set(accountIds as string[]),
-    ]);
-    return accountIds.map((accountId) => renewing.has(accountId));
   });
 }
 
@@ -2099,9 +2070,6 @@ export const createLoaders = () => ({
     createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
-  StaffCancellationContactBySubscriptionId:
-    createStaffCancellationContactBySubscriptionIdLoader(),
-  AccountRenewsByAccountId: createAccountRenewsByAccountIdLoader(),
   SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),

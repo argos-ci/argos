@@ -55,7 +55,6 @@ export * from "./ScreenshotDiff";
 export * from "./ScreenshotDiffReview";
 export * from "./SlackChannel";
 export * from "./SlackInstallation";
-export * from "./StaffCancellationContact";
 export * from "./StaffTeamContact";
 export * from "./StripeInvoice";
 export * from "./StripeInvoiceSync";

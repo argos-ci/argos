@@ -1,12 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import {
-  Account,
-  StaffCancellationContact,
-  StaffTeamContact,
-  Subscription,
-} from "@/database/models";
+import { Account, StaffTeamContact, Subscription } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
   getAccountBillings,
@@ -61,9 +56,6 @@ function activationField<Key extends keyof AccountActivation>(key: Key) {
 }
 
 const { gql } = gqlTag;
-
-/** A staff member's reach-out, whichever moment of the team's life it was. */
-export type StaffContact = StaffTeamContact | StaffCancellationContact;
 
 /**
  * Upper bound on the trial pipeline window. Each returned team drives an
@@ -262,29 +254,20 @@ export const typeDefs = gql`
   cancellations page lists it.
   """
   type StaffCancellation {
-    "The subscription's id, which the outreach mark is kept on."
     id: ID!
     team: Team!
     plan: Plan!
     provider: AccountSubscriptionProvider!
-    """
-    When the subscriber asked to stop. Null when the provider never stated it,
-    and once a scheduled cancellation is called off.
-    """
+    "When the subscriber asked to stop. Null when the provider never stated it."
     canceledAt: DateTime
-    """
-    When the subscription stops, or stopped. Null once a scheduled
-    cancellation is called off.
-    """
-    endDate: DateTime
+    "When the subscription stops, or stopped."
+    endDate: DateTime!
     "Why it stopped. Null when the provider never stated it, as on GitHub."
     cancellationReason: SubscriptionCancellationReason
     "The answer picked in the cancellation survey. Null when none was given."
     cancellationFeedback: SubscriptionCancelReason
     "What came with that answer, in the subscriber's own words."
     cancellationComment: String
-    "True when the team holds a subscription that runs on again."
-    cameBack: Boolean!
     """
     What one month of the subscription was worth, in euros, read off its last
     cycle bill: a yearly bill counts a twelfth. Null when it never billed a
@@ -296,8 +279,11 @@ export const typeDefs = gql`
     shares no invoices.
     """
     lifetimeRevenue: Float
-    "When a staff member reached out after the cancellation, null if never."
-    contact: TeamStaffContact
+    """
+    When a staff member wrote to the team about the cancellation, null if
+    nobody did.
+    """
+    staffContactedAt: DateTime
   }
 
   "One billing period of a team, priced from the usage it accumulated."
@@ -839,8 +825,6 @@ export const resolvers: IResolvers = {
       invariant(plan, "subscription plan not found");
       return plan;
     },
-    cameBack: (subscription, _args, ctx) =>
-      ctx.loaders.AccountRenewsByAccountId.load(subscription.accountId),
     monthlyRevenue: async (subscription, _args, ctx) => {
       const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
       return revenue.monthly;
@@ -849,10 +833,6 @@ export const resolvers: IResolvers = {
       const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
       return revenue.lifetime;
     },
-    contact: (subscription, _args, ctx) =>
-      ctx.loaders.StaffCancellationContactBySubscriptionId.load(
-        subscription.id,
-      ),
   },
   TeamStaffContact: {
     date: (contact) => new Date(contact.createdAt),
@@ -1067,22 +1047,18 @@ export const resolvers: IResolvers = {
       }
 
       if (args.input.contacted) {
-        // Idempotent like the trial mark: the first author and date stay.
-        await StaffCancellationContact.query()
-          .insert({ subscriptionId: subscription.id, userId: ctx.auth.user.id })
-          .onConflict("subscriptionId")
-          .ignore();
+        // Idempotent like the trial mark: the first date stays.
+        await Subscription.query()
+          .patch({ staffContactedAt: new Date().toISOString() })
+          .where("id", subscription.id)
+          .whereNull("staffContactedAt");
       } else {
-        await StaffCancellationContact.query()
-          .delete()
-          .where("subscriptionId", subscription.id);
+        await Subscription.query()
+          .patch({ staffContactedAt: null })
+          .where("id", subscription.id);
       }
 
-      ctx.loaders.StaffCancellationContactBySubscriptionId.clear(
-        subscription.id,
-      );
-
-      return subscription;
+      return subscription.$query();
     },
   },
 };

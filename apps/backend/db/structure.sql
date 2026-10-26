@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 4s9eo5irxDaI1p0afX3F19Gth3vgYqeiUC9DlGFxh47eZIe4UHdGIw7uELhlpe9
+\restrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2521,42 +2521,6 @@ ALTER SEQUENCE public.slack_installations_id_seq OWNED BY public.slack_installat
 
 
 --
--- Name: staff_cancellation_contacts; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.staff_cancellation_contacts (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "subscriptionId" bigint NOT NULL,
-    "userId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.staff_cancellation_contacts OWNER TO postgres;
-
---
--- Name: staff_cancellation_contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.staff_cancellation_contacts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.staff_cancellation_contacts_id_seq OWNER TO postgres;
-
---
--- Name: staff_cancellation_contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.staff_cancellation_contacts_id_seq OWNED BY public.staff_cancellation_contacts.id;
-
-
---
 -- Name: staff_team_contacts; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2707,6 +2671,7 @@ CREATE TABLE public.subscriptions (
     "cancellationReason" character varying(255),
     "cancellationFeedback" character varying(255),
     "cancellationComment" text,
+    "staffContactedAt" timestamp with time zone,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -3710,13 +3675,6 @@ ALTER TABLE ONLY public.slack_installations ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- Name: staff_cancellation_contacts id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.staff_cancellation_contacts ALTER COLUMN id SET DEFAULT nextval('public.staff_cancellation_contacts_id_seq'::regclass);
-
-
---
 -- Name: staff_team_contacts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4601,22 +4559,6 @@ ALTER TABLE ONLY public.slack_installations
 
 ALTER TABLE ONLY public.slack_installations
     ADD CONSTRAINT slack_installations_teamid_unique UNIQUE ("teamId");
-
-
---
--- Name: staff_cancellation_contacts staff_cancellation_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.staff_cancellation_contacts
-    ADD CONSTRAINT staff_cancellation_contacts_pkey PRIMARY KEY (id);
-
-
---
--- Name: staff_cancellation_contacts staff_cancellation_contacts_subscriptionid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.staff_cancellation_contacts
-    ADD CONSTRAINT staff_cancellation_contacts_subscriptionid_unique UNIQUE ("subscriptionId");
 
 
 --
@@ -6716,22 +6658,6 @@ ALTER TABLE ONLY public.slack_channels
 
 
 --
--- Name: staff_cancellation_contacts staff_cancellation_contacts_subscriptionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.staff_cancellation_contacts
-    ADD CONSTRAINT staff_cancellation_contacts_subscriptionid_foreign FOREIGN KEY ("subscriptionId") REFERENCES public.subscriptions(id) ON DELETE CASCADE;
-
-
---
--- Name: staff_cancellation_contacts staff_cancellation_contacts_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.staff_cancellation_contacts
-    ADD CONSTRAINT staff_cancellation_contacts_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: staff_team_contacts staff_team_contacts_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6967,7 +6893,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 4s9eo5irxDaI1p0afX3F19Gth3vgYqeiUC9DlGFxh47eZIe4UHdGIw7uELhlpe9
+\unrestrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
 
 -- Knex migrations
 
