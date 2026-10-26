@@ -8,14 +8,18 @@ import { useFieldArray } from "react-hook-form";
 import { useRefetchWhenActive } from "@/containers/Apollo";
 import { DiscordLogo } from "@/containers/DiscordLogo";
 import { MsTeamsLogo } from "@/containers/MsTeamsLogo";
-import { SlackColoredLogo } from "@/containers/Slack";
+import {
+  SlackColoredLogo,
+  SlackInstallButton,
+  SlackOwnerOnlyTooltip,
+} from "@/containers/Slack";
 import { graphql } from "@/gql";
-import { ButtonIcon, LinkButton } from "@/ui/Button";
+import { AccountPermission } from "@/gql/graphql";
+import { Button, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { SelectButton, Select, SelectField, SelectValue } from "@/ui/Select";
-import { getSlackAuthURL } from "@/util/slack";
 
 import { useAccountParams } from "../Account/AccountParams";
 import {
@@ -30,6 +34,7 @@ const SlackInstallationQuery = graphql(`
   query AutomationFormActionsStep_team($accountSlug: String!) {
     account(slug: $accountSlug) {
       id
+      permissions
       slackInstallation {
         id
         teamName
@@ -68,6 +73,10 @@ function SendSlackMessageAction(props: {
   invariant(data.account, "Account data is required for Slack installation");
 
   const slackInstallation = data.account.slackInstallation;
+  // Project admins build automations, but only a team owner can connect Slack.
+  const hasAdminPermission = data.account.permissions.includes(
+    AccountPermission.Admin,
+  );
 
   // Refetch the Slack installation when the window becomes active again.
   useRefetchWhenActive({
@@ -79,15 +88,22 @@ function SendSlackMessageAction(props: {
     return (
       <div className="flex flex-col items-start gap-3 p-2">
         <p>
-          To post to a Slack channel, you need to connect your Slack workspace
-          first.
+          {hasAdminPermission
+            ? "To post to a Slack channel, you need to connect your Slack workspace first."
+            : "To post to a Slack channel, a team owner needs to connect your Slack workspace first."}
         </p>
-        <LinkButton
-          href={`/${params.accountSlug}/settings/integrations#slack`}
-          target="_blank"
-        >
-          Connect Slack
-        </LinkButton>
+        {hasAdminPermission ? (
+          <LinkButton
+            href={`/${params.accountSlug}/settings/integrations#slack`}
+            target="_blank"
+          >
+            Connect Slack
+          </LinkButton>
+        ) : (
+          <SlackOwnerOnlyTooltip>
+            <Button disabled>Connect Slack</Button>
+          </SlackOwnerOnlyTooltip>
+        )}
       </div>
     );
   }
@@ -96,19 +112,18 @@ function SendSlackMessageAction(props: {
     return (
       <div className="text-warning-low flex flex-col items-start gap-3 p-2">
         <p>
-          <TriangleAlertIcon className="inline size-4" /> Slack permissions need
-          an update, please reconnect to be able to post messages in channels.
+          <TriangleAlertIcon className="inline size-4" />{" "}
+          {hasAdminPermission
+            ? "Slack permissions need an update, please reconnect to be able to post messages in channels."
+            : "Slack permissions need an update, ask a team owner to reconnect Slack to be able to post messages in channels."}
         </p>
-        <LinkButton
-          href={getSlackAuthURL({ accountId: data.account.id })}
+        <SlackInstallButton
+          accountId={data.account.id}
+          hasAdminPermission={hasAdminPermission}
           target="_blank"
-          variant="google"
         >
-          <ButtonIcon>
-            <SlackColoredLogo />
-          </ButtonIcon>
           Reconnect Slack
-        </LinkButton>
+        </SlackInstallButton>
       </div>
     );
   }

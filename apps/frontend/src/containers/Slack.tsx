@@ -1,3 +1,61 @@
+import type { ReactNode } from "react";
+
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
+import { Tooltip } from "@/ui/Tooltip";
+import { getSlackAuthURL } from "@/util/slack";
+
+export const SLACK_OWNER_ONLY_REASON =
+  "Only team owners can manage the Slack integration.";
+
+/**
+ * Wraps a disabled Slack action to say who can take it.
+ */
+export function SlackOwnerOnlyTooltip(props: { children: ReactNode }) {
+  return (
+    <Tooltip content={SLACK_OWNER_ONLY_REASON}>
+      <div className="flex">{props.children}</div>
+    </Tooltip>
+  );
+}
+
+/**
+ * Starts the Slack install of the account, disabled for anyone but a team
+ * owner.
+ */
+export function SlackInstallButton(props: {
+  accountId: string;
+  hasAdminPermission: boolean;
+  target: "_blank" | "_parent";
+  children: ReactNode;
+}) {
+  const label = (
+    <>
+      <ButtonIcon>
+        <SlackColoredLogo />
+      </ButtonIcon>
+      {props.children}
+    </>
+  );
+  if (!props.hasAdminPermission) {
+    return (
+      <SlackOwnerOnlyTooltip>
+        <Button variant="google" disabled>
+          {label}
+        </Button>
+      </SlackOwnerOnlyTooltip>
+    );
+  }
+  return (
+    <LinkButton
+      variant="google"
+      target={props.target}
+      href={getSlackAuthURL({ accountId: props.accountId })}
+    >
+      {label}
+    </LinkButton>
+  );
+}
+
 export function SlackColoredLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
