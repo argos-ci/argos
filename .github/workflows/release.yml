@@ -81,10 +81,7 @@ jobs:
         with:
           context: .
           push: true
-          # The Dockerfile's last stage is `dist`, a scratch image holding only
-          # the frontend build output. Without this the default target applies
-          # and the pushed "app" image is that empty scratch image.
-          target: build
+          target: runtime
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
@@ -96,9 +93,9 @@ jobs:
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
             ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
 
-      # Lifts the frontend build out of the image that was just built. Every
-      # layer is already in this job's buildx cache, so this resolves without
-      # rebuilding anything.
+      # Lifts the frontend build out of the `build` stage the image was just
+      # built from. Every layer is already in this job's buildx cache, so this
+      # resolves without rebuilding anything.
       - name: Export frontend assets
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
