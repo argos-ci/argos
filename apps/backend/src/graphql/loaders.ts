@@ -52,7 +52,9 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   SlackInstallation,
+  StaffCancellationContact,
   StaffTeamContact,
+  Subscription,
   Team,
   TeamUser,
   Test,
@@ -65,6 +67,11 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import {
+  getRenewingAccountIds,
+  getSubscriptionRevenues,
+  type SubscriptionRevenue,
+} from "@/database/services/staff-cancellations";
 import {
   getLatestReferenceBuildIds,
   getTestChangesStats,
@@ -970,6 +977,40 @@ function createStaffTeamContactByTeamIdLoader() {
     );
     return teamIds.map((teamId) => contactByTeamId.get(String(teamId)) ?? null);
   });
+}
+
+function createStaffCancellationContactBySubscriptionIdLoader() {
+  return new DataLoader<string, StaffCancellationContact | null>(
+    async (subscriptionIds) => {
+      const contacts = await StaffCancellationContact.query().whereIn(
+        "subscriptionId",
+        subscriptionIds as string[],
+      );
+      const contactBySubscriptionId = new Map(
+        contacts.map((contact) => [contact.subscriptionId, contact]),
+      );
+      return subscriptionIds.map(
+        (subscriptionId) =>
+          contactBySubscriptionId.get(String(subscriptionId)) ?? null,
+      );
+    },
+  );
+}
+
+function createAccountRenewsByAccountIdLoader() {
+  return new DataLoader<string, boolean>(async (accountIds) => {
+    const renewing = await getRenewingAccountIds([
+      ...new Set(accountIds as string[]),
+    ]);
+    return accountIds.map((accountId) => renewing.has(accountId));
+  });
+}
+
+function createSubscriptionRevenueLoader() {
+  return new DataLoader<Subscription, SubscriptionRevenue, string>(
+    async (subscriptions) => getSubscriptionRevenues([...subscriptions]),
+    { cacheKeyFn: (subscription) => subscription.id },
+  );
 }
 
 function createAccountSubscriptionStatusByAccountIdLoader() {
@@ -2058,6 +2099,10 @@ export const createLoaders = () => ({
     createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
+  StaffCancellationContactBySubscriptionId:
+    createStaffCancellationContactBySubscriptionIdLoader(),
+  AccountRenewsByAccountId: createAccountRenewsByAccountIdLoader(),
+  SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),

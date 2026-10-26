@@ -1,12 +1,18 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Account, StaffTeamContact } from "@/database/models";
+import {
+  Account,
+  StaffCancellationContact,
+  StaffTeamContact,
+  Subscription,
+} from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
   getAccountBillings,
   type AccountBilling,
 } from "@/database/services/period-usage";
+import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import {
   getStaffRevenue,
   getStaffRevenueMonthTeams,
@@ -56,12 +62,18 @@ function activationField<Key extends keyof AccountActivation>(key: Key) {
 
 const { gql } = gqlTag;
 
+/** A staff member's reach-out, whichever moment of the team's life it was. */
+export type StaffContact = StaffTeamContact | StaffCancellationContact;
+
 /**
  * Upper bound on the trial pipeline window. Each returned team drives an
  * aggregate over `projects` joined to `builds`, so an unbounded window would
  * scan the whole build history.
  */
 const MAX_TRIAL_PIPELINE_DAYS = 365;
+
+/** Upper bound on the cancellations window, which reads the invoice mirror. */
+const MAX_CANCELLATIONS_DAYS = 365;
 
 /**
  * Upper bound on a directory page.
@@ -232,6 +244,62 @@ export const typeDefs = gql`
     user: User!
   }
 
+  """
+  Why a subscription stopped, in Stripe's \`cancellation_details.reason\`
+  vocabulary.
+  """
+  enum SubscriptionCancellationReason {
+    "The subscriber asked for it"
+    cancellation_requested
+    "Stripe stopped retrying a payment that kept failing"
+    payment_failed
+    "The subscriber disputed a payment"
+    payment_disputed
+  }
+
+  """
+  A team's paid subscription that ended or is scheduled to, as the staff
+  cancellations page lists it.
+  """
+  type StaffCancellation {
+    "The subscription's id, which the outreach mark is kept on."
+    id: ID!
+    team: Team!
+    plan: Plan!
+    provider: AccountSubscriptionProvider!
+    """
+    When the subscriber asked to stop. Null when the provider never stated it,
+    and once a scheduled cancellation is called off.
+    """
+    canceledAt: DateTime
+    """
+    When the subscription stops, or stopped. Null once a scheduled
+    cancellation is called off.
+    """
+    endDate: DateTime
+    "Why it stopped. Null when the provider never stated it, as on GitHub."
+    cancellationReason: SubscriptionCancellationReason
+    "The answer picked in the cancellation survey. Null when none was given."
+    cancellationFeedback: SubscriptionCancelReason
+    "What came with that answer, in the subscriber's own words."
+    cancellationComment: String
+    "True when the team holds a subscription that runs on again."
+    cameBack: Boolean!
+    """
+    What one month of the subscription was worth, in euros, read off its last
+    cycle bill: a yearly bill counts a twelfth. Null when it never billed a
+    cycle, which is a trial canceled before it converted.
+    """
+    monthlyRevenue: Float
+    """
+    Everything the subscription was paid, in euros. Null on GitHub, which
+    shares no invoices.
+    """
+    lifetimeRevenue: Float
+    "When a staff member reached out after the cancellation, null if never."
+    contact: TeamStaffContact
+  }
+
   "One billing period of a team, priced from the usage it accumulated."
   type TeamStaffBillingPeriod {
     from: DateTime!
@@ -327,6 +395,11 @@ export const typeDefs = gql`
 
   input SetTeamStaffContactInput {
     teamAccountId: ID!
+    contacted: Boolean!
+  }
+
+  input SetStaffCancellationContactInput {
+    subscriptionId: ID!
     contacted: Boolean!
   }
 
@@ -637,6 +710,12 @@ export const typeDefs = gql`
     "List teams created within the last \`days\` days, newest first (staff only)"
     staffTrialPipeline(days: Int! = 30): [Team!]!
     """
+    The paid subscriptions canceled within the last \`days\` days, the latest
+    one per team, plus the teams written to over the window that came back
+    (staff only).
+    """
+    staffCancellations(days: Int! = 90): [StaffCancellation!]!
+    """
     What Argos invoiced over the last \`months\` calendar months, oldest first
     and the running one last, with the annual contracts the yearly rate is
     made of (staff only).
@@ -652,6 +731,13 @@ export const typeDefs = gql`
   extend type Mutation {
     "Record or clear that a staff member reached out to a team (staff only)"
     setTeamStaffContact(input: SetTeamStaffContactInput!): Team!
+    """
+    Record or clear that a staff member reached out to a team about its
+    cancellation (staff only)
+    """
+    setStaffCancellationContact(
+      input: SetStaffCancellationContactInput!
+    ): StaffCancellation!
   }
 `;
 
@@ -739,6 +825,34 @@ export const resolvers: IResolvers = {
       );
       return totals.count;
     },
+  },
+  StaffCancellation: {
+    team: async (subscription, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(subscription.accountId);
+      invariant(account, "subscription account not found");
+      return account;
+    },
+    plan: async (subscription, _args, ctx) => {
+      // `subscriptions.planId` is an integer column, which pg hands back as a
+      // number, where the loader keys plans by their bigint id, a string.
+      const plan = await ctx.loaders.Plan.load(String(subscription.planId));
+      invariant(plan, "subscription plan not found");
+      return plan;
+    },
+    cameBack: (subscription, _args, ctx) =>
+      ctx.loaders.AccountRenewsByAccountId.load(subscription.accountId),
+    monthlyRevenue: async (subscription, _args, ctx) => {
+      const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
+      return revenue.monthly;
+    },
+    lifetimeRevenue: async (subscription, _args, ctx) => {
+      const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
+      return revenue.lifetime;
+    },
+    contact: (subscription, _args, ctx) =>
+      ctx.loaders.StaffCancellationContactBySubscriptionId.load(
+        subscription.id,
+      ),
   },
   TeamStaffContact: {
     date: (contact) => new Date(contact.createdAt),
@@ -893,6 +1007,17 @@ export const resolvers: IResolvers = {
         .orderBy("createdAt", "desc")
         .orderBy("id", "desc");
     },
+    staffCancellations: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      if (args.days < 1 || args.days > MAX_CANCELLATIONS_DAYS) {
+        throw badUserInput(
+          `\`days\` must be between 1 and ${MAX_CANCELLATIONS_DAYS}.`,
+        );
+      }
+
+      return getStaffCancellations(args.days);
+    },
   },
   Mutation: {
     setTeamStaffContact: async (_root, args, ctx) => {
@@ -924,6 +1049,40 @@ export const resolvers: IResolvers = {
       ctx.loaders.StaffTeamContactByTeamId.clear(teamAccount.teamId);
 
       return teamAccount;
+    },
+    setStaffCancellationContact: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const subscription = await Subscription.query()
+        .findById(args.input.subscriptionId)
+        .withGraphFetched("account")
+        .throwIfNotFound();
+
+      invariant(subscription.account, "subscription account not fetched");
+
+      // The row resolves its `team` as `Team!`: a personal account there would
+      // break the response against the schema.
+      if (!subscription.account.teamId) {
+        throw badUserInput("Subscription is not a team's.");
+      }
+
+      if (args.input.contacted) {
+        // Idempotent like the trial mark: the first author and date stay.
+        await StaffCancellationContact.query()
+          .insert({ subscriptionId: subscription.id, userId: ctx.auth.user.id })
+          .onConflict("subscriptionId")
+          .ignore();
+      } else {
+        await StaffCancellationContact.query()
+          .delete()
+          .where("subscriptionId", subscription.id);
+      }
+
+      ctx.loaders.StaffCancellationContactBySubscriptionId.clear(
+        subscription.id,
+      );
+
+      return subscription;
     },
   },
 };

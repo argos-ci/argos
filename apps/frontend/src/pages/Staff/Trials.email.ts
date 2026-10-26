@@ -1,10 +1,10 @@
-type Owner = { name: string | null; email: string | null };
+export type Owner = { name: string | null; email: string | null };
 
 /**
  * How to open the email: "Hi Andre" reads as a personal note, "Hi team" is the
  * honest greeting once several people are on the thread.
  */
-function getGreeting(owners: Owner[]): string {
+export function getGreeting(owners: Owner[]): string {
   if (owners.length !== 1) {
     return "Hi team,";
   }

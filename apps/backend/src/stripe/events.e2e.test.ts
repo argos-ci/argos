@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -135,6 +136,31 @@ describe("handleStripeEvent", () => {
       expect(content).toContain(
         "Reason: too_expensive: The price jump was too sporadic.",
       );
+    });
+
+    it("keeps when and why the subscription ended", async () => {
+      vi.spyOn(discord, "notifyDiscord").mockResolvedValue(undefined);
+
+      await handleStripeEvent({
+        type: "customer.subscription.deleted",
+        data: CANCEL_SUBSCRIPTION_EVENT_PAYLOAD.data,
+      });
+
+      const subscription = await Subscription.query()
+        .findOne({
+          stripeSubscriptionId:
+            CANCEL_SUBSCRIPTION_EVENT_PAYLOAD.data.object.id,
+        })
+        .throwIfNotFound();
+      // Stopped on the spot: no earlier update had stated an end date.
+      invariant(subscription.endDate, "the end date was not kept");
+      expect(new Date(subscription.endDate).getTime()).toBe(1748458766 * 1000);
+      expect(subscription).toMatchObject({
+        status: "canceled",
+        cancellationReason: "cancellation_requested",
+        cancellationFeedback: "too_expensive",
+        cancellationComment: "The price jump was too sporadic.",
+      });
     });
   });
 

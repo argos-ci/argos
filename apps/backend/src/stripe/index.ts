@@ -5,7 +5,13 @@ import Stripe from "stripe";
 import { z } from "zod";
 
 import config from "@/config";
-import { Account, Plan, Subscription } from "@/database/models";
+import {
+  Account,
+  CANCELLATION_FEEDBACKS,
+  CANCELLATION_REASONS,
+  Plan,
+  Subscription,
+} from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import {
   type AmountDue,
@@ -434,6 +440,45 @@ function resolveSubscriptionStatus(
   return SubscriptionStatusSchema.parse(status);
 }
 
+/**
+ * Narrow a value Stripe types as an open union to the vocabulary Argos stores.
+ *
+ * A value introduced after this SDK release is dropped rather than rejected:
+ * unlike a status, it is a detail of the cancellation, and refusing the whole
+ * sync over it would leave the subscription's state stale.
+ */
+function pickKnown<T extends string>(
+  values: readonly T[],
+  value: string | null | undefined,
+): T | null {
+  return values.find((known) => known === value) ?? null;
+}
+
+/**
+ * When and why a subscription stops, as Stripe states it.
+ *
+ * Read on every sync rather than only when it ends: a cancellation scheduled
+ * for the end of the period is stated well before Stripe deletes the
+ * subscription, and calling it off clears it again.
+ */
+function getCancellationDataFromStripe(
+  stripeSubscription: Stripe.Subscription,
+) {
+  const rawEndDate =
+    stripeSubscription.ended_at || stripeSubscription.cancel_at;
+  const details = stripeSubscription.cancellation_details;
+
+  return {
+    endDate: rawEndDate ? timestampToISOString(rawEndDate) : null,
+    canceledAt: stripeSubscription.canceled_at
+      ? timestampToISOString(stripeSubscription.canceled_at)
+      : null,
+    cancellationReason: pickKnown(CANCELLATION_REASONS, details?.reason),
+    cancellationFeedback: pickKnown(CANCELLATION_FEEDBACKS, details?.feedback),
+    cancellationComment: details?.comment?.trim() || null,
+  } satisfies Partial<Subscription>;
+}
+
 async function getArgosSubscriptionDataFromStripe(
   stripeSubscription: Stripe.Subscription,
 ) {
@@ -447,18 +492,15 @@ async function getArgosSubscriptionDataFromStripe(
   const trialEndDate = stripeSubscription.trial_end
     ? timestampToISOString(stripeSubscription.trial_end)
     : null;
-  const rawEndDate =
-    stripeSubscription.ended_at || stripeSubscription.cancel_at;
-  const endDate = rawEndDate ? timestampToISOString(rawEndDate) : null;
 
   return {
     planId: plan.id,
     provider: "stripe",
     stripeSubscriptionId: stripeSubscription.id,
-    endDate,
     trialEndDate,
     paymentMethodFilled,
     status: resolveSubscriptionStatus(stripeSubscription.status),
+    ...getCancellationDataFromStripe(stripeSubscription),
     ...infos,
   } satisfies Partial<Subscription>;
 }
@@ -494,6 +536,32 @@ export async function cancelStripeSubscription(subscriptionId: string) {
     return;
   }
   await stripe.subscriptions.cancel(subscriptionId);
+}
+
+/**
+ * Mirror the cancellation of every subscription Stripe still holds, and return
+ * how many rows were written.
+ *
+ * The backfill for rows that predate the mirror: a subscription that ended
+ * before it existed will never receive another webhook to carry its details.
+ */
+export async function syncStripeCancellations(): Promise<number> {
+  let count = 0;
+
+  for await (const stripeSubscription of stripe.subscriptions.list({
+    status: "all",
+    limit: 100,
+  })) {
+    const { canceled_at, cancel_at, ended_at } = stripeSubscription;
+    if (!canceled_at && !cancel_at && !ended_at) {
+      continue;
+    }
+    count += await Subscription.query()
+      .patch(getCancellationDataFromStripe(stripeSubscription))
+      .where("stripeSubscriptionId", stripeSubscription.id);
+  }
+
+  return count;
 }
 
 export type StripeCancellationFeedback =
@@ -1225,7 +1293,13 @@ export async function handleStripeEvent({
       }
       const status = "canceled";
       await Promise.all([
-        argosSubscription.$query().patch({ status }),
+        // The end date too: a subscription stopped on the spot, by a failed
+        // payment or from the Dashboard, was never scheduled to end, so no
+        // earlier update carried one.
+        argosSubscription.$query().patch({
+          status,
+          ...getCancellationDataFromStripe(stripeSubscription),
+        }),
         (async () => {
           const account = await Account.query()
             .findById(argosSubscription.accountId)

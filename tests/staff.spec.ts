@@ -7,9 +7,11 @@ import {
   Build,
   Plan as PlanModel,
   ScreenshotBucket,
+  StaffCancellationContact,
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
+  TeamUser,
 } from "../apps/backend/src/database/models";
 import {
   createProject,
@@ -624,6 +626,251 @@ staffTest(
   },
 );
 
+/** The cancellations page's euros, written the way the page writes them. */
+function cancellationAmount(amount: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+/**
+ * One team per way a subscription can end up on the cancellations page, plus
+ * a trial that ran out without a card, which must stay off it.
+ */
+async function createCanceledTeams(input: {
+  prefix: string;
+  planId: string;
+  annualPlanId: string;
+  subscriberId: string;
+}) {
+  const { prefix, planId, annualPlanId, subscriberId } = input;
+
+  async function createTeam(
+    name: string,
+    subscription: Partial<Subscription> & {
+      invoices?: number[];
+      /** Defaults to a month before the first of its monthly bills. */
+      createdDaysAgo?: number;
+    },
+  ) {
+    const slug = `${prefix}-${name.toLowerCase().replaceAll(" ", "-")}`;
+    const { account, team } = await createTeamAccount({ slug, name });
+    const {
+      invoices = [],
+      createdDaysAgo = 30 * (invoices.length + 1),
+      ...data
+    } = subscription;
+    await account.$query().patch({ createdAt: daysFromNow(-createdDaysAgo) });
+    const provider = data.provider ?? "stripe";
+    const created = await Subscription.query().insertAndFetch({
+      planId,
+      accountId: account.id,
+      provider,
+      ...(provider === "stripe" && {
+        stripeSubscriptionId: `sub_${slug}`,
+        subscriberId,
+      }),
+      startDate: daysFromNow(-20),
+      paymentMethodFilled: true,
+      ...data,
+    });
+    // Monthly bills, the most recent last, each one month further back.
+    await Promise.all(
+      invoices.map((amount, index) =>
+        StripeInvoice.query().insert({
+          stripeInvoiceId: `in_${slug}_${index}`,
+          stripeCustomerId: `cus_${slug}`,
+          stripeSubscriptionId: `sub_${slug}`,
+          stripeCreatedAt: daysFromNow(-30 * (invoices.length - index)),
+          status: "paid",
+          billingReason: "subscription_cycle",
+          currency: "eur",
+          total: amount * 100,
+          totalExcludingTax: amount * 100,
+          creditedAmountExcludingTax: 0,
+          refundedAmount: 0,
+        }),
+      ),
+    );
+    return { account, team, subscription: created };
+  }
+
+  const [acme] = await Promise.all([
+    // Still running, so the one worth writing to first.
+    createTeam("Acme", {
+      status: "active",
+      canceledAt: daysFromNow(-2),
+      endDate: daysFromNow(18),
+      cancellationReason: "cancellation_requested",
+      cancellationFeedback: "too_expensive",
+      cancellationComment: "We are cutting tool spend this quarter.",
+      invoices: [120, 120, 120],
+    }),
+    createTeam("Pied Piper", {
+      status: "canceled",
+      canceledAt: daysFromNow(-40),
+      endDate: daysFromNow(-12),
+      cancellationReason: "cancellation_requested",
+      cancellationFeedback: "switched_service",
+      cancellationComment: "Moving to in-house tooling.",
+      invoices: [100, 100],
+    }).then(({ subscription }) =>
+      StaffCancellationContact.query().insert({
+        subscriptionId: subscription.id,
+        userId: subscriberId,
+      }),
+    ),
+    // Billed once a year: the column reads a twelfth of the bill.
+    createTeam("Hooli", {
+      planId: annualPlanId,
+      createdDaysAgo: 400,
+      status: "canceled",
+      canceledAt: daysFromNow(-5),
+      endDate: daysFromNow(-5),
+      cancellationReason: "payment_failed",
+    }).then(async ({ account }) => {
+      const slug = account.slug;
+      await StripeInvoice.query().insert({
+        stripeInvoiceId: `in_${slug}_annual`,
+        stripeCustomerId: `cus_${slug}`,
+        stripeSubscriptionId: `sub_${slug}`,
+        stripeCreatedAt: daysFromNow(-300),
+        status: "paid",
+        billingReason: "subscription_cycle",
+        currency: "eur",
+        total: 12_000 * 100,
+        totalExcludingTax: 12_000 * 100,
+        creditedAmountExcludingTax: 0,
+        refundedAmount: 0,
+        periodStart: daysFromNow(-300),
+        periodEnd: daysFromNow(65),
+      });
+    }),
+    // Canceled with a card on file before the trial converted: never billed.
+    createTeam("Stark", {
+      status: "trialing",
+      trialEndDate: daysFromNow(6),
+      canceledAt: daysFromNow(-1),
+      endDate: daysFromNow(6),
+      cancellationReason: "cancellation_requested",
+      cancellationFeedback: "missing_features",
+    }),
+    // Written to, then called the cancellation off.
+    createTeam("Wayne", {
+      status: "active",
+      endDate: null,
+      cancellationFeedback: "unused",
+      invoices: [100],
+    }).then(({ subscription }) =>
+      StaffCancellationContact.query().insert({
+        subscriptionId: subscription.id,
+        userId: subscriberId,
+      }),
+    ),
+    createTeam("Tyrell", {
+      status: "canceled",
+      canceledAt: daysFromNow(-30),
+      endDate: daysFromNow(-25),
+      cancellationReason: "cancellation_requested",
+      cancellationFeedback: "too_expensive",
+      invoices: [100, 100, 100, 100, 100, 100],
+    }),
+    createTeam("Cyberdyne", {
+      provider: "github",
+      createdDaysAgo: 150,
+      status: "canceled",
+      canceledAt: daysFromNow(-50),
+      endDate: daysFromNow(-20),
+    }),
+    createTeam("Massive Dynamic", {
+      status: "canceled",
+      paymentMethodFilled: false,
+      trialEndDate: daysFromNow(-3),
+      endDate: daysFromNow(-3),
+      cancellationReason: "cancellation_requested",
+    }),
+  ]);
+
+  // An owner, so the drafted email has someone to go to.
+  const owner = await createUserAccount({
+    email: `${prefix}-jane@example.com`,
+    slug: `${prefix}-jane`,
+    name: "Jane Cooper",
+  });
+  await TeamUser.query().insert({
+    teamId: acme.team.id,
+    userId: owner.user.id,
+    userLevel: "owner",
+  });
+}
+
+staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
+  test.slow();
+  const prefix = `cancel-${getUniqueTestIdentifier(testInfo)}`;
+  const annualPlan = await PlanModel.query().insertAndFetch({
+    name: "enterprise annual",
+    includedScreenshots: 35_000,
+    usageBased: true,
+    githubSsoIncluded: true,
+    fineGrainedAccessControlIncluded: true,
+    samlIncluded: true,
+    interval: "year",
+  });
+  await createCanceledTeams({
+    prefix,
+    planId: plan.id,
+    annualPlanId: annualPlan.id,
+    subscriberId: user.user.id,
+  });
+
+  await page.goto("/staff/cancellations");
+  await expect(
+    page.getByRole("heading", { name: "Cancellations" }),
+  ).toBeVisible();
+  await page.getByRole("searchbox").fill(prefix);
+  await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
+  // A trial that ran out on its own is the trial pipeline's.
+  await expect(page.getByText("Massive Dynamic")).toBeHidden();
+
+  const acme = page.getByRole("row", { name: /Acme/ });
+  await expect(acme).toContainText("Too expensive");
+  await expect(acme).toContainText("ending");
+  await expect(acme).toContainText(cancellationAmount(120));
+  await expect(acme).toContainText(`${cancellationAmount(360)} in all`);
+  await expect(
+    acme.getByRole("link", { name: "Draft follow-up email" }),
+  ).toHaveAttribute(
+    "href",
+    new RegExp(`^mailto:${prefix}-jane@example.com\\?`),
+  );
+
+  // A yearly bill of 12,000 is 1,000 a month.
+  await expect(page.getByRole("row", { name: /Hooli/ })).toContainText(
+    cancellationAmount(1000),
+  );
+  await expect(page.getByRole("row", { name: /Stark/ })).toContainText("trial");
+  await expect(page.getByRole("row", { name: /Wayne/ })).toContainText(
+    "came back",
+  );
+
+  await screenshot(page, "staff-cancellations");
+
+  // The mark is kept on the server, not on the page.
+  const acmeSwitch = acme.getByRole("switch", { name: "Follow-up email sent" });
+  await expect(acmeSwitch).not.toBeChecked();
+  await acmeSwitch.click();
+  await expect(acmeSwitch).toBeChecked();
+  await page.reload();
+  await page.getByRole("searchbox").fill(prefix);
+  await expect(
+    page
+      .getByRole("row", { name: /Acme/ })
+      .getByRole("switch", { name: "Follow-up email sent" }),
+  ).toBeChecked();
+});
+
 /**
  * The revenue page's own notation, which its assertions have to be written in.
  *
@@ -1122,7 +1369,12 @@ loggedTest("staff pages are refused to regular users", async ({ page }) => {
   // Every staff page, not just one: each owns its own query, so each has to
   // turn the refusal into something a reader can act on rather than into a
   // figure that failed to load.
-  for (const path of ["/staff/teams", "/staff/trials", "/staff/revenue"]) {
+  for (const path of [
+    "/staff/teams",
+    "/staff/trials",
+    "/staff/cancellations",
+    "/staff/revenue",
+  ]) {
     await page.goto(path);
     await expect(page.getByText("Access restricted")).toBeVisible();
   }
