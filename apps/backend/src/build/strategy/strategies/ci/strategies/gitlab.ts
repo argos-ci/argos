@@ -1,15 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 
 import { Project } from "@/database/models";
-import { getGitlabClientFromAccount, GitlabClient } from "@/gitlab";
+import { getGitlabClientForProject, type GitlabProjectClient } from "@/gitlab";
 import { UnretryableError } from "@/job-core";
 
 import { MergeBaseStrategy } from "../types";
 
-export const GitlabStrategy: MergeBaseStrategy<{
-  client: GitlabClient;
-  gitlabProjectId: number;
-}> = {
+export const GitlabStrategy: MergeBaseStrategy<GitlabProjectClient> = {
   detect: (project: Project) => Boolean(project.gitlabProjectId),
   getContext: async (project: Project) => {
     await project.$fetchGraph("[account, gitlabProject]", {
@@ -23,15 +20,9 @@ export const GitlabStrategy: MergeBaseStrategy<{
       UnretryableError,
     );
 
-    const client = await getGitlabClientFromAccount(project.account, {
+    return getGitlabClientForProject(project.account, project.gitlabProject, {
       mode: "headless",
     });
-
-    if (!client) {
-      return null;
-    }
-
-    return { client, gitlabProjectId: project.gitlabProject.gitlabId };
   },
   getMergeBaseCommitSha: async (args) => {
     const result = await args.ctx.client.Repositories.mergeBase(

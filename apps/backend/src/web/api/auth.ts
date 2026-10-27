@@ -25,6 +25,7 @@ import {
 } from "@/github";
 import {
   getGitlabClient,
+  GITLAB_COM_URL,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
@@ -149,6 +150,7 @@ router.use(
     const api = getGitlabClient({ accessToken: response.access_token });
     const apiUser = await api.Users.showCurrentUser();
     const gitlabUser = await getOrCreateGitlabUser(apiUser, {
+      baseUrl: GITLAB_COM_URL,
       accessToken: response.access_token,
       accessTokenExpiresAt: new Date(Date.now() + response.expires_in * 1000),
       refreshToken: response.refresh_token,

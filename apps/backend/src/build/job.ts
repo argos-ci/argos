@@ -5,7 +5,7 @@ import { Build, Project, ScreenshotDiff } from "@/database/models";
 import { claimOverageAlert } from "@/database/services/overage-alert";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
+import { formatGlProject, getGitlabClientForProject } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
@@ -113,17 +113,17 @@ async function syncGitlabProject(project: Project) {
 
   invariant(project.account, "no account found", UnretryableError);
 
-  const gitlabClient = await getGitlabClientFromAccount(project.account, {
-    mode: "headless",
-  });
+  const gitlab = await getGitlabClientForProject(
+    project.account,
+    project.gitlabProject,
+    { mode: "headless" },
+  );
 
-  if (!gitlabClient) {
+  if (!gitlab) {
     return;
   }
 
-  const glProject = await gitlabClient.Projects.show(
-    project.gitlabProject.gitlabId,
-  );
+  const glProject = await gitlab.client.Projects.show(gitlab.gitlabProjectId);
 
   await project.gitlabProject
     .$clone()

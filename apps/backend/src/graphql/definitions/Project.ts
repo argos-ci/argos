@@ -57,7 +57,11 @@ import {
   checkInstallationUsesProxy,
   getStaticIpAddresses,
 } from "@/github/static-ip";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
+import {
+  formatGlProject,
+  getGitlabBaseUrl,
+  getGitlabClientFromAccount,
+} from "@/gitlab";
 import {
   checkUserCanUseInstallation,
   getOrCreateGithubRepository,
@@ -579,17 +583,7 @@ const getOrCreateGitlabProject = async (props: {
   });
   invariant(client, "Gitlab client not found");
 
-  const gitlabProjectId = Number(props.gitlabProjectId);
-
-  const gitlabProject = await GitlabProject.query().findOne({
-    gitlabId: gitlabProjectId,
-  });
-
-  if (gitlabProject) {
-    return gitlabProject;
-  }
-
-  const glProject = await client.Projects.show(gitlabProjectId);
+  const glProject = await client.Projects.show(Number(props.gitlabProjectId));
   invariant(glProject, "GitLab Project not found");
 
   if (!("default_branch" in glProject)) {
@@ -598,7 +592,25 @@ const getOrCreateGitlabProject = async (props: {
     );
   }
 
-  return GitlabProject.query().insertAndFetch(formatGlProject(glProject));
+  const [gitlabProject] = await GitlabProject.query()
+    .insert([
+      {
+        ...formatGlProject(glProject),
+        baseUrl: getGitlabBaseUrl(props.account),
+      },
+    ])
+    .onConflict(["baseUrl", "gitlabId"])
+    .merge([
+      "name",
+      "path",
+      "pathWithNamespace",
+      "visibility",
+      "defaultBranch",
+      "updatedAt",
+    ])
+    .returning("*");
+  invariant(gitlabProject, "Failed to upsert GitLab project");
+  return gitlabProject;
 };
 
 const importGitlabProject = async (props: {
