@@ -1239,6 +1239,7 @@ CREATE TABLE public.gitlab_projects (
     "defaultBranch" character varying(255) NOT NULL,
     "gitlabId" integer NOT NULL,
     "baseUrl" character varying(255) NOT NULL,
+    "webUrl" text,
     CONSTRAINT gitlab_projects_visibility_check CHECK ((visibility = ANY (ARRAY['public'::text, 'internal'::text, 'private'::text])))
 );
 
@@ -7186,3 +7187,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261021120000_team-scim.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261026120000_subscription-cancellations.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027104323_gitlab-instance-isolation.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027111448_gitlab-projects-web-url.js', 1, NOW());

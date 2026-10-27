@@ -32,6 +32,7 @@ export class GitlabProject extends Model {
           defaultBranch: { type: "string" },
           gitlabId: { type: "number" },
           baseUrl: { type: "string" },
+          webUrl: { type: ["string", "null"] },
         },
       },
     ],
@@ -45,6 +46,7 @@ export class GitlabProject extends Model {
   gitlabId!: number;
   /** The instance `gitlabId` is unique within. */
   baseUrl!: string;
+  webUrl!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

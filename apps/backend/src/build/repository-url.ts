@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
 import { type Project } from "@/database/models";
+import { getGitlabProjectUrl } from "@/gitlab";
 import { UnretryableError } from "@/job-core";
 import { getOriginRepositoryUrl } from "@/origin/url";
 
@@ -36,7 +37,7 @@ export function getRepositoryUrl(project: Project): string | null {
       UnretryableError,
     );
 
-    return `https://gitlab.com/${project.gitlabProject.pathWithNamespace}`;
+    return getGitlabProjectUrl(project.gitlabProject);
   }
 
   if (project.originRepositoryId) {
