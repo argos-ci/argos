@@ -1,7 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
 import { type Project } from "@/database/models";
-import { getGitlabProjectUrl } from "@/gitlab";
+// Imported from the module rather than the `@/gitlab` barrel: the models load
+// this file through the automation actions, and the barrel's client reaches
+// `@/notification`, whose jobs read the models before they are initialized.
+import { getGitlabProjectUrl } from "@/gitlab/util";
 import { UnretryableError } from "@/job-core";
 import { getOriginRepositoryUrl } from "@/origin/url";
 
