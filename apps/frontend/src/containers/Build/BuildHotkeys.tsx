@@ -18,6 +18,7 @@ import {
   checkHotkeyUsesModifiers,
   getHotkey,
   getModifierLabel,
+  getPlainArrowDirection,
   plainHotkeyGroups,
   SEARCHABLE_MODIFIERS,
   type Hotkey,
@@ -51,6 +52,14 @@ type HotkeyRegistration = {
  */
 const hotkeyRegistry = new Set<HotkeyRegistration>();
 
+function checkIsToolbarNavigation(event: KeyboardEvent): boolean {
+  return (
+    event.target instanceof HTMLElement &&
+    event.target.closest("[role=toolbar]") !== null &&
+    getPlainArrowDirection(event) !== null
+  );
+}
+
 function handleDocumentKeyDown(event: KeyboardEvent) {
   // Guards shared by all hotkeys, based solely on the event target.
 
@@ -79,17 +88,7 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  // A toolbar walks its own items with ← and →, as a menu does with ↑ and ↓.
-  // The keys only come back to the page once focus leaves it.
-  if (
-    event.target instanceof HTMLElement &&
-    event.target.closest("[role=toolbar]") &&
-    (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey
-  ) {
+  if (checkIsToolbarNavigation(event)) {
     return;
   }
 

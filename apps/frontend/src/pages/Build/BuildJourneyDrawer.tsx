@@ -8,6 +8,7 @@ import {
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { getPlainArrowDirection } from "@/containers/Build/hotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -46,8 +47,7 @@ function useGoToJourneyStep() {
 
 /**
  * ⇧← / ⇧→ walk the journey of the active diff from anywhere on the page, the
- * drawer closed included. Plain ← / → do the same, but only from inside the
- * strip: everywhere else they switch the view mode.
+ * drawer closed included.
  */
 export function JourneyStepHotkeys() {
   const goToStep = useGoToJourneyStep();
@@ -58,6 +58,19 @@ export function JourneyStepHotkeys() {
     preventDefault: true,
   });
   return null;
+}
+
+function useFocusFollowsActiveStep(
+  stripRef: React.RefObject<HTMLElement | null>,
+) {
+  const journey = useActiveDiffJourney();
+  const activeStepKey = journey?.steps[journey.stepIndex]?.key;
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (strip?.contains(document.activeElement)) {
+      strip.querySelector<HTMLElement>("[aria-current='step']")?.focus();
+    }
+  }, [stripRef, activeStepKey]);
 }
 
 /** What the dot marks: the statuses that put a diff in front of a reviewer. */
@@ -95,16 +108,7 @@ export function BuildJourneyDrawer() {
   const { activeDiff, setActiveDiff, isSubsetBuild } = useBuildDiffState();
   const goToStep = useGoToJourneyStep();
   const stripRef = useRef<HTMLDivElement>(null);
-  const activeStepKey = journey?.steps[journey.stepIndex]?.key;
-  // An arrow opens a step without clicking it, so focus has to be carried
-  // there, or the ring stays behind on the step that was left.
-  useEffect(() => {
-    const strip = stripRef.current;
-    if (!strip || !strip.contains(document.activeElement)) {
-      return;
-    }
-    strip.querySelector<HTMLElement>("[aria-current='step']")?.focus();
-  }, [activeStepKey]);
+  useFocusFollowsActiveStep(stripRef);
   if (!visible || !journey || !activeDiff) {
     return null;
   }
@@ -125,20 +129,10 @@ export function BuildJourneyDrawer() {
         role="toolbar"
         aria-label="Journey"
         onKeyDown={(event) => {
-          if (
-            event.altKey ||
-            event.ctrlKey ||
-            event.metaKey ||
-            event.shiftKey
-          ) {
-            return;
-          }
-          const delta =
-            event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
-          if (delta !== 0) {
-            // Or the strip scrolls sideways under the focused step.
+          const direction = getPlainArrowDirection(event);
+          if (direction) {
             event.preventDefault();
-            goToStep(delta);
+            goToStep(direction);
           }
         }}
         className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5"
@@ -159,8 +153,6 @@ export function BuildJourneyDrawer() {
                 type="button"
                 data-journey-step={step.key}
                 aria-current={isActive ? "step" : undefined}
-                // One tab stop for the whole strip, on the active step; the
-                // arrows walk the rest.
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveDiff(diff, true)}
                 className={clsx(
