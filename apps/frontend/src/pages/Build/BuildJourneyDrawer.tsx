@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { clsx } from "clsx";
 import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
@@ -24,14 +25,11 @@ import { getViewportIconKind } from "./metadata/metadataIcons";
 import { resolveDiffMetadata } from "./metadata/utils";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
 
-/**
- * ⇧← / ⇧→ walk the journey of the active diff, across status sections — the
- * keyboard counterpart of the drawer (and independent from it).
- */
-export function JourneyStepHotkeys() {
+/** Opens the step `delta` away from the active one, across status sections. */
+function useGoToJourneyStep() {
   const journey = useActiveDiffJourney();
   const { activeDiff, setActiveDiff } = useBuildDiffState();
-  const goToStep = useEventCallback((delta: -1 | 1) => {
+  return useEventCallback((delta: -1 | 1) => {
     if (!journey || !activeDiff) {
       return;
     }
@@ -44,6 +42,15 @@ export function JourneyStepHotkeys() {
       setActiveDiff(diff, true);
     }
   });
+}
+
+/**
+ * ⇧← / ⇧→ walk the journey of the active diff from anywhere on the page, the
+ * drawer closed included. Plain ← / → do the same, but only from inside the
+ * strip: everywhere else they switch the view mode.
+ */
+export function JourneyStepHotkeys() {
+  const goToStep = useGoToJourneyStep();
   useBuildHotkey("goToPreviousJourneyStep", () => goToStep(-1), {
     preventDefault: true,
   });
@@ -86,6 +93,18 @@ export function BuildJourneyDrawer() {
   const { visible } = useJourneyDrawerState();
   const journey = useActiveDiffJourney();
   const { activeDiff, setActiveDiff, isSubsetBuild } = useBuildDiffState();
+  const goToStep = useGoToJourneyStep();
+  const stripRef = useRef<HTMLDivElement>(null);
+  const activeStepKey = journey?.steps[journey.stepIndex]?.key;
+  // An arrow opens a step without clicking it, so focus has to be carried
+  // there, or the ring stays behind on the step that was left.
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip || !strip.contains(document.activeElement)) {
+      return;
+    }
+    strip.querySelector<HTMLElement>("[aria-current='step']")?.focus();
+  }, [activeStepKey]);
   if (!visible || !journey || !activeDiff) {
     return null;
   }
@@ -101,7 +120,29 @@ export function BuildJourneyDrawer() {
     // selection ring and focus outline of edge thumbnails from being clipped
     // by the scroll container.
     <div className="shrink-0 px-4 pt-2" data-testid="journey-drawer">
-      <div className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5">
+      <div
+        ref={stripRef}
+        role="toolbar"
+        aria-label="Journey"
+        onKeyDown={(event) => {
+          if (
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey
+          ) {
+            return;
+          }
+          const delta =
+            event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+          if (delta !== 0) {
+            // Or the strip scrolls sideways under the focused step.
+            event.preventDefault();
+            goToStep(delta);
+          }
+        }}
+        className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5"
+      >
         {journey.steps.map((step, index) => {
           const diff = pickStepDiff(step, activeDiff);
           if (!diff) {
@@ -118,9 +159,12 @@ export function BuildJourneyDrawer() {
                 type="button"
                 data-journey-step={step.key}
                 aria-current={isActive ? "step" : undefined}
+                // One tab stop for the whole strip, on the active step; the
+                // arrows walk the rest.
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveDiff(diff, true)}
                 className={clsx(
-                  "flex flex-col items-center gap-1 rounded-md p-1",
+                  "focus-ring flex flex-col items-center gap-1 rounded-md p-1",
                   !isActive && "hover:bg-hover",
                 )}
               >
