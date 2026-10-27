@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { clsx } from "clsx";
 import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
@@ -7,6 +8,7 @@ import {
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { getPlainArrowDirection } from "@/containers/Build/hotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -24,14 +26,11 @@ import { getViewportIconKind } from "./metadata/metadataIcons";
 import { resolveDiffMetadata } from "./metadata/utils";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
 
-/**
- * ⇧← / ⇧→ walk the journey of the active diff, across status sections — the
- * keyboard counterpart of the drawer (and independent from it).
- */
-export function JourneyStepHotkeys() {
+/** Opens the step `delta` away from the active one, across status sections. */
+function useGoToJourneyStep() {
   const journey = useActiveDiffJourney();
   const { activeDiff, setActiveDiff } = useBuildDiffState();
-  const goToStep = useEventCallback((delta: -1 | 1) => {
+  return useEventCallback((delta: -1 | 1) => {
     if (!journey || !activeDiff) {
       return;
     }
@@ -44,6 +43,14 @@ export function JourneyStepHotkeys() {
       setActiveDiff(diff, true);
     }
   });
+}
+
+/**
+ * ⇧← / ⇧→ walk the journey of the active diff from anywhere on the page, the
+ * drawer closed included.
+ */
+export function JourneyStepHotkeys() {
+  const goToStep = useGoToJourneyStep();
   useBuildHotkey("goToPreviousJourneyStep", () => goToStep(-1), {
     preventDefault: true,
   });
@@ -51,6 +58,19 @@ export function JourneyStepHotkeys() {
     preventDefault: true,
   });
   return null;
+}
+
+function useFocusFollowsActiveStep(
+  stripRef: React.RefObject<HTMLElement | null>,
+) {
+  const journey = useActiveDiffJourney();
+  const activeStepKey = journey?.steps[journey.stepIndex]?.key;
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (strip?.contains(document.activeElement)) {
+      strip.querySelector<HTMLElement>("[aria-current='step']")?.focus();
+    }
+  }, [stripRef, activeStepKey]);
 }
 
 /** What the dot marks: the statuses that put a diff in front of a reviewer. */
@@ -86,6 +106,9 @@ export function BuildJourneyDrawer() {
   const { visible } = useJourneyDrawerState();
   const journey = useActiveDiffJourney();
   const { activeDiff, setActiveDiff, isSubsetBuild } = useBuildDiffState();
+  const goToStep = useGoToJourneyStep();
+  const stripRef = useRef<HTMLDivElement>(null);
+  useFocusFollowsActiveStep(stripRef);
   if (!visible || !journey || !activeDiff) {
     return null;
   }
@@ -101,7 +124,19 @@ export function BuildJourneyDrawer() {
     // selection ring and focus outline of edge thumbnails from being clipped
     // by the scroll container.
     <div className="shrink-0 px-4 pt-2" data-testid="journey-drawer">
-      <div className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5">
+      <div
+        ref={stripRef}
+        role="toolbar"
+        aria-label="Journey"
+        onKeyDown={(event) => {
+          const direction = getPlainArrowDirection(event);
+          if (direction) {
+            event.preventDefault();
+            goToStep(direction);
+          }
+        }}
+        className="bg-app border-thin flex items-center gap-1 overflow-x-auto rounded-md px-2 pt-2 pb-1.5"
+      >
         {journey.steps.map((step, index) => {
           const diff = pickStepDiff(step, activeDiff);
           if (!diff) {
@@ -118,9 +153,10 @@ export function BuildJourneyDrawer() {
                 type="button"
                 data-journey-step={step.key}
                 aria-current={isActive ? "step" : undefined}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveDiff(diff, true)}
                 className={clsx(
-                  "flex flex-col items-center gap-1 rounded-md p-1",
+                  "focus-ring flex flex-col items-center gap-1 rounded-md p-1",
                   !isActive && "hover:bg-hover",
                 )}
               >

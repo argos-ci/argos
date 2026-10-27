@@ -18,6 +18,7 @@ import {
   checkHotkeyUsesModifiers,
   getHotkey,
   getModifierLabel,
+  getPlainArrowDirection,
   plainHotkeyGroups,
   SEARCHABLE_MODIFIERS,
   type Hotkey,
@@ -51,6 +52,14 @@ type HotkeyRegistration = {
  */
 const hotkeyRegistry = new Set<HotkeyRegistration>();
 
+function checkIsToolbarNavigation(event: KeyboardEvent): boolean {
+  return (
+    event.target instanceof HTMLElement &&
+    event.target.closest("[role=toolbar]") !== null &&
+    getPlainArrowDirection(event) !== null
+  );
+}
+
 function handleDocumentKeyDown(event: KeyboardEvent) {
   // Guards shared by all hotkeys, based solely on the event target.
 
@@ -76,6 +85,10 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
       event.target.closest("[data-hotkeys-disabled]") ||
       event.target.closest("[role=dialog]"))
   ) {
+    return;
+  }
+
+  if (checkIsToolbarNavigation(event)) {
     return;
   }
 

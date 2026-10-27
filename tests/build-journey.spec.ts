@@ -94,6 +94,37 @@ loggedTest(
       },
     });
 
+    // The click above left focus in the strip, and from there plain ← / →
+    // walk it too. Focus goes along, so the next arrow starts from the step
+    // on screen.
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByRole("heading", { name: "checkout/shipping.png" }),
+    ).toBeVisible();
+    await waitForDiffListToSettle(page);
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByRole("heading", { name: "checkout/payment.png" }),
+    ).toBeVisible();
+    const payment = drawer.getByRole("button", { name: "3 · payment" });
+    await expect(payment).toBeFocused();
+    await waitForDiffListToSettle(page);
+
+    // Out of the strip, ← / → switch the view mode again and the step stays.
+    await payment.blur();
+    const baseline = page.getByRole("button", {
+      name: "Baseline",
+      exact: true,
+    });
+    const changes = page.getByRole("button", { name: "Changes", exact: true });
+    await page.keyboard.press("ArrowLeft");
+    await expect(baseline).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("ArrowRight");
+    await expect(changes).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("heading", { name: "checkout/payment.png" }),
+    ).toBeVisible();
+
     // A test that captures a single screen is regular visual testing, not a
     // journey: nothing to open, and nothing offering to.
     await page
