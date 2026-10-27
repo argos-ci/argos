@@ -2,6 +2,7 @@ import { Gitlab } from "@gitbeaker/rest";
 
 import config from "@/config";
 import type { Account, GitlabProject } from "@/database/models";
+import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";
@@ -117,7 +118,17 @@ export async function getGitlabClientForProject(
   gitlabProject: GitlabProject,
   options: Parameters<typeof getGitlabClientFromAccount>[1],
 ): Promise<GitlabProjectClient | null> {
-  if (gitlabProject.baseUrl !== getGitlabBaseUrl(account)) {
+  const accountBaseUrl = getGitlabBaseUrl(account);
+  if (gitlabProject.baseUrl !== accountBaseUrl) {
+    logger.warn(
+      {
+        accountId: account.id,
+        gitlabProjectId: gitlabProject.id,
+        projectBaseUrl: gitlabProject.baseUrl,
+        accountBaseUrl,
+      },
+      "GitLab project belongs to another instance than its account's",
+    );
     return null;
   }
   const client = await getGitlabClientFromAccount(account, options);

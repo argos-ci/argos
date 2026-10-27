@@ -86,15 +86,18 @@ export const up = async (knex) => {
   }
 
   // A shared row holds whatever instance synced it last, so its visibility may
-  // be another project's: fail closed until the next build syncs it, which an
-  // `updatedAt` older than a day makes happen.
+  // be another project's: fail closed until it is synced again. Marking it
+  // stale is what makes the next build, or `gitlab/bin/sync-gitlab-projects`
+  // right after deploy, sync it.
   if (splitIds.size > 0) {
     await knex("gitlab_projects")
       .whereIn("id", [...splitIds])
-      .update({ visibility: "private", updatedAt: knex.ref("createdAt") });
+      .update({ visibility: "private", updatedAt: new Date(0).toISOString() });
   }
 
-  await dedupe(knex, "gitlab_projects", "projects", "gitlabProjectId");
+  await dedupe(knex, "gitlab_projects", "projects", "gitlabProjectId", {
+    detach: false,
+  });
 
   await knex.raw(
     `ALTER TABLE gitlab_projects ALTER COLUMN "baseUrl" SET NOT NULL`,
@@ -111,7 +114,9 @@ export const up = async (knex) => {
     `ALTER TABLE gitlab_users ALTER COLUMN "baseUrl" DROP DEFAULT`,
   );
 
-  await dedupe(knex, "gitlab_users", "users", "gitlabUserId");
+  // Two users can't share one GitLab user: signing in resolves only one of
+  // them, and deleting either account deletes the row the other references.
+  await dedupe(knex, "gitlab_users", "users", "gitlabUserId", { detach: true });
 
   await knex.schema.alterTable("gitlab_users", (table) => {
     table.unique(["baseUrl", "gitlabId"]);
@@ -120,22 +125,28 @@ export const up = async (knex) => {
 
 /**
  * Nothing prevented two concurrent requests from both inserting a row: keep the
- * oldest of each instance and `gitlabId`, and point what referenced the others
- * at it.
+ * oldest of each instance and `gitlabId` that something references, and either
+ * point what referenced the others at it or, with `detach`, unlink it.
  *
  * @param {import('knex').Knex} knex
  * @param {string} table
  * @param {string} refTable
  * @param {string} refColumn
+ * @param {{ detach: boolean }} options
  */
-async function dedupe(knex, table, refTable, refColumn) {
+async function dedupe(knex, table, refTable, refColumn, { detach }) {
   const duplicates = `
-    SELECT id, min(id) OVER (PARTITION BY "baseUrl", "gitlabId") AS "keepId"
-    FROM ${table}
+    SELECT dup.id, first_value(dup.id) OVER (
+      PARTITION BY dup."baseUrl", dup."gitlabId"
+      ORDER BY NOT EXISTS (
+        SELECT 1 FROM ${refTable} ref WHERE ref."${refColumn}" = dup.id
+      ), dup.id
+    ) AS "keepId"
+    FROM ${table} dup
   `;
   await knex.raw(`
     UPDATE ${refTable} r
-    SET "${refColumn}" = d."keepId"
+    SET "${refColumn}" = ${detach ? "NULL" : `d."keepId"`}
     FROM (${duplicates}) d
     WHERE r."${refColumn}" = d.id AND d.id <> d."keepId"
   `);
