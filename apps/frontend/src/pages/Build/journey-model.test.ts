@@ -21,6 +21,21 @@ describe("#resolveJourneyIdentity", () => {
     });
   });
 
+  it("keeps the runs of one test apart", () => {
+    const titlePath = ["checkout.spec.ts", "complete a purchase"];
+    const desktop = resolveJourneyIdentity({
+      test: { id: "a1b2-desktop", titlePath },
+    });
+    const mobile = resolveJourneyIdentity({
+      test: { id: "c3d4-mobile", titlePath },
+    });
+    expect(desktop?.key).toBe(
+      "checkout.spec.ts › complete a purchase#a1b2-desktop",
+    );
+    expect(mobile?.key).not.toBe(desktop?.key);
+    expect(mobile?.title).toBe("complete a purchase");
+  });
+
   it("groups stories by component", () => {
     expect(
       resolveJourneyIdentity({

@@ -2,25 +2,28 @@
  * The journey a screenshot belongs to, derived from the metadata the SDK
  * records — nothing to configure on the user's side.
  *
- * A *journey* is the test that took the screenshot: its title path (file ›
- * describe › test) is the identity. Storybook uploads carry a story id
- * instead: stories group by component, one step per story.
+ * A *journey* is one run of the test that took the screenshot: its title path
+ * (file › describe › test) names it, and the test id tells its runs apart, so
+ * a test run by a `desktop` and a `mobile` Playwright project is two journeys.
+ * Storybook uploads carry a story id instead: stories group by component, one
+ * step per story.
  *
- * A *step* is a logical screen, not a file: the viewport and browser variants
- * of one screen collapse into one step, keyed by the backend `variantKey`.
+ * A *step* is a logical screen, not a file: the variants a run takes of one
+ * screen (viewports, modes) collapse into one step, keyed by the backend
+ * `variantKey`.
  * Steps follow the capture order recorded by the SDK, and fall back to the
  * alphabetical order of their key when it is missing.
  */
 
 /** The part of a screenshot's metadata the journey model reads. */
 export type JourneyMetadata = {
-  test?: { titlePath: string[] } | null;
+  test?: { id?: string | null; titlePath: string[] } | null;
   story?: { id: string } | null;
   capture?: { index: number } | null;
 } | null;
 
 export type JourneyIdentity = {
-  /** Stable key, e.g. the joined test title path or a story component id. */
+  /** Stable key, e.g. the title path and test id, or a story component id. */
   key: string;
   /** Muted context shown before the title (test file, "storybook"…). */
   prefix: string;
@@ -50,8 +53,13 @@ export function resolveJourneyIdentity(
     if (!title) {
       return null;
     }
+    // The title path is the same in every Playwright project, and the SDK
+    // numbers the captures of each run from 0: two runs under one key
+    // interleave, desktop and mobile alternating. Playwright and Vitest
+    // derive the test id from the project; Cypress sends none.
+    const runId = metadata?.test?.id;
     return {
-      key: titlePath.join(" › "),
+      key: runId ? `${titlePath.join(" › ")}#${runId}` : titlePath.join(" › "),
       prefix: titlePath.slice(0, -1).join(" › "),
       title,
     };
