@@ -25,7 +25,8 @@ export const formatGlProject = (glProject: ProjectSchema) => {
  * Not built from the account's `gitlabBaseUrl`: on a self-hosted instance it
  * is a proxy that only answers requests carrying `X-Argos-Auth`. Rows stored
  * before `webUrl` existed read null until a build of the project resyncs them,
- * and fall back to gitlab.com meanwhile.
+ * or `gitlab/bin/sync-gitlab-projects` does, and fall back to gitlab.com
+ * meanwhile.
  */
 export function getGitlabProjectUrl(gitlabProject: GitlabProject): string {
   return (

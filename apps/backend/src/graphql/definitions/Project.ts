@@ -606,6 +606,7 @@ const getOrCreateGitlabProject = async (props: {
       "pathWithNamespace",
       "visibility",
       "defaultBranch",
+      "webUrl",
       "updatedAt",
     ])
     .returning("*");
