@@ -119,6 +119,7 @@ export const GitlabProject = defineFactory(models.GitlabProject, () => ({
   visibility: "private" as const,
   defaultBranch: "main",
   gitlabId: FactoryGirl.sequence("gitlabProject.gitlabId", (n) => n),
+  baseUrl: "https://gitlab.com",
 }));
 
 export const UserAccount = defineFactory(models.Account, () => ({

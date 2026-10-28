@@ -19,6 +19,7 @@ export class GitlabProject extends Model {
           "visibility",
           "defaultBranch",
           "gitlabId",
+          "baseUrl",
         ],
         properties: {
           name: { type: "string" },
@@ -30,6 +31,7 @@ export class GitlabProject extends Model {
           },
           defaultBranch: { type: "string" },
           gitlabId: { type: "number" },
+          baseUrl: { type: "string" },
         },
       },
     ],
@@ -41,6 +43,8 @@ export class GitlabProject extends Model {
   visibility!: "public" | "private" | "internal";
   defaultBranch!: string;
   gitlabId!: number;
+  /** The instance `gitlabId` is unique within. */
+  baseUrl!: string;
 
   static override get relationMappings(): RelationMappings {
     return {

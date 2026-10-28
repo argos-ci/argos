@@ -1,12 +1,19 @@
 import { Gitlab } from "@gitbeaker/rest";
 
 import config from "@/config";
-import type { Account } from "@/database/models";
+import type { Account, GitlabProject } from "@/database/models";
+import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";
 
 export type GitlabClient = InstanceType<typeof Gitlab<false>>;
+
+export const GITLAB_COM_URL = "https://gitlab.com";
+
+export function getGitlabBaseUrl(account: Account): string {
+  return account.gitlabBaseUrl ?? GITLAB_COM_URL;
+}
 
 export function getGitlabClient(params: {
   accessToken: string;
@@ -14,7 +21,7 @@ export function getGitlabClient(params: {
 }): GitlabClient {
   const client = new Gitlab({
     oauthToken: params.accessToken,
-    host: params.baseUrl ?? "https://gitlab.com",
+    host: params.baseUrl ?? GITLAB_COM_URL,
   });
   // If we are on-premise
   if (params.baseUrl) {
@@ -94,4 +101,36 @@ export async function getGitlabClientFromAccount(
     }
     throw error;
   }
+}
+
+export type GitlabProjectClient = {
+  client: GitlabClient;
+  gitlabProjectId: number;
+};
+
+/**
+ * Same as {@link getGitlabClientFromAccount}, bound to a linked GitLab project.
+ * A project linked while the account pointed at another instance is out of
+ * reach: on the current one, its `gitlabId` names some other project, if any.
+ */
+export async function getGitlabClientForProject(
+  account: Account,
+  gitlabProject: GitlabProject,
+  options: Parameters<typeof getGitlabClientFromAccount>[1],
+): Promise<GitlabProjectClient | null> {
+  const accountBaseUrl = getGitlabBaseUrl(account);
+  if (gitlabProject.baseUrl !== accountBaseUrl) {
+    logger.warn(
+      {
+        accountId: account.id,
+        gitlabProjectId: gitlabProject.id,
+        projectBaseUrl: gitlabProject.baseUrl,
+        accountBaseUrl,
+      },
+      "GitLab project belongs to another instance than its account's",
+    );
+    return null;
+  }
+  const client = await getGitlabClientFromAccount(account, options);
+  return client ? { client, gitlabProjectId: gitlabProject.gitlabId } : null;
 }

@@ -1,8 +1,6 @@
 import { invariant } from "@argos/util/invariant";
-import type { Gitlab } from "@gitbeaker/rest";
 
-import type { GitlabProject } from "@/database/models";
-import { getGitlabClientFromAccount } from "@/gitlab";
+import { getGitlabClientForProject, type GitlabProjectClient } from "@/gitlab";
 import { setGitLabCommitStatus } from "@/gitlab/commit-status";
 import { UnretryableError } from "@/job-core";
 
@@ -10,8 +8,7 @@ import type { SendNotificationContext } from "../context";
 import type { NotificationPayload } from "../notification";
 
 export type SendGitLabNotificationContext = SendNotificationContext & {
-  gitlabClient: Gitlab<false>;
-  gitlabProject: GitlabProject;
+  gitlab: GitlabProjectClient;
 };
 
 /**
@@ -30,15 +27,15 @@ export async function getGitLabNotificationContext(
     return null;
   }
 
-  const gitlabClient = await getGitlabClientFromAccount(account, {
+  const gitlab = await getGitlabClientForProject(account, gitlabProject, {
     mode: "headless",
   });
 
-  if (!gitlabClient) {
+  if (!gitlab) {
     return null;
   }
 
-  return { ...ctx, gitlabClient, gitlabProject };
+  return { ...ctx, gitlab };
 }
 
 /**
@@ -48,11 +45,9 @@ export async function postGitLabNotificationCommitStatus(
   ctx: SendGitLabNotificationContext,
   notification: NotificationPayload,
 ) {
-  const { gitlabClient, gitlabProject, commit } = ctx;
   await setGitLabCommitStatus({
-    client: gitlabClient,
-    gitlabProjectId: gitlabProject.gitlabId,
-    sha: commit,
+    ...ctx.gitlab,
+    sha: ctx.commit,
     state: notification.gitlab.state,
     context: notification.context,
     targetUrl: notification.url,

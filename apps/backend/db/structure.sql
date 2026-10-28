@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
+\restrict giY6RoHrcuNSMb7TSnKlv8vtKPLF7UDP4PUCeytJbVzizue8HvaP4Yy1FlgbZTi
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -1238,6 +1238,7 @@ CREATE TABLE public.gitlab_projects (
     visibility text NOT NULL,
     "defaultBranch" character varying(255) NOT NULL,
     "gitlabId" integer NOT NULL,
+    "baseUrl" character varying(255) NOT NULL,
     CONSTRAINT gitlab_projects_visibility_check CHECK ((visibility = ANY (ARRAY['public'::text, 'internal'::text, 'private'::text])))
 );
 
@@ -1280,7 +1281,8 @@ CREATE TABLE public.gitlab_users (
     "accessToken" text NOT NULL,
     "accessTokenExpiresAt" timestamp with time zone NOT NULL,
     "refreshToken" text NOT NULL,
-    "lastLoggedAt" timestamp with time zone
+    "lastLoggedAt" timestamp with time zone,
+    "baseUrl" character varying(255) NOT NULL
 );
 
 
@@ -4170,11 +4172,27 @@ ALTER TABLE ONLY public.github_synchronizations
 
 
 --
+-- Name: gitlab_projects gitlab_projects_baseurl_gitlabid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_projects
+    ADD CONSTRAINT gitlab_projects_baseurl_gitlabid_unique UNIQUE ("baseUrl", "gitlabId");
+
+
+--
 -- Name: gitlab_projects gitlab_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.gitlab_projects
     ADD CONSTRAINT gitlab_projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gitlab_users gitlab_users_baseurl_gitlabid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_users
+    ADD CONSTRAINT gitlab_users_baseurl_gitlabid_unique UNIQUE ("baseUrl", "gitlabId");
 
 
 --
@@ -5426,6 +5444,13 @@ CREATE INDEX projects_accountid_index ON public.projects USING btree ("accountId
 --
 
 CREATE INDEX projects_githubrepositoryid_index ON public.projects USING btree ("githubRepositoryId");
+
+
+--
+-- Name: projects_gitlabprojectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_gitlabprojectid_index ON public.projects USING btree ("gitlabProjectId");
 
 
 --
@@ -6893,7 +6918,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OcpihsLiLpHwCQvdWfTajwQmwgV9ZG9MceVTqM5BKN9QmV0bIBudgaJtcUIfDuB
+\unrestrict giY6RoHrcuNSMb7TSnKlv8vtKPLF7UDP4PUCeytJbVzizue8HvaP4Yy1FlgbZTi
 
 -- Knex migrations
 
@@ -7160,3 +7185,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261015104600_screenshot-buckets-project-branch-name-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261021120000_team-scim.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261026120000_subscription-cancellations.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027104323_gitlab-instance-isolation.js', 1, NOW());

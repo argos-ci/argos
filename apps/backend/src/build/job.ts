@@ -5,7 +5,7 @@ import { Build, Project, ScreenshotDiff } from "@/database/models";
 import { claimOverageAlert } from "@/database/services/overage-alert";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
+import { GITLAB_PROJECT_SYNC_INTERVAL, syncGitlabProject } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
@@ -97,38 +97,24 @@ async function updateUsage(project: Project) {
 /**
  * Sync GitLab project if needed.
  */
-async function syncGitlabProject(project: Project) {
+async function syncStaleGitlabProject(project: Project) {
   if (!project.gitlabProjectId) {
     return;
   }
   invariant(project.gitlabProject, "no gitlabProject found", UnretryableError);
 
-  // If the gitlab project has not been updated since 24h
   if (
     new Date(project.gitlabProject.updatedAt).getTime() >
-    Date.now() - 24 * 60 * 60 * 1000
+    Date.now() - GITLAB_PROJECT_SYNC_INTERVAL
   ) {
     return;
   }
 
   invariant(project.account, "no account found", UnretryableError);
 
-  const gitlabClient = await getGitlabClientFromAccount(project.account, {
+  await syncGitlabProject(project.gitlabProject, project.account, {
     mode: "headless",
   });
-
-  if (!gitlabClient) {
-    return;
-  }
-
-  const glProject = await gitlabClient.Projects.show(
-    project.gitlabProject.gitlabId,
-  );
-
-  await project.gitlabProject
-    .$clone()
-    .$query()
-    .patch(formatGlProject(glProject));
 }
 
 export async function performBuild(build: Build) {
@@ -160,7 +146,7 @@ export async function performBuild(build: Build) {
     }),
   ]);
 
-  await Promise.all([updateUsage(project), syncGitlabProject(project)]);
+  await Promise.all([updateUsage(project), syncStaleGitlabProject(project)]);
 }
 
 export const job = createModelJob("build", Build, performBuild);

@@ -19,6 +19,7 @@ export class GitlabUser extends Model {
           "email",
           "username",
           "gitlabId",
+          "baseUrl",
           "accessToken",
           "accessTokenExpiresAt",
           "refreshToken",
@@ -28,6 +29,7 @@ export class GitlabUser extends Model {
           email: { type: "string" },
           username: { type: "string" },
           gitlabId: { type: "number" },
+          baseUrl: { type: "string" },
           accessToken: { type: "string" },
           accessTokenExpiresAt: { type: "string" },
           refreshToken: { type: "string" },
@@ -41,6 +43,8 @@ export class GitlabUser extends Model {
   email!: string;
   username!: string;
   gitlabId!: number;
+  /** The instance `gitlabId` is unique within. */
+  baseUrl!: string;
   accessToken!: string;
   accessTokenExpiresAt!: string;
   refreshToken!: string;

@@ -2,6 +2,7 @@ import type { NamespaceSchema, ProjectSchema } from "@gitbeaker/rest";
 
 export * from "./auth";
 export * from "./client";
+export * from "./sync";
 export * from "./util";
 
 /** @public */
