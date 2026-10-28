@@ -1,5 +1,7 @@
 import gqlTag from "graphql-tag";
 
+import { getGitlabProjectUrl } from "@/gitlab";
+
 import type { IResolvers } from "../__generated__/resolver-types";
 
 const { gql } = gqlTag;
@@ -16,9 +18,7 @@ export const typeDefs = gql`
 
 export const resolvers: IResolvers = {
   GitlabProject: {
-    url: (gitlabProject) => {
-      return `https://gitlab.com/${gitlabProject.pathWithNamespace}`;
-    },
+    url: (gitlabProject) => getGitlabProjectUrl(gitlabProject),
     fullName: (gitlabProject) => {
       return gitlabProject.pathWithNamespace;
     },
