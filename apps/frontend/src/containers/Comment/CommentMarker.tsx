@@ -13,6 +13,9 @@ import {
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
+import useViewportSize from "@/ui/useViewportSize";
+
+import { getCardPlacement, PIN_SIZE } from "./commentPlacement";
 
 /**
  * What the marker reads — deliberately narrower than any one page's fragment.
@@ -34,17 +37,16 @@ type Comment = {
   resolvedAt: string | null;
 };
 
-/** Pin badge size: a size-7 (28px) avatar with 4px (`p-1`) padding all around. */
-const PIN_SIZE = 36;
 /** Width of the expanded preview card (`w-72`). */
 const PREVIEW_WIDTH = 288;
 const TRANSITION = { duration: 0.18, ease: [0.4, 0, 0.2, 1] } as const;
 
 /**
  * A comment anchored on the changes image, drawn as a pin whose bottom-left tip
- * sits on the anchor point. On hover it expands in place — extending up and to
- * the right — into a preview: the avatar rises to the top, the author/time slide
- * in beside it and the comment appears below. Clicking opens the full thread,
+ * sits on the anchor point. On hover it expands in place, extending up and to
+ * the right (to the left when the window ends too close on the right), into a
+ * preview: the avatar rises to the top, the author/time slide in beside it and
+ * the comment appears below. Clicking opens the full thread,
  * shown as a separate popover beside the pin (see {@link CommentThreadPopover}),
  * so while open the pin stays put as a selected marker.
  *
@@ -68,6 +70,14 @@ export function CommentMarker(props: {
   // The preview only shows on hover while the thread popover is closed; once
   // open the pin is just a selected marker beside the popover.
   const expanded = hovered && !open;
+  const viewport = useViewportSize();
+  const flipped =
+    getCardPlacement({
+      point,
+      offsetX: 0,
+      width: PREVIEW_WIDTH,
+      viewportWidth: viewport.width,
+    })?.side === "left";
 
   return createPortal(
     <div
@@ -79,11 +89,12 @@ export function CommentMarker(props: {
       )}
       // Pin the bottom-left tip at the point: `translateY(-100%)` keeps the
       // bottom edge on the point as the card grows, so it extends upward; the
-      // left edge stays put, so it also extends to the right.
+      // left edge stays put, so it also extends to the right. Flipped, the
+      // pin's right edge stays put instead, and the card extends to the left.
       style={{
-        left: point.left,
+        left: flipped ? point.left + PIN_SIZE : point.left,
         top: point.top,
-        transform: "translateY(-100%)",
+        transform: flipped ? "translate(-100%, -100%)" : "translateY(-100%)",
       }}
     >
       <motion.div
@@ -107,13 +118,26 @@ export function CommentMarker(props: {
         animate={{ width: expanded ? PREVIEW_WIDTH : PIN_SIZE }}
         transition={TRANSITION}
         className={clsx(
-          "bg-app rounded-chip pointer-events-auto cursor-pointer overflow-hidden rounded-bl-none shadow-md outline-none",
+          "bg-app rounded-chip pointer-events-auto cursor-pointer overflow-hidden shadow-md outline-none",
           open ? "ring-primary ring-2" : "border-thin",
+          // Flipped, the card's content is laid out from its right edge, so the
+          // avatar stays on the pin as the card widens to the left.
+          flipped &&
+            "flex flex-col items-end transition-[border-radius] duration-180",
+          // A flipped preview's bottom-left corner is a card's width away from
+          // the point, so it would not be the tip anymore: it rounds off, and
+          // the avatar, still on the pin, marks the spot.
+          !(flipped && expanded) && "rounded-bl-none",
         )}
       >
         {/* Top row, laid out at the full preview width so the avatar stays put
             while the author/time are revealed as the card widens. */}
-        <div className="flex w-72 items-center">
+        <div
+          className={clsx(
+            "flex w-72 items-center",
+            flipped && "flex-row-reverse",
+          )}
+        >
           <div className="relative shrink-0 p-1">
             {comment.user ? (
               <AccountAvatar
@@ -137,7 +161,13 @@ export function CommentMarker(props: {
               </div>
             ) : null}
           </div>
-          <div className="flex min-w-0 items-baseline gap-1.5 pr-3 pl-1">
+          <div
+            className={clsx(
+              "flex min-w-0 items-baseline gap-1.5",
+              // Flipped, the author starts where the comment below starts.
+              flipped ? "flex-1 pr-1 pl-2" : "pr-3 pl-1",
+            )}
+          >
             <span className="text-default min-w-0 truncate text-xs font-medium">
               {name}
             </span>

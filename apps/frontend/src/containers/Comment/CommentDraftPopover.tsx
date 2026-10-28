@@ -69,7 +69,7 @@ export function CommentDraftPopover(props: {
       offset={{ x: 42, y: -18 }}
       role="dialog"
       aria-label="Add a comment"
-      className="w-80"
+      width={320}
     >
       <div className="bg-app border-thin flex -translate-y-1/2 items-end gap-2 rounded-2xl p-1.5 shadow-xl">
         <Editor
