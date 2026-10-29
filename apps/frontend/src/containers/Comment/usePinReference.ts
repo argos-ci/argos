@@ -11,9 +11,7 @@ export const WINDOW_PADDING = 8;
 
 /**
  * The pin, as the reference floating-ui places its cards against: the
- * `PIN_SIZE` square whose bottom-left corner (the tip) is on the point. Built
- * from the point the layer already has, so no element ref has to travel from a
- * pin to its cards.
+ * `PIN_SIZE` square whose bottom-left corner (the tip) is on the point.
  */
 export function usePinReference(point: ScreenPoint): VirtualElement {
   const { left, top } = point;

@@ -11,11 +11,11 @@ import { CommentPopoverFrame } from "./CommentPopoverFrame";
 import { useMentionableUsers } from "./MentionableUsersContext";
 
 /**
- * The compact floating "Add a comment" prompt shown to the right of the pin
- * after clicking a point on the changes image with the comment tool. A
- * single-line pill (input + send) that grows with the content; the author's
- * avatar lives on the pin, so it's not repeated here. Submitting anchors the
- * comment to the point; the content is kept if the request fails.
+ * The compact floating "Add a comment" prompt shown beside the pin after
+ * clicking a point on the changes image with the comment tool. A single-line
+ * pill (input + send) that grows with the content; the author's avatar lives on
+ * the pin, so it's not repeated here. Submitting anchors the comment to the
+ * point; the content is kept if the request fails.
  */
 export function CommentDraftPopover(props: {
   point: ScreenPoint;

@@ -1,6 +1,7 @@
 import {
   autoUpdate,
   flip,
+  limitShift,
   offset,
   shift,
   useFloating,
@@ -48,7 +49,13 @@ export function CommentPopoverFrame(props: {
       // Sides only: a thread running past the bottom of the window is shifted
       // up by `shift`, rather than flipped to grow upward from the pin.
       flip({ crossAxis: false, padding: WINDOW_PADDING }),
-      shift({ crossAxis: true, padding: WINDOW_PADDING }),
+      // Kept beside the pin vertically: once the pin leaves the window, its
+      // card follows instead of staying stuck to the window's edge.
+      shift({
+        crossAxis: true,
+        padding: WINDOW_PADDING,
+        limiter: limitShift(),
+      }),
     ],
     whileElementsMounted: autoUpdate,
   });
@@ -57,7 +64,12 @@ export function CommentPopoverFrame(props: {
       ref={refs.setFloating}
       role={role}
       aria-label={props["aria-label"]}
-      style={floatingStyles}
+      style={{
+        ...floatingStyles,
+        // A window narrower than the card (a small phone) could not hold it
+        // even once shifted over the pin.
+        maxWidth: `calc(100vw - ${2 * WINDOW_PADDING}px)`,
+      }}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
         ZOOMER_OVERLAY_SCROLLABLE_CLASS,

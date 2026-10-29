@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { autoUpdate, flip, offset, useFloating } from "@floating-ui/react-dom";
+import { flip, useFloating } from "@floating-ui/react-dom";
 import { clsx } from "clsx";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -15,6 +15,7 @@ import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
 
+import { THREAD_GAP, THREAD_WIDTH } from "./CommentThreadPopover";
 import { PIN_SIZE, usePinReference, WINDOW_PADDING } from "./usePinReference";
 
 /**
@@ -39,6 +40,12 @@ type Comment = {
 
 /** Width of the expanded preview card (`w-72`). */
 const PREVIEW_WIDTH = 288;
+/**
+ * How far the open thread reaches from the pin's far edge, pin and gap
+ * included. The side is picked for this width rather than the preview's, so a
+ * preview never grows toward one side while its thread opens on the other.
+ */
+const THREAD_REACH = PIN_SIZE + THREAD_GAP + THREAD_WIDTH;
 const TRANSITION = { duration: 0.18, ease: [0.4, 0, 0.2, 1] } as const;
 
 /**
@@ -71,39 +78,45 @@ export function CommentMarker(props: {
   // open the pin is just a selected marker beside the popover.
   const expanded = hovered && !open;
   const reference = usePinReference(point);
-  const { refs, floatingStyles, placement } = useFloating({
+  // Only the side comes from floating-ui, and only while the preview is out:
+  // a collapsed pin looks the same on either side. The position stays on the
+  // point in CSS, so panning the image moves every pin in the same frame, at
+  // the same fractional offset as the image, without a computation per pin.
+  const { refs, placement } = useFloating({
     strategy: "fixed",
     placement: "top-start",
-    elements: { reference },
+    elements: { reference: expanded ? reference : null },
     middleware: [
-      // Bottom edge level with the pin's: the card covers its pin and grows
-      // upward from it.
-      offset(-PIN_SIZE),
       flip({
         mainAxis: false,
         fallbackPlacements: ["top-end"],
         padding: WINDOW_PADDING,
       }),
     ],
-    whileElementsMounted: autoUpdate,
   });
   const flipped = placement === "top-end";
 
   return createPortal(
-    // The preview's full width, expanded or not: floating-ui picks the side
-    // from the size the card grows to, not from the pin's. The card sits at
-    // its start, the pin's left edge, and so extends to the right; flipped, at
-    // its end, the pin's right edge, and extends to the left.
     <div
       ref={refs.setFloating}
-      style={floatingStyles}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
         ZOOMER_OVERLAY_SCROLLABLE_CLASS,
-        "pointer-events-none flex w-72 items-end",
+        "pointer-events-none fixed flex items-end",
         flipped && "justify-end",
         expanded || open ? "z-50" : "z-40",
       )}
+      // As wide as the thread will be, which is what floating-ui measures.
+      // `translateY(-100%)` keeps its bottom edge on the point as the card
+      // grows, so it extends upward. The card sits at its start, on the pin's
+      // left edge, and extends to the right; flipped, the box ends on the
+      // pin's right edge, and the card sits at its end and extends to the left.
+      style={{
+        left: flipped ? point.left + PIN_SIZE : point.left,
+        top: point.top,
+        width: THREAD_REACH,
+        transform: flipped ? "translate(-100%, -100%)" : "translateY(-100%)",
+      }}
     >
       <motion.div
         role="button"

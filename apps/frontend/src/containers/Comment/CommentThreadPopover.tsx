@@ -2,6 +2,11 @@ import type { ScreenPoint } from "@/containers/Build/projection";
 
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
 
+/** Width of the thread card (`w-80`). */
+export const THREAD_WIDTH = 320;
+/** Gap between the pin and the thread card beside it. */
+export const THREAD_GAP = 8;
+
 /**
  * The full comment thread, shown as a floating card beside its pin once opened.
  *
@@ -22,7 +27,7 @@ export function CommentThreadPopover(props: {
     <CommentPopoverFrame
       point={point}
       placement="right-start"
-      offset={{ mainAxis: 8, crossAxis: -4 }}
+      offset={{ mainAxis: THREAD_GAP, crossAxis: -4 }}
       role="dialog"
       aria-label={`Comment from ${authorName}`}
       className="w-80"
