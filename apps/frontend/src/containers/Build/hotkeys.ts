@@ -539,20 +539,6 @@ export function checkHotkeyMatches(
   });
 }
 
-export function getPlainArrowDirection(event: HotkeyEvent): -1 | 1 | null {
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-    return null;
-  }
-  switch (event.key) {
-    case "ArrowLeft":
-      return -1;
-    case "ArrowRight":
-      return 1;
-    default:
-      return null;
-  }
-}
-
 /** The hotkey named `name`, as declared above. */
 export function getHotkey(name: HotkeyName): Hotkey {
   return hotkeys[name];

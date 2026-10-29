@@ -8,7 +8,6 @@ import {
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { getPlainArrowDirection } from "@/containers/Build/hotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -58,6 +57,20 @@ export function JourneyStepHotkeys() {
     preventDefault: true,
   });
   return null;
+}
+
+function getPlainArrowDirection(event: React.KeyboardEvent): -1 | 1 | null {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return null;
+  }
+  switch (event.key) {
+    case "ArrowLeft":
+      return -1;
+    case "ArrowRight":
+      return 1;
+    default:
+      return null;
+  }
 }
 
 function useFocusFollowsActiveStep(
@@ -131,7 +144,10 @@ export function BuildJourneyDrawer() {
         onKeyDown={(event) => {
           const direction = getPlainArrowDirection(event);
           if (direction) {
+            // ← / → are the strip's here: kept from the build hotkeys, which
+            // would also switch the view mode.
             event.preventDefault();
+            event.stopPropagation();
             goToStep(direction);
           }
         }}

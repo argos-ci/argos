@@ -95,8 +95,8 @@ loggedTest(
     });
 
     // The click above left focus in the strip, and from there plain ← / →
-    // walk it too. Focus goes along, so the next arrow starts from the step
-    // on screen.
+    // walk it instead. Focus goes along, so the next arrow starts from the
+    // step on screen.
     await page.keyboard.press("ArrowRight");
     await expect(
       page.getByRole("heading", { name: "checkout/shipping.png" }),
@@ -106,16 +106,29 @@ loggedTest(
     await expect(
       page.getByRole("heading", { name: "checkout/payment.png" }),
     ).toBeVisible();
+    await waitForDiffListToSettle(page);
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByRole("heading", { name: "checkout/confirmation.png" }),
+    ).toBeVisible();
+    await waitForDiffListToSettle(page);
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      page.getByRole("heading", { name: "checkout/payment.png" }),
+    ).toBeVisible();
     const payment = drawer.getByRole("button", { name: "3 · payment" });
     await expect(payment).toBeFocused();
     await waitForDiffListToSettle(page);
-
-    // Out of the strip, ← / → switch the view mode again and the step stays.
-    await payment.blur();
+    // Read once the list has settled, long after the build hotkeys would have
+    // run had the ← reached them: they would have shown the baseline.
     const baseline = page.getByRole("button", {
       name: "Baseline",
       exact: true,
     });
+    await expect(baseline).toHaveAttribute("aria-pressed", "false");
+
+    // Out of the strip, ← / → switch the view mode again and the step stays.
+    await payment.blur();
     const changes = page.getByRole("button", { name: "Changes", exact: true });
     await page.keyboard.press("ArrowLeft");
     await expect(baseline).toHaveAttribute("aria-pressed", "true");

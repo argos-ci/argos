@@ -18,7 +18,6 @@ import {
   checkHotkeyUsesModifiers,
   getHotkey,
   getModifierLabel,
-  getPlainArrowDirection,
   plainHotkeyGroups,
   SEARCHABLE_MODIFIERS,
   type Hotkey,
@@ -47,18 +46,14 @@ type HotkeyRegistration = {
 
 /**
  * Single source of truth for build hotkeys: every `useBuildHotkey` consumer
- * registers here and we keep a single capture-phase `keydown` listener on the
- * document, instead of one listener per hook.
+ * registers here and we keep a single `keydown` listener on the document,
+ * instead of one listener per hook.
+ *
+ * The listener is in the bubble phase, so the focused element hears a key
+ * first: one that handles a key itself keeps it from the hotkeys by stopping
+ * its propagation, as Base UI's slider thumbs and the menu kit already do.
  */
 const hotkeyRegistry = new Set<HotkeyRegistration>();
-
-function checkIsToolbarNavigation(event: KeyboardEvent): boolean {
-  return (
-    event.target instanceof HTMLElement &&
-    event.target.closest("[role=toolbar]") !== null &&
-    getPlainArrowDirection(event) !== null
-  );
-}
 
 function handleDocumentKeyDown(event: KeyboardEvent) {
   // Guards shared by all hotkeys, based solely on the event target.
@@ -85,10 +80,6 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
       event.target.closest("[data-hotkeys-disabled]") ||
       event.target.closest("[role=dialog]"))
   ) {
-    return;
-  }
-
-  if (checkIsToolbarNavigation(event)) {
     return;
   }
 
@@ -135,18 +126,14 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
 
 function registerHotkey(registration: HotkeyRegistration) {
   if (hotkeyRegistry.size === 0) {
-    document.addEventListener("keydown", handleDocumentKeyDown, {
-      capture: true,
-    });
+    document.addEventListener("keydown", handleDocumentKeyDown);
   }
   hotkeyRegistry.add(registration);
   return () => {
     window.clearTimeout(registration.timeout);
     hotkeyRegistry.delete(registration);
     if (hotkeyRegistry.size === 0) {
-      document.removeEventListener("keydown", handleDocumentKeyDown, {
-        capture: true,
-      });
+      document.removeEventListener("keydown", handleDocumentKeyDown);
     }
   };
 }
