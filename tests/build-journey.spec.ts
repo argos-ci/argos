@@ -138,3 +138,54 @@ loggedTest(
     await expect(page.getByRole("button", { name: "Journey" })).toHaveCount(0);
   },
 );
+
+loggedTest(
+  "walks the journey on screen when a step is marked",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneyScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await expect(
+      page.getByRole("button", { name: "checkout/confirmation.png" }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+
+    // The list goes confirmation, the account settings test, payment; the
+    // journey puts payment before confirmation.
+    const confirmationHeading = page.getByRole("heading", {
+      name: "checkout/confirmation.png",
+    });
+    const settingsHeading = page.getByRole("heading", {
+      name: "account/settings.png",
+    });
+    await expect(confirmationHeading).toBeVisible();
+
+    // With the journey closed, nothing on screen says the review follows it:
+    // marking moves down the list.
+    await page.keyboard.press("y");
+    await expect(settingsHeading).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(confirmationHeading).toBeVisible();
+
+    // With it open, marking moves on to the step still to review, from the
+    // last step back to the ones before it.
+    await page.getByRole("button", { name: "Journey" }).click();
+    await page.keyboard.press("y");
+    await expect(
+      page.getByRole("heading", { name: "checkout/payment.png" }),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("journey-drawer").locator("[aria-current='step']"),
+    ).toHaveText("3 · payment");
+
+    // Cart and shipping did not change, so the journey is reviewed: the review
+    // goes back to the diff it jumped over, which the list now has above.
+    await page.keyboard.press("y");
+    await expect(settingsHeading).toBeVisible();
+  },
+);

@@ -7,6 +7,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useApolloClient } from "@apollo/client/react";
@@ -663,6 +664,11 @@ const JOURNEY_DRAWER_STORAGE_KEY = "preferences.build.journey-drawer";
 type JourneyDrawerContextValue = {
   visible: boolean;
   setVisible: (visible: boolean) => void;
+  /**
+   * The diff the list would have opened when the review left it to walk a
+   * journey, to come back to once the journey is reviewed.
+   */
+  listResumeRef: React.RefObject<Diff | null>;
 };
 
 const JourneyDrawerContext = createContext<JourneyDrawerContextValue | null>(
@@ -698,45 +704,50 @@ export type ActiveDiffJourney = {
  */
 export function useActiveDiffJourney(): ActiveDiffJourney | null {
   const { activeDiff, allDiffs } = useBuildDiffState();
-  return useMemo(() => {
-    if (!activeDiff) {
-      return null;
+  return useMemo(
+    () => (activeDiff ? getDiffJourney(activeDiff, allDiffs) : null),
+    [activeDiff, allDiffs],
+  );
+}
+
+function getDiffJourney(
+  activeDiff: Diff,
+  allDiffs: Diff[],
+): ActiveDiffJourney | null {
+  const identity = resolveJourneyIdentity(resolveDiffMetadata(activeDiff));
+  if (!identity) {
+    return null;
+  }
+  const stepMap = new Map<
+    string,
+    { key: string; captureIndex: number | null; diffs: Diff[] }
+  >();
+  for (const diff of allDiffs) {
+    const metadata = resolveDiffMetadata(diff);
+    if (resolveJourneyIdentity(metadata)?.key !== identity.key) {
+      continue;
     }
-    const identity = resolveJourneyIdentity(resolveDiffMetadata(activeDiff));
-    if (!identity) {
-      return null;
+    const key = diff.variantKey;
+    const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
+    stepMap.set(key, step);
+    step.diffs.push(diff);
+    const captureIndex = getCaptureIndex(metadata);
+    if (captureIndex !== null) {
+      step.captureIndex = Math.min(
+        step.captureIndex ?? Number.MAX_SAFE_INTEGER,
+        captureIndex,
+      );
     }
-    const stepMap = new Map<
-      string,
-      { key: string; captureIndex: number | null; diffs: Diff[] }
-    >();
-    for (const diff of allDiffs) {
-      const metadata = resolveDiffMetadata(diff);
-      if (resolveJourneyIdentity(metadata)?.key !== identity.key) {
-        continue;
-      }
-      const key = diff.variantKey;
-      const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
-      stepMap.set(key, step);
-      step.diffs.push(diff);
-      const captureIndex = getCaptureIndex(metadata);
-      if (captureIndex !== null) {
-        step.captureIndex = Math.min(
-          step.captureIndex ?? Number.MAX_SAFE_INTEGER,
-          captureIndex,
-        );
-      }
-    }
-    const steps = [...stepMap.values()].toSorted(compareSteps);
-    if (steps.length < 2) {
-      return null;
-    }
-    return {
-      identity,
-      steps,
-      stepIndex: steps.findIndex((step) => step.key === activeDiff.variantKey),
-    };
-  }, [activeDiff, allDiffs]);
+  }
+  const steps = [...stepMap.values()].toSorted(compareSteps);
+  if (steps.length < 2) {
+    return null;
+  }
+  return {
+    identity,
+    steps,
+    stepIndex: steps.findIndex((step) => step.key === activeDiff.variantKey),
+  };
 }
 
 /**
@@ -754,6 +765,60 @@ export function pickStepDiff(
     step.diffs[0] ??
     null
   );
+}
+
+/**
+ * The diff to open once the active diff is marked, `getListNextDiff` unless
+ * the journey drawer is open. Then the review walks the journey on screen: the
+ * next step `predicate` accepts, wrapping around to the steps before the
+ * active one so a journey entered in the middle is reviewed whole. Once the
+ * journey has nothing left, it goes back to the diff the list would have
+ * opened when the review left it, or the diffs it jumped over would be left
+ * behind: a marked diff moves to the bottom of the list.
+ *
+ * Call it before the mark lands, like `getListNextDiff`: the active diff, and
+ * the rest of its group when the group is collapsed, still read as pending.
+ */
+export function useGetNextDiffThroughJourney(
+  predicate: (diff: Diff) => boolean,
+  getListNextDiff: () => Diff | null,
+) {
+  const { visible, listResumeRef } = useJourneyDrawerState();
+  const { activeDiff, allDiffs, diffs, expanded } = useBuildDiffState();
+  return useEventCallback((): Diff | null => {
+    const listNextDiff = getListNextDiff();
+    if (!activeDiff) {
+      return listNextDiff;
+    }
+    const markedGroup =
+      activeDiff.group && !expanded.includes(activeDiff.group)
+        ? activeDiff.group
+        : null;
+    const checkIsNext = (diff: Diff) =>
+      diff !== activeDiff &&
+      (markedGroup === null || diff.group !== markedGroup) &&
+      diffs.includes(diff) &&
+      predicate(diff);
+    const journey = visible ? getDiffJourney(activeDiff, allDiffs) : null;
+    if (journey) {
+      const { steps, stepIndex } = journey;
+      const stepDiff = [
+        ...steps.slice(stepIndex + 1),
+        ...steps.slice(0, stepIndex),
+      ]
+        .map((step) => pickStepDiff(step, activeDiff))
+        .find((diff) => diff !== null && checkIsNext(diff));
+      if (stepDiff) {
+        if (stepDiff !== listNextDiff) {
+          listResumeRef.current ??= listNextDiff;
+        }
+        return stepDiff;
+      }
+    }
+    const resumeDiff = listResumeRef.current;
+    listResumeRef.current = null;
+    return resumeDiff && checkIsNext(resumeDiff) ? resumeDiff : listNextDiff;
+  });
 }
 
 export function BuildDiffProvider(props: {
@@ -880,10 +945,12 @@ export function BuildDiffProvider(props: {
     localStorage.setItem(JOURNEY_DRAWER_STORAGE_KEY, String(visible));
     setDrawerVisibleState(visible);
   }, []);
+  const listResumeRef = useRef<Diff | null>(null);
   const drawerValue = useMemo(
     (): JourneyDrawerContextValue => ({
       visible: drawerVisible,
       setVisible: setDrawerVisible,
+      listResumeRef,
     }),
     [drawerVisible, setDrawerVisible],
   );
