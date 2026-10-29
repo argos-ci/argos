@@ -959,7 +959,15 @@ function MediaImage(props: {
               // when visible keeps whatever the reviewer set.
               ...(overlayVisible ? null : { opacity: 0 }),
             }}
-          />
+          >
+            {/*
+             * Argos waits for every `img` to load before capturing, but not for
+             * a CSS mask: without this invisible copy, the screenshot can catch
+             * the dimmed pair before the marks are painted. The build's changes
+             * screenshot carries the same copy.
+             */}
+            <img src={diff.url} alt="" className="block size-full opacity-0" />
+          </ChangesMask>
         ) : null}
       </div>
     </div>
