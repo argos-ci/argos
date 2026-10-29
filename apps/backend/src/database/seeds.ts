@@ -1505,7 +1505,9 @@ export async function createJourneyScenario(input: {
   };
   const other = {
     name: "account/settings.png",
-    score: 0.1,
+    // Lists it between confirmation and payment, so a review walking the
+    // journey from one to the other jumps over it.
+    score: 0.4,
     test: {
       title: "shows the account settings",
       titlePath: ["account.spec.ts", "shows the account settings"],

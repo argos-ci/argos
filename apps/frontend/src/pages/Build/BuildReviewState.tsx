@@ -26,6 +26,7 @@ import {
   getReviewableCount,
   useBuildDiffState,
   useGetNextDiff,
+  useGetNextDiffThroughJourney,
   type UseGetNextDiffOptions,
 } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
@@ -175,7 +176,7 @@ export function useAcknowledgeMarkedDiff(
   const reviewStatus = useReviewStatus();
   const { setActiveDiff, isSubsetBuild, diffs, isLoading } =
     useBuildDiffState();
-  const getNextDiff = useGetNextDiff((diff) => {
+  const checkIsToReview = (diff: Diff) => {
     if (!getDiffStatus) {
       return false;
     }
@@ -183,7 +184,12 @@ export function useAcknowledgeMarkedDiff(
       checkDiffCanBeReviewed(diff.status, { isSubsetBuild }) &&
       getDiffStatus(diff.id) === EvaluationStatus.Pending
     );
-  }, options);
+  };
+  const getNextDiff = useGetNextDiff(checkIsToReview, options);
+  const getNextDiffThroughJourney = useGetNextDiffThroughJourney(
+    checkIsToReview,
+    getNextDiff,
+  );
   const reviewDialog = useReviewDialog();
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
@@ -237,7 +243,9 @@ export function useAcknowledgeMarkedDiff(
 
   const planAck = useEventCallback(() => {
     diffStatusesRef.current = diffStatuses;
-    nextDiffRef.current = resolveNextDiffOnAck ? null : getNextDiff();
+    nextDiffRef.current = resolveNextDiffOnAck
+      ? null
+      : getNextDiffThroughJourney();
   });
 
   // Snapshot the next diff to review *now* — before marking re-sorts the list —
@@ -245,7 +253,7 @@ export function useAcknowledgeMarkedDiff(
   // the next render. Used by the reject-note dialog so moving to the next diff
   // waits until the reviewer submits or skips the note.
   const planDeferredAck = useEventCallback(() => {
-    const nextDiff = getNextDiff();
+    const nextDiff = getNextDiffThroughJourney();
     return () => acknowledgeNextDiff(nextDiff);
   });
 
