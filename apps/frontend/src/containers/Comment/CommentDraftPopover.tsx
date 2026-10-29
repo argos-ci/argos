@@ -11,11 +11,11 @@ import { CommentPopoverFrame } from "./CommentPopoverFrame";
 import { useMentionableUsers } from "./MentionableUsersContext";
 
 /**
- * The compact floating "Add a comment" prompt shown to the right of the pin
- * after clicking a point on the changes image with the comment tool. A
- * single-line pill (input + send) that grows with the content; the author's
- * avatar lives on the pin, so it's not repeated here. Submitting anchors the
- * comment to the point; the content is kept if the request fails.
+ * The compact floating "Add a comment" prompt shown beside the pin after
+ * clicking a point on the changes image with the comment tool. A single-line
+ * pill (input + send) that grows with the content; the author's avatar lives on
+ * the pin, so it's not repeated here. Submitting anchors the comment to the
+ * point; the content is kept if the request fails.
  */
 export function CommentDraftPopover(props: {
   point: ScreenPoint;
@@ -63,15 +63,14 @@ export function CommentDraftPopover(props: {
   return (
     <CommentPopoverFrame
       point={point}
-      // Anchor at the pin's vertical center (the 36px pin's center is 18px above
-      // the point) and offset right of it; the pill pulls itself up by half its
-      // height to stay centered on the pin regardless of how tall it grows.
-      offset={{ x: 42, y: -18 }}
+      // Centered on the pin, however tall the pill grows.
+      placement="right"
+      offset={6}
       role="dialog"
       aria-label="Add a comment"
       className="w-80"
     >
-      <div className="bg-app border-thin flex -translate-y-1/2 items-end gap-2 rounded-2xl p-1.5 shadow-xl">
+      <div className="bg-app border-thin flex items-end gap-2 rounded-2xl p-1.5 shadow-xl">
         <Editor
           key={editorKey}
           onChange={setValue}

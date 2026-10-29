@@ -1,3 +1,13 @@
+import {
+  autoUpdate,
+  flip,
+  limitShift,
+  offset,
+  shift,
+  useFloating,
+  type OffsetOptions,
+  type Placement,
+} from "@floating-ui/react-dom";
 import { clsx } from "clsx";
 import { createPortal } from "react-dom";
 
@@ -7,38 +17,61 @@ import {
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
 } from "@/containers/Build/Zoomer";
 
+import { usePinReference, WINDOW_PADDING } from "./usePinReference";
+
 /**
- * Positioning shell for a comment prompt, thread or preview. Rendered in a
- * portal with `position: fixed` so it escapes the zoom pane's `overflow-hidden`
- * clipping, anchored at its point (given in viewport coordinates) plus a
- * per-popover pixel `offset`. Visual chrome is left to the children. Marked
+ * Positioning shell for a comment prompt or thread. Rendered in a portal with
+ * `position: fixed` so it escapes the zoom pane's `overflow-hidden` clipping,
+ * and placed beside its pin by floating-ui: on the `placement` side when there
+ * is room, on the other side when not, and shifted inside the window when it
+ * fits on neither (a phone). Visual chrome is left to the children. Marked
  * interactive so the outside-click logic and build hotkeys treat it as part of
  * the overlay.
  */
 export function CommentPopoverFrame(props: {
-  /** Anchor point in viewport coordinates. */
+  /** Anchor point (the pin's bottom-left tip) in viewport coordinates. */
   point: ScreenPoint;
-  /** Pixel offset from the anchor point. */
-  offset?: { x: number; y: number };
+  placement: Placement;
+  offset: OffsetOptions;
   className?: string;
   role?: string;
   "aria-label"?: string;
   children: React.ReactNode;
 }) {
-  const { point, offset = { x: 12, y: 8 }, className, role } = props;
+  const { point, placement, className, role } = props;
+  const reference = usePinReference(point);
+  const { refs, floatingStyles } = useFloating({
+    strategy: "fixed",
+    placement,
+    elements: { reference },
+    middleware: [
+      offset(props.offset),
+      flip({ padding: WINDOW_PADDING }),
+      // Kept beside the pin vertically: once the pin leaves the window, its
+      // card follows instead of staying stuck to the window's edge.
+      shift({
+        crossAxis: true,
+        padding: WINDOW_PADDING,
+        limiter: limitShift(),
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  });
   return createPortal(
     <div
+      ref={refs.setFloating}
       role={role}
       aria-label={props["aria-label"]}
       style={{
-        left: point.left,
-        top: point.top,
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        ...floatingStyles,
+        // A window narrower than the card (a small phone) could not hold it
+        // even once shifted over the pin.
+        maxWidth: `calc(100vw - ${2 * WINDOW_PADDING}px)`,
       }}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
         ZOOMER_OVERLAY_SCROLLABLE_CLASS,
-        "fixed z-50",
+        "z-50",
         className,
       )}
     >
