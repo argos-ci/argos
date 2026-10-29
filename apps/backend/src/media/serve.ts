@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import type { MediaVersion } from "@/database/models";
 import { getImageKitUrl } from "@/storage";
 
@@ -30,21 +32,61 @@ export function getMediaFileUrl(version: MediaVersion): string {
 }
 
 /**
- * The URL of a video's poster frame, or `null` for an image and for a video
- * whose frame the CDN has not produced yet.
+ * The URL of a video's poster frame for Argos's own pages and API, or `null` for
+ * an image.
  *
- * Gated on `posterReadyAt` because the CDN does not fail cleanly while it
- * works: it answers `202` with an HTML page, for as long as its video
- * processing takes. A pull request embedding that renders a broken image
- * (GitHub's proxy turns it into a 504), and a `<video>` given it as a poster
- * lays out at 0×0. Everything that shows a poster reads it from here, so all
- * of them wait for the same signal — see `refreshMediaPoster`.
+ * Straight from the CDN once it has served the frame. Until then the CDN does
+ * not fail cleanly: it answers `202` with an HTML page for as long as its video
+ * processing takes, and a `<video>` given that as its poster lays out at 0×0.
+ * So until `posterReadyAt` is set the URL goes through Argos, which asks the CDN
+ * on the way and answers 404 while it has no frame.
  */
-export function getMediaPosterUrl(version: MediaVersion): string | null {
-  if (!version.posterReadyAt) {
+export function getMediaPosterUrl(
+  version: MediaVersion,
+  shareUrl: string,
+): string | null {
+  if (!version.isVideo()) {
     return null;
   }
-  return getMediaPosterSourceUrl(version);
+  if (version.posterReadyAt) {
+    return getMediaPosterSourceUrl(version);
+  }
+  const url = new URL(getMediaPosterProxyUrl(version, shareUrl));
+  url.searchParams.set("fallback", "none");
+  return url.href;
+}
+
+/**
+ * The poster frame to embed outside Argos — the pull request comment, a pasted
+ * Markdown snippet, an unfurl — or `null` for an image.
+ *
+ * An embed is written once and stays, so one written before the CDN has the
+ * frame cannot wait for it. It points at Argos, which serves a placeholder until
+ * the frame exists and the frame from then on. The placeholder is `no-cache`,
+ * so GitHub's image proxy asks again on the next view instead of keeping it.
+ */
+export function getMediaEmbedPosterUrl(
+  version: MediaVersion,
+  shareUrl: string,
+): string | null {
+  if (!version.isVideo()) {
+    return null;
+  }
+  if (version.posterReadyAt) {
+    return getMediaPosterSourceUrl(version);
+  }
+  return getMediaPosterProxyUrl(version, shareUrl);
+}
+
+/**
+ * Where Argos serves a version's poster frame: under its share URL, by version
+ * number, so a re-upload never reuses a URL an image proxy has cached.
+ */
+function getMediaPosterProxyUrl(
+  version: MediaVersion,
+  shareUrl: string,
+): string {
+  return `${shareUrl}/poster/${version.number}.jpg`;
 }
 
 /**
@@ -55,10 +97,8 @@ export function getMediaPosterUrl(version: MediaVersion): string | null {
  * with the media key — and a poster that cannot go stale, because it is computed
  * from whatever the key currently points at.
  */
-export function getMediaPosterSourceUrl(version: MediaVersion): string | null {
-  if (!version.isVideo()) {
-    return null;
-  }
+export function getMediaPosterSourceUrl(version: MediaVersion): string {
+  invariant(version.isVideo(), "only a video has a poster");
   const url = new URL(getImageKitUrl(version.key));
   // ImageKit's video-thumbnail endpoint: `<video-path>/ik-thumbnail.jpg`, with
   // `so` (start offset, in seconds) choosing the frame.
@@ -97,7 +137,7 @@ export function getMediaEmbedArgs(args: {
     name,
     shareUrl,
     fileUrl: getMediaFileUrl(version),
-    posterUrl: getMediaPosterUrl(version),
+    posterUrl: getMediaEmbedPosterUrl(version, shareUrl),
     isVideo: version.isVideo(),
   };
 }

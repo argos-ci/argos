@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hYDaiQWZZtaVXBwz5IEqYJ8bwoAIOoSKb3DSfc2lOCcIY69oPoPqSG4AuoKZKOh
+\restrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -5309,13 +5309,6 @@ CREATE INDEX media_versions_media_number_idx ON public.media_versions USING btre
 
 
 --
--- Name: media_versions_poster_pending_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX media_versions_poster_pending_idx ON public.media_versions USING btree ("uploadedAt") WHERE (("posterReadyAt" IS NULL) AND (("mimeType")::text ~~ 'video/%'::text));
-
-
---
 -- Name: media_versions_uploaded_at_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6927,7 +6920,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hYDaiQWZZtaVXBwz5IEqYJ8bwoAIOoSKb3DSfc2lOCcIY69oPoPqSG4AuoKZKOh
+\unrestrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Knex migrations
 

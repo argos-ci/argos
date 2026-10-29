@@ -40,8 +40,7 @@ export type MediaEmbedArgs = {
  * session of ours, so an embed that needed one could not render at all.
  *
  * A video whose poster hasn't been extracted yet degrades to a plain link rather
- * than an image that does not render: the CDN answers a frame it is still
- * extracting with an HTML page, which GitHub shows as a broken image.
+ * than an image that 404s.
  */
 export function getMediaMarkdown(args: MediaEmbedArgs): string {
   const { name, shareUrl, fileUrl, posterUrl, isVideo } = args;

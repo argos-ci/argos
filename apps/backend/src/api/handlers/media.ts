@@ -209,7 +209,7 @@ export const finalizeMediaOperation = {
   operationId: "finalizeMedia",
   summary: "Finalize a media upload",
   description:
-    "Confirm that a media version's bytes have been uploaded. Argos reads the object back to check the file is what it claims to be, records an image's dimensions, bills it to the screenshot meter, and updates the managed pull request comment. There is no processing step: the media is usable the moment this returns. A video's poster frame follows a few seconds later, and the pull request comment is updated again when it does.",
+    "Confirm that a media version's bytes have been uploaded. Argos reads the object back to check the file is what it claims to be, records an image's dimensions, bills it to the screenshot meter, and updates the managed pull request comment. There is no processing step: the media is usable the moment this returns.",
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:write"]),
   requestParams: {
@@ -387,7 +387,9 @@ export const listMediaVersionsHandler: CreateAPIHandler = ({ get }) => {
       action: "read",
     });
     const versions = await getMediaVersions(media.id);
-    res.send(versions.map(serializeMediaVersion));
+    res.send(
+      versions.map((version) => serializeMediaVersion(version, media.url)),
+    );
   });
 };
 

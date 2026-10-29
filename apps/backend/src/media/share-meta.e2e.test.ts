@@ -82,15 +82,18 @@ describe("getPublicMediaShareMeta", () => {
     expect(meta?.video).toMatchObject({ contentType: "video/mp4" });
   });
 
-  it("does not unfurl a video before the CDN has its poster frame", async () => {
-    // An unfurler caches what it fetched, and the CDN answers a frame it is
+  it("unfurls a video through Argos until the CDN has its poster frame", async () => {
+    // An unfurler keeps what it fetched, and the CDN answers a frame it is
     // still extracting with an HTML page: the card would keep a broken image.
     const { media } = await factory.createMediaWithVersion({
       media: { visibility: "public" },
       version: { key: "media/test/clip.mp4", mimeType: "video/mp4" },
     });
 
-    await expect(getPublicMediaShareMeta(media.shareToken)).resolves.toBeNull();
+    const meta = await getPublicMediaShareMeta(media.shareToken);
+
+    expect(meta?.image.url).toBe(`${meta?.shareUrl}/poster/1.jpg`);
+    expect(meta?.image.contentType).toBe("image/jpeg");
   });
 
   it("caps an oversized preview at the CDN rather than sending 4K to a crawler", async () => {

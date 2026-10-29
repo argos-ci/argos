@@ -17,7 +17,8 @@ describe("readPosterFrame", () => {
       status: 200,
       headers: { "content-type": "image/jpeg" },
     });
-    await expect(readPosterFrame(response)).resolves.toEqual({
+    await expect(readPosterFrame(response)).resolves.toMatchObject({
+      contentType: "image/jpeg",
       width: 786,
       height: 224,
     });

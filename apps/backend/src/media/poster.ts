@@ -1,57 +1,52 @@
-import { invariant } from "@argos/util/invariant";
 import sharp from "sharp";
 
-import { Media, MediaVersion } from "@/database/models";
-import logger from "@/logger";
+import { MediaVersion } from "@/database/models";
+import { getRedisClient } from "@/util/redis/client";
 
-import { updatePullRequestComment } from "./pull-request-comment";
 import { getMediaPosterSourceUrl } from "./serve";
-import { getLatestMediaVersion } from "./version";
 
 /**
- * How long a probe waits on the CDN. ImageKit holds a request for a frame it is
- * still extracting for about 15 seconds before answering `202`, and a shorter
- * timeout would cut off the answers that arrive with the frame.
+ * How long a request for a poster gives the CDN before answering without the
+ * frame. Well under what an image proxy waits for us: GitHub's gave up on
+ * ImageKit's 15-second "being prepared" answer with a 504, which is what broke
+ * the pull request comment on 2026-10-29.
  */
-export const POSTER_PROBE_TIMEOUT_MS = 30_000;
+const POSTER_REQUEST_TIMEOUT_MS = 4_000;
 
 /**
- * How long after an upload the sweep keeps asking for its poster. Past it, a
- * video the CDN never produced a frame for stays on a plain link. The migration
- * that introduced `posterReadyAt` marks everything older than this ready.
+ * At most one request for a given poster asks the CDN per this interval, across
+ * every web process. The rest answer from what is known, so a burst of views of
+ * a pull request while the CDN is stalled costs the CDN one request.
  */
-const SWEEP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const POSTER_PROBE_INTERVAL_MS = 10_000;
 
-/** Videos probed per sweep, so a backlog cannot hold one run for long. */
-const SWEEP_BATCH_SIZE = 20;
+type PosterFrame = {
+  bytes: Buffer;
+  contentType: string;
+  width: number | null;
+  height: number | null;
+};
 
 /**
  * Ask the CDN for a video's poster frame, and mark it ready once the answer is
- * an image. Returns whether the poster is ready.
+ * an image. Returns the frame, or `null` while the CDN has none.
  *
  * The frame also gives the video its dimensions, which the upload check cannot
- * read: they live in a `moov` atom that may sit at the end of the file. Without
- * them the player's frame has no shape until the video's own metadata loads.
- *
- * A pull request comment that went up while the frame was missing showed a
- * plain link in its place, so it is rebuilt now that there is a picture.
+ * read: they live in a `moov` atom that may sit at the end of the file.
  */
-export async function refreshMediaPoster(
+export async function probeMediaPoster(
   version: MediaVersion,
-): Promise<boolean> {
-  if (version.posterReadyAt) {
-    return true;
-  }
-
-  const url = getMediaPosterSourceUrl(version);
-  invariant(url, "only a video has a poster");
-
-  const frame = await fetchPosterFrame(url);
+  options: { timeout: number },
+): Promise<PosterFrame | null> {
+  const frame = await fetchPosterFrame(
+    getMediaPosterSourceUrl(version),
+    options.timeout,
+  );
   if (!frame) {
-    return false;
+    return null;
   }
 
-  const patched = await MediaVersion.query()
+  await MediaVersion.query()
     .findById(version.id)
     .whereNull("posterReadyAt")
     .patch({
@@ -60,61 +55,64 @@ export async function refreshMediaPoster(
       height: frame.height,
     });
 
-  // Another probe got there first, and refreshed the comment itself.
-  if (patched === 0) {
-    return true;
-  }
-
-  await refreshPullRequestComment(version);
-  return true;
+  return frame;
 }
 
 /**
- * Probe the recent videos whose poster is still missing.
- *
- * The safety net under the probe queued at upload, which gets a single try.
- * When ImageKit's video processing stalls it keeps answering `202` — on
- * 2026-10-29 it still was a quarter of an hour after the upload — and the
- * frame is picked up here whenever it finally turns up.
+ * {@link probeMediaPoster} for a request: `null` without asking when another
+ * request for the same poster asked within the interval.
  */
-export async function sweepMediaPosters(now: Date = new Date()): Promise<void> {
-  const pending = await MediaVersion.query()
-    .whereNull("posterReadyAt")
-    // Spelled as the partial index's predicate, so the planner can use it.
-    .whereRaw(`"mimeType" LIKE 'video/%'`)
-    .where(
-      "uploadedAt",
-      ">",
-      new Date(now.getTime() - SWEEP_WINDOW_MS).toISOString(),
-    )
-    .orderBy("uploadedAt", "desc")
-    .limit(SWEEP_BATCH_SIZE);
-
-  // In parallel: a stalled CDN holds every probe for its full 15 seconds.
-  await Promise.all(
-    pending.map(async (version) => {
-      try {
-        await refreshMediaPoster(version);
-      } catch (error) {
-        logger.error(
-          { error, mediaVersionId: version.id },
-          "Failed to probe a media poster",
-        );
-      }
-    }),
-  );
+export async function probeMediaPosterForRequest(
+  version: MediaVersion,
+): Promise<PosterFrame | null> {
+  const redis = await getRedisClient();
+  const claimed = await redis.set(`media-poster-probe.${version.id}`, "1", {
+    expiration: { type: "PX", value: POSTER_PROBE_INTERVAL_MS },
+    condition: "NX",
+  });
+  if (claimed !== "OK") {
+    return null;
+  }
+  return probeMediaPoster(version, { timeout: POSTER_REQUEST_TIMEOUT_MS });
 }
 
-type PosterFrame = { width: number | null; height: number | null };
+let placeholder: Promise<Buffer> | null = null;
+
+/**
+ * What an embed shows while the CDN has no frame yet: a play button on a
+ * neutral ground, so a pull request reads "a video goes here" rather than
+ * "something broke".
+ *
+ * A JPEG like the frame it stands in for, so an unfurl can declare one content
+ * type for both. Shapes only — no text, which would need fonts the image does
+ * not ship. Rendered once per process.
+ */
+export function getMediaPosterPlaceholder(): Promise<Buffer> {
+  placeholder ??= sharp(
+    Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">
+        <rect width="1280" height="720" fill="#2b2d31"/>
+        <circle cx="640" cy="360" r="72" fill="#ffffff" fill-opacity="0.9"/>
+        <path d="M618 322 L618 398 L680 360 Z" fill="#2b2d31"/>
+      </svg>`,
+    ),
+  )
+    .jpeg({ quality: 80 })
+    .toBuffer();
+  return placeholder;
+}
 
 /**
  * Fetch a poster frame, or `null` while the CDN has none. A timeout is the CDN
  * stalling seen from our side: not an error, the frame just isn't there yet.
  */
-async function fetchPosterFrame(url: string): Promise<PosterFrame | null> {
+async function fetchPosterFrame(
+  url: string,
+  timeout: number,
+): Promise<PosterFrame | null> {
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(POSTER_PROBE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeout),
     });
     return await readPosterFrame(response);
   } catch (error) {
@@ -126,7 +124,7 @@ async function fetchPosterFrame(url: string): Promise<PosterFrame | null> {
 }
 
 /**
- * The frame's size when the CDN answered with one, `null` otherwise.
+ * The frame, when the CDN answered with one; `null` otherwise.
  *
  * Only a `200` carrying an image counts. ImageKit's "being prepared" answer is
  * a `202` with an HTML body, and its answer for a file it cannot take a frame
@@ -141,25 +139,12 @@ export async function readPosterFrame(
     return null;
   }
 
-  const metadata = await sharp(
-    Buffer.from(await response.arrayBuffer()),
-  ).metadata();
-  return { width: metadata.width ?? null, height: metadata.height ?? null };
-}
-
-/**
- * Rebuild the pull request comment showing this version, if there is one. Only
- * for the version the comment shows: an older one's poster changes nothing in
- * it, and every update spends the installation's shared GitHub API budget.
- */
-async function refreshPullRequestComment(version: MediaVersion): Promise<void> {
-  const media = await Media.query().findById(version.mediaId);
-  if (!media?.githubPullRequestId) {
-    return;
-  }
-  const latest = await getLatestMediaVersion(media.id);
-  if (latest?.id !== version.id) {
-    return;
-  }
-  await updatePullRequestComment(media.githubPullRequestId);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const metadata = await sharp(bytes).metadata();
+  return {
+    bytes,
+    contentType,
+    width: metadata.width ?? null,
+    height: metadata.height ?? null,
+  };
 }

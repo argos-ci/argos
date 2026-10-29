@@ -114,7 +114,7 @@ export const typeDefs = gql`
     number: Int!
     "CDN URL the bytes are served from"
     fileUrl: String!
-    "Poster frame of a video, derived by the image CDN. Null for images, and for a video until the CDN has extracted it."
+    "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it, the URL points at Argos and answers 404. Null for images."
     posterUrl: String
     contentType: String!
     sizeBytes: Float!
@@ -272,7 +272,11 @@ export const resolvers: IResolvers = {
   },
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
-    posterUrl: (version) => getMediaPosterUrl(version),
+    posterUrl: async (version, _args, ctx) => {
+      const media = await ctx.loaders.Media.load(version.mediaId);
+      invariant(media, "version has no media");
+      return getMediaPosterUrl(version, media.url);
+    },
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,
     isVideo: (version) => version.isVideo(),

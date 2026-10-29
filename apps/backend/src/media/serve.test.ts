@@ -4,6 +4,7 @@ import config from "@/config";
 import { MediaVersion } from "@/database/models";
 
 import {
+  getMediaEmbedPosterUrl,
   getMediaFileUrl,
   getMediaPosterSourceUrl,
   getMediaPosterUrl,
@@ -11,6 +12,8 @@ import {
 
 /** The CDN base carries an environment segment, so it comes from config. */
 const CDN = config.get("s3.publicImageBaseUrl");
+
+const SHARE_URL = "https://app.argos-ci.com/m/abc123";
 
 function media(attributes: {
   key: string;
@@ -40,7 +43,7 @@ describe("getMediaFileUrl", () => {
 });
 
 describe("getMediaPosterUrl", () => {
-  it("serves a video's poster once the CDN has produced it", () => {
+  it("serves a ready poster straight from the CDN", () => {
     expect(
       getMediaPosterUrl(
         media({
@@ -48,26 +51,55 @@ describe("getMediaPosterUrl", () => {
           mimeType: "video/mp4",
           posterReadyAt: "2026-10-29T10:00:00.000Z",
         }),
+        SHARE_URL,
       ),
     ).toBe(`${CDN}media/1/clip.mp4/ik-thumbnail.jpg?tr=so-1`);
   });
 
-  it("holds the poster back until then", () => {
-    // Until then the CDN answers with an HTML page: a broken image in a pull
-    // request, and a player collapsed to 0×0 on the share page.
+  it("goes through Argos, with no placeholder, until then", () => {
+    // Until then the CDN answers with an HTML page, and a player given it as
+    // its poster lays out at 0×0.
     expect(
       getMediaPosterUrl(
         media({ key: "media/1/clip.mp4", mimeType: "video/mp4" }),
+        SHARE_URL,
       ),
-    ).toBeNull();
+    ).toBe(`${SHARE_URL}/poster/1.jpg?fallback=none`);
   });
 
   it("returns null for an image", () => {
     expect(
       getMediaPosterUrl(
         media({ key: "media/1/abc.png", mimeType: "image/png" }),
+        SHARE_URL,
       ),
     ).toBeNull();
+  });
+});
+
+describe("getMediaEmbedPosterUrl", () => {
+  it("embeds a poster that is not ready yet through Argos", () => {
+    // An embed is written once: it cannot wait for the frame, so it points at
+    // the endpoint that serves a placeholder until the frame exists.
+    expect(
+      getMediaEmbedPosterUrl(
+        media({ key: "media/1/clip.mp4", mimeType: "video/mp4" }),
+        SHARE_URL,
+      ),
+    ).toBe(`${SHARE_URL}/poster/1.jpg`);
+  });
+
+  it("embeds a ready poster from the CDN", () => {
+    expect(
+      getMediaEmbedPosterUrl(
+        media({
+          key: "media/1/clip.mp4",
+          mimeType: "video/mp4",
+          posterReadyAt: "2026-10-29T10:00:00.000Z",
+        }),
+        SHARE_URL,
+      ),
+    ).toBe(`${CDN}media/1/clip.mp4/ik-thumbnail.jpg?tr=so-1`);
   });
 });
 

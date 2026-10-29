@@ -1,7 +1,7 @@
 import { type MediaVersion } from "@/database/models";
 
 import { findMediaByShareToken } from "./query";
-import { getMediaFileUrl, getMediaPosterUrl } from "./serve";
+import { getMediaEmbedPosterUrl, getMediaFileUrl } from "./serve";
 import { getMediaShareUrl } from "./url";
 import { getLatestMediaVersion } from "./version";
 
@@ -69,17 +69,13 @@ export async function getPublicMediaShareMeta(
     return null;
   }
 
-  const image = getPreviewImage(version);
-
-  if (!image) {
-    return null;
-  }
+  const shareUrl = getMediaShareUrl(media.shareToken);
 
   return {
     name: media.name,
     description: media.description,
-    shareUrl: getMediaShareUrl(media.shareToken),
-    image,
+    shareUrl,
+    image: getPreviewImage(version, shareUrl),
     video: version.isVideo()
       ? { url: getMediaFileUrl(version), contentType: version.mimeType }
       : null,
@@ -87,29 +83,23 @@ export async function getPublicMediaShareMeta(
 }
 
 /**
- * The still to unfurl: the image itself, or a video's poster frame.
- *
- * Null for a video whose poster cannot be derived — the same degradation the
- * Markdown embed makes, for the same reason.
+ * The still to unfurl: the image itself, or a video's poster frame — embedded
+ * the way the Markdown embeds it, for the same reason.
  */
-function getPreviewImage(version: MediaVersion): PreviewImage | null {
-  const isVideo = version.isVideo();
-  const sourceUrl = isVideo
-    ? getMediaPosterUrl(version)
-    : getMediaFileUrl(version);
-
-  if (!sourceUrl) {
-    return null;
-  }
+function getPreviewImage(
+  version: MediaVersion,
+  shareUrl: string,
+): PreviewImage {
+  const posterUrl = getMediaEmbedPosterUrl(version, shareUrl);
 
   return resizePreview(
     {
-      url: sourceUrl,
+      url: posterUrl ?? getMediaFileUrl(version),
       width: version.width,
       height: version.height,
-      // The poster comes off ImageKit's `ik-thumbnail.jpg` endpoint whatever the
-      // video's own container, so it is a JPEG regardless of `mimeType`.
-      contentType: isVideo ? "image/jpeg" : version.mimeType,
+      // A poster is a JPEG whatever the video's own container: ImageKit's
+      // `ik-thumbnail.jpg`, or the placeholder Argos serves until it exists.
+      contentType: posterUrl ? "image/jpeg" : version.mimeType,
     },
     PREVIEW_MAX_WIDTH,
   );

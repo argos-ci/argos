@@ -83,7 +83,8 @@ export async function finalizeMedia(
   await scheduleMediaDiff(finalized, media);
 
   // Not awaited, for the reason `queueMediaDiff` gives: an upload must not hang
-  // on the broker. A push that is lost is picked up by the poster sweep.
+  // on the broker. A push that is lost only costs time: the poster endpoint
+  // asks the CDN itself when the video is first viewed.
   if (finalized.isVideo()) {
     mediaPosterJob.push(finalized.id).catch((error: unknown) => {
       logger.error(

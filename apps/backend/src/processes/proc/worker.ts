@@ -15,7 +15,6 @@ import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
 import logger from "@/logger";
 import { mediaDiffJob } from "@/media/diff-job";
-import { sweepMediaPosters } from "@/media/poster";
 import { mediaPosterJob } from "@/media/poster-job";
 import { purgeExpiredMedia } from "@/media/purge";
 import { notificationMessageJob } from "@/notification/message-job";
@@ -55,12 +54,6 @@ scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
 // into one pass.
 scheduleCron("media-retention", "15 * * * *", (context) =>
   purgeExpiredMedia(context.date),
-);
-
-// Video posters the CDN had not extracted when the upload's own probe asked.
-// Every five minutes: until then the pull request comment shows a plain link.
-scheduleCron("media-posters", "*/5 * * * *", (context) =>
-  sweepMediaPosters(context.date),
 );
 
 // Anonymous client registrations nobody authorized. Hourly, so an abandoned

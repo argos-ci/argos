@@ -2,7 +2,15 @@ import type { Router } from "express";
 import { z } from "zod";
 
 import config from "@/config";
+import { MediaVersion } from "@/database/models";
+import logger from "@/logger";
 import { getMediaOEmbed } from "@/media/oembed";
+import {
+  getMediaPosterPlaceholder,
+  probeMediaPosterForRequest,
+} from "@/media/poster";
+import { findMediaByShareToken } from "@/media/query";
+import { getMediaPosterSourceUrl } from "@/media/serve";
 import {
   getPublicMediaShareMeta,
   type MediaShareMeta,
@@ -12,6 +20,12 @@ import { asyncHandler } from "./util";
 
 /** Where a consumer asks what a share URL embeds as. */
 const OEMBED_PATH = "/oembed";
+
+/**
+ * How long a served poster frame may be kept. A poster URL names one version,
+ * whose frame never changes.
+ */
+const POSTER_CACHE_CONTROL = "public, max-age=604800, immutable";
 
 /**
  * Serve share links so they unfurl.
@@ -86,6 +100,57 @@ export function installMediaShareRoutes(
     }),
   );
 
+  // A video's poster frame, for the embeds written before the CDN had it (see
+  // `getMediaEmbedPosterUrl`). Whatever the media's visibility, like the file
+  // the frame comes from: GitHub's image proxy carries no session.
+  router.get(
+    "/m/:shareToken/poster/:file",
+    asyncHandler(async (req, res) => {
+      const { shareToken, file } = req.params;
+      const version = await findPosterVersion(shareToken, file);
+
+      if (!version) {
+        res.sendStatus(404);
+        return;
+      }
+
+      if (version.posterReadyAt) {
+        res.setHeader("Cache-Control", POSTER_CACHE_CONTROL);
+        res.redirect(302, getMediaPosterSourceUrl(version));
+        return;
+      }
+
+      const frame = await probeMediaPosterForRequest(version).catch(
+        (error: unknown) => {
+          logger.error(
+            { error, mediaVersionId: version.id },
+            "Failed to probe a media poster",
+          );
+          return null;
+        },
+      );
+
+      if (frame) {
+        res.setHeader("Cache-Control", POSTER_CACHE_CONTROL);
+        res.type(frame.contentType).send(frame.bytes);
+        return;
+      }
+
+      // Asked again on the next view, which is what swaps the frame in once
+      // the CDN has it: GitHub's image proxy keeps what it fetched otherwise.
+      res.setHeader("Cache-Control", "no-cache");
+
+      // Argos's own pages ask for this: a `<video>` sizes itself from its
+      // poster, and would take the placeholder's shape instead of the video's.
+      if (req.query["fallback"] === "none") {
+        res.sendStatus(404);
+        return;
+      }
+
+      res.type("jpeg").send(await getMediaPosterPlaceholder());
+    }),
+  );
+
   router.get(
     "/m/:shareToken",
     asyncHandler(async (req, res, next) => {
@@ -113,6 +178,39 @@ export function installMediaShareRoutes(
       res.type("html").send(injectShareMeta(shell, meta));
     }),
   );
+}
+
+/**
+ * The video version a poster URL (`<n>.jpg`) names, or `null` when there is
+ * none to show: an unknown token, an image, an upload that never landed, or a
+ * version that has expired.
+ */
+async function findPosterVersion(
+  shareToken: unknown,
+  file: unknown,
+): Promise<MediaVersion | null> {
+  if (typeof shareToken !== "string" || typeof file !== "string") {
+    return null;
+  }
+  const number = /^(\d+)\.jpg$/.exec(file)?.[1];
+  if (!number) {
+    return null;
+  }
+
+  const media = await findMediaByShareToken(shareToken);
+  if (!media) {
+    return null;
+  }
+
+  const version = await MediaVersion.query()
+    .where({ mediaId: media.id, number: Number(number) })
+    .whereNotNull("uploadedAt")
+    .first();
+
+  if (!version || !version.isVideo() || version.isExpired()) {
+    return null;
+  }
+  return version;
 }
 
 /**

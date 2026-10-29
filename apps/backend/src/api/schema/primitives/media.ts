@@ -50,7 +50,7 @@ export const MediaVersionSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video, once the image CDN has extracted it — usually seconds after the upload. Always `null` for images.",
+        "Poster frame of a video. Until the image CDN has extracted it — usually seconds after the upload — the URL points at Argos and answers 404. Always `null` for images.",
     }),
     contentType: z.string(),
     sizeBytes: z.number(),
@@ -93,7 +93,7 @@ export const MediaSchema = z
     }),
     markdown: z.string().meta({
       description:
-        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. A video whose poster is not extracted yet gets a plain link instead, so read it again once `posterUrl` is set. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
+        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. A video's picture is served through Argos until the CDN has extracted its poster frame, with a placeholder in the meantime, so the Markdown is final as soon as the upload is. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
     }),
     version: z.number().meta({
       description:
@@ -109,7 +109,7 @@ export const MediaSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video, derived by the image CDN. `null` until the CDN has extracted it — usually seconds after the upload — and always `null` for images.",
+        "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it — usually seconds after the upload — the URL points at Argos and answers 404. Always `null` for images.",
     }),
     contentType: z.string().meta({ description: "Content type of the media" }),
     sizeBytes: z.number().meta({ description: "Size of the media, in bytes" }),
@@ -118,7 +118,7 @@ export const MediaSchema = z
     visibility: MediaVisibilitySchema,
     status: z.enum(["pending", "ready"]).meta({
       description:
-        "`pending` until the bytes are uploaded, then `ready`. Argos serves the bytes it was given, with no processing step; only a video's `posterUrl` follows a few seconds later.",
+        "`pending` until the bytes are uploaded, then `ready`. There is no processing step — Argos serves the bytes it was given.",
     }),
     expiresAt: z.string().nullable().meta({
       description:
@@ -188,15 +188,16 @@ export const MediaInputSchema = z.object({
   }),
 });
 
-/** Serialize one stored upload. */
+/** Serialize one stored upload of the media shared at `shareUrl`. */
 export function serializeMediaVersion(
   version: MediaVersion,
+  shareUrl: string,
 ): z.infer<typeof MediaVersionSchema> {
   return {
     id: version.id,
     number: version.number,
     fileUrl: getMediaFileUrl(version),
-    posterUrl: getMediaPosterUrl(version),
+    posterUrl: getMediaPosterUrl(version, shareUrl),
     contentType: version.mimeType,
     sizeBytes: version.size,
     width: version.width,
@@ -220,7 +221,7 @@ export function serializeMedia(
   versionCount: number,
   prNumber: number | null,
 ): MediaResponse {
-  const posterUrl = getMediaPosterUrl(version);
+  const posterUrl = getMediaPosterUrl(version, media.url);
   return {
     id: media.id,
     name: media.name,
