@@ -121,8 +121,8 @@ export function BuildJourneyDrawer() {
   return (
     // An inset card in the viewer column, aligned on the diff area gutters
     // (`p-4`) and styled like the diff panels. The inner padding keeps the
-    // selection ring and focus outline of edge thumbnails from being clipped
-    // by the scroll container.
+    // selection ring of edge thumbnails from being clipped by the scroll
+    // container.
     <div className="shrink-0 px-4 pt-2" data-testid="journey-drawer">
       <div
         ref={stripRef}
@@ -156,7 +156,9 @@ export function BuildJourneyDrawer() {
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveDiff(diff, true)}
                 className={clsx(
-                  "focus-ring flex flex-col items-center gap-1 rounded-md p-1",
+                  // Focus only ever sits on the active step, and its ring
+                  // already marks it: a focus outline would mark it twice.
+                  "flex flex-col items-center gap-1 rounded-md p-1 outline-none",
                   !isActive && "hover:bg-hover",
                 )}
               >
