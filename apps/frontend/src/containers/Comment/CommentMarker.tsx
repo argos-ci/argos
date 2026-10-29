@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { autoUpdate, flip, offset, useFloating } from "@floating-ui/react-dom";
 import { clsx } from "clsx";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -13,9 +14,8 @@ import {
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";
-import useViewportSize from "@/ui/useViewportSize";
 
-import { getCardPlacement, PIN_SIZE } from "./commentPlacement";
+import { PIN_SIZE, usePinReference, WINDOW_PADDING } from "./usePinReference";
 
 /**
  * What the marker reads — deliberately narrower than any one page's fragment.
@@ -70,32 +70,40 @@ export function CommentMarker(props: {
   // The preview only shows on hover while the thread popover is closed; once
   // open the pin is just a selected marker beside the popover.
   const expanded = hovered && !open;
-  const viewport = useViewportSize();
-  const flipped =
-    getCardPlacement({
-      point,
-      offsetX: 0,
-      width: PREVIEW_WIDTH,
-      viewportWidth: viewport.width,
-    })?.side === "left";
+  const reference = usePinReference(point);
+  const { refs, floatingStyles, placement } = useFloating({
+    strategy: "fixed",
+    placement: "top-start",
+    elements: { reference },
+    middleware: [
+      // Bottom edge level with the pin's: the card covers its pin and grows
+      // upward from it.
+      offset(-PIN_SIZE),
+      flip({
+        mainAxis: false,
+        fallbackPlacements: ["top-end"],
+        padding: WINDOW_PADDING,
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  });
+  const flipped = placement === "top-end";
 
   return createPortal(
+    // The preview's full width, expanded or not: floating-ui picks the side
+    // from the size the card grows to, not from the pin's. The card sits at
+    // its start, the pin's left edge, and so extends to the right; flipped, at
+    // its end, the pin's right edge, and extends to the left.
     <div
+      ref={refs.setFloating}
+      style={floatingStyles}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
         ZOOMER_OVERLAY_SCROLLABLE_CLASS,
-        "pointer-events-none fixed",
+        "pointer-events-none flex w-72 items-end",
+        flipped && "justify-end",
         expanded || open ? "z-50" : "z-40",
       )}
-      // Pin the bottom-left tip at the point: `translateY(-100%)` keeps the
-      // bottom edge on the point as the card grows, so it extends upward; the
-      // left edge stays put, so it also extends to the right. Flipped, the
-      // pin's right edge stays put instead, and the card extends to the left.
-      style={{
-        left: flipped ? point.left + PIN_SIZE : point.left,
-        top: point.top,
-        transform: flipped ? "translate(-100%, -100%)" : "translateY(-100%)",
-      }}
     >
       <motion.div
         role="button"

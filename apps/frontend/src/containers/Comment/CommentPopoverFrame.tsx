@@ -1,3 +1,12 @@
+import {
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  useFloating,
+  type OffsetOptions,
+  type Placement,
+} from "@floating-ui/react-dom";
 import { clsx } from "clsx";
 import { createPortal } from "react-dom";
 
@@ -6,59 +15,53 @@ import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
 } from "@/containers/Build/Zoomer";
-import useViewportSize from "@/ui/useViewportSize";
 
-import { getCardPlacement, VIEWPORT_MARGIN } from "./commentPlacement";
+import { usePinReference, WINDOW_PADDING } from "./usePinReference";
 
 /**
- * Positioning shell for a comment prompt, thread or preview. Rendered in a
- * portal with `position: fixed` so it escapes the zoom pane's `overflow-hidden`
- * clipping, anchored at its point (given in viewport coordinates) plus a
- * per-popover pixel `offset`, on whichever side of the pin has room (see
- * {@link getCardPlacement}). Visual chrome is left to the children. Marked
+ * Positioning shell for a comment prompt or thread. Rendered in a portal with
+ * `position: fixed` so it escapes the zoom pane's `overflow-hidden` clipping,
+ * and placed beside its pin by floating-ui: on the `placement` side when there
+ * is room, on the other side when not, and shifted inside the window when it
+ * fits on neither (a phone). Visual chrome is left to the children. Marked
  * interactive so the outside-click logic and build hotkeys treat it as part of
  * the overlay.
  */
 export function CommentPopoverFrame(props: {
-  /** Anchor point in viewport coordinates. */
+  /** Anchor point (the pin's bottom-left tip) in viewport coordinates. */
   point: ScreenPoint;
-  /**
-   * Pixel offset from the anchor point, for a popover on the pin's right. On
-   * the left side it is mirrored: the same gap from the pin's left edge.
-   */
-  offset?: { x: number; y: number };
-  /** Width in pixels: picking a side needs it before the first paint. */
-  width: number;
+  placement: Placement;
+  offset: OffsetOptions;
   className?: string;
   role?: string;
   "aria-label"?: string;
   children: React.ReactNode;
 }) {
-  const { point, offset = { x: 12, y: 8 }, className, role } = props;
-  const viewport = useViewportSize();
-  const width = Math.min(props.width, viewport.width - 2 * VIEWPORT_MARGIN);
-  const placement = getCardPlacement({
-    point,
-    offsetX: offset.x,
-    width,
-    viewportWidth: viewport.width,
+  const { point, placement, className, role } = props;
+  const reference = usePinReference(point);
+  const { refs, floatingStyles } = useFloating({
+    strategy: "fixed",
+    placement,
+    elements: { reference },
+    middleware: [
+      offset(props.offset),
+      // Sides only: a thread running past the bottom of the window is shifted
+      // up by `shift`, rather than flipped to grow upward from the pin.
+      flip({ crossAxis: false, padding: WINDOW_PADDING }),
+      shift({ crossAxis: true, padding: WINDOW_PADDING }),
+    ],
+    whileElementsMounted: autoUpdate,
   });
   return createPortal(
     <div
+      ref={refs.setFloating}
       role={role}
       aria-label={props["aria-label"]}
-      style={{
-        // With room on neither side (a narrow window, a phone), as far right
-        // as it fits, over the pin.
-        left: placement?.left ?? viewport.width - VIEWPORT_MARGIN - width,
-        top: point.top,
-        width,
-        transform: `translateY(${offset.y}px)`,
-      }}
+      style={floatingStyles}
       className={clsx(
         ZOOMER_OVERLAY_INTERACTIVE_CLASS,
         ZOOMER_OVERLAY_SCROLLABLE_CLASS,
-        "fixed z-50",
+        "z-50",
         className,
       )}
     >

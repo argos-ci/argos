@@ -21,10 +21,11 @@ export function CommentThreadPopover(props: {
   return (
     <CommentPopoverFrame
       point={point}
-      offset={{ x: 44, y: -40 }}
+      placement="right-start"
+      offset={{ mainAxis: 8, crossAxis: -4 }}
       role="dialog"
       aria-label={`Comment from ${authorName}`}
-      width={320}
+      className="w-80"
     >
       {/* No horizontal padding so the thread (and its full-width reply divider)
           spans the whole card; the card's sections carry their own insets.
