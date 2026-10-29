@@ -27,7 +27,10 @@ export function CommentThreadPopover(props: {
     <CommentPopoverFrame
       point={point}
       placement="right-start"
-      offset={{ mainAxis: THREAD_GAP, crossAxis: -4 }}
+      // `alignmentAxis` rather than `crossAxis`: it is mirrored when `flip`
+      // turns the card to grow upward from the pin (`-end`), so the card then
+      // overhangs the pin's bottom as it otherwise overhangs its top.
+      offset={{ mainAxis: THREAD_GAP, alignmentAxis: -4 }}
       role="dialog"
       aria-label={`Comment from ${authorName}`}
       className="w-80"

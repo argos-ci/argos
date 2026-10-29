@@ -46,9 +46,7 @@ export function CommentPopoverFrame(props: {
     elements: { reference },
     middleware: [
       offset(props.offset),
-      // Sides only: a thread running past the bottom of the window is shifted
-      // up by `shift`, rather than flipped to grow upward from the pin.
-      flip({ crossAxis: false, padding: WINDOW_PADDING }),
+      flip({ padding: WINDOW_PADDING }),
       // Kept beside the pin vertically: once the pin leaves the window, its
       // card follows instead of staying stuck to the window's edge.
       shift({
