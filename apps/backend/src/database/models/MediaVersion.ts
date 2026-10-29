@@ -14,8 +14,9 @@ import { User } from "./User";
  * version a reviewer commented on is still there to compare against.
  *
  * Argos never rewrites the bytes it was given. The image CDN in front of the
- * bucket derives WebP/AVIF variants and video poster frames on request, so there
- * is no processing state here and `key` is stable for the row's whole life.
+ * bucket derives WebP/AVIF variants and video poster frames on request, so `key`
+ * is stable for the row's whole life. The one thing tracked about the CDN's work
+ * is whether a video's poster frame exists yet: see `posterReadyAt`.
  */
 export class MediaVersion extends Model {
   static override tableName = "media_versions";
@@ -40,6 +41,7 @@ export class MediaVersion extends Model {
           height: { type: ["number", "null"], minimum: 0 },
           expiresAt: { type: ["string", "null"] },
           uploadedAt: { type: ["string", "null"] },
+          posterReadyAt: { type: ["string", "null"] },
           billedUnits: { type: "number", minimum: 0 },
         },
       },
@@ -73,6 +75,11 @@ export class MediaVersion extends Model {
   height!: number | null;
   expiresAt!: string | null;
   uploadedAt!: string | null;
+  /**
+   * When the CDN first served this video's poster frame as an image. Null for
+   * an image, and for a video whose frame the CDN has not extracted yet.
+   */
+  posterReadyAt!: string | null;
   billedUnits!: number;
 
   media?: Media;

@@ -18,13 +18,13 @@ import { Activity, ActivityItem } from "@/ui/Activity";
 import type { EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { Link } from "@/ui/Link";
-import { MediaWell } from "@/ui/MediaFrame";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { createHandleMediaCommentsPrompt } from "./MediaCommentsPrompt";
+import { MediaVersionThumbnail } from "./MediaVersionThumbnail";
 import { checkCanCommentOnMedia } from "./permissions";
 
 const _MediaCommentsFragment = graphql(`
@@ -372,11 +372,6 @@ function MediaPinnedReference(props: {
   const { media, mediaVersionId, viewedVersionId, onNavigate } = props;
   const version =
     media.versions.find((candidate) => candidate.id === mediaVersionId) ?? null;
-  const thumbnailUrl = version
-    ? version.isVideo
-      ? version.posterUrl
-      : version.fileUrl
-    : null;
   const label =
     mediaVersionId === viewedVersionId
       ? "Pinned on the image"
@@ -392,12 +387,8 @@ function MediaPinnedReference(props: {
       // shares this button's navigation and carries the hover affordance.
       className="text-low focus-ring flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
     >
-      {thumbnailUrl ? (
-        <MediaWell className="size-6 shrink-0">
-          {/* Contained rather than cropped, like the version rows: a crop out
-              of a wide screenshot's middle identifies nothing. */}
-          <img src={thumbnailUrl} alt="" className="size-full object-contain" />
-        </MediaWell>
+      {version ? (
+        <MediaVersionThumbnail version={version} className="size-6" />
       ) : null}
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
       <MapPinPenIcon aria-hidden="true" className="size-3.5 shrink-0" />

@@ -526,10 +526,12 @@ loggedTest("media share page for a video", async ({ page, project }) => {
   await expect(
     page.getByRole("heading", { name: "checkout-flow.mp4" }),
   ).toBeVisible();
-  // Rendered in a player, with the CDN-derived poster as its still frame.
+  // Rendered in a player. The seeded poster fails to load, and the player must
+  // not take it: a `<video>` sizes itself from its poster, and one that does
+  // not load lays it out at 0×0 — a playable recording nobody can see.
   const video = page.locator("video");
   await expect(video).toBeVisible();
-  await expect(video).toHaveAttribute("poster", /ik-thumbnail\.jpg/);
+  await expect(video).not.toHaveAttribute("poster");
 });
 
 loggedTest(

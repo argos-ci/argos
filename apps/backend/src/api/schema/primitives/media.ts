@@ -49,7 +49,8 @@ export const MediaVersionSchema = z
       description: "URL of the image or video as it was at this version.",
     }),
     posterUrl: z.url().nullable().meta({
-      description: "Poster frame of a video. Always `null` for images.",
+      description:
+        "Poster frame of a video, once the image CDN has extracted it — usually seconds after the upload. Always `null` for images.",
     }),
     contentType: z.string(),
     sizeBytes: z.number(),
@@ -92,7 +93,7 @@ export const MediaSchema = z
     }),
     markdown: z.string().meta({
       description:
-        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
+        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. A video whose poster is not extracted yet gets a plain link instead, so read it again once `posterUrl` is set. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
     }),
     version: z.number().meta({
       description:
@@ -108,7 +109,7 @@ export const MediaSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video, derived by the image CDN. Always `null` for images.",
+        "Poster frame of a video, derived by the image CDN. `null` until the CDN has extracted it — usually seconds after the upload — and always `null` for images.",
     }),
     contentType: z.string().meta({ description: "Content type of the media" }),
     sizeBytes: z.number().meta({ description: "Size of the media, in bytes" }),
@@ -117,7 +118,7 @@ export const MediaSchema = z
     visibility: MediaVisibilitySchema,
     status: z.enum(["pending", "ready"]).meta({
       description:
-        "`pending` until the bytes are uploaded, then `ready`. There is no processing step — Argos serves the bytes it was given.",
+        "`pending` until the bytes are uploaded, then `ready`. Argos serves the bytes it was given, with no processing step; only a video's `posterUrl` follows a few seconds later.",
     }),
     expiresAt: z.string().nullable().meta({
       description:

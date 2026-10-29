@@ -69,6 +69,7 @@ describe("getPublicMediaShareMeta", () => {
         mimeType: "video/mp4",
         width: 1280,
         height: 720,
+        posterReadyAt: new Date().toISOString(),
       },
     });
 
@@ -79,6 +80,17 @@ describe("getPublicMediaShareMeta", () => {
     expect(meta?.image.url).toContain("ik-thumbnail.jpg");
     expect(meta?.image.contentType).toBe("image/jpeg");
     expect(meta?.video).toMatchObject({ contentType: "video/mp4" });
+  });
+
+  it("does not unfurl a video before the CDN has its poster frame", async () => {
+    // An unfurler caches what it fetched, and the CDN answers a frame it is
+    // still extracting with an HTML page: the card would keep a broken image.
+    const { media } = await factory.createMediaWithVersion({
+      media: { visibility: "public" },
+      version: { key: "media/test/clip.mp4", mimeType: "video/mp4" },
+    });
+
+    await expect(getPublicMediaShareMeta(media.shareToken)).resolves.toBeNull();
   });
 
   it("caps an oversized preview at the CDN rather than sending 4K to a crawler", async () => {
@@ -106,6 +118,7 @@ describe("getPublicMediaShareMeta", () => {
         mimeType: "video/mp4",
         width: 3840,
         height: 2160,
+        posterReadyAt: new Date().toISOString(),
       },
     });
 

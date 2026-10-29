@@ -1,11 +1,13 @@
 import { getMediaUnits } from "@argos/schemas/media";
 
 import { Media, MediaVersion } from "@/database/models";
+import logger from "@/logger";
 import { boom } from "@/util/error";
 
 import { scheduleMediaDiff } from "./diff-schedule";
 import { inspectMediaObject, MediaContentMismatchError } from "./inspect";
 import { deleteUnreferencedMediaObjects, headMediaObject } from "./object";
+import { mediaPosterJob } from "./poster-job";
 
 /**
  * Mark a version's bytes as landed and make it serveable.
@@ -14,8 +16,9 @@ import { deleteUnreferencedMediaObjects, headMediaObject } from "./object";
  * real size, and one 64 KB ranged read to check the file is what it claims and to
  * pick up an image's dimensions. Nothing touches the bytes — they are served
  * exactly as uploaded, and the CDN derives WebP/AVIF variants and video posters
- * on request. The one background step is the before/after comparison, which
- * produces a separate mask and leaves the upload itself alone.
+ * on request. The background steps leave the upload itself alone: the
+ * before/after comparison produces a separate mask, and a video's poster probe
+ * only waits for the CDN to have extracted a frame.
  *
  * Doing the check inline rather than in a worker is also better behaviour: a file
  * that isn't what it claims is rejected *before* the caller is handed a working
@@ -78,6 +81,17 @@ export async function finalizeMedia(
   // counterpart lookup for a media that is half of a pair, and nothing at all
   // for one that is not.
   await scheduleMediaDiff(finalized, media);
+
+  // Not awaited, for the reason `queueMediaDiff` gives: an upload must not hang
+  // on the broker. A push that is lost is picked up by the poster sweep.
+  if (finalized.isVideo()) {
+    mediaPosterJob.push(finalized.id).catch((error: unknown) => {
+      logger.error(
+        { error, mediaVersionId: finalized.id },
+        "Failed to queue the media poster probe",
+      );
+    });
+  }
 
   return finalized;
 }

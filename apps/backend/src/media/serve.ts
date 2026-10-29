@@ -30,14 +30,32 @@ export function getMediaFileUrl(version: MediaVersion): string {
 }
 
 /**
- * The URL of a video's poster frame, or `null` for an image.
+ * The URL of a video's poster frame, or `null` for an image and for a video
+ * whose frame the CDN has not produced yet.
+ *
+ * Gated on `posterReadyAt` because the CDN does not fail cleanly while it
+ * works: it answers `202` with an HTML page, for as long as its video
+ * processing takes. A pull request embedding that renders a broken image
+ * (GitHub's proxy turns it into a 504), and a `<video>` given it as a poster
+ * lays out at 0×0. Everything that shows a poster reads it from here, so all
+ * of them wait for the same signal — see `refreshMediaPoster`.
+ */
+export function getMediaPosterUrl(version: MediaVersion): string | null {
+  if (!version.posterReadyAt) {
+    return null;
+  }
+  return getMediaPosterSourceUrl(version);
+}
+
+/**
+ * Where the CDN serves a video's poster frame from, ready or not.
  *
  * Derived, not stored: the CDN extracts the frame from the video on request. That
  * means no ffmpeg on our side, no second object to upload, purge, or keep in step
  * with the media key — and a poster that cannot go stale, because it is computed
  * from whatever the key currently points at.
  */
-export function getMediaPosterUrl(version: MediaVersion): string | null {
+export function getMediaPosterSourceUrl(version: MediaVersion): string | null {
   if (!version.isVideo()) {
     return null;
   }
