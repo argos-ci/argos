@@ -3462,6 +3462,10 @@ export async function createMediaScenario(input: {
         sizeBytes: "8388608",
         expiresAt: "2027-04-20T09:30:00.000Z",
         uploadedAt: videoTs,
+        // Marked ready, though the CDN answers its poster with an error page
+        // (the key is a PNG): the share page has to cope with a poster that
+        // fails to load, as ImageKit's did on 2026-10-29.
+        posterReadyAt: videoTs,
         billedUnits: 25,
         createdAt: videoTs,
         updatedAt: videoTs,

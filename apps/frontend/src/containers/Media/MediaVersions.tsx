@@ -1,9 +1,10 @@
 import { Toggle } from "@base-ui/react/toggle";
 import { CheckIcon } from "lucide-react";
 
-import { MediaWell } from "@/ui/MediaFrame";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
+
+import { MediaVersionThumbnail } from "./MediaVersionThumbnail";
 
 type MediaVersionRow = {
   id: string;
@@ -44,52 +45,34 @@ export function MediaVersions(props: {
         <PanelTitle>Versions</PanelTitle>
       </PanelHeader>
       <div className="flex flex-col gap-0.5 px-1.5">
-        {ordered.map((version, index) => {
-          const thumbnailUrl = version.isVideo
-            ? version.posterUrl
-            : version.fileUrl;
-          return (
-            <Toggle
-              key={version.id}
-              pressed={version.id === selectedId}
-              // Radio semantics on a toggle: picking the selected row again
-              // keeps it selected instead of leaving nothing on screen, which
-              // is why the new pressed state is ignored.
-              onPressedChange={() => onSelect(version.id)}
-              className="focus-ring group hover:bg-hover data-pressed:bg-ui flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs"
-            >
-              {thumbnailUrl ? (
-                <MediaWell className="size-8 shrink-0">
-                  {/* Contained, not cropped: what this thumbnail is for is
-                      telling one version from another at a glance, and a
-                      square crop out of the middle of a wide screenshot
-                      shows the same patch of background for every one of
-                      them. The well's ground is the letterbox. */}
-                  <img
-                    src={thumbnailUrl}
-                    alt=""
-                    className="size-full object-contain"
-                  />
-                </MediaWell>
-              ) : null}
-              <span className="shrink-0 font-mono font-medium tabular-nums">
-                v{version.number}
-              </span>
-              <span className="text-low min-w-0 flex-1 truncate">
-                <Time date={version.createdAt} />
-              </span>
-              {index === 0 ? (
-                <span className="text-low shrink-0">Latest</span>
-              ) : null}
-              {/* Always in the row so the "Latest" column lines up; only
-                  visible on the selected one. */}
-              <CheckIcon
-                aria-hidden="true"
-                className="invisible size-3.5 shrink-0 group-data-pressed:visible"
-              />
-            </Toggle>
-          );
-        })}
+        {ordered.map((version, index) => (
+          <Toggle
+            key={version.id}
+            pressed={version.id === selectedId}
+            // Radio semantics on a toggle: picking the selected row again
+            // keeps it selected instead of leaving nothing on screen, which
+            // is why the new pressed state is ignored.
+            onPressedChange={() => onSelect(version.id)}
+            className="focus-ring group hover:bg-hover data-pressed:bg-ui flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs"
+          >
+            <MediaVersionThumbnail version={version} className="size-8" />
+            <span className="shrink-0 font-mono font-medium tabular-nums">
+              v{version.number}
+            </span>
+            <span className="text-low min-w-0 flex-1 truncate">
+              <Time date={version.createdAt} />
+            </span>
+            {index === 0 ? (
+              <span className="text-low shrink-0">Latest</span>
+            ) : null}
+            {/* Always in the row so the "Latest" column lines up; only
+                visible on the selected one. */}
+            <CheckIcon
+              aria-hidden="true"
+              className="invisible size-3.5 shrink-0 group-data-pressed:visible"
+            />
+          </Toggle>
+        ))}
       </div>
     </Panel>
   );

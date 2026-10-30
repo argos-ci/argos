@@ -387,7 +387,9 @@ export const listMediaVersionsHandler: CreateAPIHandler = ({ get }) => {
       action: "read",
     });
     const versions = await getMediaVersions(media.id);
-    res.send(versions.map(serializeMediaVersion));
+    res.send(
+      versions.map((version) => serializeMediaVersion(version, media.url)),
+    );
   });
 };
 

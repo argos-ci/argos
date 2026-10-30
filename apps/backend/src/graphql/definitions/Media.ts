@@ -272,7 +272,11 @@ export const resolvers: IResolvers = {
   },
   MediaVersion: {
     fileUrl: (version) => getMediaFileUrl(version),
-    posterUrl: (version) => getMediaPosterUrl(version),
+    posterUrl: async (version, _args, ctx) => {
+      const media = await ctx.loaders.Media.load(version.mediaId);
+      invariant(media, "version has no media");
+      return getMediaPosterUrl(version, media.url);
+    },
     contentType: (version) => version.mimeType,
     sizeBytes: (version) => version.size,
     isVideo: (version) => version.isVideo(),

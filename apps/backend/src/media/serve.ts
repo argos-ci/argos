@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import type { MediaVersion } from "@/database/models";
 import { getImageKitUrl } from "@/storage";
 
@@ -32,15 +34,36 @@ export function getMediaFileUrl(version: MediaVersion): string {
 /**
  * The URL of a video's poster frame, or `null` for an image.
  *
+ * Straight from the CDN once it has served the frame. Until then the CDN does
+ * not fail cleanly — it answers `202` with an HTML page for as long as its
+ * video processing takes — so the URL goes through Argos, which serves a
+ * placeholder until the frame exists and the frame from then on. Whatever
+ * renders it, a pull request comment included, shows a picture either way.
+ */
+export function getMediaPosterUrl(
+  version: MediaVersion,
+  shareUrl: string,
+): string | null {
+  if (!version.isVideo()) {
+    return null;
+  }
+  if (version.posterReadyAt) {
+    return getMediaPosterSourceUrl(version);
+  }
+  // Per version, so a re-upload never reuses a URL an image proxy has cached.
+  return `${shareUrl}/poster/${version.number}.jpg`;
+}
+
+/**
+ * Where the CDN serves a video's poster frame from, ready or not.
+ *
  * Derived, not stored: the CDN extracts the frame from the video on request. That
  * means no ffmpeg on our side, no second object to upload, purge, or keep in step
  * with the media key — and a poster that cannot go stale, because it is computed
  * from whatever the key currently points at.
  */
-export function getMediaPosterUrl(version: MediaVersion): string | null {
-  if (!version.isVideo()) {
-    return null;
-  }
+export function getMediaPosterSourceUrl(version: MediaVersion): string {
+  invariant(version.isVideo(), "only a video has a poster");
   const url = new URL(getImageKitUrl(version.key));
   // ImageKit's video-thumbnail endpoint: `<video-path>/ik-thumbnail.jpg`, with
   // `so` (start offset, in seconds) choosing the frame.
@@ -79,7 +102,7 @@ export function getMediaEmbedArgs(args: {
     name,
     shareUrl,
     fileUrl: getMediaFileUrl(version),
-    posterUrl: getMediaPosterUrl(version),
+    posterUrl: getMediaPosterUrl(version, shareUrl),
     isVideo: version.isVideo(),
   };
 }

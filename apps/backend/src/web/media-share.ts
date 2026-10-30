@@ -2,16 +2,29 @@ import type { Router } from "express";
 import { z } from "zod";
 
 import config from "@/config";
+import { MediaVersion } from "@/database/models";
 import { getMediaOEmbed } from "@/media/oembed";
+import { getMediaPosterPlaceholder, probeMediaPoster } from "@/media/poster";
+import { findMediaByShareToken } from "@/media/query";
+import { getMediaPosterSourceUrl } from "@/media/serve";
 import {
   getPublicMediaShareMeta,
   type MediaShareMeta,
 } from "@/media/share-meta";
+import { redisLock } from "@/util/redis";
 
 import { asyncHandler } from "./util";
 
 /** Where a consumer asks what a share URL embeds as. */
 const OEMBED_PATH = "/oembed";
+
+/**
+ * How long a request for a poster gives the CDN before answering with the
+ * placeholder. Well under what an image proxy waits for us: GitHub's gave up on
+ * ImageKit's 15-second "being prepared" answer with a 504, which is what broke
+ * the pull request comment on 2026-10-29.
+ */
+const POSTER_REQUEST_TIMEOUT_MS = 4_000;
 
 /**
  * Serve share links so they unfurl.
@@ -86,6 +99,49 @@ export function installMediaShareRoutes(
     }),
   );
 
+  // A video's poster, for anything rendered before the CDN had the frame (see
+  // `getMediaPosterUrl`). Whatever the media's visibility, like the file the
+  // frame comes from: GitHub's image proxy carries no session.
+  router.get(
+    "/m/:shareToken/poster/:file",
+    asyncHandler(async (req, res) => {
+      const { shareToken, file } = req.params;
+      const version = await findPosterVersion(shareToken, file);
+
+      if (!version) {
+        res.sendStatus(404);
+        return;
+      }
+
+      if (!version.posterReadyAt) {
+        // One request at a time asks the CDN, and only once: `coalesce` runs
+        // its task again for the requests that arrived meanwhile, which have
+        // already been answered with the placeholder.
+        let probed = false;
+        await redisLock.coalesce(["media-poster", version.id], async () => {
+          if (!probed) {
+            probed = true;
+            await probeMediaPoster(version, {
+              timeout: POSTER_REQUEST_TIMEOUT_MS,
+            });
+          }
+        });
+      }
+
+      if (version.posterReadyAt) {
+        // A poster URL names one version, whose frame never changes.
+        res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        res.redirect(302, getMediaPosterSourceUrl(version));
+        return;
+      }
+
+      // Asked again on the next view, which swaps the frame in once the CDN
+      // has it: GitHub's image proxy keeps what it fetched otherwise.
+      res.setHeader("Cache-Control", "no-cache");
+      res.type("jpeg").send(await getMediaPosterPlaceholder());
+    }),
+  );
+
   router.get(
     "/m/:shareToken",
     asyncHandler(async (req, res, next) => {
@@ -113,6 +169,39 @@ export function installMediaShareRoutes(
       res.type("html").send(injectShareMeta(shell, meta));
     }),
   );
+}
+
+/**
+ * The video version a poster URL (`<n>.jpg`) names, or `null` when there is
+ * none to show: an unknown token, an image, an upload that never landed, or a
+ * version that has expired.
+ */
+async function findPosterVersion(
+  shareToken: unknown,
+  file: unknown,
+): Promise<MediaVersion | null> {
+  if (typeof shareToken !== "string" || typeof file !== "string") {
+    return null;
+  }
+  const number = /^(\d+)\.jpg$/.exec(file)?.[1];
+  if (!number) {
+    return null;
+  }
+
+  const media = await findMediaByShareToken(shareToken);
+  if (!media) {
+    return null;
+  }
+
+  const version = await MediaVersion.query()
+    .where({ mediaId: media.id, number: Number(number) })
+    .whereNotNull("uploadedAt")
+    .first();
+
+  if (!version || !version.isVideo() || version.isExpired()) {
+    return null;
+  }
+  return version;
 }
 
 /**

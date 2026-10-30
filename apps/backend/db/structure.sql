@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict giY6RoHrcuNSMb7TSnKlv8vtKPLF7UDP4PUCeytJbVzizue8HvaP4Yy1FlgbZTi
+\restrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.6 (Homebrew)
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1558,7 +1558,8 @@ CREATE TABLE public.media_versions (
     height integer,
     "expiresAt" timestamp with time zone,
     "uploadedAt" timestamp with time zone,
-    "billedUnits" integer DEFAULT 0 NOT NULL
+    "billedUnits" integer DEFAULT 0 NOT NULL,
+    "posterReadyAt" timestamp with time zone
 );
 
 
@@ -6919,7 +6920,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict giY6RoHrcuNSMb7TSnKlv8vtKPLF7UDP4PUCeytJbVzizue8HvaP4Yy1FlgbZTi
+\unrestrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Knex migrations
 
@@ -7188,3 +7189,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261026120000_subscription-cancellations.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027104323_gitlab-instance-isolation.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027111448_gitlab-projects-web-url.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261029145630_media-version-poster-ready.js', 1, NOW());

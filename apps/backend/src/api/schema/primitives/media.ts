@@ -187,15 +187,16 @@ export const MediaInputSchema = z.object({
   }),
 });
 
-/** Serialize one stored upload. */
+/** Serialize one stored upload of the media shared at `shareUrl`. */
 export function serializeMediaVersion(
   version: MediaVersion,
+  shareUrl: string,
 ): z.infer<typeof MediaVersionSchema> {
   return {
     id: version.id,
     number: version.number,
     fileUrl: getMediaFileUrl(version),
-    posterUrl: getMediaPosterUrl(version),
+    posterUrl: getMediaPosterUrl(version, shareUrl),
     contentType: version.mimeType,
     sizeBytes: version.size,
     width: version.width,
@@ -219,7 +220,7 @@ export function serializeMedia(
   versionCount: number,
   prNumber: number | null,
 ): MediaResponse {
-  const posterUrl = getMediaPosterUrl(version);
+  const posterUrl = getMediaPosterUrl(version, media.url);
   return {
     id: media.id,
     name: media.name,

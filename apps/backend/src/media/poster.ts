@@ -1,0 +1,96 @@
+import sharp from "sharp";
+
+import { MediaVersion } from "@/database/models";
+import logger from "@/logger";
+
+import { readImageDimensions, type MediaInspection } from "./inspect";
+import { getMediaPosterSourceUrl } from "./serve";
+
+/**
+ * Ask the CDN for a video's poster frame, and mark it ready once the answer is
+ * an image.
+ *
+ * The frame also gives the video its dimensions, which the upload check cannot
+ * read: they live in a `moov` atom that may sit at the end of the file.
+ *
+ * A failed request is logged, not thrown: a poster is a nicety, and failing to
+ * get one must not fail the upload or the page that asked.
+ */
+export async function probeMediaPoster(
+  version: MediaVersion,
+  options: { timeout: number },
+): Promise<void> {
+  let frame: MediaInspection | null;
+  try {
+    const response = await fetch(getMediaPosterSourceUrl(version), {
+      signal: AbortSignal.timeout(options.timeout),
+    });
+    frame = await readPosterFrame(response);
+  } catch (error) {
+    // A timeout is the CDN stalling seen from our side: the frame just isn't
+    // there yet.
+    if (!(error instanceof DOMException && error.name === "TimeoutError")) {
+      logger.error(
+        { error, mediaVersionId: version.id },
+        "Failed to probe a media poster",
+      );
+    }
+    return;
+  }
+  if (!frame) {
+    return;
+  }
+
+  const ready = { posterReadyAt: new Date().toISOString(), ...frame };
+  await MediaVersion.query()
+    .findById(version.id)
+    .whereNull("posterReadyAt")
+    .patch(ready);
+  // Callers go on to render from this very instance.
+  version.$set(ready);
+}
+
+let placeholder: Promise<Buffer> | null = null;
+
+/**
+ * What a poster shows while the CDN has no frame yet: a play button on a
+ * neutral ground, so a pull request reads "a video goes here" rather than
+ * "something broke".
+ *
+ * A JPEG like the frame it stands in for, so an unfurl can declare one content
+ * type for both. Shapes only — no text, which would need fonts the image does
+ * not ship. Rendered once per process.
+ */
+export function getMediaPosterPlaceholder(): Promise<Buffer> {
+  placeholder ??= sharp(
+    Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">
+        <rect width="1280" height="720" fill="#2b2d31"/>
+        <circle cx="640" cy="360" r="72" fill="#ffffff" fill-opacity="0.9"/>
+        <path d="M618 322 L618 398 L680 360 Z" fill="#2b2d31"/>
+      </svg>`,
+    ),
+  )
+    .jpeg({ quality: 80 })
+    .toBuffer();
+  return placeholder;
+}
+
+/**
+ * The frame's size, when the CDN answered with one; `null` otherwise.
+ *
+ * Only a `200` carrying an image counts. ImageKit's "being prepared" answer is
+ * a `202` with an HTML body, and its answer for a file it cannot take a frame
+ * from is a `400` with one.
+ */
+export async function readPosterFrame(
+  response: Response,
+): Promise<MediaInspection | null> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (response.status !== 200 || !contentType.startsWith("image/")) {
+    await response.body?.cancel();
+    return null;
+  }
+
+  return readImageDimensions(Buffer.from(await response.arrayBuffer()));
+}

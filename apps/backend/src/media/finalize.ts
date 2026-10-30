@@ -6,16 +6,27 @@ import { boom } from "@/util/error";
 import { scheduleMediaDiff } from "./diff-schedule";
 import { inspectMediaObject, MediaContentMismatchError } from "./inspect";
 import { deleteUnreferencedMediaObjects, headMediaObject } from "./object";
+import { probeMediaPoster } from "./poster";
+
+/**
+ * How long finalizing a video waits for the CDN's poster frame. Enough for
+ * ImageKit to extract one from a short recording, so the Markdown handed back
+ * and the first pull request comment point straight at it. Past that, the
+ * upload goes ahead without it: on 2026-10-29 ImageKit took more than a quarter
+ * of an hour, and the poster endpoint covers that.
+ */
+const POSTER_WAIT_MS = 10_000;
 
 /**
  * Mark a version's bytes as landed and make it serveable.
  *
  * Everything here is cheap enough to run inside the request: one `HEAD` for the
  * real size, and one 64 KB ranged read to check the file is what it claims and to
- * pick up an image's dimensions. Nothing touches the bytes — they are served
- * exactly as uploaded, and the CDN derives WebP/AVIF variants and video posters
- * on request. The one background step is the before/after comparison, which
- * produces a separate mask and leaves the upload itself alone.
+ * pick up an image's dimensions — plus, for a video, a bounded wait for the CDN's
+ * poster frame. Nothing touches the bytes — they are served exactly as uploaded,
+ * and the CDN derives WebP/AVIF variants and video posters on request. The one
+ * background step is the before/after comparison, which produces a separate mask
+ * and leaves the upload itself alone.
  *
  * Doing the check inline rather than in a worker is also better behaviour: a file
  * that isn't what it claims is rejected *before* the caller is handed a working
@@ -78,6 +89,10 @@ export async function finalizeMedia(
   // counterpart lookup for a media that is half of a pair, and nothing at all
   // for one that is not.
   await scheduleMediaDiff(finalized, media);
+
+  if (finalized.isVideo()) {
+    await probeMediaPoster(finalized, { timeout: POSTER_WAIT_MS });
+  }
 
   return finalized;
 }
