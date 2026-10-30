@@ -8,6 +8,7 @@ import {
 } from "@/constants";
 import { ConfigureGitHubSSO } from "@/containers/Team/GitHubSSO/Configure";
 import { DocumentType, graphql } from "@/gql";
+import { LinkButton } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -48,6 +49,10 @@ const _TeamFragment = graphql(`
     ssoGithubAccount {
       id
     }
+    samlSso {
+      id
+      enabled
+    }
     ...SAMLSSOAddOn_Team
     ...StaticIpAddOn_Team
     ...AddOnsPricingTable_Team
@@ -62,7 +67,12 @@ export function TeamAddOns(props: {
   const githubSsoIncluded = Boolean(team.plan?.githubSsoIncluded);
   const samlIncluded = Boolean(team.plan?.samlIncluded);
   const githubSsoEnabled = Boolean(team.ssoGithubAccount);
-  const samlEnabled = team.samlPurchased;
+  // An included add-on is never purchased, so it is only enabled once SAML is
+  // turned on in the Authentication settings.
+  const samlEnabled = samlIncluded
+    ? Boolean(team.samlSso?.enabled)
+    : team.samlPurchased;
+  const authenticationSettingsUrl = `/${team.slug}/settings/authentication`;
   const staticIpIncluded = Boolean(team.plan?.staticIpIncluded);
   const githubSsoBlockedReason = getAddOnBlockedReason({
     status: team.subscriptionStatus,
@@ -85,13 +95,8 @@ export function TeamAddOns(props: {
             title="GitHub Single Sign-On"
             description="Synchronize your team members with your GitHub organization."
             enabled={githubSsoEnabled}
-            price={
-              githubSsoIncluded ? (
-                "Included in your plan"
-              ) : (
-                <>${GITHUB_SSO_PRICING} / month</>
-              )
-            }
+            included={githubSsoIncluded}
+            price={GITHUB_SSO_PRICING}
             action={
               githubSsoEnabled ? (
                 <DisableGitHubSSOButton teamAccountId={team.id} />
@@ -108,16 +113,24 @@ export function TeamAddOns(props: {
             icon={<LockIcon className="size-6 shrink-0" />}
             title="SAML Single Sign-On"
             description="Allow team members to sign in with your Identity Provider."
-            enabled={samlIncluded || samlEnabled}
-            price={
-              samlIncluded ? (
-                "Included in your plan"
-              ) : (
-                <>${SAML_SSO_PRICING} / month</>
-              )
-            }
+            enabled={samlEnabled}
+            included={samlIncluded}
+            price={SAML_SSO_PRICING}
             action={
-              samlIncluded ? null : samlEnabled ? (
+              samlIncluded ? (
+                samlEnabled ? (
+                  <LinkButton
+                    variant="secondary"
+                    href={authenticationSettingsUrl}
+                  >
+                    Manage
+                  </LinkButton>
+                ) : (
+                  <LinkButton href={authenticationSettingsUrl}>
+                    Configure
+                  </LinkButton>
+                )
+              ) : samlEnabled ? (
                 <DisableSAMLSSOAddOnButton teamAccountId={team.id} />
               ) : (
                 <EnableSAMLSSOAddOnButton team={team} />
@@ -129,13 +142,8 @@ export function TeamAddOns(props: {
             title="Static IP"
             description="Reach GitHub from static IP addresses your organization can add to its IP allow list."
             enabled={team.staticIpEnabled}
-            price={
-              staticIpIncluded ? (
-                "Included in your plan"
-              ) : (
-                <>${STATIC_IP_PRICING} / month</>
-              )
-            }
+            included={staticIpIncluded}
+            price={STATIC_IP_PRICING}
             action={
               team.staticIpEnabled ? (
                 <DisableStaticIpButton team={team} />
@@ -148,10 +156,8 @@ export function TeamAddOns(props: {
       </CardBody>
       <CardFooter>
         Configure Single Sign-On in the{" "}
-        <Link href={`/${team.slug}/settings/authentication`}>
-          Authentication settings
-        </Link>
-        , and find the static IP addresses in the{" "}
+        <Link href={authenticationSettingsUrl}>Authentication settings</Link>,
+        and find the static IP addresses in the{" "}
         <Link href={`/${team.slug}/settings/integrations#static-ip`}>
           Integrations settings
         </Link>
@@ -166,17 +172,23 @@ function AddOnRow(props: {
   title: string;
   description: string;
   enabled: boolean;
-  price: React.ReactNode;
+  included: boolean;
+  price: number;
   action: React.ReactNode;
 }) {
   return (
     // On a phone the description takes the width, and the price and the
     // action move under it: side by side, the text was a word per line.
-    <div className="flex items-center gap-4 p-4 max-md:grid max-md:grid-cols-[auto_1fr_auto] max-md:gap-y-3">
+    <div className="flex items-center gap-4 p-4 max-md:grid max-md:grid-cols-[auto_1fr] max-md:gap-y-3">
       {props.icon}
-      <div className="flex-1 max-md:col-span-2">
-        <div className="flex items-center gap-2 font-medium">
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-2 font-medium">
           {props.title}
+          {props.included && (
+            <Chip scale="xs" color="neutral">
+              Included in your plan
+            </Chip>
+          )}
           {props.enabled && (
             <Chip scale="xs" color="success">
               Enabled
@@ -185,8 +197,12 @@ function AddOnRow(props: {
         </div>
         <p className="text-low">{props.description}</p>
       </div>
-      <div className="text-low max-md:col-start-2">{props.price}</div>
-      {props.action}
+      <div className="flex items-center gap-4 max-md:col-start-2 max-md:justify-end">
+        {!props.included && (
+          <div className="text-low max-md:mr-auto">${props.price} / month</div>
+        )}
+        {props.action}
+      </div>
     </div>
   );
 }
