@@ -153,8 +153,10 @@ loggedTest("links from emails and the CLI", async ({ page, auth }) => {
     await maskViewer(page, auth),
   );
 
+  // The title is set before the viewer has loaded, and `maskViewer` only masks
+  // the handle once it is on screen: wait for the handle itself.
   await visit(page, "/auth/cli?port=4242&state=a-state&pkce=a-challenge", () =>
-    expect(page).toHaveTitle(/Authorize CLI/),
+    expect(page.getByText(`Signed in as @${auth.account.slug}`)).toBeVisible(),
   );
   await screenshot(page, "auth-cli", await maskViewer(page, auth));
 
