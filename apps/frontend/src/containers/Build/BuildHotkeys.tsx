@@ -46,14 +46,35 @@ type HotkeyRegistration = {
 
 /**
  * Single source of truth for build hotkeys: every `useBuildHotkey` consumer
- * registers here and we keep a single `keydown` listener on the document,
- * instead of one listener per hook.
- *
- * The listener is in the bubble phase, so the focused element hears a key
- * first: one that handles a key itself keeps it from the hotkeys by stopping
- * its propagation, as Base UI's slider thumbs and the menu kit already do.
+ * registers here and we keep a single capture-phase `keydown` listener on the
+ * document, instead of one listener per hook.
  */
 const hotkeyRegistry = new Set<HotkeyRegistration>();
+
+/**
+ * Turns the hotkeys off for `keys` while focus is inside the element, for an
+ * element that handles those keys itself: the hotkeys hear every key before it
+ * does. Each key is matched as a hotkey of its own, so `ArrowLeft` leaves ⇧←
+ * to the hotkeys. An empty `data-hotkeys-disabled` turns every key off.
+ */
+export function disableHotkeys(keys: string[]) {
+  return { "data-hotkeys-disabled": keys.join(" ") };
+}
+
+function checkIsKeyDisabled(event: KeyboardEvent): boolean {
+  const keys =
+    event.target instanceof HTMLElement
+      ? event.target.closest<HTMLElement>("[data-hotkeys-disabled]")?.dataset
+          .hotkeysDisabled
+      : undefined;
+  if (keys === undefined) {
+    return false;
+  }
+  return (
+    keys === "" ||
+    keys.split(" ").some((key) => checkHotkeyMatches({ keys: [key] }, event))
+  );
+}
 
 function handleDocumentKeyDown(event: KeyboardEvent) {
   // Guards shared by all hotkeys, based solely on the event target.
@@ -77,9 +98,12 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
     (event.target.role === "menu" ||
       event.target.role?.startsWith("menuitem") ||
       event.target.role === "textbox" ||
-      event.target.closest("[data-hotkeys-disabled]") ||
       event.target.closest("[role=dialog]"))
   ) {
+    return;
+  }
+
+  if (checkIsKeyDisabled(event)) {
     return;
   }
 
@@ -126,14 +150,18 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
 
 function registerHotkey(registration: HotkeyRegistration) {
   if (hotkeyRegistry.size === 0) {
-    document.addEventListener("keydown", handleDocumentKeyDown);
+    document.addEventListener("keydown", handleDocumentKeyDown, {
+      capture: true,
+    });
   }
   hotkeyRegistry.add(registration);
   return () => {
     window.clearTimeout(registration.timeout);
     hotkeyRegistry.delete(registration);
     if (hotkeyRegistry.size === 0) {
-      document.removeEventListener("keydown", handleDocumentKeyDown);
+      document.removeEventListener("keydown", handleDocumentKeyDown, {
+        capture: true,
+      });
     }
   };
 }

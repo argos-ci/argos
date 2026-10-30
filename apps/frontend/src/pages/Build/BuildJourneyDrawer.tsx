@@ -7,7 +7,10 @@ import {
   getDiffGroupDefinition,
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
-import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import {
+  disableHotkeys,
+  useBuildHotkey,
+} from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -141,13 +144,11 @@ export function BuildJourneyDrawer() {
         ref={stripRef}
         role="toolbar"
         aria-label="Journey"
+        {...disableHotkeys(["ArrowLeft", "ArrowRight"])}
         onKeyDown={(event) => {
           const direction = getPlainArrowDirection(event);
           if (direction) {
-            // ← / → are the strip's here: kept from the build hotkeys, which
-            // would also switch the view mode.
             event.preventDefault();
-            event.stopPropagation();
             goToStep(direction);
           }
         }}

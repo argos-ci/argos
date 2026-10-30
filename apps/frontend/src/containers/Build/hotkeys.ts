@@ -497,7 +497,10 @@ function checkIsLiteralKey(key: string): boolean {
  * AZERTY, so demanding either a second time would make those impossible to
  * type.
  */
-function checkModifiersMatch(hotkey: Hotkey, event: HotkeyEvent): boolean {
+function checkModifiersMatch(
+  hotkey: Pick<Hotkey, "keys">,
+  event: HotkeyEvent,
+): boolean {
   const declared = new Set<ModifierFlag>(
     hotkey.keys.filter(checkIsModifier).map((key) => MODIFIER_FLAGS[key]),
   );
@@ -520,7 +523,7 @@ function checkModifiersMatch(hotkey: Hotkey, event: HotkeyEvent): boolean {
 
 /** Whether `event` triggers `hotkey`, modifiers included. */
 export function checkHotkeyMatches(
-  hotkey: Hotkey,
+  hotkey: Pick<Hotkey, "keys">,
   event: HotkeyEvent,
 ): boolean {
   if (!checkModifiersMatch(hotkey, event)) {
