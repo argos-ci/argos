@@ -182,7 +182,9 @@ export function TeamSAMLSSO(props: {
             <div className="flex items-center gap-4 p-4">
               <LockIcon className="size-6 shrink-0" />
               <div className="flex-1">
-                <div className="font-medium">SAML Enabled</div>
+                <div className="font-medium">
+                  {team.samlSso.enabled ? "SAML Enabled" : "SAML Disabled"}
+                </div>
                 <p className="text-low">
                   Manage the configuration with your Identity Provider.
                 </p>
