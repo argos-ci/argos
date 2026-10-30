@@ -172,17 +172,15 @@ function AddOnRow(props: {
 }) {
   return (
     // On a phone the description takes the width, and the price and the
-    // action move under it: side by side, the text was a word per line.
+    // action move under it: side by side, the text was a word per line. The
+    // plan chip moves down with them, into the price's place: next to the
+    // title it wrapped onto a line of its own.
     <div className="flex items-center gap-4 p-4 max-md:grid max-md:grid-cols-[auto_1fr] max-md:gap-y-3">
       {props.icon}
       <div className="flex-1">
         <div className="flex flex-wrap items-center gap-2 font-medium">
           {props.title}
-          {props.included && (
-            <Chip scale="xs" color="neutral">
-              Included in your plan
-            </Chip>
-          )}
+          {props.included && <IncludedInPlanChip className="max-md:hidden" />}
           {props.enabled && (
             <Chip scale="xs" color="success">
               Enabled
@@ -192,11 +190,21 @@ function AddOnRow(props: {
         <p className="text-low">{props.description}</p>
       </div>
       <div className="flex items-center gap-4 max-md:col-start-2 max-md:justify-end">
-        {!props.included && (
+        {props.included ? (
+          <IncludedInPlanChip className="mr-auto md:hidden" />
+        ) : (
           <div className="text-low max-md:mr-auto">${props.price} / month</div>
         )}
         {props.action}
       </div>
     </div>
+  );
+}
+
+function IncludedInPlanChip(props: { className: string }) {
+  return (
+    <Chip scale="xs" color="neutral" className={props.className}>
+      Included in your plan
+    </Chip>
   );
 }
