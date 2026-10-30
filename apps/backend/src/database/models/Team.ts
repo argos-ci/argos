@@ -1,6 +1,8 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
+import { checkTeamSamlEnforced } from "@/auth/saml";
 import config from "@/config";
 import { boom } from "@/util/error";
 
@@ -9,7 +11,6 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
 import { GithubAccount } from "./GithubAccount";
-import { TeamSamlConfig } from "./TeamSamlConfig";
 import { TeamUser } from "./TeamUser";
 import { User } from "./User";
 
@@ -149,17 +150,15 @@ export class Team extends Model {
       return ALL_ACCOUNT_PERMISSIONS;
     }
 
-    const [teamUser, teamSamlConfig] = await Promise.all([
+    const [teamUser, teamAccount] = await Promise.all([
       TeamUser.query()
         .select("id", "userLevel", "lastAuthMethod")
         .findOne({ userId: user.id, teamId: teamId })
         .withGraphFetched("team"),
       options?.enforceSSO
-        ? TeamSamlConfig.query()
-            .select("enforced")
-            .joinRelated("account")
-            .where("account.teamId", teamId)
-            .first()
+        ? Account.query()
+            .findOne({ "accounts.teamId": teamId })
+            .withGraphJoined("teamSamlConfig")
         : null,
     ]);
 
@@ -167,14 +166,13 @@ export class Team extends Model {
       return [];
     }
 
-    if (
-      options?.enforceSSO &&
-      teamSamlConfig?.enforced &&
-      teamUser.lastAuthMethod !== "saml"
-    ) {
-      throw boom(403, "SAML Single Sign-On required", {
-        code: "SAML_SSO_REQUIRED",
-      });
+    if (options?.enforceSSO && teamUser.lastAuthMethod !== "saml") {
+      invariant(teamAccount, "Team account not found");
+      if (await checkTeamSamlEnforced(teamAccount)) {
+        throw boom(403, "SAML Single Sign-On required", {
+          code: "SAML_SSO_REQUIRED",
+        });
+      }
     }
 
     switch (teamUser.userLevel) {
