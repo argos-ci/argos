@@ -249,6 +249,8 @@ export function TeamSAMLSSO(props: {
                 Require Team Members to login with SAML to access this Team.
                 <Switch
                   checked={team.samlSso.enforced}
+                  // Enforcement only applies while members can log in with SAML.
+                  disabled={!hasSamlAccess || !team.samlSso.enabled}
                   onCheckedChange={(isSelected) => {
                     invariant(team.samlSso);
                     apolloClient.mutate({

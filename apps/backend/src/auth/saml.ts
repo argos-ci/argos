@@ -1,4 +1,5 @@
 import { X509Certificate } from "node:crypto";
+import { invariant } from "@argos/util/invariant";
 import * as samlify from "samlify";
 import z from "zod";
 
@@ -456,6 +457,45 @@ export async function checkHasAccessToSAML(account: Account) {
     .select("samlPurchased")
     .findById(account.teamId);
   return team?.samlPurchased ?? false;
+}
+
+/**
+ * Members can log in to a team with SAML only while it has access to SAML SSO
+ * and has turned it on. Expects `teamSamlConfig` to be fetched.
+ */
+export async function checkTeamSamlEnabled(
+  account: Account,
+): Promise<
+  | { enabled: true; samlConfig: TeamSamlConfig }
+  | { enabled: false; reason: string }
+> {
+  invariant(
+    account.teamSamlConfig !== undefined,
+    "teamSamlConfig must be fetched",
+  );
+  if (!(await checkHasAccessToSAML(account))) {
+    return {
+      enabled: false,
+      reason: "SAML SSO is only available on Enterprise plan.",
+    };
+  }
+  if (!account.teamSamlConfig?.enabled) {
+    return { enabled: false, reason: "SAML SSO is not enabled for this team." };
+  }
+  return { enabled: true, samlConfig: account.teamSamlConfig };
+}
+
+/**
+ * Whether members must log in to a team with SAML. `enforced` survives SAML
+ * being turned off or the plan losing it, so it only counts while members can
+ * actually log in with SAML: otherwise it would lock them all out.
+ */
+export async function checkTeamSamlEnforced(account: Account) {
+  if (!account.teamSamlConfig?.enforced) {
+    return false;
+  }
+  const { enabled } = await checkTeamSamlEnabled(account);
+  return enabled;
 }
 
 function getStringLocation(location: string | object) {

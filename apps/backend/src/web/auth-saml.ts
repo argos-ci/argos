@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   checkHasAccessToSAML,
+  checkTeamSamlEnabled,
   createSamlAuthCode,
   createSamlLoginRedirect,
   extractEmailFromSaml,
@@ -56,15 +57,12 @@ async function getTeamAccountOrThrow(teamSlug: string) {
   return account;
 }
 
-async function checkTeamSamlEnabled(account: Account) {
-  const hasAccessToSAML = await checkHasAccessToSAML(account);
-  if (!hasAccessToSAML) {
-    throw boom(403, "SAML SSO is only available on Enterprise plan.");
+async function getEnabledTeamSamlConfig(account: Account) {
+  const result = await checkTeamSamlEnabled(account);
+  if (!result.enabled) {
+    throw boom(403, result.reason);
   }
-  if (!account.teamSamlConfig || !account.teamSamlConfig.enabled) {
-    throw boom(403, "SAML SSO is not enabled for this team.");
-  }
-  return account.teamSamlConfig;
+  return result.samlConfig;
 }
 
 const router: Router = Router();
@@ -82,7 +80,7 @@ router.get(
         query.success ? getFirstString(query.data.r) : undefined,
       );
       const account = await getTeamAccountOrThrow(teamSlug);
-      const samlConfig = await checkTeamSamlEnabled(account);
+      const samlConfig = await getEnabledTeamSamlConfig(account);
       const loginUrl = await createSamlLoginRedirect({
         teamSlug,
         samlConfig,
@@ -109,7 +107,7 @@ router.post(
     }
     const body = AcsBodySchema.parse(req.body);
     const account = await getTeamAccountOrThrow(teamSlug);
-    const samlConfig = await checkTeamSamlEnabled(account);
+    const samlConfig = await getEnabledTeamSamlConfig(account);
     const parsed = await parseAndValidateSamlLoginResponse({
       teamSlug,
       samlConfig,
