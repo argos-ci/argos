@@ -46,14 +46,17 @@ export async function probeMediaPoster(
     return null;
   }
 
+  const ready = {
+    posterReadyAt: new Date().toISOString(),
+    width: frame.width,
+    height: frame.height,
+  };
   await MediaVersion.query()
     .findById(version.id)
     .whereNull("posterReadyAt")
-    .patch({
-      posterReadyAt: new Date().toISOString(),
-      width: frame.width,
-      height: frame.height,
-    });
+    .patch(ready);
+  // The upload renders its Markdown and comment from this very instance.
+  version.$set(ready);
 
   return frame;
 }

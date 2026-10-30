@@ -15,7 +15,6 @@ import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
 import logger from "@/logger";
 import { mediaDiffJob } from "@/media/diff-job";
-import { mediaPosterJob } from "@/media/poster-job";
 import { purgeExpiredMedia } from "@/media/purge";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
@@ -99,7 +98,6 @@ createJobWorker(
   deploymentNotificationJob,
   githubPullRequestJob,
   mediaDiffJob,
-  mediaPosterJob,
   notificationMessageJob,
   notificationWorkflowJob,
   originInstallationSyncJob,
