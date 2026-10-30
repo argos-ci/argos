@@ -32,14 +32,13 @@ export function getMediaFileUrl(version: MediaVersion): string {
 }
 
 /**
- * The URL of a video's poster frame for Argos's own pages and API, or `null` for
- * an image.
+ * The URL of a video's poster frame, or `null` for an image.
  *
  * Straight from the CDN once it has served the frame. Until then the CDN does
- * not fail cleanly: it answers `202` with an HTML page for as long as its video
- * processing takes, and a `<video>` given that as its poster lays out at 0×0.
- * So until `posterReadyAt` is set the URL goes through Argos, which asks the CDN
- * on the way and answers 404 while it has no frame.
+ * not fail cleanly — it answers `202` with an HTML page for as long as its
+ * video processing takes — so the URL goes through Argos, which serves a
+ * placeholder until the frame exists and the frame from then on. Whatever
+ * renders it, a pull request comment included, shows a picture either way.
  */
 export function getMediaPosterUrl(
   version: MediaVersion,
@@ -51,41 +50,7 @@ export function getMediaPosterUrl(
   if (version.posterReadyAt) {
     return getMediaPosterSourceUrl(version);
   }
-  const url = new URL(getMediaPosterProxyUrl(version, shareUrl));
-  url.searchParams.set("fallback", "none");
-  return url.href;
-}
-
-/**
- * The poster frame to embed outside Argos — the pull request comment, a pasted
- * Markdown snippet, an unfurl — or `null` for an image.
- *
- * An embed is written once and stays, so one written before the CDN has the
- * frame cannot wait for it. It points at Argos, which serves a placeholder until
- * the frame exists and the frame from then on. The placeholder is `no-cache`,
- * so GitHub's image proxy asks again on the next view instead of keeping it.
- */
-export function getMediaEmbedPosterUrl(
-  version: MediaVersion,
-  shareUrl: string,
-): string | null {
-  if (!version.isVideo()) {
-    return null;
-  }
-  if (version.posterReadyAt) {
-    return getMediaPosterSourceUrl(version);
-  }
-  return getMediaPosterProxyUrl(version, shareUrl);
-}
-
-/**
- * Where Argos serves a version's poster frame: under its share URL, by version
- * number, so a re-upload never reuses a URL an image proxy has cached.
- */
-function getMediaPosterProxyUrl(
-  version: MediaVersion,
-  shareUrl: string,
-): string {
+  // Per version, so a re-upload never reuses a URL an image proxy has cached.
   return `${shareUrl}/poster/${version.number}.jpg`;
 }
 
@@ -137,7 +102,7 @@ export function getMediaEmbedArgs(args: {
     name,
     shareUrl,
     fileUrl: getMediaFileUrl(version),
-    posterUrl: getMediaEmbedPosterUrl(version, shareUrl),
+    posterUrl: getMediaPosterUrl(version, shareUrl),
     isVideo: version.isVideo(),
   };
 }

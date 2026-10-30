@@ -234,9 +234,9 @@ describe("video poster endpoint", () => {
   });
 
   it("serves a placeholder while the CDN has no frame, and is asked again", async () => {
-    // The CDN has no such video, so it never has a frame — what an embed sees
-    // while ImageKit is stalled. It must still be a picture, and one GitHub's
-    // image proxy does not keep.
+    // The CDN has no such video and holds the request for 15 seconds before
+    // saying so — what a stall looks like. The answer must still be a picture,
+    // and one GitHub's image proxy does not keep.
     const media = await createVideo();
 
     const res = await createApp()
@@ -244,19 +244,6 @@ describe("video poster endpoint", () => {
       .expect(200);
 
     expect(res.headers["content-type"]).toBe("image/jpeg");
-    expect(res.headers["cache-control"]).toBe("no-cache");
-  });
-
-  it("answers Argos's own player with a 404 instead", async () => {
-    // A player sizes itself from its poster, and would take the placeholder's
-    // shape rather than the video's.
-    const media = await createVideo();
-
-    const res = await createApp()
-      .get(`/m/${media.shareToken}/poster/1.jpg`)
-      .query({ fallback: "none" })
-      .expect(404);
-
     expect(res.headers["cache-control"]).toBe("no-cache");
   });
 

@@ -50,7 +50,7 @@ export const MediaVersionSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video. Until the image CDN has extracted it — usually seconds after the upload — the URL points at Argos and answers 404. Always `null` for images.",
+        "Poster frame of a video. Until the image CDN has extracted it — usually seconds after the upload — the URL points at Argos, which serves a placeholder in the meantime. Always `null` for images.",
     }),
     contentType: z.string(),
     sizeBytes: z.number(),
@@ -109,7 +109,7 @@ export const MediaSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it — usually seconds after the upload — the URL points at Argos and answers 404. Always `null` for images.",
+        "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it — usually seconds after the upload — the URL points at Argos, which serves a placeholder in the meantime. Always `null` for images.",
     }),
     contentType: z.string().meta({ description: "Content type of the media" }),
     sizeBytes: z.number().meta({ description: "Size of the media, in bytes" }),

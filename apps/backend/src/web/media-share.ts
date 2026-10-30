@@ -5,16 +5,14 @@ import config from "@/config";
 import { MediaVersion } from "@/database/models";
 import logger from "@/logger";
 import { getMediaOEmbed } from "@/media/oembed";
-import {
-  getMediaPosterPlaceholder,
-  probeMediaPosterForRequest,
-} from "@/media/poster";
+import { getMediaPosterPlaceholder, probeMediaPoster } from "@/media/poster";
 import { findMediaByShareToken } from "@/media/query";
 import { getMediaPosterSourceUrl } from "@/media/serve";
 import {
   getPublicMediaShareMeta,
   type MediaShareMeta,
 } from "@/media/share-meta";
+import { redisLock } from "@/util/redis";
 
 import { asyncHandler } from "./util";
 
@@ -22,10 +20,12 @@ import { asyncHandler } from "./util";
 const OEMBED_PATH = "/oembed";
 
 /**
- * How long a served poster frame may be kept. A poster URL names one version,
- * whose frame never changes.
+ * How long a request for a poster gives the CDN before answering with the
+ * placeholder. Well under what an image proxy waits for us: GitHub's gave up on
+ * ImageKit's 15-second "being prepared" answer with a 504, which is what broke
+ * the pull request comment on 2026-10-29.
  */
-const POSTER_CACHE_CONTROL = "public, max-age=604800, immutable";
+const POSTER_REQUEST_TIMEOUT_MS = 4_000;
 
 /**
  * Serve share links so they unfurl.
@@ -100,9 +100,9 @@ export function installMediaShareRoutes(
     }),
   );
 
-  // A video's poster frame, for the embeds written before the CDN had it (see
-  // `getMediaEmbedPosterUrl`). Whatever the media's visibility, like the file
-  // the frame comes from: GitHub's image proxy carries no session.
+  // A video's poster, for anything rendered before the CDN had the frame (see
+  // `getMediaPosterUrl`). Whatever the media's visibility, like the file the
+  // frame comes from: GitHub's image proxy carries no session.
   router.get(
     "/m/:shareToken/poster/:file",
     asyncHandler(async (req, res) => {
@@ -114,39 +114,30 @@ export function installMediaShareRoutes(
         return;
       }
 
+      if (!version.posterReadyAt) {
+        // One request at a time asks the CDN; the others answer at once.
+        await redisLock
+          .coalesce(["media-poster", version.id], () =>
+            probeMediaPoster(version, { timeout: POSTER_REQUEST_TIMEOUT_MS }),
+          )
+          .catch((error: unknown) => {
+            logger.error(
+              { error, mediaVersionId: version.id },
+              "Failed to probe a media poster",
+            );
+          });
+      }
+
       if (version.posterReadyAt) {
-        res.setHeader("Cache-Control", POSTER_CACHE_CONTROL);
+        // A poster URL names one version, whose frame never changes.
+        res.setHeader("Cache-Control", "public, max-age=604800, immutable");
         res.redirect(302, getMediaPosterSourceUrl(version));
         return;
       }
 
-      const frame = await probeMediaPosterForRequest(version).catch(
-        (error: unknown) => {
-          logger.error(
-            { error, mediaVersionId: version.id },
-            "Failed to probe a media poster",
-          );
-          return null;
-        },
-      );
-
-      if (frame) {
-        res.setHeader("Cache-Control", POSTER_CACHE_CONTROL);
-        res.type(frame.contentType).send(frame.bytes);
-        return;
-      }
-
-      // Asked again on the next view, which is what swaps the frame in once
-      // the CDN has it: GitHub's image proxy keeps what it fetched otherwise.
+      // Asked again on the next view, which swaps the frame in once the CDN
+      // has it: GitHub's image proxy keeps what it fetched otherwise.
       res.setHeader("Cache-Control", "no-cache");
-
-      // Argos's own pages ask for this: a `<video>` sizes itself from its
-      // poster, and would take the placeholder's shape instead of the video's.
-      if (req.query["fallback"] === "none") {
-        res.sendStatus(404);
-        return;
-      }
-
       res.type("jpeg").send(await getMediaPosterPlaceholder());
     }),
   );

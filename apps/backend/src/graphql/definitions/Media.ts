@@ -114,7 +114,7 @@ export const typeDefs = gql`
     number: Int!
     "CDN URL the bytes are served from"
     fileUrl: String!
-    "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it, the URL points at Argos and answers 404. Null for images."
+    "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it, the URL points at Argos, which serves a placeholder in the meantime. Null for images."
     posterUrl: String
     contentType: String!
     sizeBytes: Float!

@@ -1,7 +1,7 @@
 import { type MediaVersion } from "@/database/models";
 
 import { findMediaByShareToken } from "./query";
-import { getMediaEmbedPosterUrl, getMediaFileUrl } from "./serve";
+import { getMediaFileUrl, getMediaPosterUrl } from "./serve";
 import { getMediaShareUrl } from "./url";
 import { getLatestMediaVersion } from "./version";
 
@@ -90,7 +90,7 @@ function getPreviewImage(
   version: MediaVersion,
   shareUrl: string,
 ): PreviewImage {
-  const posterUrl = getMediaEmbedPosterUrl(version, shareUrl);
+  const posterUrl = getMediaPosterUrl(version, shareUrl);
 
   return resizePreview(
     {

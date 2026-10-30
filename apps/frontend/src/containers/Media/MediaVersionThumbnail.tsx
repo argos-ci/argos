@@ -13,8 +13,8 @@ import { MediaWell } from "@/ui/MediaFrame";
  * wide screenshot shows the same patch of background for every one of them.
  * The well's ground is the letterbox.
  *
- * A video whose poster is not there yet, or did not load, shows the film icon
- * the library's filmstrip falls back to, rather than a broken image.
+ * A video whose poster does not load shows the film icon the library's
+ * filmstrip falls back to, rather than a broken image.
  */
 export function MediaVersionThumbnail(props: {
   version: { fileUrl: string; posterUrl: string | null; isVideo: boolean };
