@@ -67,8 +67,8 @@ export function TeamAddOns(props: {
   const githubSsoIncluded = Boolean(team.plan?.githubSsoIncluded);
   const samlIncluded = Boolean(team.plan?.samlIncluded);
   const githubSsoEnabled = Boolean(team.ssoGithubAccount);
-  // An included add-on is never purchased, so it is only enabled once SAML is
-  // turned on in the Authentication settings.
+  // With SAML in the plan, `samlPurchased` grants nothing: only the
+  // configuration says whether SAML is on.
   const samlEnabled = samlIncluded
     ? Boolean(team.samlSso?.enabled)
     : team.samlPurchased;
@@ -118,18 +118,12 @@ export function TeamAddOns(props: {
             price={SAML_SSO_PRICING}
             action={
               samlIncluded ? (
-                samlEnabled ? (
-                  <LinkButton
-                    variant="secondary"
-                    href={authenticationSettingsUrl}
-                  >
-                    Manage
-                  </LinkButton>
-                ) : (
-                  <LinkButton href={authenticationSettingsUrl}>
-                    Configure
-                  </LinkButton>
-                )
+                <LinkButton
+                  variant={samlEnabled ? "secondary" : "primary"}
+                  href={authenticationSettingsUrl}
+                >
+                  {samlEnabled ? "Manage" : "Configure"}
+                </LinkButton>
               ) : samlEnabled ? (
                 <DisableSAMLSSOAddOnButton teamAccountId={team.id} />
               ) : (
