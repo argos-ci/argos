@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
+import { FilmIcon } from "lucide-react";
 
 /**
  * The surface a media is inspected on: the flat `--media-ground` under the
@@ -71,6 +72,34 @@ export function MediaVideo(props: {
       )}
     />
   );
+}
+
+/**
+ * A recording's poster frame, or the film icon when it has none or it fails to
+ * load: the icon says what it is, where a broken image would only say that
+ * something went wrong with a thumbnail nobody asked about.
+ *
+ * A plain `img`: the poster comes out of the CDN already transformed — it is a
+ * frame taken from the video — and `ImageKitPicture` would append a second set
+ * of transformations to a URL that has one.
+ */
+export function VideoPoster(
+  props: Omit<React.ComponentProps<"img">, "src" | "onError"> & {
+    src: string | null;
+    iconClassName: string;
+  },
+) {
+  const { src, iconClassName, ...imgProps } = props;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (!src || src === failedSrc) {
+    return (
+      <FilmIcon
+        aria-hidden="true"
+        className={clsx("text-low", iconClassName)}
+      />
+    );
+  }
+  return <img src={src} onError={() => setFailedSrc(src)} {...imgProps} />;
 }
 
 /**

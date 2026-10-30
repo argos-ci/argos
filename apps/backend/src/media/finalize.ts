@@ -1,7 +1,6 @@
 import { getMediaUnits } from "@argos/schemas/media";
 
 import { Media, MediaVersion } from "@/database/models";
-import logger from "@/logger";
 import { boom } from "@/util/error";
 
 import { scheduleMediaDiff } from "./diff-schedule";
@@ -92,15 +91,7 @@ export async function finalizeMedia(
   await scheduleMediaDiff(finalized, media);
 
   if (finalized.isVideo()) {
-    // A poster is a nicety: failing to get one must not fail the upload.
-    await probeMediaPoster(finalized, { timeout: POSTER_WAIT_MS }).catch(
-      (error: unknown) => {
-        logger.error(
-          { error, mediaVersionId: finalized.id },
-          "Failed to probe a media poster",
-        );
-      },
-    );
+    await probeMediaPoster(finalized, { timeout: POSTER_WAIT_MS });
   }
 
   return finalized;

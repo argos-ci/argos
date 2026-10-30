@@ -35,9 +35,10 @@ export type MediaEmbedArgs = {
  * The picture is the file itself for an image, and the **poster frame** for a
  * video — GitHub only renders an inline player for media it hosts itself, so a
  * `<video>` tag or a bare `.mp4` link pointing at Argos renders as a dead link.
- * Both come from the image CDN, which serves them unauthenticated: GitHub
- * fetches embedded images server-side through its camo proxy, carrying no
- * session of ours, so an embed that needed one could not render at all.
+ * Both are served unauthenticated — by the image CDN, or by Argos for a poster
+ * the CDN has not extracted yet: GitHub fetches embedded images server-side
+ * through its camo proxy, carrying no session of ours, so an embed that needed
+ * one could not render at all.
  *
  * A video whose poster hasn't been extracted yet degrades to a plain link rather
  * than an image that 404s.

@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import config from "@/config";
 import { MediaVersion } from "@/database/models";
-import logger from "@/logger";
 import { getMediaOEmbed } from "@/media/oembed";
 import { getMediaPosterPlaceholder, probeMediaPoster } from "@/media/poster";
 import { findMediaByShareToken } from "@/media/query";
@@ -115,17 +114,18 @@ export function installMediaShareRoutes(
       }
 
       if (!version.posterReadyAt) {
-        // One request at a time asks the CDN; the others answer at once.
-        await redisLock
-          .coalesce(["media-poster", version.id], () =>
-            probeMediaPoster(version, { timeout: POSTER_REQUEST_TIMEOUT_MS }),
-          )
-          .catch((error: unknown) => {
-            logger.error(
-              { error, mediaVersionId: version.id },
-              "Failed to probe a media poster",
-            );
-          });
+        // One request at a time asks the CDN, and only once: `coalesce` runs
+        // its task again for the requests that arrived meanwhile, which have
+        // already been answered with the placeholder.
+        let probed = false;
+        await redisLock.coalesce(["media-poster", version.id], async () => {
+          if (!probed) {
+            probed = true;
+            await probeMediaPoster(version, {
+              timeout: POSTER_REQUEST_TIMEOUT_MS,
+            });
+          }
+        });
       }
 
       if (version.posterReadyAt) {

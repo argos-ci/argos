@@ -66,7 +66,7 @@ export function MediaVersions(props: {
               <span className="text-low shrink-0">Latest</span>
             ) : null}
             {/* Always in the row so the "Latest" column lines up; only
-                  visible on the selected one. */}
+                visible on the selected one. */}
             <CheckIcon
               aria-hidden="true"
               className="invisible size-3.5 shrink-0 group-data-pressed:visible"

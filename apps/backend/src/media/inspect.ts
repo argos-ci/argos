@@ -144,7 +144,9 @@ async function readObjectHeader(key: string): Promise<Buffer> {
  * buffer still uploads fine, it just renders without a reserved frame. Dimensions
  * are a layout nicety, not a reason to reject a file.
  */
-async function readImageDimensions(header: Buffer): Promise<MediaInspection> {
+export async function readImageDimensions(
+  header: Buffer,
+): Promise<MediaInspection> {
   try {
     const metadata = await sharp(header).metadata();
     return {

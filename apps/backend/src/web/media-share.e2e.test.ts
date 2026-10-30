@@ -3,7 +3,6 @@ import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config";
-import { MediaVersion } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { installMediaShareRoutes } from "./media-share";
@@ -210,13 +209,12 @@ describe("video poster endpoint", () => {
   async function createVideo(posterReadyAt: string | null = null) {
     const { media } = await factory.createMediaWithVersion({
       media: { name: "checkout.mp4" },
-      version: { key: "media/test/clip.mp4", mimeType: "video/mp4" },
+      version: {
+        key: "media/test/clip.mp4",
+        mimeType: "video/mp4",
+        posterReadyAt,
+      },
     });
-    if (posterReadyAt) {
-      await MediaVersion.query()
-        .where("mediaId", media.id)
-        .patch({ posterReadyAt });
-    }
     return media;
   }
 

@@ -1,10 +1,10 @@
 import sharp from "sharp";
 
 import { MediaVersion } from "@/database/models";
+import logger from "@/logger";
 
+import { readImageDimensions, type MediaInspection } from "./inspect";
 import { getMediaPosterSourceUrl } from "./serve";
-
-type PosterFrame = { width: number | null; height: number | null };
 
 /**
  * Ask the CDN for a video's poster frame, and mark it ready once the answer is
@@ -12,19 +12,31 @@ type PosterFrame = { width: number | null; height: number | null };
  *
  * The frame also gives the video its dimensions, which the upload check cannot
  * read: they live in a `moov` atom that may sit at the end of the file.
+ *
+ * A failed request is logged, not thrown: a poster is a nicety, and failing to
+ * get one must not fail the upload or the page that asked.
  */
 export async function probeMediaPoster(
   version: MediaVersion,
   options: { timeout: number },
 ): Promise<void> {
-  if (version.posterReadyAt) {
+  let frame: MediaInspection | null;
+  try {
+    const response = await fetch(getMediaPosterSourceUrl(version), {
+      signal: AbortSignal.timeout(options.timeout),
+    });
+    frame = await readPosterFrame(response);
+  } catch (error) {
+    // A timeout is the CDN stalling seen from our side: the frame just isn't
+    // there yet.
+    if (!(error instanceof DOMException && error.name === "TimeoutError")) {
+      logger.error(
+        { error, mediaVersionId: version.id },
+        "Failed to probe a media poster",
+      );
+    }
     return;
   }
-
-  const frame = await fetchPosterFrame(
-    getMediaPosterSourceUrl(version),
-    options.timeout,
-  );
   if (!frame) {
     return;
   }
@@ -65,27 +77,6 @@ export function getMediaPosterPlaceholder(): Promise<Buffer> {
 }
 
 /**
- * Fetch a poster frame, or `null` while the CDN has none. A timeout is the CDN
- * stalling seen from our side: not an error, the frame just isn't there yet.
- */
-async function fetchPosterFrame(
-  url: string,
-  timeout: number,
-): Promise<PosterFrame | null> {
-  try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(timeout),
-    });
-    return await readPosterFrame(response);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "TimeoutError") {
-      return null;
-    }
-    throw error;
-  }
-}
-
-/**
  * The frame's size, when the CDN answered with one; `null` otherwise.
  *
  * Only a `200` carrying an image counts. ImageKit's "being prepared" answer is
@@ -94,15 +85,12 @@ async function fetchPosterFrame(
  */
 export async function readPosterFrame(
   response: Response,
-): Promise<PosterFrame | null> {
+): Promise<MediaInspection | null> {
   const contentType = response.headers.get("content-type") ?? "";
   if (response.status !== 200 || !contentType.startsWith("image/")) {
     await response.body?.cancel();
     return null;
   }
 
-  const metadata = await sharp(
-    Buffer.from(await response.arrayBuffer()),
-  ).metadata();
-  return { width: metadata.width ?? null, height: metadata.height ?? null };
+  return readImageDimensions(Buffer.from(await response.arrayBuffer()));
 }

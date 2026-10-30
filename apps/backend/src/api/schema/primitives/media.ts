@@ -49,8 +49,7 @@ export const MediaVersionSchema = z
       description: "URL of the image or video as it was at this version.",
     }),
     posterUrl: z.url().nullable().meta({
-      description:
-        "Poster frame of a video. Until the image CDN has extracted it — usually seconds after the upload — the URL points at Argos, which serves a placeholder in the meantime. Always `null` for images.",
+      description: "Poster frame of a video. Always `null` for images.",
     }),
     contentType: z.string(),
     sizeBytes: z.number(),
@@ -93,7 +92,7 @@ export const MediaSchema = z
     }),
     markdown: z.string().meta({
       description:
-        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. A video's picture is served through Argos until the CDN has extracted its poster frame, with a placeholder in the meantime, so the Markdown is final as soon as the upload is. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
+        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
     }),
     version: z.number().meta({
       description:
@@ -109,7 +108,7 @@ export const MediaSchema = z
     }),
     posterUrl: z.url().nullable().meta({
       description:
-        "Poster frame of a video, derived by the image CDN. Until the CDN has extracted it — usually seconds after the upload — the URL points at Argos, which serves a placeholder in the meantime. Always `null` for images.",
+        "Poster frame of a video, derived by the image CDN. Always `null` for images.",
     }),
     contentType: z.string().meta({ description: "Content type of the media" }),
     sizeBytes: z.number().meta({ description: "Size of the media, in bytes" }),
