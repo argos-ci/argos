@@ -7,8 +7,10 @@ import {
   getDiffGroupDefinition,
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
-import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { getPlainArrowDirection } from "@/containers/Build/hotkeys";
+import {
+  disableHotkeys,
+  useBuildHotkey,
+} from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -58,6 +60,20 @@ export function JourneyStepHotkeys() {
     preventDefault: true,
   });
   return null;
+}
+
+function getPlainArrowDirection(event: React.KeyboardEvent): -1 | 1 | null {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return null;
+  }
+  switch (event.key) {
+    case "ArrowLeft":
+      return -1;
+    case "ArrowRight":
+      return 1;
+    default:
+      return null;
+  }
 }
 
 function useFocusFollowsActiveStep(
@@ -128,6 +144,7 @@ export function BuildJourneyDrawer() {
         ref={stripRef}
         role="toolbar"
         aria-label="Journey"
+        {...disableHotkeys(["ArrowLeft", "ArrowRight"])}
         onKeyDown={(event) => {
           const direction = getPlainArrowDirection(event);
           if (direction) {

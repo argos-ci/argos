@@ -18,7 +18,6 @@ import {
   checkHotkeyUsesModifiers,
   getHotkey,
   getModifierLabel,
-  getPlainArrowDirection,
   plainHotkeyGroups,
   SEARCHABLE_MODIFIERS,
   type Hotkey,
@@ -52,11 +51,28 @@ type HotkeyRegistration = {
  */
 const hotkeyRegistry = new Set<HotkeyRegistration>();
 
-function checkIsToolbarNavigation(event: KeyboardEvent): boolean {
+/**
+ * Turns the hotkeys off for `keys` while focus is inside the element, for an
+ * element that handles those keys itself: the hotkeys hear every key before it
+ * does. Each key is matched as a hotkey of its own, so `ArrowLeft` leaves ⇧←
+ * to the hotkeys. An empty `data-hotkeys-disabled` turns every key off.
+ */
+export function disableHotkeys(keys: string[]) {
+  return { "data-hotkeys-disabled": keys.join(" ") };
+}
+
+function checkIsKeyDisabled(event: KeyboardEvent): boolean {
+  const keys =
+    event.target instanceof HTMLElement
+      ? event.target.closest<HTMLElement>("[data-hotkeys-disabled]")?.dataset
+          .hotkeysDisabled
+      : undefined;
+  if (keys === undefined) {
+    return false;
+  }
   return (
-    event.target instanceof HTMLElement &&
-    event.target.closest("[role=toolbar]") !== null &&
-    getPlainArrowDirection(event) !== null
+    keys === "" ||
+    keys.split(" ").some((key) => checkHotkeyMatches({ keys: [key] }, event))
   );
 }
 
@@ -82,13 +98,12 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
     (event.target.role === "menu" ||
       event.target.role?.startsWith("menuitem") ||
       event.target.role === "textbox" ||
-      event.target.closest("[data-hotkeys-disabled]") ||
       event.target.closest("[role=dialog]"))
   ) {
     return;
   }
 
-  if (checkIsToolbarNavigation(event)) {
+  if (checkIsKeyDisabled(event)) {
     return;
   }
 

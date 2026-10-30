@@ -497,7 +497,10 @@ function checkIsLiteralKey(key: string): boolean {
  * AZERTY, so demanding either a second time would make those impossible to
  * type.
  */
-function checkModifiersMatch(hotkey: Hotkey, event: HotkeyEvent): boolean {
+function checkModifiersMatch(
+  hotkey: Pick<Hotkey, "keys">,
+  event: HotkeyEvent,
+): boolean {
   const declared = new Set<ModifierFlag>(
     hotkey.keys.filter(checkIsModifier).map((key) => MODIFIER_FLAGS[key]),
   );
@@ -520,7 +523,7 @@ function checkModifiersMatch(hotkey: Hotkey, event: HotkeyEvent): boolean {
 
 /** Whether `event` triggers `hotkey`, modifiers included. */
 export function checkHotkeyMatches(
-  hotkey: Hotkey,
+  hotkey: Pick<Hotkey, "keys">,
   event: HotkeyEvent,
 ): boolean {
   if (!checkModifiersMatch(hotkey, event)) {
@@ -537,20 +540,6 @@ export function checkHotkeyMatches(
     }
     return key === event.code || key === event.key;
   });
-}
-
-export function getPlainArrowDirection(event: HotkeyEvent): -1 | 1 | null {
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-    return null;
-  }
-  switch (event.key) {
-    case "ArrowLeft":
-      return -1;
-    case "ArrowRight":
-      return 1;
-    default:
-      return null;
-  }
 }
 
 /** The hotkey named `name`, as declared above. */
