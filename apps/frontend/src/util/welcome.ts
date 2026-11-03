@@ -52,7 +52,8 @@ export function getPostAuthURL(input: {
   const { creation, hasAutoInvite, redirect } = input;
 
   if (!creation) {
-    return redirect ?? "/";
+    // The destination rides in the login URL, which anyone can hand out.
+    return resolveWelcomeRedirect(redirect ?? null);
   }
 
   // Checked against the original destination. Once `getAutoInviteTeamsURL` has

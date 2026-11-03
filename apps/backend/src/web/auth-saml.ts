@@ -25,14 +25,26 @@ const AcsBodySchema = z.object({
   RelayState: z.string().optional(),
 });
 
+/**
+ * A same-origin path to land on after login. Resolved with the URL parser
+ * rather than matched as a string: `//evil.example` and `/\evil.example` both
+ * start with a slash and both leave the origin.
+ */
 function getSafeRedirect(redirect: string | undefined) {
   if (!redirect) {
     return "/";
   }
-  if (!redirect.startsWith("/")) {
+  const origin = new URL(config.get("server.url")).origin;
+  let url: URL;
+  try {
+    url = new URL(redirect, origin);
+  } catch {
     return "/";
   }
-  return redirect;
+  if (url.origin !== origin) {
+    return "/";
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function getFirstString(input: string | string[] | undefined) {
