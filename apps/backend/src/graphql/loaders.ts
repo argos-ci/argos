@@ -863,6 +863,7 @@ function createAccountActivationByAccountIdLoader() {
 const EMPTY_ACCOUNT_BILLING: AccountBilling = {
   plan: null,
   flatPrice: null,
+  addOns: [],
   includedScreenshots: null,
   periodUsage: null,
 };

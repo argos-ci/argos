@@ -1,6 +1,9 @@
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 
+/** The statuses an invoice counts under: raised, and not written off. */
+export const COUNTED_INVOICE_STATUSES = ["paid", "open"];
+
 /**
  * Mirror of a Stripe invoice — the fields the revenue page reads.
  *

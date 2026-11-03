@@ -3,11 +3,15 @@ import { invariant } from "@argos/util/invariant";
 import { knex } from "@/database";
 import {
   Account,
+  COUNTED_INVOICE_STATUSES,
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
 } from "@/database/models";
-import { getAccountBillings } from "@/database/services/period-usage";
+import {
+  getAccountBillings,
+  getEstimatedPeriodAmount,
+} from "@/database/services/period-usage";
 import { startOfUTCMonth } from "@/util/utc-month";
 
 /** What the teams on one billing interval contributed to a month. */
@@ -683,9 +687,6 @@ type StaffYearlyContract = {
   usage: StaffContractUsage | null;
 };
 
-/** The statuses an invoice counts under: raised, and not written off. */
-const COUNTED_STATUSES = ["paid", "open"];
-
 /**
  * How far back the contract scan reaches beyond the reported window.
  *
@@ -1044,7 +1045,11 @@ async function getEstimatedBills(options: {
     }
 
     const revenue = {
-      amount: billing.flatPrice + period.additionalScreenshotCost,
+      amount: getEstimatedPeriodAmount({
+        flatPrice: billing.flatPrice,
+        addOns: billing.addOns,
+        period,
+      }),
       currency: team.currency ?? REPORTING_CURRENCY,
     };
     bills.push({
@@ -1251,7 +1256,7 @@ export async function getStaffRevenueMonthTeams(
     getTeamCustomers(),
     getBilledTeams(),
     StripeInvoice.query()
-      .whereIn("status", COUNTED_STATUSES)
+      .whereIn("status", COUNTED_INVOICE_STATUSES)
       .whereIn("billingReason", [
         ...SUBSCRIPTION_BILLING_REASONS,
         ...SALES_LED_BILLING_REASONS,
@@ -1403,7 +1408,7 @@ export async function getStaffRevenue(
   await assertMirrorCovers(scanStart, now);
 
   const rows = await StripeInvoice.query()
-    .whereIn("status", COUNTED_STATUSES)
+    .whereIn("status", COUNTED_INVOICE_STATUSES)
     .whereIn("billingReason", [
       ...SUBSCRIPTION_BILLING_REASONS,
       ...SALES_LED_BILLING_REASONS,

@@ -77,6 +77,10 @@ const StaffTeamsQuery = graphql(`
         stripeCustomerId
         staff {
           flatPrice
+          addOns {
+            label
+            monthlyPrice
+          }
           includedScreenshots
           plan {
             id
@@ -91,6 +95,7 @@ const StaffTeamsQuery = graphql(`
               closed
               screenshotsCount
               additionalScreenshotsCost
+              invoicedAmount
             }
           }
         }
@@ -319,10 +324,10 @@ type BilledPeriod = { period: BillingPeriod; amount: number };
 type TeamBilling = {
   plan: PricedPlan;
   /**
-   * The last period that closed. Its usage is settled, but the prices are the
-   * ones the subscription carries today — Argos keeps no history of them — so a
-   * contract renegotiated since is priced on its new terms rather than the ones
-   * it was invoiced on. Null until the team closes its first period.
+   * The last period that closed: the invoice it closed on, or an estimate
+   * until that invoice reaches the mirror. The estimate prices the settled
+   * usage at the prices the subscription carries today, since Argos keeps no
+   * history of them. Null until the team closes its first period.
    */
   previous: BilledPeriod | null;
   /** The period still accruing. Null when nothing is being billed right now. */
@@ -330,7 +335,8 @@ type TeamBilling = {
 };
 
 /**
- * What a team was billed over one period: the plan's own amount, plus the
+ * What a team was billed over one period: the invoice the period closed on
+ * when there is one, and otherwise the plan's own amount, its add-ons and the
  * screenshots it consumed beyond the quota.
  *
  * Both halves are taken in the period's own unit rather than brought back to a
@@ -351,7 +357,10 @@ function getPeriodAmount(
   plan: PricedPlan,
 ): number {
   return (
-    getPeriodFlatPrice(staff.flatPrice, plan) + period.additionalScreenshotsCost
+    period.invoicedAmount ??
+    getPeriodFlatPrice(staff.flatPrice, plan) +
+      staff.addOns.reduce((total, addOn) => total + addOn.monthlyPrice, 0) +
+      period.additionalScreenshotsCost
   );
 }
 
@@ -385,14 +394,22 @@ function getTeamBilling(team: TeamItem): TeamBilling | null {
 }
 
 /**
- * What the plan costs on this team, spelled out under the amount.
+ * Where an amount comes from, spelled out under it.
  *
- * The flat half is what the reader cannot check: the overage is computed from
- * screenshots we counted, while the plan's own amount is either read from the
- * contract in Stripe or guessed. Which of the two it is changes how much the
- * figure can be trusted, so it is said rather than implied.
+ * An invoiced amount is what Stripe billed. An estimate is not: the overage is
+ * computed from screenshots we counted, while the plan's own amount is either
+ * read from the contract in Stripe or guessed. Which of these it is changes how
+ * much the figure can be trusted, so it is said rather than implied.
  */
-function getAmountHint(team: TeamItem, billing: TeamBilling): string {
+function getAmountHint(
+  team: TeamItem,
+  billing: TeamBilling,
+  billed: BilledPeriod,
+): string {
+  if (billed.period.invoicedAmount != null) {
+    return "Invoiced by Stripe when the period closed, before tax: the plan, its add-ons and the screenshots consumed beyond the quota.";
+  }
+
   const { plan } = billing;
   const flat = formatPrice(getPeriodFlatPrice(team.staff.flatPrice, plan));
   const unit = plan.interval === PlanInterval.Year ? "year" : "month";
@@ -400,8 +417,15 @@ function getAmountHint(team: TeamItem, billing: TeamBilling): string {
     team.staff.flatPrice === null
       ? `a ${flat} guess for ${plan.displayName}, whose own amount is not on file`
       : `${flat} held on the subscription in Stripe`;
+  const addOns = team.staff.addOns
+    .map((addOn) => `, ${addOn.label} at ${formatPrice(addOn.monthlyPrice)}`)
+    .join("");
+  // Only a closed period has an invoice to fall short of.
+  const estimate = billed.period.closed
+    ? "Estimated, as no invoice for this period is mirrored."
+    : "Estimated.";
 
-  return `Billed by the ${unit}. ${plan.displayName}: ${source}, plus the screenshots consumed beyond the quota over the period.`;
+  return `${estimate} Billed by the ${unit}. ${plan.displayName}: ${source}${addOns}, plus the screenshots consumed beyond the quota over the period.`;
 }
 
 /**
@@ -506,7 +530,7 @@ function BilledAmount(props: {
   return (
     <div>
       {billing && billed ? (
-        <Tooltip content={getAmountHint(team, billing)}>
+        <Tooltip content={getAmountHint(team, billing, billed)}>
           <span className="font-medium">{formatPrice(billed.amount)}</span>
         </Tooltip>
       ) : (

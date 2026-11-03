@@ -147,6 +147,8 @@ async function createBilledTeam(input: {
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
+  /** Whether the team bought the static IP add-on, which its plan leaves out. */
+  staticIpEnabled?: boolean;
   /** Screenshots uploaded during each closed period, most recent first. */
   screenshotsByClosedPeriod: number[];
   /**
@@ -157,10 +159,13 @@ async function createBilledTeam(input: {
   screenshotsInRunningPeriod?: number;
 }): Promise<Account> {
   const runningTrial = input.trialEndsInDays;
-  const { account } = await createTeamAccount({
+  const { account, team } = await createTeamAccount({
     slug: input.slug,
     name: input.name,
   });
+  if (input.staticIpEnabled) {
+    await team.$query().patch({ staticIpEnabled: true });
+  }
   await account.$query().patch({
     createdAt: daysFromNow(-input.createdDaysAgo),
     // A billed team reached checkout, so it has a Stripe customer — which is
@@ -377,6 +382,8 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
         flatPrice: 750,
+        // Billed $200 a month on top of the plan.
+        staticIpEnabled: true,
         periodStart: daysFromNow(-9),
         screenshotsByClosedPeriod: [60_000],
         // Already 6k past the quota, which is the whole point of the column:
@@ -466,12 +473,12 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   await expect(soylent).not.toContainText("35,000");
 
   // Umbrella is on a contract, so its quota is named — and it is 6k past it
-  // with days still to run: $750 flat plus $30 of overage, which is the figure
-  // the column exists to explain.
+  // with days still to run: $750 flat, $200 for its static IP and $30 of
+  // overage, which is the figure the column exists to explain.
   const umbrella = page.getByRole("row", { name: /Umbrella/ });
   await expect(umbrella).toContainText("41,000");
   await expect(umbrella).toContainText("/ 35,000");
-  await expect(umbrella).toContainText("$780");
+  await expect(umbrella).toContainText("$980");
 
   // The running period is partial by construction, so what is left of it is
   // what tells a genuine drop from a period that simply opened three days ago.

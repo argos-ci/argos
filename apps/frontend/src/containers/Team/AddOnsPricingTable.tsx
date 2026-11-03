@@ -1,10 +1,12 @@
+import {
+  ADD_ON_KEYS,
+  ADD_ONS,
+  getAddOnsMonthlyPrice,
+  getBilledAddOns,
+  type AddOn,
+} from "@argos/schemas/add-ons";
 import clsx from "clsx";
 
-import {
-  GITHUB_SSO_PRICING,
-  SAML_SSO_PRICING,
-  STATIC_IP_PRICING,
-} from "@/constants";
 import { DocumentType, graphql } from "@/gql";
 
 const _TeamFragment = graphql(`
@@ -24,8 +26,6 @@ const _TeamFragment = graphql(`
   }
 `);
 
-export type AddOn = "github-sso" | "saml-sso" | "static-ip";
-
 export type AddOnsPricingTableTeam = DocumentType<typeof _TeamFragment>;
 
 /**
@@ -37,52 +37,35 @@ export function AddOnsPricingTable(props: {
   enabling: AddOn;
 }) {
   const { team, enabling } = props;
-  const rows: { key: AddOn; label: string; price: number }[] = [];
-  if (
-    enabling === "github-sso" ||
-    (team.ssoGithubAccount && !team.plan?.githubSsoIncluded)
-  ) {
-    rows.push({
-      key: "github-sso",
-      label: "GitHub SSO",
-      price: GITHUB_SSO_PRICING,
-    });
-  }
-  if (
-    enabling === "saml-sso" ||
-    (team.samlPurchased && !team.plan?.samlIncluded)
-  ) {
-    rows.push({ key: "saml-sso", label: "SAML SSO", price: SAML_SSO_PRICING });
-  }
-  if (
-    enabling === "static-ip" ||
-    (team.staticIpEnabled && !team.plan?.staticIpIncluded)
-  ) {
-    rows.push({
-      key: "static-ip",
-      label: "Static IP",
-      price: STATIC_IP_PRICING,
-    });
-  }
-  const total = rows.reduce((sum, row) => sum + row.price, 0);
+  const billed = getBilledAddOns({
+    enabled: {
+      "github-sso": Boolean(team.ssoGithubAccount),
+      "saml-sso": team.samlPurchased,
+      "static-ip": team.staticIpEnabled,
+    },
+    plan: team.plan ?? null,
+  });
+  const keys = ADD_ON_KEYS.filter(
+    (key) => key === enabling || billed.includes(key),
+  );
   return (
     <div>
-      {rows.map((row) => (
+      {keys.map((key) => (
         <div
-          key={row.key}
+          key={key}
           className={clsx(
             "text-low my-2 flex justify-between",
-            enabling === row.key && "font-bold",
+            enabling === key && "font-bold",
           )}
         >
-          <div>{row.label}</div>
-          <div>${row.price} / month</div>
+          <div>{ADD_ONS[key].label}</div>
+          <div>${ADD_ONS[key].monthlyPrice} / month</div>
         </div>
       ))}
       <hr className="my-2 border-0 border-t" />
       <div className="my-2 flex justify-between font-bold">
         <div>Total</div>
-        <div>${total} / month</div>
+        <div>${getAddOnsMonthlyPrice(keys)} / month</div>
       </div>
       <p className="text-low mt-2 text-right text-sm">
         * Plus applicable tax and fees

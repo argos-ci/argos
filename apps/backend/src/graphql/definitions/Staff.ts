@@ -1,15 +1,23 @@
+import { ADD_ONS } from "@argos/schemas/add-ons";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Account, StaffTeamContact, Subscription } from "@/database/models";
+import {
+  Account,
+  StaffTeamContact,
+  Subscription,
+  type StripeInvoice,
+} from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
   getAccountBillings,
+  getEstimatedPeriodAmount,
   type AccountBilling,
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import {
   getStaffRevenue,
+  getInvoiceRevenue,
   getStaffRevenueMonthTeams,
   MAX_MONTHS,
   MirrorCoverageError,
@@ -113,6 +121,10 @@ const AMOUNT_ORDERINGS: Partial<
  * displays it does — a yearly subscription's period is a year. This exists so
  * the ordering and the figure on screen come out of one rule; a team ordered
  * above another has to read higher than it too.
+ *
+ * A closed period reads the invoice it closed on when the mirror holds one:
+ * that is what was billed, add-ons and all, where the sum below is only an
+ * estimate of it.
  */
 function getPeriodAmount(
   billing: AccountBilling,
@@ -133,10 +145,27 @@ function getPeriodAmount(
     return null;
   }
 
-  // Null when Stripe was never asked for the amount. Ordered as nothing rather
-  // than guessed at: the guess belongs to the display, which says it is one.
-  const flatPrice = billing.flatPrice ?? 0;
-  return flatPrice + billed.additionalScreenshotCost;
+  return (
+    getInvoicedAmount(billed) ??
+    getEstimatedPeriodAmount({
+      // Null when Stripe was never asked for the amount. Ordered as nothing
+      // rather than guessed at: the guess belongs to the display, which says it
+      // is one.
+      flatPrice: billing.flatPrice ?? 0,
+      addOns: billing.addOns,
+      period: billed,
+    })
+  );
+}
+
+/**
+ * What Stripe invoiced for a period, before tax and net of credit notes, as the
+ * revenue page counts it. Null when no invoice of it is mirrored.
+ */
+function getInvoicedAmount(period: {
+  invoice: StripeInvoice | null;
+}): number | null {
+  return period.invoice ? getInvoiceRevenue(period.invoice).amount : null;
 }
 
 /**
@@ -307,6 +336,19 @@ export const typeDefs = gql`
     screenshotsCount: Int!
     "Cost of the screenshots consumed beyond the included quota, this period."
     additionalScreenshotsCost: Float!
+    """
+    What Stripe invoiced when the period closed, before tax and net of credit
+    notes: the plan, the add-ons and the overage. Null while the period runs,
+    and when no such invoice is mirrored.
+    """
+    invoicedAmount: Float
+  }
+
+  "An add-on a team pays for on top of its plan."
+  type TeamStaffAddOn {
+    label: String!
+    "What it costs a month, at its published price."
+    monthlyPrice: Float!
   }
 
   "What a team is consuming, as needed to explain what it is about to pay."
@@ -363,6 +405,11 @@ export const typeDefs = gql`
     reading the amount.
     """
     flatPrice: Float
+    """
+    The add-ons billed on top of the plan, read off what the team enabled and
+    priced at their published amount.
+    """
+    addOns: [TeamStaffAddOn!]!
     """
     Screenshots included in each billing period before the overage starts: the
     amount the subscription states, and the plan's published one when it states
@@ -764,6 +811,12 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
+    addOns: async (account, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        account.id,
+      );
+      return billing.addOns.map((key) => ADD_ONS[key]);
+    },
     includedScreenshots: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(
         account.id,
@@ -797,6 +850,7 @@ export const resolvers: IResolvers = {
         closed: period.closed,
         screenshotsCount: period.screenshotsCount,
         additionalScreenshotsCost: period.additionalScreenshotCost,
+        invoicedAmount: getInvoicedAmount(period),
       }));
     },
     storybookRatio: async (account, _args, ctx) => {
