@@ -348,7 +348,7 @@ jobs:
             DATABASE_URL=/production/database_url
             DEPLOYMENTS_CLOUDFLARE_ZONE_ID=/production/deployments_cloudflare_zone_id
             DEPLOYMENTS_CLOUDFLARE_API_TOKEN=/production/deployments_cloudflare_api_token
-            DEPLOYMENTS_ACCESS_TOKEN_SECRET=/production/deployments_access_token_secret
+            DEPLOYMENTS_ACCESS_TOKEN_PRIVATE_KEY=/production/deployments_access_token_private_key
             DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID=/production/deployments_custom_domains_distribution_id
             DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID=/production/deployments_custom_domains_connection_group_id 
             DISCORD_WEBHOOK_URL=/production/discord_webhook_url
