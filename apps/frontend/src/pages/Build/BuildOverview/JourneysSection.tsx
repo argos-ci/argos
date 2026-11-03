@@ -328,7 +328,9 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
               : "Run"}
         </span>
       </HeadlessLink>
-      <div className="flex min-w-0 [scrollbar-width:none] items-end gap-1.5 overflow-x-auto pt-1.5 pr-1.5 pb-0.5">
+      {/* A journey longer than the row shrinks its screens, keeping their
+          shape, so the strip always shows the whole journey. */}
+      <div className="flex min-w-0 items-end gap-1.5 pt-1.5 pr-1.5 pb-0.5">
         {screens.map((screen, index) => (
           <Tooltip
             key={screen.diff.id}
@@ -337,8 +339,11 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
             <HeadlessLink
               href={getHref(screen.diff)}
               aria-label={`Screen ${index + 1}, ${screen.label}${screen.changed ? ", changed" : ""}`}
-              className="focus-ring relative z-1 block shrink-0 rounded-sm"
-              style={size}
+              className="focus-ring relative z-1 block min-w-3 rounded-sm"
+              style={{
+                width: size.width,
+                aspectRatio: `${size.width} / ${size.height}`,
+              }}
             >
               <ScreenshotDiffThumbnail
                 screenshotDiff={screen.diff}
