@@ -297,19 +297,7 @@ describe("buildReviewers", () => {
   });
 
   test("403s without the review permission", async ({ account, build }) => {
-    // A contributor with no project-level access cannot review.
-    const contributor = await factory.User.create();
-    await factory.UserAccount.create({ userId: contributor.id });
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: contributor.id,
-      userLevel: "contributor",
-    });
-    const token = await createScopedPatToken({
-      user: contributor,
-      account,
-      token: `arp_${"f".repeat(36)}`,
-    });
+    const { token } = await createContributor(account);
     const teammate = await createTeammate(account);
 
     await request(app)
