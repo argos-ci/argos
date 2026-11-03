@@ -3,7 +3,7 @@ import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { ChevronDownIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import {
@@ -16,7 +16,7 @@ import {
   ScreenshotDiffStatus,
   type ScreenshotMetadataColorScheme,
 } from "@/gql/graphql";
-import { Details, Summary } from "@/ui/Details";
+import { Details } from "@/ui/Details";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
@@ -373,24 +373,31 @@ export function JourneysSection(props: {
         </Panel>
       ) : null}
       {/* A section of their own, below the journeys to review, folded:
-          nothing there needs a look. */}
+          nothing there needs a look. Its header is the panel header of the
+          other sections, with a chevron always shown: folded, the panel is
+          nothing but that header, and has to say it opens. */}
       {unchanged.length > 0 ? (
-        <Panel elevation={0}>
+        <Panel elevation={0} spacing={false}>
           <Details
             open={showUnchanged}
             onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
-            className="px-4"
           >
-            <Summary icon={UnchangedIcon} className="text-low text-sm">
-              <span className="flex-1">Unchanged journeys</span>
-              <span className="text-xs font-normal tabular-nums">
+            <summary className="group/summary focus-ring text-low hover:bg-ui hover:text-default flex h-11 cursor-default list-none items-center justify-between gap-4 rounded-xl pr-3 pl-4 transition [details[open]>&]:rounded-b-none">
+              <PanelTitle
+                icon={UnchangedIcon}
+                className="group-hover/summary:text-default transition"
+              >
+                Unchanged journeys
+              </PanelTitle>
+              <span className="flex items-center gap-2 text-xs tabular-nums">
                 {plural(unchanged.length, "journey")}
+                <ChevronDownIcon className="size-4 transition [details[open]>summary_&]:rotate-180" />
               </span>
-            </Summary>
+            </summary>
             {showUnchanged ? (
               <JourneyTestList
                 tests={unchanged}
-                className="-mx-4 pb-1"
+                className="pb-4"
                 {...listProps}
               />
             ) : null}
