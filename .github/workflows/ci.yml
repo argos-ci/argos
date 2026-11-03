@@ -10,9 +10,9 @@ on:
   pull_request:
     branches: ["**"]
 
+# No TURBO_TOKEN: the remote cache only holds artifacts signed with the release
+# workflow's key, which CI cannot verify or produce, so turbo caches locally.
 env:
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 jobs:
@@ -268,10 +268,7 @@ jobs:
           target: runtime
           load: true
           tags: argos:ci
-          secrets: |
-            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
           build-args: |
-            TURBO_TEAM=${{ vars.TURBO_TEAM }}
             ASSETS_BASE_URL=https://assets.argos-ci.com
 
       - name: Check image

@@ -35,6 +35,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The only job given TURBO_REMOTE_CACHE_SIGNATURE_KEY, an environment secret:
+    # the environment's branch policy admits `main` alone, so no other branch
+    # can sign an artifact this build would restore.
+    environment: production
     permissions:
       id-token: write
       contents: read
@@ -88,6 +92,7 @@ jobs:
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }},mode=max
           secrets: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_REMOTE_CACHE_SIGNATURE_KEY=${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           build-args: |
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
@@ -105,6 +110,7 @@ jobs:
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
           secrets: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_REMOTE_CACHE_SIGNATURE_KEY=${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           build-args: |
             TURBO_TEAM=${{ vars.TURBO_TEAM }}

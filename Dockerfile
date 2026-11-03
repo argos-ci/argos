@@ -26,8 +26,18 @@ RUN pnpm install --offline --frozen-lockfile --config.confirmModulesPurge=false
 # The frontend build uploads its source maps to Sentry and then deletes them, so
 # they never reach the image or the asset CDN. Without the token they are still
 # deleted, and production stack traces go unsymbolicated.
+#
+# The remote cache is signed (turbo.json) with a key only the release workflow
+# holds, so an artifact uploaded with the TURBO_TOKEN alone is a miss here. The
+# key is exported only when present: CI builds this image without it, and an
+# empty key is fatal. Without a key, turbo neither trusts nor writes the remote
+# cache.
 RUN --mount=type=secret,id=TURBO_TOKEN \
+  --mount=type=secret,id=TURBO_REMOTE_CACHE_SIGNATURE_KEY \
   --mount=type=secret,id=SENTRY_AUTH_TOKEN \
+  if [ -s /run/secrets/TURBO_REMOTE_CACHE_SIGNATURE_KEY ]; then \
+    export TURBO_REMOTE_CACHE_SIGNATURE_KEY="$(cat /run/secrets/TURBO_REMOTE_CACHE_SIGNATURE_KEY)"; \
+  fi; \
   TURBO_TOKEN="$(cat /run/secrets/TURBO_TOKEN)" \
   SENTRY_AUTH_TOKEN="$(cat /run/secrets/SENTRY_AUTH_TOKEN)" \
   BUILD_MODE=production pnpm run build
