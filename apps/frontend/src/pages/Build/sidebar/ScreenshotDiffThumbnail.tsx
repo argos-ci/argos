@@ -29,6 +29,8 @@ export function ScreenshotDiffThumbnail(props: {
   screenshotDiff: DocumentType<typeof _ScreenshotDiffFragment>;
   /** Size class for the thumbnail box. */
   className?: string;
+  /** Inline style of the thumbnail box, for a size computed at render. */
+  style?: React.CSSProperties;
   /** Size class for the fallback icon; defaults to `className`. */
   iconClassName?: string;
   /** How the image fills the box; `cover-top` crops the bottom only. */
@@ -39,6 +41,7 @@ export function ScreenshotDiffThumbnail(props: {
   const {
     screenshotDiff,
     className,
+    style,
     iconClassName = className,
     fit = "contain",
     transformations = ["w-32", "h-32", "c-at_max"],
@@ -57,6 +60,7 @@ export function ScreenshotDiffThumbnail(props: {
           "block shrink-0 overflow-hidden rounded-sm border bg-white",
           className,
         )}
+        style={style}
       >
         <ImageKitPicture
           src={thumbnailUrl}

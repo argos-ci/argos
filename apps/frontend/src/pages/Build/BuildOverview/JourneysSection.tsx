@@ -506,6 +506,25 @@ function JourneyLineup(props: { test: JourneyTest }) {
   );
 }
 
+/** A card's image area: a screen as wide shows its whole first screen. */
+const IMAGE_AREA_RATIO = 16 / 9;
+
+/**
+ * How much of its first screen a card shows, at least. A screen narrower
+ * than that ratio stands in the middle of the card, as wide as it takes, so
+ * the room around it tells a phone from a tablet from a desktop.
+ */
+const SHOWN_SCREEN_SHARE = 0.6;
+
+/** A screen's width in its card, in percent. */
+function getScreenWidthPercent(viewport: Viewport | null): number {
+  const ratio = viewport ? viewport.width / viewport.height : 1.5;
+  return Math.min(
+    100,
+    Math.round((ratio / IMAGE_AREA_RATIO / SHOWN_SCREEN_SHARE) * 100),
+  );
+}
+
 function getDiffCardVariant(mark: ReviewMarkValue | null) {
   switch (mark) {
     case EvaluationStatus.Accepted:
@@ -538,7 +557,8 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
   const ViewportIcon = viewport
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
-  const portrait = viewport ? viewport.height > viewport.width : false;
+  const screenWidth = getScreenWidthPercent(viewport);
+  const narrow = screenWidth < 100;
   const ColorSchemeIcon =
     test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
@@ -548,27 +568,26 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
       <div className="bg-hover absolute inset-0 -z-10 translate-x-1.5 translate-y-1.5 rounded-lg border" />
       <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
         <div className="flex size-full flex-col">
-          {/* A phone screen stands narrower in the middle, rising from the
-              bottom edge, so a mobile run reads as one at a glance. */}
           <div
             className={clsx(
               "aspect-video overflow-hidden",
-              portrait && "bg-subtle px-[22%] pt-3",
+              narrow && "bg-subtle pt-3",
             )}
           >
             <ScreenshotDiffThumbnail
               screenshotDiff={shownScreen.diff}
               className={clsx(
-                "size-full",
-                portrait
+                "mx-auto h-full",
+                narrow
                   ? "rounded-t-md border-b-0 shadow-sm"
                   : "rounded-none border-0",
               )}
+              style={{ width: `${screenWidth}%` }}
               iconClassName="m-auto size-6"
               fit="cover-top"
               transformations={getFirstScreenTransformations(
                 viewport,
-                portrait ? 400 : 720,
+                Math.max(200, Math.round(7.6 * screenWidth)),
               )}
             />
           </div>
