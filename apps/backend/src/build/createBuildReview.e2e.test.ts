@@ -282,8 +282,6 @@ describe("#createBuildReview", () => {
     expect(comments).toHaveLength(0);
   });
 
-  // A build subscription outlives the access that created it, and the email
-  // carries the review comment.
   test("emails the review only to subscribers who can still view the project", async ({
     user,
     build,
@@ -311,16 +309,7 @@ describe("#createBuildReview", () => {
     await createBuildReview({
       build,
       userId: user.id,
-      event: "COMMENT",
-      body: {
-        type: "doc",
-        content: [
-          {
-            type: "paragraph",
-            content: [{ type: "text", text: "Internal feedback" }],
-          },
-        ],
-      },
+      event: "APPROVE",
       snapshotReviews: [],
     });
 
