@@ -31,8 +31,8 @@ export function ScreenshotDiffThumbnail(props: {
   className?: string;
   /** Size class for the fallback icon; defaults to `className`. */
   iconClassName?: string;
-  /** How the image fills the box. */
-  fit?: "contain" | "cover";
+  /** How the image fills the box; `cover-top` crops the bottom only. */
+  fit?: "contain" | "cover" | "cover-top";
   /** ImageKit transformations for the source, to match the box being drawn. */
   transformations?: string[];
 }) {
@@ -63,7 +63,9 @@ export function ScreenshotDiffThumbnail(props: {
           transformations={transformations}
           className={clsx(
             "size-full",
-            fit === "cover" ? "object-cover" : "object-contain",
+            fit === "contain"
+              ? "object-contain"
+              : clsx("object-cover", fit === "cover-top" && "object-top"),
           )}
           alt=""
         />

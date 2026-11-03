@@ -465,74 +465,13 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
   );
 }
 
-const STACKED_SCREEN_COUNT = 3;
-const STACK_OFFSET = 8;
-
-/** The front screen of a run's stack, at the viewport's shape. */
-function getFrontScreenSize(viewport: Viewport | null): Viewport {
-  const ratio = viewport ? viewport.width / viewport.height : 1.5;
-  return ratio < 1
-    ? { width: Math.round(116 * ratio), height: 116 }
-    : { width: 104, height: Math.round(104 / ratio) };
-}
-
 /**
- * A run's first screens of interest, the first one in front and the next ones
- * peeking out above it, smaller, like a deck.
+ * The first screen of a run as it showed, at twice the size the card draws
+ * it: the top of a full-page capture, one viewport tall.
  */
-function ScreenStack(props: {
-  screens: JourneyScreen[];
-  viewport: Viewport | null;
-}) {
-  const front = getFrontScreenSize(props.viewport);
-  const layers = props.screens.slice(0, STACKED_SCREEN_COUNT);
-  const depth = layers.length - 1;
-  return (
-    <span
-      className="relative block shrink-0"
-      style={{
-        width: front.width,
-        height: front.height + STACK_OFFSET * depth,
-      }}
-    >
-      {layers.map((screen, index) => {
-        const scale = 1 - index * 0.1;
-        const width = Math.round(front.width * scale);
-        const height = Math.round(front.height * scale);
-        return (
-          <span
-            key={screen.diff.id}
-            className={clsx(
-              "absolute block rounded-sm",
-              index === 0 && "shadow-md",
-            )}
-            style={{
-              left: Math.round((front.width - width) / 2),
-              top: STACK_OFFSET * (depth - index),
-              width,
-              height,
-              zIndex: layers.length - index,
-            }}
-          >
-            <ScreenshotDiffThumbnail
-              screenshotDiff={screen.diff}
-              className="size-full"
-              iconClassName="m-auto size-4"
-              fit="cover"
-              // A top crop at 2x the box: the screen as it first showed,
-              // sharpened, as shrinking a whole page blurs its text.
-              transformations={[
-                `w-${width * 2}`,
-                `h-${height * 2}`,
-                "fo-top",
-                "e-sharpen",
-              ]}
-            />
-          </span>
-        );
-      })}
-    </span>
-  );
+function getFirstScreenTransformations(viewport: Viewport | null): string[] {
+  const ratio = viewport ? viewport.width / viewport.height : 1.5;
+  return ["w-400", `h-${Math.round(400 / ratio)}`, "fo-top", "e-sharpen"];
 }
 
 function getRunLabel(run: JourneyRun, test: JourneyTest): string {
@@ -558,9 +497,10 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
   const label = getRunLabel(run, test);
-  // What changed, the first screens of it: the walk shows the rest. A run
-  // that changed nothing shows how it starts.
+  // The first screen that changed, the walk shows the rest. A run that
+  // changed nothing shows how it starts.
   const changed = screens.filter((screen) => screen.changed);
+  const [shownScreen = firstScreen] = changed;
   const mark = getReviewMark(
     changed.map((screen) => screen.diff),
     useReviewStatuses(),
@@ -570,10 +510,24 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
       {mark ? (
         <ReviewMark mark={mark} className="absolute top-2.5 right-2.5 z-1" />
       ) : null}
-      <ScreenStack
-        screens={changed.length > 0 ? changed : screens}
-        viewport={viewport}
-      />
+      {/* Half the card, at the viewport's shape: a phone screen, too tall
+          for that, shows its top. */}
+      <span
+        className="block max-h-44 w-1/2 shrink-0 overflow-hidden rounded-sm shadow-md"
+        style={{
+          aspectRatio: viewport
+            ? `${viewport.width} / ${viewport.height}`
+            : "3 / 2",
+        }}
+      >
+        <ScreenshotDiffThumbnail
+          screenshotDiff={shownScreen.diff}
+          className="size-full"
+          iconClassName="m-auto size-6"
+          fit="cover-top"
+          transformations={getFirstScreenTransformations(viewport)}
+        />
+      </span>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
         <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
           {test.showBrowser && browser ? (
