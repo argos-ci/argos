@@ -26,6 +26,7 @@ import {
   TeamSamlConfig,
   TeamUser,
   UserEmail,
+  type User,
 } from "@/database/models";
 import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
@@ -578,6 +579,17 @@ async function removeStripeProductFromSubscription(input: {
  * Map the GraphQL member ordering enum onto the service's own, so the shared
  * query never has to know about generated GraphQL types.
  */
+/**
+ * A team is reachable from any of its public projects, so who belongs to it is
+ * only listed to its own members.
+ */
+async function assertTeamMember(account: Account, user: User) {
+  const permissions = await account.$getPermissions(user);
+  if (!permissions.includes("view")) {
+    throw forbidden();
+  }
+}
+
 function fromGraphQLTeamMembersOrderBy(
   orderBy: ITeamMembersOrderBy | null | undefined,
 ): TeamMembersOrder {
@@ -669,6 +681,8 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
+      await assertTeamMember(account, ctx.auth.user);
+
       const { first, after, levels, search } = args;
 
       const team = await ctx.loaders.Team.load(account.teamId);
@@ -708,6 +722,8 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
+
+      await assertTeamMember(account, ctx.auth.user);
 
       const { first, after, search } = args;
 

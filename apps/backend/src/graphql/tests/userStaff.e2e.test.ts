@@ -216,4 +216,34 @@ describe("GraphQL User private fields", () => {
       other.user.email,
     );
   });
+
+  it("refuses a team's roster to a visitor of one of its public projects", async () => {
+    const viewer = await createViewer({ staff: false });
+    const other = await createViewer({ staff: false });
+    const teamAccount = await createTeamWith([other]);
+    const project = await factory.Project.create({
+      accountId: teamAccount.id,
+      private: false,
+    });
+
+    const res = await request(await createApp(viewer))
+      .post("/graphql")
+      .send({
+        query: `
+          query PublicProjectTeamMembers($accountSlug: String!, $projectName: String!) {
+            project(accountSlug: $accountSlug, projectName: $projectName) {
+              account {
+                ... on Team {
+                  members(first: 10, after: 0) { edges { user { id } } }
+                }
+              }
+            }
+          }
+        `,
+        variables: { accountSlug: teamAccount.slug, projectName: project.name },
+      });
+
+    expect(res.body.errors?.[0]?.extensions?.code).toBe("FORBIDDEN");
+    expect(JSON.stringify(res.body.data)).not.toContain(other.user.id);
+  });
 });
