@@ -466,12 +466,20 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
 }
 
 /**
- * The first screen of a run as it showed, at twice the size the card draws
+ * The first screen of a run as it showed, at twice the width the card draws
  * it: the top of a full-page capture, one viewport tall.
  */
-function getFirstScreenTransformations(viewport: Viewport | null): string[] {
+function getFirstScreenTransformations(
+  viewport: Viewport | null,
+  width: number,
+): string[] {
   const ratio = viewport ? viewport.width / viewport.height : 1.5;
-  return ["w-400", `h-${Math.round(400 / ratio)}`, "fo-top", "e-sharpen"];
+  return [
+    `w-${width}`,
+    `h-${Math.round(width / ratio)}`,
+    "fo-top",
+    "e-sharpen",
+  ];
 }
 
 function getRunLabel(run: JourneyRun, test: JourneyTest): string {
@@ -505,15 +513,34 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
     changed.map((screen) => screen.diff),
     useReviewStatuses(),
   );
+  // A wide screen takes the whole card, its text below; a tall one half of
+  // it, its text beside, and shows its top.
+  const wide = !viewport || viewport.width >= viewport.height;
+  const count = (
+    <span
+      className={clsx(
+        "inline-flex items-center gap-1.5 text-[0.8125rem]/5 font-medium",
+        changedCount > 0 ? "text-warning-low" : "text-low",
+      )}
+    >
+      {changedCount > 0
+        ? `${changedCount} of ${screens.length} changed`
+        : plural(screens.length, "screen")}
+      {mark ? <ReviewMark mark={mark} /> : null}
+    </span>
+  );
   return (
-    <li className="bg-ui hover:bg-hover relative flex items-center gap-4 rounded-lg px-4 py-3.5 transition">
-      {mark ? (
-        <ReviewMark mark={mark} className="absolute top-2.5 right-2.5 z-1" />
-      ) : null}
-      {/* Half the card, at the viewport's shape: a phone screen, too tall
-          for that, shows its top. */}
+    <li
+      className={clsx(
+        "bg-ui hover:bg-hover relative flex rounded-lg px-4 py-3.5 transition",
+        wide ? "flex-col gap-3" : "items-center gap-4",
+      )}
+    >
       <span
-        className="block max-h-44 w-1/2 shrink-0 overflow-hidden rounded-sm shadow-md"
+        className={clsx(
+          "block shrink-0 overflow-hidden rounded-sm shadow-md",
+          wide ? "w-full" : "max-h-44 w-1/2",
+        )}
         style={{
           aspectRatio: viewport
             ? `${viewport.width} / ${viewport.height}`
@@ -525,10 +552,20 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
           className="size-full"
           iconClassName="m-auto size-6"
           fit="cover-top"
-          transformations={getFirstScreenTransformations(viewport)}
+          transformations={getFirstScreenTransformations(
+            viewport,
+            wide ? 720 : 400,
+          )}
         />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+      <div
+        className={clsx(
+          "flex min-w-0",
+          wide
+            ? "flex-wrap items-center gap-x-3 gap-y-1"
+            : "flex-1 flex-col items-start gap-1.5",
+        )}
+      >
         <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
           {test.showBrowser && browser ? (
             <BrowserIcon
@@ -539,21 +576,15 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
           {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
           <span className="truncate">{label || "Run"}</span>
         </span>
-        <span
-          className={clsx(
-            "text-[0.8125rem]/5 font-medium",
-            changedCount > 0 ? "text-warning-low" : "text-low",
-          )}
-        >
-          {changedCount > 0
-            ? `${changedCount} of ${screens.length} changed`
-            : plural(screens.length, "screen")}
-        </span>
+        {count}
         {/* The whole block walks the journey from its start. */}
         <HeadlessLink
           href={getJourneyScreenURL(params, journey, firstScreen.diff)}
           aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
-          className="text-primary-low mt-0.5 inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
+          className={clsx(
+            "text-primary-low inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)",
+            wide ? "ml-auto" : "mt-0.5",
+          )}
         >
           Walk the journey
           <ArrowRightIcon className="size-3.5" />
