@@ -1,7 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
-import pTimeout from "p-timeout";
-import { TimeoutError } from "redis";
+import pTimeout, { TimeoutError } from "p-timeout";
 
 import {
   Build,
