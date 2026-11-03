@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createPublicKey } from "node:crypto";
 import type {
   CloudFrontHeaders,
   CloudFrontRequestEvent,
@@ -6,28 +6,38 @@ import type {
   CloudFrontResultResponse,
 } from "aws-lambda";
 
+import {
+  verifyDeploymentAccessToken,
+  type DeploymentAccessTokenKeys,
+} from "./deployment-access-token.ts";
+
 const API_BASEURL = process.env.API_BASEURL ?? "";
 const APP_URL = process.env.APP_URL ?? "";
 const BASE_DOMAIN = process.env.BASE_DOMAIN ?? "";
 
 /**
- * Substituted at bundle time by an esbuild `--inject` file that
- * `ArgosDeploymentStack` writes, rather than by a `--define` like the constants
- * above.
+ * The HS256 secret, accepted only until the backend signs every token with
+ * ES256; empty after that. Substituted at bundle time by an esbuild `--inject`
+ * file that `ArgosDeploymentStack` writes, rather than by a `--define` like the
+ * constants above.
  *
  * The difference is only where the value travels. A `define` becomes
- * `--define:process.env.ACCESS_TOKEN_SECRET="..."` on esbuild's command line,
- * and CDK prints that whole command line whenever bundling fails -- which, in a
- * public repository with `cdk diff` running in CI, publishes the secret to
- * anyone reading a failed build log. An inject puts only a file path there.
- *
- * Lambda@Edge cannot read environment variables at runtime, so baking the value
- * into the bundle is the only option; this keeps it out of argv while doing so.
+ * `--define:...="..."` on esbuild's command line, and CDK prints that whole
+ * command line whenever bundling fails -- which, in a public repository with
+ * `cdk diff` running in CI, publishes the secret to anyone reading a failed
+ * build log. An inject puts only a file path there.
  *
  * Declared, never defined: a real `const` here would shadow the global and
  * esbuild would have nothing to substitute.
  */
-declare const ACCESS_TOKEN_SECRET: string;
+declare const LEGACY_ACCESS_TOKEN_SECRET: string;
+
+// The public key is no secret, so it is a plain `define`. The stack checks it
+// is a P-256 key at synth time: a bad one would fail every request here.
+const ACCESS_TOKEN_KEYS: DeploymentAccessTokenKeys = {
+  publicKey: createPublicKey(process.env.ACCESS_TOKEN_PUBLIC_KEY ?? ""),
+  legacySecret: LEGACY_ACCESS_TOKEN_SECRET,
+};
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
 const AUTH_CALLBACK_PATH = "/__argos/auth";
 
@@ -97,81 +107,6 @@ function getCookie(
     }
   }
   return undefined;
-}
-
-function base64UrlDecode(input: string): Buffer {
-  const padded =
-    input.replace(/-/g, "+").replace(/_/g, "/") +
-    "=".repeat((4 - (input.length % 4)) % 4);
-  return Buffer.from(padded, "base64");
-}
-
-type DeploymentAccessTokenPayload = {
-  projectId: string;
-  sub: string;
-  iat: number;
-  exp: number;
-};
-
-function verifyDeploymentAccessToken(
-  token: string,
-): DeploymentAccessTokenPayload | null {
-  if (!ACCESS_TOKEN_SECRET) {
-    throw new Error("ACCESS_TOKEN_SECRET is not configured");
-  }
-  const parts = token.split(".");
-  if (parts.length !== 3) {
-    return null;
-  }
-  const [encodedHeader, encodedPayload, encodedSignature] = parts as [
-    string,
-    string,
-    string,
-  ];
-
-  let header: { alg?: string; typ?: string };
-  try {
-    header = JSON.parse(base64UrlDecode(encodedHeader).toString("utf-8"));
-  } catch {
-    return null;
-  }
-  if (header.alg !== "HS256") {
-    return null;
-  }
-
-  const expected = createHmac("sha256", ACCESS_TOKEN_SECRET)
-    .update(`${encodedHeader}.${encodedPayload}`)
-    .digest();
-  let received: Buffer;
-  try {
-    received = base64UrlDecode(encodedSignature);
-  } catch {
-    return null;
-  }
-  if (received.length !== expected.length) {
-    return null;
-  }
-  if (!timingSafeEqual(received, expected)) {
-    return null;
-  }
-
-  let payload: DeploymentAccessTokenPayload;
-  try {
-    payload = JSON.parse(base64UrlDecode(encodedPayload).toString("utf-8"));
-  } catch {
-    return null;
-  }
-  if (
-    typeof payload.projectId !== "string" ||
-    typeof payload.sub !== "string" ||
-    typeof payload.exp !== "number"
-  ) {
-    return null;
-  }
-  if (Math.floor(Date.now() / 1000) >= payload.exp) {
-    return null;
-  }
-  return payload;
 }
 
 function cookieName(projectId: string): string {
@@ -286,7 +221,7 @@ function handleAuthCallback(
     return badRequestResponse("Invalid auth callback");
   }
 
-  const payload = verifyDeploymentAccessToken(token);
+  const payload = verifyDeploymentAccessToken(token, ACCESS_TOKEN_KEYS);
   if (!payload) {
     return badRequestResponse("Invalid or expired token");
   }
@@ -347,7 +282,7 @@ export const handler = async (
       cookieName(deployment.projectId),
     );
     const payload = cookieValue
-      ? verifyDeploymentAccessToken(cookieValue)
+      ? verifyDeploymentAccessToken(cookieValue, ACCESS_TOKEN_KEYS)
       : null;
     if (!payload || payload.projectId !== deployment.projectId) {
       console.log(

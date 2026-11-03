@@ -19,12 +19,34 @@ if (!stage) {
   throw new Error(`Missing required context value: stage`);
 }
 
+// A pull request's `cdk diff` runs as a role that may read the config document
+// but no secret, and passes `-c secrets=false`.
+const readSecrets = app.node.tryGetContext("secrets") !== "false";
+
 function assertStageMatches(config: { stage?: string }, stage: string) {
   if (config.stage !== stage) {
     throw new Error(
       `Stage mismatch: context stage is "${stage}" but the loaded config stage is "${config.stage}"`,
     );
   }
+}
+
+function readSsmParameter(name: string): string {
+  return execFileSync(
+    "aws",
+    [
+      "ssm",
+      "get-parameter",
+      "--name",
+      name,
+      "--with-decryption",
+      "--query",
+      "Parameter.Value",
+      "--output",
+      "text",
+    ],
+    { encoding: "utf8" },
+  ).trimEnd();
 }
 
 /**
@@ -34,25 +56,17 @@ function assertStageMatches(config: { stage?: string }, stage: string) {
  * the one that drifted took a local deploy down while CI kept working.
  */
 function readSsmConfig(stage: string) {
-  const json = execFileSync(
-    "aws",
-    [
-      "ssm",
-      "get-parameter",
-      "--name",
-      `/${stage}/cdk/config.json`,
-      "--with-decryption",
-      "--query",
-      "Parameter.Value",
-      "--output",
-      "text",
-    ],
-    { encoding: "utf8" },
-  );
-
-  const config = JSON.parse(json);
+  const config = JSON.parse(readSsmParameter(`/${stage}/cdk/config.json`));
 
   assertStageMatches(config, stage);
+
+  // Pull requests read this document, so a secret left in it is published to
+  // anyone who can open one.
+  if ("accessTokenSecret" in config) {
+    throw new Error(
+      "`accessTokenSecret` must leave the config document: store it in its own parameter and name that in `accessTokenLegacySecretParameter`.",
+    );
+  }
 
   return config;
 }
@@ -66,6 +80,9 @@ const deploymentStack = new ArgosDeploymentStack(
   `argos-deployment-${props.stage}`,
   {
     ...props,
+    legacyAccessTokenSecret: readSecrets
+      ? readSsmParameter(props.accessTokenLegacySecretParameter)
+      : "",
     env: {
       account: process.env["CDK_DEFAULT_ACCOUNT"],
       region: "us-east-1",

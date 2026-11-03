@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createPublicKey } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,7 +23,12 @@ export const ArgosDeploymentStackPropsSchema = z.object({
   hostedZoneId: z.string(),
   apiBaseUrl: z.url(),
   appUrl: z.url(),
-  accessTokenSecret: z.string().min(1),
+  accessTokenPublicKey: z.string().refine(isP256PublicKey, {
+    error: "accessTokenPublicKey must be a PEM P-256 public key",
+  }),
+  // Where the HS256 secret lives while the edge still accepts it. Only the
+  // name: this document is readable by the pull-request diff role.
+  accessTokenLegacySecretParameter: z.string().startsWith("/"),
   appUserArns: z.array(z.string()).min(1),
 });
 
@@ -32,7 +37,10 @@ type ArgosDeploymentStackOwnProps = z.infer<
 >;
 
 interface ArgosDeploymentStackProps
-  extends cdk.StackProps, ArgosDeploymentStackOwnProps {}
+  extends cdk.StackProps, ArgosDeploymentStackOwnProps {
+  /** Empty when synthesized without secrets, for a pull request's diff. */
+  legacyAccessTokenSecret: string;
+}
 
 const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   development: "dev.argos-ci.live",
@@ -52,7 +60,8 @@ export class ArgosDeploymentStack extends cdk.Stack {
       hostedZoneId,
       apiBaseUrl,
       appUrl,
-      accessTokenSecret,
+      accessTokenPublicKey,
+      legacyAccessTokenSecret,
       appUserArns = [],
     } = props;
     const isProduction = stage === "production";
@@ -214,11 +223,13 @@ export class ArgosDeploymentStack extends cdk.Stack {
           "process.env.API_BASEURL": JSON.stringify(apiBaseUrl),
           "process.env.APP_URL": JSON.stringify(appUrl),
           "process.env.BASE_DOMAIN": JSON.stringify(baseDomain),
+          "process.env.ACCESS_TOKEN_PUBLIC_KEY":
+            JSON.stringify(accessTokenPublicKey),
         },
         // The secret is injected from a file instead of defined inline. See
-        // `writeInjectedSecret` and the `ACCESS_TOKEN_SECRET` declaration in
-        // the lambda for why.
-        inject: [writeInjectedSecret(accessTokenSecret)],
+        // `writeInjectedSecret` and the `LEGACY_ACCESS_TOKEN_SECRET`
+        // declaration in the lambda for why.
+        inject: [writeInjectedSecret(legacyAccessTokenSecret)],
       },
     });
 
@@ -541,8 +552,8 @@ export class ArgosDeploymentStack extends cdk.Stack {
 }
 
 /**
- * Writes the edge function's access-token secret to a file for esbuild to
- * `--inject`, returning its path.
+ * Writes the edge function's legacy access-token secret to a file for esbuild
+ * to `--inject`, returning its path.
  *
  * Lambda@Edge cannot read environment variables at runtime, so the secret has
  * to be compiled into the bundle either way. What changed is how it gets there:
@@ -562,10 +573,22 @@ function writeInjectedSecret(secret: string): string {
   const file = path.join(directory, "edge-access-token-secret.js");
   fs.writeFileSync(
     file,
-    `export const ACCESS_TOKEN_SECRET = ${JSON.stringify(secret)};\n`,
+    `export const LEGACY_ACCESS_TOKEN_SECRET = ${JSON.stringify(secret)};\n`,
     { mode: 0o600 },
   );
   return file;
+}
+
+function isP256PublicKey(pem: string): boolean {
+  try {
+    const key = createPublicKey(pem);
+    return (
+      key.asymmetricKeyType === "ec" &&
+      key.asymmetricKeyDetails?.namedCurve === "prime256v1"
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

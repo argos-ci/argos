@@ -52,7 +52,11 @@ The document:
   "hostedZoneId": "Z0123456789ABCDEFGHIJ",
   "apiBaseUrl": "https://api.argos-ci.com",
   "appUrl": "https://app.argos-ci.com",
-  "accessTokenSecret": "…",
+  // PEM P-256 public key matching the app's DEPLOYMENTS_ACCESS_TOKEN_PRIVATE_KEY
+  "accessTokenPublicKey": "-----BEGIN PUBLIC KEY-----\n…\n-----END PUBLIC KEY-----\n",
+  // The parameter holding the HS256 secret the edge still accepts, by name only:
+  // pull requests can read this document, so it never holds a secret
+  "accessTokenLegacySecretParameter": "/production/deployments_access_token_secret",
   "appUserArns": ["arn:aws:iam::<ACCOUNT_ID>:user/greg"],
 
   "assets": {
@@ -171,25 +175,32 @@ aws cloudformation deploy \
 If it does **not** appear, add
 `--parameter-overrides CreateOidcProvider=true` to that command.
 
-Read the ARN back out:
+Read the ARNs back out:
 
 ```sh
 aws cloudformation describe-stacks \
   --stack-name argos-github-oidc-cdk-role \
   --region us-east-1 \
-  --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' --output text
+  --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output text
 ```
 
-Store it as the **`CDK_AWS_ROLE_ARN`** repository secret in GitHub
-(Settings → Secrets and variables → Actions).
+Store `RoleArn` as the **`CDK_AWS_ROLE_ARN`** repository secret and `DiffRoleArn`
+as **`CDK_DIFF_AWS_ROLE_ARN`** (Settings → Secrets and variables → Actions).
 
-**What this role can do.** Almost nothing directly. It holds `sts:AssumeRole` on
-`cdk-hnb659fds-*` — the bootstrap roles that already carry deploy rights — plus
-`ssm:GetParameter` on `*/cdk/config.json` and read-only CloudFormation for
-`cdk diff`. So the blast radius is whatever `cdk bootstrap` provisioned, and
-revoking CI's access later is deleting this one stack. Trust is scoped to
-`refs/heads/main` and same-repo pull requests; fork PRs receive no token at all,
-which is why `infra.yml` also gates the diff job on the head repository.
+**What the two roles can do.** A pull request runs `infra.yml` and `app.ts`
+from its own branch, so the role it gets is effectively its author's. Hence two:
+
+- `argos-github-actions-cdk` deploys. It holds `sts:AssumeRole` on
+  `cdk-hnb659fds-*`, and through them whatever `cdk bootstrap` provisioned — by
+  default an administrator CloudFormation execution role. It trusts
+  `refs/heads/main` only.
+- `argos-github-actions-cdk-diff` runs `cdk diff` on same-repo pull requests. It
+  reads the config document and the `argos-*` stack templates, and assumes
+  nothing: the bootstrap lookup role is `ReadOnlyAccess` over the whole account.
+
+Fork PRs receive no token at all, which is why `infra.yml` also gates the diff
+job on the head repository. Revoking CI's access later is deleting this one
+stack.
 
 ### 4. Publish the config parameter
 
@@ -205,11 +216,13 @@ aws ssm put-parameter \
   --overwrite
 ```
 
-`SecureString` because the document carries `accessTokenSecret`. The default
-`alias/aws/ssm` key is used when `--key-id` is omitted, and its key policy
-already allows any principal in the account to decrypt via SSM — so the CDK role
-needs no extra `kms:Decrypt`. If you point it at a customer-managed key instead,
-you must add that permission to the role.
+The document holds no secret: the pull-request diff role reads it, and `app.ts`
+refuses to synth if `accessTokenSecret` reappears in it. Secrets live in their
+own parameters, which only the deploy role reads. With `SecureString`, the
+default `alias/aws/ssm` key is used when `--key-id` is omitted, and its key
+policy already allows any principal in the account to decrypt via SSM — so
+neither role needs `kms:Decrypt`. If you point it at a customer-managed key
+instead, you must add that permission to the roles.
 
 Delete the local file afterwards.
 
@@ -439,9 +452,15 @@ OIDC token. The job is gated to same-repo PRs; a fork's infra change has to be
 diffed by a maintainer.
 
 **`Need to perform AWS calls but no credentials configured`.** The
-`CDK_AWS_ROLE_ARN` secret is missing or the trust policy does not match. The
-`sub` claim must be `repo:argos-ci/argos:ref:refs/heads/main` or
-`repo:argos-ci/argos:pull_request`.
+`CDK_AWS_ROLE_ARN` or `CDK_DIFF_AWS_ROLE_ARN` secret is missing, or the trust
+policy does not match. The deploy role's `sub` claim must be
+`repo:argos-ci/argos:ref:refs/heads/main`, so a deploy dispatched from another
+branch is refused; the diff role's is `repo:argos-ci/argos:pull_request`.
+
+**A pull request's `cdk diff` shows `ViewerRequestFn` as changed.** Expected
+while the edge accepts the legacy HS256 secret: the diff role cannot read it, so
+the diff bundles the function without it. It goes away when the legacy secret
+is retired.
 
 **Assets 404 from the CDN but exist in the bucket.** Under origin access control
 the bucket grants only `s3:GetObject`, so S3 answers a _missing_ key with 403

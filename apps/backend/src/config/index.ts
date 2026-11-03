@@ -663,8 +663,14 @@ export function createConfig() {
           env: "DEPLOYMENTS_CLOUDFLARE_API_TOKEN",
         },
       },
+      accessTokenPrivateKey: {
+        doc: "PEM P-256 private key that signs deployment access JWTs (ES256). The alias edge lambda verifies them with the matching public key.",
+        format: String,
+        default: "",
+        env: "DEPLOYMENTS_ACCESS_TOKEN_PRIVATE_KEY",
+      },
       accessTokenSecret: {
-        doc: "Shared secret used to sign deployment access JWTs (must match the value bundled into the alias edge lambda).",
+        doc: "Legacy HS256 secret for deployment access JWTs, used only while `accessTokenPrivateKey` is unset. Must match the value bundled into the alias edge lambda.",
         format: String,
         default: "",
         env: "DEPLOYMENTS_ACCESS_TOKEN_SECRET",
