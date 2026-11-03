@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ArrowRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { FileCodeIcon, WaypointsIcon } from "lucide-react";
 
 import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
@@ -17,7 +17,6 @@ import { getBuildURL, useBuildParams, type BuildParams } from "../BuildParams";
 import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyTestKey } from "../journey-hints";
-import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import { serializeJourneySearch } from "../metadata/filters/util";
 import { getViewportIconKind, viewportIcons } from "../metadata/metadataIcons";
@@ -454,13 +453,7 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
           ) : null}
         </div>
       </div>
-      {/* Runs side by side as long as each keeps its text beside its
-          screens. */}
-      <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-3">
-        {test.runs.map((run) => (
-          <JourneyRunItem key={run.key} run={run} test={test} />
-        ))}
-      </ul>
+      <JourneyLineup test={test} />
     </li>
   );
 }
@@ -494,16 +487,57 @@ function getRunLabel(run: JourneyRun, test: JourneyTest): string {
     .join(" · ");
 }
 
-function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
-  const { run, test } = props;
+/** How tall the screens of a test are, at most. */
+const LINEUP_HEIGHT = 220;
+const LINEUP_GAP = 12;
+
+function getScreenRatio(viewport: Viewport | null): number {
+  return viewport ? viewport.width / viewport.height : 1.5;
+}
+
+/**
+ * The runs of a test side by side, a screen each, all as tall: each takes a
+ * width in proportion to its shape, so a phone and a desktop read as one app
+ * at two sizes. They shrink together on a narrow page.
+ */
+function JourneyLineup(props: { test: JourneyTest }) {
+  const { test } = props;
+  const ratios = test.runs.map((run) => getScreenRatio(run.viewport));
+  const totalRatio = ratios.reduce((sum, ratio) => sum + ratio, 0);
+  return (
+    <div className="bg-ui mt-3 rounded-lg p-3">
+      <ul
+        className="flex"
+        style={{
+          gap: LINEUP_GAP,
+          maxWidth:
+            totalRatio * LINEUP_HEIGHT + (ratios.length - 1) * LINEUP_GAP,
+        }}
+      >
+        {test.runs.map((run, index) => (
+          <JourneyRunItem
+            key={run.key}
+            run={run}
+            test={test}
+            ratio={ratios[index] ?? 1}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function JourneyRunItem(props: {
+  run: JourneyRun;
+  test: JourneyTest;
+  ratio: number;
+}) {
+  const { run, test, ratio } = props;
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
-  const { journey, screens, changedCount, viewport, browser } = run;
+  const { journey, screens, changedCount, viewport } = run;
   const [firstScreen] = screens;
   invariant(firstScreen, "a journey has at least one screen");
-  const ViewportIcon = viewport
-    ? viewportIcons[getViewportIconKind(viewport.width)]
-    : null;
   const label = getRunLabel(run, test);
   // The first screen that changed, the walk shows the rest. A run that
   // changed nothing shows how it starts.
@@ -513,87 +547,46 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
     changed.map((screen) => screen.diff),
     useReviewStatuses(),
   );
-  // A wide screen takes the whole card, its text below; a tall one half of
-  // it, its text beside, and shows its top.
-  const wide = !viewport || viewport.width >= viewport.height;
-  const count = (
-    <span
-      className={clsx(
-        "inline-flex items-center gap-1.5 text-[0.8125rem]/5 font-medium",
-        changedCount > 0 ? "text-warning-low" : "text-low",
-      )}
-    >
-      {changedCount > 0
-        ? `${changedCount} of ${screens.length} changed`
-        : plural(screens.length, "screen")}
-      {mark ? <ReviewMark mark={mark} /> : null}
-    </span>
-  );
   return (
     <li
-      className={clsx(
-        "bg-ui hover:bg-hover relative flex rounded-lg px-4 py-3.5 transition",
-        wide ? "flex-col gap-3" : "items-center gap-4",
-      )}
+      className="group relative min-w-0"
+      style={{ flex: `${ratio} 1 0%`, aspectRatio: String(ratio) }}
     >
-      <span
-        className={clsx(
-          "block shrink-0 overflow-hidden rounded-sm shadow-md",
-          wide ? "w-full" : "max-h-44 w-1/2",
-        )}
-        style={{
-          aspectRatio: viewport
-            ? `${viewport.width} / ${viewport.height}`
-            : "3 / 2",
-        }}
-      >
-        <ScreenshotDiffThumbnail
-          screenshotDiff={shownScreen.diff}
-          className="size-full"
-          iconClassName="m-auto size-6"
-          fit="cover-top"
-          transformations={getFirstScreenTransformations(
-            viewport,
-            wide ? 720 : 400,
-          )}
-        />
-      </span>
-      <div
-        className={clsx(
-          "flex min-w-0",
-          wide
-            ? "items-end justify-between gap-3"
-            : "flex-1 flex-col items-start gap-1.5",
-        )}
-      >
-        <div className="flex min-w-0 flex-col items-start gap-1.5">
-          <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
-            {test.showBrowser && browser ? (
-              <BrowserIcon
-                browser={{ name: browser }}
-                className="size-3.5 shrink-0"
-              />
-            ) : null}
-            {ViewportIcon ? (
-              <ViewportIcon className="size-3.5 shrink-0" />
-            ) : null}
-            <span className="truncate">{label || "Run"}</span>
-          </span>
-          {count}
-        </div>
-        {/* The whole block walks the journey from its start. */}
+      <Tooltip content={label || "Walk the journey"}>
         <HeadlessLink
           href={getJourneyScreenURL(params, journey, firstScreen.diff)}
           aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
-          className={clsx(
-            "text-primary-low inline-flex items-center gap-1 text-xs/5 font-medium whitespace-nowrap outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)",
-            !wide && "mt-0.5",
-          )}
+          className="focus-ring block size-full overflow-hidden rounded-md shadow-sm transition group-hover:shadow-md"
         >
-          Walk the journey
-          <ArrowRightIcon className="size-3.5" />
+          <ScreenshotDiffThumbnail
+            screenshotDiff={shownScreen.diff}
+            className="size-full"
+            iconClassName="m-auto size-6"
+            fit="cover-top"
+            transformations={getFirstScreenTransformations(
+              viewport,
+              Math.round(LINEUP_HEIGHT * ratio * 2),
+            )}
+          />
         </HeadlessLink>
-      </div>
+      </Tooltip>
+      {/* What the screen does not say: how many of the run's screens changed,
+          and whether the review went through them. */}
+      <span
+        className={clsx(
+          "bg-app border-thin text-xxs pointer-events-none absolute bottom-1.5 left-1.5 rounded-full px-1.5 font-medium whitespace-nowrap tabular-nums shadow-xs",
+          changedCount > 0 ? "text-warning-low" : "text-low",
+        )}
+      >
+        {changedCount > 0
+          ? `${changedCount} of ${screens.length} changed`
+          : plural(screens.length, "screen")}
+      </span>
+      {mark ? (
+        <span className="bg-app border-thin absolute top-1.5 right-1.5 flex rounded-full p-0.5 shadow-xs">
+          <ReviewMark mark={mark} />
+        </span>
+      ) : null}
     </li>
   );
 }
