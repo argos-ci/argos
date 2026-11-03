@@ -45,6 +45,7 @@ import {
   queryTeamInvites,
 } from "@/database/services/team-invite";
 import {
+  deleteTeamMembership,
   loadAccountById,
   queryTeamMembers,
   removeTeamMember,
@@ -1181,34 +1182,25 @@ export const resolvers: IResolvers = {
       const account = await Account.query()
         .findById(args.input.teamAccountId)
         .throwIfNotFound();
+      invariant(account.teamId, "not a team account");
 
-      const count = await TeamUser.query()
-        .where({ teamId: account.teamId })
-        .resultSize();
-
-      if (count === 1) {
-        throw forbidden(
-          "You are the last user of this team, you can't leave it",
-        );
+      // Through the shared removal, which promotes whoever is left alone: a
+      // caller who is not a member removes nobody, so they must not get that far.
+      const teamUser = await TeamUser.query()
+        .select("id")
+        .findOne({ teamId: account.teamId, userId: ctx.auth.user.id });
+      if (!teamUser) {
+        throw forbidden("You are not a member of this team");
       }
 
-      await transaction(async (trx) => {
-        if (!ctx.auth) {
-          throw unauthenticated();
-        }
-
-        await TeamUser.query(trx).delete().where({
-          userId: ctx.auth.user.id,
+      try {
+        await deleteTeamMembership({
           teamId: account.teamId,
+          teamUserId: teamUser.id,
         });
-
-        // The last one is the only one, so it must be the owner
-        if (count === 2) {
-          await TeamUser.query(trx)
-            .where({ teamId: account.teamId })
-            .patch({ userLevel: "owner" });
-        }
-      });
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
 
       return true;
     },
