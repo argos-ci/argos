@@ -19,6 +19,7 @@ import {
 } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
 import {
   Page,
@@ -655,14 +656,18 @@ function StaffTeamRow(props: {
           <div className="flex min-w-0 items-center gap-3">
             <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
             {/* `flex-1` is what pushes the Stripe link to the cell edge: this
-                wrapper takes the width the link does not, so the link lands at
+                wrapper takes the width the name does not, so the link lands at
                 the same offset on every row whatever the name is. */}
-            <Link
-              href={teamURL}
-              className="min-w-0 flex-1 truncate font-medium"
-            >
-              {team.name || team.slug}
-            </Link>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <Link href={teamURL} className="min-w-0 truncate font-medium">
+                {team.name || team.slug}
+              </Link>
+              {team.subscriptionStatus === AccountSubscriptionStatus.PastDue ? (
+                <Chip scale="xs" color="danger" className="shrink-0">
+                  Past Due
+                </Chip>
+              ) : null}
+            </div>
             <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
           </div>
         </td>
