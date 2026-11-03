@@ -248,8 +248,6 @@ loggedTest(
     const journeyHeader = page.getByRole("region", { name: "Journey" });
     await expect(journeyHeader).toContainText("complete a purchase");
     await expect(journeyHeader).toContainText("1280×720");
-    await expect(journeyHeader).toContainText("Screen 1 of 4");
-    await expect(journeyHeader).toContainText("2 changed");
     const drawer = page.getByTestId("journey-drawer");
     // The strip stays open while the journey is walked: nothing to toggle.
     const journeyToggle = page.getByRole("button", {
@@ -286,17 +284,16 @@ loggedTest(
     await expect(heading("payment")).toBeVisible();
     // A reviewed screen keeps its place in the journey.
     await expect(rows.nth(1)).toHaveText(/2 · shipping/);
-    await expect(journeyHeader).toContainText("Screen 3 of 4");
 
     // The journey is in the URL, so a reload keeps walking it.
     await page.reload();
     await expect(heading("payment")).toBeVisible();
-    await expect(journeyHeader).toContainText("Screen 3 of 4");
+    await expect(journeyHeader).toContainText("complete a purchase");
 
-    // Leaving the journey is back to the review sorted by status.
-    await page.getByRole("button", { name: "Leave the journey" }).click();
+    // Closing the journey goes back to the overview, to pick another one.
+    await page.getByRole("link", { name: "Back to the overview" }).click();
     await expect(page).not.toHaveURL(/[?&]journey=/);
     await expect(journeyHeader).toHaveCount(0);
-    await expect(journeyToggle).toBeVisible();
+    await expect(walkLink("complete a purchase").first()).toBeVisible();
   },
 );

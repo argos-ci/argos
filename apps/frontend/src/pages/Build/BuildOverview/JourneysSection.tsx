@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ChevronRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { FileCodeIcon, WaypointsIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
@@ -270,21 +270,28 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
   );
 }
 
+type Size = { width: number; height: number };
+
 /**
- * A screen's box in the strip: the first screen as the run saw it, at the
- * viewport's shape, so a phone run reads as phone screens.
+ * The boxes of a run's screens, at the viewport's shape so a phone run reads
+ * as phone screens: a changed screen large enough to see what changed, an
+ * unchanged one small, kept to show where the change sits in the journey.
  */
-function getScreenSize(viewport: Journey["viewport"]): {
-  width: number;
-  height: number;
+function getScreenSizes(viewport: Journey["viewport"]): {
+  changed: Size;
+  unchanged: Size;
 } {
-  if (!viewport) {
-    return { width: 48, height: 32 };
-  }
-  const height = viewport.height > viewport.width ? 68 : 32;
+  const ratio = viewport ? viewport.width / viewport.height : 1.5;
+  const [changedHeight, unchangedHeight] = ratio < 1 ? [128, 56] : [72, 28];
   return {
-    width: Math.round((height * viewport.width) / viewport.height),
-    height,
+    changed: {
+      width: Math.round(changedHeight * ratio),
+      height: changedHeight,
+    },
+    unchanged: {
+      width: Math.round(unchangedHeight * ratio),
+      height: unchangedHeight,
+    },
   };
 }
 
@@ -302,79 +309,86 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
   const ViewportIcon = journey.viewport
     ? viewportIcons[getViewportIconKind(journey.viewport.width)]
     : null;
-  const size = getScreenSize(journey.viewport);
+  const sizes = getScreenSizes(journey.viewport);
   return (
-    <li className="hover:bg-subtle relative -mx-2 grid grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-1 transition">
+    <li className="hover:bg-subtle relative -mx-2 grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-1.5 transition">
       {/* The whole row walks the journey from its start; each screen is a
           link of its own, above it. */}
       <HeadlessLink
         href={getHref(firstScreen.diff)}
         aria-label={`Walk “${title}”${journey.viewport ? ` at ${formatViewport(journey.viewport)}` : ""}`}
-        className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
+        className="flex min-w-0 flex-col gap-1 text-xs tabular-nums outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
       >
-        {browser ? (
-          <BrowserIcon
-            browser={{ name: browser }}
-            className="size-3.5 shrink-0"
-            title={getBrowserLabel(browser)}
-          />
-        ) : null}
-        {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
-        <span className="truncate">
-          {journey.viewport
-            ? formatViewport(journey.viewport)
-            : browser
-              ? getBrowserLabel(browser)
-              : "Run"}
+        <span className="text-low flex min-w-0 items-center gap-1.5">
+          {browser ? (
+            <BrowserIcon
+              browser={{ name: browser }}
+              className="size-3.5 shrink-0"
+              title={getBrowserLabel(browser)}
+            />
+          ) : null}
+          {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
+          <span className="truncate">
+            {journey.viewport
+              ? formatViewport(journey.viewport)
+              : browser
+                ? getBrowserLabel(browser)
+                : "Run"}
+          </span>
+        </span>
+        <span
+          className={clsx(
+            "font-medium",
+            changedCount > 0 ? "text-warning-low" : "text-low",
+          )}
+        >
+          {changedCount > 0
+            ? `${changedCount} of ${screens.length} changed`
+            : plural(screens.length, "screen")}
         </span>
       </HeadlessLink>
-      {/* A journey longer than the row shrinks its screens, keeping their
-          shape, so the strip always shows the whole journey. */}
-      <div className="flex min-w-0 items-end gap-1.5 pt-1.5 pr-1.5 pb-0.5">
-        {screens.map((screen, index) => (
-          <Tooltip
-            key={screen.diff.id}
-            content={`${index + 1} · ${screen.label}`}
-          >
-            <HeadlessLink
-              href={getHref(screen.diff)}
-              aria-label={`Screen ${index + 1}, ${screen.label}${screen.changed ? ", changed" : ""}`}
-              className="focus-ring relative z-1 block min-w-3 rounded-sm"
-              style={{
-                width: size.width,
-                aspectRatio: `${size.width} / ${size.height}`,
-              }}
+      {/* A journey longer than the row shrinks its screens, the unchanged
+          ones first, so the strip always shows the whole journey. */}
+      <div className="flex min-w-0 items-center gap-1.5 pt-1.5 pr-1.5 pb-0.5">
+        {screens.map((screen, index) => {
+          const size = screen.changed ? sizes.changed : sizes.unchanged;
+          return (
+            <Tooltip
+              key={screen.diff.id}
+              content={`${index + 1} · ${screen.label}`}
             >
-              <ScreenshotDiffThumbnail
-                screenshotDiff={screen.diff}
-                className={clsx("size-full", !screen.changed && "opacity-50")}
-                iconClassName="m-auto size-4"
-                fit="cover"
-                // A top crop at 2x the box: the screen as it first showed.
-                transformations={[
-                  `w-${size.width * 2}`,
-                  `h-${size.height * 2}`,
-                  "fo-top",
-                ]}
-              />
-              {screen.changed ? (
-                <span className="bg-warning-solid absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-(--background-color-app)" />
-              ) : null}
-            </HeadlessLink>
-          </Tooltip>
-        ))}
+              <HeadlessLink
+                href={getHref(screen.diff)}
+                aria-label={`Screen ${index + 1}, ${screen.label}${screen.changed ? ", changed" : ""}`}
+                className={clsx(
+                  "focus-ring relative z-1 block min-w-3 rounded-sm",
+                  !screen.changed && "shrink-[4]",
+                )}
+                style={{
+                  width: size.width,
+                  aspectRatio: `${size.width} / ${size.height}`,
+                }}
+              >
+                <ScreenshotDiffThumbnail
+                  screenshotDiff={screen.diff}
+                  className={clsx("size-full", !screen.changed && "opacity-50")}
+                  iconClassName="m-auto size-4"
+                  fit="cover"
+                  // A top crop at 2x the box: the screen as it first showed.
+                  transformations={[
+                    `w-${size.width * 2}`,
+                    `h-${size.height * 2}`,
+                    "fo-top",
+                  ]}
+                />
+                {screen.changed ? (
+                  <span className="bg-warning-solid absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-(--background-color-app)" />
+                ) : null}
+              </HeadlessLink>
+            </Tooltip>
+          );
+        })}
       </div>
-      <span
-        className={clsx(
-          "flex items-center gap-1 text-xs font-medium whitespace-nowrap tabular-nums",
-          changedCount > 0 ? "text-warning-low" : "text-low",
-        )}
-      >
-        {changedCount > 0
-          ? `${changedCount} of ${screens.length} changed`
-          : plural(screens.length, "screen")}
-        <ChevronRightIcon className="text-low size-3.5" />
-      </span>
     </li>
   );
 }
