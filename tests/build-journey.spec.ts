@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { createJourneyScenario } from "../apps/backend/src/database/seeds";
+import {
+  createJourneyScenario,
+  createJourneysScenario,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot, waitForDiffListToSettle } from "./util";
 
@@ -200,5 +203,100 @@ loggedTest(
     // goes back to the diff it jumped over, which the list now has above.
     await page.keyboard.press("y");
     await expect(settingsHeading).toBeVisible();
+  },
+);
+
+loggedTest(
+  "walks a journey screen by screen from the build overview",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // One card per run of the checkout, the biggest change first. The sign-up
+    // changed nothing and waits behind a button; the home page test captures
+    // a single screen, which is no journey.
+    const checkoutCards = page.getByRole("link", {
+      name: /complete a purchase/,
+    });
+    await expect(checkoutCards).toHaveText([
+      /2 of 4 screens changed/,
+      /1 of 4 screens changed/,
+    ]);
+    const signupCard = page.getByRole("link", { name: /create an account/ });
+    await expect(signupCard).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Show 1 unchanged journey" })
+      .click();
+    await expect(signupCard).toHaveText(/2 screens/);
+    await expect(
+      page.getByRole("link", { name: /shows the home page/ }),
+    ).toHaveCount(0);
+
+    await screenshot(page, "build-overview-journeys", {
+      replacements: { [team.account.slug]: "acme" },
+    });
+
+    // A card opens its journey on the first screen, unchanged as it is, with
+    // the journey as a filter and the strip open.
+    await checkoutCards.first().click();
+    const heading = (name: string) =>
+      page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
+    await expect(heading("cart")).toBeVisible();
+    await expect(page).toHaveURL(/[?&]journey=/);
+    await expect(
+      page.getByRole("button", { name: "Remove Journey filter" }),
+    ).toBeVisible();
+    const drawer = page.getByTestId("journey-drawer");
+    // The strip stays open while the journey is walked: nothing to toggle.
+    const journeyToggle = page.getByRole("button", {
+      name: "Journey",
+      exact: true,
+    });
+    await expect(drawer.getByRole("button")).toHaveText([
+      "1 · cart",
+      "2 · shipping",
+      "3 · payment",
+      "4 · confirmation",
+    ]);
+    await expect(journeyToggle).toHaveCount(0);
+
+    // The list is the journey: its screens in the order the test walked them,
+    // in one section, not sorted by status.
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /desktop\/checkout\/cart\.png/,
+      /desktop\/checkout\/shipping\.png/,
+      /desktop\/checkout\/payment\.png/,
+      /desktop\/checkout\/confirmation\.png/,
+    ]);
+    await waitForDiffListToSettle(page);
+    await screenshot(page, "build-journey-walk", {
+      replacements: { [team.account.slug]: "acme" },
+    });
+
+    // ↓ goes to the next screen, and marking one moves on to the next screen
+    // too, changed or not: the walk does not skip the payment.
+    await page.keyboard.press("ArrowDown");
+    await expect(heading("shipping")).toBeVisible();
+    await page.keyboard.press("y");
+    await expect(heading("payment")).toBeVisible();
+    // A reviewed screen keeps its place in the journey.
+    await expect(rows.nth(1)).toHaveText(/desktop\/checkout\/shipping\.png/);
+
+    // The journey is in the URL, so a reload keeps walking it.
+    await page.reload();
+    await expect(heading("payment")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Remove Journey filter" }),
+    ).toBeVisible();
+
+    // Removing the filter is back to the review sorted by status.
+    await page.getByRole("button", { name: "Remove Journey filter" }).click();
+    await expect(page).not.toHaveURL(/[?&]journey=/);
+    await expect(journeyToggle).toBeVisible();
   },
 );

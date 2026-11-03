@@ -190,6 +190,7 @@ function getRows(
   expandedGroups: ReadonlySet<string>,
   results: DiffResult[],
   searchMode: boolean,
+  journeyMode: boolean,
 ): ListRow[] {
   const rows: ListRow[] = [];
   const nonEmptyGroups = groups.filter((group) => group.diffs.length > 0);
@@ -225,6 +226,12 @@ function getRows(
     group.diffs.forEach((diff, index, diffs) => {
       const first = index === 0;
       const last = index === diffs.length - 1;
+
+      // A journey is walked screen by screen, so it shows no stacks either.
+      if (journeyMode) {
+        rows.push(memoCreateListItemRow({ diff, first, last }));
+        return;
+      }
 
       // In search mode, we don't show groups.
       if (searchMode) {
@@ -455,7 +462,8 @@ function DiffStatusIndicator(props: { group: DiffGroupName }) {
  * The status a row shows. Listed by status, the section says where a diff
  * stands, so a card only adds what a reviewed diff was, while a name, which
  * has nothing else beside it, always shows its diff's status. Listed by test,
- * nothing else on the row says where the diff stands.
+ * nothing else on the row says where the diff stands. Walking a journey, with
+ * no status sections left, a screen says on its own whether it changed.
  */
 function getRowStatus(input: {
   diff: Diff;
@@ -463,8 +471,12 @@ function getRowStatus(input: {
   grouping: SnapshotGrouping;
   display: SnapshotDisplay;
   isSubsetBuild: boolean;
+  journeyMode: boolean;
 }): DiffGroupName | null {
-  const { diff, status, grouping, display, isSubsetBuild } = input;
+  const { diff, status, grouping, display, isSubsetBuild, journeyMode } = input;
+  if (journeyMode) {
+    return getDiffListStatus(diff, null, { isSubsetBuild });
+  }
   if (grouping === "test") {
     return getDiffListStatus(diff, status, { isSubsetBuild });
   }
@@ -760,13 +772,14 @@ const InternalBuildDiffList = memo(() => {
     isSubsetBuild,
     grouping,
     diffs,
+    journeyMode,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
   const [display] = useSnapshotDisplay();
   const filterState = use(FilterStateContext);
   const rows = useMemo(
-    () => getRows(groups, expanded, results, searchMode),
-    [groups, expanded, results, searchMode],
+    () => getRows(groups, expanded, results, searchMode, journeyMode),
+    [groups, expanded, results, searchMode, journeyMode],
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const getDiffIndex = useEventCallback((diff: Diff | null) => {
@@ -1080,6 +1093,7 @@ const InternalBuildDiffList = memo(() => {
                           grouping,
                           display,
                           isSubsetBuild,
+                          journeyMode,
                         })}
                         display={display}
                       />

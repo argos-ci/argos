@@ -1,7 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
+import { createSerializer, parseAsString, useQueryState } from "nuqs";
+
+import { parseAsSetOf } from "@/util/search-params";
 
 import type { Diff } from "../../BuildDiffState";
+import {
+  getJourneyRunHints,
+  groupWalkableJourneys,
+  resolveJourneyIdentity,
+} from "../../journey-model";
+import { getBrowserLabel } from "../browser/browserLabels";
 import {
   getMetadataCategoryDefinition,
   isKnownMetadataCategory,
@@ -39,6 +48,32 @@ export function getFilterKey(
   filter: Pick<Filter, "category" | "value">,
 ): string {
   return `${filter.category}:${filter.value}`;
+}
+
+/**
+ * The journeys the review walks, by journey key. Kept in the URL rather than
+ * with the other filters: a link to a journey opens the build on it, and
+ * leaving for the build overview drops it.
+ */
+const journeySearchParams = {
+  journey: parseAsSetOf(parseAsString).withDefault(new Set()),
+};
+
+export const serializeJourneySearch = createSerializer(journeySearchParams);
+
+export function useJourneySearchState() {
+  return useQueryState("journey", journeySearchParams.journey);
+}
+
+function parseFilterKey(key: string) {
+  const [category = "", ...rest] = key.split(":");
+  return { category, value: rest.join(":") };
+}
+
+export function checkHasJourneyFilter(activeFilters: Set<string>): boolean {
+  return Array.from(activeFilters).some(
+    (key) => parseFilterKey(key).category === MetadataCategory.journey,
+  );
 }
 
 export function getStoryKindFromStoryId(storyId: string | null | undefined) {
@@ -147,6 +182,34 @@ function getFiltersFromDiffs(diffs: Diff[]): {
     }
   }
 
+  const journeys = groupWalkableJourneys(
+    diffs,
+    (diff) => getMetadataForDiff(diff) ?? null,
+  );
+  const runHints = getJourneyRunHints(
+    journeys,
+    (diff) => getMetadataForDiff(diff) ?? null,
+  );
+  for (const { identity, steps } of journeys) {
+    const hint = runHints.get(identity.key);
+    const label = [
+      identity.title,
+      hint?.browser ? getBrowserLabel(hint.browser) : null,
+      hint?.viewport ? formatViewport(hint.viewport) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const filter = createFilter({
+      category: MetadataCategory.journey,
+      value: identity.key,
+      label,
+    });
+    filterByKey.set(filter.key, {
+      ...filter,
+      count: steps.reduce((count, step) => count + step.diffs.length, 0),
+    });
+  }
+
   const filters = Array.from(filterByKey.values()).sort((a, b) => {
     if (a.category !== b.category) {
       const aLabel = getMetadataCategoryDefinition(a.category).label;
@@ -184,10 +247,43 @@ function getMetadataForDiff(diff: Diff) {
  * Create a filter state from diffs.
  */
 export function useCreateFilterState(diffs: Diff[]): FilterState {
-  const [active, setActive] = useState<Set<string>>(new Set());
+  const [localActive, setLocalActive] = useState<Set<string>>(new Set());
+  const [journeyKeys, setJourneyKeys] = useJourneySearchState();
   const { filterByKey, filterGroups, filters } = useMemo(
     () => getFiltersFromDiffs(diffs),
     [diffs],
+  );
+  // A journey from the URL counts once its screenshots are loaded: until then
+  // there is no filter to show for it, nor to remove it with.
+  const active = useMemo(() => {
+    const active = new Set(localActive);
+    for (const journeyKey of journeyKeys) {
+      const key = getFilterKey({
+        category: MetadataCategory.journey,
+        value: journeyKey,
+      });
+      if (filterByKey.has(key)) {
+        active.add(key);
+      }
+    }
+    return active;
+  }, [localActive, journeyKeys, filterByKey]);
+  const setActive: FilterState["setActive"] = useCallback(
+    (next) => {
+      const nextLocal = new Set<string>();
+      const nextJourneyKeys = new Set<string>();
+      for (const key of next) {
+        const { category, value } = parseFilterKey(key);
+        if (category === MetadataCategory.journey) {
+          nextJourneyKeys.add(value);
+        } else {
+          nextLocal.add(key);
+        }
+      }
+      setLocalActive(nextLocal);
+      void setJourneyKeys(nextJourneyKeys.size > 0 ? nextJourneyKeys : null);
+    },
+    [setJourneyKeys],
   );
   const getFilterByKey: FilterState["getFilterByKey"] = useCallback(
     (key) => {
@@ -231,6 +327,7 @@ function getFilterGroups(filters: Filter[]) {
       group.category === FilterCategory.storyTag ||
       group.category === FilterCategory.snapshotTag ||
       group.category === FilterCategory.testTag ||
+      group.category === FilterCategory.journey ||
       group.filterKeys.size > 1,
   );
 }
@@ -247,8 +344,7 @@ export function diffMatchesFilters(
   // All categories must match (AND), within a category any value matches (OR).
   const byCategory = new Map<MetadataCategory, string[]>();
   for (const filter of activeFilters) {
-    const [category, ...rest] = filter.split(":");
-    const value = rest.join(":");
+    const { category, value } = parseFilterKey(filter);
     if (!category) {
       continue;
     }
@@ -315,6 +411,13 @@ export function diffMatchesFilters(
 
         case MetadataCategory.testTag: {
           if (metadata.test?.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.journey: {
+          if (resolveJourneyIdentity(metadata)?.key === value) {
             matched = true;
           }
           break;

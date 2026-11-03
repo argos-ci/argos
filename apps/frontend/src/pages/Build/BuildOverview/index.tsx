@@ -9,6 +9,7 @@ import { BuildSummary } from "./BuildSummary";
 import { ContextSection } from "./ContextSection";
 import { DeploymentSection } from "./DeploymentSection";
 import { ImpactAnalysisSection } from "./ImpactAnalysisSection";
+import { JourneysSection } from "./JourneysSection";
 
 const _BuildFragment = graphql(`
   fragment BuildOverview_Build on Build {
@@ -47,6 +48,7 @@ export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
         <div className="flex min-w-0 flex-1 justify-center">
           <main className="flex w-full max-w-3xl flex-col gap-10">
             <BuildSummary build={build} />
+            <JourneysSection storybook={build.storybook} />
             <ImpactAnalysisSection build={build} repoUrl={repoUrl} />
           </main>
         </div>

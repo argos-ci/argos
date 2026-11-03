@@ -117,3 +117,162 @@ export function compareSteps(
 export function getCaptureIndex(metadata: JourneyMetadata): number | null {
   return metadata?.capture?.index ?? null;
 }
+
+export type Journey<T> = {
+  identity: JourneyIdentity;
+  /** The steps in order, each with the screenshots taken of it (variants). */
+  steps: { key: string; captureIndex: number | null; diffs: T[] }[];
+};
+
+/**
+ * The journeys `items` belong to, in the order they first come in, each with
+ * its steps in order. Items without journey information are left out.
+ */
+export function groupJourneys<T extends { variantKey: string }>(
+  items: readonly T[],
+  getMetadata: (item: T) => JourneyMetadata,
+): Journey<T>[] {
+  const journeys = new Map<
+    string,
+    { identity: JourneyIdentity; steps: Map<string, Journey<T>["steps"][0]> }
+  >();
+  for (const item of items) {
+    const metadata = getMetadata(item);
+    const identity = resolveJourneyIdentity(metadata);
+    if (!identity) {
+      continue;
+    }
+    const journey = journeys.get(identity.key) ?? {
+      identity,
+      steps: new Map(),
+    };
+    journeys.set(identity.key, journey);
+    const key = item.variantKey;
+    const step = journey.steps.get(key) ?? {
+      key,
+      captureIndex: null,
+      diffs: [],
+    };
+    journey.steps.set(key, step);
+    step.diffs.push(item);
+    const captureIndex = getCaptureIndex(metadata);
+    if (captureIndex !== null) {
+      step.captureIndex = Math.min(step.captureIndex ?? LAST, captureIndex);
+    }
+  }
+  return Array.from(journeys.values(), (journey) => ({
+    identity: journey.identity,
+    steps: Array.from(journey.steps.values()).toSorted(compareSteps),
+  }));
+}
+
+/**
+ * A test that captures a single screen is regular visual testing: there is no
+ * journey to walk.
+ */
+export function checkIsMultiStepJourney(journey: Journey<unknown>): boolean {
+  return journey.steps.length > 1;
+}
+
+/**
+ * The journeys a reviewer can walk screen by screen: several steps, and not
+ * Storybook stories, which group by component: a build already names those on
+ * its own (story kind filter, affected components).
+ */
+export function groupWalkableJourneys<T extends { variantKey: string }>(
+  items: readonly T[],
+  getMetadata: (item: T) => JourneyMetadata,
+): Journey<T>[] {
+  return groupJourneys(items, getMetadata).filter(
+    (journey) =>
+      checkIsMultiStepJourney(journey) &&
+      !journey.steps.some((step) =>
+        step.diffs.some((item) => getMetadata(item)?.story),
+      ),
+  );
+}
+
+type JourneyRunMetadata = {
+  browser?: { name: string } | null;
+  viewport?: { width: number; height: number } | null;
+} | null;
+
+export type JourneyRunHint = {
+  browser: string | null;
+  viewport: { width: number; height: number } | null;
+};
+
+/**
+ * What tells apart the journeys that share a title, by journey key. A test run
+ * by several Playwright projects is a journey per project, and projects differ
+ * by browser, by viewport or both: only what differs among the journeys of one
+ * title is kept, so a journey alone under its title gets no hint.
+ */
+export function getJourneyRunHints<T>(
+  journeys: readonly Journey<T>[],
+  getMetadata: (item: T) => JourneyRunMetadata,
+): Map<string, JourneyRunHint> {
+  const runsByTitle = new Map<
+    string,
+    {
+      key: string;
+      browser: string | null;
+      viewport: JourneyRunHint["viewport"];
+    }[]
+  >();
+  for (const { identity, steps } of journeys) {
+    const firstItem = steps[0]?.diffs[0];
+    const metadata = firstItem === undefined ? null : getMetadata(firstItem);
+    const titleKey = `${identity.prefix} › ${identity.title}`;
+    const runs = runsByTitle.get(titleKey) ?? [];
+    runsByTitle.set(titleKey, runs);
+    runs.push({
+      key: identity.key,
+      browser: metadata?.browser?.name ?? null,
+      viewport: metadata?.viewport ?? null,
+    });
+  }
+  const hints = new Map<string, JourneyRunHint>();
+  for (const runs of runsByTitle.values()) {
+    const browserDiffers = new Set(runs.map((run) => run.browser)).size > 1;
+    const viewportDiffers =
+      new Set(
+        runs.map((run) =>
+          run.viewport ? `${run.viewport.width}x${run.viewport.height}` : null,
+        ),
+      ).size > 1;
+    for (const run of runs) {
+      hints.set(run.key, {
+        browser: browserDiffers ? run.browser : null,
+        viewport: viewportDiffers ? run.viewport : null,
+      });
+    }
+  }
+  return hints;
+}
+
+/**
+ * `items` in the order their journeys walk them: journey by journey, then one
+ * variant at a time, step by step. A variant is walked whole before the next
+ * one, so the screens follow each other on one viewport and scheme, the way
+ * someone clicking through the app would see them. Items without journey
+ * information come last, in their own order.
+ */
+export function sortAlongJourneys<
+  T extends { name: string; variantKey: string },
+>(items: readonly T[], getMetadata: (item: T) => JourneyMetadata): T[] {
+  const sorted = groupJourneys(items, getMetadata).flatMap((journey) => {
+    const variants = new Map<string, T[]>();
+    for (const step of journey.steps) {
+      for (const item of step.diffs) {
+        const signature = getVariantSignature(item);
+        const variant = variants.get(signature) ?? [];
+        variants.set(signature, variant);
+        variant.push(item);
+      }
+    }
+    return Array.from(variants.values()).flat();
+  });
+  const placed = new Set(sorted);
+  return [...sorted, ...items.filter((item) => !placed.has(item))];
+}
