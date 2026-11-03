@@ -127,15 +127,6 @@ function ApprovedDescription(props: { build: Build; canReview: boolean }) {
   );
 }
 
-function ChangesResume() {
-  return (
-    <Paragraph>
-      <Emphasis>Changes were detected in this build.</Emphasis> Please review
-      the snapshots and confirm whether these changes are expected.
-    </Paragraph>
-  );
-}
-
 export function BuildSummaryDescription({
   build,
   canReview,
@@ -191,8 +182,10 @@ export function BuildSummaryDescription({
   }
 
   switch (build.status) {
+    // The title already says it, and the review insights and the review
+    // button follow right below.
     case BuildStatus.ChangesDetected:
-      return <ChangesResume />;
+      return null;
 
     case BuildStatus.Accepted:
       return <ApprovedDescription build={build} canReview={canReview} />;

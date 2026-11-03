@@ -51,6 +51,9 @@ const _BuildFragment = graphql(`
         count
       }
     }
+    journeys {
+      id
+    }
   }
 `);
 
@@ -145,8 +148,10 @@ function ChangeSentence(props: {
   analysis: ImpactAnalysis;
   added: number;
   removed: number;
+  /** The journeys section names the tests: the sentence only counts them. */
+  countTestsOnly: boolean;
 }) {
-  const { analysis, added, removed } = props;
+  const { analysis, added, removed, countTestsOnly } = props;
   const { uniqueChangeCount, changedCount } = analysis;
   const useComponents = analysis.affectedComponents.length > 0;
   const entities = useComponents
@@ -156,6 +161,7 @@ function ChangeSentence(props: {
   const entityIcon = useComponents ? ComponentIcon : FlaskConicalIcon;
   const names = entities.map((entity) => entity.name);
   const entityCount = names.length;
+  const countOnly = countTestsOnly && !useComponents;
 
   // No modified snapshots: the build is purely additions and/or removals.
   if (uniqueChangeCount === 0) {
@@ -182,6 +188,14 @@ function ChangeSentence(props: {
       ? "A single visual change"
       : `${uniqueChangeCount} visual changes`;
 
+  if (countOnly && uniqueChangeCount === 1 && entityCount === 1) {
+    return changedCount >= 4 ? (
+      <>A single visual change, seen across {changedCount} snapshots.</>
+    ) : (
+      <>A single visual change.</>
+    );
+  }
+
   // Single change to a single entity — the common, simplest case.
   if (uniqueChangeCount === 1 && entityCount === 1) {
     if (changedCount >= 4) {
@@ -207,6 +221,15 @@ function ChangeSentence(props: {
         {countPhrase} rippling across {entityCount} {entityWord}s (
         {changedCount} snapshots), likely a shared{" "}
         {useComponents ? "style" : "change"}.
+      </>
+    );
+  }
+
+  if (countOnly && entityCount > 0) {
+    return (
+      <>
+        {countPhrase} across {entityCount} {entityWord}
+        {entityCount > 1 ? "s" : ""}.
       </>
     );
   }
@@ -318,7 +341,12 @@ export function ChangeSummary(props: { build: Build }) {
     <ChangeSummaryPanel>
       <div className="flex flex-col gap-3">
         <div>
-          <ChangeSentence analysis={analysis} added={added} removed={removed} />
+          <ChangeSentence
+            analysis={analysis}
+            added={added}
+            removed={removed}
+            countTestsOnly={props.build.journeys.length > 0}
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Chip icon={ClockIcon}>
