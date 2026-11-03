@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Project, type AuditTrail, type User } from "@/database/models";
+import { Project, Test, type AuditTrail, type User } from "@/database/models";
 import {
   getChangeMutationDenial,
   ignoreChange as ignoreTestChange,
@@ -240,14 +240,27 @@ async function runChangeMutaton(
     throw notFound("Test change not found");
   }
 
-  const project = await Project.queryNotDeleted()
+  const projectQuery = Project.queryNotDeleted()
     .joinRelated("account")
     .where("account.slug", accountSlug)
     .whereILike("projects.name", changeIdPayload.projectName)
     .first();
 
+  // A test id is globally unique and the change id is client-supplied, so
+  // ownership by the authorized project is the boundary: without it, a change
+  // id naming another project's test would hand that test — and the project
+  // behind it — to anyone who can review a project of their own.
+  const [project, test] = await Promise.all([
+    projectQuery,
+    Test.query().select("id", "projectId").findById(changeIdPayload.testId),
+  ]);
+
   if (!project) {
     throw notFound("Project not found");
+  }
+
+  if (!test || test.projectId !== project.id) {
+    throw notFound("Test change not found");
   }
 
   const denial = await getChangeMutationDenial(project, user);
