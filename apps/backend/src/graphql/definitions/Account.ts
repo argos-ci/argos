@@ -18,7 +18,10 @@ import {
   requestEmailSignin,
   requestEmailSignup,
 } from "@/database/services/account";
-import { queryAccountProjects } from "@/database/services/project";
+import {
+  getRestrictedVisibleProjectIds,
+  queryAccountProjects,
+} from "@/database/services/project";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
@@ -560,10 +563,22 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     }
     return ctx.loaders.GithubAccount.load(account.githubAccountId);
   },
-  metrics: async (account, args) => {
+  metrics: async (account, args, ctx) => {
+    if (!ctx.auth) {
+      throw unauthenticated();
+    }
+    // An account is reachable from any of its public projects, and its metrics
+    // list every project behind it, private ones included.
+    const visibleProjectIds = await getRestrictedVisibleProjectIds({
+      account,
+      user: ctx.auth.user,
+    }).catch((error: unknown) => {
+      throw toGraphQLError(error);
+    });
     try {
       return await getAccountMetrics({
         accountId: account.id,
+        visibleProjectIds,
         projectNames: args.input.projectNames,
         from: args.input.from,
         to: args.input.to,

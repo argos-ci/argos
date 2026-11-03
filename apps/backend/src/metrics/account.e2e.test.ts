@@ -287,6 +287,7 @@ describe("getAccountMetrics", () => {
 
     const metrics = await getAccountMetrics({
       accountId: project.accountId,
+      visibleProjectIds: null,
       projectNames: [project.name],
       from: new Date("2020-12-31"),
       to: new Date("2021-01-02"),
@@ -319,6 +320,7 @@ describe("getAccountMetrics", () => {
     // Oct 1 in Paris, as the analytics page sends it.
     const metrics = await getAccountMetrics({
       accountId: project.accountId,
+      visibleProjectIds: null,
       from: new Date("2026-09-30T22:00:00.000Z"),
       to: new Date("2026-10-01T21:59:59.999Z"),
       groupBy: "day",
@@ -352,6 +354,7 @@ describe("getAccountMetrics", () => {
 
     const metrics = await getAccountMetrics({
       accountId: project.accountId,
+      visibleProjectIds: null,
       from: new Date("2026-08-23T00:00:00.000Z"),
       to: new Date("2026-09-22T23:59:59.999Z"),
       groupBy: "week",
@@ -367,6 +370,7 @@ describe("getAccountMetrics", () => {
       await expect(
         getAccountMetrics({
           accountId: project.accountId,
+          visibleProjectIds: null,
           from: new Date("2026-09-30T22:00:00.000Z"),
           to: new Date("2026-10-01T21:59:59.999Z"),
           groupBy: "day",
@@ -382,6 +386,7 @@ describe("getAccountMetrics", () => {
     await expect(
       getAccountMetrics({
         accountId: project.accountId,
+        visibleProjectIds: null,
         from: new Date("2025-10-24T22:00:00.000Z"),
         to: new Date("2026-10-25T22:59:59.999Z"),
         groupBy: "month",
@@ -394,6 +399,7 @@ describe("getAccountMetrics", () => {
     await expect(
       getAccountMetrics({
         accountId: project.accountId,
+        visibleProjectIds: null,
         from: new Date("2025-01-01T00:00:00.000Z"),
         to: new Date("2026-01-03T00:00:00.000Z"),
         groupBy: "month",
@@ -414,6 +420,7 @@ describe("getAccountMetrics", () => {
 
     const metrics = await getAccountMetrics({
       accountId: project.accountId,
+      visibleProjectIds: null,
       projectNames: ["missing"],
       from: new Date("2020-12-31"),
       to: new Date("2021-01-02"),

@@ -8,6 +8,11 @@ type AccountMetricsGroupBy = "month" | "week" | "day";
 type AccountMetricsFilter = {
   accountId: string;
   projectNames?: string[] | null | undefined;
+  /**
+   * The only projects the viewer may see, or `null` when they may see every
+   * project of the account.
+   */
+  visibleProjectIds: string[] | null;
 };
 
 type AccountMetricsAggregationInput = {
@@ -103,14 +108,23 @@ function hasProjectFilter(input: AccountMetricsAggregationInput) {
 }
 
 async function resolveProjectIds(input: AccountMetricsFilter) {
-  if (!input.projectNames || input.projectNames.length === 0) {
+  const hasProjectNames = Boolean(
+    input.projectNames && input.projectNames.length > 0,
+  );
+  if (!hasProjectNames && !input.visibleProjectIds) {
     return { projectIds: undefined, projectFilterApplied: false };
   }
 
-  const projects = await Project.query()
+  const query = Project.query()
     .select("id")
-    .where("accountId", input.accountId)
-    .whereIn("name", input.projectNames);
+    .where("accountId", input.accountId);
+  if (input.projectNames && hasProjectNames) {
+    query.whereIn("name", input.projectNames);
+  }
+  if (input.visibleProjectIds) {
+    query.whereIn("id", input.visibleProjectIds);
+  }
+  const projects = await query;
 
   return {
     projectIds: projects.map((project) => project.id),
