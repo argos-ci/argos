@@ -226,18 +226,15 @@ loggedTest(
         .getByRole("listitem")
         .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
     await expect(runRow("complete a purchase")).toHaveText([
-      /1 of 4 changed/,
-      /2 of 4 changed/,
+      /375×812.*Chromium/,
+      /1280×720.*Chromium/,
     ]);
     await expect(walkLink("complete a purchase").first()).toHaveAccessibleName(
       /375×812/,
     );
     // The search takes each screen at two sizes in a single run (Argos's
     // `viewports` option): a run per size all the same, smallest first.
-    await expect(runRow("finds a product")).toHaveText([
-      /1 of 2 changed/,
-      /2 screens/,
-    ]);
+    await expect(runRow("finds a product")).toHaveText([/375×667/, /1280×720/]);
     await expect(walkLink("finds a product").first()).toHaveAccessibleName(
       /375×667/,
     );
@@ -245,7 +242,7 @@ loggedTest(
     await page
       .getByRole("button", { name: "Show 1 unchanged journey" })
       .click();
-    await expect(runRow("create an account")).toHaveText(/2 screens/);
+    await expect(runRow("create an account")).toHaveText(/1280×720/);
     await expect(walkLink("shows the home page")).toHaveCount(0);
     // A changed test that captures a single screen has a line of its own at
     // the end, so no other section lists the changed tests.

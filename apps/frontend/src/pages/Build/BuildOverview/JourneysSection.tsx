@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { FileCodeIcon, WaypointsIcon } from "lucide-react";
 
 import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
+import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
 import { DocumentType, graphql } from "@/gql";
 import type { ScreenshotMetadataColorScheme } from "@/gql/graphql";
 import { HeadlessLink } from "@/ui/Link";
@@ -17,9 +19,14 @@ import { getBuildURL, useBuildParams, type BuildParams } from "../BuildParams";
 import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyTestKey } from "../journey-hints";
+import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import { serializeJourneySearch } from "../metadata/filters/util";
-import { getViewportIconKind, viewportIcons } from "../metadata/metadataIcons";
+import {
+  colorSchemeIcons,
+  getViewportIconKind,
+  viewportIcons,
+} from "../metadata/metadataIcons";
 import { formatViewport } from "../metadata/viewports/util";
 import { getLocationURL } from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
@@ -487,58 +494,39 @@ function getRunLabel(run: JourneyRun, test: JourneyTest): string {
     .join(" · ");
 }
 
-/** How tall the screens of a test are, at most. */
-const LINEUP_HEIGHT = 220;
-const LINEUP_GAP = 12;
-/** A tile's padding, on each side. */
-const TILE_PADDING = 12;
-
-function getScreenRatio(viewport: Viewport | null): number {
-  return viewport ? viewport.width / viewport.height : 1.5;
-}
-
 /**
- * The runs of a test side by side, a tile each holding its screen, all
- * screens as tall: each takes a width in proportion to its shape, so a phone
- * and a desktop read as one app at two sizes. They shrink together on a
- * narrow page.
+ * The runs of a test side by side, half a row each, as cards like the ones
+ * in the build's snapshot list.
  */
 function JourneyLineup(props: { test: JourneyTest }) {
   const { test } = props;
-  const ratios = test.runs.map((run) => getScreenRatio(run.viewport));
-  const totalRatio = ratios.reduce((sum, ratio) => sum + ratio, 0);
   return (
-    <ul
-      className="mt-3 flex"
-      style={{
-        gap: LINEUP_GAP,
-        maxWidth:
-          totalRatio * LINEUP_HEIGHT +
-          ratios.length * TILE_PADDING * 2 +
-          (ratios.length - 1) * LINEUP_GAP,
-      }}
-    >
-      {test.runs.map((run, index) => (
-        <JourneyRunItem
-          key={run.key}
-          run={run}
-          test={test}
-          ratio={ratios[index] ?? 1}
-        />
+    <ul className="mt-3 grid gap-4 sm:grid-cols-2">
+      {test.runs.map((run) => (
+        <JourneyRunItem key={run.key} run={run} test={test} />
       ))}
     </ul>
   );
 }
 
-function JourneyRunItem(props: {
-  run: JourneyRun;
-  test: JourneyTest;
-  ratio: number;
-}) {
-  const { run, test, ratio } = props;
+function getDiffCardVariant(mark: ReviewMarkValue | null) {
+  switch (mark) {
+    case EvaluationStatus.Accepted:
+      return "success" as const;
+    case EvaluationStatus.Rejected:
+      return "danger" as const;
+    case null:
+      return "primary" as const;
+    default:
+      assertNever(mark);
+  }
+}
+
+function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
+  const { run, test } = props;
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
-  const { journey, screens, changedCount, viewport } = run;
+  const { journey, screens, viewport, browser, colorScheme } = run;
   const [firstScreen] = screens;
   invariant(firstScreen, "a journey has at least one screen");
   const label = getRunLabel(run, test);
@@ -550,57 +538,61 @@ function JourneyRunItem(props: {
     changed.map((screen) => screen.diff),
     useReviewStatuses(),
   );
-  const overlayInset = TILE_PADDING + 6;
+  const ViewportIcon = viewport
+    ? viewportIcons[getViewportIconKind(viewport.width)]
+    : null;
+  const ColorSchemeIcon =
+    test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
-    <li
-      className="bg-ui hover:bg-hover relative min-w-0 rounded-lg transition"
-      style={{
-        // The padding is the tile's basis and the rest grows with the shape,
-        // so the screens of the tiles stay as tall as each other.
-        flex: `${ratio} 1 ${TILE_PADDING * 2}px`,
-        padding: TILE_PADDING,
-      }}
-    >
-      <Tooltip content={label || "Walk the journey"}>
-        <HeadlessLink
-          href={getJourneyScreenURL(params, journey, firstScreen.diff)}
-          aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
-          className="block overflow-hidden rounded-sm shadow-md outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
-          style={{ aspectRatio: String(ratio) }}
-        >
-          <ScreenshotDiffThumbnail
-            screenshotDiff={shownScreen.diff}
-            className="size-full"
-            iconClassName="m-auto size-6"
-            fit="cover-top"
-            transformations={getFirstScreenTransformations(
-              viewport,
-              Math.round(LINEUP_HEIGHT * ratio * 2),
-            )}
-          />
-        </HeadlessLink>
-      </Tooltip>
-      {/* What the screen does not say: how many of the run's screens changed,
-          and whether the review went through them. */}
-      <span
-        className={clsx(
-          "bg-app border-thin text-xxs pointer-events-none absolute rounded-full px-1.5 font-medium whitespace-nowrap tabular-nums shadow-xs",
-          changedCount > 0 ? "text-warning-low" : "text-low",
-        )}
-        style={{ bottom: overlayInset, left: overlayInset }}
-      >
-        {changedCount > 0
-          ? `${changedCount} of ${screens.length} changed`
-          : plural(screens.length, "screen")}
-      </span>
-      {mark ? (
-        <span
-          className="bg-app border-thin absolute z-1 flex rounded-full p-0.5 shadow-xs"
-          style={{ top: overlayInset, right: overlayInset }}
-        >
-          <ReviewMark mark={mark} />
-        </span>
-      ) : null}
+    <li className="group/item relative isolate">
+      {/* A journey is a stack of screens: a card peeks out behind, like
+          similar snapshots in the list. */}
+      <div className="bg-hover absolute inset-0 -z-10 translate-x-1.5 translate-y-1.5 rounded-lg border" />
+      <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
+        <div className="flex size-full flex-col">
+          <div className="aspect-video overflow-hidden">
+            <ScreenshotDiffThumbnail
+              screenshotDiff={shownScreen.diff}
+              className="size-full rounded-none border-0"
+              iconClassName="m-auto size-6"
+              fit="cover-top"
+              transformations={getFirstScreenTransformations(viewport, 720)}
+            />
+          </div>
+          <div className="text-low text-xxs flex items-center gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
+            {ViewportIcon ? (
+              <ViewportIcon className="size-3.5 shrink-0" />
+            ) : null}
+            <span className="truncate">
+              {viewport ? formatViewport(viewport) : "Unknown viewport"}
+            </span>
+            {browser ? (
+              <>
+                <span aria-hidden>·</span>
+                <BrowserIcon
+                  browser={{ name: browser }}
+                  className="size-3.5 shrink-0"
+                />
+                <span className="truncate">{getBrowserLabel(browser)}</span>
+              </>
+            ) : null}
+            {ColorSchemeIcon && colorScheme ? (
+              <>
+                <span aria-hidden>·</span>
+                <ColorSchemeIcon className="size-3.5 shrink-0" />
+                <span className="truncate">{capitalize(colorScheme)}</span>
+              </>
+            ) : null}
+            {mark ? <ReviewMark mark={mark} className="ml-auto" /> : null}
+          </div>
+        </div>
+      </DiffCard>
+      {/* The whole card walks the journey from its start. */}
+      <HeadlessLink
+        href={getJourneyScreenURL(params, journey, firstScreen.diff)}
+        aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
+        className="absolute inset-0 z-30 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
+      />
     </li>
   );
 }
