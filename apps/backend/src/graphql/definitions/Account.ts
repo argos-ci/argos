@@ -480,7 +480,13 @@ export const commonAccountResolvers: IResolvers["Team"] = {
   avatar: async (account, _args, ctx) => {
     return getAccountAvatar(account, ctx.loaders);
   },
-  glNamespaces: async (account) => {
+  glNamespaces: async (account, _args, ctx) => {
+    // Listed with the account's own GitLab token, which reaches namespaces no
+    // visitor of a public project should learn about.
+    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    if (!permissions.includes("admin")) {
+      return null;
+    }
     const client = await getGitlabClientFromAccount(account, {
       mode: "manual",
     });
