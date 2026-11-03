@@ -325,8 +325,8 @@ export function JourneysSection(props: {
           {plural(tests.length, "journey")}
         </span>
       </PanelHeader>
-      {/* No rule between journeys: a title sits close to its cards and far
-          from the ones above, and the file opens its group once. */}
+      {/* A rule only between files: within one, a title sits close to its
+          cards and far from the ones above, and the file opens its group. */}
       <ul className="flex flex-col gap-8">
         {visible.map((test, index) => {
           const opensGroup =
@@ -336,7 +336,7 @@ export function JourneysSection(props: {
               key={test.key}
               test={test}
               showPrefix={opensGroup}
-              className={clsx(opensGroup && index > 0 && "mt-4")}
+              className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
               href={getLocationURL({
                 location: test.location,
                 repoUrl,
