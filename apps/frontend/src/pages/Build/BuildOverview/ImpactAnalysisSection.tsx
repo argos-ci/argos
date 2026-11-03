@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ComponentIcon, FlaskConicalIcon, RadarIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { Button } from "@/ui/Button";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Truncable } from "@/ui/Truncable";
 
@@ -95,13 +96,15 @@ function AffectedItemsSection(props: {
         ))}
       </ul>
       {collapsible && !expanded ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="focus-ring text-low hover:bg-ui hover:text-default mx-2 mt-3 cursor-default rounded-full px-2 py-0.5 text-sm transition"
-        >
-          {props.seeAllLabel(items.length)}
-        </button>
+        <div className="mx-4 mt-3">
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {props.seeAllLabel(items.length)}
+          </Button>
+        </div>
       ) : null}
     </Panel>
   );

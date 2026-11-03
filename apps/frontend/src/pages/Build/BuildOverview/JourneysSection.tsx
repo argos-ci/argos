@@ -9,6 +9,7 @@ import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
 import { DocumentType, graphql } from "@/gql";
 import type { ScreenshotMetadataColorScheme } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
@@ -339,7 +340,7 @@ export function JourneysSection(props: {
         ))}
       </ul>
       {(collapsible && !expanded) || hiddenUnchangedCount > 0 ? (
-        <div className="border-t-thin flex flex-wrap gap-2 px-2 pt-2.5 pb-2">
+        <div className="border-t-thin flex flex-wrap gap-2 px-4 pt-3 pb-2">
           {collapsible && !expanded ? (
             <SectionButton onClick={() => setExpanded(true)}>
               Show {plural(listed.length - visible.length, "more journey")}
@@ -362,13 +363,9 @@ function SectionButton(props: {
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      className="focus-ring text-low hover:bg-ui hover:text-default cursor-default rounded-full px-2 py-0.5 text-sm transition"
-    >
+    <Button variant="secondary" size="small" onClick={props.onClick}>
       {props.children}
-    </button>
+    </Button>
   );
 }
 
@@ -541,6 +538,7 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
   const ViewportIcon = viewport
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
+  const portrait = viewport ? viewport.height > viewport.width : false;
   const ColorSchemeIcon =
     test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
@@ -550,13 +548,28 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
       <div className="bg-hover absolute inset-0 -z-10 translate-x-1.5 translate-y-1.5 rounded-lg border" />
       <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
         <div className="flex size-full flex-col">
-          <div className="aspect-video overflow-hidden">
+          {/* A phone screen stands narrower in the middle, rising from the
+              bottom edge, so a mobile run reads as one at a glance. */}
+          <div
+            className={clsx(
+              "aspect-video overflow-hidden",
+              portrait && "bg-subtle px-[22%] pt-3",
+            )}
+          >
             <ScreenshotDiffThumbnail
               screenshotDiff={shownScreen.diff}
-              className="size-full rounded-none border-0"
+              className={clsx(
+                "size-full",
+                portrait
+                  ? "rounded-t-md border-b-0 shadow-sm"
+                  : "rounded-none border-0",
+              )}
               iconClassName="m-auto size-6"
               fit="cover-top"
-              transformations={getFirstScreenTransformations(viewport, 720)}
+              transformations={getFirstScreenTransformations(
+                viewport,
+                portrait ? 400 : 720,
+              )}
             />
           </div>
           <div className="text-low text-xxs flex items-center gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
@@ -583,7 +596,10 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
                 <span className="truncate">{capitalize(colorScheme)}</span>
               </>
             ) : null}
-            {mark ? <ReviewMark mark={mark} className="ml-auto" /> : null}
+            <span className="ml-auto flex shrink-0 items-center gap-1.5">
+              {mark ? <ReviewMark mark={mark} /> : null}
+              <WaypointsIcon className="size-3.5" aria-hidden />
+            </span>
           </div>
         </div>
       </DiffCard>
@@ -623,7 +639,7 @@ function SingleScreenTests(props: { tests: JourneyTest[] }) {
         ))}
       </ul>
       {collapsible && !expanded ? (
-        <div className="-mx-2 mt-1">
+        <div className="mt-2 mb-1.5">
           <SectionButton onClick={() => setExpanded(true)}>
             Show {plural(tests.length - visible.length, "more test")}
           </SectionButton>
