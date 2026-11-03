@@ -29,6 +29,7 @@ import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
@@ -641,16 +642,31 @@ export const resolvers: IResolvers = {
 
       invariant(account.userId, "account.userId is undefined");
 
-      const query = ProjectUser.query()
-        .where("userId", account.userId)
-        .orderBy("id", "desc")
-        .range(after, after + first - 1);
-
-      if (args.projectId) {
-        query.where("projectId", args.projectId);
+      // A contributor row outlives the membership it was granted under, so it
+      // says nothing about access on its own: the project it leads to is only
+      // handed out to whoever may see it — and someone else's level only to
+      // whoever may see the project's settings.
+      const project = isValidPgBigInt(args.projectId)
+        ? await ctx.loaders.Project.load(args.projectId)
+        : null;
+      const permissions = project
+        ? await project.$getPermissions(ctx.auth.user)
+        : [];
+      const required =
+        ctx.auth.user.id === account.userId ? "view" : "view_settings";
+      if (!project || !permissions.includes(required)) {
+        return paginateResult({
+          result: { total: 0, results: [] },
+          first,
+          after,
+        });
       }
 
-      const result = await query;
+      const result = await ProjectUser.query()
+        .where("userId", account.userId)
+        .where("projectId", project.id)
+        .orderBy("id", "desc")
+        .range(after, after + first - 1);
       return paginateResult({ result, first, after });
     },
     gitlabUser: async (account, _args, ctx) => {
