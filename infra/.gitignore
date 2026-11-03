@@ -1,3 +1,4 @@
 /cdk.out
-# Secrets written at synth time for esbuild to --inject into the edge bundle.
+# Synths before ES256 wrote the edge's HS256 secret here. Keep any leftover
+# copy out of git.
 /.generated

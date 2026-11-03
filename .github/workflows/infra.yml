@@ -60,16 +60,12 @@ jobs:
           role-to-assume: ${{ secrets.CDK_DIFF_AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # `--no-change-set`: a change set needs the deploy role. `secrets=false`
-      # synthesizes without the parameters only the deploy role may read; until
-      # the edge drops its HS256 secret, that shows the viewer-request function
-      # as changed in every diff.
+      # `--no-change-set`: a change set needs the deploy role.
       - name: cdk diff
         run: |
           pnpm --filter @argos/infra exec cdk diff \
             --no-change-set \
-            -c stage="$CDK_STAGE" \
-            -c secrets=false
+            -c stage="$CDK_STAGE"
 
   deploy:
     if: github.event_name != 'pull_request'

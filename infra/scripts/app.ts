@@ -19,10 +19,6 @@ if (!stage) {
   throw new Error(`Missing required context value: stage`);
 }
 
-// A pull request's `cdk diff` runs as a role that may read the config document
-// but no secret, and passes `-c secrets=false`.
-const readSecrets = app.node.tryGetContext("secrets") !== "false";
-
 function assertStageMatches(config: { stage?: string }, stage: string) {
   if (config.stage !== stage) {
     throw new Error(
@@ -60,14 +56,6 @@ function readSsmConfig(stage: string) {
 
   assertStageMatches(config, stage);
 
-  // Pull requests read this document, so a secret left in it is published to
-  // anyone who can open one.
-  if ("accessTokenSecret" in config) {
-    throw new Error(
-      "`accessTokenSecret` must leave the config document: store it in its own parameter and name that in `accessTokenLegacySecretParameter`.",
-    );
-  }
-
   return config;
 }
 
@@ -80,9 +68,6 @@ const deploymentStack = new ArgosDeploymentStack(
   `argos-deployment-${props.stage}`,
   {
     ...props,
-    legacyAccessTokenSecret: readSecrets
-      ? readSsmParameter(props.accessTokenLegacySecretParameter)
-      : "",
     env: {
       account: process.env["CDK_DEFAULT_ACCOUNT"],
       region: "us-east-1",
