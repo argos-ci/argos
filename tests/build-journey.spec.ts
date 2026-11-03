@@ -216,40 +216,40 @@ loggedTest(
       `/${team.account.slug}/${project.name}/builds/${build.number}`,
     );
 
-    // One card per run of the checkout, the biggest change first. The sign-up
-    // changed nothing and waits behind a button; the home page test captures
-    // a single screen, which is no journey.
-    const checkoutCards = page.getByRole("link", {
-      name: /complete a purchase/,
-    });
-    await expect(checkoutCards).toHaveText([
-      /2 of 4 screens changed/,
-      /1 of 4 screens changed/,
+    // The checkout, run on desktop and on mobile, has the most changes: it
+    // comes first, a row per run. The sign-up changed nothing and waits behind
+    // a button; the home page test captures a single screen, no journey.
+    const walkLink = (title: string) =>
+      page.getByRole("link", { name: new RegExp(`^Walk “${title}”`) });
+    const runRow = (title: string) =>
+      page
+        .getByRole("listitem")
+        .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
+    await expect(runRow("complete a purchase")).toHaveText([
+      /1280×720.*2 of 4 changed/,
+      /375×812.*1 of 4 changed/,
     ]);
-    const signupCard = page.getByRole("link", { name: /create an account/ });
-    await expect(signupCard).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "Show 1 unchanged journey" })
-      .click();
-    await expect(signupCard).toHaveText(/2 screens/);
-    await expect(
-      page.getByRole("link", { name: /shows the home page/ }),
-    ).toHaveCount(0);
+    await expect(walkLink("create an account")).toHaveCount(0);
+    await page.getByRole("button", { name: "Show 1 unchanged test" }).click();
+    await expect(runRow("create an account")).toHaveText(/2 screens/);
+    await expect(walkLink("shows the home page")).toHaveCount(0);
 
     await screenshot(page, "build-overview-journeys", {
       replacements: { [team.account.slug]: "acme" },
     });
 
-    // A card opens its journey on the first screen, unchanged as it is, with
-    // the journey as a filter and the strip open.
-    await checkoutCards.first().click();
+    // A run opens its journey on the first screen, unchanged as it is, with a
+    // short id in the URL, the journey above the list and the strip open.
+    await walkLink("complete a purchase").first().click();
     const heading = (name: string) =>
       page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
     await expect(heading("cart")).toBeVisible();
-    await expect(page).toHaveURL(/[?&]journey=/);
-    await expect(
-      page.getByRole("button", { name: "Remove Journey filter" }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
+    const journeyHeader = page.getByRole("region", { name: "Journey" });
+    await expect(journeyHeader).toContainText("complete a purchase");
+    await expect(journeyHeader).toContainText("1280×720");
+    await expect(journeyHeader).toContainText("Screen 1 of 4");
+    await expect(journeyHeader).toContainText("2 changed");
     const drawer = page.getByTestId("journey-drawer");
     // The strip stays open while the journey is walked: nothing to toggle.
     const journeyToggle = page.getByRole("button", {
@@ -268,10 +268,10 @@ loggedTest(
     // in one section, not sorted by status.
     const rows = page.locator("[role='button'][data-index]");
     await expect(rows).toHaveText([
-      /desktop\/checkout\/cart\.png/,
-      /desktop\/checkout\/shipping\.png/,
-      /desktop\/checkout\/payment\.png/,
-      /desktop\/checkout\/confirmation\.png/,
+      /1 · cart/,
+      /2 · shipping/,
+      /3 · payment/,
+      /4 · confirmation/,
     ]);
     await waitForDiffListToSettle(page);
     await screenshot(page, "build-journey-walk", {
@@ -285,18 +285,18 @@ loggedTest(
     await page.keyboard.press("y");
     await expect(heading("payment")).toBeVisible();
     // A reviewed screen keeps its place in the journey.
-    await expect(rows.nth(1)).toHaveText(/desktop\/checkout\/shipping\.png/);
+    await expect(rows.nth(1)).toHaveText(/2 · shipping/);
+    await expect(journeyHeader).toContainText("Screen 3 of 4");
 
     // The journey is in the URL, so a reload keeps walking it.
     await page.reload();
     await expect(heading("payment")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Remove Journey filter" }),
-    ).toBeVisible();
+    await expect(journeyHeader).toContainText("Screen 3 of 4");
 
-    // Removing the filter is back to the review sorted by status.
-    await page.getByRole("button", { name: "Remove Journey filter" }).click();
+    // Leaving the journey is back to the review sorted by status.
+    await page.getByRole("button", { name: "Leave the journey" }).click();
     await expect(page).not.toHaveURL(/[?&]journey=/);
+    await expect(journeyHeader).toHaveCount(0);
     await expect(journeyToggle).toBeVisible();
   },
 );

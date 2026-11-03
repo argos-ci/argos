@@ -198,13 +198,16 @@ function getRows(
     const isLastGroup = groupIndex === nonEmptyGroups.length - 1;
     const isGroupExpanded = expandedGroups.has(group.name);
 
-    rows.push(
-      createHeaderRow({
-        group,
-        expanded: isGroupExpanded,
-        borderBottom: isLastGroup || isGroupExpanded,
-      }),
-    );
+    // A journey has its header above the list, the walk is the whole list.
+    if (!journeyMode) {
+      rows.push(
+        createHeaderRow({
+          group,
+          expanded: isGroupExpanded,
+          borderBottom: isLastGroup || isGroupExpanded,
+        }),
+      );
+    }
 
     if (!isGroupExpanded) {
       return;
@@ -488,10 +491,15 @@ function getRowStatus(input: {
     : null;
 }
 
-function DiffName(props: { diff: Diff; result: DiffResult | null }) {
-  const { diff, result } = props;
+function DiffName(props: {
+  diff: Diff;
+  result: DiffResult | null;
+  /** What names the diff in place of its name, out of search. */
+  label?: string | undefined;
+}) {
+  const { diff, result, label } = props;
   if (!result) {
-    return diff.name;
+    return label ?? diff.name;
   }
   const start = Math.max(result.match.index, 0);
   const end = result.match.index + result.match.length;
@@ -513,6 +521,8 @@ const ListItem = memo(function ListItem(props: {
    * already says it.
    */
   listStatus: DiffGroupName | null;
+  /** The step a journey walk names the diff by. */
+  label: string | undefined;
   display: SnapshotDisplay;
   active: boolean;
   setActiveDiff: (diff: Diff) => void;
@@ -526,6 +536,7 @@ const ListItem = memo(function ListItem(props: {
     active,
     status,
     listStatus,
+    label,
     display,
     setActiveDiff,
     observer,
@@ -590,7 +601,7 @@ const ListItem = memo(function ListItem(props: {
               scroll, so the row's native title names the snapshot instead. */}
           {listStatus && <DiffStatusIcon group={listStatus} />}
           <div className="min-w-0 flex-1 truncate">
-            <DiffName diff={item.diff} result={item.result} />
+            <DiffName diff={item.diff} result={item.result} label={label} />
           </div>
           {subItemToggle}
         </ListItemButton>
@@ -611,7 +622,7 @@ const ListItem = memo(function ListItem(props: {
         >
           {listStatus && <DiffStatusIndicator group={listStatus} />}
           <DiffCardFooterText>
-            <DiffName diff={item.diff} result={item.result} />
+            <DiffName diff={item.diff} result={item.result} label={label} />
           </DiffCardFooterText>
           {subItemToggle && (
             <div className="shrink-0 py-2">{subItemToggle}</div>
@@ -773,6 +784,7 @@ const InternalBuildDiffList = memo(() => {
     grouping,
     diffs,
     journeyMode,
+    journeyStepLabels,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
   const [display] = useSnapshotDisplay();
@@ -1095,6 +1107,7 @@ const InternalBuildDiffList = memo(() => {
                           isSubsetBuild,
                           journeyMode,
                         })}
+                        label={journeyStepLabels.get(item.diff.id)}
                         display={display}
                       />
                     </div>

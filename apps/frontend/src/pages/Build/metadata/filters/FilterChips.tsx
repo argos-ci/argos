@@ -11,19 +11,27 @@ import { Truncable } from "@/ui/Truncable";
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterIcon } from "./FilterIcon";
 import { FilterStateContext, type FilterState } from "./FilterState";
-import { getFilterCategoryDefinition, type FilterGroup } from "./util";
+import {
+  FilterCategory,
+  getFilterCategoryDefinition,
+  type FilterGroup,
+} from "./util";
 
 export const FilterChips = memo(() => {
   const state = use(FilterStateContext);
   invariant(state, "Must be used in a filter context");
 
-  if (state.active.size === 0) {
+  // The journey a review walks has a header of its own above the list.
+  const filterGroups = Array.from(getActiveFilterGroups(state)).filter(
+    (filterGroup) => filterGroup.category !== FilterCategory.journey,
+  );
+  if (filterGroups.length === 0) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {Array.from(getActiveFilterGroups(state).values(), (filterGroup) => (
+      {filterGroups.map((filterGroup) => (
         <FilterChip
           key={filterGroup.category}
           filterGroup={filterGroup}

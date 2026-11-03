@@ -19,6 +19,7 @@ const _BuildFragment = graphql(`
       id
     }
     ...BuildSummary_Build
+    ...JourneysSection_Build
     ...ImpactAnalysisSection_Build
     ...ContextSection_Build
     ...DeploymentSection_Build
@@ -48,7 +49,7 @@ export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
         <div className="flex min-w-0 flex-1 justify-center">
           <main className="flex w-full max-w-3xl flex-col gap-10">
             <BuildSummary build={build} />
-            <JourneysSection storybook={build.storybook} />
+            <JourneysSection build={build} repoUrl={repoUrl} />
             <ImpactAnalysisSection build={build} repoUrl={repoUrl} />
           </main>
         </div>

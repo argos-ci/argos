@@ -13,17 +13,23 @@ export interface LocationChipProps extends Pick<
   tooltip?: string;
 }
 
+/** Where `location` reads in the repository, when the build knows it. */
+export function getLocationURL(
+  props: Pick<LocationChipProps, "location" | "repoUrl" | "branch">,
+): string | null {
+  const { location, repoUrl, branch } = props;
+  if (!location || !repoUrl || !branch) {
+    return null;
+  }
+  return `${repoUrl}/blob/${branch}/${location.file.replace(/^\/github\/workspace\//, "")}#L${location.line}`;
+}
+
 export function LocationChip(props: LocationChipProps) {
   const { repoUrl, branch, location, tooltip, ...rest } = props;
+  const href = getLocationURL({ location, repoUrl, branch });
 
-  if (location && repoUrl && branch) {
-    const link = (
-      <ChipLink
-        href={`${repoUrl}/blob/${branch}/${location.file.replace(/^\/github\/workspace\//, "")}#L${location.line}`}
-        target="_blank"
-        {...rest}
-      />
-    );
+  if (href) {
+    const link = <ChipLink href={href} target="_blank" {...rest} />;
     return tooltip ? <Tooltip content={tooltip}>{link}</Tooltip> : link;
   }
 

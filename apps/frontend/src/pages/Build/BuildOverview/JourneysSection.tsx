@@ -1,122 +1,218 @@
 import { useState } from "react";
+import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { WaypointsIcon } from "lucide-react";
+import { ChevronRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 
+import { DocumentType, graphql } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
+import { Tooltip } from "@/ui/Tooltip";
 
-import {
-  pickStepDiff,
-  useBuildDiffState,
-  useBuildJourneys,
-  type Diff,
-} from "../BuildDiffState";
 import { checkDiffNeedsAttention } from "../BuildJourneyDrawer";
 import { getBuildURL, useBuildParams } from "../BuildParams";
-import {
-  getJourneyRunHints,
-  type Journey,
-  type JourneyRunHint,
-} from "../journey-model";
+import { getJourneyRunHints, getJourneyTestKey } from "../journey-hints";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import { serializeJourneySearch } from "../metadata/filters/util";
 import { getViewportIconKind, viewportIcons } from "../metadata/metadataIcons";
-import { resolveDiffMetadata } from "../metadata/utils";
+import { formatViewport } from "../metadata/viewports/util";
+import { getLocationURL } from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
 
-const COLLAPSED_JOURNEY_COUNT = 6;
+const _BuildFragment = graphql(`
+  fragment JourneysSection_Build on Build {
+    subset
+    branch
+    journeys {
+      id
+      prefix
+      title
+      browser
+      viewport {
+        width
+        height
+      }
+      location {
+        file
+        line
+        column
+      }
+      steps {
+        key
+        diffs {
+          id
+          name
+          variantKey
+          status
+          ...ScreenshotDiffThumbnail_ScreenshotDiff
+        }
+      }
+    }
+  }
+`);
 
-type JourneyCardModel = {
-  journey: Journey<Diff>;
-  /** Which steps the strip marks, in step order. */
-  attention: boolean[];
-  /** The screen the card shows: the first one that changed. */
-  coverDiff: Diff;
-  /** The first screen of the journey, in the variant of the cover. */
-  startDiff: Diff;
-  /** What tells it apart from the journeys under the same title. */
-  hint: JourneyRunHint | null;
+type Build = DocumentType<typeof _BuildFragment>;
+type Journey = Build["journeys"][number];
+type JourneyDiff = Journey["steps"][number]["diffs"][number];
+
+const COLLAPSED_TEST_COUNT = 5;
+
+type JourneyScreen = {
+  label: string;
+  /** The step's screenshot in the variant the run shows. */
+  diff: JourneyDiff;
+  changed: boolean;
 };
 
-function getJourneyCardModel(
-  journey: Journey<Diff>,
-  context: { isSubsetBuild: boolean; hint: JourneyRunHint | null },
-): JourneyCardModel {
-  const attention = journey.steps.map((step) =>
-    step.diffs.some((diff) => checkDiffNeedsAttention(diff, context)),
+type JourneyRun = {
+  journey: Journey;
+  screens: JourneyScreen[];
+  changedCount: number;
+  /** The browser, when the other runs of the test use another one. */
+  browser: string | null;
+};
+
+type JourneyTest = {
+  key: string;
+  prefix: string;
+  title: string;
+  location: Journey["location"];
+  runs: JourneyRun[];
+  changedCount: number;
+};
+
+function getJourneyRun(
+  journey: Journey,
+  context: { isSubsetBuild: boolean; browser: string | null },
+): JourneyRun {
+  const needsAttention = (diff: JourneyDiff) =>
+    checkDiffNeedsAttention(diff, context);
+  const steps = journey.steps.map((step) => ({
+    step,
+    changed: step.diffs.some(needsAttention),
+  }));
+  // One variant all along, the one of the first change, so the strip reads
+  // as the screens a user went through.
+  const reference =
+    journey.steps.flatMap((step) => step.diffs).find(needsAttention) ??
+    journey.steps[0]?.diffs[0];
+  invariant(reference, "a journey has at least one screenshot");
+  const signature = getVariantSignature(reference);
+  const screens = steps.map(({ step, changed }) => {
+    const diff =
+      step.diffs.find((diff) => getVariantSignature(diff) === signature) ??
+      step.diffs[0];
+    invariant(diff, "a journey step has at least one screenshot");
+    return { label: getStepLabel(step.key), diff, changed };
+  });
+  return {
+    journey,
+    screens,
+    changedCount: screens.filter((screen) => screen.changed).length,
+    browser: context.browser,
+  };
+}
+
+/** The tests of the build, their runs together, the most changed first. */
+function getJourneyTests(
+  journeys: Journey[],
+  context: { isSubsetBuild: boolean },
+): JourneyTest[] {
+  const hints = getJourneyRunHints(journeys);
+  const tests = new Map<string, JourneyTest>();
+  for (const journey of journeys) {
+    const key = getJourneyTestKey(journey);
+    const test = tests.get(key) ?? {
+      key,
+      prefix: journey.prefix,
+      title: journey.title,
+      location: journey.location,
+      runs: [],
+      changedCount: 0,
+    };
+    tests.set(key, test);
+    const run = getJourneyRun(journey, {
+      ...context,
+      browser: hints.get(journey.id)?.browser ?? null,
+    });
+    test.runs.push(run);
+    test.changedCount += run.changedCount;
+  }
+  return Array.from(tests.values()).sort(
+    (a, b) => b.changedCount - a.changedCount || a.key.localeCompare(b.key),
   );
-  const coverStep = journey.steps[Math.max(attention.indexOf(true), 0)];
-  const coverDiff =
-    coverStep?.diffs.find((diff) => checkDiffNeedsAttention(diff, context)) ??
-    coverStep?.diffs[0];
-  invariant(coverDiff, "a journey step has at least one screenshot");
-  const [firstStep] = journey.steps;
-  invariant(firstStep, "a journey has at least one step");
-  const startDiff = pickStepDiff(firstStep, coverDiff);
-  invariant(startDiff, "a journey step has at least one screenshot");
-  return { journey, attention, coverDiff, startDiff, hint: context.hint };
+}
+
+function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 /**
- * The build's journeys, a card each, the ones that changed first. A card opens
- * the build on the journey's first screen with the journey filter on, so the
- * review walks it screen by screen, the way a user clicks through the app.
+ * The build's end-to-end tests that walk several screens, each run as a strip
+ * of its screens. A run opens the build on its first screen with the journey
+ * filter on, a screen opens it on that screen: the review then walks the
+ * journey screen by screen, the way a user clicks through the app.
  */
-export function JourneysSection(props: { storybook: boolean }) {
-  const { isLoading, isSubsetBuild } = useBuildDiffState();
-  const journeys = useBuildJourneys();
+export function JourneysSection(props: {
+  build: Build;
+  repoUrl: string | null;
+}) {
+  const { build, repoUrl } = props;
   const [expanded, setExpanded] = useState(false);
   const [showUnchanged, setShowUnchanged] = useState(false);
-  // Journeys are read from the whole list: until it has loaded, cards would
-  // keep appearing and moving.
-  if (props.storybook || isLoading || journeys.length === 0) {
+  if (build.journeys.length === 0) {
     return null;
   }
-  const runHints = getJourneyRunHints(journeys, resolveDiffMetadata);
-  const cards = journeys.map((journey) =>
-    getJourneyCardModel(journey, {
-      isSubsetBuild,
-      hint: runHints.get(journey.identity.key) ?? null,
-    }),
-  );
-  const changed = cards.filter((card) => card.attention.includes(true));
-  const unchanged = cards.filter((card) => !card.attention.includes(true));
-  const collapsible = changed.length > COLLAPSED_JOURNEY_COUNT + 1;
-  const visible = [
-    ...(collapsible && !expanded
-      ? changed.slice(0, COLLAPSED_JOURNEY_COUNT)
-      : changed),
-    ...(showUnchanged ? unchanged : []),
-  ];
+  const tests = getJourneyTests(build.journeys, {
+    isSubsetBuild: build.subset,
+  });
+  const changed = tests.filter((test) => test.changedCount > 0);
+  const unchanged = tests.filter((test) => test.changedCount === 0);
+  // With nothing changed, the unchanged journeys are all there is to walk.
+  const listed = showUnchanged || changed.length === 0 ? tests : changed;
+  const collapsible = listed.length > COLLAPSED_TEST_COUNT + 1;
+  const visible =
+    collapsible && !expanded ? listed.slice(0, COLLAPSED_TEST_COUNT) : listed;
+  const hiddenUnchangedCount = listed === changed ? unchanged.length : 0;
   return (
-    <Panel elevation={0}>
+    <Panel elevation={0} className="pb-1">
       <PanelHeader className="mb-2">
         <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
+        <span className="text-low text-xs tabular-nums">
+          {plural(tests.length, "test")}
+          {build.journeys.length > tests.length
+            ? ` · ${plural(build.journeys.length, "run")}`
+            : null}
+        </span>
       </PanelHeader>
-      {visible.length > 0 ? (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(13rem,100%),1fr))] gap-3 px-2">
-          {visible.map((card) => (
-            <li key={card.journey.identity.key} className="min-w-0">
-              <JourneyCard card={card} />
-            </li>
-          ))}
-        </ul>
+      <ul>
+        {visible.map((test) => (
+          <JourneyTestItem
+            key={test.key}
+            test={test}
+            href={getLocationURL({
+              location: test.location,
+              repoUrl,
+              branch: build.branch,
+            })}
+          />
+        ))}
+      </ul>
+      {(collapsible && !expanded) || hiddenUnchangedCount > 0 ? (
+        <div className="border-t-thin flex flex-wrap gap-2 px-2 pt-2.5 pb-2">
+          {collapsible && !expanded ? (
+            <SectionButton onClick={() => setExpanded(true)}>
+              Show {plural(listed.length - visible.length, "more test")}
+            </SectionButton>
+          ) : null}
+          {hiddenUnchangedCount > 0 ? (
+            <SectionButton onClick={() => setShowUnchanged(true)}>
+              Show {plural(hiddenUnchangedCount, "unchanged test")}
+            </SectionButton>
+          ) : null}
+        </div>
       ) : null}
-      <div className="mx-2 mt-3 flex flex-wrap gap-2 empty:hidden">
-        {collapsible && !expanded ? (
-          <SectionButton onClick={() => setExpanded(true)}>
-            View all {changed.length} journeys
-          </SectionButton>
-        ) : null}
-        {unchanged.length > 0 && !showUnchanged ? (
-          <SectionButton onClick={() => setShowUnchanged(true)}>
-            Show {unchanged.length} unchanged{" "}
-            {unchanged.length === 1 ? "journey" : "journeys"}
-          </SectionButton>
-        ) : null}
-      </div>
     </Panel>
   );
 }
@@ -136,73 +232,144 @@ function SectionButton(props: {
   );
 }
 
-function JourneyCard(props: { card: JourneyCardModel }) {
-  const { journey, attention, coverDiff, startDiff, hint } = props.card;
-  const params = useBuildParams();
-  invariant(params, "a journey card is rendered on a build page");
-  const changedCount = attention.filter(Boolean).length;
-  const stepCount = journey.steps.length;
-  const viewportWidth = resolveDiffMetadata(coverDiff)?.viewport?.width;
-  const ViewportIcon =
-    viewportWidth !== undefined
-      ? viewportIcons[getViewportIconKind(viewportWidth)]
-      : null;
+function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
+  const { test, href } = props;
   return (
-    <HeadlessLink
-      href={serializeJourneySearch(
-        getBuildURL({ ...params, diffId: startDiff.id }),
-        { journey: new Set([journey.identity.key]) },
-      )}
-      className="border-thin bg-app hover:bg-subtle flex flex-col gap-2 rounded-md p-2 transition"
-    >
-      <ScreenshotDiffThumbnail
-        screenshotDiff={coverDiff}
-        className="h-28 w-full"
-        iconClassName="mx-auto my-10 size-8"
-        fit="cover"
-        // A top crop at 2x the rendered box, like the journey strip.
-        transformations={["w-512", "h-224", "fo-top"]}
-      />
-      <div className="flex flex-col gap-1.5 px-0.5">
-        <div className="min-w-0">
-          {journey.identity.prefix ? (
-            <div className="text-low truncate text-xs">
-              {journey.identity.prefix}
-            </div>
+    <li className="border-t-thin px-4 pt-3 pb-2.5">
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          {test.prefix ? (
+            href ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-low hover:text-default inline-flex max-w-full items-center gap-1 text-xs transition"
+              >
+                <FileCodeIcon className="size-3.5 shrink-0" />
+                <span className="truncate">{test.prefix}</span>
+              </a>
+            ) : (
+              <div className="text-low truncate text-xs">{test.prefix}</div>
+            )
           ) : null}
-          <div className="flex items-center gap-1.5">
-            {hint?.browser ? (
-              <BrowserIcon
-                browser={{ name: hint.browser }}
-                className="size-3.5 shrink-0"
-                title={getBrowserLabel(hint.browser)}
-              />
-            ) : null}
-            {ViewportIcon ? (
-              <ViewportIcon className="text-low size-3.5 shrink-0" />
-            ) : null}
-            <span className="truncate text-sm font-medium">
-              {journey.identity.title}
-            </span>
-          </div>
+          <h3 className="mt-0.5 text-sm/snug font-medium">{test.title}</h3>
         </div>
-        <div className="flex gap-0.5" aria-hidden>
-          {attention.map((marked, index) => (
-            <span
-              key={journey.steps[index]?.key ?? index}
-              className={clsx(
-                "h-1 min-w-0 flex-1 rounded-full",
-                marked ? "bg-warning-solid" : "bg-ui",
-              )}
-            />
-          ))}
-        </div>
-        <div className="text-low text-xs tabular-nums">
-          {changedCount > 0
-            ? `${changedCount} of ${stepCount} screens changed`
-            : `${stepCount} screens`}
-        </div>
+        {test.changedCount > 0 ? (
+          <span className="text-low shrink-0 pt-4 text-xs tabular-nums">
+            {plural(test.changedCount, "change")}
+          </span>
+        ) : null}
       </div>
-    </HeadlessLink>
+      <ul className="mt-2 flex flex-col gap-0.5">
+        {test.runs.map((run) => (
+          <JourneyRunRow key={run.journey.id} run={run} title={test.title} />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
+/**
+ * A screen's box in the strip: the first screen as the run saw it, at the
+ * viewport's shape, so a phone run reads as phone screens.
+ */
+function getScreenSize(viewport: Journey["viewport"]): {
+  width: number;
+  height: number;
+} {
+  if (!viewport) {
+    return { width: 48, height: 32 };
+  }
+  const height = viewport.height > viewport.width ? 68 : 32;
+  return {
+    width: Math.round((height * viewport.width) / viewport.height),
+    height,
+  };
+}
+
+function JourneyRunRow(props: { run: JourneyRun; title: string }) {
+  const { run, title } = props;
+  const params = useBuildParams();
+  invariant(params, "a journey is rendered on a build page");
+  const { journey, screens, changedCount, browser } = run;
+  const getHref = (diff: JourneyDiff) =>
+    serializeJourneySearch(getBuildURL({ ...params, diffId: diff.id }), {
+      journey: new Set([journey.id]),
+    });
+  const [firstScreen] = screens;
+  invariant(firstScreen, "a journey has at least one screen");
+  const ViewportIcon = journey.viewport
+    ? viewportIcons[getViewportIconKind(journey.viewport.width)]
+    : null;
+  const size = getScreenSize(journey.viewport);
+  return (
+    <li className="hover:bg-subtle relative -mx-2 grid grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-1 transition">
+      {/* The whole row walks the journey from its start; each screen is a
+          link of its own, above it. */}
+      <HeadlessLink
+        href={getHref(firstScreen.diff)}
+        aria-label={`Walk “${title}”${journey.viewport ? ` at ${formatViewport(journey.viewport)}` : ""}`}
+        className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
+      >
+        {browser ? (
+          <BrowserIcon
+            browser={{ name: browser }}
+            className="size-3.5 shrink-0"
+            title={getBrowserLabel(browser)}
+          />
+        ) : null}
+        {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
+        <span className="truncate">
+          {journey.viewport
+            ? formatViewport(journey.viewport)
+            : browser
+              ? getBrowserLabel(browser)
+              : "Run"}
+        </span>
+      </HeadlessLink>
+      <div className="flex min-w-0 [scrollbar-width:none] items-end gap-1.5 overflow-x-auto pt-1.5 pr-1.5 pb-0.5">
+        {screens.map((screen, index) => (
+          <Tooltip
+            key={screen.diff.id}
+            content={`${index + 1} · ${screen.label}`}
+          >
+            <HeadlessLink
+              href={getHref(screen.diff)}
+              aria-label={`Screen ${index + 1}, ${screen.label}${screen.changed ? ", changed" : ""}`}
+              className="focus-ring relative z-1 block shrink-0 rounded-sm"
+              style={size}
+            >
+              <ScreenshotDiffThumbnail
+                screenshotDiff={screen.diff}
+                className={clsx("size-full", !screen.changed && "opacity-50")}
+                iconClassName="m-auto size-4"
+                fit="cover"
+                // A top crop at 2x the box: the screen as it first showed.
+                transformations={[
+                  `w-${size.width * 2}`,
+                  `h-${size.height * 2}`,
+                  "fo-top",
+                ]}
+              />
+              {screen.changed ? (
+                <span className="bg-warning-solid absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-(--background-color-app)" />
+              ) : null}
+            </HeadlessLink>
+          </Tooltip>
+        ))}
+      </div>
+      <span
+        className={clsx(
+          "flex items-center gap-1 text-xs font-medium whitespace-nowrap tabular-nums",
+          changedCount > 0 ? "text-warning-low" : "text-low",
+        )}
+      >
+        {changedCount > 0
+          ? `${changedCount} of ${screens.length} changed`
+          : plural(screens.length, "screen")}
+        <ChevronRightIcon className="text-low size-3.5" />
+      </span>
+    </li>
   );
 }

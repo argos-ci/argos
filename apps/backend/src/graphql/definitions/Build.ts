@@ -8,6 +8,7 @@ import {
   type BuildBaselineIneligibilityReason,
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
+import { getBuildJourneys } from "@/build/journeys";
 import { getNewerBuild } from "@/build/lineage";
 import { getBuildPullRequestStack } from "@/build/pull-request-stack";
 import { getSiblingBuilds } from "@/build/siblings";
@@ -168,6 +169,34 @@ export const typeDefs = gql`
     impactAnalysis: BuildImpactAnalysis
     "Indicates whether the build contains Storybook screenshots"
     storybook: Boolean!
+    "Runs of end-to-end tests that capture several screens, a journey each"
+    journeys: [BuildJourney!]!
+  }
+
+  "A run of an end-to-end test that captures several screens"
+  type BuildJourney {
+    "Short id, unique in the build"
+    id: ID!
+    "Test file and describe blocks the test sits in"
+    prefix: String!
+    "Title of the test"
+    title: String!
+    "Source location of the test"
+    location: ScreenshotMetadataLocation
+    "Browser the run took its screenshots in"
+    browser: String
+    "Viewport the run took its screenshots at"
+    viewport: ScreenshotMetadataViewport
+    "Screens of the journey, in capture order"
+    steps: [BuildJourneyStep!]!
+  }
+
+  "A screen of a journey"
+  type BuildJourneyStep {
+    "Variant key shared by the screenshots of the screen"
+    key: String!
+    "Screenshots of the screen, a variant each (viewport, color scheme…)"
+    diffs: [ScreenshotDiff!]!
   }
 
   "Whether a build is eligible to be used as a baseline, with the reasons when it is not."
@@ -525,6 +554,7 @@ export const resolvers: IResolvers = {
       }
       return getBuildImpactAnalysis(build);
     },
+    journeys: async (build) => getBuildJourneys(build),
     storybook: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.storybookScreenshotCount > 0;
@@ -590,6 +620,18 @@ export const resolvers: IResolvers = {
           (reason) => baselineIneligibilityReasonMap[reason],
         ),
       };
+    },
+  },
+  BuildJourneyStep: {
+    diffs: async (step, _args, ctx) => {
+      const diffs = await ctx.loaders.ScreenshotDiff.loadMany(step.diffIds);
+      return diffs.map((diff) => {
+        invariant(
+          diff && !(diff instanceof Error),
+          "Screenshot diff not found",
+        );
+        return diff;
+      });
     },
   },
 };

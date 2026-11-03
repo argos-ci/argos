@@ -192,87 +192,23 @@ export function groupWalkableJourneys<T extends { variantKey: string }>(
   );
 }
 
-type JourneyRunMetadata = {
-  browser?: { name: string } | null;
-  viewport?: { width: number; height: number } | null;
-} | null;
-
-export type JourneyRunHint = {
-  browser: string | null;
-  viewport: { width: number; height: number } | null;
-};
-
 /**
- * What tells apart the journeys that share a title, by journey key. A test run
- * by several Playwright projects is a journey per project, and projects differ
- * by browser, by viewport or both: only what differs among the journeys of one
- * title is kept, so a journey alone under its title gets no hint.
+ * The screenshots of `steps` in the order a review walks them: one variant at
+ * a time, step by step. A variant is walked whole before the next one, so the
+ * screens follow each other on one viewport and scheme, the way someone
+ * clicking through the app would see them.
  */
-export function getJourneyRunHints<T>(
-  journeys: readonly Journey<T>[],
-  getMetadata: (item: T) => JourneyRunMetadata,
-): Map<string, JourneyRunHint> {
-  const runsByTitle = new Map<
-    string,
-    {
-      key: string;
-      browser: string | null;
-      viewport: JourneyRunHint["viewport"];
-    }[]
-  >();
-  for (const { identity, steps } of journeys) {
-    const firstItem = steps[0]?.diffs[0];
-    const metadata = firstItem === undefined ? null : getMetadata(firstItem);
-    const titleKey = `${identity.prefix} › ${identity.title}`;
-    const runs = runsByTitle.get(titleKey) ?? [];
-    runsByTitle.set(titleKey, runs);
-    runs.push({
-      key: identity.key,
-      browser: metadata?.browser?.name ?? null,
-      viewport: metadata?.viewport ?? null,
-    });
-  }
-  const hints = new Map<string, JourneyRunHint>();
-  for (const runs of runsByTitle.values()) {
-    const browserDiffers = new Set(runs.map((run) => run.browser)).size > 1;
-    const viewportDiffers =
-      new Set(
-        runs.map((run) =>
-          run.viewport ? `${run.viewport.width}x${run.viewport.height}` : null,
-        ),
-      ).size > 1;
-    for (const run of runs) {
-      hints.set(run.key, {
-        browser: browserDiffers ? run.browser : null,
-        viewport: viewportDiffers ? run.viewport : null,
-      });
-    }
-  }
-  return hints;
-}
-
-/**
- * `items` in the order their journeys walk them: journey by journey, then one
- * variant at a time, step by step. A variant is walked whole before the next
- * one, so the screens follow each other on one viewport and scheme, the way
- * someone clicking through the app would see them. Items without journey
- * information come last, in their own order.
- */
-export function sortAlongJourneys<
+export function walkJourneySteps<
   T extends { name: string; variantKey: string },
->(items: readonly T[], getMetadata: (item: T) => JourneyMetadata): T[] {
-  const sorted = groupJourneys(items, getMetadata).flatMap((journey) => {
-    const variants = new Map<string, T[]>();
-    for (const step of journey.steps) {
-      for (const item of step.diffs) {
-        const signature = getVariantSignature(item);
-        const variant = variants.get(signature) ?? [];
-        variants.set(signature, variant);
-        variant.push(item);
-      }
+>(steps: readonly { diffs: readonly T[] }[]): T[] {
+  const variants = new Map<string, T[]>();
+  for (const step of steps) {
+    for (const item of step.diffs) {
+      const signature = getVariantSignature(item);
+      const variant = variants.get(signature) ?? [];
+      variants.set(signature, variant);
+      variant.push(item);
     }
-    return Array.from(variants.values()).flat();
-  });
-  const placed = new Set(sorted);
-  return [...sorted, ...items.filter((item) => !placed.has(item))];
+  }
+  return Array.from(variants.values()).flat();
 }

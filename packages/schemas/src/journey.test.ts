@@ -4,14 +4,13 @@ import {
   compareSteps,
   getCaptureIndex,
   getStepLabel,
-  getJourneyRunHints,
   getVariantSignature,
   groupWalkableJourneys,
   resolveJourneyIdentity,
   resolveTestIdentity,
-  sortAlongJourneys,
+  walkJourneySteps,
   type JourneyMetadata,
-} from "./journey-model";
+} from "./journey";
 
 describe("#resolveTestIdentity", () => {
   it("merges the runs of one test", () => {
@@ -213,100 +212,25 @@ describe("#groupWalkableJourneys", () => {
   });
 });
 
-describe("#sortAlongJourneys", () => {
+describe("#walkJourneySteps", () => {
   it("walks one variant at a time, step by step", () => {
-    const items = [
-      screen("checkout/payment dark", "checkout/payment", checkout(1)),
-      screen("checkout/cart light", "checkout/cart", checkout(0)),
-      screen("checkout/payment light", "checkout/payment", checkout(1)),
-      screen("checkout/cart dark", "checkout/cart", checkout(0)),
-    ];
+    const [journey] = groupWalkableJourneys(
+      [
+        screen("checkout/payment dark", "checkout/payment", checkout(1)),
+        screen("checkout/cart light", "checkout/cart", checkout(0)),
+        screen("checkout/payment light", "checkout/payment", checkout(1)),
+        screen("checkout/cart dark", "checkout/cart", checkout(0)),
+      ],
+      (item) => item.metadata,
+    );
+    expect(journey).toBeDefined();
     expect(
-      sortAlongJourneys(items, (item) => item.metadata).map(
-        (item) => item.name,
-      ),
+      walkJourneySteps(journey?.steps ?? []).map((item) => item.name),
     ).toEqual([
       "checkout/cart light",
       "checkout/payment light",
       "checkout/cart dark",
       "checkout/payment dark",
     ]);
-  });
-
-  it("walks the journeys in the order they come in", () => {
-    const signup = (index: number) => ({
-      test: { id: "signup", titlePath: ["signup.spec.ts", "sign up"] },
-      capture: { index },
-    });
-    const items = [
-      screen("signup/welcome", "signup/welcome", signup(1)),
-      screen("checkout/cart", "checkout/cart", checkout(0)),
-      screen("signup/form", "signup/form", signup(0)),
-      screen("loose", "loose", null),
-      screen("checkout/payment", "checkout/payment", checkout(1)),
-    ];
-    expect(
-      sortAlongJourneys(items, (item) => item.metadata).map(
-        (item) => item.name,
-      ),
-    ).toEqual([
-      "signup/form",
-      "signup/welcome",
-      "checkout/cart",
-      "checkout/payment",
-      "loose",
-    ]);
-  });
-});
-
-describe("#getJourneyRunHints", () => {
-  type Run = Screen & {
-    browser: { name: string };
-    viewport: { width: number; height: number };
-  };
-  const run = (
-    id: string,
-    titlePath: string[],
-    browser: string,
-    width: number,
-  ): Run[] =>
-    ["a", "b"].map((step, index) => ({
-      name: `${id}/${step}`,
-      variantKey: step,
-      metadata: { test: { id, titlePath }, capture: { index } },
-      browser: { name: browser },
-      viewport: { width, height: 720 },
-    }));
-  const getHints = (items: Run[]) =>
-    getJourneyRunHints(
-      groupWalkableJourneys(items, (item) => item.metadata),
-      (item) => item,
-    );
-
-  it("keeps what differs among the runs of one test", () => {
-    const hints = getHints([
-      ...run("chromium", ["a.spec.ts", "buy"], "chromium", 1280),
-      ...run("firefox", ["a.spec.ts", "buy"], "firefox", 1280),
-      ...run("mobile", ["a.spec.ts", "buy"], "chromium", 375),
-    ]);
-    expect(hints.get("a.spec.ts › buy#chromium")).toEqual({
-      browser: "chromium",
-      viewport: { width: 1280, height: 720 },
-    });
-    expect(hints.get("a.spec.ts › buy#firefox")).toEqual({
-      browser: "firefox",
-      viewport: { width: 1280, height: 720 },
-    });
-  });
-
-  it("gives no hint to a journey alone under its title", () => {
-    const hints = getHints([
-      ...run("chromium", ["a.spec.ts", "buy"], "chromium", 1280),
-      ...run("signup", ["b.spec.ts", "sign up"], "firefox", 375),
-    ]);
-    expect(hints.get("a.spec.ts › buy#chromium")).toEqual({
-      browser: null,
-      viewport: null,
-    });
   });
 });

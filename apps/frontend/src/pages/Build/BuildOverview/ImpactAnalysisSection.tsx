@@ -5,11 +5,17 @@ import { DocumentType, graphql } from "@/gql";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Truncable } from "@/ui/Truncable";
 
+import { getJourneyTestKey } from "../journey-hints";
 import { LocationChip } from "../sidebar/metadata/LocationChip";
 
 const _BuildFragment = graphql(`
   fragment ImpactAnalysisSection_Build on Build {
     branch
+    journeys {
+      id
+      prefix
+      title
+    }
     impactAnalysis {
       affectedComponents {
         name
@@ -106,8 +112,8 @@ function AffectedItemsSection(props: {
 
 /**
  * Surfaces the entities most impacted by the build's changes: Storybook
- * components when available, otherwise end-to-end tests. Renders nothing when
- * neither is present.
+ * components when available, otherwise the end-to-end tests the journeys
+ * section does not show. Renders nothing when neither is present.
  */
 export function ImpactAnalysisSection(props: {
   build: Build;
@@ -116,7 +122,11 @@ export function ImpactAnalysisSection(props: {
   const { build, repoUrl } = props;
   const analysis = build.impactAnalysis;
   const components = analysis?.affectedComponents ?? [];
-  const tests = analysis?.affectedTests ?? [];
+  // The journeys section shows the tests that walk several screens.
+  const journeyTests = new Set(build.journeys.map(getJourneyTestKey));
+  const tests = (analysis?.affectedTests ?? []).filter(
+    (test) => !journeyTests.has(test.name),
+  );
   const showComponents = components.length > 0;
   const showTests = !showComponents && tests.length > 0;
 

@@ -166,7 +166,9 @@ function countTests(rows: AffectedRow[]): BuildImpactItem[] {
 }
 
 /** Build a location from an affected row, or null when it lacks a usable one. */
-function parseLocation(row: AffectedRow): ImpactItemLocation | null {
+export function parseLocation(
+  row: Pick<AffectedRow, "testFile" | "testLine" | "testColumn">,
+): ImpactItemLocation | null {
   if (row.testFile === null || row.testLine === null) {
     return null;
   }
