@@ -35,6 +35,7 @@ export class TeamScimUser extends Model {
           givenName: { type: ["string", "null"], maxLength: 255 },
           familyName: { type: ["string", "null"], maxLength: 255 },
           active: { type: "boolean" },
+          userCreated: { type: "boolean" },
           role: {
             type: ["string", "null"],
             enum: [...TeamUserLevelSchema.options, null],
@@ -53,6 +54,12 @@ export class TeamScimUser extends Model {
   givenName!: string | null;
   familyName!: string | null;
   active!: boolean;
+  /**
+   * Whether this provisioning created the Argos account, rather than linking
+   * one that already existed. Only then may the team's IdP sign in to it
+   * without the person proving they own it.
+   */
+  userCreated!: boolean;
   role!: z.infer<typeof TeamUserLevelSchema> | null;
 
   static override get relationMappings(): RelationMappings {

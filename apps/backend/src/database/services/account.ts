@@ -18,6 +18,7 @@ import type { GitlabUser } from "../models/GitlabUser";
 import { GoogleUser } from "../models/GoogleUser";
 import { Team } from "../models/Team";
 import { TeamInvite } from "../models/TeamInvite";
+import { TeamScimUser } from "../models/TeamScimUser";
 import { TeamUser } from "../models/TeamUser";
 import { User } from "../models/User";
 import { transaction } from "../transaction";
@@ -120,10 +121,19 @@ export async function joinSSOTeams(input: {
   }
 }
 
+async function checkScimCreatedUser(args: { teamId: string; userId: string }) {
+  const scimUser = await TeamScimUser.query()
+    .select("id")
+    .findOne({ teamId: args.teamId, userId: args.userId, userCreated: true });
+  return Boolean(scimUser);
+}
+
 export async function getOrCreateUserAccountFromSaml(input: {
   email: string;
   teamAccount: Account;
   ssoSubject: string;
+  /** The user of the session the SAML login completes in, if any. */
+  signedInUserId: string | null;
 }): Promise<Account> {
   const email = sanitizeEmail(input.email);
   const now = new Date().toISOString();
@@ -153,6 +163,24 @@ export async function getOrCreateUserAccountFromSaml(input: {
       lastAuthMethod: "saml",
     });
     return teamUser.user.account;
+  }
+
+  // The IdP is configured by the team, so it vouches for whatever email its
+  // admin wants: trusting it with an account that already exists would let any
+  // team sign in as anyone. Such an account is only linked once its owner has
+  // proven it is theirs — by being signed in to it — or when this team's SCIM
+  // created it in the first place.
+  const existingUser = await findUserByVerifiedEmail(email);
+  if (
+    existingUser &&
+    existingUser.id !== input.signedInUserId &&
+    !(await checkScimCreatedUser({ teamId, userId: existingUser.id }))
+  ) {
+    throw boom(
+      403,
+      `An Argos account already uses ${email}. Log in to it the way you usually do, then sign in with SAML again to link it.`,
+      { code: "SAML_ACCOUNT_LINK_REQUIRED" },
+    );
   }
 
   const { user, account } = await getOrCreateUserByVerifiedEmail(email);

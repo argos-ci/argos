@@ -12,7 +12,6 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { Account } from "@/database/models";
-import { getOrCreateUserAccountFromSaml } from "@/database/services/account";
 import { boom } from "@/util/error";
 
 import { asyncHandler } from "./util";
@@ -122,15 +121,13 @@ router.post(
       throw boom(401, "No email attribute found in SAML response.");
     }
 
-    const userAccount = await getOrCreateUserAccountFromSaml({
-      email,
-      teamAccount: account,
-      ssoSubject: parsed.subject ?? email,
-    });
-
+    // The account is resolved when the code is exchanged, not here: this POST
+    // comes from the IdP's page, so the browser sends no session cookie, and
+    // whether the person is signed in decides which account they may link.
     const code = await createSamlAuthCode({
-      accountId: userAccount.id,
-      teamSlug,
+      teamAccountId: account.id,
+      email,
+      ssoSubject: parsed.subject ?? email,
       redirect: parsed.redirect,
     });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));

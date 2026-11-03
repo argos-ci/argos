@@ -14,6 +14,7 @@ import {
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
+  getOrCreateUserAccountFromSaml,
   joinSSOTeams,
 } from "@/database/services/account";
 import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
@@ -204,13 +205,20 @@ router.use(
       });
       return;
     }
-    const account = await AccountModel.query()
-      .findById(payload.accountId)
-      .throwIfNotFound();
+    const [auth, teamAccount] = await Promise.all([
+      safeSessionAuthFromExpressReq(req),
+      AccountModel.query().findById(payload.teamAccountId).throwIfNotFound(),
+    ]);
+    const account = await getOrCreateUserAccountFromSaml({
+      email: payload.email,
+      teamAccount,
+      ssoSubject: payload.ssoSubject,
+      signedInUserId: auth?.user.id ?? null,
+    });
     invariant(account.userId, "Expected account to have userId");
     // Not `completeLogin`: SAML answers with a redirect rather than an
-    // AuthPayload, and `lastAuthMethod` is already recorded as "saml" when the
-    // assertion is consumed.
+    // AuthPayload, and `getOrCreateUserAccountFromSaml` already recorded
+    // `lastAuthMethod` as "saml".
     await startSession(req, res, account.userId);
     res.send({
       redirect: payload.redirect,

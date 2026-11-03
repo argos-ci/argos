@@ -7,6 +7,7 @@ import {
   type Account,
   GithubAccount,
   TeamInvite,
+  TeamScimUser,
   TeamUser,
   User,
   UserEmail,
@@ -61,7 +62,27 @@ async function findTeamUser(args: { teamAccount: Account; userId: string }) {
 
 describe("getOrCreateUserAccountFromSaml", () => {
   withAccounts(
-    "links the user holding the email verified",
+    "refuses to sign in to the user holding the email verified",
+    async ({ teamAccount, userAccount }) => {
+      invariant(userAccount.userId, "user account has no user");
+      await addEmail({ account: userAccount, verified: true });
+
+      await expect(
+        getOrCreateUserAccountFromSaml({
+          email: EMAIL,
+          teamAccount,
+          ssoSubject: SSO_SUBJECT,
+          signedInUserId: null,
+        }),
+      ).rejects.toMatchObject({ code: "SAML_ACCOUNT_LINK_REQUIRED" });
+      expect(
+        await findTeamUser({ teamAccount, userId: userAccount.userId }),
+      ).toBeUndefined();
+    },
+  );
+
+  withAccounts(
+    "links the user holding the email verified once signed in to it",
     async ({ teamAccount, userAccount }) => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: true });
@@ -70,12 +91,52 @@ describe("getOrCreateUserAccountFromSaml", () => {
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,
+        signedInUserId: userAccount.userId,
       });
 
       expect(account.id).toBe(userAccount.id);
       expect(
         await findTeamUser({ teamAccount, userId: userAccount.userId }),
       ).toMatchObject({ ssoSubject: SSO_SUBJECT });
+    },
+  );
+
+  describe.each([
+    { userCreated: true, links: true },
+    { userCreated: false, links: false },
+  ])(
+    "when the team's SCIM provisioned the user holding the email verified (userCreated: $userCreated)",
+    ({ userCreated, links }) => {
+      withAccounts(
+        links ? "links it" : "refuses to sign in to it",
+        async ({ teamAccount, userAccount }) => {
+          invariant(teamAccount.teamId, "team account has no team");
+          invariant(userAccount.userId, "user account has no user");
+          await addEmail({ account: userAccount, verified: true });
+          await TeamScimUser.query().insert({
+            teamId: teamAccount.teamId,
+            userId: userAccount.userId,
+            userName: EMAIL,
+            active: true,
+            userCreated,
+          });
+
+          const result = getOrCreateUserAccountFromSaml({
+            email: EMAIL,
+            teamAccount,
+            ssoSubject: SSO_SUBJECT,
+            signedInUserId: null,
+          });
+
+          if (links) {
+            expect((await result).id).toBe(userAccount.id);
+          } else {
+            await expect(result).rejects.toMatchObject({
+              code: "SAML_ACCOUNT_LINK_REQUIRED",
+            });
+          }
+        },
+      );
     },
   );
 
@@ -89,6 +150,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,
+        signedInUserId: null,
       });
 
       expect(account.id).not.toBe(userAccount.id);
@@ -121,6 +183,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,
+        signedInUserId: null,
       });
 
       invariant(account.userId, "account has no user");
