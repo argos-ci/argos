@@ -22,6 +22,7 @@ import {
   Project,
   UserAccessToken,
   type Account,
+  type ProjectPermission,
 } from "@/database/models";
 import { boom } from "@/util/error";
 
@@ -119,12 +120,66 @@ export async function getAuthPayloadFromExpressReq(
   return auth;
 }
 
+/**
+ * What a route needs on the project it resolves: the permission the user must
+ * hold, and the message of the 403 they get without it.
+ *
+ * The project loaders take one, or `null` when the route authorizes the user
+ * itself — usually through a service shared with the GraphQL API, which
+ * checks a stronger permission than `view` on its own.
+ */
+export type ProjectAccess = {
+  permission: ProjectPermission;
+  message: string;
+  /**
+   * Grant only what membership does, without a public project's `view`
+   * fallback — for what stays team-only in a public project, such as media.
+   */
+  membership?: true;
+};
+
+export const VIEW_PROJECT_ACCESS: ProjectAccess = {
+  permission: "view",
+  message: "You do not have permission to view this project",
+};
+
+export const ADMIN_PROJECT_ACCESS: ProjectAccess = {
+  permission: "admin",
+  message: "You are not an administrator of this project.",
+};
+
+/**
+ * Assert the caller holds a permission on a project {@link assertProjectAccess}
+ * let it reach, throwing a 403 otherwise.
+ *
+ * A project token is bound to that one project, so reaching it is enough. A
+ * user's token is scoped to accounts, not projects: it reaches every project of
+ * a team they belong to, private ones a contributor was never given included,
+ * so their own project permissions decide.
+ */
+export async function assertProjectPermission(
+  auth: AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
+  project: Project,
+  access: ProjectAccess | null,
+): Promise<void> {
+  if (!access || auth.type === "project") {
+    return;
+  }
+  const permissions = access.membership
+    ? await project.$getMembershipPermissions(auth.user)
+    : await project.$getPermissions(auth.user);
+  if (!permissions.includes(access.permission)) {
+    throw boom(403, access.message);
+  }
+}
+
 export async function getProjectForAuth(
   authPromise: Promise<AuthPATPayload | AuthProjectPayload | AuthOAuthPayload>,
   params: {
     owner: string;
     project: string;
   },
+  access: ProjectAccess | null,
 ) {
   // Authenticate and load the routed project in parallel, then authorize the
   // resolved account/project pair before deciding whether this route is a 401
@@ -132,7 +187,9 @@ export async function getProjectForAuth(
   const [auth, project] = await Promise.all([
     authPromise,
     Project.queryNotDeleted()
-      .joinRelated("account")
+      // Joined into the graph, not just filtered on: the permission check
+      // reads the account and would otherwise fetch it again.
+      .withGraphJoined("account")
       .where("account.slug", params.owner)
       .where("projects.name", params.project)
       .first(),
@@ -146,6 +203,8 @@ export async function getProjectForAuth(
   if (!project) {
     throw boom(404, "Not found");
   }
+
+  await assertProjectPermission(auth, project, access);
 
   return project;
 }

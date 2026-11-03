@@ -5,7 +5,7 @@ import { queryActiveTests } from "@/database/services/test";
 import { computeTestMetrics } from "@/metrics/test";
 import { formatTestId } from "@/util/test-id";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import {
   MetricsPeriodSchema,
   toMetricsPeriodEnum,
@@ -14,6 +14,7 @@ import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestSummarySchema } from "../schema/primitives/test";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -59,6 +60,7 @@ export const listTestsOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -67,7 +69,11 @@ export const listTestsOperation = {
 export const listTests: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/tests", async (req, res) => {
     const { page, perPage, metricsPeriod, buildName, search } = req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
 
     // Shared with the GraphQL API — same active-test definition, same ranking.
     const tests = await queryActiveTests({

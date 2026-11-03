@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import {
   BuildListParamsSchema,
   BuildSchema,
@@ -54,7 +54,11 @@ export const listBuildsOperation = {
 export const listBuilds: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds", async (req, res) => {
     const { page, perPage } = req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
     const builds = await listBuildsQuery(
       { projectId: project.id },
       req.ctx.query,

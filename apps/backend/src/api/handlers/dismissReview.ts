@@ -5,7 +5,7 @@ import { dismissBuildReview } from "@/build/dismissBuildReview";
 import { BuildReview } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
+import { loadBuildForAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -59,14 +59,7 @@ export const dismissReview: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(
-        req.ctx.auth(),
-        params,
-      );
-
-      await assertBuildPermission({
-        build,
-        user: auth.user,
+      const { auth, build } = await loadBuildForAuth(req.ctx.auth(), params, {
         permission: "review_dismiss",
         message: "You do not have permission to dismiss this review",
       });

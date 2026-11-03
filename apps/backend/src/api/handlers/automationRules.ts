@@ -12,9 +12,8 @@ import {
   queryAutomationRules,
   updateAutomationRule as updateRule,
 } from "@/database/services/automation-rule";
-import { assertProjectAdmin } from "@/database/services/project";
 
-import { getProjectForAuth } from "../auth/project";
+import { ADMIN_PROJECT_ACCESS, getProjectForAuth } from "../auth/project";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
@@ -147,14 +146,13 @@ export const listAutomationRulesOperation = {
 export const listAutomationRules: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/automation-rules", async (req, res) => {
     const { page, perPage, active } = req.ctx.query;
-    const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
-      req.ctx.auth(),
-    ]);
-
     // Rules can name Slack channels and webhooks, so listing them is an
     // administrator's view of the project, not a reader's.
-    await assertProjectAdmin({ project, user: auth.user });
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      ADMIN_PROJECT_ACCESS,
+    );
 
     const rules = await queryAutomationRules({
       projectId: project.id,
@@ -194,7 +192,7 @@ export const getAutomationRule: CreateAPIHandler = ({ get }) => {
     "/projects/{owner}/{project}/automation-rules/{ruleId}",
     async (req, res) => {
       const [project, auth] = await Promise.all([
-        getProjectForAuth(req.ctx.auth(), req.ctx.params),
+        getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
         req.ctx.auth(),
       ]);
 
@@ -237,7 +235,7 @@ export const createAutomationRuleOperation = {
 export const createAutomationRule: CreateAPIHandler = ({ post }) => {
   post("/projects/{owner}/{project}/automation-rules", async (req, res) => {
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
 
@@ -282,7 +280,7 @@ export const updateAutomationRule: CreateAPIHandler = ({ put }) => {
     "/projects/{owner}/{project}/automation-rules/{ruleId}",
     async (req, res) => {
       const [project, auth] = await Promise.all([
-        getProjectForAuth(req.ctx.auth(), req.ctx.params),
+        getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
         req.ctx.auth(),
       ]);
 
@@ -324,7 +322,7 @@ export const deactivateAutomationRule: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/automation-rules/{ruleId}/deactivate",
     async (req, res) => {
       const [project, auth] = await Promise.all([
-        getProjectForAuth(req.ctx.auth(), req.ctx.params),
+        getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
         req.ctx.auth(),
       ]);
 

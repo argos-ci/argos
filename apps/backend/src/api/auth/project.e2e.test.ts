@@ -1,18 +1,26 @@
 import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
-import { test as base, describe, expect } from "vitest";
+import request from "supertest";
+import { test as base, beforeAll, describe, expect } from "vitest";
+import z from "zod";
 
 import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
-import type { Account, Project } from "@/database/models";
+import type { Account, Project, TeamUser } from "@/database/models";
 import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
+import { formatTestId } from "@/util/test-id";
 
+import { getBuild } from "../handlers/getBuild";
+import { getProject } from "../handlers/getProject";
+import { getTest } from "../handlers/getTest";
+import { createTestHandlerApp } from "../test-util";
 import {
   assertAuthAttributes,
   assertProjectAccess,
   getAuthPayloadFromExpressReq,
   getProjectForAuth,
+  VIEW_PROJECT_ACCESS,
 } from "./project";
 
 const test = base.extend<{
@@ -20,6 +28,7 @@ const test = base.extend<{
   project: Project;
   scopedPatToken: string;
   otherScopedPatToken: string;
+  contributorToken: string;
 }>({
   account: async ({}, use) => {
     await setupDatabase();
@@ -35,58 +44,61 @@ const test = base.extend<{
     await use(project);
   },
   scopedPatToken: async ({ account }, use) => {
-    invariant(account.teamId);
-
-    const user = await factory.User.create();
-    await factory.UserAccount.create({ userId: user.id });
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: user.id,
-      userLevel: "member",
-    });
-
-    const token = UserAccessToken.generateToken();
-    const userAccessToken = await UserAccessToken.query().insertAndFetch({
-      name: "acme-scope-token",
-      source: "user",
-      userId: user.id,
-      token: hashToken(token),
-    });
-
-    await UserAccessTokenScope.query().insert({
-      userAccessTokenId: userAccessToken.id,
-      accountId: account.id,
-    });
-
-    await use(token);
+    await use(await createScopedPatToken(account, "member"));
   },
   otherScopedPatToken: async ({}, use) => {
-    const user = await factory.User.create();
-    await factory.UserAccount.create({ userId: user.id });
     const otherAccount = await factory.TeamAccount.create({ slug: "other" });
-    invariant(otherAccount.teamId);
-    await factory.TeamUser.create({
-      teamId: otherAccount.teamId,
-      userId: user.id,
-      userLevel: "member",
-    });
-
-    const token = UserAccessToken.generateToken();
-    const userAccessToken = await UserAccessToken.query().insertAndFetch({
-      name: "other-scope-token",
-      source: "user",
-      userId: user.id,
-      token: hashToken(token),
-    });
-
-    await UserAccessTokenScope.query().insert({
-      userAccessTokenId: userAccessToken.id,
-      accountId: otherAccount.id,
-    });
-
-    await use(token);
+    await use(await createScopedPatToken(otherAccount, "member"));
+  },
+  // A team contributor with no project-level access.
+  contributorToken: async ({ account }, use) => {
+    await use(await createScopedPatToken(account, "contributor"));
   },
 });
+
+/** A token scoped to `account`, held by a team user at `userLevel`. */
+async function createScopedPatToken(
+  account: Account,
+  userLevel: TeamUser["userLevel"],
+): Promise<string> {
+  invariant(account.teamId);
+  const user = await factory.User.create();
+  await factory.UserAccount.create({ userId: user.id });
+  await factory.TeamUser.create({
+    teamId: account.teamId,
+    userId: user.id,
+    userLevel,
+  });
+  const token = UserAccessToken.generateToken();
+  const userAccessToken = await factory.UserAccessToken.create({
+    userId: user.id,
+    token: hashToken(token),
+  });
+  await UserAccessTokenScope.query().insert({
+    userAccessTokenId: userAccessToken.id,
+    accountId: account.id,
+  });
+  return token;
+}
+
+/** A build numbered 1 and a test, and the read route of each resource kind. */
+async function createReadPaths(project: Project) {
+  const bucket = await factory.ScreenshotBucket.create({
+    projectId: project.id,
+  });
+  await factory.Build.create({
+    projectId: project.id,
+    compareScreenshotBucketId: bucket.id,
+    number: 1,
+  });
+  const testRow = await factory.Test.create({ projectId: project.id });
+  const projectPath = `/projects/acme/${project.name}`;
+  return {
+    project: projectPath,
+    build: `${projectPath}/builds/1`,
+    test: `${projectPath}/tests/${formatTestId({ projectName: project.name, testId: testRow.id })}`,
+  };
+}
 
 function createRequest(authHeader?: string): Request {
   return {
@@ -284,10 +296,14 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "web",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "web",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).resolves.toMatchObject({ id: project.id, name: "web" });
     });
 
@@ -299,10 +315,14 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${scopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "web",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "web",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).resolves.toMatchObject({ id: project.id, name: "web" });
     });
 
@@ -319,10 +339,14 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "docs",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "docs",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).rejects.toMatchObject({
         statusCode: 401,
       });
@@ -335,10 +359,14 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${otherScopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "web",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "web",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).rejects.toMatchObject({
         statusCode: 401,
       });
@@ -351,10 +379,14 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${scopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "missing-project",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "missing-project",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).rejects.toMatchObject({
         statusCode: 404,
         message: "Not found",
@@ -368,13 +400,55 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(Promise.resolve(auth), {
-          owner: "acme",
-          project: "missing-project",
-        }),
+        getProjectForAuth(
+          Promise.resolve(auth),
+          {
+            owner: "acme",
+            project: "missing-project",
+          },
+          VIEW_PROJECT_ACCESS,
+        ),
       ).rejects.toMatchObject({
         statusCode: 401,
       });
+    });
+  });
+
+  describe("project permissions on reads", () => {
+    const app = createTestHandlerApp(getProject, getBuild, getTest);
+
+    beforeAll(() => {
+      z.globalRegistry.clear();
+    });
+
+    test.for(["project", "build", "test"] as const)(
+      "403s a %s to a contributor without project access",
+      async (resource, { project, contributorToken }) => {
+        const paths = await createReadPaths(project);
+        await request(app)
+          .get(paths[resource])
+          .set("Authorization", `Bearer ${contributorToken}`)
+          .expect(403);
+      },
+    );
+
+    test("keeps a public project readable without project access", async ({
+      account,
+      contributorToken,
+    }) => {
+      const project = await factory.Project.create({
+        accountId: account.id,
+        name: "docs",
+        private: false,
+      });
+      const paths = await createReadPaths(project);
+
+      for (const path of Object.values(paths)) {
+        await request(app)
+          .get(path)
+          .set("Authorization", `Bearer ${contributorToken}`)
+          .expect(200);
+      }
     });
   });
 });

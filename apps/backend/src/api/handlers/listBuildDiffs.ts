@@ -1,13 +1,10 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { ScreenshotDiff } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
-import { boom } from "@/util/error";
 
-import { queryBuildByNumber } from "../auth/build";
-import { assertProjectAccess } from "../auth/project";
+import { loadBuildForAuth, VIEW_BUILD_ACCESS } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   getMetricsPeriodStartDate,
@@ -20,6 +17,7 @@ import {
   SnapshotDiffSchema,
 } from "../schema/primitives/snapshot-diff";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -74,6 +72,7 @@ export const listBuildDiffsOperation = {
       },
     },
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "400": invalidParameters,
     "500": serverError,
@@ -89,21 +88,11 @@ export const listBuildDiffs: CreateAPIHandler = ({ get }) => {
         query: { page, perPage, needsReview, metricsPeriod },
       } = req.ctx;
 
-      const [auth, build] = await Promise.all([
+      const { build, project } = await loadBuildForAuth(
         req.ctx.auth(),
-        queryBuildByNumber(params),
-      ]);
-
-      assertProjectAccess(auth, {
-        projectId: build?.projectId ?? null,
-        account: { slug: params.owner },
-      });
-
-      if (!build) {
-        throw boom(404, "Not found");
-      }
-
-      invariant(build.project, "Build without project");
+        params,
+        VIEW_BUILD_ACCESS,
+      );
 
       const diffsQuery = ScreenshotDiff.query()
         .where("screenshot_diffs.buildId", build.id)
@@ -143,7 +132,7 @@ export const listBuildDiffs: CreateAPIHandler = ({ get }) => {
       );
 
       const results = await serializeSnapshotDiffs(diffs.results, {
-        project: build.project,
+        project,
         metricsFrom: getMetricsPeriodStartDate(metricsPeriod),
       });
 

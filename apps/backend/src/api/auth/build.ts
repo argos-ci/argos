@@ -1,63 +1,54 @@
 import { invariant } from "@argos/util/invariant";
-import type { QueryBuilder } from "objection";
 
-import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
-import { Build, type User } from "@/database/models";
+import type {
+  AuthOAuthPayload,
+  AuthPATPayload,
+  AuthProjectPayload,
+} from "@/auth/payload";
+import { Build, type Project } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { assertProjectAccess } from "./project";
+import {
+  assertProjectAccess,
+  assertProjectPermission,
+  type ProjectAccess,
+} from "./project";
 
-/** Project permissions checked by the review/comment endpoints. */
-export type BuildActionPermission = "view" | "review" | "review_dismiss";
+export const VIEW_BUILD_ACCESS: ProjectAccess = {
+  permission: "view",
+  message: "You do not have permission to view this build",
+};
 
 /**
- * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` for a
- * user caller (personal access token or OAuth), enforcing the rules shared by
- * every review/comment endpoint: the token must be scoped to the owner account,
- * and the build must exist. These routes accept a PAT or an OAuth token, so the
- * global handler resolves and type-checks the auth; pass `req.ctx.auth()` and
- * the build load runs in parallel with authentication.
+ * Load the build addressed by `{owner}/{project}/builds/{buildNumber}`, with
+ * the same rules as `getProjectForAuth`: the token must be scoped to the owner
+ * account, the build must exist, and the user must hold `access` on its
+ * project. Pass `req.ctx.auth()` and the build load runs in parallel with
+ * authentication.
  *
- * Returns the resolved auth and the build (with `project.account` fetched so
- * callers can check permissions and serialize without a second round-trip).
+ * The project comes back with its account fetched, so callers can serialize
+ * without a second round-trip.
  */
-/**
- * The build addressed by `{owner}/{project}/builds/{buildNumber}`, with
- * `project.account` fetched.
- *
- * Extracted because the routes that resolve one do not share an auth shape —
- * some take a project token as well as a user's — so they cannot all go through
- * {@link loadBuildForUserAuth}, and each had its own copy of this query.
- */
-export function queryBuildByNumber(params: {
-  owner: string;
-  project: string;
-  buildNumber: number;
-}): QueryBuilder<Build, Build | undefined> {
-  return (
+export async function loadBuildForAuth<
+  TAuth extends AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
+>(
+  authPromise: Promise<TAuth>,
+  params: { owner: string; project: string; buildNumber: number },
+  access: ProjectAccess | null,
+): Promise<{ auth: TAuth; build: Build; project: Project }> {
+  const [auth, build] = await Promise.all([
+    authPromise,
     Build.query()
       .joinRelated("project.account")
       .where("project:account.slug", params.owner)
       .where("project.name", params.project)
-      // A deleted project answers 404 rather than 403: the route is addressed by
-      // name, and that name is no longer this project's — deleting it parks the
-      // project under a prefixed one. The permission check in
-      // `assertBuildPermission` would refuse it too, but not every route that
-      // resolves a build runs one.
+      // A deleted project answers 404 rather than 403: the route is addressed
+      // by name, and that name is no longer this project's — deleting it parks
+      // the project under a prefixed one.
       .whereNull("project.deletedAt")
       .where("number", params.buildNumber)
       .withGraphFetched("project.account")
-      .first()
-  );
-}
-
-export async function loadBuildForUserAuth(
-  authPromise: Promise<AuthPATPayload | AuthOAuthPayload>,
-  params: { owner: string; project: string; buildNumber: number },
-): Promise<{ auth: AuthPATPayload | AuthOAuthPayload; build: Build }> {
-  const [auth, build] = await Promise.all([
-    authPromise,
-    queryBuildByNumber(params),
+      .first(),
   ]);
 
   assertProjectAccess(auth, {
@@ -71,24 +62,7 @@ export async function loadBuildForUserAuth(
 
   invariant(build.project?.account, "Build project account not found");
 
-  return { auth, build };
-}
+  await assertProjectPermission(auth, build.project, access);
 
-/**
- * Assert the user holds a project permission on the build's project, throwing a
- * 403 with the given message otherwise. The build must have `project` fetched
- * (as returned by {@link loadBuildForUserAuth}).
- */
-export async function assertBuildPermission(input: {
-  build: Build;
-  user: User;
-  permission: BuildActionPermission;
-  message: string;
-}): Promise<void> {
-  const { build, user, permission, message } = input;
-  invariant(build.project, "Build project not fetched");
-  const permissions = await build.project.$getPermissions(user);
-  if (!permissions.includes(permission)) {
-    throw boom(403, message);
-  }
+  return { auth, build, project: build.project };
 }

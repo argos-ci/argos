@@ -1,10 +1,7 @@
 import z from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { boom } from "@/util/error";
-
-import { queryBuildByNumber } from "../auth/build";
-import { assertProjectAccess } from "../auth/project";
+import { loadBuildForAuth, VIEW_BUILD_ACCESS } from "../auth/build";
 import {
   BuildNumber,
   BuildSchema,
@@ -50,21 +47,11 @@ export const getBuildOperation = {
 
 export const getBuild: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds/{buildNumber}", async (req, res) => {
-    const { params } = req.ctx;
-    const [auth, build] = await Promise.all([
+    const { build } = await loadBuildForAuth(
       req.ctx.auth(),
-      queryBuildByNumber(params),
-    ]);
-
-    assertProjectAccess(auth, {
-      projectId: build?.projectId ?? null,
-      account: { slug: params.owner },
-    });
-
-    if (!build) {
-      throw boom(404, "Not found");
-    }
-
+      req.ctx.params,
+      VIEW_BUILD_ACCESS,
+    );
     res.send(await serializeBuild(build));
   });
 };

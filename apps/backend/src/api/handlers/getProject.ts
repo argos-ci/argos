@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import {
   AccountSlug,
   ProjectName,
@@ -48,7 +48,11 @@ export const getProjectOperation = {
 
 export const getProject: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}", async (req, res) => {
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
     res.send(await serializeProject(project));
   });
 };
