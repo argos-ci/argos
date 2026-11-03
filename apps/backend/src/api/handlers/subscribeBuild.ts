@@ -10,8 +10,8 @@ import {
   unsubscribeUserFromTest,
 } from "@/database/services/test-notification-subscription";
 
-import { loadBuildForUserAuth } from "../auth/build";
-import { loadTestForAuth } from "../auth/test";
+import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
+import { assertTestPermission, loadTestForAuth } from "../auth/test";
 import { BuildNumber } from "../schema/primitives/build";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
@@ -82,6 +82,12 @@ export const subscribeBuild: CreateAPIHandler = ({ post }) => {
         req.ctx.auth(),
         req.ctx.params,
       );
+      await assertBuildPermission({
+        build,
+        user: auth.user,
+        permission: "view",
+        message: "You do not have permission to view this build",
+      });
       await subscribeUserToBuild({ buildId: build.id, userId: auth.user.id });
       res.send({ subscribed: true });
     },
@@ -113,6 +119,12 @@ export const unsubscribeBuild: CreateAPIHandler = ({ delete: del }) => {
         req.ctx.auth(),
         req.ctx.params,
       );
+      await assertBuildPermission({
+        build,
+        user: auth.user,
+        permission: "view",
+        message: "You do not have permission to view this build",
+      });
       await unsubscribeUserFromBuild({
         buildId: build.id,
         userId: auth.user.id,
@@ -147,6 +159,12 @@ export const subscribeTest: CreateAPIHandler = ({ post }) => {
         req.ctx.auth(),
         req.ctx.params,
       );
+      await assertTestPermission({
+        test,
+        user: auth.user,
+        permission: "view",
+        message: "You do not have permission to view this test",
+      });
       await subscribeUserToTest({ testId: test.id, userId: auth.user.id });
       res.send({ subscribed: true });
     },
@@ -178,6 +196,12 @@ export const unsubscribeTest: CreateAPIHandler = ({ delete: del }) => {
         req.ctx.auth(),
         req.ctx.params,
       );
+      await assertTestPermission({
+        test,
+        user: auth.user,
+        permission: "view",
+        message: "You do not have permission to view this test",
+      });
       await unsubscribeUserFromTest({ testId: test.id, userId: auth.user.id });
       res.send({ subscribed: false });
     },

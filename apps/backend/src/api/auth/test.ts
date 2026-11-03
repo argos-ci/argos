@@ -5,7 +5,7 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
-import { Test, type Project } from "@/database/models";
+import { Test, type Project, type User } from "@/database/models";
 import { boom } from "@/util/error";
 import { safeParseTestId } from "@/util/test-id";
 
@@ -57,4 +57,23 @@ export async function loadTestForAuth<
   invariant(test.project?.account, "Test project account not found");
 
   return { auth, test, project: test.project };
+}
+
+/**
+ * Assert the user holds a project permission on the test's project, throwing a
+ * 403 with the given message otherwise. The test must have `project` fetched
+ * (as returned by {@link loadTestForAuth}).
+ */
+export async function assertTestPermission(input: {
+  test: Test;
+  user: User;
+  permission: "view" | "review";
+  message: string;
+}): Promise<void> {
+  const { test, user, permission, message } = input;
+  invariant(test.project, "Test project not fetched");
+  const permissions = await test.project.$getPermissions(user);
+  if (!permissions.includes(permission)) {
+    throw boom(403, message);
+  }
 }
