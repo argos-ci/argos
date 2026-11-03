@@ -239,14 +239,9 @@ loggedTest(
       /375×667/,
     );
     await expect(walkLink("create an account")).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "Show 1 unchanged journey" })
-      .click();
+    await page.locator("summary", { hasText: "Unchanged journeys" }).click();
     await expect(runRow("create an account")).toHaveText(/1280×720/);
     // Apart from the journeys to review, and marked as having no changes.
-    await expect(
-      page.getByRole("heading", { name: "Unchanged journeys" }),
-    ).toBeVisible();
     await expect(
       runRow("create an account").getByRole("img", {
         name: "No changes in this journey",

@@ -16,7 +16,7 @@ import {
   ScreenshotDiffStatus,
   type ScreenshotMetadataColorScheme,
 } from "@/gql/graphql";
-import { Button } from "@/ui/Button";
+import { Details, Summary } from "@/ui/Details";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
@@ -345,16 +345,15 @@ export function JourneysSection(props: {
   const unchanged = groupByPrefix(
     tests.filter((test) => test.changedCount === 0),
   );
-  // Back from an unchanged journey, its list stays open.
-  const [showUnchanged, setShowUnchanged] = useState(() =>
-    unchanged.some(checkIsWalked),
+  // Open with nothing else to walk, or back from an unchanged journey.
+  const [showUnchanged, setShowUnchanged] = useState(
+    () => changed.length === 0 || unchanged.some(checkIsWalked),
   );
   if (tests.length === 0) {
     return null;
   }
   // Every changed journey is review work: all of them show. The unchanged
-  // ones wait behind a button, unless there is nothing else to walk.
-  const unchangedShown = showUnchanged || changed.length === 0;
+  // ones wait in a folded section.
   const listProps = {
     checkIsWalked,
     repoUrl,
@@ -373,29 +372,29 @@ export function JourneysSection(props: {
           <JourneyTestList tests={changed} {...listProps} />
         </Panel>
       ) : null}
-      {/* A section of their own, below the journeys to review: nothing there
-          needs a look. */}
+      {/* A section of their own, below the journeys to review, folded:
+          nothing there needs a look. */}
       {unchanged.length > 0 ? (
-        <Panel elevation={0} className="pb-4">
-          <PanelHeader className="mb-2">
-            <PanelTitle icon={UnchangedIcon}>Unchanged journeys</PanelTitle>
-            <span className="text-low text-xs tabular-nums">
-              {plural(unchanged.length, "journey")}
-            </span>
-          </PanelHeader>
-          {unchangedShown ? (
-            <JourneyTestList tests={unchanged} {...listProps} />
-          ) : (
-            <div className="px-4">
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => setShowUnchanged(true)}
-              >
-                Show {plural(unchanged.length, "unchanged journey")}
-              </Button>
-            </div>
-          )}
+        <Panel elevation={0}>
+          <Details
+            open={showUnchanged}
+            onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
+            className="px-4"
+          >
+            <Summary icon={UnchangedIcon} className="text-low text-sm">
+              <span className="flex-1">Unchanged journeys</span>
+              <span className="text-xs font-normal tabular-nums">
+                {plural(unchanged.length, "journey")}
+              </span>
+            </Summary>
+            {showUnchanged ? (
+              <JourneyTestList
+                tests={unchanged}
+                className="-mx-4 pb-1"
+                {...listProps}
+              />
+            ) : null}
+          </Details>
         </Panel>
       ) : null}
     </>
