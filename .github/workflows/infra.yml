@@ -51,16 +51,25 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      # The PR's own code runs with these credentials, so this is a role that
+      # can read templates and the config document and nothing more. See
+      # infra/bootstrap/github-oidc-cdk-role.yml.
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          role-to-assume: ${{ secrets.CDK_AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.CDK_DIFF_AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # `--no-change-set`: a change set needs the deploy role. `secrets=false`
+      # synthesizes without the parameters only the deploy role may read; until
+      # the edge drops its HS256 secret, that shows the viewer-request function
+      # as changed in every diff.
       - name: cdk diff
         run: |
           pnpm --filter @argos/infra exec cdk diff \
-            -c stage="$CDK_STAGE"
+            --no-change-set \
+            -c stage="$CDK_STAGE" \
+            -c secrets=false
 
   deploy:
     if: github.event_name != 'pull_request'

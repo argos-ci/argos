@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description: >-
-  Role assumed by GitHub Actions to run `cdk diff` and `cdk deploy`
+  Roles assumed by GitHub Actions to run `cdk deploy` and `cdk diff`
   (.github/workflows/infra.yml). Deployed once, by hand, with local admin
   credentials; it is the thing CI needs before CI can deploy anything.
 
@@ -13,18 +13,19 @@ Description: >-
 #     --capabilities CAPABILITY_NAMED_IAM \
 #     --region us-east-1
 #
-# Then read the role ARN back out and store it as the CDK_AWS_ROLE_ARN repo
-# secret:
+# Then read the role ARNs back out and store them as the CDK_AWS_ROLE_ARN and
+# CDK_DIFF_AWS_ROLE_ARN repo secrets:
 #
 #   aws cloudformation describe-stacks \
 #     --stack-name argos-github-oidc-cdk-role \
-#     --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' \
+#     --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' \
 #     --output text
 #
-# This grants no AWS permissions directly. It only lets GitHub assume the CDK
-# bootstrap roles, which are what actually hold deploy rights, so the blast
-# radius is whatever `cdk bootstrap` already provisioned, and revoking CI access
-# is a matter of deleting this one stack.
+# Two roles because a pull request runs the workflow and `infra/scripts/app.ts`
+# from its own branch, so whatever role it gets is the PR author's. The deploy
+# role reaches the CDK bootstrap roles, whose CloudFormation execution role is
+# an administrator: it trusts `main` alone. Pull requests get the diff role,
+# which can read the stack templates and the config document, nothing else.
 
 Parameters:
   GitHubRepo:
@@ -72,7 +73,7 @@ Resources:
       # Keep this ASCII. IAM rejects any character above U+00FF here, and an
       # em dash costs you a CREATE_FAILED whose only clue is a validation
       # error naming the description field, with no hint as to which byte.
-      Description: GitHub Actions - cdk diff and cdk deploy for the Argos infra stacks.
+      Description: GitHub Actions - cdk deploy for the Argos infra stacks, from main only.
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -84,13 +85,9 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              # Scoped to main and to same-repo pull requests. Note that a fork
-              # PR gets no token at all, so the diff job is gated on the head
-              # repo in the workflow as well.
-              StringLike:
-                token.actions.githubusercontent.com:sub:
-                  - !Sub repo:${GitHubRepo}:ref:refs/heads/main
-                  - !Sub repo:${GitHubRepo}:pull_request
+                # A push to main, or a run dispatched from it. A run dispatched
+                # from any other branch carries that branch's ref and is refused.
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepo}:ref:refs/heads/main
       Policies:
         - PolicyName: assume-cdk-bootstrap-roles
           PolicyDocument:
@@ -116,6 +113,10 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/cdk/config.json
                   - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/cdk-bootstrap/*
+                  # The HS256 secret the edge still accepts while the backend
+                  # moves to ES256. Kept out of the config document, which the
+                  # diff role reads.
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/deployments_access_token_secret
 
         - PolicyName: read-stack-state
           PolicyDocument:
@@ -135,7 +136,60 @@ Resources:
                   - cloudformation:ListStacks
                 Resource: "*"
 
+  CdkDiffRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: argos-github-actions-cdk-diff
+      Description: GitHub Actions - cdk diff for the Argos infra stacks, from pull requests.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Same-repo pull requests. A fork PR gets no token at all, so
+                # the diff job is gated on the head repo in the workflow too.
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepo}:pull_request
+      Policies:
+        # No sts:AssumeRole: the bootstrap lookup role is ReadOnlyAccess over
+        # the whole account. `cdk diff` warns that it cannot assume it and
+        # reads the deployed templates with this role instead.
+        - PolicyName: read-cdk-config
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/cdk/config.json
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/cdk-bootstrap/*
+
+        - PolicyName: read-stack-state
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListStackResources
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/argos-*/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ListStacks
+                Resource: "*"
+
 Outputs:
   RoleArn:
     Description: Store as the CDK_AWS_ROLE_ARN repository secret.
     Value: !GetAtt CdkDeployRole.Arn
+  DiffRoleArn:
+    Description: Store as the CDK_DIFF_AWS_ROLE_ARN repository secret.
+    Value: !GetAtt CdkDiffRole.Arn
