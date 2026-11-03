@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Audit"
+  short_description: "Audit Argos for vulnerabilities, fix the contained ones with guard tests, report the rest privately"
+  default_prompt: "Use $security-audit to run a security audit of Argos and fix what you confirm."
