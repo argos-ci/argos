@@ -361,48 +361,44 @@ export function JourneysSection(props: {
     branch: build.branch,
   };
   return (
-    <Panel elevation={0} className="pb-4">
-      <PanelHeader className="mb-2">
-        <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
-        <span className="text-low text-xs tabular-nums">
-          {plural(tests.length, "journey")}
-        </span>
-      </PanelHeader>
-      <JourneyTestList tests={changed} {...listProps} />
-      {unchanged.length > 0 ? (
-        unchangedShown ? (
-          // Apart from the journeys to review, under a heading of their own:
-          // nothing there needs a look.
-          <section
-            aria-labelledby="unchanged-journeys"
-            className={clsx(changed.length > 0 && "border-t-thin mt-8 pt-6")}
-          >
-            <h3
-              id="unchanged-journeys"
-              className="text-low flex items-center gap-1.5 px-4 text-xs font-medium"
-            >
-              <UnchangedIcon className="text-success-low size-3.5" />
-              Unchanged journeys
-            </h3>
-            <JourneyTestList
-              tests={unchanged}
-              className="mt-4"
-              {...listProps}
-            />
-          </section>
-        ) : (
-          <div className="px-4 pt-8">
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => setShowUnchanged(true)}
-            >
-              Show {plural(unchanged.length, "unchanged journey")}
-            </Button>
-          </div>
-        )
+    <>
+      {changed.length > 0 ? (
+        <Panel elevation={0} className="pb-4">
+          <PanelHeader className="mb-2">
+            <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
+            <span className="text-low text-xs tabular-nums">
+              {plural(changed.length, "journey")}
+            </span>
+          </PanelHeader>
+          <JourneyTestList tests={changed} {...listProps} />
+        </Panel>
       ) : null}
-    </Panel>
+      {/* A section of their own, below the journeys to review: nothing there
+          needs a look. */}
+      {unchanged.length > 0 ? (
+        <Panel elevation={0} className="pb-4">
+          <PanelHeader className="mb-2">
+            <PanelTitle icon={UnchangedIcon}>Unchanged journeys</PanelTitle>
+            <span className="text-low text-xs tabular-nums">
+              {plural(unchanged.length, "journey")}
+            </span>
+          </PanelHeader>
+          {unchangedShown ? (
+            <JourneyTestList tests={unchanged} {...listProps} />
+          ) : (
+            <div className="px-4">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setShowUnchanged(true)}
+              >
+                Show {plural(unchanged.length, "unchanged journey")}
+              </Button>
+            </div>
+          )}
+        </Panel>
+      ) : null}
+    </>
   );
 }
 
