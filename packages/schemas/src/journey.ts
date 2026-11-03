@@ -175,9 +175,21 @@ export function checkIsMultiStepJourney(journey: Journey<unknown>): boolean {
 }
 
 /**
+ * Storybook stories group by component, one step per story: a build already
+ * names those on its own (story kind filter, affected components).
+ */
+export function checkIsStoryJourney<T>(
+  journey: Journey<T>,
+  getMetadata: (item: T) => JourneyMetadata,
+): boolean {
+  return journey.steps.some((step) =>
+    step.diffs.some((item) => getMetadata(item)?.story),
+  );
+}
+
+/**
  * The journeys a reviewer can walk screen by screen: several steps, and not
- * Storybook stories, which group by component: a build already names those on
- * its own (story kind filter, affected components).
+ * Storybook stories.
  */
 export function groupWalkableJourneys<T extends { variantKey: string }>(
   items: readonly T[],
@@ -186,9 +198,7 @@ export function groupWalkableJourneys<T extends { variantKey: string }>(
   return groupJourneys(items, getMetadata).filter(
     (journey) =>
       checkIsMultiStepJourney(journey) &&
-      !journey.steps.some((step) =>
-        step.diffs.some((item) => getMetadata(item)?.story),
-      ),
+      !checkIsStoryJourney(journey, getMetadata),
   );
 }
 

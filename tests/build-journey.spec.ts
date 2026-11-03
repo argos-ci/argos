@@ -241,6 +241,14 @@ loggedTest(
       .click();
     await expect(runRow("create an account")).toHaveText(/2 screens/);
     await expect(walkLink("shows the home page")).toHaveCount(0);
+    // A changed test that captures a single screen has a line of its own at
+    // the end, so no other section lists the changed tests.
+    await expect(
+      page.getByRole("link", { name: "shows the home page" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Affected tests" }),
+    ).toHaveCount(0);
 
     await screenshot(page, "build-overview-journeys", {
       replacements: { [team.account.slug]: "acme" },
@@ -305,5 +313,20 @@ loggedTest(
     await expect(page).not.toHaveURL(/[?&]journey=/);
     await expect(journeyHeader).toHaveCount(0);
     await expect(walkLink("complete a purchase").first()).toBeVisible();
+
+    // Once every changed screen of a run is marked, its card says so.
+    const reviewed = page.getByRole("img", {
+      name: "Reviewed, every screen accepted",
+    });
+    await expect(reviewed).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Screen 4, confirmation, changed" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "mobile/checkout/confirmation.png" }),
+    ).toBeVisible();
+    await page.keyboard.press("y");
+    await page.getByRole("link", { name: "Back to the overview" }).click();
+    await expect(reviewed).toHaveCount(1);
   },
 );

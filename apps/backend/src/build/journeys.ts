@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import {
-  groupWalkableJourneys,
+  checkIsMultiStepJourney,
+  checkIsStoryJourney,
+  groupJourneys,
+  type Journey,
   type JourneyMetadata,
 } from "@argos/schemas/journey";
 import { raw } from "objection";
@@ -20,8 +23,9 @@ export type BuildJourneyStep = {
 };
 
 /**
- * A run of a test that captures several screens, the way a review walks it.
+ * A run of a test, with its screens in capture order.
  * `@argos/schemas/journey` says what makes a journey and a step.
+ * @graphqlType
  */
 export type BuildJourney = {
   id: string;
@@ -36,6 +40,10 @@ export type BuildJourney = {
 type JourneyRow = {
   id: string;
   name: string;
+  baseScreenshotId: string | null;
+  compareScreenshotId: string | null;
+  score: string | number | null;
+  ignored: boolean;
   testId: string | null;
   testTitlePath: unknown;
   storyId: string | null;
@@ -84,8 +92,64 @@ function getJourneyId(key: string): string {
   return createHash("sha256").update(key).digest("hex").slice(0, 8);
 }
 
-/** The journeys of a build, with their steps in capture order. */
-export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
+/** Added, removed or changed: what a review has to look at. */
+function checkRowChanged(row: JourneyRow): boolean {
+  return (
+    row.baseScreenshotId === null ||
+    row.compareScreenshotId === null ||
+    (Number(row.score ?? 0) > 0 && !row.ignored)
+  );
+}
+
+type JourneyItem = {
+  row: JourneyRow;
+  variantKey: string;
+  metadata: JourneyMetadata;
+};
+
+function toBuildJourney({
+  identity,
+  steps,
+}: Journey<JourneyItem>): BuildJourney {
+  const runRows = steps.flatMap((step) => step.diffs.map((item) => item.row));
+  const [firstRow] = runRows;
+  return {
+    id: getJourneyId(identity.key),
+    prefix: identity.prefix,
+    title: identity.title,
+    location:
+      runRows.map(parseLocation).find((location) => location !== null) ?? null,
+    browser: firstRow?.browser ?? null,
+    viewport: parseViewport(firstRow),
+    steps: steps.map((step) => ({
+      key: step.key,
+      diffIds: step.diffs.map((item) => item.row.id),
+    })),
+  };
+}
+
+type BuildJourneys = {
+  /** The test runs that capture several screens, steps in capture order. */
+  journeys: BuildJourney[];
+  /** The test runs that capture a single screen, the ones that changed. */
+  singleScreenTests: BuildJourney[];
+};
+
+// The two fields of a build read the same rows: a query per build object, so
+// per request, not one per field.
+const buildJourneysCache = new WeakMap<Build, Promise<BuildJourneys>>();
+
+export function getBuildJourneys(build: Build): Promise<BuildJourneys> {
+  const cached = buildJourneysCache.get(build);
+  if (cached) {
+    return cached;
+  }
+  const promise = queryBuildJourneys(build);
+  buildJourneysCache.set(build, promise);
+  return promise;
+}
+
+async function queryBuildJourneys(build: Build): Promise<BuildJourneys> {
   const rows = await ScreenshotDiff.query()
     .where("screenshot_diffs.buildId", build.id)
     .leftJoinRelated("[baseScreenshot, compareScreenshot]")
@@ -94,6 +158,10 @@ export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
     .whereNull("compareScreenshot.parentName")
     .select(
       "screenshot_diffs.id",
+      "screenshot_diffs.baseScreenshotId",
+      "screenshot_diffs.compareScreenshotId",
+      "screenshot_diffs.score",
+      "screenshot_diffs.ignored",
       raw(
         `coalesce(nullif("compareScreenshot"."name", ''), "baseScreenshot"."name")`,
       ).as("name"),
@@ -111,31 +179,24 @@ export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
     .orderBy("screenshot_diffs.id")
     .castTo<JourneyRow[]>();
 
-  const items = rows.map((row) => ({
+  const items = rows.map((row): JourneyItem => ({
     row,
     variantKey: getVariantKey(row.name),
     metadata: getJourneyMetadata(row),
   }));
-  return groupWalkableJourneys(items, (item) => item.metadata).map(
-    ({ identity, steps }) => {
-      const runRows = steps.flatMap((step) =>
-        step.diffs.map((item) => item.row),
-      );
-      const [firstRow] = runRows;
-      return {
-        id: getJourneyId(identity.key),
-        prefix: identity.prefix,
-        title: identity.title,
-        location:
-          runRows.map(parseLocation).find((location) => location !== null) ??
-          null,
-        browser: firstRow?.browser ?? null,
-        viewport: parseViewport(firstRow),
-        steps: steps.map((step) => ({
-          key: step.key,
-          diffIds: step.diffs.map((item) => item.row.id),
-        })),
-      };
-    },
+  const tests = groupJourneys(items, (item) => item.metadata).filter(
+    (journey) => !checkIsStoryJourney(journey, (item) => item.metadata),
   );
+  return {
+    journeys: tests.filter(checkIsMultiStepJourney).map(toBuildJourney),
+    singleScreenTests: tests
+      .filter(
+        (journey) =>
+          !checkIsMultiStepJourney(journey) &&
+          journey.steps.some((step) =>
+            step.diffs.some((item) => checkRowChanged(item.row)),
+          ),
+      )
+      .map(toBuildJourney),
+  };
 }
