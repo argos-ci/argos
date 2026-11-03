@@ -363,7 +363,7 @@ export function JourneysSection(props: {
     <>
       {changed.length > 0 ? (
         <Panel elevation={0} className="pb-4">
-          <PanelHeader className="mb-2">
+          <PanelHeader className="mb-3">
             <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
             <span className="text-low text-xs tabular-nums">
               {plural(changed.length, "journey")}
@@ -521,7 +521,7 @@ function JourneyTestItem(props: {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-low hover:text-default inline-flex max-w-full items-center gap-1 text-xs transition"
+                className="text-low hover:text-default flex w-fit max-w-full items-center gap-1 text-xs transition"
               >
                 <FileCodeIcon className="size-3.5 shrink-0" />
                 <span className="truncate">{test.prefix}</span>
@@ -533,7 +533,7 @@ function JourneyTestItem(props: {
           <h3
             className={clsx(
               "text-sm/snug font-medium",
-              test.prefix && showPrefix && "mt-3",
+              test.prefix && showPrefix && "mt-1.5",
             )}
           >
             {test.title}
