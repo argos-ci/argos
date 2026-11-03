@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
@@ -51,6 +52,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -131,6 +133,7 @@ describe("createProject", () => {
     // `scopedPatToken` is scoped to "acme". Even though the user is an owner of
     // "other", the acme-scoped token must not be able to create a project there.
     const other = await factory.TeamAccount.create({ slug: "other" });
+    invariant(other.teamId);
     await factory.TeamUser.create({
       teamId: other.teamId,
       userId: user.id,
@@ -162,6 +165,7 @@ describe("createProject", () => {
   }) => {
     const member = await factory.User.create();
     await factory.UserAccount.create({ userId: member.id });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: member.id,

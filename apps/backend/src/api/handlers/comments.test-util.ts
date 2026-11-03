@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { Express } from "express";
 
 import { Project, User, UserAccessTokenScope } from "@/database/models";
@@ -106,6 +107,7 @@ export const commentApiFixtures = {
       name: "web",
       token: "the-awesome-token",
     });
+    invariant(teamAccount.teamId);
     await factory.TeamUser.create({
       teamId: teamAccount.teamId,
       userId: user.id,

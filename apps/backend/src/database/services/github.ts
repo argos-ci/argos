@@ -1,5 +1,5 @@
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
-import type { PartialModelObject } from "objection";
+import type { PartialModelRow } from "objection";
 
 import type { RestEndpointMethodTypes } from "@/github";
 import { sanitizeEmail } from "@/util/email";
@@ -66,7 +66,7 @@ export async function getOrCreateGhAccount(
   const { githubId, type, fallbackEmail, emails, ...rest } = props;
   return redisLock.acquire(["get-or-create-gh-account", githubId], async () => {
     const existing = await GithubAccount.query().findOne({ githubId });
-    const props: PartialModelObject<GithubAccount> = omitUndefinedValues(rest);
+    const props: PartialModelRow<GithubAccount> = omitUndefinedValues(rest);
     if (emails) {
       props.email = emails[0] ?? null;
       props.emails = emails;

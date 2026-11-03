@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { slugify } from "@argos/util/slug";
-import type { PartialModelObject } from "objection";
+import type { PartialModelRow } from "objection";
 
 import { Account } from "../models/Account";
 import { Team } from "../models/Team";
@@ -40,7 +40,7 @@ export const createTeamAccount = async (props: {
       teamId: team.id,
       userLevel: "owner",
     });
-    const accountData: PartialModelObject<Account> = {
+    const accountData: PartialModelRow<Account> = {
       name,
       slug,
       teamId: team.id,

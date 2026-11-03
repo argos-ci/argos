@@ -54,6 +54,7 @@ const test = base.extend<{
   },
   patToken: async ({ factory, account }, use) => {
     const user = await factory.User.create();
+    invariant(account.teamId);
     await Promise.all([
       factory.UserAccount.create({ userId: user.id }),
       factory.TeamUser.create({

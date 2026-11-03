@@ -99,6 +99,7 @@ describe("automation/job", () => {
         then: [
           {
             action: "sendSlackMessage",
+            // @ts-expect-error the payload is deliberately missing `channelId`
             actionPayload: {},
           },
         ],

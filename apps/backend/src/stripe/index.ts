@@ -821,6 +821,7 @@ async function notifyTrialEnded(
     subscription.$relatedQuery("plan"),
     account.$getOwnerIds(),
   ]);
+  invariant(plan, "Plan not found");
 
   if (recipients.length === 0) {
     return;
@@ -927,6 +928,7 @@ export async function updateStripeUsage(input: {
   }
 
   const plan = await subscription.$relatedQuery("plan");
+  invariant(plan, "Plan not found");
 
   // Only update usage for usage-based plans
   if (!plan.usageBased) {

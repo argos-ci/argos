@@ -1,6 +1,8 @@
 import type { Knex } from "knex";
 import { Model as ObjectionModel } from "objection";
 import type {
+  DatabaseJsonOptions,
+  JsonColumnFormat,
   ModelOptions,
   Pojo,
   QueryContext,
@@ -26,6 +28,13 @@ export class Model extends ObjectionModel {
    */
   static deterministicEncryptedAttributes: string[] = [];
 
+  /**
+   * Objection 3 ran `JSON.parse` on every string a JSON column returned, and
+   * "auto" stops doing it on Postgres: a jsonb value holding a JSON-encoded
+   * string would come back as that string.
+   */
+  static override jsonColumnFormat: JsonColumnFormat = "mixed";
+
   override $formatDatabaseJson(json: Pojo): Pojo {
     json = super.$formatDatabaseJson(json);
     const ctor = this.constructor as typeof Model;
@@ -42,7 +51,7 @@ export class Model extends ObjectionModel {
     return json;
   }
 
-  override $parseDatabaseJson(json: Pojo): Pojo {
+  override $parseDatabaseJson(json: Pojo, options?: DatabaseJsonOptions): Pojo {
     const ctor = this.constructor as typeof Model;
     for (const attr of [
       ...ctor.encryptedAttributes,
@@ -52,7 +61,7 @@ export class Model extends ObjectionModel {
         json[attr] = decrypt(json[attr]);
       }
     }
-    return super.$parseDatabaseJson(json);
+    return super.$parseDatabaseJson(json, options);
   }
 
   override $beforeInsert(_queryContext: QueryContext) {

@@ -3,7 +3,7 @@ import { AccountNameSchema } from "@argos/schemas/account";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { slugify } from "@argos/util/slug";
-import type { PartialModelObject, TransactionOrKnex } from "objection";
+import type { PartialModelRow, TransactionOrKnex } from "objection";
 
 import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email";
 import { sendEmailTemplate } from "@/email/send-email-template";
@@ -63,7 +63,7 @@ async function findUserByVerifiedEmail(email: string) {
  */
 export async function getOrCreateUserByVerifiedEmail(
   email: string,
-  accountData?: PartialModelObject<Account>,
+  accountData?: PartialModelRow<Account>,
 ) {
   const user = await findUserByVerifiedEmail(email);
   if (user) {
@@ -397,6 +397,7 @@ async function getOrCreateUserAccountFromThirdParty<
         assertNever(thirdPartyKey);
       })(),
     ]);
+    invariant(user, "Expected attachToAccount to be a user account");
 
     if (existingUser) {
       invariant(existingUser.account, "Account not fetched");
@@ -577,16 +578,16 @@ async function getOrCreateUserAccountFromThirdParty<
 async function createAccount(args: {
   email: string;
   slug: string;
-  accountData?: PartialModelObject<Account>;
-  userData?: PartialModelObject<User>;
+  accountData?: PartialModelRow<Account>;
+  userData?: PartialModelRow<User>;
 }) {
   const email = sanitizeEmail(args.email);
   const slug = await resolveAccountSlug(slugify(args.slug));
   const { account, user } = await transaction(async (trx) => {
-    const userData: PartialModelObject<User> = { email, ...args.userData };
+    const userData: PartialModelRow<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);
 
-    const accountData: PartialModelObject<Account> = {
+    const accountData: PartialModelRow<Account> = {
       userId: user.id,
       slug,
       ...args.accountData,

@@ -253,6 +253,7 @@ describe("listBuildDiffs", () => {
         factory.User.create(),
         factory.TeamAccount.create(),
       ]);
+      invariant(account.teamId);
       const [project] = await Promise.all([
         factory.Project.create({ accountId: account.id }),
         factory.UserAccount.create({ userId: user.id }),

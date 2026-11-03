@@ -1,4 +1,4 @@
-import type Objection from "objection";
+import type { QueryBuilder } from "objection";
 
 import { ScreenshotDiff } from "../models";
 
@@ -6,7 +6,7 @@ import { ScreenshotDiff } from "../models";
  * Sort screenshot diffs for a build in a meaningful order.
  */
 export function sortScreenshotDiffsForBuild(
-  qb: Objection.QueryBuilder<ScreenshotDiff, ScreenshotDiff[]>,
+  qb: QueryBuilder<ScreenshotDiff, ScreenshotDiff[]>,
 ) {
   return qb
     .orderByRaw(ScreenshotDiff.sortDiffByStatus)

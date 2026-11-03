@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
@@ -45,6 +46,7 @@ const test = base.extend<{
       name: "web",
       token: "the-awesome-token",
     });
+    invariant(teamAccount.teamId);
     await factory.TeamUser.create({
       teamId: teamAccount.teamId,
       userId: user.id,

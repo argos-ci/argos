@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect, vi } from "vitest";
 import z from "zod";
@@ -73,6 +74,7 @@ async function createTeamAccountOnPlan(args: {
   planName: string;
 }): Promise<Account> {
   const account = await factory.TeamAccount.create({ slug: "acme" });
+  invariant(account.teamId);
   await factory.TeamUser.create({
     teamId: account.teamId,
     userId: args.user.id,
@@ -489,6 +491,7 @@ describe("getMedia", () => {
 
     const outsider = await factory.User.create();
     await factory.UserAccount.create({ userId: outsider.id });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: outsider.id,
@@ -533,6 +536,7 @@ describe("getMedia", () => {
 
     const reviewer = await factory.User.create();
     await factory.UserAccount.create({ userId: reviewer.id });
+    invariant(account.teamId);
     // A contributor, not a member: members get every project permission, so the
     // test would pass whatever the gate demanded. The project's default level
     // makes this one a reviewer and nothing more.

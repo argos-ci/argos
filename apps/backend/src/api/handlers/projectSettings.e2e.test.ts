@@ -51,6 +51,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -183,6 +184,7 @@ describe("updateProject", () => {
     // contributor the project grants no default level to.
     const outsider = await factory.User.create();
     await factory.UserAccount.create({ userId: outsider.id });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: outsider.id,
@@ -277,6 +279,7 @@ describe("transferProject", () => {
     project,
   }) => {
     const target = await factory.TeamAccount.create({ slug: "target" });
+    invariant(target.teamId);
     await factory.TeamUser.create({
       teamId: target.teamId,
       userId: user.id,
@@ -302,6 +305,7 @@ describe("transferProject", () => {
 
   test("renames on the way", async ({ user, account, project }) => {
     const target = await factory.TeamAccount.create({ slug: "target" });
+    invariant(target.teamId);
     await factory.TeamUser.create({
       teamId: target.teamId,
       userId: user.id,
@@ -329,6 +333,7 @@ describe("transferProject", () => {
     project,
   }) => {
     const target = await factory.TeamAccount.create({ slug: "target" });
+    invariant(target.teamId);
     await factory.TeamUser.create({
       teamId: target.teamId,
       userId: user.id,
@@ -357,6 +362,7 @@ describe("transferProject", () => {
     project,
   }) => {
     const target = await factory.TeamAccount.create({ slug: "target" });
+    invariant(target.teamId);
     await factory.TeamUser.create({
       teamId: target.teamId,
       userId: user.id,
@@ -384,6 +390,7 @@ describe("transferProject", () => {
     project,
   }) => {
     const target = await factory.TeamAccount.create({ slug: "target" });
+    invariant(target.teamId);
     await factory.TeamUser.create({
       teamId: target.teamId,
       userId: user.id,

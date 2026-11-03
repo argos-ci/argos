@@ -40,7 +40,7 @@ async function createBuild(input: {
     name: input.name ?? "default",
     jobStatus: "complete",
     conclusion: input.conclusion ?? "no-changes",
-    updatedAt: input.updatedAt,
+    ...(input.updatedAt && { updatedAt: input.updatedAt }),
   });
 }
 
@@ -69,8 +69,8 @@ async function createDeployment(input: {
     status: input.status ?? "ready",
     environment: input.environment ?? "preview",
     branch: "feature/comment",
-    createdAt: input.createdAt,
-    updatedAt: input.updatedAt,
+    ...(input.createdAt && { createdAt: input.createdAt }),
+    ...(input.updatedAt && { updatedAt: input.updatedAt }),
   });
 }
 

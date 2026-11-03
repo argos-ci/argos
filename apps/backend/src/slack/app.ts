@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { invariant } from "@argos/util/invariant";
 import * as Bolt from "@slack/bolt";
 import Cookies from "cookies";
-import { PartialModelObject } from "objection";
+import { PartialModelRow } from "objection";
 
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
@@ -81,7 +81,7 @@ const installationStore: Bolt.InstallationStore = {
     const accountId = getAccountIdFromSlackInstallation(installation);
     invariant(accountId, "Expected accountId to be defined in metadata");
 
-    const data: PartialModelObject<SlackInstallation> = await (async () => {
+    const data: PartialModelRow<SlackInstallation> = await (async () => {
       if (
         installation.isEnterpriseInstall &&
         installation.enterprise !== undefined

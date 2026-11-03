@@ -1,5 +1,5 @@
 import { slugify } from "@argos/util/slug";
-import type { PartialModelObject } from "objection";
+import type { PartialModelRow } from "objection";
 
 import config from "@/config";
 import { boom } from "@/util/error";
@@ -285,7 +285,7 @@ export async function upsertProductionInternalProjectDomain(input: {
         domain: normalizedDomain,
       });
     } else {
-      const insert: PartialModelObject<ProjectDomain> = {
+      const insert: PartialModelRow<ProjectDomain> = {
         domain: normalizedDomain,
         environment: "production",
         branch: null,
