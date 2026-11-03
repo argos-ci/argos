@@ -26,9 +26,6 @@ export const ArgosDeploymentStackPropsSchema = z.object({
   accessTokenPublicKey: z.string().refine(isP256PublicKey, {
     error: "accessTokenPublicKey must be a PEM P-256 public key",
   }),
-  // Where the HS256 secret lives while the edge still accepts it. Only the
-  // name: this document is readable by the pull-request diff role.
-  accessTokenLegacySecretParameter: z.string().startsWith("/"),
   appUserArns: z.array(z.string()).min(1),
 });
 
@@ -37,10 +34,7 @@ type ArgosDeploymentStackOwnProps = z.infer<
 >;
 
 interface ArgosDeploymentStackProps
-  extends cdk.StackProps, ArgosDeploymentStackOwnProps {
-  /** Empty when synthesized without secrets, for a pull request's diff. */
-  legacyAccessTokenSecret: string;
-}
+  extends cdk.StackProps, ArgosDeploymentStackOwnProps {}
 
 const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   development: "dev.argos-ci.live",
@@ -61,7 +55,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
       apiBaseUrl,
       appUrl,
       accessTokenPublicKey,
-      legacyAccessTokenSecret,
       appUserArns = [],
     } = props;
     const isProduction = stage === "production";
@@ -226,10 +219,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
           "process.env.ACCESS_TOKEN_PUBLIC_KEY":
             JSON.stringify(accessTokenPublicKey),
         },
-        // The secret is injected from a file instead of defined inline. See
-        // `writeInjectedSecret` and the `LEGACY_ACCESS_TOKEN_SECRET`
-        // declaration in the lambda for why.
-        inject: [writeInjectedSecret(legacyAccessTokenSecret)],
       },
     });
 
@@ -549,34 +538,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
       value: customDomainsTarget,
     });
   }
-}
-
-/**
- * Writes the edge function's legacy access-token secret to a file for esbuild
- * to `--inject`, returning its path.
- *
- * Lambda@Edge cannot read environment variables at runtime, so the secret has
- * to be compiled into the bundle either way. What changed is how it gets there:
- * as a `--define` it sat on esbuild's command line, and CDK reproduces that
- * command line verbatim in its error whenever bundling fails. In a public
- * repository running `cdk diff` in CI, one failed build publishes the secret.
- * With an inject, only this path appears.
- *
- * Written inside the package rather than `os.tmpdir()` so it stays visible if
- * bundling ever falls back to running in Docker, which mounts the project but
- * not the host's temp directory. The directory is gitignored, and the file is
- * owner-only.
- */
-function writeInjectedSecret(secret: string): string {
-  const directory = path.join(__dirname, "../.generated");
-  fs.mkdirSync(directory, { recursive: true });
-  const file = path.join(directory, "edge-access-token-secret.js");
-  fs.writeFileSync(
-    file,
-    `export const LEGACY_ACCESS_TOKEN_SECRET = ${JSON.stringify(secret)};\n`,
-    { mode: 0o600 },
-  );
-  return file;
 }
 
 function isP256PublicKey(pem: string): boolean {

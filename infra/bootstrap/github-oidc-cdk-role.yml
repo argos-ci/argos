@@ -113,10 +113,6 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/cdk/config.json
                   - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/cdk-bootstrap/*
-                  # The HS256 secret the edge still accepts while the backend
-                  # moves to ES256. Kept out of the config document, which the
-                  # diff role reads.
-                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/*/deployments_access_token_secret
 
         - PolicyName: read-stack-state
           PolicyDocument:

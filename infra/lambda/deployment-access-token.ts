@@ -1,24 +1,9 @@
-import {
-  createHmac,
-  timingSafeEqual,
-  verify,
-  type KeyObject,
-} from "node:crypto";
+import { verify, type KeyObject } from "node:crypto";
 
 export type DeploymentAccessTokenPayload = {
   projectId: string;
   sub: string;
   exp: number;
-};
-
-export type DeploymentAccessTokenKeys = {
-  /** The P-256 public key matching the backend's ES256 signing key. */
-  publicKey: KeyObject;
-  /**
-   * The HS256 secret the backend signed with before ES256. Accepted only while
-   * non-empty, so the edge can take both while the backend switches over.
-   */
-  legacySecret: string;
 };
 
 function decodeJson(segment: string): unknown {
@@ -29,44 +14,13 @@ function decodeJson(segment: string): unknown {
   }
 }
 
-function checkSignature(
-  alg: unknown,
-  signingInput: string,
-  signature: Buffer,
-  keys: DeploymentAccessTokenKeys,
-): boolean {
-  switch (alg) {
-    case "ES256":
-      // JWS carries an ECDSA signature as raw r || s, not DER.
-      return (
-        signature.length === 64 &&
-        verify(
-          "sha256",
-          Buffer.from(signingInput),
-          { key: keys.publicKey, dsaEncoding: "ieee-p1363" },
-          signature,
-        )
-      );
-    case "HS256": {
-      if (!keys.legacySecret) {
-        return false;
-      }
-      const expected = createHmac("sha256", keys.legacySecret)
-        .update(signingInput)
-        .digest();
-      return (
-        signature.length === expected.length &&
-        timingSafeEqual(signature, expected)
-      );
-    }
-    default:
-      return false;
-  }
-}
-
+/**
+ * Verifies an ES256 deployment access token against the public half of the
+ * backend's signing key.
+ */
 export function verifyDeploymentAccessToken(
   token: string,
-  keys: DeploymentAccessTokenKeys,
+  publicKey: KeyObject,
   now = Date.now(),
 ): DeploymentAccessTokenPayload | null {
   const parts = token.split(".");
@@ -80,15 +34,23 @@ export function verifyDeploymentAccessToken(
   ];
 
   const header = decodeJson(encodedHeader);
-  if (typeof header !== "object" || header === null || !("alg" in header)) {
+  if (
+    typeof header !== "object" ||
+    header === null ||
+    !("alg" in header) ||
+    header.alg !== "ES256"
+  ) {
     return null;
   }
+  // JWS carries an ECDSA signature as raw r || s, not DER.
+  const signature = Buffer.from(encodedSignature, "base64url");
   if (
-    !checkSignature(
-      header.alg,
-      `${encodedHeader}.${encodedPayload}`,
-      Buffer.from(encodedSignature, "base64url"),
-      keys,
+    signature.length !== 64 ||
+    !verify(
+      "sha256",
+      Buffer.from(`${encodedHeader}.${encodedPayload}`),
+      { key: publicKey, dsaEncoding: "ieee-p1363" },
+      signature,
     )
   ) {
     return null;

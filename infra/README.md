@@ -54,9 +54,6 @@ The document:
   "appUrl": "https://app.argos-ci.com",
   // PEM P-256 public key matching the app's DEPLOYMENTS_ACCESS_TOKEN_PRIVATE_KEY
   "accessTokenPublicKey": "-----BEGIN PUBLIC KEY-----\n…\n-----END PUBLIC KEY-----\n",
-  // The parameter holding the HS256 secret the edge still accepts, by name only:
-  // pull requests can read this document, so it never holds a secret
-  "accessTokenLegacySecretParameter": "/production/deployments_access_token_secret",
   "appUserArns": ["arn:aws:iam::<ACCOUNT_ID>:user/greg"],
 
   "assets": {
@@ -216,13 +213,11 @@ aws ssm put-parameter \
   --overwrite
 ```
 
-The document holds no secret: the pull-request diff role reads it, and `app.ts`
-refuses to synth if `accessTokenSecret` reappears in it. Secrets live in their
-own parameters, which only the deploy role reads. With `SecureString`, the
-default `alias/aws/ssm` key is used when `--key-id` is omitted, and its key
-policy already allows any principal in the account to decrypt via SSM — so
-neither role needs `kms:Decrypt`. If you point it at a customer-managed key
-instead, you must add that permission to the roles.
+The document must hold no secret: the pull-request diff role reads it. With
+`SecureString`, the default `alias/aws/ssm` key is used when `--key-id` is
+omitted, and its key policy already allows any principal in the account to
+decrypt via SSM — so neither role needs `kms:Decrypt`. If you point it at a
+customer-managed key instead, you must add that permission to the roles.
 
 Delete the local file afterwards.
 
@@ -456,11 +451,6 @@ diffed by a maintainer.
 policy does not match. The deploy role's `sub` claim must be
 `repo:argos-ci/argos:ref:refs/heads/main`, so a deploy dispatched from another
 branch is refused; the diff role's is `repo:argos-ci/argos:pull_request`.
-
-**A pull request's `cdk diff` shows `ViewerRequestFn` as changed.** Expected
-while the edge accepts the legacy HS256 secret: the diff role cannot read it, so
-the diff bundles the function without it. It goes away when the legacy secret
-is retired.
 
 **Assets 404 from the CDN but exist in the bucket.** Under origin access control
 the bucket grants only `s3:GetObject`, so S3 answers a _missing_ key with 403

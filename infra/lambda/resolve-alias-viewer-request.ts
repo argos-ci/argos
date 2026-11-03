@@ -6,38 +6,17 @@ import type {
   CloudFrontResultResponse,
 } from "aws-lambda";
 
-import {
-  verifyDeploymentAccessToken,
-  type DeploymentAccessTokenKeys,
-} from "./deployment-access-token.ts";
+import { verifyDeploymentAccessToken } from "./deployment-access-token.ts";
 
 const API_BASEURL = process.env.API_BASEURL ?? "";
 const APP_URL = process.env.APP_URL ?? "";
 const BASE_DOMAIN = process.env.BASE_DOMAIN ?? "";
 
-/**
- * The HS256 secret, accepted only until the backend signs every token with
- * ES256; empty after that. Substituted at bundle time by an esbuild `--inject`
- * file that `ArgosDeploymentStack` writes, rather than by a `--define` like the
- * constants above.
- *
- * The difference is only where the value travels. A `define` becomes
- * `--define:...="..."` on esbuild's command line, and CDK prints that whole
- * command line whenever bundling fails -- which, in a public repository with
- * `cdk diff` running in CI, publishes the secret to anyone reading a failed
- * build log. An inject puts only a file path there.
- *
- * Declared, never defined: a real `const` here would shadow the global and
- * esbuild would have nothing to substitute.
- */
-declare const LEGACY_ACCESS_TOKEN_SECRET: string;
-
-// The public key is no secret, so it is a plain `define`. The stack checks it
-// is a P-256 key at synth time: a bad one would fail every request here.
-const ACCESS_TOKEN_KEYS: DeploymentAccessTokenKeys = {
-  publicKey: createPublicKey(process.env.ACCESS_TOKEN_PUBLIC_KEY ?? ""),
-  legacySecret: LEGACY_ACCESS_TOKEN_SECRET,
-};
+// The public key is no secret, so it is a plain `define`. The stack checks it is
+// a P-256 key at synth time: a bad one would fail every request here.
+const ACCESS_TOKEN_PUBLIC_KEY = createPublicKey(
+  process.env.ACCESS_TOKEN_PUBLIC_KEY ?? "",
+);
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
 const AUTH_CALLBACK_PATH = "/__argos/auth";
 
@@ -221,7 +200,7 @@ function handleAuthCallback(
     return badRequestResponse("Invalid auth callback");
   }
 
-  const payload = verifyDeploymentAccessToken(token, ACCESS_TOKEN_KEYS);
+  const payload = verifyDeploymentAccessToken(token, ACCESS_TOKEN_PUBLIC_KEY);
   if (!payload) {
     return badRequestResponse("Invalid or expired token");
   }
@@ -282,7 +261,7 @@ export const handler = async (
       cookieName(deployment.projectId),
     );
     const payload = cookieValue
-      ? verifyDeploymentAccessToken(cookieValue, ACCESS_TOKEN_KEYS)
+      ? verifyDeploymentAccessToken(cookieValue, ACCESS_TOKEN_PUBLIC_KEY)
       : null;
     if (!payload || payload.projectId !== deployment.projectId) {
       console.log(

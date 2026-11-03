@@ -669,12 +669,6 @@ export function createConfig() {
         default: "",
         env: "DEPLOYMENTS_ACCESS_TOKEN_PRIVATE_KEY",
       },
-      accessTokenSecret: {
-        doc: "Legacy HS256 secret for deployment access JWTs, used only while `accessTokenPrivateKey` is unset. Must match the value bundled into the alias edge lambda.",
-        format: String,
-        default: "",
-        env: "DEPLOYMENTS_ACCESS_TOKEN_SECRET",
-      },
       customDomains: {
         distributionId: {
           doc: "CloudFront multi-tenant distribution that serves customer custom domains. Empty disables custom domains.",

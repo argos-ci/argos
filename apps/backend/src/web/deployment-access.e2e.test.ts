@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import type { IncomingHttpHeaders } from "node:http";
 import { invariant } from "@argos/util/invariant";
 import jwt from "jsonwebtoken";
@@ -53,18 +54,23 @@ const test = base.extend<{
   },
 });
 
+const signingKey = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+const signingKeyPem = signingKey.privateKey
+  .export({ type: "pkcs8", format: "pem" })
+  .toString();
+
 describe("deployment access web auth", () => {
-  const originalSecret = config.get("deployments.accessTokenSecret");
+  const originalPrivateKey = config.get("deployments.accessTokenPrivateKey");
 
   afterEach(() => {
-    config.set("deployments.accessTokenSecret", originalSecret);
+    config.set("deployments.accessTokenPrivateKey", originalPrivateKey);
   });
 
   test("redirects authenticated viewers back to the deployment with an access token", async ({
     deployment,
     userAccount,
   }) => {
-    config.set("deployments.accessTokenSecret", "deployment-access-secret");
+    config.set("deployments.accessTokenPrivateKey", signingKeyPem);
 
     await request(app)
       .get("/auth/deployments")
@@ -88,8 +94,8 @@ describe("deployment access web auth", () => {
 
         const token = location.searchParams.get("token");
         invariant(typeof token === "string", "Access token is missing");
-        const payload = jwt.verify(token, "deployment-access-secret", {
-          algorithms: ["HS256"],
+        const payload = jwt.verify(token, signingKey.publicKey, {
+          algorithms: ["ES256"],
         });
         invariant(typeof payload === "object", "JWT payload is missing");
         expect(payload).toMatchObject({
@@ -136,7 +142,7 @@ describe("deployment access web auth", () => {
   test("rejects authenticated users without project view permission", async ({
     deployment,
   }) => {
-    config.set("deployments.accessTokenSecret", "deployment-access-secret");
+    config.set("deployments.accessTokenPrivateKey", signingKeyPem);
     const otherAccount = await factory.UserAccount.create();
 
     await request(app)

@@ -9,11 +9,9 @@ import { signDeploymentAccessToken } from "./deployment-access";
 
 describe("signDeploymentAccessToken", () => {
   const originalPrivateKey = config.get("deployments.accessTokenPrivateKey");
-  const originalSecret = config.get("deployments.accessTokenSecret");
 
   afterEach(() => {
     config.set("deployments.accessTokenPrivateKey", originalPrivateKey);
-    config.set("deployments.accessTokenSecret", originalSecret);
   });
 
   it("signs a short-lived ES256 token the edge can verify", () => {
@@ -24,7 +22,6 @@ describe("signDeploymentAccessToken", () => {
       "deployments.accessTokenPrivateKey",
       privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
     );
-    config.set("deployments.accessTokenSecret", "deployment-access-secret");
 
     const token = signDeploymentAccessToken({
       projectId: "project-1",
@@ -45,25 +42,8 @@ describe("signDeploymentAccessToken", () => {
     expect(payload.exp - payload.iat).toBe(60 * 60);
   });
 
-  it("falls back to HS256 while no private key is configured", () => {
+  it("throws when the private key is not configured", () => {
     config.set("deployments.accessTokenPrivateKey", "");
-    config.set("deployments.accessTokenSecret", "deployment-access-secret");
-
-    const token = signDeploymentAccessToken({
-      projectId: "project-1",
-      sub: "user-1",
-    });
-
-    const payload = jwt.verify(token, "deployment-access-secret", {
-      algorithms: ["HS256"],
-    });
-    invariant(typeof payload === "object", "JWT payload is missing");
-    expect(payload).toMatchObject({ projectId: "project-1", sub: "user-1" });
-  });
-
-  it("throws when neither key is configured", () => {
-    config.set("deployments.accessTokenPrivateKey", "");
-    config.set("deployments.accessTokenSecret", "");
 
     expect(() =>
       signDeploymentAccessToken({
