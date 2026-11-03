@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isValidEmoji, normalizeEmoji } from "./emoji";
+import { normalizeEmoji, parseEmoji } from "./emoji";
 
 const VS16 = "\u{FE0F}";
 
@@ -23,15 +23,15 @@ describe("normalizeEmoji", () => {
   });
 });
 
-describe("isValidEmoji", () => {
+describe("parseEmoji", () => {
   it.each([
-    ["a simple emoji", "👍"],
-    ["an emoji with a redundant VS16", `👍${VS16}`],
-    ["an emoji that needs its VS16", `❤${VS16}`],
-    ["an emoji with a skin-tone modifier", "👍🏽"],
-    ["a ZWJ sequence", "👨‍👩‍👧‍👦"],
-  ])("accepts %s", (_name, value) => {
-    expect(isValidEmoji(value)).toBe(true);
+    ["a simple emoji", "👍", "👍"],
+    ["an emoji with a redundant VS16", `👍${VS16}`, "👍"],
+    ["an emoji that needs its VS16", `❤${VS16}`, `❤${VS16}`],
+    ["an emoji with a skin-tone modifier", "👍🏽", "👍🏽"],
+    ["a ZWJ sequence", "👨‍👩‍👧‍👦", "👨‍👩‍👧‍👦"],
+  ])("returns the normalized form of %s", (_name, value, expected) => {
+    expect(parseEmoji(value)).toBe(expected);
   });
 
   it.each([
@@ -42,9 +42,7 @@ describe("isValidEmoji", () => {
     ["multiple emojis", "👍🎉"],
     ["a lone VS16", VS16],
     ["a text-presentation character without its VS16", "❤"],
-    ["a non-string value", undefined],
-    ["a number", 42],
   ])("rejects %s", (_name, value) => {
-    expect(isValidEmoji(value)).toBe(false);
+    expect(parseEmoji(value)).toBeNull();
   });
 });

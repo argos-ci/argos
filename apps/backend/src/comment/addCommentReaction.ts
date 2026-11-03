@@ -1,4 +1,4 @@
-import { isValidEmoji, normalizeEmoji } from "@argos/util/emoji";
+import { parseEmoji } from "@argos/util/emoji";
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
@@ -29,10 +29,10 @@ export async function addCommentReaction(input: {
 }): Promise<Comment> {
   const { comment, userId } = input;
 
-  if (!isValidEmoji(input.emoji)) {
+  const emoji = parseEmoji(input.emoji);
+  if (!emoji) {
     throw boom(400, "Invalid emoji");
   }
-  const emoji = normalizeEmoji(input.emoji);
 
   // Insert atomically: `onConflict().ignore()` makes concurrent requests safe
   // (no read-then-insert race, no primary-key violation) and the returning rows

@@ -1,4 +1,4 @@
-import { isValidEmoji, normalizeEmoji } from "@argos/util/emoji";
+import { parseEmoji } from "@argos/util/emoji";
 
 import { Comment, CommentReaction } from "@/database/models";
 import { boom } from "@/util/error";
@@ -16,10 +16,10 @@ export async function removeCommentReaction(input: {
 }): Promise<Comment> {
   const { comment, userId } = input;
 
-  if (!isValidEmoji(input.emoji)) {
+  const emoji = parseEmoji(input.emoji);
+  if (!emoji) {
     throw boom(400, "Invalid emoji");
   }
-  const emoji = normalizeEmoji(input.emoji);
 
   // The migration that normalized reactions runs before the rollout, so rows
   // the previous release wrote in between keep emojibase 17's trailing U+FE0F

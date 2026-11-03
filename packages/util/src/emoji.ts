@@ -19,10 +19,8 @@ const VARIATION_SELECTOR_16 = "\u{FE0F}";
  *
  * Some emoji sources "fully-qualify" emoji by appending VS16 (U+FE0F) even when
  * the base code point already has emoji presentation — emojibase 17 gave "👍️"
- * (1F44D FE0F) where 18 gives "👍" (1F44D). Such a sequence is not part of the
- * RGI set, so when dropping its variation selectors yields an RGI emoji, that
- * is the form returned. An RGI emoji that needs its selector, like "❤️", and a
- * value that is not an emoji are returned unchanged.
+ * (1F44D FE0F) where 18 gives "👍" (1F44D). Selectors are only dropped when
+ * that yields an RGI emoji: "❤️" needs its selector and keeps it.
  */
 export function normalizeEmoji(value: string): string {
   if (EMOJI_REGEX.test(value)) {
@@ -33,9 +31,10 @@ export function normalizeEmoji(value: string): string {
 }
 
 /**
- * Check that a value is a single emoji, once normalized by
- * {@link normalizeEmoji}.
+ * The {@link normalizeEmoji | normalized} form of a value that is a single
+ * emoji, or null when it is not one.
  */
-export function isValidEmoji(value: unknown): value is string {
-  return typeof value === "string" && EMOJI_REGEX.test(normalizeEmoji(value));
+export function parseEmoji(value: string): string | null {
+  const emoji = normalizeEmoji(value);
+  return EMOJI_REGEX.test(emoji) ? emoji : null;
 }

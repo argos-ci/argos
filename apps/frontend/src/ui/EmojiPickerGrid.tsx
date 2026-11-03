@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { isValidEmoji, normalizeEmoji } from "@argos/util/emoji";
+import { normalizeEmoji, parseEmoji } from "@argos/util/emoji";
 import {
   defaultRangeExtractor,
   useVirtualizer,
@@ -77,11 +77,12 @@ for (const emoji of compactEmojis) {
   // Emojibase ships each Emoji version before Node and the browsers know it
   // (18 adds Emoji 18.0): the server would reject those emoji as reactions,
   // and no platform draws them yet.
-  if (!isValidEmoji(emoji.unicode)) {
+  const unicode = parseEmoji(emoji.unicode);
+  if (!unicode) {
     continue;
   }
   const entry: EmojiEntry = {
-    emoji: emoji.unicode,
+    emoji: unicode,
     label: emoji.label,
     tags: emoji.tags ?? [],
   };
@@ -153,9 +154,9 @@ const recentEmojisAtom = atomWithStorage<Emoji[]>(
 );
 
 /**
- * Normalize each emoji and keep the first occurrence of each. Lists saved
- * before emojibase 18 spell some emoji with a VS16 ("👍️") that the picker no
- * longer sends, and would otherwise show them twice.
+ * Normalize each emoji and keep the first occurrence of each. Tabs still
+ * running a bundle on emojibase 17 keep writing its spelling ("👍️") to the
+ * shared storage key, next to the "👍" this picker saved.
  */
 function normalizeRecentEmojis(emojis: Emoji[]): Emoji[] {
   const seen = new Set<string>();
