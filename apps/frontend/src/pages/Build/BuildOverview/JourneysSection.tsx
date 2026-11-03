@@ -490,40 +490,43 @@ function getRunLabel(run: JourneyRun, test: JourneyTest): string {
 /** How tall the screens of a test are, at most. */
 const LINEUP_HEIGHT = 220;
 const LINEUP_GAP = 12;
+/** A tile's padding, on each side. */
+const TILE_PADDING = 12;
 
 function getScreenRatio(viewport: Viewport | null): number {
   return viewport ? viewport.width / viewport.height : 1.5;
 }
 
 /**
- * The runs of a test side by side, a screen each, all as tall: each takes a
- * width in proportion to its shape, so a phone and a desktop read as one app
- * at two sizes. They shrink together on a narrow page.
+ * The runs of a test side by side, a tile each holding its screen, all
+ * screens as tall: each takes a width in proportion to its shape, so a phone
+ * and a desktop read as one app at two sizes. They shrink together on a
+ * narrow page.
  */
 function JourneyLineup(props: { test: JourneyTest }) {
   const { test } = props;
   const ratios = test.runs.map((run) => getScreenRatio(run.viewport));
   const totalRatio = ratios.reduce((sum, ratio) => sum + ratio, 0);
   return (
-    <div className="bg-ui mt-3 rounded-lg p-3">
-      <ul
-        className="flex"
-        style={{
-          gap: LINEUP_GAP,
-          maxWidth:
-            totalRatio * LINEUP_HEIGHT + (ratios.length - 1) * LINEUP_GAP,
-        }}
-      >
-        {test.runs.map((run, index) => (
-          <JourneyRunItem
-            key={run.key}
-            run={run}
-            test={test}
-            ratio={ratios[index] ?? 1}
-          />
-        ))}
-      </ul>
-    </div>
+    <ul
+      className="mt-3 flex"
+      style={{
+        gap: LINEUP_GAP,
+        maxWidth:
+          totalRatio * LINEUP_HEIGHT +
+          ratios.length * TILE_PADDING * 2 +
+          (ratios.length - 1) * LINEUP_GAP,
+      }}
+    >
+      {test.runs.map((run, index) => (
+        <JourneyRunItem
+          key={run.key}
+          run={run}
+          test={test}
+          ratio={ratios[index] ?? 1}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -547,16 +550,23 @@ function JourneyRunItem(props: {
     changed.map((screen) => screen.diff),
     useReviewStatuses(),
   );
+  const overlayInset = TILE_PADDING + 6;
   return (
     <li
-      className="group relative min-w-0"
-      style={{ flex: `${ratio} 1 0%`, aspectRatio: String(ratio) }}
+      className="bg-ui hover:bg-hover relative min-w-0 rounded-lg transition"
+      style={{
+        // The padding is the tile's basis and the rest grows with the shape,
+        // so the screens of the tiles stay as tall as each other.
+        flex: `${ratio} 1 ${TILE_PADDING * 2}px`,
+        padding: TILE_PADDING,
+      }}
     >
       <Tooltip content={label || "Walk the journey"}>
         <HeadlessLink
           href={getJourneyScreenURL(params, journey, firstScreen.diff)}
           aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
-          className="focus-ring block size-full overflow-hidden rounded-md shadow-sm transition group-hover:shadow-md"
+          className="block overflow-hidden rounded-sm shadow-md outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
+          style={{ aspectRatio: String(ratio) }}
         >
           <ScreenshotDiffThumbnail
             screenshotDiff={shownScreen.diff}
@@ -574,16 +584,20 @@ function JourneyRunItem(props: {
           and whether the review went through them. */}
       <span
         className={clsx(
-          "bg-app border-thin text-xxs pointer-events-none absolute bottom-1.5 left-1.5 rounded-full px-1.5 font-medium whitespace-nowrap tabular-nums shadow-xs",
+          "bg-app border-thin text-xxs pointer-events-none absolute rounded-full px-1.5 font-medium whitespace-nowrap tabular-nums shadow-xs",
           changedCount > 0 ? "text-warning-low" : "text-low",
         )}
+        style={{ bottom: overlayInset, left: overlayInset }}
       >
         {changedCount > 0
           ? `${changedCount} of ${screens.length} changed`
           : plural(screens.length, "screen")}
       </span>
       {mark ? (
-        <span className="bg-app border-thin absolute top-1.5 right-1.5 flex rounded-full p-0.5 shadow-xs">
+        <span
+          className="bg-app border-thin absolute z-1 flex rounded-full p-0.5 shadow-xs"
+          style={{ top: overlayInset, right: overlayInset }}
+        >
           <ReviewMark mark={mark} />
         </span>
       ) : null}
