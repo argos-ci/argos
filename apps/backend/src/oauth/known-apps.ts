@@ -114,9 +114,48 @@ function getHost(url: string | null | undefined): string | null {
   }
 }
 
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The hosts a client's redirect URIs send authorization codes to over the
+ * network. A loopback or custom-scheme redirect lands on the user's own
+ * machine, out of reach of whoever registered the client; an unparsable one
+ * counts as a host no app owns.
+ */
+function getRemoteRedirectHosts(redirectUris: string[]): string[] {
+  return redirectUris.flatMap((uri) => {
+    let url: URL;
+    try {
+      url = new URL(uri);
+    } catch {
+      return [""];
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return [];
+    }
+    if (LOOPBACK_HOSTNAMES.has(url.hostname.toLowerCase())) {
+      return [];
+    }
+    return [url.host.toLowerCase()];
+  });
+}
+
+/**
+ * Whether every code issued to a client stays with the app. The badge tells
+ * the user who receives access, and every signal a dynamically registered
+ * client supplies is self-asserted: they only vouch for it when no redirect
+ * leads to a host the app does not own.
+ */
+function checkRedirectsStayWithApp(app: KnownApp, redirectUris: string[]) {
+  return getRemoteRedirectHosts(redirectUris).every(
+    (host) => app.match.redirectHosts?.includes(host) ?? false,
+  );
+}
+
 /**
  * Resolve a client's metadata to a known app, or `null` if unrecognized.
- * A single positive signal is enough to match.
+ * A first-party `client_id` matches on its own; any other single positive
+ * signal matches as long as the client's redirects stay with the app.
  */
 export function resolveKnownApp(metadata: {
   clientId?: string | null;
@@ -125,7 +164,8 @@ export function resolveKnownApp(metadata: {
   redirectUris?: string[] | null;
 }): KnownApp | null {
   const clientUriHost = getHost(metadata.clientUri);
-  const redirectHosts = (metadata.redirectUris ?? [])
+  const redirectUris = metadata.redirectUris ?? [];
+  const redirectHosts = redirectUris
     .map((uri) => getHost(uri))
     .filter((host): host is string => host !== null);
 
@@ -134,21 +174,39 @@ export function resolveKnownApp(metadata: {
     if (metadata.clientId && match.clientIds?.includes(metadata.clientId)) {
       return app;
     }
-    if (
-      metadata.softwareId &&
-      match.softwareIds?.includes(metadata.softwareId)
-    ) {
+    const signaled =
+      Boolean(
+        metadata.softwareId && match.softwareIds?.includes(metadata.softwareId),
+      ) ||
+      Boolean(clientUriHost && match.clientUriHosts?.includes(clientUriHost)) ||
+      redirectHosts.some((host) => match.redirectHosts?.includes(host));
+    if (signaled && checkRedirectsStayWithApp(app, redirectUris)) {
       return app;
     }
-    if (clientUriHost && match.clientUriHosts?.includes(clientUriHost)) {
-      return app;
-    }
-    if (
-      match.redirectHosts &&
-      redirectHosts.some((host) => match.redirectHosts?.includes(host))
-    ) {
-      return app;
-    }
+  }
+  return null;
+}
+
+/**
+ * The known app a stored client is presented as. A dynamically registered
+ * client is re-checked against its redirects rather than trusted on its stored
+ * id, so one registered before the redirect rule cannot keep a badge it no
+ * longer earns. First-party clients are created by Argos and keep theirs.
+ */
+export function getClientKnownApp(client: {
+  knownAppId: string | null;
+  isFirstParty: boolean;
+  redirectUris: string[];
+}): KnownApp | null {
+  const app = getKnownApp(client.knownAppId);
+  if (!app) {
+    return null;
+  }
+  if (
+    client.isFirstParty ||
+    checkRedirectsStayWithApp(app, client.redirectUris)
+  ) {
+    return app;
   }
   return null;
 }

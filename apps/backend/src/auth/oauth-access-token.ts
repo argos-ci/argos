@@ -5,6 +5,7 @@ import type { Request } from "express";
 import { waitUntil } from "@/api/request-context";
 import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
+import { getClientKnownApp } from "@/oauth/known-apps";
 import { getApiResourceUrl, normalizeResource } from "@/oauth/metadata";
 
 import { boom } from "../util/error";
@@ -162,7 +163,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
     scope: scopeAccounts,
     oauthScopes: accessToken.scopes,
     clientId: client.clientId,
-    knownAppId: client.knownAppId,
+    knownAppId: getClientKnownApp(client)?.id ?? null,
     grantId: grant.id,
   };
 }
