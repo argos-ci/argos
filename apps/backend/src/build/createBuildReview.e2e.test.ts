@@ -7,10 +7,12 @@ import {
   BuildNotificationSubscription,
   BuildReview,
   Comment,
+  NotificationWorkflowRecipient,
   ScreenshotDiff,
   ScreenshotDiffReview,
   User,
 } from "@/database/models";
+import { subscribeUserToBuild } from "@/database/services/build-notification-subscription";
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
 import { HTTPError } from "@/util/error";
@@ -278,6 +280,56 @@ describe("#createBuildReview", () => {
 
     const comments = await Comment.query().where({ buildReviewId: review.id });
     expect(comments).toHaveLength(0);
+  });
+
+  // A build subscription outlives the access that created it, and the email
+  // carries the review comment.
+  test("emails the review only to subscribers who can still view the project", async ({
+    user,
+    build,
+  }) => {
+    const project = await build
+      .$relatedQuery("project")
+      .withGraphFetched("account");
+    const teamId = project?.account?.teamId;
+    invariant(teamId, "build should belong to a team project");
+    const [member, contributor, formerMember] =
+      await factory.User.createMany(3);
+    invariant(member && contributor && formerMember);
+    await factory.TeamUser.createMany(2, [
+      { teamId, userId: member.id, userLevel: "member" },
+      // No project-level access, and the project grants none by default.
+      { teamId, userId: contributor.id, userLevel: "contributor" },
+    ]);
+    // `formerMember` subscribed while on the team, then was removed from it.
+    await Promise.all(
+      [member, contributor, formerMember].map((subscriber) =>
+        subscribeUserToBuild({ buildId: build.id, userId: subscriber.id }),
+      ),
+    );
+
+    await createBuildReview({
+      build,
+      userId: user.id,
+      event: "COMMENT",
+      body: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Internal feedback" }],
+          },
+        ],
+      },
+      snapshotReviews: [],
+    });
+
+    const recipients = await NotificationWorkflowRecipient.query()
+      .joinRelated("workflow")
+      .where("workflow.type", "review_submitted");
+    expect(recipients.map((recipient) => recipient.userId)).toEqual([
+      member.id,
+    ]);
   });
 
   test("pushes a diff-accepted build notification when approving", async ({

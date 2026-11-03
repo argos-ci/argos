@@ -16,12 +16,12 @@ import {
   getTestSubscribedUserIds,
 } from "@/database/services/test-notification-subscription";
 import { sendNotification } from "@/notification";
+import { getProjectNotificationRecipients } from "@/project/members";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
 import {
   getCommentNotificationData,
-  getCommentRecipients,
   notifyMentionedUsers,
 } from "./commentNotifications";
 import { syncCommentMentions } from "./mentions";
@@ -238,7 +238,7 @@ async function notifyTargetSubscribers(input: {
 }): Promise<void> {
   const { target, project, comment, userId, excludeUserIds } = input;
   const subscribedUserIds = await getTargetSubscribedUserIds(target);
-  const recipients = await getCommentRecipients({
+  const recipients = await getProjectNotificationRecipients({
     project,
     userIds: subscribedUserIds,
     excludeUserIds: [userId, ...excludeUserIds],
@@ -265,7 +265,7 @@ async function notifyCommentThreadSubscribers(input: {
 }): Promise<void> {
   const { target, project, comment, userId, threadId, excludeUserIds } = input;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
-  const recipients = await getCommentRecipients({
+  const recipients = await getProjectNotificationRecipients({
     project,
     userIds: subscribedUserIds,
     excludeUserIds: [userId, ...excludeUserIds],

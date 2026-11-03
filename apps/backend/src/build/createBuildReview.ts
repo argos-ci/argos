@@ -27,6 +27,7 @@ import { subscribeUserToCommentThread } from "@/database/services/comment-notifi
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { sendNotification } from "@/notification";
+import { getProjectNotificationRecipients } from "@/project/members";
 import { boom } from "@/util/error";
 
 import { getViewerPendingReview } from "./pendingReview";
@@ -308,21 +309,31 @@ async function notifyBuildSubscribers(input: {
   if (state !== "approved" && state !== "rejected" && state !== "commented") {
     return;
   }
-  invariant(buildReview.userId, "review should have a userId");
+  const reviewerId = buildReview.userId;
+  invariant(reviewerId, "review should have a userId");
   const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
-  const recipients = subscribedUserIds.filter(
-    (id) => id !== buildReview.userId,
-  );
+  // Narrowing needs the project: skip loading it when only the reviewer follows
+  // the build.
+  if (subscribedUserIds.every((id) => id === reviewerId)) {
+    return;
+  }
+  const project = await build
+    .$relatedQuery("project")
+    .withGraphFetched("account");
+  invariant(project, "project not found");
+  invariant(project.account, "project account not found");
+  const recipients = await getProjectNotificationRecipients({
+    project,
+    userIds: subscribedUserIds,
+    excludeUserIds: [reviewerId],
+  });
   if (recipients.length === 0) {
     return;
   }
-  const [project, reviewer, buildUrl] = await Promise.all([
-    build.$relatedQuery("project").withGraphFetched("account"),
-    User.query().findById(buildReview.userId).withGraphFetched("account"),
+  const [reviewer, buildUrl] = await Promise.all([
+    User.query().findById(reviewerId).withGraphFetched("account"),
     build.getUrl(),
   ]);
-  invariant(project, "project not found");
-  invariant(project.account, "project account not found");
   const reviewerName = reviewer?.account?.displayName ?? null;
   await sendNotification({
     type: "review_submitted",

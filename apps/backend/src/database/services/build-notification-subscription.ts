@@ -66,7 +66,7 @@ export async function autoSubscribeUserToBuild(input: {
  * Get the user IDs currently subscribed to a build's notifications.
  *
  * These are the users who asked to be told, not the users who may still read
- * what they would be told about — see `getCommentRecipients`.
+ * what they would be told about — see `getProjectNotificationRecipients`.
  */
 export async function getBuildSubscribedUserIds(
   buildId: string,
