@@ -325,4 +325,87 @@ describe("GraphQL staffTeams", () => {
       ]);
     });
   });
+
+  describe("ordering by what the last period came to", () => {
+    let viewer: Viewer;
+
+    beforeEach(async () => {
+      viewer = await createViewer({ staff: true });
+      const plan = await factory.Plan.create({
+        usageBased: true,
+        interval: "month",
+      });
+      // Running since 2021, so the periods reset on the 1st and the one
+      // before the running period has closed and been invoiced.
+      const startDate = new Date("2021-01-01").toISOString();
+      const now = new Date();
+      const boundary = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+      );
+
+      const teams = [
+        { slug: "amount-plain", flatPrice: 120, addOnsPrice: 0, invoiced: 0 },
+        {
+          slug: "amount-add-ons",
+          flatPrice: 100,
+          addOnsPrice: 50,
+          invoiced: 0,
+        },
+        {
+          slug: "amount-invoiced",
+          flatPrice: 100,
+          addOnsPrice: 0,
+          invoiced: 30_000,
+        },
+      ];
+
+      for (const team of teams) {
+        const account = await factory.TeamAccount.create({
+          slug: team.slug,
+          stripeCustomerId: `cus_${team.slug}`,
+        });
+        const subscriber = await factory.User.create();
+        await factory.Subscription.create({
+          accountId: account.id,
+          planId: plan.id,
+          subscriberId: subscriber.id,
+          provider: "stripe",
+          stripeSubscriptionId: `sub_${team.slug}`,
+          status: "active",
+          createdAt: startDate,
+          startDate,
+          includedScreenshots: 1000,
+          currency: "usd",
+          flatPrice: team.flatPrice,
+          addOnsPrice: team.addOnsPrice,
+        });
+        if (team.invoiced) {
+          await factory.StripeInvoice.create({
+            stripeCustomerId: `cus_${team.slug}`,
+            stripeSubscriptionId: `sub_${team.slug}`,
+            stripeCreatedAt: new Date(
+              boundary.getTime() + 60_000,
+            ).toISOString(),
+            total: team.invoiced,
+            totalExcludingTax: team.invoiced,
+          });
+        }
+      }
+    });
+
+    it("reads the invoice when there is one, and the add-ons otherwise", async () => {
+      // Read off the plan alone, the order is the other way round: 120 for the
+      // plain team, 100 for each of the others.
+      const res = await queryTeams(viewer, {
+        search: "amount-",
+        orderBy: "PREVIOUS_PERIOD_DESC",
+      });
+
+      expect(getSlugs(res)).toEqual([
+        "amount-invoiced",
+        "amount-add-ons",
+        "amount-plain",
+      ]);
+    });
+  });
 });

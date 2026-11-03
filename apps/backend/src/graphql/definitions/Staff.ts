@@ -10,6 +10,7 @@ import {
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import {
   getStaffRevenue,
+  getInvoiceRevenue,
   getStaffRevenueMonthTeams,
   MAX_MONTHS,
   MirrorCoverageError,
@@ -113,6 +114,10 @@ const AMOUNT_ORDERINGS: Partial<
  * displays it does — a yearly subscription's period is a year. This exists so
  * the ordering and the figure on screen come out of one rule; a team ordered
  * above another has to read higher than it too.
+ *
+ * A closed period reads the invoice it closed on when the mirror holds one:
+ * that is what was billed, add-ons and all, where the sum below is only an
+ * estimate of it.
  */
 function getPeriodAmount(
   billing: AccountBilling,
@@ -133,10 +138,15 @@ function getPeriodAmount(
     return null;
   }
 
+  if (billed.invoice) {
+    return getInvoiceRevenue(billed.invoice).amount;
+  }
+
   // Null when Stripe was never asked for the amount. Ordered as nothing rather
   // than guessed at: the guess belongs to the display, which says it is one.
   const flatPrice = billing.flatPrice ?? 0;
-  return flatPrice + billed.additionalScreenshotCost;
+  const addOnsPrice = billing.addOnsPrice ?? 0;
+  return flatPrice + addOnsPrice + billed.additionalScreenshotCost;
 }
 
 /**
@@ -307,6 +317,12 @@ export const typeDefs = gql`
     screenshotsCount: Int!
     "Cost of the screenshots consumed beyond the included quota, this period."
     additionalScreenshotsCost: Float!
+    """
+    What Stripe invoiced when the period closed, before tax and net of credit
+    notes: the plan, the add-ons and the overage. Null while the period runs,
+    and when no such invoice is mirrored.
+    """
+    invoicedAmount: Float
   }
 
   "What a team is consuming, as needed to explain what it is about to pay."
@@ -363,6 +379,12 @@ export const typeDefs = gql`
     reading the amount.
     """
     flatPrice: Float
+    """
+    What the add-ons cost per billing period, in the subscription's currency: 0
+    when it has none. Null when Stripe has nothing to state, as for
+    \`flatPrice\`.
+    """
+    addOnsPrice: Float
     """
     Screenshots included in each billing period before the overage starts: the
     amount the subscription states, and the plan's published one when it states
@@ -764,6 +786,12 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
+    addOnsPrice: async (account, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        account.id,
+      );
+      return billing.addOnsPrice;
+    },
     includedScreenshots: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(
         account.id,
@@ -797,6 +825,9 @@ export const resolvers: IResolvers = {
         closed: period.closed,
         screenshotsCount: period.screenshotsCount,
         additionalScreenshotsCost: period.additionalScreenshotCost,
+        invoicedAmount: period.invoice
+          ? getInvoiceRevenue(period.invoice).amount
+          : null,
       }));
     },
     storybookRatio: async (account, _args, ctx) => {

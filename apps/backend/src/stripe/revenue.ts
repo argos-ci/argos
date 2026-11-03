@@ -1044,7 +1044,10 @@ async function getEstimatedBills(options: {
     }
 
     const revenue = {
-      amount: billing.flatPrice + period.additionalScreenshotCost,
+      amount:
+        billing.flatPrice +
+        (billing.addOnsPrice ?? 0) +
+        period.additionalScreenshotCost,
       currency: team.currency ?? REPORTING_CURRENCY,
     };
     bills.push({

@@ -2,7 +2,13 @@ import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
 
-import { Account, clampedStorybookCount, Plan, Subscription } from "../models";
+import {
+  Account,
+  clampedStorybookCount,
+  Plan,
+  StripeInvoice,
+  Subscription,
+} from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
 
 /** One billing period of an account, priced from the usage it accumulated. */
@@ -33,6 +39,14 @@ type BillingPeriodUsage = {
    * period, in the subscription's currency.
    */
   additionalScreenshotCost: number;
+  /**
+   * The invoice Stripe raised when the period closed, which bills its overage
+   * along with the plan and the add-ons. Null while the period runs, and when
+   * the mirror holds no such invoice: it is still a draft (Stripe finalizes an
+   * hour after the boundary), or the period closed on something other than a
+   * renewal, such as a plan change.
+   */
+  invoice: StripeInvoice | null;
 };
 
 /**
@@ -99,6 +113,12 @@ export type AccountBilling = {
    * has nothing to answer: see `Subscription.flatPrice`.
    */
   flatPrice: number | null;
+  /**
+   * What the add-ons cost per billing period on this subscription, in the same
+   * currency. Null when Stripe has never been asked for it: see
+   * `Subscription.addOnsPrice`.
+   */
+  addOnsPrice: number | null;
   /**
    * Screenshots included in each billing period before the overage starts: the
    * amount the subscription states, and the plan's published one when it
@@ -451,6 +471,73 @@ export async function getAccountStorybookTotals(
   return result;
 }
 
+/** A closed period, with what it takes to find the invoice it closed on. */
+type ClosingPeriod = {
+  period: AccountPeriod;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  /** When the period after it ends, which bounds the search. */
+  nextEndsAt: Date;
+};
+
+/**
+ * The invoice each closed period closed on, in one query whatever the batch
+ * size.
+ *
+ * A renewal raises one `subscription_cycle` invoice at the boundary, billing
+ * the overage of the period that ends there with the plan and the add-ons. So
+ * a period's invoice is the cycle invoice raised between its end and the end
+ * of the period after it. Filtered on the customer as well as on the
+ * subscription because the customer is what the mirror indexes.
+ */
+async function getClosingInvoices(
+  closingPeriods: ClosingPeriod[],
+): Promise<Map<AccountPeriod, StripeInvoice>> {
+  const result = new Map<AccountPeriod, StripeInvoice>();
+
+  if (closingPeriods.length === 0) {
+    return result;
+  }
+
+  const earliestEnd = Math.min(
+    ...closingPeriods.map(({ period }) => period.endsAt.getTime()),
+  );
+  const invoices = await StripeInvoice.query()
+    .whereIn("stripeCustomerId", [
+      ...new Set(closingPeriods.map((item) => item.stripeCustomerId)),
+    ])
+    .whereIn("stripeSubscriptionId", [
+      ...new Set(closingPeriods.map((item) => item.stripeSubscriptionId)),
+    ])
+    .where("billingReason", "subscription_cycle")
+    // Nobody owes a voided invoice, so it says nothing of what was billed.
+    .whereNot("status", "void")
+    .where(
+      "stripeCreatedAt",
+      ">=",
+      new Date(earliestEnd - PERIOD_BOUNDARY_TOLERANCE).toISOString(),
+    )
+    .orderBy("stripeCreatedAt", "asc");
+
+  for (const { period, stripeSubscriptionId, nextEndsAt } of closingPeriods) {
+    const from = period.endsAt.getTime() - PERIOD_BOUNDARY_TOLERANCE;
+    const until = nextEndsAt.getTime() - PERIOD_BOUNDARY_TOLERANCE;
+    const invoice = invoices.find((candidate) => {
+      const createdAt = new Date(candidate.stripeCreatedAt).getTime();
+      return (
+        candidate.stripeSubscriptionId === stripeSubscriptionId &&
+        createdAt >= from &&
+        createdAt < until
+      );
+    });
+    if (invoice) {
+      result.set(period, invoice);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Whether a period is one Stripe invoices. `index` counts periods back from
  * the running one, 0.
@@ -527,6 +614,7 @@ export async function getAccountBillings(
           // even when a leftover subscription still carries one, and no quota
           // either — nothing is ever counted against it.
           flatPrice: null,
+          addOnsPrice: null,
           includedScreenshots: null,
           periodUsage: null,
         });
@@ -570,6 +658,7 @@ export async function getAccountBillings(
 
   const now = new Date();
   const periodsByAccountId = new Map<string, AccountPeriod[]>();
+  const closingPeriods: ClosingPeriod[] = [];
 
   for (const account of subscribedAccounts) {
     const subscription = subscriptionByAccountId.get(account.id);
@@ -577,6 +666,7 @@ export async function getAccountBillings(
       result.set(account.id, {
         plan: subscription?.plan ?? null,
         flatPrice: subscription?.flatPrice ?? null,
+        addOnsPrice: subscription?.addOnsPrice ?? null,
         includedScreenshots:
           subscription?.includedScreenshots ??
           subscription?.plan?.includedScreenshots ??
@@ -596,18 +686,32 @@ export async function getAccountBillings(
       now,
       subscription.plan.interval,
     );
-    periodsByAccountId.set(
-      account.id,
-      starts.map((from, index) => ({
-        accountId: account.id,
-        index,
-        from,
-        to: starts[index - 1] ?? now,
-        // A closed period ends exactly where the next one opens. The running
-        // one has no next period yet, so its end comes off the anniversary.
-        endsAt: starts[index - 1] ?? runningPeriodEnd,
-      })),
-    );
+    const accountPeriods = starts.map((from, index) => ({
+      accountId: account.id,
+      index,
+      from,
+      to: starts[index - 1] ?? now,
+      // A closed period ends exactly where the next one opens. The running
+      // one has no next period yet, so its end comes off the anniversary.
+      endsAt: starts[index - 1] ?? runningPeriodEnd,
+    }));
+    periodsByAccountId.set(account.id, accountPeriods);
+
+    const { stripeSubscriptionId } = subscription;
+    const { stripeCustomerId } = account;
+    if (stripeSubscriptionId && stripeCustomerId) {
+      for (const period of accountPeriods) {
+        const next = accountPeriods[period.index - 1];
+        if (next && checkIsBilledPeriod(period, subscription)) {
+          closingPeriods.push({
+            period,
+            stripeCustomerId,
+            stripeSubscriptionId,
+            nextEndsAt: next.endsAt,
+          });
+        }
+      }
+    }
   }
 
   const periods = [...periodsByAccountId.values()].flat();
@@ -616,7 +720,10 @@ export async function getAccountBillings(
     return result;
   }
 
-  const totalsByAccountId = await getScreenshotTotals(periods);
+  const [totalsByAccountId, invoiceByPeriod] = await Promise.all([
+    getScreenshotTotals(periods),
+    getClosingInvoices(closingPeriods),
+  ]);
 
   for (const [accountId, accountPeriods] of periodsByAccountId) {
     const subscription = subscriptionByAccountId.get(accountId);
@@ -635,6 +742,7 @@ export async function getAccountBillings(
     result.set(accountId, {
       plan,
       flatPrice: subscription.flatPrice,
+      addOnsPrice: subscription.addOnsPrice,
       includedScreenshots,
       periodUsage: {
         currentPeriodScreenshotsCount: runningTotals.all,
@@ -655,6 +763,7 @@ export async function getAccountBillings(
                 totals: periodTotals,
                 included: includedScreenshots,
               }),
+              invoice: invoiceByPeriod.get(period) ?? null,
             };
           }),
       },

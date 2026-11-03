@@ -68,6 +68,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: null,
       flatPrice: null,
+      addOnsPrice: null,
       includedScreenshots: null,
       periodUsage: null,
     });
@@ -92,6 +93,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(grantedAccount.id)).toEqual({
       plan: expect.objectContaining({ id: usageBasedPlan.id }),
       flatPrice: null,
+      addOnsPrice: null,
       // Nothing is counted against a quota on a plan that is not billed.
       includedScreenshots: null,
       periodUsage: null,
@@ -132,6 +134,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: expect.objectContaining({ id: flatPlan.id }),
       flatPrice: null,
+      addOnsPrice: null,
       // Read off the subscription that won, not off the one that lost: the
       // usage-based one includes a thousand.
       includedScreenshots: 1_000_000,
@@ -270,9 +273,48 @@ describe("getAccountPeriodUsages", () => {
     expect(closed).toMatchObject({
       closed: true,
       additionalScreenshotCost: 200,
+      // No invoice mirrored, so nothing says what Stripe billed for it.
+      invoice: null,
     });
     // Contiguous: each period ends where the next one opens.
     expect(closed?.to).toEqual(running?.from);
+  });
+
+  it("reads a closed period off the invoice raised when it closed", async () => {
+    await createUsageBasedSubscription();
+    await account.$query().patch({ stripeCustomerId: "cus_period_usage" });
+    const createInvoice = (props: {
+      stripeCreatedAt: Date;
+      billingReason?: string;
+    }) =>
+      factory.StripeInvoice.create({
+        stripeCustomerId: "cus_period_usage",
+        stripeSubscriptionId: "sub_period_usage",
+        billingReason: props.billingReason ?? "subscription_cycle",
+        stripeCreatedAt: props.stripeCreatedAt.toISOString(),
+      });
+    const previousBoundary = new Date(inPeriod);
+    previousBoundary.setUTCMonth(previousBoundary.getUTCMonth() - 1);
+
+    const [closing] = await Promise.all([
+      // Raised a minute after the boundary, as a renewal is.
+      createInvoice({ stripeCreatedAt: new Date(inPeriod.getTime() + 60_000) }),
+      // The renewal before, which closed the period before.
+      createInvoice({ stripeCreatedAt: previousBoundary }),
+      // An add-on bought during the running period is invoiced on the spot.
+      createInvoice({
+        stripeCreatedAt: new Date(inPeriod.getTime() + 120_000),
+        billingReason: "subscription_update",
+      }),
+    ]);
+
+    const usage = await getAccountBillings([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    const [running, closed] = usage?.periodUsage?.billingPeriods ?? [];
+    expect(closed?.invoice?.stripeInvoiceId).toBe(closing.stripeInvoiceId);
+    expect(running?.invoice).toBeNull();
   });
 
   it("leaves out the periods the trial covers", async () => {
@@ -369,6 +411,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(noSubscriptionAccount.id)).toEqual({
       plan: null,
       flatPrice: null,
+      addOnsPrice: null,
       includedScreenshots: null,
       periodUsage: null,
     });
