@@ -138,6 +138,29 @@ describe("updateBuild", () => {
     });
   });
 
+  test("returns 403 for another project's finalized build", async () => {
+    // The retry path returns the whole build, so it must not run before the
+    // build is known to belong to the token's project.
+    const otherProject = await factory.Project.create({
+      name: "other",
+      token: "another-token",
+    });
+    const otherBucket = await factory.ScreenshotBucket.create({
+      projectId: otherProject.id,
+      complete: true,
+    });
+    const otherBuild = await factory.Build.create({
+      projectId: otherProject.id,
+      compareScreenshotBucketId: otherBucket.id,
+    });
+
+    await put(otherBuild.id, { screenshots: [] })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.build).toBeUndefined();
+      });
+  });
+
   describe("when the build is already finalized", () => {
     test("adding new screenshots returns 409", async ({ build }) => {
       await put(build.id, {
