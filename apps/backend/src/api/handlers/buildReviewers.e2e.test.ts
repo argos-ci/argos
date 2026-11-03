@@ -126,6 +126,25 @@ async function createTeammate(account: Account): Promise<Account> {
   return userAccount;
 }
 
+/** A team contributor with no project-level access, holding an account-scoped token. */
+async function createContributor(
+  account: Account,
+): Promise<{ user: User; token: string }> {
+  const user = await factory.User.create();
+  await factory.UserAccount.create({ userId: user.id });
+  await factory.TeamUser.create({
+    teamId: account.teamId,
+    userId: user.id,
+    userLevel: "contributor",
+  });
+  const token = await createScopedPatToken({
+    user,
+    account,
+    token: `arp_${"d".repeat(36)}`,
+  });
+  return { user, token };
+}
+
 beforeAll(() => {
   z.globalRegistry.clear();
 });
@@ -278,19 +297,7 @@ describe("buildReviewers", () => {
   });
 
   test("403s without the review permission", async ({ account, build }) => {
-    // A contributor with no project-level access cannot review.
-    const contributor = await factory.User.create();
-    await factory.UserAccount.create({ userId: contributor.id });
-    await factory.TeamUser.create({
-      teamId: account.teamId,
-      userId: contributor.id,
-      userLevel: "contributor",
-    });
-    const token = await createScopedPatToken({
-      user: contributor,
-      account,
-      token: `arp_${"f".repeat(36)}`,
-    });
+    const { token } = await createContributor(account);
     const teammate = await createTeammate(account);
 
     await request(app)
@@ -341,6 +348,28 @@ describe("build subscription", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
+
+  test("403s to a contributor without project access", async ({
+    account,
+    build,
+  }) => {
+    const { token } = await createContributor(account);
+
+    await request(app)
+      .post("/projects/acme/web/builds/1/subscription")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+    await request(app)
+      .delete("/projects/acme/web/builds/1/subscription")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+
+    expect(
+      await BuildNotificationSubscription.query()
+        .where({ buildId: build.id })
+        .resultSize(),
+    ).toBe(0);
+  });
 });
 
 describe("test subscription", () => {
@@ -385,5 +414,86 @@ describe("test subscription", () => {
       .post("/projects/acme/web/tests/WEB-nope/subscription")
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
+  });
+
+  test("403s to a contributor without project access", async ({
+    account,
+    project,
+  }) => {
+    const testRow = await factory.Test.create({
+      projectId: project.id,
+      name: "home",
+    });
+    const testId = formatTestId({
+      projectName: project.name,
+      testId: testRow.id,
+    });
+    const { token } = await createContributor(account);
+
+    await request(app)
+      .post(`/projects/acme/web/tests/${testId}/subscription`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+    await request(app)
+      .delete(`/projects/acme/web/tests/${testId}/subscription`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+
+    expect(
+      await TestNotificationSubscription.query()
+        .where({ testId: testRow.id })
+        .resultSize(),
+    ).toBe(0);
+  });
+
+  test("stays open on a public project with no project access", async ({
+    account,
+  }) => {
+    const project = await factory.Project.create({
+      name: "docs",
+      accountId: account.id,
+      private: false,
+    });
+    const bucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: bucket.id,
+      number: 1,
+    });
+    const testRow = await factory.Test.create({
+      projectId: project.id,
+      name: "home",
+    });
+    const testId = formatTestId({
+      projectName: project.name,
+      testId: testRow.id,
+    });
+    const { user, token } = await createContributor(account);
+
+    const subscribeBuild = await request(app)
+      .post("/projects/acme/docs/builds/1/subscription")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(subscribeBuild.body).toEqual({ subscribed: true });
+    expect(
+      await BuildNotificationSubscription.query().findOne({
+        buildId: build.id,
+        userId: user.id,
+      }),
+    ).not.toBeNull();
+
+    const subscribeTest = await request(app)
+      .post(`/projects/acme/docs/tests/${testId}/subscription`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(subscribeTest.body).toEqual({ subscribed: true });
+    expect(
+      await TestNotificationSubscription.query().findOne({
+        testId: testRow.id,
+        userId: user.id,
+      }),
+    ).not.toBeNull();
   });
 });
