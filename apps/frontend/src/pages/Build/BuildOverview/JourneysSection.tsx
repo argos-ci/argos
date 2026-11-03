@@ -93,9 +93,6 @@ const _BuildFragment = graphql(`
     journeys {
       ...JourneysSection_Journey
     }
-    singleScreenTests {
-      ...JourneysSection_Journey
-    }
   }
 `);
 
@@ -315,9 +312,6 @@ export function JourneysSection(props: {
       ? listed.slice(0, COLLAPSED_JOURNEY_COUNT)
       : listed;
   const hiddenUnchangedCount = listed === changed ? unchanged.length : 0;
-  const singleScreenTests = getJourneyTests(build.singleScreenTests, {
-    isSubsetBuild: build.subset,
-  });
   return (
     <Panel elevation={0} className="pb-1">
       <PanelHeader className="mb-2">
@@ -353,7 +347,6 @@ export function JourneysSection(props: {
           ) : null}
         </div>
       ) : null}
-      <SingleScreenTests tests={singleScreenTests} />
     </Panel>
   );
 }
@@ -628,110 +621,6 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="absolute inset-0 z-30 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       />
-    </li>
-  );
-}
-
-const COLLAPSED_SINGLE_SCREEN_COUNT = 5;
-
-/**
- * The changed tests that capture a single screen, a line each after the
- * journeys: nothing to walk, but the section then covers every changed test.
- */
-function SingleScreenTests(props: { tests: JourneyTest[] }) {
-  const { tests } = props;
-  const [expanded, setExpanded] = useState(false);
-  if (tests.length === 0) {
-    return null;
-  }
-  const collapsible = tests.length > COLLAPSED_SINGLE_SCREEN_COUNT + 1;
-  const visible =
-    collapsible && !expanded
-      ? tests.slice(0, COLLAPSED_SINGLE_SCREEN_COUNT)
-      : tests;
-  return (
-    <div className="border-t-thin px-4 pt-3 pb-1.5">
-      <h3 className="text-low text-xs font-medium">Single-screen tests</h3>
-      <ul className="mt-1.5 flex flex-col">
-        {visible.map((test) => (
-          <SingleScreenTestItem key={test.key} test={test} />
-        ))}
-      </ul>
-      {collapsible && !expanded ? (
-        <div className="mt-2 mb-1.5">
-          <SectionButton onClick={() => setExpanded(true)}>
-            Show {plural(tests.length - visible.length, "more test")}
-          </SectionButton>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SingleScreenTestItem(props: { test: JourneyTest }) {
-  const { test } = props;
-  const params = useBuildParams();
-  invariant(params, "a test is rendered on a build page");
-  const mark = getReviewMark(getChangedDiffs(test.runs), useReviewStatuses());
-  const shownRun =
-    test.runs.find((run) => run.changedCount > 0) ?? test.runs[0];
-  const shownScreen = shownRun?.screens[0];
-  invariant(shownScreen, "a test has at least one screen");
-  const ratio = shownRun?.viewport
-    ? shownRun.viewport.width / shownRun.viewport.height
-    : 1.5;
-  const thumbnail = { width: Math.round(40 * ratio), height: 40 };
-  return (
-    <li className="hover:bg-subtle relative -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition">
-      <span className="block shrink-0" style={thumbnail}>
-        <ScreenshotDiffThumbnail
-          screenshotDiff={shownScreen.diff}
-          className="size-full"
-          iconClassName="m-auto size-4"
-          fit="cover"
-          transformations={[
-            `w-${thumbnail.width * 2}`,
-            `h-${thumbnail.height * 2}`,
-            "fo-top",
-            "e-sharpen",
-          ]}
-        />
-      </span>
-      <div className="min-w-0 flex-1">
-        {test.prefix ? (
-          <div className="text-low truncate text-xs">{test.prefix}</div>
-        ) : null}
-        {/* The whole line opens the screen that changed. */}
-        <HeadlessLink
-          href={getBuildURL({ ...params, diffId: shownScreen.diff.id })}
-          className="text-sm/snug font-medium outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
-        >
-          {test.title}
-        </HeadlessLink>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {test.runs.map((run) => {
-          const [screen] = run.screens;
-          invariant(screen, "a run has at least one screen");
-          const ViewportIcon = run.viewport
-            ? viewportIcons[getViewportIconKind(run.viewport.width)]
-            : null;
-          return (
-            <HeadlessLink
-              key={run.key}
-              href={getBuildURL({ ...params, diffId: screen.diff.id })}
-              className={clsx(
-                "border-thin bg-app hover:bg-hover focus-ring text-xxs relative z-1 flex items-center gap-1 rounded-full px-1.5 tabular-nums transition",
-                run.changedCount > 0 ? "text-warning-low" : "text-low",
-              )}
-            >
-              {ViewportIcon ? <ViewportIcon className="size-3" /> : null}
-              {getRunLabel(run, test) || "Run"}
-            </HeadlessLink>
-          );
-        })}
-        {mark ? <ReviewMark mark={mark} className="relative z-1 ml-1" /> : null}
-      </div>
     </li>
   );
 }

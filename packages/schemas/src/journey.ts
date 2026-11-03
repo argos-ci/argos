@@ -178,7 +178,7 @@ export function checkIsMultiStepJourney(journey: Journey<unknown>): boolean {
  * Storybook stories group by component, one step per story: a build already
  * names those on its own (story kind filter, affected components).
  */
-export function checkIsStoryJourney<T>(
+function checkIsStoryJourney<T>(
   journey: Journey<T>,
   getMetadata: (item: T) => JourneyMetadata,
 ): boolean {

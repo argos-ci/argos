@@ -171,8 +171,6 @@ export const typeDefs = gql`
     storybook: Boolean!
     "Runs of end-to-end tests that capture several screens, a journey each"
     journeys: [BuildJourney!]!
-    "Runs of end-to-end tests that capture a single screen, the ones that changed"
-    singleScreenTests: [BuildJourney!]!
   }
 
   "A run of an end-to-end test, with the screens it captures"
@@ -556,9 +554,7 @@ export const resolvers: IResolvers = {
       }
       return getBuildImpactAnalysis(build);
     },
-    journeys: async (build) => (await getBuildJourneys(build)).journeys,
-    singleScreenTests: async (build) =>
-      (await getBuildJourneys(build)).singleScreenTests,
+    journeys: async (build) => getBuildJourneys(build),
     storybook: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.storybookScreenshotCount > 0;

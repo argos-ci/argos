@@ -1,8 +1,6 @@
 import { createHash } from "node:crypto";
 import {
-  checkIsMultiStepJourney,
-  checkIsStoryJourney,
-  groupJourneys,
+  groupWalkableJourneys,
   type Journey,
   type JourneyMetadata,
 } from "@argos/schemas/journey";
@@ -23,9 +21,8 @@ export type BuildJourneyStep = {
 };
 
 /**
- * A run of a test, with its screens in capture order.
+ * A run of a test that captures several screens, the way a review walks it.
  * `@argos/schemas/journey` says what makes a journey and a step.
- * @graphqlType
  */
 export type BuildJourney = {
   id: string;
@@ -40,10 +37,6 @@ export type BuildJourney = {
 type JourneyRow = {
   id: string;
   name: string;
-  baseScreenshotId: string | null;
-  compareScreenshotId: string | null;
-  score: string | number | null;
-  ignored: boolean;
   testId: string | null;
   testTitlePath: unknown;
   storyId: string | null;
@@ -92,15 +85,6 @@ function getJourneyId(key: string): string {
   return createHash("sha256").update(key).digest("hex").slice(0, 8);
 }
 
-/** Added, removed or changed: what a review has to look at. */
-function checkRowChanged(row: JourneyRow): boolean {
-  return (
-    row.baseScreenshotId === null ||
-    row.compareScreenshotId === null ||
-    (Number(row.score ?? 0) > 0 && !row.ignored)
-  );
-}
-
 type JourneyItem = {
   row: JourneyRow;
   variantKey: string;
@@ -128,28 +112,8 @@ function toBuildJourney({
   };
 }
 
-type BuildJourneys = {
-  /** The test runs that capture several screens, steps in capture order. */
-  journeys: BuildJourney[];
-  /** The test runs that capture a single screen, the ones that changed. */
-  singleScreenTests: BuildJourney[];
-};
-
-// The two fields of a build read the same rows: a query per build object, so
-// per request, not one per field.
-const buildJourneysCache = new WeakMap<Build, Promise<BuildJourneys>>();
-
-export function getBuildJourneys(build: Build): Promise<BuildJourneys> {
-  const cached = buildJourneysCache.get(build);
-  if (cached) {
-    return cached;
-  }
-  const promise = queryBuildJourneys(build);
-  buildJourneysCache.set(build, promise);
-  return promise;
-}
-
-async function queryBuildJourneys(build: Build): Promise<BuildJourneys> {
+/** The journeys of a build, with their steps in capture order. */
+export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
   const rows = await ScreenshotDiff.query()
     .where("screenshot_diffs.buildId", build.id)
     .leftJoinRelated("[baseScreenshot, compareScreenshot]")
@@ -158,10 +122,6 @@ async function queryBuildJourneys(build: Build): Promise<BuildJourneys> {
     .whereNull("compareScreenshot.parentName")
     .select(
       "screenshot_diffs.id",
-      "screenshot_diffs.baseScreenshotId",
-      "screenshot_diffs.compareScreenshotId",
-      "screenshot_diffs.score",
-      "screenshot_diffs.ignored",
       raw(
         `coalesce(nullif("compareScreenshot"."name", ''), "baseScreenshot"."name")`,
       ).as("name"),
@@ -184,19 +144,7 @@ async function queryBuildJourneys(build: Build): Promise<BuildJourneys> {
     variantKey: getVariantKey(row.name),
     metadata: getJourneyMetadata(row),
   }));
-  const tests = groupJourneys(items, (item) => item.metadata).filter(
-    (journey) => !checkIsStoryJourney(journey, (item) => item.metadata),
+  return groupWalkableJourneys(items, (item) => item.metadata).map(
+    toBuildJourney,
   );
-  return {
-    journeys: tests.filter(checkIsMultiStepJourney).map(toBuildJourney),
-    singleScreenTests: tests
-      .filter(
-        (journey) =>
-          !checkIsMultiStepJourney(journey) &&
-          journey.steps.some((step) =>
-            step.diffs.some((item) => checkRowChanged(item.row)),
-          ),
-      )
-      .map(toBuildJourney),
-  };
 }

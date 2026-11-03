@@ -244,14 +244,6 @@ loggedTest(
       .click();
     await expect(runRow("create an account")).toHaveText(/1280×720/);
     await expect(walkLink("shows the home page")).toHaveCount(0);
-    // A changed test that captures a single screen has a line of its own at
-    // the end, so no other section lists the changed tests.
-    await expect(
-      page.getByRole("link", { name: "shows the home page" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Affected tests" }),
-    ).toHaveCount(0);
 
     await screenshot(page, "build-overview-journeys", {
       replacements: { [team.account.slug]: "acme" },
