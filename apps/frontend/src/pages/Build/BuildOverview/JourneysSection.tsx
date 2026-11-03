@@ -255,11 +255,6 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
           ) : null}
           <h3 className="mt-0.5 text-sm/snug font-medium">{test.title}</h3>
         </div>
-        {test.changedCount > 0 ? (
-          <span className="text-low shrink-0 pt-4 text-xs tabular-nums">
-            {plural(test.changedCount, "change")}
-          </span>
-        ) : null}
       </div>
       <ul className="mt-2 flex flex-col gap-0.5">
         {test.runs.map((run) => (
@@ -270,29 +265,19 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
   );
 }
 
-type Size = { width: number; height: number };
+const MAX_SHOWN_SCREENS = 3;
 
 /**
- * The boxes of a run's screens, at the viewport's shape so a phone run reads
- * as phone screens: a changed screen large enough to see what changed, an
- * unchanged one small, kept to show where the change sits in the journey.
+ * The box of a run's screens, at the viewport's shape so a phone run reads as
+ * phone screens, large enough to see what changed.
  */
-function getScreenSizes(viewport: Journey["viewport"]): {
-  changed: Size;
-  unchanged: Size;
+function getScreenSize(viewport: Journey["viewport"]): {
+  width: number;
+  height: number;
 } {
   const ratio = viewport ? viewport.width / viewport.height : 1.5;
-  const [changedHeight, unchangedHeight] = ratio < 1 ? [128, 56] : [72, 28];
-  return {
-    changed: {
-      width: Math.round(changedHeight * ratio),
-      height: changedHeight,
-    },
-    unchanged: {
-      width: Math.round(unchangedHeight * ratio),
-      height: unchangedHeight,
-    },
-  };
+  const height = ratio < 1 ? 128 : 72;
+  return { width: Math.round(height * ratio), height };
 }
 
 function JourneyRunRow(props: { run: JourneyRun; title: string }) {
@@ -309,7 +294,14 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
   const ViewportIcon = journey.viewport
     ? viewportIcons[getViewportIconKind(journey.viewport.width)]
     : null;
-  const sizes = getScreenSizes(journey.viewport);
+  const size = getScreenSize(journey.viewport);
+  // What changed, the first screens of it: the walk shows the rest. A run
+  // that changed nothing shows how it starts.
+  const numbered = screens.map((screen, index) => ({ ...screen, index }));
+  const changed = numbered.filter((screen) => screen.changed);
+  const candidates = changed.length > 0 ? changed : numbered;
+  const shown = candidates.slice(0, MAX_SHOWN_SCREENS);
+  const hiddenCount = candidates.length - shown.length;
   return (
     <li className="hover:bg-subtle relative -mx-2 grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-1.5 transition">
       {/* The whole row walks the journey from its start; each screen is a
@@ -347,47 +339,41 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
             : plural(screens.length, "screen")}
         </span>
       </HeadlessLink>
-      {/* A journey longer than the row shrinks its screens, the unchanged
-          ones first, so the strip always shows the whole journey. */}
-      <div className="flex min-w-0 items-center gap-1.5 pt-1.5 pr-1.5 pb-0.5">
-        {screens.map((screen, index) => {
-          const size = screen.changed ? sizes.changed : sizes.unchanged;
-          return (
-            <Tooltip
-              key={screen.diff.id}
-              content={`${index + 1} · ${screen.label}`}
+      <div className="flex min-w-0 items-center gap-2">
+        {shown.map((screen) => (
+          <Tooltip
+            key={screen.diff.id}
+            content={`${screen.index + 1} · ${screen.label}`}
+          >
+            <HeadlessLink
+              href={getHref(screen.diff)}
+              aria-label={`Screen ${screen.index + 1}, ${screen.label}`}
+              className="focus-ring relative z-1 block min-w-3 rounded-sm"
+              style={{
+                width: size.width,
+                aspectRatio: `${size.width} / ${size.height}`,
+              }}
             >
-              <HeadlessLink
-                href={getHref(screen.diff)}
-                aria-label={`Screen ${index + 1}, ${screen.label}${screen.changed ? ", changed" : ""}`}
-                className={clsx(
-                  "focus-ring relative z-1 block min-w-3 rounded-sm",
-                  !screen.changed && "shrink-[4]",
-                )}
-                style={{
-                  width: size.width,
-                  aspectRatio: `${size.width} / ${size.height}`,
-                }}
-              >
-                <ScreenshotDiffThumbnail
-                  screenshotDiff={screen.diff}
-                  className={clsx("size-full", !screen.changed && "opacity-50")}
-                  iconClassName="m-auto size-4"
-                  fit="cover"
-                  // A top crop at 2x the box: the screen as it first showed.
-                  transformations={[
-                    `w-${size.width * 2}`,
-                    `h-${size.height * 2}`,
-                    "fo-top",
-                  ]}
-                />
-                {screen.changed ? (
-                  <span className="bg-warning-solid absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-(--background-color-app)" />
-                ) : null}
-              </HeadlessLink>
-            </Tooltip>
-          );
-        })}
+              <ScreenshotDiffThumbnail
+                screenshotDiff={screen.diff}
+                className="size-full"
+                iconClassName="m-auto size-4"
+                fit="cover"
+                // A top crop at 2x the box: the screen as it first showed.
+                transformations={[
+                  `w-${size.width * 2}`,
+                  `h-${size.height * 2}`,
+                  "fo-top",
+                ]}
+              />
+            </HeadlessLink>
+          </Tooltip>
+        ))}
+        {hiddenCount > 0 ? (
+          <span className="text-low bg-ui shrink-0 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
+            +{hiddenCount}
+          </span>
+        ) : null}
       </div>
     </li>
   );
