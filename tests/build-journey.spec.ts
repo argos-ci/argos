@@ -243,6 +243,15 @@ loggedTest(
       .getByRole("button", { name: "Show 1 unchanged journey" })
       .click();
     await expect(runRow("create an account")).toHaveText(/1280×720/);
+    // Apart from the journeys to review, and marked as having no changes.
+    await expect(
+      page.getByRole("heading", { name: "Unchanged journeys" }),
+    ).toBeVisible();
+    await expect(
+      runRow("create an account").getByRole("img", {
+        name: "No changes in this journey",
+      }),
+    ).toBeVisible();
     await expect(walkLink("shows the home page")).toHaveCount(0);
 
     await screenshot(page, "build-overview-journeys", {
@@ -313,12 +322,12 @@ loggedTest(
         name: "Walk “complete a purchase” at 1280×720",
       }),
     ).toBeInViewport();
-    // A run waits for its review with a dot, which says how far it got.
+    // A run says it changed until its review is done, and how far it got.
     await expect(
-      page.getByRole("img", { name: "1 of 2 changed screens reviewed" }),
+      page.getByRole("img", { name: "Changed, 1 of 2 reviewed" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("img", { name: "Not reviewed yet" }).first(),
+      page.getByRole("img", { name: "Changed, not reviewed yet" }).first(),
     ).toBeVisible();
     await expect(journeyHeader).toHaveCount(0);
     await expect(walkLink("complete a purchase").first()).toBeVisible();

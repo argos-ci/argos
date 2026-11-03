@@ -6,14 +6,21 @@ import { clsx } from "clsx";
 import { FileCodeIcon, WaypointsIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
-import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
+import {
+  getDiffGroupDefinition,
+  type DiffGroupName,
+} from "@/containers/Build/BuildDiffGroup";
 import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
 import { DocumentType, graphql } from "@/gql";
-import type { ScreenshotMetadataColorScheme } from "@/gql/graphql";
+import {
+  ScreenshotDiffStatus,
+  type ScreenshotMetadataColorScheme,
+} from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
+import { lowTextColorClassNames } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
 import { checkDiffNeedsAttention } from "../BuildJourneyDrawer";
@@ -278,40 +285,37 @@ function ExplainedIcon(props: {
   );
 }
 
-function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
-  const { icon: Icon } = getDiffGroupDefinition(props.mark);
-  const rejected = props.mark === EvaluationStatus.Rejected;
+/**
+ * Where a run or a test stands, with the snapshot list's status icons and
+ * colors: changed until every change is reviewed, then accepted or rejected.
+ */
+function StatusMark(props: {
+  group: DiffGroupName;
+  description: string;
+  className?: string;
+}) {
+  const { icon: Icon, color } = getDiffGroupDefinition(props.group);
   return (
     <ExplainedIcon
-      description={
-        rejected
-          ? "Reviewed, with a rejected screen"
-          : "Reviewed, every screen accepted"
-      }
-      className={clsx(
-        rejected ? "text-danger-low" : "text-success-low",
-        props.className,
-      )}
+      description={props.description}
+      className={clsx(lowTextColorClassNames[color], props.className)}
     >
       <Icon className="size-3.5" />
     </ExplainedIcon>
   );
 }
 
-/** The dot the journey strip marks a screen to review with. */
-function PendingReviewMark(props: { reviewedCount: number; total: number }) {
-  const { reviewedCount, total } = props;
+function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   return (
-    <ExplainedIcon
+    <StatusMark
+      group={props.mark}
       description={
-        reviewedCount === 0
-          ? "Not reviewed yet"
-          : `${reviewedCount} of ${plural(total, "changed screen")} reviewed`
+        props.mark === EvaluationStatus.Rejected
+          ? "Reviewed, with a rejected screen"
+          : "Reviewed, every screen accepted"
       }
-      className="size-3.5 items-center justify-center"
-    >
-      <span className="bg-warning-solid block size-2 rounded-full" />
-    </ExplainedIcon>
+      className={props.className}
+    />
   );
 }
 
@@ -350,11 +354,12 @@ export function JourneysSection(props: {
   }
   // Every changed journey is review work: all of them show. The unchanged
   // ones wait behind a button, unless there is nothing else to walk.
-  const listed =
-    showUnchanged || changed.length === 0
-      ? [...changed, ...unchanged]
-      : changed;
-  const hiddenUnchangedCount = listed === changed ? unchanged.length : 0;
+  const unchangedShown = showUnchanged || changed.length === 0;
+  const listProps = {
+    checkIsWalked,
+    repoUrl,
+    branch: build.branch,
+  };
   return (
     <Panel elevation={0} className="pb-4">
       <PanelHeader className="mb-2">
@@ -363,40 +368,78 @@ export function JourneysSection(props: {
           {plural(tests.length, "journey")}
         </span>
       </PanelHeader>
-      {/* A rule only between files: within one, a title sits close to its
-          cards and far from the ones above, and the file opens its group. */}
-      <ul className="flex flex-col gap-8">
-        {listed.map((test, index) => {
-          const opensGroup =
-            index === 0 || listed[index - 1]?.prefix !== test.prefix;
-          return (
-            <JourneyTestItem
-              key={test.key}
-              test={test}
-              showPrefix={opensGroup}
-              scrollIntoView={checkIsWalked(test)}
-              className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
-              href={getLocationURL({
-                location: test.location,
-                repoUrl,
-                branch: build.branch,
-              })}
-            />
-          );
-        })}
-      </ul>
-      {hiddenUnchangedCount > 0 ? (
-        <div className="px-4 pt-8">
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={() => setShowUnchanged(true)}
+      <JourneyTestList tests={changed} {...listProps} />
+      {unchanged.length > 0 ? (
+        unchangedShown ? (
+          // Apart from the journeys to review, under a heading of their own:
+          // nothing there needs a look.
+          <section
+            aria-labelledby="unchanged-journeys"
+            className={clsx(changed.length > 0 && "border-t-thin mt-8 pt-6")}
           >
-            Show {plural(hiddenUnchangedCount, "unchanged journey")}
-          </Button>
-        </div>
+            <h3
+              id="unchanged-journeys"
+              className="text-low flex items-center gap-1.5 px-4 text-xs font-medium"
+            >
+              <UnchangedIcon className="text-success-low size-3.5" />
+              Unchanged journeys
+            </h3>
+            <JourneyTestList
+              tests={unchanged}
+              className="mt-4"
+              {...listProps}
+            />
+          </section>
+        ) : (
+          <div className="px-4 pt-8">
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setShowUnchanged(true)}
+            >
+              Show {plural(unchanged.length, "unchanged journey")}
+            </Button>
+          </div>
+        )
       ) : null}
     </Panel>
+  );
+}
+
+const UnchangedIcon = getDiffGroupDefinition(
+  ScreenshotDiffStatus.Unchanged,
+).icon;
+
+/**
+ * Journeys grouped by file. A rule only between files: within one, a title
+ * sits close to its cards and far from the ones above, and the file opens its
+ * group.
+ */
+function JourneyTestList(props: {
+  tests: JourneyTest[];
+  checkIsWalked: (test: JourneyTest) => boolean;
+  repoUrl: string | null;
+  branch: string | null;
+  className?: string;
+}) {
+  const { tests, checkIsWalked, repoUrl, branch } = props;
+  return (
+    <ul className={clsx("flex flex-col gap-8", props.className)}>
+      {tests.map((test, index) => {
+        const opensGroup =
+          index === 0 || tests[index - 1]?.prefix !== test.prefix;
+        return (
+          <JourneyTestItem
+            key={test.key}
+            test={test}
+            showPrefix={opensGroup}
+            scrollIntoView={checkIsWalked(test)}
+            className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
+            href={getLocationURL({ location: test.location, repoUrl, branch })}
+          />
+        );
+      })}
+    </ul>
   );
 }
 
@@ -644,7 +687,10 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       >
-        <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
+        <DiffCard
+          isActive={false}
+          variant={changed.length > 0 ? getDiffCardVariant(mark) : "neutral"}
+        >
           <div className="flex size-full flex-col">
             <div
               className={clsx(
@@ -698,11 +744,20 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
                 {mark ? (
                   <ReviewMark mark={mark} />
                 ) : changed.length > 0 ? (
-                  <PendingReviewMark
-                    reviewedCount={reviewedCount}
-                    total={changed.length}
+                  <StatusMark
+                    group={ScreenshotDiffStatus.Changed}
+                    description={
+                      reviewedCount === 0
+                        ? "Changed, not reviewed yet"
+                        : `Changed, ${reviewedCount} of ${changed.length} reviewed`
+                    }
                   />
-                ) : null}
+                ) : (
+                  <StatusMark
+                    group={ScreenshotDiffStatus.Unchanged}
+                    description="No changes in this journey"
+                  />
+                )}
                 <ExplainedIcon
                   description={`A journey of ${plural(screens.length, "screen")}`}
                 >
