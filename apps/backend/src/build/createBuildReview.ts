@@ -9,6 +9,7 @@ import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
 import { notifyReviewCommentsWentLive } from "@/comment/commentNotifications";
 import { renderCommentHtmlWithMentions } from "@/comment/mentions";
+import { getCommentTargetProject } from "@/comment/target";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import type { BuildNotification } from "@/database/models";
 import {
@@ -27,6 +28,7 @@ import { subscribeUserToCommentThread } from "@/database/services/comment-notifi
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { sendNotification } from "@/notification";
+import { getProjectNotificationRecipients } from "@/project/members";
 import { boom } from "@/util/error";
 
 import { getViewerPendingReview } from "./pendingReview";
@@ -248,10 +250,7 @@ export async function createBuildReview(input: {
   // notifications. A fresh review has no draft comments to promote.
   let goLivePromise: Promise<void> = Promise.resolve();
   if (hadPendingReview) {
-    const project = await build
-      .$relatedQuery("project")
-      .withGraphFetched("account");
-    invariant(project, "project not found");
+    const project = await getCommentTargetProject({ type: "build", build });
     goLivePromise = notifyReviewCommentsWentLive({
       build,
       project,
@@ -310,19 +309,25 @@ async function notifyBuildSubscribers(input: {
   }
   invariant(buildReview.userId, "review should have a userId");
   const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
-  const recipients = subscribedUserIds.filter(
+  const candidates = subscribedUserIds.filter(
     (id) => id !== buildReview.userId,
   );
+  if (candidates.length === 0) {
+    return;
+  }
+  const project = await getCommentTargetProject({ type: "build", build });
+  invariant(project.account, "project account not found");
+  const recipients = await getProjectNotificationRecipients({
+    project,
+    userIds: candidates,
+  });
   if (recipients.length === 0) {
     return;
   }
-  const [project, reviewer, buildUrl] = await Promise.all([
-    build.$relatedQuery("project").withGraphFetched("account"),
+  const [reviewer, buildUrl] = await Promise.all([
     User.query().findById(buildReview.userId).withGraphFetched("account"),
     build.getUrl(),
   ]);
-  invariant(project, "project not found");
-  invariant(project.account, "project account not found");
   const reviewerName = reviewer?.account?.displayName ?? null;
   await sendNotification({
     type: "review_submitted",

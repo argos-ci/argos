@@ -44,7 +44,7 @@ export async function autoSubscribeUserToTest(input: {
  * Get the user IDs currently subscribed to a test's notifications.
  *
  * These are the users who asked to be told, not the users who may still read
- * what they would be told about — see `getCommentRecipients`.
+ * what they would be told about — see `getProjectNotificationRecipients`.
  */
 export async function getTestSubscribedUserIds(
   testId: string,

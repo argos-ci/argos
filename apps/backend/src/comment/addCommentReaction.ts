@@ -4,10 +4,10 @@ import { knex } from "@/database";
 import { Comment, User } from "@/database/models";
 import { getCommentThreadSubscribedUserIds } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
+import { getProjectNotificationRecipients } from "@/project/members";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
-import { getCommentRecipients } from "./commentNotifications";
 import { getCommentUrl } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
@@ -83,7 +83,7 @@ async function notifyCommentThreadSubscribers(input: {
   const project = await getCommentTargetProject(target);
   invariant(project.account, "project account not found");
 
-  const recipients = await getCommentRecipients({
+  const recipients = await getProjectNotificationRecipients({
     project,
     userIds: subscribedUserIds,
     excludeUserIds: [userId],
