@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
 import { FolderCode } from "lucide-react";
-import { useLocation, useMatch } from "react-router";
+import { useMatch } from "react-router";
 
 import { useAuth, type AuthAccount } from "@/containers/Auth";
 import { graphql } from "@/gql";
@@ -14,9 +14,15 @@ import {
   BreadcrumbMenuButton,
   BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
-import { Menu, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import {
+  Menu,
+  MenuAutoComplete,
+  MenuRoot,
+  MenuTrigger,
+  useMenuQuery,
+} from "@/ui/menu-kit";
 
-import { getAccountMenuSections } from "./AccountBreadcrumbMenu";
+import { useAccountMenu } from "./AccountBreadcrumbMenu";
 import {
   getProjectMenuSection,
   ProjectBreadcrumbMenu,
@@ -133,8 +139,7 @@ function PhoneProjectSwitcher(props: {
   projectNames: string[];
   children: ReactNode;
 }) {
-  const { me, accountSlug, accountName, projectNames, children } = props;
-  const { pathname } = useLocation();
+  const { children, ...menuProps } = props;
   const [view, setView] = useState<"projects" | "teams">("projects");
   return (
     <MenuRoot
@@ -151,14 +156,42 @@ function PhoneProjectSwitcher(props: {
           {children}
         </BreadcrumbMenuButton>
       </MenuTrigger>
-      <Menu side="bottom" align="start">
-        {view === "projects"
-          ? getProjectMenuSection(accountSlug, projectNames, {
-              title: accountName,
-              onBack: () => setView("teams"),
-            })
-          : getAccountMenuSections(me, pathname)}
-      </Menu>
+      <MenuAutoComplete>
+        <PhoneProjectSwitcherMenu
+          {...menuProps}
+          view={view}
+          onBack={() => setView("teams")}
+        />
+      </MenuAutoComplete>
     </MenuRoot>
+  );
+}
+
+function PhoneProjectSwitcherMenu(props: {
+  me: AuthAccount;
+  accountSlug: string;
+  accountName: string;
+  projectNames: string[];
+  view: "projects" | "teams";
+  onBack: () => void;
+}) {
+  const { me, accountSlug, accountName, projectNames, view, onBack } = props;
+  const query = useMenuQuery();
+  // A query in the projects view is looking for a project, not a team.
+  const accountMenu = useAccountMenu(me, view === "teams" ? query : "");
+  return (
+    <Menu
+      side="bottom"
+      align="start"
+      search={view === "teams" ? accountMenu.search : false}
+      noResultsPlaceholder={accountMenu.noResultsPlaceholder}
+    >
+      {view === "projects"
+        ? getProjectMenuSection(accountSlug, projectNames, {
+            title: accountName,
+            onBack,
+          })
+        : accountMenu.rows}
+    </Menu>
   );
 }

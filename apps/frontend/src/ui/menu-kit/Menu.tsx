@@ -92,19 +92,24 @@ const SearchContext = createContext<SearchState | null>(null);
  * what makes every menu type-to-filter without anyone opting in — and each
  * submenu mounts its own, so its query is its own too. Wrap a menu in it
  * explicitly only to control the query — to drive it from an input that lives
- * outside the popup, say.
+ * outside the popup, say. Or to read it: rows fetched for what is typed are
+ * built above the `Menu`, from `useMenuQuery`.
  */
-function MenuAutoComplete(props: {
+export function MenuAutoComplete(props: {
   children: ReactNode;
-  /** The popup's open state: the query resets each time it opens. */
+  /**
+   * The popup's open state: the query resets each time it opens. Defaults to
+   * the enclosing `MenuRoot`'s.
+   */
   open?: boolean;
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
 }) {
+  const treeOpen = use(MenuOpenContext)?.open ?? true;
   const {
     children,
-    open = true,
+    open = treeOpen,
     value,
     defaultValue = "",
     onValueChange,
@@ -145,6 +150,11 @@ function useSearch(): SearchState {
     throw new Error("Menu parts must be rendered inside a Menu");
   }
   return state;
+}
+
+/** What is typed in the menu under the enclosing `MenuAutoComplete`. */
+export function useMenuQuery(): string {
+  return useSearch().query;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -503,12 +513,11 @@ export function Menu(props: {
   "aria-label"?: string;
 }) {
   const search = use(SearchContext);
-  const open = use(MenuOpenContext)?.open ?? true;
   if (search) {
     return <MenuList {...props} />;
   }
   return (
-    <MenuAutoComplete open={open}>
+    <MenuAutoComplete>
       <MenuList {...props} />
     </MenuAutoComplete>
   );

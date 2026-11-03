@@ -1,5 +1,6 @@
 export {
   Menu,
+  MenuAutoComplete,
   MenuHeading,
   MenuItem,
   MenuItemTooltip,
@@ -11,4 +12,5 @@ export {
   MenuTrigger,
   SubMenu,
   SubMenuContent,
+  useMenuQuery,
 } from "./Menu";
