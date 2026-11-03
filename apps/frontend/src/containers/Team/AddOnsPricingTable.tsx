@@ -1,10 +1,11 @@
+import {
+  ADD_ON_KEYS,
+  ADD_ONS,
+  getBilledAddOns,
+  type AddOn,
+} from "@argos/util/add-ons";
 import clsx from "clsx";
 
-import {
-  GITHUB_SSO_PRICING,
-  SAML_SSO_PRICING,
-  STATIC_IP_PRICING,
-} from "@/constants";
 import { DocumentType, graphql } from "@/gql";
 
 const _TeamFragment = graphql(`
@@ -24,8 +25,6 @@ const _TeamFragment = graphql(`
   }
 `);
 
-export type AddOn = "github-sso" | "saml-sso" | "static-ip";
-
 export type AddOnsPricingTableTeam = DocumentType<typeof _TeamFragment>;
 
 /**
@@ -37,33 +36,21 @@ export function AddOnsPricingTable(props: {
   enabling: AddOn;
 }) {
   const { team, enabling } = props;
-  const rows: { key: AddOn; label: string; price: number }[] = [];
-  if (
-    enabling === "github-sso" ||
-    (team.ssoGithubAccount && !team.plan?.githubSsoIncluded)
-  ) {
-    rows.push({
-      key: "github-sso",
-      label: "GitHub SSO",
-      price: GITHUB_SSO_PRICING,
-    });
-  }
-  if (
-    enabling === "saml-sso" ||
-    (team.samlPurchased && !team.plan?.samlIncluded)
-  ) {
-    rows.push({ key: "saml-sso", label: "SAML SSO", price: SAML_SSO_PRICING });
-  }
-  if (
-    enabling === "static-ip" ||
-    (team.staticIpEnabled && !team.plan?.staticIpIncluded)
-  ) {
-    rows.push({
-      key: "static-ip",
-      label: "Static IP",
-      price: STATIC_IP_PRICING,
-    });
-  }
+  const billed = getBilledAddOns({
+    enabled: {
+      githubSso: Boolean(team.ssoGithubAccount),
+      samlSso: team.samlPurchased,
+      staticIp: team.staticIpEnabled,
+    },
+    plan: team.plan ?? null,
+  });
+  const rows = ADD_ON_KEYS.filter(
+    (key) => key === enabling || billed.includes(key),
+  ).map((key) => ({
+    key,
+    label: ADD_ONS[key].label,
+    price: ADD_ONS[key].monthlyPrice,
+  }));
   const total = rows.reduce((sum, row) => sum + row.price, 0);
   return (
     <div>

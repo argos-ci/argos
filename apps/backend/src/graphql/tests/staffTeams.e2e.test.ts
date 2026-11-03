@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { Team } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -344,18 +345,13 @@ describe("GraphQL staffTeams", () => {
       );
 
       const teams = [
-        { slug: "amount-plain", flatPrice: 120, addOnsPrice: 0, invoiced: 0 },
-        {
-          slug: "amount-add-ons",
-          flatPrice: 100,
-          addOnsPrice: 50,
-          invoiced: 0,
-        },
+        { slug: "amount-plain", flatPrice: 120, samlPurchased: false },
+        { slug: "amount-add-ons", flatPrice: 100, samlPurchased: true },
         {
           slug: "amount-invoiced",
           flatPrice: 100,
-          addOnsPrice: 0,
-          invoiced: 30_000,
+          samlPurchased: false,
+          invoiced: 40_000,
         },
       ];
 
@@ -364,6 +360,10 @@ describe("GraphQL staffTeams", () => {
           slug: team.slug,
           stripeCustomerId: `cus_${team.slug}`,
         });
+        invariant(account.teamId, "a team account has a team");
+        await Team.query()
+          .findById(account.teamId)
+          .patch({ samlPurchased: team.samlPurchased });
         const subscriber = await factory.User.create();
         await factory.Subscription.create({
           accountId: account.id,
@@ -377,7 +377,6 @@ describe("GraphQL staffTeams", () => {
           includedScreenshots: 1000,
           currency: "usd",
           flatPrice: team.flatPrice,
-          addOnsPrice: team.addOnsPrice,
         });
         if (team.invoiced) {
           await factory.StripeInvoice.create({
@@ -394,8 +393,9 @@ describe("GraphQL staffTeams", () => {
     });
 
     it("reads the invoice when there is one, and the add-ons otherwise", async () => {
-      // Read off the plan alone, the order is the other way round: 120 for the
-      // plain team, 100 for each of the others.
+      // $400 invoiced, then $100 and $200 of SAML SSO, then $120. Ignoring the
+      // invoice puts that team last at $100; ignoring the add-ons puts SAML
+      // last.
       const res = await queryTeams(viewer, {
         search: "amount-",
         orderBy: "PREVIOUS_PERIOD_DESC",

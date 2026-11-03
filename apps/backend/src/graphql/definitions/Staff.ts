@@ -1,3 +1,4 @@
+import { ADD_ONS, getAddOnsMonthlyPrice } from "@argos/util/add-ons";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
@@ -145,8 +146,11 @@ function getPeriodAmount(
   // Null when Stripe was never asked for the amount. Ordered as nothing rather
   // than guessed at: the guess belongs to the display, which says it is one.
   const flatPrice = billing.flatPrice ?? 0;
-  const addOnsPrice = billing.addOnsPrice ?? 0;
-  return flatPrice + addOnsPrice + billed.additionalScreenshotCost;
+  return (
+    flatPrice +
+    getAddOnsMonthlyPrice(billing.addOns) +
+    billed.additionalScreenshotCost
+  );
 }
 
 /**
@@ -325,6 +329,13 @@ export const typeDefs = gql`
     invoicedAmount: Float
   }
 
+  "An add-on a team pays for on top of its plan."
+  type TeamStaffAddOn {
+    label: String!
+    "What it costs a month, at its published price."
+    monthlyPrice: Float!
+  }
+
   "What a team is consuming, as needed to explain what it is about to pay."
   type TeamStaffPeriodUsage {
     """
@@ -380,11 +391,10 @@ export const typeDefs = gql`
     """
     flatPrice: Float
     """
-    What the add-ons cost per billing period, in the subscription's currency: 0
-    when it has none. Null when Stripe has nothing to state, as for
-    \`flatPrice\`.
+    The add-ons billed on top of the plan, read off what the team enabled and
+    priced at their published amount.
     """
-    addOnsPrice: Float
+    addOns: [TeamStaffAddOn!]!
     """
     Screenshots included in each billing period before the overage starts: the
     amount the subscription states, and the plan's published one when it states
@@ -786,11 +796,11 @@ export const resolvers: IResolvers = {
       );
       return billing.flatPrice;
     },
-    addOnsPrice: async (account, _args, ctx) => {
+    addOns: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(
         account.id,
       );
-      return billing.addOnsPrice;
+      return billing.addOns.map((key) => ADD_ONS[key]);
     },
     includedScreenshots: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(

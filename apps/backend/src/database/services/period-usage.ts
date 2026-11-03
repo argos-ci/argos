@@ -1,3 +1,4 @@
+import { getBilledAddOns, type AddOn } from "@argos/util/add-ons";
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
@@ -8,6 +9,7 @@ import {
   Plan,
   StripeInvoice,
   Subscription,
+  Team,
 } from "../models";
 import { computeAdditionalScreenshots } from "./additional-screenshots";
 
@@ -114,11 +116,10 @@ export type AccountBilling = {
    */
   flatPrice: number | null;
   /**
-   * What the add-ons cost per billing period on this subscription, in the same
-   * currency. Null when Stripe has never been asked for it: see
-   * `Subscription.addOnsPrice`.
+   * The add-ons billed on top of the plan, read off what the team enabled. Empty
+   * when the subscription cannot carry any: see `getSubscriptionAddOns`.
    */
-  addOnsPrice: number | null;
+  addOns: AddOn[];
   /**
    * Screenshots included in each billing period before the overage starts: the
    * amount the subscription states, and the plan's published one when it
@@ -539,6 +540,36 @@ async function getClosingInvoices(
 }
 
 /**
+ * The add-ons billed on a subscription, read off what its team enabled with the
+ * rule the dialog that sells them uses.
+ *
+ * They ride on the Stripe subscription as items priced monthly, so a GitHub
+ * subscription cannot carry one, nor can a yearly one.
+ */
+function getSubscriptionAddOns(
+  team: Team | undefined,
+  subscription: Subscription,
+): AddOn[] {
+  const { plan } = subscription;
+  if (
+    !team ||
+    !plan ||
+    subscription.provider !== "stripe" ||
+    plan.interval !== "month"
+  ) {
+    return [];
+  }
+  return getBilledAddOns({
+    enabled: {
+      githubSso: team.ssoGithubAccountId !== null,
+      samlSso: team.samlPurchased,
+      staticIp: team.staticIpEnabled,
+    },
+    plan,
+  });
+}
+
+/**
  * Whether a period is one Stripe invoices. `index` counts periods back from
  * the running one, 0.
  */
@@ -614,7 +645,7 @@ export async function getAccountBillings(
           // even when a leftover subscription still carries one, and no quota
           // either — nothing is ever counted against it.
           flatPrice: null,
-          addOnsPrice: null,
+          addOns: [],
           includedScreenshots: null,
           periodUsage: null,
         });
@@ -626,6 +657,10 @@ export async function getAccountBillings(
     return result;
   }
 
+  const teamIds = subscribedAccounts.flatMap((account) =>
+    account.teamId ? [account.teamId] : [],
+  );
+
   // Deliberately not filtered on `plan.usageBased`: this has to pick the same
   // subscription as `Account.getActiveSubscription()`, which selects on
   // `includedScreenshots` alone. Narrowing to usage-based plans before the
@@ -633,32 +668,42 @@ export async function getAccountBillings(
   // active subscription resolve one subscription here and the other there —
   // pricing the row against a plan it is not billed on. The plan is checked
   // below instead, once the same winner has been picked.
-  const subscriptions = await Subscription.query()
-    .select("subscriptions.*")
-    .withGraphFetched("plan")
-    .joinRelated("plan")
-    .whereIn(
-      "subscriptions.accountId",
-      subscribedAccounts.map((account) => account.id),
-    )
-    .whereRaw("?? < now()", "subscriptions.startDate")
-    .whereIn("subscriptions.status", ["active", "trialing", "past_due"])
-    .where((query) =>
-      query
-        .whereNull("subscriptions.endDate")
-        .orWhereRaw("?? >= now()", "subscriptions.endDate"),
-    )
-    .distinctOn("subscriptions.accountId")
-    .orderBy("subscriptions.accountId")
-    .orderBy("plan.includedScreenshots", "DESC");
+  const [subscriptions, teams] = await Promise.all([
+    Subscription.query()
+      .select("subscriptions.*")
+      .withGraphFetched("plan")
+      .joinRelated("plan")
+      .whereIn(
+        "subscriptions.accountId",
+        subscribedAccounts.map((account) => account.id),
+      )
+      .whereRaw("?? < now()", "subscriptions.startDate")
+      .whereIn("subscriptions.status", ["active", "trialing", "past_due"])
+      .where((query) =>
+        query
+          .whereNull("subscriptions.endDate")
+          .orWhereRaw("?? >= now()", "subscriptions.endDate"),
+      )
+      .distinctOn("subscriptions.accountId")
+      .orderBy("subscriptions.accountId")
+      .orderBy("plan.includedScreenshots", "DESC"),
+    teamIds.length > 0 ? Team.query().findByIds(teamIds) : [],
+  ]);
 
   const subscriptionByAccountId = new Map(
     subscriptions.map((subscription) => [subscription.accountId, subscription]),
   );
+  const teamById = new Map(teams.map((team) => [team.id, team]));
+  const getAddOns = (account: Account, subscription: Subscription) =>
+    getSubscriptionAddOns(
+      account.teamId ? teamById.get(account.teamId) : undefined,
+      subscription,
+    );
 
   const now = new Date();
   const periodsByAccountId = new Map<string, AccountPeriod[]>();
   const closingPeriods: ClosingPeriod[] = [];
+  const addOnsByAccountId = new Map<string, AddOn[]>();
 
   for (const account of subscribedAccounts) {
     const subscription = subscriptionByAccountId.get(account.id);
@@ -666,7 +711,7 @@ export async function getAccountBillings(
       result.set(account.id, {
         plan: subscription?.plan ?? null,
         flatPrice: subscription?.flatPrice ?? null,
-        addOnsPrice: subscription?.addOnsPrice ?? null,
+        addOns: subscription ? getAddOns(account, subscription) : [],
         includedScreenshots:
           subscription?.includedScreenshots ??
           subscription?.plan?.includedScreenshots ??
@@ -686,6 +731,7 @@ export async function getAccountBillings(
       now,
       subscription.plan.interval,
     );
+    addOnsByAccountId.set(account.id, getAddOns(account, subscription));
     const accountPeriods = starts.map((from, index) => ({
       accountId: account.id,
       index,
@@ -729,9 +775,10 @@ export async function getAccountBillings(
     const subscription = subscriptionByAccountId.get(accountId);
     const plan = subscription?.plan;
     const totals = totalsByAccountId.get(accountId);
+    const addOns = addOnsByAccountId.get(accountId);
     invariant(
-      subscription && plan && totals,
-      "every account with periods has a usage-based subscription and totals",
+      subscription && plan && totals && addOns,
+      "every account with periods has a usage-based subscription, totals and add-ons",
     );
 
     const includedScreenshots = getIncludedScreenshots(subscription, plan);
@@ -742,7 +789,7 @@ export async function getAccountBillings(
     result.set(accountId, {
       plan,
       flatPrice: subscription.flatPrice,
-      addOnsPrice: subscription.addOnsPrice,
+      addOns,
       includedScreenshots,
       periodUsage: {
         currentPeriodScreenshotsCount: runningTotals.all,

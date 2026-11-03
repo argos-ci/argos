@@ -75,9 +75,6 @@ export class Subscription extends Model {
           flatPrice: {
             anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
           },
-          addOnsPrice: {
-            anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
-          },
           additionalScreenshotPrice: {
             anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
           },
@@ -135,14 +132,6 @@ export class Subscription extends Model {
    * plan priced by tiers, which has no single unit amount.
    */
   flatPrice!: number | null;
-  /**
-   * What the add-ons on the subscription cost per billing period, in
-   * `currency`: GitHub SSO, SAML SSO, a static IP. Kept apart from `flatPrice`,
-   * which is the plan's own line. 0 when there are none; null when the
-   * subscription has not been synced since the column existed, or has no
-   * Stripe items to read, as a GitHub subscription does.
-   */
-  addOnsPrice!: number | null;
   additionalScreenshotPrice!: number | null;
   additionalStorybookScreenshotPrice!: number | null;
   usageUpdatedAt!: string | null;

@@ -11,7 +11,6 @@ import { redisLock } from "@/util/redis";
 import {
   ENDED_TRIAL_STRIPE_SUBSCRIPTION,
   PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION,
-  TRIAL_ADD_ON_PRICE,
   TRIAL_CONVERSION_TIMESTAMP,
   TRIAL_FLAT_PRICE,
   TRIAL_INCLUDED_SCREENSHOTS,
@@ -106,8 +105,6 @@ describe("endTrialToUnlockUsage", () => {
     // The plan's own amount is synced along with the rest of the pricing, so
     // nothing downstream has to guess what the subscription costs.
     expect(updated.flatPrice).toBe(TRIAL_FLAT_PRICE);
-    // The add-on is billed apart from the plan, so it is kept apart too.
-    expect(updated.addOnsPrice).toBe(TRIAL_ADD_ON_PRICE);
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "trial_ended",

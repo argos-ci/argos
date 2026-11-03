@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9bodpz1H2SMQZx8JgaI0zkqKQAxK3XH8jfFDmwlEoRBXU2Tee0BHTF6LJeQhj6M
+\restrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.6 (Homebrew)
+-- Dumped by pg_dump version 18.4 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2676,7 +2676,6 @@ CREATE TABLE public.subscriptions (
     "cancellationFeedback" character varying(255),
     "cancellationComment" text,
     "staffContactedAt" timestamp with time zone,
-    "addOnsPrice" real,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -6921,7 +6920,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9bodpz1H2SMQZx8JgaI0zkqKQAxK3XH8jfFDmwlEoRBXU2Tee0BHTF6LJeQhj6M
+\unrestrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
 
 -- Knex migrations
 
@@ -7191,4 +7190,3 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027104323_gitlab-instance-isolation.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027111448_gitlab-projects-web-url.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261029145630_media-version-poster-ready.js', 1, NOW());
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103120000_subscription-add-ons-price.js', 1, NOW());

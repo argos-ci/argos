@@ -5,8 +5,6 @@ export const TRIAL_STRIPE_SUBSCRIPTION_ID = "sub_trial_test";
 export const TRIAL_INCLUDED_SCREENSHOTS = 15000;
 /** Monthly price of the plan, in dollars. */
 export const TRIAL_FLAT_PRICE = 250;
-/** Monthly price of the add-on bought during the trial, in dollars. */
-export const TRIAL_ADD_ON_PRICE = 50;
 /** Moment the trial started. */
 const TRIAL_START_TIMESTAMP = 1751760000;
 /**
@@ -35,23 +33,6 @@ function createPlanItem(currentPeriodStart: number) {
   };
 }
 
-/** An add-on is an item of its own, told apart by the metadata on its price. */
-const addOnItem = {
-  id: "si_trial_add_on",
-  object: "subscription_item",
-  quantity: 1,
-  price: {
-    id: "price_trial_add_on",
-    object: "price",
-    billing_scheme: "per_unit",
-    currency: "usd",
-    metadata: { type: "addon" },
-    unit_amount_decimal: { toNumber: () => TRIAL_ADD_ON_PRICE * 100 },
-    product: "prod_trial_add_on",
-    tiers_mode: null,
-  },
-};
-
 /**
  * A Stripe subscription while its trial is running, as returned by a
  * `subscriptions.retrieve` before the conversion.
@@ -79,8 +60,7 @@ export const TRIALING_STRIPE_SUBSCRIPTION = {
 
 /**
  * The same subscription right after its trial has been ended: `status` is
- * active and a new billing period opens at the conversion moment. It carries an
- * add-on, bought while the trial ran.
+ * active and a new billing period opens at the conversion moment.
  */
 export const ENDED_TRIAL_STRIPE_SUBSCRIPTION = {
   ...(TRIALING_STRIPE_SUBSCRIPTION as unknown as Record<string, unknown>),
@@ -88,7 +68,7 @@ export const ENDED_TRIAL_STRIPE_SUBSCRIPTION = {
   billing_cycle_anchor: TRIAL_CONVERSION_TIMESTAMP,
   items: {
     object: "list",
-    data: [createPlanItem(TRIAL_CONVERSION_TIMESTAMP), addOnItem],
+    data: [createPlanItem(TRIAL_CONVERSION_TIMESTAMP)],
     has_more: false,
     url: "",
   },

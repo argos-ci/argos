@@ -1,3 +1,4 @@
+import { getAddOnsMonthlyPrice } from "@argos/util/add-ons";
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
@@ -1046,7 +1047,7 @@ async function getEstimatedBills(options: {
     const revenue = {
       amount:
         billing.flatPrice +
-        (billing.addOnsPrice ?? 0) +
+        getAddOnsMonthlyPrice(billing.addOns) +
         period.additionalScreenshotCost,
       currency: team.currency ?? REPORTING_CURRENCY,
     };

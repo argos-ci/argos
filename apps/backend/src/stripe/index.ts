@@ -301,7 +301,6 @@ async function getPriceInfosFromStripeSubscription(
     | "includedScreenshots"
     | "currency"
     | "flatPrice"
-    | "addOnsPrice"
     | "additionalScreenshotPrice"
     | "additionalStorybookScreenshotPrice"
     | "startDate"
@@ -315,7 +314,6 @@ async function getPriceInfosFromStripeSubscription(
   // unlike the included screenshots it depends on no metadata of ours, so a
   // plan whose metadata we cannot interpret still has a price we can state.
   const flatPrice = getFlatPriceFromPlanItem(planItem);
-  const addOnsPrice = getAddOnsPriceFromStripeSubscription(stripeSubscription);
 
   switch (price.billing_scheme) {
     case "tiered": {
@@ -347,7 +345,6 @@ async function getPriceInfosFromStripeSubscription(
               startDate,
               currency,
               flatPrice,
-              addOnsPrice,
               includedScreenshots: includedScreenshots,
               additionalScreenshotPrice: screenshotItem
                 ? getUnitAmountFromPrice(screenshotItem.price)
@@ -363,7 +360,6 @@ async function getPriceInfosFromStripeSubscription(
         startDate,
         currency,
         flatPrice,
-        addOnsPrice,
         includedScreenshots: null,
         additionalScreenshotPrice: null,
         additionalStorybookScreenshotPrice: null,
@@ -412,27 +408,6 @@ function getFlatPriceFromPlanItem(
   // Every Argos plan line sits at a quantity of 1, but it is read rather than
   // assumed: a contract billed per seat would otherwise report one seat.
   return (unitAmount.toNumber() / 100) * (planItem.quantity ?? 1);
-}
-
-/**
- * What the add-ons on a subscription cost per billing period, 0 when it has
- * none.
- *
- * Each add-on is an item of its own, so the plan line read by
- * `getFlatPriceFromPlanItem` never includes them, while Stripe invoices them
- * on every cycle all the same.
- */
-function getAddOnsPriceFromStripeSubscription(
-  subscription: Stripe.Subscription,
-): number {
-  return subscription.items.data
-    .filter((item) => item.price.metadata["type"] === "addon")
-    .reduce((total, item) => {
-      const unitAmount = item.price.unit_amount_decimal;
-      return unitAmount
-        ? total + (unitAmount.toNumber() / 100) * (item.quantity ?? 1)
-        : total;
-    }, 0);
 }
 
 /**
@@ -928,8 +903,7 @@ function checkIsUsageBasedSubscriptionIncomplete(
     subscription.includedScreenshots === null ||
     subscription.additionalScreenshotPrice === null ||
     subscription.currency === null ||
-    subscription.flatPrice === null ||
-    subscription.addOnsPrice === null
+    subscription.flatPrice === null
   );
 }
 

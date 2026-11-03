@@ -77,7 +77,10 @@ const StaffTeamsQuery = graphql(`
         stripeCustomerId
         staff {
           flatPrice
-          addOnsPrice
+          addOns {
+            label
+            monthlyPrice
+          }
           includedScreenshots
           plan {
             id
@@ -356,7 +359,7 @@ function getPeriodAmount(
   return (
     period.invoicedAmount ??
     getPeriodFlatPrice(staff.flatPrice, plan) +
-      (staff.addOnsPrice ?? 0) +
+      staff.addOns.reduce((total, addOn) => total + addOn.monthlyPrice, 0) +
       period.additionalScreenshotsCost
   );
 }
@@ -408,19 +411,16 @@ function getAmountHint(
   }
 
   const { plan } = billing;
-  const { flatPrice, addOnsPrice } = team.staff;
+  const { flatPrice } = team.staff;
   const flat = formatPrice(getPeriodFlatPrice(flatPrice, plan));
   const unit = plan.interval === PlanInterval.Year ? "year" : "month";
   const source =
     flatPrice === null
       ? `a ${flat} guess for ${plan.displayName}, whose own amount is not on file`
       : `${flat} held on the subscription in Stripe`;
-  const addOns =
-    addOnsPrice === null
-      ? ", add-ons not on file yet"
-      : addOnsPrice > 0
-        ? `, ${formatPrice(addOnsPrice)} of add-ons`
-        : "";
+  const addOns = team.staff.addOns
+    .map((addOn) => `, ${addOn.label} at ${formatPrice(addOn.monthlyPrice)}`)
+    .join("");
   // Only a closed period has an invoice to fall short of.
   const estimate = billed.period.closed
     ? "Estimated, as no invoice for this period is mirrored."

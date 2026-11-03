@@ -147,14 +147,8 @@ async function createBilledTeam(input: {
   /** What the plan costs per month, as Stripe holds it — null when Argos has
    * not read it yet, which every subscription is until its next sync. */
   flatPrice: number | null;
-  /** What its add-ons cost per month, such as GitHub SSO. */
-  addOnsPrice?: number;
-  /**
-   * The invoice Stripe raised when the last period closed, in dollars before
-   * tax, with what a credit note gave back. Left out where it is not mirrored,
-   * which leaves the period to be estimated.
-   */
-  lastInvoice?: { amount: number; credited: number };
+  /** Whether the team bought the static IP add-on, which its plan leaves out. */
+  staticIpEnabled?: boolean;
   /** Screenshots uploaded during each closed period, most recent first. */
   screenshotsByClosedPeriod: number[];
   /**
@@ -165,10 +159,13 @@ async function createBilledTeam(input: {
   screenshotsInRunningPeriod?: number;
 }): Promise<Account> {
   const runningTrial = input.trialEndsInDays;
-  const { account } = await createTeamAccount({
+  const { account, team } = await createTeamAccount({
     slug: input.slug,
     name: input.name,
   });
+  if (input.staticIpEnabled) {
+    await team.$query().patch({ staticIpEnabled: true });
+  }
   await account.$query().patch({
     createdAt: daysFromNow(-input.createdDaysAgo),
     // A billed team reached checkout, so it has a Stripe customer — which is
@@ -193,7 +190,6 @@ async function createBilledTeam(input: {
     paymentMethodFilled: true,
     status: runningTrial === undefined ? "active" : "trialing",
     flatPrice: input.flatPrice,
-    addOnsPrice: input.addOnsPrice ?? 0,
     includedScreenshots: 35_000,
     additionalScreenshotPrice: 0.005,
     additionalStorybookScreenshotPrice: 0.002,
@@ -214,28 +210,6 @@ async function createBilledTeam(input: {
     accountId: account.id,
     name: "usage",
   });
-
-  if (input.lastInvoice) {
-    const [runningPeriodStart] = periodStarts;
-    if (!runningPeriodStart) {
-      throw new Error("missing period");
-    }
-    // Raised by the renewal that opened the running period.
-    await StripeInvoice.query().insert({
-      stripeInvoiceId: `in_${input.slug}`,
-      stripeCustomerId: `cus_${input.slug}`,
-      stripeSubscriptionId: `sub_${input.slug}`,
-      stripeCreatedAt: new Date(
-        runningPeriodStart.getTime() + 60_000,
-      ).toISOString(),
-      status: "paid",
-      billingReason: "subscription_cycle",
-      currency: "usd",
-      total: input.lastInvoice.amount * 100,
-      totalExcludingTax: input.lastInvoice.amount * 100,
-      creditedAmountExcludingTax: input.lastInvoice.credited * 100,
-    });
-  }
 
   // Index 0 is the period still running, so the closed ones start at 1.
   const volumes = [
@@ -370,8 +344,7 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         account.$query().patch({ createdAt: daysFromNow(-40) }),
       ),
       // Converted almost three months ago, so two periods have closed since:
-      // 40k screenshots, then 50k. The row reads the invoice the most recent
-      // of the two closed on: $175, $25 of which a credit note gave back.
+      // 40k screenshots, then 50k. The row prices the most recent of the two.
       createBilledTeam({
         ...common,
         planId: proPlan.id,
@@ -381,7 +354,6 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         trialEndedDaysAgo: 85,
         periodStart: daysFromNow(-14),
         flatPrice: 100,
-        lastInvoice: { amount: 175, credited: 25 },
         screenshotsByClosedPeriod: [50_000, 40_000],
         // Well inside the 35k quota with half the period still to run: the
         // column says so long before the invoice does.
@@ -410,8 +382,8 @@ const staffTest = loggedTest.extend<{ pipelineTeams: PipelineTeams }>({
         createdDaysAgo: 80,
         trialEndedDaysAgo: 77,
         flatPrice: 750,
-        // GitHub SSO, which Stripe bills apart from the plan.
-        addOnsPrice: 50,
+        // Billed $200 a month on top of the plan.
+        staticIpEnabled: true,
         periodStart: daysFromNow(-9),
         screenshotsByClosedPeriod: [60_000],
         // Already 6k past the quota, which is the whole point of the column:
@@ -499,17 +471,14 @@ staffTest("staff all teams", async ({ page, pipelineTeams }) => {
   const soylent = page.getByRole("row", { name: /Soylent/ });
   await expect(soylent).toContainText("12,340");
   await expect(soylent).not.toContainText("35,000");
-  // Its last period is read off the invoice it closed on, net of the credit
-  // note, rather than estimated at $175 from the screenshots it consumed.
-  await expect(soylent).toContainText("$150");
 
   // Umbrella is on a contract, so its quota is named — and it is 6k past it
-  // with days still to run: $750 flat, $50 of add-ons and $30 of overage,
-  // which is the figure the column exists to explain.
+  // with days still to run: $750 flat, $200 for its static IP and $30 of
+  // overage, which is the figure the column exists to explain.
   const umbrella = page.getByRole("row", { name: /Umbrella/ });
   await expect(umbrella).toContainText("41,000");
   await expect(umbrella).toContainText("/ 35,000");
-  await expect(umbrella).toContainText("$830");
+  await expect(umbrella).toContainText("$980");
 
   // The running period is partial by construction, so what is left of it is
   // what tells a genuine drop from a period that simply opened three days ago.

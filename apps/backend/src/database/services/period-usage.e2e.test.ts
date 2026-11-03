@@ -1,5 +1,7 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { Team } from "@/database/models";
 import type { Account, Plan, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -68,7 +70,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: null,
       flatPrice: null,
-      addOnsPrice: null,
+      addOns: [],
       includedScreenshots: null,
       periodUsage: null,
     });
@@ -93,7 +95,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(grantedAccount.id)).toEqual({
       plan: expect.objectContaining({ id: usageBasedPlan.id }),
       flatPrice: null,
-      addOnsPrice: null,
+      addOns: [],
       // Nothing is counted against a quota on a plan that is not billed.
       includedScreenshots: null,
       periodUsage: null,
@@ -134,7 +136,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(account.id)).toEqual({
       plan: expect.objectContaining({ id: flatPlan.id }),
       flatPrice: null,
-      addOnsPrice: null,
+      addOns: [],
       // Read off the subscription that won, not off the one that lost: the
       // usage-based one includes a thousand.
       includedScreenshots: 1_000_000,
@@ -280,6 +282,37 @@ describe("getAccountPeriodUsages", () => {
     expect(closed?.to).toEqual(running?.from);
   });
 
+  it("bills the add-ons the team enabled beyond what its plan includes", async () => {
+    await createUsageBasedSubscription();
+    await usageBasedPlan.$query().patch({ staticIpIncluded: true });
+    invariant(account.teamId, "a team account has a team");
+    await Team.query()
+      .findById(account.teamId)
+      .patch({ samlPurchased: true, staticIpEnabled: true });
+
+    const usage = await getAccountBillings([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    // The static IP comes with the plan, so only SAML is billed on top.
+    expect(usage?.addOns).toEqual(["saml-sso"]);
+  });
+
+  it("bills no add-on on a yearly subscription", async () => {
+    // Add-ons are priced monthly, and Stripe refuses an item whose interval
+    // differs from the rest of the subscription.
+    await createUsageBasedSubscription();
+    await usageBasedPlan.$query().patch({ interval: "year" });
+    invariant(account.teamId, "a team account has a team");
+    await Team.query().findById(account.teamId).patch({ samlPurchased: true });
+
+    const usage = await getAccountBillings([account]).then((usages) =>
+      usages.get(account.id),
+    );
+
+    expect(usage?.addOns).toEqual([]);
+  });
+
   it("reads a closed period off the invoice raised when it closed", async () => {
     await createUsageBasedSubscription();
     await account.$query().patch({ stripeCustomerId: "cus_period_usage" });
@@ -411,7 +444,7 @@ describe("getAccountPeriodUsages", () => {
     expect(usages.get(noSubscriptionAccount.id)).toEqual({
       plan: null,
       flatPrice: null,
-      addOnsPrice: null,
+      addOns: [],
       includedScreenshots: null,
       periodUsage: null,
     });
