@@ -562,28 +562,32 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
         className={clsx(
           "flex min-w-0",
           wide
-            ? "flex-wrap items-center gap-x-3 gap-y-1"
+            ? "items-end justify-between gap-3"
             : "flex-1 flex-col items-start gap-1.5",
         )}
       >
-        <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
-          {test.showBrowser && browser ? (
-            <BrowserIcon
-              browser={{ name: browser }}
-              className="size-3.5 shrink-0"
-            />
-          ) : null}
-          {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
-          <span className="truncate">{label || "Run"}</span>
-        </span>
-        {count}
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
+            {test.showBrowser && browser ? (
+              <BrowserIcon
+                browser={{ name: browser }}
+                className="size-3.5 shrink-0"
+              />
+            ) : null}
+            {ViewportIcon ? (
+              <ViewportIcon className="size-3.5 shrink-0" />
+            ) : null}
+            <span className="truncate">{label || "Run"}</span>
+          </span>
+          {count}
+        </div>
         {/* The whole block walks the journey from its start. */}
         <HeadlessLink
           href={getJourneyScreenURL(params, journey, firstScreen.diff)}
           aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
           className={clsx(
-            "text-primary-low inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)",
-            wide ? "ml-auto" : "mt-0.5",
+            "text-primary-low inline-flex items-center gap-1 text-xs/5 font-medium whitespace-nowrap outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)",
+            !wide && "mt-0.5",
           )}
         >
           Walk the journey
