@@ -302,10 +302,15 @@ export function JourneysSection(props: {
   const tests = getJourneyTests(build.journeys, {
     isSubsetBuild: build.subset,
   });
-  const changed = tests.filter((test) => test.changedCount > 0);
-  const unchanged = tests.filter((test) => test.changedCount === 0);
+  const changed = groupByPrefix(tests.filter((test) => test.changedCount > 0));
+  const unchanged = groupByPrefix(
+    tests.filter((test) => test.changedCount === 0),
+  );
   // With nothing changed, the unchanged journeys are all there is to walk.
-  const listed = showUnchanged || changed.length === 0 ? tests : changed;
+  const listed =
+    showUnchanged || changed.length === 0
+      ? [...changed, ...unchanged]
+      : changed;
   const collapsible = listed.length > COLLAPSED_JOURNEY_COUNT + 1;
   const visible =
     collapsible && !expanded
@@ -313,28 +318,36 @@ export function JourneysSection(props: {
       : listed;
   const hiddenUnchangedCount = listed === changed ? unchanged.length : 0;
   return (
-    <Panel elevation={0} className="pb-1">
+    <Panel elevation={0} className="pb-4">
       <PanelHeader className="mb-2">
         <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
         <span className="text-low text-xs tabular-nums">
           {plural(tests.length, "journey")}
         </span>
       </PanelHeader>
-      <ul>
-        {visible.map((test) => (
-          <JourneyTestItem
-            key={test.key}
-            test={test}
-            href={getLocationURL({
-              location: test.location,
-              repoUrl,
-              branch: build.branch,
-            })}
-          />
-        ))}
+      {/* No rule between journeys: a title sits close to its cards and far
+          from the ones above, and the file opens its group once. */}
+      <ul className="flex flex-col gap-8">
+        {visible.map((test, index) => {
+          const opensGroup =
+            index === 0 || visible[index - 1]?.prefix !== test.prefix;
+          return (
+            <JourneyTestItem
+              key={test.key}
+              test={test}
+              showPrefix={opensGroup}
+              className={clsx(opensGroup && index > 0 && "mt-4")}
+              href={getLocationURL({
+                location: test.location,
+                repoUrl,
+                branch: build.branch,
+              })}
+            />
+          );
+        })}
       </ul>
       {(collapsible && !expanded) || hiddenUnchangedCount > 0 ? (
-        <div className="border-t-thin flex flex-wrap gap-2 px-4 pt-3 pb-2">
+        <div className="flex flex-wrap gap-2 px-4 pt-8">
           {collapsible && !expanded ? (
             <SectionButton onClick={() => setExpanded(true)}>
               Show {plural(listed.length - visible.length, "more journey")}
@@ -393,18 +406,38 @@ function getChangedScreens(test: JourneyTest): NamedScreen[] {
   return Array.from(byLabel.values()).sort((a, b) => a.index - b.index);
 }
 
-function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
-  const { test, href } = props;
+/**
+ * `tests` grouped by file and describe blocks, the groups in the order their
+ * first test comes in, so the most changed first as `tests` is sorted.
+ */
+function groupByPrefix(tests: JourneyTest[]): JourneyTest[] {
+  const groups = new Map<string, JourneyTest[]>();
+  for (const test of tests) {
+    const group = groups.get(test.prefix) ?? [];
+    groups.set(test.prefix, group);
+    group.push(test);
+  }
+  return Array.from(groups.values()).flat();
+}
+
+function JourneyTestItem(props: {
+  test: JourneyTest;
+  href: string | null;
+  /** Whether the test opens a group of the same file, which names it. */
+  showPrefix: boolean;
+  className?: string;
+}) {
+  const { test, href, showPrefix } = props;
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
   const mark = getReviewMark(getChangedDiffs(test.runs), useReviewStatuses());
   const changedScreens = getChangedScreens(test);
   const namedScreens = changedScreens.slice(0, MAX_CHANGED_SCREEN_NAMES);
   return (
-    <li className="border-t-thin px-4 pt-3 pb-2.5 first:border-t-0 first:pt-1">
+    <li className={clsx("px-4", props.className)}>
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          {test.prefix ? (
+          {test.prefix && showPrefix ? (
             href ? (
               <a
                 href={href}
@@ -419,7 +452,12 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
               <div className="text-low truncate text-xs">{test.prefix}</div>
             )
           ) : null}
-          <h3 className="mt-0.5 text-sm/snug font-medium">
+          <h3
+            className={clsx(
+              "text-sm/snug font-medium",
+              test.prefix && showPrefix && "mt-3",
+            )}
+          >
             {test.title}
             {mark ? (
               <ReviewMark mark={mark} className="ml-1.5 align-[-0.125em]" />
