@@ -1,6 +1,7 @@
 import {
   ADD_ON_KEYS,
   ADD_ONS,
+  getAddOnsMonthlyPrice,
   getBilledAddOns,
   type AddOn,
 } from "@argos/util/add-ons";
@@ -38,38 +39,33 @@ export function AddOnsPricingTable(props: {
   const { team, enabling } = props;
   const billed = getBilledAddOns({
     enabled: {
-      githubSso: Boolean(team.ssoGithubAccount),
-      samlSso: team.samlPurchased,
-      staticIp: team.staticIpEnabled,
+      "github-sso": Boolean(team.ssoGithubAccount),
+      "saml-sso": team.samlPurchased,
+      "static-ip": team.staticIpEnabled,
     },
     plan: team.plan ?? null,
   });
-  const rows = ADD_ON_KEYS.filter(
+  const keys = ADD_ON_KEYS.filter(
     (key) => key === enabling || billed.includes(key),
-  ).map((key) => ({
-    key,
-    label: ADD_ONS[key].label,
-    price: ADD_ONS[key].monthlyPrice,
-  }));
-  const total = rows.reduce((sum, row) => sum + row.price, 0);
+  );
   return (
     <div>
-      {rows.map((row) => (
+      {keys.map((key) => (
         <div
-          key={row.key}
+          key={key}
           className={clsx(
             "text-low my-2 flex justify-between",
-            enabling === row.key && "font-bold",
+            enabling === key && "font-bold",
           )}
         >
-          <div>{row.label}</div>
-          <div>${row.price} / month</div>
+          <div>{ADD_ONS[key].label}</div>
+          <div>${ADD_ONS[key].monthlyPrice} / month</div>
         </div>
       ))}
       <hr className="my-2 border-0 border-t" />
       <div className="my-2 flex justify-between font-bold">
         <div>Total</div>
-        <div>${total} / month</div>
+        <div>${getAddOnsMonthlyPrice(keys)} / month</div>
       </div>
       <p className="text-low mt-2 text-right text-sm">
         * Plus applicable tax and fees

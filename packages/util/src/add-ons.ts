@@ -3,42 +3,53 @@ export const ADD_ON_KEYS = ["github-sso", "saml-sso", "static-ip"] as const;
 
 export type AddOn = (typeof ADD_ON_KEYS)[number];
 
+/** The plan flags that include an add-on, so that it is not billed. */
+type PlanInclusions = {
+  githubSsoIncluded: boolean;
+  samlIncluded: boolean;
+  staticIpIncluded: boolean;
+};
+
 /**
- * What each add-on is called and costs a month, in dollars.
+ * What each add-on is called, costs a month in dollars, and which plan flag
+ * includes it.
  *
  * Shared so the dialog that sells an add-on and the staff pages that estimate a
  * team's bill price it alike.
  */
-export const ADD_ONS: Record<AddOn, { label: string; monthlyPrice: number }> = {
-  "github-sso": { label: "GitHub SSO", monthlyPrice: 50 },
-  "saml-sso": { label: "SAML SSO", monthlyPrice: 200 },
-  "static-ip": { label: "Static IP", monthlyPrice: 200 },
+export const ADD_ONS: Record<
+  AddOn,
+  { label: string; monthlyPrice: number; includedBy: keyof PlanInclusions }
+> = {
+  "github-sso": {
+    label: "GitHub SSO",
+    monthlyPrice: 50,
+    includedBy: "githubSsoIncluded",
+  },
+  "saml-sso": {
+    label: "SAML SSO",
+    monthlyPrice: 200,
+    includedBy: "samlIncluded",
+  },
+  "static-ip": {
+    label: "Static IP",
+    monthlyPrice: 200,
+    includedBy: "staticIpIncluded",
+  },
 };
 
 /**
  * The add-ons a team pays for: the ones it enabled that its plan does not
- * include. In the order `ADD_ON_KEYS` lists them.
+ * include.
  */
 export function getBilledAddOns(input: {
-  enabled: { githubSso: boolean; samlSso: boolean; staticIp: boolean };
-  plan: {
-    githubSsoIncluded: boolean;
-    samlIncluded: boolean;
-    staticIpIncluded: boolean;
-  } | null;
+  enabled: Record<AddOn, boolean>;
+  plan: PlanInclusions | null;
 }): AddOn[] {
   const { enabled, plan } = input;
-  const billed: AddOn[] = [];
-  if (enabled.githubSso && !plan?.githubSsoIncluded) {
-    billed.push("github-sso");
-  }
-  if (enabled.samlSso && !plan?.samlIncluded) {
-    billed.push("saml-sso");
-  }
-  if (enabled.staticIp && !plan?.staticIpIncluded) {
-    billed.push("static-ip");
-  }
-  return billed;
+  return ADD_ON_KEYS.filter(
+    (key) => enabled[key] && !plan?.[ADD_ONS[key].includedBy],
+  );
 }
 
 /** What a set of add-ons costs a month, in dollars. */

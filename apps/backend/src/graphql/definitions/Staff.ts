@@ -1,11 +1,17 @@
-import { ADD_ONS, getAddOnsMonthlyPrice } from "@argos/util/add-ons";
+import { ADD_ONS } from "@argos/util/add-ons";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Account, StaffTeamContact, Subscription } from "@/database/models";
+import {
+  Account,
+  StaffTeamContact,
+  Subscription,
+  type StripeInvoice,
+} from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
   getAccountBillings,
+  getEstimatedPeriodAmount,
   type AccountBilling,
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
@@ -139,18 +145,27 @@ function getPeriodAmount(
     return null;
   }
 
-  if (billed.invoice) {
-    return getInvoiceRevenue(billed.invoice).amount;
-  }
-
-  // Null when Stripe was never asked for the amount. Ordered as nothing rather
-  // than guessed at: the guess belongs to the display, which says it is one.
-  const flatPrice = billing.flatPrice ?? 0;
   return (
-    flatPrice +
-    getAddOnsMonthlyPrice(billing.addOns) +
-    billed.additionalScreenshotCost
+    getInvoicedAmount(billed) ??
+    getEstimatedPeriodAmount({
+      // Null when Stripe was never asked for the amount. Ordered as nothing
+      // rather than guessed at: the guess belongs to the display, which says it
+      // is one.
+      flatPrice: billing.flatPrice ?? 0,
+      addOns: billing.addOns,
+      period: billed,
+    })
   );
+}
+
+/**
+ * What Stripe invoiced for a period, before tax and net of credit notes, as the
+ * revenue page counts it. Null when no invoice of it is mirrored.
+ */
+function getInvoicedAmount(period: {
+  invoice: StripeInvoice | null;
+}): number | null {
+  return period.invoice ? getInvoiceRevenue(period.invoice).amount : null;
 }
 
 /**
@@ -835,9 +850,7 @@ export const resolvers: IResolvers = {
         closed: period.closed,
         screenshotsCount: period.screenshotsCount,
         additionalScreenshotsCost: period.additionalScreenshotCost,
-        invoicedAmount: period.invoice
-          ? getInvoiceRevenue(period.invoice).amount
-          : null,
+        invoicedAmount: getInvoicedAmount(period),
       }));
     },
     storybookRatio: async (account, _args, ctx) => {

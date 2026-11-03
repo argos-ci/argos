@@ -411,11 +411,10 @@ function getAmountHint(
   }
 
   const { plan } = billing;
-  const { flatPrice } = team.staff;
-  const flat = formatPrice(getPeriodFlatPrice(flatPrice, plan));
+  const flat = formatPrice(getPeriodFlatPrice(team.staff.flatPrice, plan));
   const unit = plan.interval === PlanInterval.Year ? "year" : "month";
   const source =
-    flatPrice === null
+    team.staff.flatPrice === null
       ? `a ${flat} guess for ${plan.displayName}, whose own amount is not on file`
       : `${flat} held on the subscription in Stripe`;
   const addOns = team.staff.addOns

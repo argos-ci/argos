@@ -18,8 +18,6 @@ import {
   checkIsActiveSubscriptionStatus,
   GithubAccountMember,
   GithubInstallation,
-  Plan,
-  Subscription,
   Team,
   TeamDomain,
   TeamInvite,
@@ -28,6 +26,10 @@ import {
   UserEmail,
 } from "@/database/models";
 import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
+import {
+  checkCanBillAddOns,
+  checkIsYearlyPlan,
+} from "@/database/services/add-ons";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -477,35 +479,6 @@ function getWelcomeUrl(input: { teamSlug: string }): string {
   url.searchParams.set("team", input.teamSlug);
   url.searchParams.set("r", `/${input.teamSlug}`);
   return url.href;
-}
-
-/**
- * Whether add-ons can be billed onto this subscription.
- *
- * They ride as extra products on a Stripe subscription, so a forced plan (which
- * has no subscription at all) and a GitHub Marketplace one have nothing to
- * carry them — however healthy their plan is otherwise.
- *
- * Narrows `stripeSubscriptionId` so callers can bill without asserting.
- */
-function checkCanBillAddOns(
-  subscription: Subscription | null,
-): subscription is Subscription & { stripeSubscriptionId: string } {
-  return (
-    subscription !== null &&
-    subscription.provider === "stripe" &&
-    subscription.stripeSubscriptionId !== null
-  );
-}
-
-/**
- * Whether the plan is billed yearly.
- *
- * Add-on products are priced monthly and Stripe refuses items whose interval
- * differs from the rest of the subscription, so a yearly plan cannot take one.
- */
-function checkIsYearlyPlan(plan: Plan | null): boolean {
-  return plan?.interval === "year";
 }
 
 /**

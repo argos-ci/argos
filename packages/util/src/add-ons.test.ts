@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { getAddOnsMonthlyPrice, getBilledAddOns } from "./add-ons";
 
-const enabled = { githubSso: true, samlSso: true, staticIp: true };
+const enabled = { "github-sso": true, "saml-sso": true, "static-ip": true };
 const nothingIncluded = {
   githubSsoIncluded: false,
   samlIncluded: false,
@@ -30,7 +30,7 @@ describe("getBilledAddOns", () => {
   it("bills nothing the team did not enable", () => {
     expect(
       getBilledAddOns({
-        enabled: { githubSso: false, samlSso: true, staticIp: false },
+        enabled: { "github-sso": false, "saml-sso": true, "static-ip": false },
         plan: nothingIncluded,
       }),
     ).toEqual(["saml-sso"]);
@@ -39,7 +39,7 @@ describe("getBilledAddOns", () => {
   it("bills what is enabled when there is no plan", () => {
     expect(
       getBilledAddOns({
-        enabled: { githubSso: true, samlSso: false, staticIp: false },
+        enabled: { "github-sso": true, "saml-sso": false, "static-ip": false },
         plan: null,
       }),
     ).toEqual(["github-sso"]);
