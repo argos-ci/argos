@@ -226,8 +226,8 @@ loggedTest(
         .getByRole("listitem")
         .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
     await expect(runRow("complete a purchase")).toHaveText([
-      /1280×720.*2 of 4 changed/,
-      /375×812.*1 of 4 changed/,
+      /1280×720.*2 of 4 screens changed/,
+      /375×812.*1 of 4 screens changed/,
     ]);
     await expect(walkLink("create an account")).toHaveCount(0);
     await page.getByRole("button", { name: "Show 1 unchanged test" }).click();

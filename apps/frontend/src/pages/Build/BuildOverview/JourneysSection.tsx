@@ -2,12 +2,11 @@ import { useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { ArrowRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
-import { Tooltip } from "@/ui/Tooltip";
 
 import { checkDiffNeedsAttention } from "../BuildJourneyDrawer";
 import { getBuildURL, useBuildParams } from "../BuildParams";
@@ -256,31 +255,85 @@ function JourneyTestItem(props: { test: JourneyTest; href: string | null }) {
           <h3 className="mt-0.5 text-sm/snug font-medium">{test.title}</h3>
         </div>
       </div>
-      <ul className="mt-2 flex flex-col gap-0.5">
+      {/* Runs side by side while each keeps room for its text next to its
+          screens. */}
+      <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(min(21rem,100%),1fr))] gap-3">
         {test.runs.map((run) => (
-          <JourneyRunRow key={run.journey.id} run={run} title={test.title} />
+          <JourneyRunItem key={run.journey.id} run={run} title={test.title} />
         ))}
       </ul>
     </li>
   );
 }
 
-const MAX_SHOWN_SCREENS = 3;
+const STACKED_SCREEN_COUNT = 3;
+const STACK_OFFSET = 8;
 
-/**
- * The box of a run's screens, at the viewport's shape so a phone run reads as
- * phone screens, large enough to see what changed.
- */
-function getScreenSize(viewport: Journey["viewport"]): {
+/** The front screen of a run's stack, at the viewport's shape. */
+function getFrontScreenSize(viewport: Journey["viewport"]): {
   width: number;
   height: number;
 } {
   const ratio = viewport ? viewport.width / viewport.height : 1.5;
-  const height = ratio < 1 ? 128 : 72;
-  return { width: Math.round(height * ratio), height };
+  return ratio < 1
+    ? { width: Math.round(134 * ratio), height: 134 }
+    : { width: 150, height: Math.round(150 / ratio) };
 }
 
-function JourneyRunRow(props: { run: JourneyRun; title: string }) {
+/**
+ * A run's first screens of interest, the first one in front and the next ones
+ * peeking out above it, smaller, like a deck.
+ */
+function ScreenStack(props: {
+  screens: JourneyScreen[];
+  viewport: Journey["viewport"];
+}) {
+  const front = getFrontScreenSize(props.viewport);
+  const layers = props.screens.slice(0, STACKED_SCREEN_COUNT);
+  const depth = layers.length - 1;
+  return (
+    <span
+      className="relative block shrink-0"
+      style={{
+        width: front.width,
+        height: front.height + STACK_OFFSET * depth,
+      }}
+    >
+      {layers.map((screen, index) => {
+        const scale = 1 - index * 0.1;
+        const width = Math.round(front.width * scale);
+        const height = Math.round(front.height * scale);
+        return (
+          <span
+            key={screen.diff.id}
+            className={clsx(
+              "absolute block rounded-sm",
+              index === 0 && "shadow-md",
+            )}
+            style={{
+              left: Math.round((front.width - width) / 2),
+              top: STACK_OFFSET * (depth - index),
+              width,
+              height,
+              zIndex: layers.length - index,
+            }}
+          >
+            <ScreenshotDiffThumbnail
+              screenshotDiff={screen.diff}
+              className="size-full"
+              iconClassName="m-auto size-4"
+              fit="cover"
+              // A top crop at 2x the box: the screen as it first showed.
+              transformations={[`w-${width * 2}`, `h-${height * 2}`, "fo-top"]}
+            />
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function JourneyRunItem(props: { run: JourneyRun; title: string }) {
   const { run, title } = props;
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
@@ -294,24 +347,19 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
   const ViewportIcon = journey.viewport
     ? viewportIcons[getViewportIconKind(journey.viewport.width)]
     : null;
-  const size = getScreenSize(journey.viewport);
   // What changed, the first screens of it: the walk shows the rest. A run
   // that changed nothing shows how it starts.
   const numbered = screens.map((screen, index) => ({ ...screen, index }));
   const changed = numbered.filter((screen) => screen.changed);
-  const candidates = changed.length > 0 ? changed : numbered;
-  const shown = candidates.slice(0, MAX_SHOWN_SCREENS);
-  const hiddenCount = candidates.length - shown.length;
+  const chips = changed.slice(0, STACKED_SCREEN_COUNT);
   return (
-    <li className="hover:bg-subtle relative -mx-2 grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-1.5 transition">
-      {/* The whole row walks the journey from its start; each screen is a
-          link of its own, above it. */}
-      <HeadlessLink
-        href={getHref(firstScreen.diff)}
-        aria-label={`Walk “${title}”${journey.viewport ? ` at ${formatViewport(journey.viewport)}` : ""}`}
-        className="flex min-w-0 flex-col gap-1 text-xs tabular-nums outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
-      >
-        <span className="text-low flex min-w-0 items-center gap-1.5">
+    <li className="bg-subtle hover:bg-ui relative flex items-center gap-4 rounded-lg px-4 py-3.5 transition">
+      <ScreenStack
+        screens={changed.length > 0 ? changed : numbered}
+        viewport={journey.viewport}
+      />
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <span className="text-low flex min-w-0 items-center gap-1.5 text-xs tabular-nums">
           {browser ? (
             <BrowserIcon
               browser={{ name: browser }}
@@ -330,50 +378,43 @@ function JourneyRunRow(props: { run: JourneyRun; title: string }) {
         </span>
         <span
           className={clsx(
-            "font-medium",
+            "text-sm font-medium",
             changedCount > 0 ? "text-warning-low" : "text-low",
           )}
         >
           {changedCount > 0
-            ? `${changedCount} of ${screens.length} changed`
+            ? `${changedCount} of ${plural(screens.length, "screen")} changed`
             : plural(screens.length, "screen")}
         </span>
-      </HeadlessLink>
-      <div className="flex min-w-0 items-center gap-2">
-        {shown.map((screen) => (
-          <Tooltip
-            key={screen.diff.id}
-            content={`${screen.index + 1} · ${screen.label}`}
-          >
-            <HeadlessLink
-              href={getHref(screen.diff)}
-              aria-label={`Screen ${screen.index + 1}, ${screen.label}`}
-              className="focus-ring relative z-1 block min-w-3 rounded-sm"
-              style={{
-                width: size.width,
-                aspectRatio: `${size.width} / ${size.height}`,
-              }}
-            >
-              <ScreenshotDiffThumbnail
-                screenshotDiff={screen.diff}
-                className="size-full"
-                iconClassName="m-auto size-4"
-                fit="cover"
-                // A top crop at 2x the box: the screen as it first showed.
-                transformations={[
-                  `w-${size.width * 2}`,
-                  `h-${size.height * 2}`,
-                  "fo-top",
-                ]}
-              />
-            </HeadlessLink>
-          </Tooltip>
-        ))}
-        {hiddenCount > 0 ? (
-          <span className="text-low bg-ui shrink-0 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
-            +{hiddenCount}
+        {chips.length > 0 ? (
+          <span className="flex flex-wrap items-center gap-1">
+            {chips.map((screen) => (
+              <HeadlessLink
+                key={screen.diff.id}
+                href={getHref(screen.diff)}
+                aria-label={`Screen ${screen.index + 1}, ${screen.label}`}
+                className="border-thin bg-app hover:bg-hover focus-ring text-xxs relative z-1 max-w-full truncate rounded-full px-1.5 transition"
+              >
+                {screen.label}
+              </HeadlessLink>
+            ))}
+            {changed.length > chips.length ? (
+              <span className="text-low text-xxs px-0.5 tabular-nums">
+                +{changed.length - chips.length}
+              </span>
+            ) : null}
           </span>
         ) : null}
+        {/* The whole block walks the journey from its start; the screens
+            named above it open on themselves. */}
+        <HeadlessLink
+          href={getHref(firstScreen.diff)}
+          aria-label={`Walk “${title}”${journey.viewport ? ` at ${formatViewport(journey.viewport)}` : ""}`}
+          className="text-primary-low mt-0.5 inline-flex items-center gap-1 text-xs font-medium outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-(--ring-color-default)"
+        >
+          Walk the journey
+          <ArrowRightIcon className="size-3.5" />
+        </HeadlessLink>
       </div>
     </li>
   );
