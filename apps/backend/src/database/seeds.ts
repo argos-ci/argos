@@ -1766,7 +1766,41 @@ export async function createJourneysScenario(input: {
       } satisfies ScreenshotMetadata,
     }));
   });
-  const build = await insertJourneyBuild({ projectId, screenshots });
+  // `argosScreenshot` with its `viewports` option: a single run of the test
+  // takes each screen at two sizes, named apart by a ` vw-<width>` suffix.
+  const search = { file: "search.spec.ts", title: "finds a product" };
+  const searchViewports = [
+    { width: 375, height: 667 },
+    { width: 1280, height: 720 },
+  ];
+  const searchSteps = [
+    { name: "search/results", scores: [null, null] },
+    { name: "search/product", scores: [0.4, null] },
+  ];
+  const searchScreenshots = searchSteps.flatMap((step, index) =>
+    searchViewports.map((viewport, viewportIndex) => ({
+      name: `${step.name} vw-${viewport.width}.png`,
+      score: step.scores[viewportIndex] ?? null,
+      metadata: {
+        ...common,
+        url: `https://shop.example.com/${step.name}`,
+        viewport,
+        test: {
+          id: "search.spec.ts-finds-a-product",
+          title: search.title,
+          titlePath: [search.file, search.title],
+          location: { file: `e2e/${search.file}`, line: 5, column: 3 },
+          retries: 0,
+          retry: 0,
+        },
+        capture: { index },
+      } satisfies ScreenshotMetadata,
+    })),
+  );
+  const build = await insertJourneyBuild({
+    projectId,
+    screenshots: [...screenshots, ...searchScreenshots],
+  });
   return { build };
 }
 

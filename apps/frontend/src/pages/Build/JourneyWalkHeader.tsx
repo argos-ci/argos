@@ -8,6 +8,7 @@ import { useBuildDiffState } from "./BuildDiffState";
 import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
 import { getBrowserLabel } from "./metadata/browser/browserLabels";
 import { getViewportIconKind, viewportIcons } from "./metadata/metadataIcons";
+import { resolveDiffMetadata } from "./metadata/utils";
 import { formatViewport } from "./metadata/viewports/util";
 
 /**
@@ -28,12 +29,17 @@ export function JourneyWalkHeader() {
   if (!journey) {
     return null;
   }
-  const ViewportIcon = journey.viewport
-    ? viewportIcons[getViewportIconKind(journey.viewport.width)]
+  // A run can take its screens at several sizes (Argos's `viewports` option):
+  // the one walked is the active screen's.
+  const metadata = activeDiff ? resolveDiffMetadata(activeDiff) : null;
+  const viewport = metadata?.viewport ?? journey.viewport;
+  const browser = metadata?.browser?.name ?? journey.browser;
+  const ViewportIcon = viewport
+    ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
   const run = [
-    journey.viewport ? formatViewport(journey.viewport) : null,
-    journey.browser ? getBrowserLabel(journey.browser) : null,
+    viewport ? formatViewport(viewport) : null,
+    browser ? getBrowserLabel(browser) : null,
   ].filter(Boolean);
   return (
     <section

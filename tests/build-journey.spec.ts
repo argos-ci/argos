@@ -226,11 +226,19 @@ loggedTest(
         .getByRole("listitem")
         .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
     await expect(runRow("complete a purchase")).toHaveText([
-      /1280×720.*2 of 4 screens changed/,
-      /375×812.*1 of 4 screens changed/,
+      /375×812.*1 of 4 changed/,
+      /1280×720.*2 of 4 changed/,
+    ]);
+    // The search takes each screen at two sizes in a single run (Argos's
+    // `viewports` option): a run per size all the same, smallest first.
+    await expect(runRow("finds a product")).toHaveText([
+      /375×667.*1 of 2 changed/,
+      /1280×720.*2 screens/,
     ]);
     await expect(walkLink("create an account")).toHaveCount(0);
-    await page.getByRole("button", { name: "Show 1 unchanged test" }).click();
+    await page
+      .getByRole("button", { name: "Show 1 unchanged journey" })
+      .click();
     await expect(runRow("create an account")).toHaveText(/2 screens/);
     await expect(walkLink("shows the home page")).toHaveCount(0);
 
@@ -240,7 +248,9 @@ loggedTest(
 
     // A run opens its journey on the first screen, unchanged as it is, with a
     // short id in the URL, the journey above the list and the strip open.
-    await walkLink("complete a purchase").first().click();
+    await page
+      .getByRole("link", { name: "Walk “complete a purchase” at 1280×720" })
+      .click();
     const heading = (name: string) =>
       page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
     await expect(heading("cart")).toBeVisible();
