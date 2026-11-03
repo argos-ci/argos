@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Oi7tUaRAldAUBf50f7ufqyaKBwgLTVRxpgYKhvImHQH3U5IuYzcFaCcdJoSdrZf
+\restrict POaje5UqwSBHz8IocaWxd6FBjTG5mkh72soPSwfVwRNziN8kQJlAfatyKMyCPjJ
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -6921,7 +6921,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Oi7tUaRAldAUBf50f7ufqyaKBwgLTVRxpgYKhvImHQH3U5IuYzcFaCcdJoSdrZf
+\unrestrict POaje5UqwSBHz8IocaWxd6FBjTG5mkh72soPSwfVwRNziN8kQJlAfatyKMyCPjJ
 
 -- Knex migrations
 
@@ -7192,3 +7192,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027111448_gitlab-projects-web-url.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261029145630_media-version-poster-ready.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103125834_scim-user-created.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103223358_normalize-comment-reaction-emoji.js', 1, NOW());

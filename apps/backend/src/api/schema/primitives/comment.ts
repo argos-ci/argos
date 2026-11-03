@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { formatCommentId } from "@/comment/id";
+import { groupCommentReactions } from "@/comment/reactions";
 import { schema as proseMirrorSchema } from "@/comment/schema";
 import { BuildReview, Comment, CommentReaction } from "@/database/models";
 
@@ -229,13 +230,6 @@ export async function serializeComments(
       ? (accountByUserId.get(comment.userId) ?? null)
       : null;
 
-    const groups = new Map<string, CommentReaction[]>();
-    for (const reaction of reactionsByComment.get(comment.id) ?? []) {
-      const list = groups.get(reaction.emoji) ?? [];
-      list.push(reaction);
-      groups.set(reaction.emoji, list);
-    }
-
     const pending = comment.buildReviewId
       ? reviewById.get(comment.buildReviewId)?.state === "pending"
       : false;
@@ -257,11 +251,13 @@ export async function serializeComments(
       resolvedAt: comment.resolvedAt,
       editedAt: comment.editedAt,
       createdAt: comment.createdAt,
-      reactions: Array.from(groups.entries()).map(([emoji, list]) => ({
-        emoji,
-        count: list.length,
-        users: list.flatMap((reaction) => {
-          const reactionAccount = accountByUserId.get(reaction.userId);
+      reactions: groupCommentReactions(
+        reactionsByComment.get(comment.id) ?? [],
+      ).map((group) => ({
+        emoji: group.emoji,
+        count: group.userIds.length,
+        users: group.userIds.flatMap((userId) => {
+          const reactionAccount = accountByUserId.get(userId);
           return reactionAccount ? [serializeUser(reactionAccount)] : [];
         }),
       })),

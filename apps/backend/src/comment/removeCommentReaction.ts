@@ -1,8 +1,9 @@
+import { isValidEmoji, normalizeEmoji } from "@argos/util/emoji";
+
 import { Comment, CommentReaction } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
-import { isValidEmoji } from "./reactions";
 
 /**
  * Remove a user's emoji reaction from a comment. The operation is idempotent:
@@ -13,17 +14,20 @@ export async function removeCommentReaction(input: {
   userId: string;
   emoji: string;
 }): Promise<Comment> {
-  const { comment, userId, emoji } = input;
+  const { comment, userId } = input;
 
-  if (!isValidEmoji(emoji)) {
+  if (!isValidEmoji(input.emoji)) {
     throw boom(400, "Invalid emoji");
   }
+  const emoji = normalizeEmoji(input.emoji);
 
-  const deletedCount = await CommentReaction.query().deleteById([
-    comment.id,
-    userId,
-    emoji,
-  ]);
+  // The migration that normalized reactions runs before the rollout, so rows
+  // the previous release wrote in between keep emojibase 17's trailing U+FE0F
+  // ("👍️").
+  const deletedCount = await CommentReaction.query()
+    .where({ commentId: comment.id, userId })
+    .whereIn("emoji", [emoji, `${emoji}\u{FE0F}`])
+    .delete();
 
   // No reaction to remove: nothing changed, nothing to broadcast.
   if (deletedCount === 0) {
