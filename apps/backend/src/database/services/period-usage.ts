@@ -1,4 +1,4 @@
-import { getAddOnsMonthlyPrice, type AddOn } from "@argos/util/add-ons";
+import { getAddOnsMonthlyPrice, type AddOn } from "@argos/schemas/add-ons";
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";

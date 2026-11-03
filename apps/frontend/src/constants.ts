@@ -1,4 +1,4 @@
-import { ADD_ONS } from "@argos/util/add-ons";
+import { ADD_ONS } from "@argos/schemas/add-ons";
 
 export const GITHUB_SSO_PRICING = ADD_ONS["github-sso"].monthlyPrice;
 export const SAML_SSO_PRICING = ADD_ONS["saml-sso"].monthlyPrice;

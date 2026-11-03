@@ -4,7 +4,7 @@ import {
   getAddOnsMonthlyPrice,
   getBilledAddOns,
   type AddOn,
-} from "@argos/util/add-ons";
+} from "@argos/schemas/add-ons";
 import clsx from "clsx";
 
 import { DocumentType, graphql } from "@/gql";

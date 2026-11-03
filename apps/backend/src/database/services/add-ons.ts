@@ -1,4 +1,4 @@
-import { getBilledAddOns, type AddOn } from "@argos/util/add-ons";
+import { getBilledAddOns, type AddOn } from "@argos/schemas/add-ons";
 
 import type { Plan, Subscription, Team } from "../models";
 

@@ -1,4 +1,4 @@
-import { ADD_ONS } from "@argos/util/add-ons";
+import { ADD_ONS } from "@argos/schemas/add-ons";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
