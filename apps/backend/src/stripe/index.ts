@@ -229,7 +229,7 @@ export function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2026-09-30.endive",
+  apiVersion: "2026-10-28.endive",
   typescript: true,
 });
 

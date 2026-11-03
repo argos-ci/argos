@@ -18,13 +18,13 @@
   "dependencies": {
     "commander": "^15.0.0",
     "fast-glob": "^3.3.3",
-    "ora": "^9.4.1"
+    "ora": "^10.0.0"
   },
   "peerDependencies": {
     "knex": "^3.0.0"
   },
   "devDependencies": {
     "@argos/tsconfig": "workspace:*",
-    "tsdown": "^0.23.1"
+    "tsdown": "^0.23.4"
   }
 }
