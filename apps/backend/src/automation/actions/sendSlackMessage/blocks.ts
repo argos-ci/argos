@@ -113,8 +113,13 @@ export function detailsBlock(props: {
   const repositoryURL = getRepositoryUrl(project);
   const pullRequestUrl =
     (pullRequest && getPullRequestUrl(project, pullRequest)) ?? undefined;
+  // Encoded: a branch name may hold `>` or `|`, which would end the link early
+  // and let whoever pushes it write their own mrkdwn — a `<!channel>`, a link
+  // of their choosing — into the customer's channel as the Argos bot.
   const branchUrl =
-    branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
+    branch && repositoryURL
+      ? `${repositoryURL}/tree/${branch.split("/").map(encodeURIComponent).join("/")}`
+      : undefined;
   const commitUrl =
     commit && repositoryURL ? `${repositoryURL}/commit/${commit}` : undefined;
 
