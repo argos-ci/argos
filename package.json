@@ -36,8 +36,8 @@
   },
   "packageManager": "pnpm@11.28.2+sha512.755ce2fe3c05bfd7bb412b42aff3c5c55cd38c529c6eca810475497ae36746c571e4b6e1814e6e7e4b97d7ee864b8a0e44673c3b297a50e0ac28771c5ce15d27",
   "devDependencies": {
-    "@0no-co/graphqlsp": "^1.17.5",
-    "@argos-ci/playwright": "^7.7.1",
+    "@0no-co/graphqlsp": "^1.18.0",
+    "@argos-ci/playwright": "^7.8.0",
     "@graphql-codegen/add": "^7.1.1",
     "@graphql-codegen/cli": "^7.4.6",
     "@graphql-codegen/client-preset": "^6.2.3",
@@ -46,16 +46,16 @@
     "@graphql-codegen/typescript": "^6.1.2",
     "@graphql-codegen/typescript-resolvers": "^6.1.1",
     "@parcel/watcher": "^2.6.0",
-    "@playwright/test": "1.64.0",
-    "@types/node": "^26.6.5",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^26.6.6",
     "esbuild": "^0.28.2",
-    "knip": "^6.41.0",
-    "oxfmt": "^0.72.0",
-    "oxlint": "^1.87.0",
+    "knip": "^6.44.1",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
     "smee-client": "^5.0.0",
     "tsrs": "catalog:",
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.10",
     "typescript": "catalog:",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   }
 }

@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@argos/tsconfig": "workspace:*",
-    "tsdown": "^0.23.1"
+    "tsdown": "^0.23.4"
   },
   "dependencies": {
     "zod": "catalog:"

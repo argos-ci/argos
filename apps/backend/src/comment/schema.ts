@@ -1,3 +1,7 @@
+// TipTap types its `parseHTML` hooks with DOM elements; here they receive
+// happy-dom's (see `./html.ts`). The DOM lib used to arrive implicitly through
+// @xmldom/xmldom 0.8's typings.
+/// <reference lib="dom" />
 import { getSchema } from "@tiptap/core";
 import Mention from "@tiptap/extension-mention";
 import type { Schema } from "@tiptap/pm/model";

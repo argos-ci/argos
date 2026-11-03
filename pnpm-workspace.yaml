@@ -12,15 +12,20 @@ catalog:
   # tsrs ports one exact TypeScript build (`tsrs --version` prints it), and
   # `typescript` is pinned to that build so the editor and every tool peering on
   # it see the compiler CI checks with. Bump the two together.
-  tsrs: 0.18.0-ts7.1.0-dev.20260929
-  typescript: 7.1.0-dev.20260930.4
-  zod: ^4.6.5
+  tsrs: 0.20.1-ts7.1.0-beta
+  typescript: 7.1.0-beta
+  zod: ^4.6.7
 
 overrides:
   '@types/react': "catalog:"
   '@types/react-dom': "catalog:"
   browserslist: ^4.28.7
   dompurify: ^3.4.0
+  # 18 drops the redundant U+FE0F from 152 emoji (👍, ✅, ✨…), and reactions
+  # store the picked string verbatim: new picks would no longer match existing
+  # rows. Lift once reactions normalize what they store and existing rows are
+  # migrated.
+  emojibase-data: ^17.0.0
   esbuild: ^0.28.1
   file-type: ^22.1.1
   # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
@@ -28,10 +33,15 @@ overrides:
   # rewrites that peer range too: pnpm reports no conflict even when it is
   # raised past what Apollo supports.
   graphql: 16.14.2
-  ip-address: ^10.7.2
+  ip-address: ^10.7.4
   lodash: ^4.17.23
   lodash-es: ^4.18.1
-  minimatch: ^10.2.6
+  # A floor, not a cap: glob 13 and graphql-config still need minimatch 10,
+  # while the backend matches user-defined globs and takes 11.
+  minimatch@<10.2.6: ^10.2.6
+  # The maintained line (ditojs/objection) changed behaviour all through
+  # 3.2–4.x, and 4's typings break ~45 backend files: migrate in its own change.
+  objection: 3.1.5
   react: "catalog:"
   react-dom: "catalog:"
   react-router: "catalog:"
@@ -40,13 +50,12 @@ overrides:
   # TypeScript for msw and tsdown.
   typescript: "catalog:"
   uuid: ^14.0.0
-  undici: ^8.11.2
+  undici: ^8.12.2
   ws: ^8.20.1
 
 allowBuilds:
   "@apollo/protobufjs": true
   "@parcel/watcher": true
-  "@sentry/cli": true
   "@tailwindcss/oxide": true
   esbuild: true
   # Its postinstall refetches the domain list from three remote sources and

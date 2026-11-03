@@ -155,7 +155,9 @@ type ScreenshotUploadRequest = z.infer<typeof ScreenshotUploadRequestSchema>;
 
 const UniqueScreenshotUploadsSchema = z
   .array(ScreenshotUploadRequestSchema)
-  .max(MAX_SCREENSHOTS_PER_BUILD, { message: tooManyScreenshotsMessage })
+  // Not `.max()`: since zod 4.6.6 a failed size bound aborts the union branch,
+  // and the request is rejected with a bare "Invalid input" (colinhacks/zod#6659).
+  .refine(withinScreenshotLimit, { message: tooManyScreenshotsMessage })
   .refine(
     (items) => new Set(items.map((item) => item.key)).size === items.length,
     { message: "Must be an array of uploads with unique keys" },
