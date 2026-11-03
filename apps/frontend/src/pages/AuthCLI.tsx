@@ -37,12 +37,31 @@ const CreateCLITokenMutation = graphql(`
   }
 `);
 
-function buildCallbackUrl(port: string, state: string, code: string) {
-  return `http://localhost:${port}/callback?state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`;
+/**
+ * The port the CLI listens on, or `null` when the parameter is not one.
+ *
+ * Checked strictly because it is spliced into the URL the token code is sent
+ * to: `port=@attacker.example` would turn `localhost` into userinfo and hand
+ * the code — and the token it redeems for — to another host.
+ */
+function parsePort(value: string | null): number | null {
+  if (!value || !/^\d{1,5}$/.test(value)) {
+    return null;
+  }
+  const port = Number(value);
+  return port >= 1 && port <= 65535 ? port : null;
+}
+
+function buildCallbackUrl(port: number, state: string, code: string) {
+  const url = new URL("http://localhost/callback");
+  url.port = String(port);
+  url.searchParams.set("state", state);
+  url.searchParams.set("code", code);
+  return url.toString();
 }
 
 function AuthCLIContent(props: {
-  port: string;
+  port: number;
   state: string;
   codeChallenge: string;
 }) {
@@ -158,7 +177,7 @@ const InvalidRequestPage = () => (
   <Container className="mt-12 max-w-sm">
     <Alert>
       <AlertTitle>Invalid request</AlertTitle>
-      <AlertText>Missing port or state parameter.</AlertText>
+      <AlertText>Missing or invalid port, state or PKCE parameter.</AlertText>
     </Alert>
   </Container>
 );
@@ -166,7 +185,7 @@ const InvalidRequestPage = () => (
 export function Component() {
   const [searchParams] = useSearchParams();
   const auth = useAuth();
-  const port = searchParams.get("port");
+  const port = parsePort(searchParams.get("port"));
   const state = searchParams.get("state");
   const codeChallenge = searchParams.get("pkce");
 

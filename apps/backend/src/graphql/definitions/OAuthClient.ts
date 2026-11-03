@@ -4,7 +4,7 @@ import { OAuthGrant, OAuthGrantAccount } from "@/database/models";
 import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
-import { getKnownApp } from "@/oauth/known-apps";
+import { getClientKnownApp } from "@/oauth/known-apps";
 import { isKnownResource, normalizeResource } from "@/oauth/metadata";
 import {
   isOAuthScope,
@@ -110,12 +110,14 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   OAuthClient: {
     name: (client) => {
-      const app = getKnownApp(client.knownAppId);
+      const app = getClientKnownApp(client);
       return app?.displayName ?? client.clientName;
     },
+    verified: (client) => getClientKnownApp(client) !== null,
+    knownAppId: (client) => getClientKnownApp(client)?.id ?? null,
     logoUrl: (client) => client.logoUri,
     homepage: (client) => {
-      const app = getKnownApp(client.knownAppId);
+      const app = getClientKnownApp(client);
       return app?.homepage ?? client.clientUri;
     },
   },

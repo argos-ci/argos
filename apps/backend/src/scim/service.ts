@@ -226,7 +226,7 @@ export async function createScimUser(args: {
 
   return rejectDuplicate(async () => {
     const name = attributes.displayName ?? formatName(attributes);
-    const { user } = await getOrCreateUserByVerifiedEmail(
+    const { user, creation } = await getOrCreateUserByVerifiedEmail(
       sanitizeEmail(email),
       {
         name: AccountNameSchema.safeParse(name).data ?? null,
@@ -235,7 +235,12 @@ export async function createScimUser(args: {
     const userId = user.id;
     return transaction(async (trx) => {
       const scimUser = await TeamScimUser.query(trx)
-        .insert({ teamId: team.id, userId, ...attributes })
+        .insert({
+          teamId: team.id,
+          userId,
+          userCreated: creation,
+          ...attributes,
+        })
         .returning("*");
       if (attributes.active) {
         await addMembership({ team, userId, role: attributes.role, trx });

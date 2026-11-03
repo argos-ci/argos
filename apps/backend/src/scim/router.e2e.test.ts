@@ -208,6 +208,10 @@ describe("SCIM API", () => {
     expect(await getMembership(teamAccount, "jane@acme.com")).toMatchObject({
       userLevel: team.defaultUserLevel,
     });
+    // Created by the team's IdP, so that IdP may sign in to it.
+    expect(await TeamScimUser.query().findById(id)).toMatchObject({
+      userCreated: true,
+    });
 
     const found = await api.get(`/Users?filter=${filter}`);
     expect(found.body).toMatchObject({
@@ -323,6 +327,10 @@ describe("SCIM API", () => {
     expect(await getMembership(teamAccount, ownerEmail)).toMatchObject({
       userId: owner.id,
       userLevel: "owner",
+    });
+    // The account predates the team's IdP, which must not sign in to it.
+    expect(await TeamScimUser.query().findById(created.body.id)).toMatchObject({
+      userCreated: false,
     });
   });
 

@@ -5,7 +5,7 @@ import {
   redirectUriMatches,
   resolveClientVerification,
 } from "./clients";
-import { resolveKnownApp } from "./known-apps";
+import { getClientKnownApp, resolveKnownApp } from "./known-apps";
 import {
   getApiResourceUrl,
   getAuthorizationServerMetadata,
@@ -125,6 +125,39 @@ describe("known-apps verification", () => {
   it("does not verify from an unknown host or name alone", () => {
     expect(resolveKnownApp({ clientUri: "https://evil.example" })).toBeNull();
     expect(resolveKnownApp({})).toBeNull();
+  });
+
+  it.each([
+    { softwareId: "claude-code", redirectUris: ["http://localhost:4567/cb"] },
+    { clientUri: "https://claude.ai", redirectUris: ["http://127.0.0.1/cb"] },
+    {
+      clientUri: "https://cursor.com",
+      redirectUris: ["cursor://anysphere.cursor-retrieval/oauth/callback"],
+    },
+  ])("verifies a signal whose codes stay local: %o", (metadata) => {
+    expect(resolveKnownApp(metadata)).not.toBeNull();
+  });
+
+  it.each([
+    { softwareId: "claude-code", redirectUris: ["https://evil.example/cb"] },
+    { clientUri: "https://claude.ai", redirectUris: ["https://evil.example"] },
+    {
+      redirectUris: ["https://claude.ai/cb", "https://evil.example/cb"],
+    },
+    { clientUri: "https://claude.ai", redirectUris: ["not a url"] },
+  ])("does not verify a client sending codes elsewhere: %o", (metadata) => {
+    expect(resolveKnownApp(metadata)).toBeNull();
+  });
+
+  it("drops the badge of a stored client sending codes elsewhere", () => {
+    const client = {
+      knownAppId: "claude",
+      redirectUris: ["https://evil.example/cb"],
+    };
+    expect(getClientKnownApp({ ...client, isFirstParty: false })).toBeNull();
+    expect(getClientKnownApp({ ...client, isFirstParty: true })?.id).toBe(
+      "claude",
+    );
   });
 
   it("resolveClientVerification derives verified + knownAppId", () => {

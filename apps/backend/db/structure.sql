@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
+\restrict Oi7tUaRAldAUBf50f7ufqyaKBwgLTVRxpgYKhvImHQH3U5IuYzcFaCcdJoSdrZf
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2856,6 +2856,7 @@ CREATE TABLE public.team_scim_users (
     "familyName" character varying(255),
     active boolean DEFAULT true NOT NULL,
     role text,
+    "userCreated" boolean DEFAULT false NOT NULL,
     CONSTRAINT team_scim_users_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
 
@@ -6920,7 +6921,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict B4lBvIrCcSTgUbW2jJVBqWfWpbrEdlFQlOwgCmJvl8EPiNQa5AUhajv3BVmiHFJ
+\unrestrict Oi7tUaRAldAUBf50f7ufqyaKBwgLTVRxpgYKhvImHQH3U5IuYzcFaCcdJoSdrZf
 
 -- Knex migrations
 
@@ -7190,3 +7191,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027104323_gitlab-instance-isolation.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261027111448_gitlab-projects-web-url.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261029145630_media-version-poster-ready.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103125834_scim-user-created.js', 1, NOW());

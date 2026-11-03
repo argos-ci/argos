@@ -2,6 +2,7 @@ import { ProjectNameSchema } from "@argos/schemas/project";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { getRestrictedVisibleProjectIds } from "@/database/services/project";
 import {
   getAccountMetrics,
   InvalidAccountMetricsInputError,
@@ -164,9 +165,14 @@ export const getAccountAnalytics: CreateAPIHandler = ({ get }) => {
       slug: req.ctx.params.accountSlug,
     });
 
+    const visibleProjectIds = await getRestrictedVisibleProjectIds({
+      account,
+      user: auth.user,
+    });
     try {
       const metrics = await getAccountMetrics({
         accountId: account.id,
+        visibleProjectIds,
         ...req.ctx.query,
       });
       res.send(serializeAccountAnalytics(metrics));

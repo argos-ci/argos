@@ -123,3 +123,127 @@ describe("GraphQL User.staff", () => {
     expect(res.body.data.teamById).not.toBeNull();
   });
 });
+
+describe("GraphQL User private fields", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  const TeamMembersPrivateQuery = `
+    query TeamMembersPrivate($teamAccountId: ID!) {
+      teamById(id: $teamAccountId) {
+        ... on Team {
+          members(first: 10, after: 0) {
+            edges {
+              user {
+                id
+                email
+                emails { email }
+                teams { id }
+                userAccessTokens { id }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  async function createTeamWith(
+    members: { userAccount: { userId: string | null } }[],
+  ) {
+    const teamAccount = await factory.TeamAccount.create();
+    invariant(teamAccount.teamId, "team account has no team");
+    for (const member of members) {
+      invariant(member.userAccount.userId, "account has no user");
+      await factory.TeamUser.create({
+        teamId: teamAccount.teamId,
+        userId: member.userAccount.userId,
+        userLevel: "owner",
+      });
+    }
+    return teamAccount;
+  }
+
+  it.each([
+    "email",
+    "emails { email }",
+    "teams { id }",
+    "userAccessTokens { id }",
+  ])("withholds a teammate's %s", async (selection) => {
+    const viewer = await createViewer({ staff: false });
+    const other = await createViewer({ staff: false });
+    const teamAccount = await createTeamWith([viewer, other]);
+
+    const res = await request(await createApp(viewer))
+      .post("/graphql")
+      .send({
+        query: `
+            query TeamMemberField($teamAccountId: ID!) {
+              teamById(id: $teamAccountId) {
+                ... on Team {
+                  members(first: 10, after: 0) {
+                    edges { user { id ${selection} } }
+                  }
+                }
+              }
+            }
+          `,
+        variables: { teamAccountId: teamAccount.id },
+      });
+
+    expect(res.body.errors?.[0]).toMatchObject({
+      extensions: { code: "FORBIDDEN" },
+      path: expect.arrayContaining([selection.split(" ")[0]]),
+    });
+    expect(JSON.stringify(res.body.data)).not.toContain(other.user.email);
+  });
+
+  it("shows them to staff", async () => {
+    const viewer = await createViewer({ staff: true });
+    const other = await createViewer({ staff: false });
+    const teamAccount = await createTeamWith([other]);
+
+    const res = await request(await createApp(viewer))
+      .post("/graphql")
+      .send({
+        query: TeamMembersPrivateQuery,
+        variables: { teamAccountId: teamAccount.id },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.teamById.members.edges[0].user.email).toBe(
+      other.user.email,
+    );
+  });
+
+  it("refuses a team's roster to a visitor of one of its public projects", async () => {
+    const viewer = await createViewer({ staff: false });
+    const other = await createViewer({ staff: false });
+    const teamAccount = await createTeamWith([other]);
+    const project = await factory.Project.create({
+      accountId: teamAccount.id,
+      private: false,
+    });
+
+    const res = await request(await createApp(viewer))
+      .post("/graphql")
+      .send({
+        query: `
+          query PublicProjectTeamMembers($accountSlug: String!, $projectName: String!) {
+            project(accountSlug: $accountSlug, projectName: $projectName) {
+              account {
+                ... on Team {
+                  members(first: 10, after: 0) { edges { user { id } } }
+                }
+              }
+            }
+          }
+        `,
+        variables: { accountSlug: teamAccount.slug, projectName: project.name },
+      });
+
+    expect(res.body.errors?.[0]?.extensions?.code).toBe("FORBIDDEN");
+    expect(JSON.stringify(res.body.data)).not.toContain(other.user.id);
+  });
+});

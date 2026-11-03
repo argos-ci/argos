@@ -12,7 +12,6 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { Account } from "@/database/models";
-import { getOrCreateUserAccountFromSaml } from "@/database/services/account";
 import { boom } from "@/util/error";
 
 import { asyncHandler } from "./util";
@@ -26,14 +25,26 @@ const AcsBodySchema = z.object({
   RelayState: z.string().optional(),
 });
 
+/**
+ * A same-origin path to land on after login. Resolved with the URL parser
+ * rather than matched as a string: `//evil.example` and `/\evil.example` both
+ * start with a slash and both leave the origin.
+ */
 function getSafeRedirect(redirect: string | undefined) {
   if (!redirect) {
     return "/";
   }
-  if (!redirect.startsWith("/")) {
+  const origin = new URL(config.get("server.url")).origin;
+  let url: URL;
+  try {
+    url = new URL(redirect, origin);
+  } catch {
     return "/";
   }
-  return redirect;
+  if (url.origin !== origin) {
+    return "/";
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function getFirstString(input: string | string[] | undefined) {
@@ -122,15 +133,13 @@ router.post(
       throw boom(401, "No email attribute found in SAML response.");
     }
 
-    const userAccount = await getOrCreateUserAccountFromSaml({
-      email,
-      teamAccount: account,
-      ssoSubject: parsed.subject ?? email,
-    });
-
+    // The account is resolved when the code is exchanged, not here: this POST
+    // comes from the IdP's page, so the browser sends no session cookie, and
+    // whether the person is signed in decides which account they may link.
     const code = await createSamlAuthCode({
-      accountId: userAccount.id,
-      teamSlug,
+      teamAccountId: account.id,
+      email,
+      ssoSubject: parsed.subject ?? email,
       redirect: parsed.redirect,
     });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));

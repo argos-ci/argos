@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Account, Project, Test } from "@/database/models";
 import { IgnoredChange } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { formatTestId } from "@/util/test-id";
+import { formatTestChangeId, formatTestId } from "@/util/test-id";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
@@ -143,4 +143,59 @@ describe("GraphQL Test.changes", () => {
     expect(liveChanges.pageInfo.totalCount).toBe(1);
     expect(liveChanges.edges).toEqual([{ ignored: false }]);
   });
+});
+
+describe("GraphQL ignoreChange / unignoreChange", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  it.each(["ignoreChange", "unignoreChange"])(
+    "%s refuses a change naming another project's test",
+    async (mutation) => {
+      const attackerAccount = await factory.UserAccount.create();
+      await attackerAccount.$fetchGraph("user");
+      invariant(attackerAccount.user, "the user account should have a user");
+      const attackerProject = await factory.Project.create({
+        accountId: attackerAccount.id,
+        name: "mine",
+      });
+      const victimProject = await factory.Project.create({ name: "secret" });
+      const victimTest = await factory.Test.create({
+        projectId: victimProject.id,
+        name: "victim-test",
+      });
+
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        { user: attackerAccount.user, account: attackerAccount },
+      );
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: `
+            mutation ($input: ${mutation === "ignoreChange" ? "IgnoreChangeInput" : "UnignoreChangeInput"}!) {
+              ${mutation}(input: $input) {
+                test { name project { name } }
+              }
+            }
+          `,
+          variables: {
+            input: {
+              accountSlug: attackerAccount.slug,
+              changeId: formatTestChangeId({
+                projectName: attackerProject.name,
+                testId: victimTest.id,
+                fingerprint: "fp",
+              }),
+            },
+          },
+        });
+
+      expect(res.body.errors?.[0]?.extensions?.code).toBe("NOT_FOUND");
+      expect(JSON.stringify(res.body)).not.toContain(victimTest.name);
+      expect(await IgnoredChange.query().resultSize()).toBe(0);
+    },
+  );
 });

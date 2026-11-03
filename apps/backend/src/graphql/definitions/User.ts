@@ -29,6 +29,7 @@ import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
@@ -257,6 +258,21 @@ export const typeDefs = gql`
     completeWelcome(input: CompleteWelcomeInput!): User!
   }
 `;
+
+/**
+ * Who someone is, where they work and how they sign in are theirs to know: a
+ * user is reachable from any comment or review on a public project, so the
+ * fields that describe them beyond a name and an avatar are readable only by
+ * the user, and by staff.
+ */
+function assertCanReadPrivateUserData(account: Account, ctx: Context) {
+  if (
+    !ctx.auth ||
+    (ctx.auth.user.id !== account.userId && !ctx.auth.user.staff)
+  ) {
+    throw forbidden();
+  }
+}
 
 export const resolvers: IResolvers = {
   Query: {
@@ -537,18 +553,21 @@ export const resolvers: IResolvers = {
       });
       return (level as ITeamUserLevel) ?? null;
     },
-    hasSubscribedToTrial: async (account) => {
+    hasSubscribedToTrial: async (account, _args, ctx) => {
+      assertCanReadPrivateUserData(account, ctx);
       return account.$checkHasSubscribedToTrial();
     },
-    lastSubscription: async (account) => {
+    lastSubscription: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       const subscription = await Subscription.query()
         .findOne({ subscriberId: account.userId })
         .orderBy("updatedAt");
       return subscription ?? null;
     },
-    teams: async (account) => {
+    teams: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       return Account.query()
         .orderBy([
           { column: "name", order: "asc" },
@@ -559,8 +578,9 @@ export const resolvers: IResolvers = {
           User.relatedQuery("teams").select("teams.id").for(account.userId),
         );
     },
-    invites: async (account) => {
+    invites: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       return TeamInvite.query()
         .whereRaw(`"expiresAt" > now()`)
         .whereIn(
@@ -622,27 +642,44 @@ export const resolvers: IResolvers = {
 
       invariant(account.userId, "account.userId is undefined");
 
-      const query = ProjectUser.query()
-        .where("userId", account.userId)
-        .orderBy("id", "desc")
-        .range(after, after + first - 1);
-
-      if (args.projectId) {
-        query.where("projectId", args.projectId);
+      // A contributor row outlives the membership it was granted under, so it
+      // says nothing about access on its own: the project it leads to is only
+      // handed out to whoever may see it — and someone else's level only to
+      // whoever may see the project's settings.
+      const project = isValidPgBigInt(args.projectId)
+        ? await ctx.loaders.Project.load(args.projectId)
+        : null;
+      const permissions = project
+        ? await project.$getPermissions(ctx.auth.user)
+        : [];
+      const required =
+        ctx.auth.user.id === account.userId ? "view" : "view_settings";
+      if (!project || !permissions.includes(required)) {
+        return paginateResult({
+          result: { total: 0, results: [] },
+          first,
+          after,
+        });
       }
 
-      const result = await query;
+      const result = await ProjectUser.query()
+        .where("userId", account.userId)
+        .where("projectId", project.id)
+        .orderBy("id", "desc")
+        .range(after, after + first - 1);
       return paginateResult({ result, first, after });
     },
-    gitlabUser: async (account) => {
+    gitlabUser: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       const gitlabUser = await User.relatedQuery("gitlabUser")
         .for(account.userId)
         .first();
       return gitlabUser ?? null;
     },
-    googleUser: async (account) => {
+    googleUser: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       const gitlabUser = await User.relatedQuery("googleUser")
         .for(account.userId)
         .first();
@@ -650,18 +687,21 @@ export const resolvers: IResolvers = {
     },
     email: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       const user = await ctx.loaders.User.load(account.userId);
       invariant(user, "user is undefined");
       return user.email;
     },
     emails: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       const user = await ctx.loaders.User.load(account.userId);
       invariant(user, "user is undefined");
       return user.$relatedQuery("emails");
     },
-    userAccessTokens: async (account) => {
+    userAccessTokens: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");
+      assertCanReadPrivateUserData(account, ctx);
       return UserAccessToken.query()
         .where("userId", account.userId)
         .withGraphFetched("scope.account")

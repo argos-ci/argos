@@ -116,10 +116,22 @@ export async function postCardToUrl(args: {
     body: JSON.stringify(buildCardMessage(card)),
     // Workflows occasionally hangs; don't let a job block on it forever.
     signal: AbortSignal.timeout(15_000),
+    // The host allowlist only covers the URL we were given. Anyone can run a
+    // Logic App on an allowed host and answer with a redirect, which `fetch`
+    // would follow anywhere — internal services and cloud metadata included.
+    redirect: "manual",
   });
 
   if (response.ok) {
     return;
+  }
+
+  if (response.status >= 300 && response.status < 400) {
+    throw boom(
+      400,
+      `Microsoft Teams webhook redirected the message (HTTP ${response.status}), which is not supported.`,
+      { retryable: false },
+    );
   }
 
   // The body carries the actual reason (expired signature, deleted flow…).

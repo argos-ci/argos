@@ -26,6 +26,24 @@ describe("getPostAuthURL", () => {
     expect(
       getPostAuthURL({ creation: false, hasAutoInvite: false, redirect: null }),
     ).toBe("/");
+    expect(
+      getPostAuthURL({
+        creation: false,
+        hasAutoInvite: false,
+        redirect: `${ORIGIN}/auth/cli?port=4321`,
+      }),
+    ).toBe("/auth/cli?port=4321");
+  });
+
+  it.each([
+    "https://evil.example/login",
+    "//evil.example",
+    "/\\evil.example",
+    "javascript:alert(1)",
+  ])("keeps a returning user on the origin when sent to %s", (redirect) => {
+    expect(
+      getPostAuthURL({ creation: false, hasAutoInvite: false, redirect }),
+    ).toBe("/");
   });
 
   it("routes an auto-invite signup through the teams list", () => {

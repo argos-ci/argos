@@ -123,6 +123,12 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       throw boom(500, "Could not find compareScreenshotBucket for build");
     }
 
+    // Before anything is answered about the build: ids are sequential, and the
+    // retry path below returns the whole build.
+    if (build.projectId !== auth.project.id) {
+      throw boom(403, "Build does not belong to project");
+    }
+
     assertAuthAttributes(auth, {
       sha: build.compareScreenshotBucket.commit,
     });
@@ -144,10 +150,6 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
         return;
       }
       throw boom(409, "Build is already finalized");
-    }
-
-    if (build.projectId !== auth.project.id) {
-      throw boom(403, "Build does not belong to project");
     }
 
     const ctx = {

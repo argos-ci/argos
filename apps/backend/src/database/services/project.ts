@@ -127,6 +127,52 @@ export function applyProjectVisibility<R>(
 }
 
 /**
+ * The projects of an account a viewer may see when that is only some of them,
+ * or `null` when they may see every one — deleted ones included, which still
+ * count towards what the account used.
+ *
+ * Throws when the viewer may see nothing of the account: anything aggregated
+ * over its projects describes projects they have no access to.
+ */
+export async function getRestrictedVisibleProjectIds(args: {
+  account: Account;
+  user: { id: string; staff: boolean };
+}): Promise<string[] | null> {
+  const { account, user } = args;
+  if (user.staff) {
+    return null;
+  }
+  switch (account.type) {
+    case "user": {
+      if (account.userId !== user.id) {
+        throw boom(403, "You do not have access to this account.");
+      }
+      return null;
+    }
+    case "team": {
+      const teamUser = await TeamUser.query()
+        .select("userLevel")
+        .findOne({ teamId: account.teamId, userId: user.id });
+      if (!teamUser) {
+        throw boom(403, "You do not have access to this account.");
+      }
+      if (teamUser.userLevel !== "contributor") {
+        return null;
+      }
+      const query = applyProjectVisibility(
+        Project.query().where("accountId", account.id).select("projects.id"),
+        args,
+      );
+      invariant(query, "A team member always has a visibility query");
+      const rows = await query;
+      return rows.map((row) => row.id);
+    }
+    default:
+      return assertNever(account.type);
+  }
+}
+
+/**
  * Query the projects of an account visible to a user, most recently active
  * first (latest created project or build). Returns `null` when the user can
  * see no project at all. Callers apply their own pagination.

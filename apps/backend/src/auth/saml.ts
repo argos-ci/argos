@@ -35,8 +35,9 @@ const SmalLoginStateSchema = z.object({
 type SamlLoginState = z.infer<typeof SmalLoginStateSchema>;
 
 const SamlAuthCodePayloadSchema = z.object({
-  accountId: z.string(),
-  teamSlug: z.string(),
+  teamAccountId: z.string(),
+  email: z.string(),
+  ssoSubject: z.string(),
   redirect: z.string(),
 });
 
