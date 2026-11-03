@@ -5,6 +5,7 @@ import { HeadlessLink } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState } from "./BuildDiffState";
+import { getJourneyAnchor } from "./BuildOverview/JourneysSection";
 import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
 import { getBrowserLabel } from "./metadata/browser/browserLabels";
 import { getViewportIconKind, viewportIcons } from "./metadata/metadataIcons";
@@ -14,7 +15,7 @@ import { formatViewport } from "./metadata/viewports/util";
 /**
  * Names the journey the review walks, above the list of its screens; the
  * strip above the screenshot shows where the review is in it. Closing it goes
- * back to the overview, where the journey was picked.
+ * back to the overview, at the journey, where it was picked.
  */
 export function JourneyWalkHeader() {
   const { walkedJourneys, activeDiff } = useBuildDiffState();
@@ -53,7 +54,7 @@ export function JourneyWalkHeader() {
         </span>
         <Tooltip content="Back to the overview">
           <HeadlessLink
-            href={getBuildOverviewURL(params)}
+            href={`${getBuildOverviewURL(params)}#${getJourneyAnchor(journey.id)}`}
             aria-label="Back to the overview"
             className="focus-ring text-low hover:bg-ui hover:text-default -mr-1 rounded-sm p-0.5 transition"
           >

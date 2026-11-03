@@ -303,9 +303,23 @@ loggedTest(
     await expect(heading("payment")).toBeVisible();
     await expect(journeyHeader).toContainText("complete a purchase");
 
-    // Closing the journey goes back to the overview, to pick another one.
+    // Closing the journey goes back to the overview, at the journey, to pick
+    // another one.
     await page.getByRole("link", { name: "Back to the overview" }).click();
     await expect(page).not.toHaveURL(/[?&]journey=/);
+    await expect(page).toHaveURL(/#journey-[0-9a-f]{8}$/);
+    await expect(
+      page.getByRole("link", {
+        name: "Walk “complete a purchase” at 1280×720",
+      }),
+    ).toBeInViewport();
+    // A run waits for its review with a dot, which says how far it got.
+    await expect(
+      page.getByRole("img", { name: "1 of 2 changed screens reviewed" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: "Not reviewed yet" }).first(),
+    ).toBeVisible();
     await expect(journeyHeader).toHaveCount(0);
     await expect(walkLink("complete a purchase").first()).toBeVisible();
 

@@ -31,6 +31,8 @@ export function ScreenshotDiffThumbnail(props: {
   className?: string;
   /** Inline style of the thumbnail box, for a size computed at render. */
   style?: React.CSSProperties;
+  /** `lazy` waits for the image to near the screen to load it. */
+  loading?: "lazy" | "eager";
   /** Size class for the fallback icon; defaults to `className`. */
   iconClassName?: string;
   /** How the image fills the box; `cover-top` crops the bottom only. */
@@ -42,6 +44,7 @@ export function ScreenshotDiffThumbnail(props: {
     screenshotDiff,
     className,
     style,
+    loading,
     iconClassName = className,
     fit = "contain",
     transformations = ["w-32", "h-32", "c-at_max"],
@@ -64,6 +67,7 @@ export function ScreenshotDiffThumbnail(props: {
       >
         <ImageKitPicture
           src={thumbnailUrl}
+          loading={loading}
           transformations={transformations}
           className={clsx(
             "size-full",

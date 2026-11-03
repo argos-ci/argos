@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { useLocation } from "react-router";
 
 import { getDiffGroupDefinition } from "@/containers/Build/BuildDiffGroup";
 import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
@@ -99,8 +100,6 @@ const _BuildFragment = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type Journey = DocumentType<typeof _JourneyFragment>;
 type JourneyDiff = Journey["steps"][number]["diffs"][number];
-
-const COLLAPSED_JOURNEY_COUNT = 5;
 
 type Viewport = { width: number; height: number };
 
@@ -260,26 +259,59 @@ function getChangedDiffs(runs: JourneyRun[]): JourneyDiff[] {
   );
 }
 
+/** An icon that says what it means on hover, for whoever does not know it. */
+function ExplainedIcon(props: {
+  description: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip content={props.description}>
+      <span
+        role="img"
+        aria-label={props.description}
+        className={clsx("inline-flex shrink-0", props.className)}
+      >
+        {props.children}
+      </span>
+    </Tooltip>
+  );
+}
+
 function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   const { icon: Icon } = getDiffGroupDefinition(props.mark);
   const rejected = props.mark === EvaluationStatus.Rejected;
-  const description = rejected
-    ? "Reviewed, with a rejected screen"
-    : "Reviewed, every screen accepted";
   return (
-    <Tooltip content={description}>
-      <span
-        role="img"
-        aria-label={description}
-        className={clsx(
-          "inline-flex shrink-0",
-          rejected ? "text-danger-low" : "text-success-low",
-          props.className,
-        )}
-      >
-        <Icon className="size-3.5" />
-      </span>
-    </Tooltip>
+    <ExplainedIcon
+      description={
+        rejected
+          ? "Reviewed, with a rejected screen"
+          : "Reviewed, every screen accepted"
+      }
+      className={clsx(
+        rejected ? "text-danger-low" : "text-success-low",
+        props.className,
+      )}
+    >
+      <Icon className="size-3.5" />
+    </ExplainedIcon>
+  );
+}
+
+/** The dot the journey strip marks a screen to review with. */
+function PendingReviewMark(props: { reviewedCount: number; total: number }) {
+  const { reviewedCount, total } = props;
+  return (
+    <ExplainedIcon
+      description={
+        reviewedCount === 0
+          ? "Not reviewed yet"
+          : `${reviewedCount} of ${plural(total, "changed screen")} reviewed`
+      }
+      className="size-3.5 items-center justify-center"
+    >
+      <span className="bg-warning-solid block size-2 rounded-full" />
+    </ExplainedIcon>
   );
 }
 
@@ -289,33 +321,39 @@ function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
  * filter on, a screen opens it on that screen: the review then walks the
  * journey screen by screen, the way a user clicks through the app.
  */
+/** The overview anchor of a journey, where walking it leads back to. */
+export function getJourneyAnchor(journeyId: string): string {
+  return `journey-${journeyId}`;
+}
+
 export function JourneysSection(props: {
   build: Build;
   repoUrl: string | null;
 }) {
   const { build, repoUrl } = props;
-  const [expanded, setExpanded] = useState(false);
-  const [showUnchanged, setShowUnchanged] = useState(false);
-  if (build.journeys.length === 0) {
-    return null;
-  }
+  const { hash } = useLocation();
   const tests = getJourneyTests(build.journeys, {
     isSubsetBuild: build.subset,
   });
+  const checkIsWalked = (test: JourneyTest) =>
+    test.runs.some((run) => `#${getJourneyAnchor(run.journey.id)}` === hash);
   const changed = groupByPrefix(tests.filter((test) => test.changedCount > 0));
   const unchanged = groupByPrefix(
     tests.filter((test) => test.changedCount === 0),
   );
-  // With nothing changed, the unchanged journeys are all there is to walk.
+  // Back from an unchanged journey, its list stays open.
+  const [showUnchanged, setShowUnchanged] = useState(() =>
+    unchanged.some(checkIsWalked),
+  );
+  if (tests.length === 0) {
+    return null;
+  }
+  // Every changed journey is review work: all of them show. The unchanged
+  // ones wait behind a button, unless there is nothing else to walk.
   const listed =
     showUnchanged || changed.length === 0
       ? [...changed, ...unchanged]
       : changed;
-  const collapsible = listed.length > COLLAPSED_JOURNEY_COUNT + 1;
-  const visible =
-    collapsible && !expanded
-      ? listed.slice(0, COLLAPSED_JOURNEY_COUNT)
-      : listed;
   const hiddenUnchangedCount = listed === changed ? unchanged.length : 0;
   return (
     <Panel elevation={0} className="pb-4">
@@ -328,14 +366,15 @@ export function JourneysSection(props: {
       {/* A rule only between files: within one, a title sits close to its
           cards and far from the ones above, and the file opens its group. */}
       <ul className="flex flex-col gap-8">
-        {visible.map((test, index) => {
+        {listed.map((test, index) => {
           const opensGroup =
-            index === 0 || visible[index - 1]?.prefix !== test.prefix;
+            index === 0 || listed[index - 1]?.prefix !== test.prefix;
           return (
             <JourneyTestItem
               key={test.key}
               test={test}
               showPrefix={opensGroup}
+              scrollIntoView={checkIsWalked(test)}
               className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
               href={getLocationURL({
                 location: test.location,
@@ -346,32 +385,18 @@ export function JourneysSection(props: {
           );
         })}
       </ul>
-      {(collapsible && !expanded) || hiddenUnchangedCount > 0 ? (
-        <div className="flex flex-wrap gap-2 px-4 pt-8">
-          {collapsible && !expanded ? (
-            <SectionButton onClick={() => setExpanded(true)}>
-              Show {plural(listed.length - visible.length, "more journey")}
-            </SectionButton>
-          ) : null}
-          {hiddenUnchangedCount > 0 ? (
-            <SectionButton onClick={() => setShowUnchanged(true)}>
-              Show {plural(hiddenUnchangedCount, "unchanged journey")}
-            </SectionButton>
-          ) : null}
+      {hiddenUnchangedCount > 0 ? (
+        <div className="px-4 pt-8">
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setShowUnchanged(true)}
+          >
+            Show {plural(hiddenUnchangedCount, "unchanged journey")}
+          </Button>
         </div>
       ) : null}
     </Panel>
-  );
-}
-
-function SectionButton(props: {
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button variant="secondary" size="small" onClick={props.onClick}>
-      {props.children}
-    </Button>
   );
 }
 
@@ -425,16 +450,24 @@ function JourneyTestItem(props: {
   href: string | null;
   /** Whether the test opens a group of the same file, which names it. */
   showPrefix: boolean;
+  /** Whether the review comes back from walking it, to show it first. */
+  scrollIntoView: boolean;
   className?: string;
 }) {
-  const { test, href, showPrefix } = props;
+  const { test, href, showPrefix, scrollIntoView } = props;
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (scrollIntoView) {
+      ref.current?.scrollIntoView({ block: "center" });
+    }
+  }, [scrollIntoView]);
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
   const mark = getReviewMark(getChangedDiffs(test.runs), useReviewStatuses());
   const changedScreens = getChangedScreens(test);
   const namedScreens = changedScreens.slice(0, MAX_CHANGED_SCREEN_NAMES);
   return (
-    <li className={clsx("px-4", props.className)}>
+    <li ref={ref} className={clsx("px-4", props.className)}>
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
           {test.prefix && showPrefix ? (
@@ -581,10 +614,18 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
   // changed nothing shows how it starts.
   const changed = screens.filter((screen) => screen.changed);
   const [shownScreen = firstScreen] = changed;
+  const reviewStatuses = useReviewStatuses();
   const mark = getReviewMark(
     changed.map((screen) => screen.diff),
-    useReviewStatuses(),
+    reviewStatuses,
   );
+  const reviewedCount = changed.filter((screen) => {
+    const status = reviewStatuses[screen.diff.id];
+    return (
+      status === EvaluationStatus.Accepted ||
+      status === EvaluationStatus.Rejected
+    );
+  }).length;
   const ViewportIcon = viewport
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
@@ -593,72 +634,85 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
   const ColorSchemeIcon =
     test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
-    <li className="group/item relative isolate">
+    <li className="relative isolate">
       {/* A journey is a stack of screens: a card peeks out behind, like
           similar snapshots in the list. */}
       <div className="bg-hover absolute inset-0 -z-10 translate-x-1.5 translate-y-1.5 rounded-lg border" />
-      <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
-        <div className="flex size-full flex-col">
-          <div
-            className={clsx(
-              "aspect-video overflow-hidden",
-              narrow && "bg-subtle pt-3",
-            )}
-          >
-            <ScreenshotDiffThumbnail
-              screenshotDiff={shownScreen.diff}
-              className={clsx(
-                "mx-auto h-full",
-                narrow
-                  ? "rounded-t-md border-b-0 shadow-sm"
-                  : "rounded-none border-0",
-              )}
-              style={{ width: `${screenWidth}%` }}
-              iconClassName="m-auto size-6"
-              fit="cover-top"
-              transformations={getFirstScreenTransformations(
-                viewport,
-                Math.max(200, Math.round(7.6 * screenWidth)),
-              )}
-            />
-          </div>
-          <div className="text-low text-xxs flex items-center gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
-            {ViewportIcon ? (
-              <ViewportIcon className="size-3.5 shrink-0" />
-            ) : null}
-            <span className="truncate">
-              {viewport ? formatViewport(viewport) : "Unknown viewport"}
-            </span>
-            {browser ? (
-              <>
-                <span aria-hidden>·</span>
-                <BrowserIcon
-                  browser={{ name: browser }}
-                  className="size-3.5 shrink-0"
-                />
-                <span className="truncate">{getBrowserLabel(browser)}</span>
-              </>
-            ) : null}
-            {ColorSchemeIcon && colorScheme ? (
-              <>
-                <span aria-hidden>·</span>
-                <ColorSchemeIcon className="size-3.5 shrink-0" />
-                <span className="truncate">{capitalize(colorScheme)}</span>
-              </>
-            ) : null}
-            <span className="ml-auto flex shrink-0 items-center gap-1.5">
-              {mark ? <ReviewMark mark={mark} /> : null}
-              <WaypointsIcon className="size-3.5" aria-hidden />
-            </span>
-          </div>
-        </div>
-      </DiffCard>
       {/* The whole card walks the journey from its start. */}
       <HeadlessLink
         href={getJourneyScreenURL(params, journey, firstScreen.diff)}
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
-        className="absolute inset-0 z-30 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
-      />
+        className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
+      >
+        <DiffCard isActive={false} variant={getDiffCardVariant(mark)}>
+          <div className="flex size-full flex-col">
+            <div
+              className={clsx(
+                "aspect-video overflow-hidden",
+                narrow && "bg-subtle pt-3",
+              )}
+            >
+              <ScreenshotDiffThumbnail
+                screenshotDiff={shownScreen.diff}
+                className={clsx(
+                  "mx-auto h-full",
+                  narrow
+                    ? "rounded-t-md border-b-0 shadow-sm"
+                    : "rounded-none border-0",
+                )}
+                style={{ width: `${screenWidth}%` }}
+                iconClassName="m-auto size-6"
+                fit="cover-top"
+                loading="lazy"
+                transformations={getFirstScreenTransformations(
+                  viewport,
+                  Math.max(200, Math.round(7.6 * screenWidth)),
+                )}
+              />
+            </div>
+            <div className="text-low text-xxs flex items-center gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
+              {ViewportIcon ? (
+                <ViewportIcon className="size-3.5 shrink-0" />
+              ) : null}
+              <span className="truncate">
+                {viewport ? formatViewport(viewport) : "Unknown viewport"}
+              </span>
+              {browser ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <BrowserIcon
+                    browser={{ name: browser }}
+                    className="size-3.5 shrink-0"
+                  />
+                  <span className="truncate">{getBrowserLabel(browser)}</span>
+                </>
+              ) : null}
+              {ColorSchemeIcon && colorScheme ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <ColorSchemeIcon className="size-3.5 shrink-0" />
+                  <span className="truncate">{capitalize(colorScheme)}</span>
+                </>
+              ) : null}
+              <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                {mark ? (
+                  <ReviewMark mark={mark} />
+                ) : changed.length > 0 ? (
+                  <PendingReviewMark
+                    reviewedCount={reviewedCount}
+                    total={changed.length}
+                  />
+                ) : null}
+                <ExplainedIcon
+                  description={`A journey of ${plural(screens.length, "screen")}`}
+                >
+                  <WaypointsIcon className="size-3.5" />
+                </ExplainedIcon>
+              </span>
+            </div>
+          </div>
+        </DiffCard>
+      </HeadlessLink>
     </li>
   );
 }
