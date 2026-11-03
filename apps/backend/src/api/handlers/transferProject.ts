@@ -65,7 +65,7 @@ export const transferProjectOperation = {
 export const transferProject: CreateAPIHandler = ({ post }) => {
   post("/projects/{owner}/{project}/transfer", async (req, res) => {
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
 

@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -8,7 +7,7 @@ import {
 } from "@/build/requestedReviewers";
 import { Account, BuildRequestedReviewer } from "@/database/models";
 
-import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
+import { loadBuildForAuth, VIEW_BUILD_ACCESS } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { serializeUser, UserSchema } from "../schema/primitives/user";
@@ -89,9 +88,10 @@ export const listBuildReviewers: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviewers",
     async (req, res) => {
-      const { build } = await loadBuildForUserAuth(
+      const { build } = await loadBuildForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_BUILD_ACCESS,
       );
       res.send(await serializeReviewers(build.id));
     },
@@ -127,19 +127,16 @@ export const addBuildReviewers: CreateAPIHandler = ({ post }) => {
   post(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviewers",
     async (req, res) => {
-      const { auth, build } = await loadBuildForUserAuth(
+      // Never trust the client — the same check gates who can see the picker.
+      const { auth, build } = await loadBuildForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        {
+          permission: "review",
+          message: "You cannot request reviewers for this build",
+        },
       );
-      // Never trust the client — the same check gates who can see the picker.
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "review",
-        message: "You cannot request reviewers for this build",
-      });
 
-      invariant(build.project);
       // Shared with the GraphQL API — same eligibility rules, same notification.
       await addReviewers({
         build,
@@ -181,13 +178,7 @@ export const removeBuildReviewers: CreateAPIHandler = ({ delete: del }) => {
   del(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviewers",
     async (req, res) => {
-      const { auth, build } = await loadBuildForUserAuth(
-        req.ctx.auth(),
-        req.ctx.params,
-      );
-      await assertBuildPermission({
-        build,
-        user: auth.user,
+      const { build } = await loadBuildForAuth(req.ctx.auth(), req.ctx.params, {
         permission: "review",
         message: "You cannot manage reviewers for this build",
       });

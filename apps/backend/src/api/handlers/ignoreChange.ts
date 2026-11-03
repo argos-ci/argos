@@ -117,10 +117,11 @@ async function resolveChangeMutation(input: {
     throw boom(404, "Change not found");
   }
 
-  const project = await getProjectForAuth(Promise.resolve(auth), {
-    owner: params.owner,
-    project: params.project,
-  });
+  const project = await getProjectForAuth(
+    Promise.resolve(auth),
+    { owner: params.owner, project: params.project },
+    null,
+  );
 
   // A test id is globally unique, so ownership by the routed project is the
   // authorization boundary for the change.

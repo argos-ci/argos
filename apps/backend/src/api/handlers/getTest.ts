@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { loadTestForAuth } from "../auth/test";
+import { loadTestForAuth, VIEW_TEST_ACCESS } from "../auth/test";
 import {
   getMetricsPeriodStartDate,
   MetricsPeriodSchema,
@@ -13,6 +13,7 @@ import {
   TestId,
 } from "../schema/primitives/test";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -49,6 +50,7 @@ export const getTestOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -59,6 +61,7 @@ export const getTest: CreateAPIHandler = ({ get }) => {
     const { test, project } = await loadTestForAuth(
       req.ctx.auth(),
       req.ctx.params,
+      VIEW_TEST_ACCESS,
     );
 
     res.send(

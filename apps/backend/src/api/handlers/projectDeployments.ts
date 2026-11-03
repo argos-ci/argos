@@ -2,13 +2,16 @@ import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Deployment } from "@/database/models";
-import { assertProjectAdmin } from "@/database/services/project";
 import {
   getProductionInternalProjectDomain,
   upsertProductionInternalProjectDomain,
 } from "@/database/services/project-domain";
 
-import { getProjectForAuth } from "../auth/project";
+import {
+  ADMIN_PROJECT_ACCESS,
+  getProjectForAuth,
+  VIEW_PROJECT_ACCESS,
+} from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -53,6 +56,7 @@ export const listProjectDeploymentsOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -61,7 +65,11 @@ export const listProjectDeploymentsOperation = {
 export const listProjectDeployments: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/deployments", async (req, res) => {
     const { page, perPage, environment } = req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
 
     // Shared ordering with the GraphQL API (`Project.deployments`).
     const query = Deployment.query()
@@ -114,6 +122,7 @@ export const getProjectDomainOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -121,7 +130,11 @@ export const getProjectDomainOperation = {
 
 export const getProjectDomain: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/domain", async (req, res) => {
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
 
     if (!project.deploymentEnabled) {
       res.send({ domain: null });
@@ -170,12 +183,11 @@ export const updateProjectDomainOperation = {
 
 export const updateProjectDomain: CreateAPIHandler = ({ put }) => {
   put("/projects/{owner}/{project}/domain", async (req, res) => {
-    const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+    const project = await getProjectForAuth(
       req.ctx.auth(),
-    ]);
-
-    await assertProjectAdmin({ project, user: auth.user });
+      req.ctx.params,
+      ADMIN_PROJECT_ACCESS,
+    );
 
     // Shared with the GraphQL API — same validation, normalization and alias
     // syncing.

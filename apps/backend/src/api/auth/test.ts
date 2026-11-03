@@ -5,11 +5,20 @@ import type {
   AuthPATPayload,
   AuthProjectPayload,
 } from "@/auth/payload";
-import { Test, type Project, type User } from "@/database/models";
+import { Test, type Project } from "@/database/models";
 import { boom } from "@/util/error";
 import { safeParseTestId } from "@/util/test-id";
 
-import { assertProjectAccess } from "./project";
+import {
+  assertProjectAccess,
+  assertProjectPermission,
+  type ProjectAccess,
+} from "./project";
+
+export const VIEW_TEST_ACCESS: ProjectAccess = {
+  permission: "view",
+  message: "You do not have permission to view this test",
+};
 
 /** The route params addressing a test. */
 export type TestRouteParams = {
@@ -20,15 +29,17 @@ export type TestRouteParams = {
 
 /**
  * Load the test addressed by `{owner}/{project}/tests/{testId}`, with the same
- * rules as `getProjectForAuth`: the token must be scoped to the owner account
- * and the test must exist. The public test id embeds the project name, so a test
- * addressed through another project's id resolves to a 404.
+ * rules as `getProjectForAuth`: the token must be scoped to the owner account,
+ * the test must exist, and the user must hold `access` on its project. The
+ * public test id embeds the project name, so a test addressed through another
+ * project's id resolves to a 404.
  */
 export async function loadTestForAuth<
   TAuth extends AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
 >(
   authPromise: Promise<TAuth>,
   params: TestRouteParams,
+  access: ProjectAccess | null,
 ): Promise<{ auth: TAuth; test: Test; project: Project }> {
   const parsed = safeParseTestId(params.testId);
   const [auth, test] = await Promise.all([
@@ -56,24 +67,7 @@ export async function loadTestForAuth<
 
   invariant(test.project?.account, "Test project account not found");
 
-  return { auth, test, project: test.project };
-}
+  await assertProjectPermission(auth, test.project, access);
 
-/**
- * Assert the user holds a project permission on the test's project, throwing a
- * 403 with the given message otherwise. The test must have `project` fetched
- * (as returned by {@link loadTestForAuth}).
- */
-export async function assertTestPermission(input: {
-  test: Test;
-  user: User;
-  permission: "view" | "review";
-  message: string;
-}): Promise<void> {
-  const { test, user, permission, message } = input;
-  invariant(test.project, "Test project not fetched");
-  const permissions = await test.project.$getPermissions(user);
-  if (!permissions.includes(permission)) {
-    throw boom(403, message);
-  }
+  return { auth, test, project: test.project };
 }

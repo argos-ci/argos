@@ -101,7 +101,7 @@ export const updateProjectOperation = {
 export const updateProject: CreateAPIHandler = ({ patch }) => {
   patch("/projects/{owner}/{project}", async (req, res) => {
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
 

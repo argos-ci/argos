@@ -10,8 +10,8 @@ import {
   unsubscribeUserFromTest,
 } from "@/database/services/test-notification-subscription";
 
-import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
-import { assertTestPermission, loadTestForAuth } from "../auth/test";
+import { loadBuildForAuth, VIEW_BUILD_ACCESS } from "../auth/build";
+import { loadTestForAuth, VIEW_TEST_ACCESS } from "../auth/test";
 import { BuildNumber } from "../schema/primitives/build";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { TestId } from "../schema/primitives/test";
@@ -78,16 +78,11 @@ export const subscribeBuild: CreateAPIHandler = ({ post }) => {
   post(
     "/projects/{owner}/{project}/builds/{buildNumber}/subscription",
     async (req, res) => {
-      const { auth, build } = await loadBuildForUserAuth(
+      const { auth, build } = await loadBuildForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_BUILD_ACCESS,
       );
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this build",
-      });
       await subscribeUserToBuild({ buildId: build.id, userId: auth.user.id });
       res.send({ subscribed: true });
     },
@@ -115,16 +110,11 @@ export const unsubscribeBuild: CreateAPIHandler = ({ delete: del }) => {
   del(
     "/projects/{owner}/{project}/builds/{buildNumber}/subscription",
     async (req, res) => {
-      const { auth, build } = await loadBuildForUserAuth(
+      const { auth, build } = await loadBuildForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_BUILD_ACCESS,
       );
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this build",
-      });
       await unsubscribeUserFromBuild({
         buildId: build.id,
         userId: auth.user.id,
@@ -158,13 +148,8 @@ export const subscribeTest: CreateAPIHandler = ({ post }) => {
       const { auth, test } = await loadTestForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_TEST_ACCESS,
       );
-      await assertTestPermission({
-        test,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this test",
-      });
       await subscribeUserToTest({ testId: test.id, userId: auth.user.id });
       res.send({ subscribed: true });
     },
@@ -195,13 +180,8 @@ export const unsubscribeTest: CreateAPIHandler = ({ delete: del }) => {
       const { auth, test } = await loadTestForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_TEST_ACCESS,
       );
-      await assertTestPermission({
-        test,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this test",
-      });
       await unsubscribeUserFromTest({ testId: test.id, userId: auth.user.id });
       res.send({ subscribed: false });
     },

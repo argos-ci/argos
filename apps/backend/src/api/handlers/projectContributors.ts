@@ -9,7 +9,7 @@ import {
   removeProjectContributor,
 } from "@/database/services/project-contributor";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import {
   AccountSlug,
@@ -71,7 +71,7 @@ export const listProjectContributors: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/contributors", async (req, res) => {
     const { page, perPage } = req.ctx.query;
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, VIEW_PROJECT_ACCESS),
       req.ctx.auth(),
     ]);
 
@@ -146,7 +146,7 @@ export const setProjectContributorOperation = {
 export const setProjectContributor: CreateAPIHandler = ({ put }) => {
   put("/projects/{owner}/{project}/contributors/{userId}", async (req, res) => {
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
 
@@ -195,7 +195,7 @@ export const removeProjectContributorHandler: CreateAPIHandler = ({
 }) => {
   del("/projects/{owner}/{project}/contributors/{userId}", async (req, res) => {
     const [project, auth] = await Promise.all([
-      getProjectForAuth(req.ctx.auth(), req.ctx.params),
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
 

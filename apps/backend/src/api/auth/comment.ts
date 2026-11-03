@@ -6,11 +6,11 @@ import {
   type CommentTarget,
 } from "@/comment/target";
 import { getCommentThreadRoot } from "@/comment/thread";
-import { Comment, type User } from "@/database/models";
+import { Comment, type ProjectPermission, type User } from "@/database/models";
 import { resolveCommentMediaVersionId } from "@/media/version";
 import { boom } from "@/util/error";
 
-import { loadBuildForUserAuth, type BuildActionPermission } from "./build";
+import { loadBuildForAuth } from "./build";
 import { loadMediaForAuth, type MediaRouteParams } from "./media";
 import { loadTestForAuth, type TestRouteParams } from "./test";
 
@@ -31,6 +31,10 @@ export type CommentAuth = AuthPATPayload | AuthOAuthPayload;
  * Load the comment target addressed by a route, whichever kind it is. Every
  * comment endpoint is registered on a build path, a test path and a media path
  * and shares one implementation, so they all resolve their target through this.
+ *
+ * Authorizes nothing beyond the token's scope: the caller checks the user with
+ * {@link assertCommentTargetPermission}, which holds a media to a different
+ * rule than its build and test siblings.
  */
 export async function loadCommentTargetForUserAuth(
   authPromise: Promise<CommentAuth>,
@@ -47,10 +51,10 @@ export async function loadCommentTargetForUserAuth(
     return { auth, target: { type: "media", media, mediaVersionId } };
   }
   if ("testId" in params) {
-    const { auth, test } = await loadTestForAuth(authPromise, params);
+    const { auth, test } = await loadTestForAuth(authPromise, params, null);
     return { auth, target: { type: "test", test } };
   }
-  const { auth, build } = await loadBuildForUserAuth(authPromise, params);
+  const { auth, build } = await loadBuildForAuth(authPromise, params, null);
   return { auth, target: { type: "build", build } };
 }
 
@@ -70,7 +74,7 @@ export async function loadCommentTargetForUserAuth(
 export async function assertCommentTargetPermission(input: {
   target: CommentTarget;
   user: User;
-  permission: BuildActionPermission;
+  permission: ProjectPermission;
   message: string;
 }): Promise<void> {
   const { target, user, permission, message } = input;

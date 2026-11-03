@@ -3,7 +3,6 @@ import {
   type BuildReviewEvent,
 } from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -16,7 +15,7 @@ import { resolveCommentBody } from "@/comment/body";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import { boom } from "@/util/error";
 
-import { loadBuildForUserAuth } from "../auth/build";
+import { loadBuildForAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -176,18 +175,10 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         throw boom(400, "Either `event` or `conclusion` is required");
       }
 
-      const { auth, build } = await loadBuildForUserAuth(
-        req.ctx.auth(),
-        params,
-      );
-
-      invariant(build.project);
-
-      const permissions = await build.project.$getPermissions(auth.user);
-
-      if (!permissions.includes("review")) {
-        throw boom(403, "You do not have permission to review this build");
-      }
+      const { auth, build } = await loadBuildForAuth(req.ctx.auth(), params, {
+        permission: "review",
+        message: "You do not have permission to review this build",
+      });
 
       const buildReview = await createBuildReview({
         build,

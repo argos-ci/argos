@@ -536,7 +536,11 @@ export const listMediaHandler: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/media", async (req, res) => {
     const { page, perPage, search, type, branch, prNumber, stage } =
       req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params, {
+      permission: MEDIA_ACTION_PERMISSION.read,
+      message: "You do not have permission to view this project's media.",
+      membership: true,
+    });
 
     // Resolved to an id rather than joined on the number: the pull request has to
     // be one of *this* repository's, and a project with no repository has no pull
@@ -765,17 +769,16 @@ async function resolveUploadTarget(args: {
     if (!owner || !name) {
       throw boom(400, "`project` must be in the `owner/project` format.");
     }
-    const resolved = await getProjectForAuth(Promise.resolve(auth), {
-      owner,
-      project: name,
-    });
     // Uploading spends the account's quota and publishes a link under the
     // project's name, so it takes more than read access.
-    const permissions = await resolved.$getPermissions(auth.user);
-    if (!permissions.includes("review") && !permissions.includes("admin")) {
-      throw boom(403, "You do not have permission to upload to this project.");
-    }
-    return resolved;
+    return getProjectForAuth(
+      Promise.resolve(auth),
+      { owner, project: name },
+      {
+        permission: "review",
+        message: "You do not have permission to upload to this project.",
+      },
+    );
   })();
 
   const account = await project.$relatedQuery("account");

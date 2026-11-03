@@ -5,10 +5,11 @@ import { Test } from "@/database/models";
 import { queryIgnoredChanges } from "@/database/services/ignored-change";
 import { formatTestChangeId, formatTestId } from "@/util/test-id";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -60,6 +61,7 @@ export const listIgnoredChangesOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -68,7 +70,11 @@ export const listIgnoredChangesOperation = {
 export const listIgnoredChanges: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/ignored-changes", async (req, res) => {
     const { page, perPage } = req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
+    const project = await getProjectForAuth(
+      req.ctx.auth(),
+      req.ctx.params,
+      VIEW_PROJECT_ACCESS,
+    );
 
     // Shared with the GraphQL API (`Project.ignoredChanges`), in its default
     // order.

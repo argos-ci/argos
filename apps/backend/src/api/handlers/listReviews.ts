@@ -3,7 +3,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { BuildReview } from "@/database/models";
 
-import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
+import { loadBuildForAuth, VIEW_BUILD_ACCESS } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -54,17 +54,11 @@ export const listReviews: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews",
     async (req, res) => {
-      const { auth, build } = await loadBuildForUserAuth(
+      const { auth, build } = await loadBuildForAuth(
         req.ctx.auth(),
         req.ctx.params,
+        VIEW_BUILD_ACCESS,
       );
-
-      await assertBuildPermission({
-        build,
-        user: auth.user,
-        permission: "view",
-        message: "You do not have permission to view this build",
-      });
 
       // Submitted reviews are visible to everyone with access; pending reviews
       // are drafts visible only to their author.
