@@ -1,9 +1,13 @@
-import { ModelObject, PartialModelObject } from "objection";
+import type { Expression, ModelProps } from "objection";
 
 import { Model } from "./model";
 
 type MakePropsOptional<T> = {
   [K in keyof T]: T[K] | undefined;
+};
+
+type ModelUpdate<TModel extends Model> = {
+  [K in ModelProps<TModel>]?: Expression<TModel[K]>;
 };
 
 /**
@@ -15,12 +19,10 @@ type MakePropsOptional<T> = {
  */
 export function getPartialModelUpdate<TModel extends Model>(
   existing: TModel,
-  props: MakePropsOptional<PartialModelObject<TModel>>,
-): PartialModelObject<TModel> | null {
-  const keys = Object.keys(props) as Array<keyof ModelObject<TModel>>;
-  const [toUpdate, hasChanges] = keys.reduce<
-    [PartialModelObject<TModel>, boolean]
-  >(
+  props: MakePropsOptional<ModelUpdate<TModel>>,
+): ModelUpdate<TModel> | null {
+  const keys = Object.keys(props) as Array<ModelProps<TModel>>;
+  const [toUpdate, hasChanges] = keys.reduce<[ModelUpdate<TModel>, boolean]>(
     (acc, key) => {
       const value = props[key];
       if (value !== undefined && !checkIsEqual(existing[key], value)) {

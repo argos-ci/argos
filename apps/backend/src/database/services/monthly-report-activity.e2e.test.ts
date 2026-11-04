@@ -1,4 +1,5 @@
 import type { BuildStats } from "@argos/schemas/build-stats";
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { knex } from "@/database";
@@ -199,6 +200,7 @@ describe("getMonthlyReportActivity", () => {
       score: 0.4,
     });
     const [first, second, third] = diffs.map((diff) => diff.id);
+    invariant(first && second && third);
     const review = (state: "approved" | "rejected", automatic = false) =>
       factory.BuildReview.create({ buildId: build.id, state, automatic });
     const alice = await review("approved");

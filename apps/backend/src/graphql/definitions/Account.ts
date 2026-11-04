@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
-import type { PartialModelObject } from "objection";
+import type { PartialModelRow } from "objection";
 
 import { getAccountAvatar } from "@/account/avatar";
 import { disconnectGitHubAuth } from "@/auth/github";
@@ -642,7 +642,7 @@ export const resolvers: IResolvers = {
       const { id, ...input } = args.input;
       const account = await getAdminAccount({ id, user: ctx.auth?.user });
 
-      const data: PartialModelObject<Account> = {};
+      const data: PartialModelRow<Account> = {};
 
       if (input.slug && account.slug !== input.slug) {
         try {

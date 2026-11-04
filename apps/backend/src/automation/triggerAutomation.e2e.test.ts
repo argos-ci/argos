@@ -61,7 +61,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -115,7 +114,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -155,7 +153,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -201,7 +198,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -247,7 +243,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -295,7 +290,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -339,7 +333,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -383,7 +376,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -429,7 +421,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -471,7 +462,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -513,7 +503,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },
@@ -553,7 +542,6 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              type: "sendSlackMessage",
               channelId: slackChannel.slackId,
             },
           },

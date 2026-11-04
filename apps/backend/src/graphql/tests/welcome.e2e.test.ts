@@ -330,6 +330,7 @@ describe("User.eligibleAutoJoinDomain", () => {
         email: "john@acme.com",
         verified: true,
       });
+      invariant(teamAccount.teamId);
       await factory.TeamUser.create({
         teamId: teamAccount.teamId,
         userId: otherAccount.userId,

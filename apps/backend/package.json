@@ -88,7 +88,7 @@
     "mime": "^4.1.2",
     "minimatch": "^11.0.4",
     "node-cron": "^4.6.0",
-    "objection": "^3.1.5",
+    "objection": "^4.4.2",
     "odiff-bin": "^4.5.0",
     "ora": "^10.0.0",
     "p-memoize": "^9.0.0",

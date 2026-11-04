@@ -56,6 +56,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -88,6 +89,7 @@ const test = base.extend<{
 async function createContributor(account: Account): Promise<Account> {
   const userAccount = await factory.UserAccount.create();
   invariant(userAccount.userId);
+  invariant(account.teamId);
   await factory.TeamUser.create({
     teamId: account.teamId,
     userId: userAccount.userId,

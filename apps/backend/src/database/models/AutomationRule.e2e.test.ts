@@ -65,6 +65,7 @@ describe("AutomationRule", () => {
           projectId: project.id,
           then: [
             {
+              // @ts-expect-error the action is deliberately unknown
               action: "unknownAction",
               actionPayload: {
                 channelId: slackChannel.slackId,

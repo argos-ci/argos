@@ -1,5 +1,5 @@
 import { truncate } from "@argos/util/string";
-import type { PartialModelObject } from "objection";
+import type { PartialModelRow } from "objection";
 
 import type { OriginPullRequest } from "@/database/models";
 import type { OriginApi, OriginApiPullRequest } from "@/origin/api";
@@ -34,7 +34,7 @@ export async function fetchOriginPullRequest(
  */
 export function parseOriginPullRequestData(
   data: OriginApiPullRequest,
-): PartialModelObject<OriginPullRequest> {
+): PartialModelRow<OriginPullRequest> {
   return {
     originId: data.id,
     // The column is a varchar(255): a title or a branch name has no length

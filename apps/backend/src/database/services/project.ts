@@ -2,7 +2,7 @@ import { ProjectNameSchema } from "@argos/schemas/project";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
-import type { PartialModelObject, QueryBuilder } from "objection";
+import type { PartialModelRow, QueryBuilder } from "objection";
 
 import { invalidateProjectDeploymentCache } from "@/deployment/invalidate";
 import { formatDiscordLink, getProjectUrl, notifyDiscord } from "@/discord";
@@ -321,7 +321,7 @@ export async function updateProject(args: {
   const { project, input } = args;
   await assertProjectAdmin(args);
 
-  const data: PartialModelObject<Project> = {};
+  const data: PartialModelRow<Project> = {};
 
   if (input.defaultBaseBranch !== undefined) {
     data.defaultBaseBranch = input.defaultBaseBranch ?? null;

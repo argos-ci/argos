@@ -50,6 +50,7 @@ const findRelevantUserTeam = async (
 ): Promise<Account> => {
   // Got the user entity linked to this account (to get teams)
   const user = await userAccount.$relatedQuery("user").first();
+  invariant(user, "Expected a user account");
   // Got the teams owned by the user
   const ownedTeams = await user
     .$relatedQuery("ownedTeams")

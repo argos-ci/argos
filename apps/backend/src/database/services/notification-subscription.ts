@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import type { NotificationSubscription } from "@/database/util/notification-subscription";
 
 /**
@@ -27,7 +29,8 @@ type SubscriptionId = Record<string, string>;
 /** Columns to conflict on: the table's own primary key. */
 function conflictColumns(model: SubscriptionModel): string[] {
   const { idColumn } = model;
-  return Array.isArray(idColumn) ? idColumn : [idColumn];
+  invariant(idColumn, "Expected an id column");
+  return typeof idColumn === "string" ? [idColumn] : [...idColumn];
 }
 
 /**

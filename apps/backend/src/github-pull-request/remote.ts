@@ -1,5 +1,5 @@
 import { truncate } from "@argos/util/string";
-import { PartialModelObject } from "objection";
+import { PartialModelRow } from "objection";
 
 import { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import {
@@ -71,5 +71,5 @@ export function parsePullRequestData(data: {
     mergedAt: data.merged_at ?? null,
     merged: data.merged ?? false,
     draft: data.draft ?? false,
-  } satisfies PartialModelObject<GithubPullRequest>;
+  } satisfies PartialModelRow<GithubPullRequest>;
 }

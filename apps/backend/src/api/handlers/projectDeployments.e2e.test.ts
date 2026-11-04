@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
@@ -55,6 +56,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -233,6 +235,7 @@ describe("project domain", () => {
   }) => {
     const contributor = await factory.User.create();
     await factory.UserAccount.create({ userId: contributor.id });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: contributor.id,

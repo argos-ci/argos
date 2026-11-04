@@ -132,6 +132,7 @@ export async function checkUserHasAccessToInstallation(
     return false;
   }
   const githubAccount = await userAccount.$relatedQuery("githubAccount");
+  invariant(githubAccount, "GitHub account not found");
   if (!githubAccount.accessToken) {
     return false;
   }

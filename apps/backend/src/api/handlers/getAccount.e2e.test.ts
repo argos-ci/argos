@@ -47,6 +47,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -111,6 +112,7 @@ describe("getAccount", () => {
 
   test("401s when the token is not scoped to the account", async ({ user }) => {
     const other = await factory.TeamAccount.create({ slug: "other" });
+    invariant(other.teamId);
     await factory.TeamUser.create({
       teamId: other.teamId,
       userId: user.id,

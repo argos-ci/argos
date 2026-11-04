@@ -155,6 +155,7 @@ async function createTeamOwner() {
   const user = await factory.User.create();
   const userAccount = await factory.UserAccount.create({ userId: user.id });
   const account = await factory.TeamAccount.create();
+  invariant(account.teamId);
   await factory.TeamUser.create({
     teamId: account.teamId,
     userId: user.id,

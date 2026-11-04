@@ -62,6 +62,7 @@ const test = base.extend<{
   },
   account: async ({ user }, use) => {
     const account = await factory.TeamAccount.create({ slug: "acme" });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: user.id,
@@ -190,6 +191,7 @@ describe("createAutomationRule", () => {
   }) => {
     const contributor = await factory.User.create();
     await factory.UserAccount.create({ userId: contributor.id });
+    invariant(account.teamId);
     await factory.TeamUser.create({
       teamId: account.teamId,
       userId: contributor.id,

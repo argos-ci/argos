@@ -39,9 +39,6 @@ overrides:
   # A floor, not a cap: glob 13 and graphql-config still need minimatch 10,
   # while the backend matches user-defined globs and takes 11.
   minimatch@<10.2.6: ^10.2.6
-  # The maintained line (ditojs/objection) changed behaviour all through
-  # 3.2–4.x, and 4's typings break ~45 backend files: migrate in its own change.
-  objection: 3.1.5
   react: "catalog:"
   react-dom: "catalog:"
   react-router: "catalog:"

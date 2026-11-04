@@ -3,8 +3,7 @@ import {
   ScreenshotMetadataJSONSchema,
 } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
-import type { JSONSchema, RelationMappings } from "objection";
-import type Objection from "objection";
+import type { JSONSchema, ModelObject, RelationMappings } from "objection";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -108,7 +107,7 @@ export class Screenshot extends Model {
   static partialClone(
     model: Screenshot,
   ): Omit<
-    Objection.ModelObject<Screenshot>,
+    ModelObject<Screenshot>,
     | "id"
     | "createdAt"
     | "updatedAt"
