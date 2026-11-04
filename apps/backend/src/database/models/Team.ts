@@ -25,6 +25,8 @@ export type GetPermissionsOptions = {
 export class Team extends Model {
   static override tableName = "teams";
 
+  static override deterministicEncryptedAttributes = ["inviteSecret"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

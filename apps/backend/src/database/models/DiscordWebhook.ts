@@ -7,6 +7,8 @@ import { Account } from "./Account";
 export class DiscordWebhook extends Model {
   static override tableName = "discord_webhooks";
 
+  static override encryptedAttributes = ["url"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

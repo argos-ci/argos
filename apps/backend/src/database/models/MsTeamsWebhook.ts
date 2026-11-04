@@ -7,6 +7,8 @@ import { Account } from "./Account";
 export class MsTeamsWebhook extends Model {
   static override tableName = "ms_teams_webhooks";
 
+  static override encryptedAttributes = ["url"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

@@ -9,6 +9,8 @@ import { SlackChannel } from "./SlackChannel";
 export class SlackInstallation extends Model {
   static override tableName = "slack_installations";
 
+  static override encryptedAttributes = ["installation"];
+
   static override get jsonAttributes() {
     return ["installation"];
   }
