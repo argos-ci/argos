@@ -777,7 +777,9 @@ function JourneyRunItem(props: {
   const ColorSchemeIcon =
     test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
-    <li>
+    // `isolate`: the card draws its ring above its image, which would also put
+    // it above its file's sticky header.
+    <li className="isolate">
       {/* The whole card walks the journey from its start. */}
       <HeadlessLink
         href={getJourneyScreenURL(params, journey, firstScreen.diff)}
