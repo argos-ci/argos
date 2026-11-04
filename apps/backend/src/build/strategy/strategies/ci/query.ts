@@ -69,7 +69,7 @@ function queryEligibleBaselineBuilds(args: {
     .whereNot("builds.type", "skipped")
     // A build with an active (non-dismissed) rejection can never be used as a
     // baseline, whatever its type and even when an explicit approval is not
-    // required (e.g. auto-approved branches or the ancestor-commit fallback).
+    // required (auto-approved base branches).
     .whereNotExists(Build.rejectedReviewQuery());
 
   if (args.approved) {
@@ -180,11 +180,12 @@ function rankedBindings(shas: string[]): (string | number)[] {
 export async function getBucketFromCommits(args: {
   shas: string[];
   build: Build;
+  approved?: QueryBaseBucketOptions["approved"];
 }) {
   if (args.shas.length === 0) {
     return null;
   }
-  const bucket = await queryBaseBucket(args.build)
+  const bucket = await queryBaseBucket(args.build, { approved: args.approved })
     .whereIn("commit", args.shas)
     .joinRaw(
       `join (values ${rankedValuesClause(args.shas)}) as ordering(sha, rank) on commit = ordering.sha`,

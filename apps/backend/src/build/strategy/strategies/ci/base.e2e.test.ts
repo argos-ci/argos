@@ -82,6 +82,27 @@ async function createBaseline(project: Project, commit: string) {
 }
 
 /**
+ * Create a completed check build that nobody reviewed at a given commit.
+ */
+async function createUnreviewedBuild(project: Project, commit: string) {
+  const bucket = await factory.ScreenshotBucket.create({
+    projectId: project.id,
+    name: "default",
+    mode: "ci",
+    commit,
+  });
+  await factory.Build.create({
+    projectId: project.id,
+    compareScreenshotBucketId: bucket.id,
+    name: "default",
+    mode: "ci",
+    type: "check",
+    jobStatus: "complete",
+  });
+  return bucket;
+}
+
+/**
  * Create a completed build on a given commit and branch, to test the
  * same-commit fallback.
  */
@@ -198,6 +219,68 @@ describe("#getCIBase (no git provider)", () => {
     expect(
       result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
     ).toBe(baseBucket.id);
+  });
+
+  describe("approval of ancestor baselines", () => {
+    const CLOSER_COMMIT = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const FURTHER_COMMIT = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    test("skips an unreviewed ancestor when the base branch is not auto-approved", async ({
+      args,
+      build,
+      project,
+    }) => {
+      await createUnreviewedBuild(project, CLOSER_COMMIT);
+      const approvedBucket = await createBaseline(project, FURTHER_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, CLOSER_COMMIT, FURTHER_COMMIT],
+      });
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(approvedBucket.id);
+    });
+
+    test("skips an unreviewed ancestor when the reference commit has no approved build", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const referenceCommit = "cccccccccccccccccccccccccccccccccccccccc";
+      await createUnreviewedBuild(project, referenceCommit);
+      await createUnreviewedBuild(project, CLOSER_COMMIT);
+      const approvedBucket = await createBaseline(project, FURTHER_COMMIT);
+      await build.$query().patch({
+        baseCommit: referenceCommit,
+        parentCommits: [referenceCommit, CLOSER_COMMIT, FURTHER_COMMIT],
+      });
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(approvedBucket.id);
+    });
+
+    test("uses an unreviewed ancestor when the base branch is auto-approved", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const closerBucket = await createUnreviewedBuild(project, CLOSER_COMMIT);
+      await createBaseline(project, FURTHER_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, CLOSER_COMMIT, FURTHER_COMMIT],
+      });
+
+      const result = await getCIBase({
+        ...args,
+        context: { checkIsAutoApproved: () => true },
+      });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(closerBucket.id);
+    });
   });
 
   describe("same commit and branch fallback", () => {
