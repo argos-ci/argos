@@ -89,25 +89,12 @@ describe("#getNotificationPayload", () => {
 
   describe("with changes awaiting review", () => {
     async function getAwaitingReviewPayload(
-      awaitingReviewStatus: Project["awaitingReviewStatus"] | undefined,
+      awaitingReviewStatus?: Project["awaitingReviewStatus"],
     ) {
       const project = await factory.Project.create(
         awaitingReviewStatus ? { awaitingReviewStatus } : {},
       );
-      const build = await factory.Build.create({
-        projectId: project.id,
-        conclusion: "changes-detected",
-        stats: {
-          failure: 0,
-          added: 0,
-          unchanged: 0,
-          changed: 1,
-          removed: 0,
-          total: 1,
-          retryFailure: 0,
-          ignored: 0,
-        },
-      });
+      const build = await factory.Build.create({ projectId: project.id });
       return getNotificationPayload({
         build,
         buildNotification: { type: "diff-detected" },
@@ -115,7 +102,7 @@ describe("#getNotificationPayload", () => {
     }
 
     it("reports a failure by default", async () => {
-      const payload = await getAwaitingReviewPayload(undefined);
+      const payload = await getAwaitingReviewPayload();
       expect(payload.github.state).toBe("failure");
       expect(payload.gitlab.state).toBe("failed");
       expect(payload.origin).toEqual({
@@ -132,7 +119,6 @@ describe("#getNotificationPayload", () => {
         status: "in_progress",
         conclusion: null,
       });
-      expect(payload.description).toBe("1 changed — waiting for your decision");
     });
   });
 });

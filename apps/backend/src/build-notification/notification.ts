@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { getStatsMessage } from "@/build/stats";
-import { Project, type AwaitingReviewStatus } from "@/database/models";
+import { Project } from "@/database/models";
 import { Build } from "@/database/models/Build";
 import type { BuildNotification } from "@/database/models/BuildNotification";
 import { UnretryableError } from "@/job-core/error";
@@ -106,43 +106,19 @@ async function getStatusContext(input: {
   return `${context}/${build.name}`;
 }
 
-type NotificationStates = {
-  github: NotificationPayload["github"]["state"];
-  gitlab: NotificationPayload["gitlab"]["state"];
-  origin: NotificationPayload["origin"];
-};
-
-function getAwaitingReviewStates(
-  awaitingReviewStatus: AwaitingReviewStatus,
-): NotificationStates {
-  switch (awaitingReviewStatus) {
-    case "failure":
-      return {
-        github: "failure",
-        gitlab: "failed",
-        origin: { status: "completed", conclusion: "failure" },
-      };
-    case "pending":
-      return {
-        github: "pending",
-        gitlab: "running",
-        origin: { status: "in_progress", conclusion: null },
-      };
-    default:
-      assertNever(awaitingReviewStatus);
-  }
-}
-
 /**
  * Get the notification status for each platform based on the build
- * notification type, if it's an auto-approved build, and the status the
- * project reports while changes wait for a review.
+ * notification type and if it's an auto-approved build.
  */
 export function getNotificationStates(args: {
   buildNotificationType: BuildNotification["type"];
   buildType: Build["type"];
-  awaitingReviewStatus: AwaitingReviewStatus;
-}): NotificationStates {
+  awaitingReviewStatus: Project["awaitingReviewStatus"];
+}): {
+  github: NotificationPayload["github"]["state"];
+  gitlab: NotificationPayload["gitlab"]["state"];
+  origin: NotificationPayload["origin"];
+} {
   const { buildNotificationType, buildType, awaitingReviewStatus } = args;
   if (buildType === "skipped") {
     return {
@@ -163,10 +139,8 @@ export function getNotificationStates(args: {
     case "progress": {
       return {
         github: "pending",
-        // A GitLab status is never updated in place, and `running` only moves
-        // on to a conclusion. When the review wait is reported `running`, the
-        // build in progress stays `pending`, or the wait — far longer — would
-        // keep the "in progress" description.
+        // GitLab refuses `running` → `running`: a review wait reported
+        // `running` would keep "Build in progress..." as its description.
         gitlab: awaitingReviewStatus === "pending" ? "pending" : "running",
         origin: { status: "in_progress", conclusion: null },
       };
@@ -186,7 +160,18 @@ export function getNotificationStates(args: {
           origin: { status: "completed", conclusion: "success" },
         };
       }
-      return getAwaitingReviewStates(awaitingReviewStatus);
+      if (awaitingReviewStatus === "pending") {
+        return {
+          github: "pending",
+          gitlab: "running",
+          origin: { status: "in_progress", conclusion: null },
+        };
+      }
+      return {
+        github: "failure",
+        gitlab: "failed",
+        origin: { status: "completed", conclusion: "failure" },
+      };
     }
     case "diff-accepted": {
       return {
