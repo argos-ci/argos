@@ -1,8 +1,29 @@
+import { readFileSync } from "node:fs";
 import { invariant } from "@argos/util/invariant";
 import { Signer } from "@aws-sdk/rds-signer";
 import { Knex } from "knex";
 
 import type { Config } from ".";
+import { resolveFromPackageRoot } from "../util/paths";
+
+/**
+ * TLS options that make `pg` check it is talking to the RDS instance itself.
+ * Only the us-east-1 certificate authorities ship with the app, from
+ * https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem.
+ */
+function getRdsSslOptions(hostname: string) {
+  invariant(
+    hostname.endsWith(".us-east-1.rds.amazonaws.com"),
+    `no RDS certificate authority for Postgres host "${hostname}": config/rds-ca-us-east-1.pem only covers us-east-1 RDS endpoints`,
+  );
+  return {
+    ca: readFileSync(
+      resolveFromPackageRoot("config/rds-ca-us-east-1.pem"),
+      "utf8",
+    ),
+    rejectUnauthorized: true,
+  };
+}
 
 /**
  * Resolve the connection password. With `pg.connection.iamAuth` there is no
@@ -65,7 +86,7 @@ export function getKnexConfig(config: Config): Knex.Config {
       // RDS rejects IAM tokens over plaintext connections.
       ssl:
         config.get("pg.connection.ssl") || config.get("pg.connection.iamAuth")
-          ? { rejectUnauthorized: false }
+          ? getRdsSslOptions(config.get("pg.connection.host"))
           : false,
     },
   };

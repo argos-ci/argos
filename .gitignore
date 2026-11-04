@@ -4,6 +4,8 @@ dist/
 node_modules/
 # Keys
 *.pem
+# Public certificate authorities, not keys
+!apps/backend/config/rds-ca-us-east-1.pem
 # Env
 .env
 # Local overrides
