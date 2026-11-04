@@ -10,6 +10,7 @@ import { invariant } from "@argos/util/invariant";
 import { Navigate, Route, Routes } from "react-router";
 
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
+import { ProjectAwaitingReviewStatus } from "@/containers/Project/AwaitingReviewStatus";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
@@ -62,6 +63,7 @@ const ProjectQuery = graphql(`
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
+      ...ProjectAwaitingReviewStatus_Project
       ...ProjectIgnore_Project
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
@@ -182,6 +184,7 @@ function PageContent() {
         <>
           <ProjectGitRepository project={project} />
           <ProjectStatusChecks project={project} />
+          <ProjectAwaitingReviewStatus project={project} />
         </>
       ),
     },

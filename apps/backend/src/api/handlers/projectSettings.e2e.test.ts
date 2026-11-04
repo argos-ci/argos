@@ -86,17 +86,23 @@ describe("updateProject", () => {
     const res = await request(app)
       .patch("/projects/acme/web")
       .set("Authorization", `Bearer ${token}`)
-      .send({ summaryCheck: "never", deploymentEnabled: false })
+      .send({
+        summaryCheck: "never",
+        awaitingReviewStatus: "pending",
+        deploymentEnabled: false,
+      })
       .expect(200);
 
     expect(res.body).toMatchObject({
       name: "web",
       summaryCheck: "never",
+      awaitingReviewStatus: "pending",
       deploymentEnabled: false,
     });
 
     const reloaded = await Project.query().findById(project.id);
     expect(reloaded?.summaryCheck).toBe("never");
+    expect(reloaded?.awaitingReviewStatus).toBe("pending");
     expect(reloaded?.deploymentEnabled).toBe(false);
     // Untouched settings keep their value.
     expect(reloaded?.prCommentEnabled).toBe(project.prCommentEnabled);
@@ -261,6 +267,7 @@ describe("getProject", () => {
     expect(res.body).toMatchObject({
       name: "web",
       summaryCheck: expect.any(String),
+      awaitingReviewStatus: expect.any(String),
       deploymentAuth: expect.any(String),
       deploymentEnabled: expect.any(Boolean),
       prCommentEnabled: expect.any(Boolean),

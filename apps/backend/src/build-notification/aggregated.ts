@@ -102,6 +102,7 @@ export async function getAggregatedNotificationPayload(args: {
   const states = getNotificationStates({
     buildNotificationType: type,
     buildType,
+    awaitingReviewStatus: project.awaitingReviewStatus,
   });
   const base = {
     context: "argos/summary",

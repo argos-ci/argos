@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { getStatsMessage } from "@/build/stats";
-import { Project } from "@/database/models";
+import { Project, type AwaitingReviewStatus } from "@/database/models";
 import { Build } from "@/database/models/Build";
 import type { BuildNotification } from "@/database/models/BuildNotification";
 import { UnretryableError } from "@/job-core/error";
@@ -86,16 +86,17 @@ async function checkHasSiblingProject(project: Project): Promise<boolean> {
 /**
  * Get the status context for the build.
  */
-async function getStatusContext(build: Build): Promise<string> {
+async function getStatusContext(input: {
+  build: Build;
+  project: Project;
+}): Promise<string> {
+  const { build, project } = input;
   let context = "argos";
 
-  await build.$fetchGraph("project", { skipFetched: true });
-  invariant(build.project, "Project not found", UnretryableError);
-
-  const hasSiblingProject = await checkHasSiblingProject(build.project);
+  const hasSiblingProject = await checkHasSiblingProject(project);
 
   if (hasSiblingProject) {
-    context = `${context}/${build.project.name}`;
+    context = `${context}/${project.name}`;
   }
 
   if (build.name === "default") {
@@ -105,19 +106,44 @@ async function getStatusContext(build: Build): Promise<string> {
   return `${context}/${build.name}`;
 }
 
+type NotificationStates = {
+  github: NotificationPayload["github"]["state"];
+  gitlab: NotificationPayload["gitlab"]["state"];
+  origin: NotificationPayload["origin"];
+};
+
+function getAwaitingReviewStates(
+  awaitingReviewStatus: AwaitingReviewStatus,
+): NotificationStates {
+  switch (awaitingReviewStatus) {
+    case "failure":
+      return {
+        github: "failure",
+        gitlab: "failed",
+        origin: { status: "completed", conclusion: "failure" },
+      };
+    case "pending":
+      return {
+        github: "pending",
+        gitlab: "running",
+        origin: { status: "in_progress", conclusion: null },
+      };
+    default:
+      assertNever(awaitingReviewStatus);
+  }
+}
+
 /**
  * Get the notification status for each platform based on the build
- * notification type and if it's an auto-approved build.
+ * notification type, if it's an auto-approved build, and the status the
+ * project reports while changes wait for a review.
  */
 export function getNotificationStates(args: {
   buildNotificationType: BuildNotification["type"];
   buildType: Build["type"];
-}): {
-  github: NotificationPayload["github"]["state"];
-  gitlab: NotificationPayload["gitlab"]["state"];
-  origin: NotificationPayload["origin"];
-} {
-  const { buildNotificationType, buildType } = args;
+  awaitingReviewStatus: AwaitingReviewStatus;
+}): NotificationStates {
+  const { buildNotificationType, buildType, awaitingReviewStatus } = args;
   if (buildType === "skipped") {
     return {
       github: "success",
@@ -137,7 +163,11 @@ export function getNotificationStates(args: {
     case "progress": {
       return {
         github: "pending",
-        gitlab: "running",
+        // A GitLab status is never updated in place, and `running` only moves
+        // on to a conclusion. When the review wait is reported `running`, the
+        // build in progress stays `pending`, or the wait — far longer — would
+        // keep the "in progress" description.
+        gitlab: awaitingReviewStatus === "pending" ? "pending" : "running",
         origin: { status: "in_progress", conclusion: null },
       };
     }
@@ -149,14 +179,14 @@ export function getNotificationStates(args: {
       };
     }
     case "diff-detected": {
-      return {
-        github: isAutoApproved ? "success" : "failure",
-        gitlab: isAutoApproved ? "success" : "failed",
-        origin: {
-          status: "completed",
-          conclusion: isAutoApproved ? "success" : "failure",
-        },
-      };
+      if (isAutoApproved) {
+        return {
+          github: "success",
+          gitlab: "success",
+          origin: { status: "completed", conclusion: "success" },
+        };
+      }
+      return getAwaitingReviewStates(awaitingReviewStatus);
     }
     case "diff-accepted": {
       return {
@@ -247,6 +277,9 @@ export async function getNotificationPayload(args: {
   build: Build;
 }): Promise<NotificationPayload> {
   const { buildNotification, build } = args;
+  await build.$fetchGraph("project", { skipFetched: true });
+  const { project } = build;
+  invariant(project, "Project not found", UnretryableError);
   const description = getNotificationDescription({
     buildNotificationType: buildNotification.type,
     build: build,
@@ -254,9 +287,10 @@ export async function getNotificationPayload(args: {
   const states = getNotificationStates({
     buildNotificationType: buildNotification.type,
     buildType: build.type,
+    awaitingReviewStatus: project.awaitingReviewStatus,
   });
   const [context, buildUrl] = await Promise.all([
-    getStatusContext(build),
+    getStatusContext({ build, project }),
     build.getUrl(),
   ]);
 

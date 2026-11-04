@@ -95,6 +95,7 @@ describe("createProject", () => {
       deploymentProductionBranchGlob: "main",
       private: true,
       summaryCheck: "auto",
+      awaitingReviewStatus: "failure",
       prCommentEnabled: true,
       githubActionsOidcEnabled: false,
       tokenlessAuthEnabled: false,

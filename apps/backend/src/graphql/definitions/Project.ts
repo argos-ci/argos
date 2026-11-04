@@ -101,6 +101,11 @@ export const typeDefs = gql`
     auto
   }
 
+  enum AwaitingReviewStatus {
+    failure
+    pending
+  }
+
   enum DeploymentAuth {
     public
     domainPrivate
@@ -269,6 +274,8 @@ export const typeDefs = gql`
     tokenlessAuthEnabled: Boolean!
     "Summary check"
     summaryCheck: SummaryCheck!
+    "Status reported to the Git provider while changes wait for a review"
+    awaitingReviewStatus: AwaitingReviewStatus!
     "Build names"
     buildNames: [String!]!
     "Contributors"
@@ -384,6 +391,7 @@ export const typeDefs = gql`
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
+    awaitingReviewStatus: AwaitingReviewStatus
     defaultUserLevel: ProjectUserLevel
     ignoreConfig: IgnoreConfigInput
     deploymentEnabled: Boolean
@@ -1255,6 +1263,7 @@ export const resolvers: IResolvers = {
               args.input.deploymentProductionBranchGlob,
             private: args.input.private,
             summaryCheck: args.input.summaryCheck ?? undefined,
+            awaitingReviewStatus: args.input.awaitingReviewStatus ?? undefined,
             defaultUserLevel: args.input.defaultUserLevel,
             ignoreConfig:
               args.input.ignoreConfig === undefined

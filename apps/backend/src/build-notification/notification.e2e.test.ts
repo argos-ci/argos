@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { concludeBuild } from "@/build/concludeBuild";
 import { Build } from "@/database/models/Build";
 import { BuildNotification } from "@/database/models/BuildNotification";
+import type { Project } from "@/database/models/Project";
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
 
@@ -83,6 +84,55 @@ describe("#getNotificationPayload", () => {
         buildNotification,
       });
       expect(payload.context).toBe("argos/backend");
+    });
+  });
+
+  describe("with changes awaiting review", () => {
+    async function getAwaitingReviewPayload(
+      awaitingReviewStatus: Project["awaitingReviewStatus"] | undefined,
+    ) {
+      const project = await factory.Project.create(
+        awaitingReviewStatus ? { awaitingReviewStatus } : {},
+      );
+      const build = await factory.Build.create({
+        projectId: project.id,
+        conclusion: "changes-detected",
+        stats: {
+          failure: 0,
+          added: 0,
+          unchanged: 0,
+          changed: 1,
+          removed: 0,
+          total: 1,
+          retryFailure: 0,
+          ignored: 0,
+        },
+      });
+      return getNotificationPayload({
+        build,
+        buildNotification: { type: "diff-detected" },
+      });
+    }
+
+    it("reports a failure by default", async () => {
+      const payload = await getAwaitingReviewPayload(undefined);
+      expect(payload.github.state).toBe("failure");
+      expect(payload.gitlab.state).toBe("failed");
+      expect(payload.origin).toEqual({
+        status: "completed",
+        conclusion: "failure",
+      });
+    });
+
+    it("reports a pending status when the project asks for it", async () => {
+      const payload = await getAwaitingReviewPayload("pending");
+      expect(payload.github.state).toBe("pending");
+      expect(payload.gitlab.state).toBe("running");
+      expect(payload.origin).toEqual({
+        status: "in_progress",
+        conclusion: null,
+      });
+      expect(payload.description).toBe("1 changed — waiting for your decision");
     });
   });
 });

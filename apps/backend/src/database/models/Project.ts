@@ -32,6 +32,11 @@ export type ProjectPermission =
   | "view_settings"
   | "view";
 export type DeploymentAuth = "public" | "domain-private" | "private";
+/**
+ * The status reported to the Git provider while a build has changes waiting
+ * for a review.
+ */
+export type AwaitingReviewStatus = "failure" | "pending";
 
 /**
  * Default number of occurrences before a change is considered flaky and
@@ -148,6 +153,10 @@ export class Project extends Model {
             enum: ["public", "domain-private", "private"],
           },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+          awaitingReviewStatus: {
+            type: "string",
+            enum: ["failure", "pending"],
+          },
           buildNumber: { type: "integer", minimum: 0 },
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
@@ -201,6 +210,7 @@ export class Project extends Model {
   deploymentEnabled!: boolean;
   deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";
+  awaitingReviewStatus!: AwaitingReviewStatus;
   defaultUserLevel!: UserLevel | null;
   ignoreConfig!: ProjectIgnoreConfig | null;
   deploymentProdBranchGlob!: string | null;

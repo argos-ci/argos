@@ -23,6 +23,12 @@ export const SummaryCheck = z.enum(["always", "never", "auto"]).meta({
   id: "SummaryCheck",
 });
 
+export const AwaitingReviewStatus = z.enum(["failure", "pending"]).meta({
+  description:
+    "Status reported to the Git provider while a build has changes waiting for a review: `failure`, or `pending` until the build is approved or rejected (`running` on GitLab).",
+  id: "AwaitingReviewStatus",
+});
+
 export const DeploymentAuth = z
   .enum(["public", "domain-private", "private"])
   .meta({
@@ -79,6 +85,7 @@ export const ProjectSchema = z
         "Whether the project is private. Resolved from the linked repository unless overridden.",
     }),
     summaryCheck: SummaryCheck,
+    awaitingReviewStatus: AwaitingReviewStatus,
     prCommentEnabled: z.boolean().meta({
       description: "Whether Argos comments on pull requests.",
     }),
@@ -158,6 +165,7 @@ export async function serializeProject(
     deploymentProductionBranchGlob,
     private: !isPublic,
     summaryCheck: project.summaryCheck,
+    awaitingReviewStatus: project.awaitingReviewStatus,
     prCommentEnabled: project.prCommentEnabled,
     githubActionsOidcEnabled: project.githubActionsOidcEnabled,
     tokenlessAuthEnabled: project.tokenlessAuthEnabled,
