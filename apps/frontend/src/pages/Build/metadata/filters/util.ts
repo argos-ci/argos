@@ -288,8 +288,9 @@ export function useCreateFilterState(
       getFilterByKey,
       filterGroups,
       filters,
+      journeys,
     }),
-    [active, setActive, filterGroups, getFilterByKey, filters],
+    [active, setActive, filterGroups, getFilterByKey, filters, journeys],
   );
 }
 

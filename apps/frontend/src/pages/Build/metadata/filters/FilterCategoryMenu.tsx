@@ -1,10 +1,80 @@
 import { Fragment } from "react";
 
-import { Menu, MenuItem, MenuSeparator } from "@/ui/menu-kit";
+import { Menu, MenuHeading, MenuItem, MenuSeparator } from "@/ui/menu-kit";
 
+import {
+  getJourneyTestFiles,
+  getJourneyTestSummary,
+  getTestContext,
+  JourneyStatusIcon,
+  useJourneyStatusContext,
+  type JourneyStatusContext,
+} from "../../journey-tests";
 import { FilterIcon } from "./FilterIcon";
 import type { FilterState } from "./FilterState";
-import { getFilterCategoryDefinition, type FilterGroup } from "./util";
+import {
+  FilterCategory,
+  getFilterCategoryDefinition,
+  getFilterKey,
+  type FilterGroup,
+} from "./util";
+
+/**
+ * The journeys as the overview lists them: by file, a row per test with its
+ * runs together. The filter keeps a journey per run, so the URL stays a list
+ * of short ids, and a row takes or leaves all the runs of its test: the
+ * Viewport filter is there to keep one.
+ */
+function getJourneyFilterItems(props: {
+  filterGroup: FilterGroup;
+  state: FilterState;
+  statusContext: JourneyStatusContext;
+}) {
+  const { filterGroup, state, statusContext } = props;
+  const selectedKeys = state.active.intersection(filterGroup.filterKeys);
+  const otherKeys = state.active.difference(filterGroup.filterKeys);
+  return getJourneyTestFiles(state.journeys, statusContext).map((file) => (
+    <Fragment key={file.key}>
+      <MenuHeading>{file.path ?? file.name}</MenuHeading>
+      {file.tests.map((test) => {
+        const keys = new Set(
+          test.journeys.map((journey) =>
+            getFilterKey({
+              category: FilterCategory.journey,
+              value: journey.id,
+            }),
+          ),
+        );
+        const context = getTestContext(test, file);
+        return (
+          <MenuItem
+            key={test.key}
+            checkbox
+            wrap
+            checked={!selectedKeys.isDisjointFrom(keys)}
+            textValue={[context, test.title].filter(Boolean).join(" › ")}
+            keywords={[file.path ?? file.name]}
+            subtitle={getJourneyTestSummary(test)}
+            onAction={() => state.setActive(otherKeys.union(keys))}
+            onCheckedChange={(checked: boolean) => {
+              const next = checked
+                ? selectedKeys.union(keys)
+                : selectedKeys.difference(keys);
+              state.setActive(otherKeys.union(next));
+            }}
+          >
+            {context ? <span className="text-low">{context} › </span> : null}
+            {test.title}
+            <JourneyStatusIcon
+              status={test.status}
+              className="ml-1.5 inline size-3.5 align-[-0.125em]"
+            />
+          </MenuItem>
+        );
+      })}
+    </Fragment>
+  ));
+}
 
 /**
  * The rows for one category, as a plain function rather than a component.
@@ -16,9 +86,13 @@ import { getFilterCategoryDefinition, type FilterGroup } from "./util";
 export function getFilterCategoryItems(props: {
   filterGroup: FilterGroup;
   state: FilterState;
+  statusContext: JourneyStatusContext;
   splitSelected?: boolean;
 }) {
   const { filterGroup, state, splitSelected } = props;
+  if (filterGroup.category === FilterCategory.journey) {
+    return getJourneyFilterItems(props);
+  }
   const { getFilterByKey } = state;
   const selectedKeys = state.active.intersection(filterGroup.filterKeys);
   const { showMenuSeparator, checked, visibleFilters } = (() => {
@@ -80,9 +154,10 @@ export function FilterCategoryMenu(props: {
 }) {
   const { className, ...rest } = props;
   const categoryDef = getFilterCategoryDefinition(props.filterGroup.category);
+  const statusContext = useJourneyStatusContext();
   return (
     <Menu aria-label={`${categoryDef.label} filters`} className={className}>
-      {getFilterCategoryItems(rest)}
+      {getFilterCategoryItems({ ...rest, statusContext })}
     </Menu>
   );
 }

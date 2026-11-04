@@ -393,3 +393,57 @@ loggedTest(
     ).toHaveCount(0);
   },
 );
+
+loggedTest(
+  "picks a journey from the filters and moves on from the walk header",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // The journey filter lists the tests by file, a row per test with its
+    // runs together, and narrows the list to the one picked.
+    await page.locator("button:has(.lucide-filter)").click();
+    await page.getByRole("option", { name: "Journey" }).click();
+    await expect(
+      page.locator("[role='listbox']").getByText("e2e/checkout.spec.ts"),
+    ).toBeVisible();
+    const purchase = page.getByRole("option", {
+      name: /^complete a purchase/,
+    });
+    await expect(purchase).toContainText("375×812, 1280×720");
+    await purchase.click();
+    const journeyHeader = page.getByRole("region", {
+      name: "Journey",
+      exact: true,
+    });
+    await expect(journeyHeader).toContainText("complete a purchase");
+    // The overview's order: the most changed first, the unchanged one last.
+    await expect(journeyHeader).toContainText("Journey 1 of 3");
+
+    // On to the next journey, from its first screen.
+    await journeyHeader.getByRole("link", { name: "Next journey" }).click();
+    await expect(journeyHeader).toContainText("finds a product");
+    await expect(journeyHeader).toContainText("Journey 2 of 3");
+    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
+
+    // Or to any journey, from the title.
+    await journeyHeader
+      .getByRole("button", { name: "finds a product" })
+      .click();
+    await page.getByRole("option", { name: /^complete a purchase/ }).click();
+    await expect(journeyHeader).toContainText("Journey 1 of 3");
+
+    // A test run in two projects switches runs on the same screen.
+    await journeyHeader.getByRole("link", { name: "375×812" }).click();
+    await expect(
+      page.getByRole("heading", { name: "mobile/checkout/cart.png" }),
+    ).toBeVisible();
+    await expect(
+      journeyHeader.getByRole("link", { name: "375×812" }),
+    ).toHaveAttribute("aria-current", "true");
+  },
+);

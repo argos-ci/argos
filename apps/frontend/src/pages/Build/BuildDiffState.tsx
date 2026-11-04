@@ -299,6 +299,8 @@ type BuildDiffContextValue = {
    * in one section, instead of sorting it by status.
    */
   journeyMode: boolean;
+  /** The journeys of the build: the tests that walk several screens. */
+  journeys: BuildJourney[];
   /** The journeys the filter walks, none outside of journey mode. */
   walkedJourneys: BuildJourney[];
   /** Where each walked screen sits in its journey ("2 · cart"), by diff id. */
@@ -852,6 +854,9 @@ const _BuildDiffStateFragment = graphql(`
         width
         height
       }
+      location {
+        file
+      }
       steps {
         key
         diffs {
@@ -1401,6 +1406,7 @@ export function BuildDiffProvider(props: {
       isLoading: hasMore,
       isSubsetBuild,
       journeyMode,
+      journeys,
       walkedJourneys,
       journeyStepLabels,
     }),
@@ -1428,6 +1434,7 @@ export function BuildDiffProvider(props: {
       hasMore,
       isSubsetBuild,
       journeyMode,
+      journeys,
       walkedJourneys,
       journeyStepLabels,
     ],

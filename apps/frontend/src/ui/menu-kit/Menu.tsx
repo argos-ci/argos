@@ -1072,6 +1072,11 @@ function MenuNodeRenderer(props: { node: MenuNode }) {
 
 export type MenuItemProps = {
   children: ReactNode;
+  /**
+   * Lets the label run on two lines instead of being cut: for rows named by a
+   * sentence, a test title, where the end is what tells two rows apart.
+   */
+  wrap?: boolean;
   /** What the query matches, when the children are not plain text. */
   textValue?: string;
   subtitle?: ReactNode;
@@ -1242,7 +1247,7 @@ function MenuItemRow(
         <span className={menuItemIconClassName}>{itemProps.icon}</span>
       ) : null}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate">
+        <span className={itemProps.wrap ? "line-clamp-2" : "truncate"}>
           {node.parent ? (
             <>
               <span className="text-low">{node.parent.title}</span>

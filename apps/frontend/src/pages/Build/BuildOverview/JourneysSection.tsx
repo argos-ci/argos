@@ -31,6 +31,11 @@ import { getBuildReviewBlocker } from "../BuildReviewability";
 import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyTestKey } from "../journey-hints";
+import {
+  getTestContext,
+  groupTestsByFile,
+  type JourneyFile,
+} from "../journey-tests";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import { serializeJourneySearch } from "../metadata/filters/util";
@@ -41,10 +46,7 @@ import {
 } from "../metadata/metadataIcons";
 import { formatViewport } from "../metadata/viewports/util";
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
-import {
-  getRepositoryFileURL,
-  getRepositoryPath,
-} from "../sidebar/metadata/LocationChip";
+import { getRepositoryFileURL } from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
 
 const _JourneyFragment = graphql(`
@@ -378,10 +380,10 @@ export function JourneysSection(props: {
   if (tests.length === 0) {
     return null;
   }
-  const fileContext = { repoUrl, branch: build.branch };
   const listProps = {
     checkIsWalked,
     reviewBlocker: getBuildReviewBlocker(build),
+    repo: { repoUrl, branch: build.branch },
   };
   return (
     <>
@@ -402,14 +404,14 @@ export function JourneysSection(props: {
             order.
           </p>
           <JourneyFileList
-            files={groupByFile(changed, fileContext)}
+            files={groupTestsByFile(changed)}
             className="mt-4"
             {...listProps}
           />
         </section>
       ) : null}
-      {/* Built like the Journeys heading, muted, and saying why it is
-          folded. */}
+      {/* Muted, with the status after the title as on the journeys' cards,
+          and saying why it is folded. */}
       {unchanged.length > 0 ? (
         <Details
           open={showUnchanged}
@@ -417,9 +419,14 @@ export function JourneysSection(props: {
         >
           <summary className="focus-ring text-low hover:text-default flex cursor-default list-none flex-col rounded-md transition">
             <span className="flex items-center gap-2">
-              <UnchangedIcon className="size-5 shrink-0" strokeWidth={1.75} />
-              <h2 className="text-lg font-semibold tracking-tight">
+              <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
                 Unchanged journeys
+                <UnchangedIcon
+                  className={clsx(
+                    "size-4.5 shrink-0",
+                    lowTextColorClassNames[UNCHANGED_COLOR],
+                  )}
+                />
               </h2>
               <span className="ml-auto flex items-center gap-2 text-sm tabular-nums">
                 {plural(unchanged.length, "journey")}
@@ -427,12 +434,12 @@ export function JourneysSection(props: {
               </span>
             </span>
             <span className="mt-0.5 text-sm">
-              No changes in these journeys, nothing to review.
+              Nothing to review in these journeys.
             </span>
           </summary>
           {showUnchanged ? (
             <JourneyFileList
-              files={groupByFile(unchanged, fileContext)}
+              files={groupTestsByFile(unchanged)}
               className="mt-4"
               {...listProps}
             />
@@ -443,66 +450,13 @@ export function JourneysSection(props: {
   );
 }
 
-const UnchangedIcon = getDiffGroupDefinition(
+const { icon: UnchangedIcon, color: UNCHANGED_COLOR } = getDiffGroupDefinition(
   ScreenshotDiffStatus.Unchanged,
-).icon;
-
-type JourneyFile = {
-  key: string;
-  /** The folders before the file name in its repository path. */
-  dir: string | null;
-  /** The file name, or the title path when the test has no location. */
-  name: string;
-  href: string | null;
-  tests: JourneyTest[];
-};
-
-/**
- * `tests` by the file that holds them, the files in the order their first
- * test comes in: the most changed first, as `tests` is sorted.
- */
-function groupByFile(
-  tests: JourneyTest[],
-  context: { repoUrl: string | null; branch: string | null },
-): JourneyFile[] {
-  const files = new Map<string, JourneyFile>();
-  for (const test of tests) {
-    const path = test.location ? getRepositoryPath(test.location.file) : null;
-    const key = path ?? test.prefix;
-    const nameStart = path ? path.lastIndexOf("/") + 1 : 0;
-    const file = files.get(key) ?? {
-      key,
-      dir: path && nameStart > 0 ? path.slice(0, nameStart) : null,
-      name: path ? path.slice(nameStart) : test.prefix,
-      href: path ? getRepositoryFileURL({ file: path, ...context }) : null,
-      tests: [],
-    };
-    files.set(key, file);
-    file.tests.push(test);
-  }
-  return Array.from(files.values());
-}
-
-/**
- * What the title path says about a test besides its file: `describe` blocks,
- * a Playwright project. Cypress leaves the file out of it, Playwright puts it
- * in, relative to its test directory.
- */
-function getTestContext(test: JourneyTest, file: JourneyFile): string | null {
-  if (!test.location) {
-    // The file is named after the title path itself.
-    return null;
-  }
-  const filePath = `${file.dir ?? ""}${file.name}`;
-  const context = test.prefix
-    .split(" › ")
-    .filter((segment) => segment && !filePath.endsWith(segment));
-  return context.length > 0 ? context.join(" › ") : null;
-}
+);
 
 /** The viewer's review of a file's changed screens, as the build counts it. */
 function getFileReviewProgression(
-  file: JourneyFile,
+  file: JourneyFile<JourneyTest>,
   statuses: Record<string, EvaluationStatus>,
 ) {
   const toReview = file.tests.flatMap((test) => getChangedDiffs(test.runs));
@@ -519,10 +473,13 @@ function getFileReviewProgression(
   };
 }
 
+type RepositoryContext = { repoUrl: string | null; branch: string | null };
+
 function JourneyFileList(props: {
-  files: JourneyFile[];
+  files: JourneyFile<JourneyTest>[];
   checkIsWalked: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
+  repo: RepositoryContext;
   className?: string;
 }) {
   const { files, ...itemProps } = props;
@@ -537,12 +494,16 @@ function JourneyFileList(props: {
 
 /** A test file and its journeys, as a pull request review shows a file. */
 function JourneyFileCard(props: {
-  file: JourneyFile;
+  file: JourneyFile<JourneyTest>;
   checkIsWalked: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
+  repo: RepositoryContext;
 }) {
-  const { file, checkIsWalked, reviewBlocker } = props;
+  const { file, checkIsWalked, reviewBlocker, repo } = props;
   const statuses = useReviewStatuses();
+  const href = file.path
+    ? getRepositoryFileURL({ file: file.path, ...repo })
+    : null;
   // The path once, the name standing out: when it is long, the folders give
   // way first.
   const fileLabel = (
@@ -559,13 +520,10 @@ function JourneyFileCard(props: {
         <FileCodeIcon className="text-low size-4 shrink-0" />
         {/* Named by the path itself: as flex items, the folders and the name
             would be read as two words. */}
-        <h3
-          aria-label={`${file.dir ?? ""}${file.name}`}
-          className="flex min-w-0"
-        >
-          {file.href ? (
+        <h3 aria-label={file.path ?? file.name} className="flex min-w-0">
+          {href ? (
             <a
-              href={file.href}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               className="focus-ring flex min-w-0 rounded-xs text-sm hover:underline"
