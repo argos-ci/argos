@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { normalizeEmoji, parseEmoji } from "@argos/util/emoji";
 import {
   defaultRangeExtractor,
   useVirtualizer,
@@ -73,8 +74,15 @@ const EMOJIS_BY_HEXCODE = new Map<string, EmojiEntry>();
 const groupBuckets = new Map<number, { order: number; entry: EmojiEntry }[]>();
 
 for (const emoji of compactEmojis) {
+  // Emojibase ships each Emoji version before Node and the browsers know it
+  // (18 adds Emoji 18.0): the server would reject those emoji as reactions,
+  // and no platform draws them yet.
+  const unicode = parseEmoji(emoji.unicode);
+  if (!unicode) {
+    continue;
+  }
   const entry: EmojiEntry = {
-    emoji: emoji.unicode,
+    emoji: unicode,
     label: emoji.label,
     tags: emoji.tags ?? [],
   };
@@ -146,19 +154,37 @@ const recentEmojisAtom = atomWithStorage<Emoji[]>(
 );
 
 /**
+ * Normalize each emoji and keep the first occurrence of each. Tabs still
+ * running a bundle on emojibase 17 keep writing its spelling ("👍️") to the
+ * shared storage key, next to the "👍" this picker saved.
+ */
+function normalizeRecentEmojis(emojis: Emoji[]): Emoji[] {
+  const seen = new Set<string>();
+  return emojis.flatMap(({ emoji, label }) => {
+    const normalized = normalizeEmoji(emoji);
+    if (seen.has(normalized)) {
+      return [];
+    }
+    seen.add(normalized);
+    return [{ emoji: normalized, label }];
+  });
+}
+
+/**
  * Returns the list of recently used emojis and a function to record a new
  * selection. The list is persisted in local storage, deduplicated by emoji
  * character (most recent first) and capped at {@link MAX_RECENT_EMOJIS}.
  */
 function useRecentEmojis(): [Emoji[], (emoji: Emoji) => void] {
-  const [recentEmojis, setRecentEmojis] = useAtom(recentEmojisAtom);
+  const [storedRecentEmojis, setRecentEmojis] = useAtom(recentEmojisAtom);
+  const recentEmojis = useMemo(
+    () => normalizeRecentEmojis(storedRecentEmojis),
+    [storedRecentEmojis],
+  );
   const addRecentEmoji = useCallback(
     (emoji: Emoji) => {
       setRecentEmojis((current) =>
-        [
-          { emoji: emoji.emoji, label: emoji.label },
-          ...current.filter((it) => it.emoji !== emoji.emoji),
-        ].slice(0, MAX_RECENT_EMOJIS),
+        normalizeRecentEmojis([emoji, ...current]).slice(0, MAX_RECENT_EMOJIS),
       );
     },
     [setRecentEmojis],

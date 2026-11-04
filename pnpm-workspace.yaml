@@ -21,11 +21,6 @@ overrides:
   '@types/react-dom': "catalog:"
   browserslist: ^4.28.7
   dompurify: ^3.4.0
-  # 18 drops the redundant U+FE0F from 152 emoji (👍, ✅, ✨…), and reactions
-  # store the picked string verbatim: new picks would no longer match existing
-  # rows. Lift once reactions normalize what they store and existing rows are
-  # migrated.
-  emojibase-data: ^17.0.0
   esbuild: ^0.28.1
   file-type: ^22.1.1
   # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on

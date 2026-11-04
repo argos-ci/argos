@@ -2,46 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CommentReaction } from "@/database/models";
 
-import { groupCommentReactions, isValidEmoji } from "./reactions";
-
-describe("isValidEmoji", () => {
-  it("accepts a simple emoji", () => {
-    expect(isValidEmoji("👍")).toBe(true);
-  });
-
-  it("accepts an emoji with a skin-tone modifier", () => {
-    expect(isValidEmoji("👍🏽")).toBe(true);
-  });
-
-  it("accepts a ZWJ sequence", () => {
-    expect(isValidEmoji("👨‍👩‍👧‍👦")).toBe(true);
-  });
-
-  it("rejects plain text", () => {
-    expect(isValidEmoji("lgtm")).toBe(false);
-  });
-
-  it("rejects digits", () => {
-    expect(isValidEmoji("123")).toBe(false);
-  });
-
-  it("rejects an empty string", () => {
-    expect(isValidEmoji("")).toBe(false);
-  });
-
-  it("rejects an emoji with trailing text", () => {
-    expect(isValidEmoji("👍lgtm")).toBe(false);
-  });
-
-  it("rejects multiple emojis", () => {
-    expect(isValidEmoji("👍🎉")).toBe(false);
-  });
-
-  it("rejects non-string values", () => {
-    expect(isValidEmoji(undefined)).toBe(false);
-    expect(isValidEmoji(42)).toBe(false);
-  });
-});
+import { groupCommentReactions } from "./reactions";
 
 describe("groupCommentReactions", () => {
   function reaction(emoji: string, userId: string): CommentReaction {

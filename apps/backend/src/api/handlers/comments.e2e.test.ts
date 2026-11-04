@@ -9,6 +9,7 @@ import {
   Build,
   Comment,
   CommentNotificationSubscription,
+  CommentReaction,
   ScreenshotBucket,
   ScreenshotDiff,
 } from "@/database/models";
@@ -546,6 +547,47 @@ describe("reactions", () => {
       .expect(200);
 
     expect(removed.body.reactions).toEqual([]);
+  });
+
+  test("counts both spellings of an emoji as one reaction", async ({
+    user,
+    build,
+    scopedPatToken,
+  }) => {
+    const comment = await factory.Comment.create({
+      buildId: build.id,
+      userId: user.id,
+      content: DOC("React to me"),
+    });
+    const url = `/projects/acme/web/builds/${build.number}/comments/${formatCommentId(comment.id)}/reactions`;
+
+    // The emojibase 17 spelling, stored verbatim before reactions were
+    // normalized.
+    await factory.CommentReaction.create({
+      commentId: comment.id,
+      userId: user.id,
+      emoji: "👍\u{FE0F}",
+    });
+
+    for (const emoji of ["👍", "👍\u{FE0F}"]) {
+      const added = await request(app)
+        .post(url)
+        .set(auth(scopedPatToken))
+        .send({ emoji })
+        .expect(200);
+      expect(added.body.reactions).toMatchObject([{ emoji: "👍", count: 1 }]);
+    }
+
+    const removed = await request(app)
+      .delete(url)
+      .query({ emoji: "👍" })
+      .set(auth(scopedPatToken))
+      .expect(200);
+
+    expect(removed.body.reactions).toEqual([]);
+    expect(
+      await CommentReaction.query().where({ commentId: comment.id }),
+    ).toEqual([]);
   });
 
   test("rejects an invalid emoji", async ({ user, build, scopedPatToken }) => {

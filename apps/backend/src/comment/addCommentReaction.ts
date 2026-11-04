@@ -1,3 +1,4 @@
+import { parseEmoji } from "@argos/util/emoji";
 import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
@@ -10,7 +11,6 @@ import { boom } from "@/util/error";
 import { publishCommentChange } from "./commentEvents";
 import { getCommentUrl } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
-import { isValidEmoji } from "./reactions";
 import {
   getCommentTargetNotificationFields,
   getCommentTargetProject,
@@ -27,9 +27,10 @@ export async function addCommentReaction(input: {
   userId: string;
   emoji: string;
 }): Promise<Comment> {
-  const { comment, userId, emoji } = input;
+  const { comment, userId } = input;
 
-  if (!isValidEmoji(emoji)) {
+  const emoji = parseEmoji(input.emoji);
+  if (!emoji) {
     throw boom(400, "Invalid emoji");
   }
 
