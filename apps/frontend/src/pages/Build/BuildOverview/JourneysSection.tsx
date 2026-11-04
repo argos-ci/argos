@@ -13,6 +13,7 @@ import {
 import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
 import { DocumentType, graphql } from "@/gql";
 import {
+  BuildType,
   ScreenshotDiffStatus,
   type ScreenshotMetadataColorScheme,
 } from "@/gql/graphql";
@@ -20,11 +21,13 @@ import { Details } from "@/ui/Details";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
+import { buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
 import { checkDiffNeedsAttention } from "../BuildJourneyDrawer";
 import { getBuildURL, useBuildParams, type BuildParams } from "../BuildParams";
+import { getBuildReviewBlocker } from "../BuildReviewability";
 import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyTestKey } from "../journey-hints";
@@ -98,6 +101,7 @@ const _BuildFragment = graphql(`
   fragment JourneysSection_Build on Build {
     subset
     branch
+    ...BuildReviewability_Build
     journeys {
       ...JourneysSection_Journey
     }
@@ -305,6 +309,21 @@ function StatusMark(props: {
   );
 }
 
+/** A change the build approved itself, as it ran on an auto-approved branch. */
+function AutoApprovedMark() {
+  const { icon: Icon, color } = buildTypeDescriptors[BuildType.Reference];
+  return (
+    <ExplainedIcon
+      description="Changed, auto-approved with the build"
+      className={lowTextColorClassNames[color]}
+    >
+      <Icon className="size-3.5" />
+    </ExplainedIcon>
+  );
+}
+
+type ReviewBlocker = ReturnType<typeof getBuildReviewBlocker>;
+
 function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   return (
     <StatusMark
@@ -358,6 +377,7 @@ export function JourneysSection(props: {
     checkIsWalked,
     repoUrl,
     branch: build.branch,
+    reviewBlocker: getBuildReviewBlocker(build),
   };
   return (
     <>
@@ -422,9 +442,10 @@ function JourneyTestList(props: {
   checkIsWalked: (test: JourneyTest) => boolean;
   repoUrl: string | null;
   branch: string | null;
+  reviewBlocker: ReviewBlocker;
   className?: string;
 }) {
-  const { tests, checkIsWalked, repoUrl, branch } = props;
+  const { tests, checkIsWalked, repoUrl, branch, reviewBlocker } = props;
   return (
     <ul className={clsx("flex flex-col gap-8", props.className)}>
       {tests.map((test, index) => {
@@ -436,6 +457,7 @@ function JourneyTestList(props: {
             test={test}
             showPrefix={opensGroup}
             scrollIntoView={checkIsWalked(test)}
+            reviewBlocker={reviewBlocker}
             className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
             href={getLocationURL({ location: test.location, repoUrl, branch })}
           />
@@ -497,9 +519,10 @@ function JourneyTestItem(props: {
   showPrefix: boolean;
   /** Whether the review comes back from walking it, to show it first. */
   scrollIntoView: boolean;
+  reviewBlocker: ReviewBlocker;
   className?: string;
 }) {
-  const { test, href, showPrefix, scrollIntoView } = props;
+  const { test, href, showPrefix, scrollIntoView, reviewBlocker } = props;
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
     if (scrollIntoView) {
@@ -566,7 +589,7 @@ function JourneyTestItem(props: {
           ) : null}
         </div>
       </div>
-      <JourneyLineup test={test} />
+      <JourneyLineup test={test} reviewBlocker={reviewBlocker} />
     </li>
   );
 }
@@ -604,12 +627,20 @@ function getRunLabel(run: JourneyRun, test: JourneyTest): string {
  * The runs of a test side by side, half a row each, as cards like the ones
  * in the build's snapshot list.
  */
-function JourneyLineup(props: { test: JourneyTest }) {
-  const { test } = props;
+function JourneyLineup(props: {
+  test: JourneyTest;
+  reviewBlocker: ReviewBlocker;
+}) {
+  const { test, reviewBlocker } = props;
   return (
     <ul className="mt-3 grid gap-4 sm:grid-cols-2">
       {test.runs.map((run) => (
-        <JourneyRunItem key={run.key} run={run} test={test} />
+        <JourneyRunItem
+          key={run.key}
+          run={run}
+          test={test}
+          reviewBlocker={reviewBlocker}
+        />
       ))}
     </ul>
   );
@@ -647,8 +678,12 @@ function getDiffCardVariant(mark: ReviewMarkValue | null) {
   }
 }
 
-function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
-  const { run, test } = props;
+function JourneyRunItem(props: {
+  run: JourneyRun;
+  test: JourneyTest;
+  reviewBlocker: ReviewBlocker;
+}) {
+  const { run, test, reviewBlocker } = props;
   const params = useBuildParams();
   invariant(params, "a journey is rendered on a build page");
   const { journey, screens, viewport, browser, colorScheme } = run;
@@ -691,7 +726,11 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
       >
         <DiffCard
           isActive={false}
-          variant={changed.length > 0 ? getDiffCardVariant(mark) : "neutral"}
+          variant={
+            changed.length > 0 && !reviewBlocker
+              ? getDiffCardVariant(mark)
+              : "neutral"
+          }
         >
           <div className="flex size-full flex-col">
             <div
@@ -743,9 +782,21 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
                 </>
               ) : null}
               <span className="ml-auto flex shrink-0 items-center gap-1.5">
-                {mark ? (
+                {changed.length === 0 ? (
+                  <StatusMark
+                    group={ScreenshotDiffStatus.Unchanged}
+                    description="No changes in this journey"
+                  />
+                ) : reviewBlocker === "reference" ? (
+                  <AutoApprovedMark />
+                ) : reviewBlocker === "merge-queue" ? (
+                  <StatusMark
+                    group={ScreenshotDiffStatus.Changed}
+                    description="Changed, in a merge queue build"
+                  />
+                ) : mark ? (
                   <ReviewMark mark={mark} />
-                ) : changed.length > 0 ? (
+                ) : (
                   <StatusMark
                     group={ScreenshotDiffStatus.Changed}
                     description={
@@ -753,11 +804,6 @@ function JourneyRunItem(props: { run: JourneyRun; test: JourneyTest }) {
                         ? "Changed, not reviewed yet"
                         : `Changed, ${reviewedCount} of ${changed.length} reviewed`
                     }
-                  />
-                ) : (
-                  <StatusMark
-                    group={ScreenshotDiffStatus.Unchanged}
-                    description="No changes in this journey"
                   />
                 )}
                 <ExplainedIcon

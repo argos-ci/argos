@@ -1694,8 +1694,10 @@ export async function createJourneyScenario(input: {
  */
 export async function createJourneysScenario(input: {
   projectId: string;
+  /** `reference` for a build that ran on an auto-approved branch. */
+  type?: "check" | "reference";
 }): Promise<{ build: Build }> {
-  const { projectId } = input;
+  const { projectId, type = "check" } = input;
   const common = {
     sdk: { name: "@argos-ci/playwright", version: "7.5.1" },
     automationLibrary: { name: "playwright", version: "1.61.0" },
@@ -1799,6 +1801,7 @@ export async function createJourneysScenario(input: {
   );
   const build = await insertJourneyBuild({
     projectId,
+    type,
     screenshots: [...screenshots, ...searchScreenshots],
   });
   return { build };
@@ -1810,6 +1813,7 @@ export async function createJourneysScenario(input: {
  */
 async function insertJourneyBuild(input: {
   projectId: string;
+  type?: "check" | "reference";
   screenshots: {
     name: string;
     /** Diff score; `null` for an unchanged screenshot. */
@@ -1817,7 +1821,7 @@ async function insertJourneyBuild(input: {
     metadata: ScreenshotMetadata;
   }[];
 }): Promise<Build> {
-  const { projectId, screenshots } = input;
+  const { projectId, type = "check", screenshots } = input;
   const seededAt = getSeedInstant();
   const bucketProps = {
     name: "default",
@@ -1902,7 +1906,7 @@ async function insertJourneyBuild(input: {
     {
       name: "default",
       number: 1,
-      type: "check" as const,
+      type,
       jobStatus: "complete" as const,
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,

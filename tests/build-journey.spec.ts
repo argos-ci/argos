@@ -343,3 +343,29 @@ loggedTest(
     await expect(reviewed).toHaveCount(1);
   },
 );
+
+loggedTest(
+  "shows the journeys of an auto-approved build as approved",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({
+      projectId: project.id,
+      type: "reference",
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // Nobody reviews a build of an auto-approved branch: its changed runs
+    // say they were approved with it, none waits for a review.
+    await expect(
+      page
+        .getByRole("img", { name: "Changed, auto-approved with the build" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /^Changed, not reviewed yet/ }),
+    ).toHaveCount(0);
+  },
+);
