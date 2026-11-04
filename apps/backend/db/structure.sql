@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict POaje5UqwSBHz8IocaWxd6FBjTG5mkh72soPSwfVwRNziN8kQJlAfatyKMyCPjJ
+\restrict xhY2QlhdRUQ4n96wQomH08kpv2yUmz1qgvyJMKgbY2d82H4GC6Fi7SwbQIy4Csf
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -120,7 +120,7 @@ CREATE TABLE public.accounts (
     "githubAccountId" bigint,
     name character varying(255),
     slug character varying(255) NOT NULL,
-    "gitlabAccessToken" character varying(255),
+    "gitlabAccessToken" text,
     "gitlabBaseUrl" character varying(255),
     "slackInstallationId" bigint,
     "githubLightInstallationId" bigint,
@@ -2496,7 +2496,7 @@ CREATE TABLE public.slack_installations (
     "teamId" character varying(255) NOT NULL,
     "teamName" character varying(255) NOT NULL,
     "teamDomain" character varying(255) NOT NULL,
-    installation jsonb NOT NULL,
+    installation text NOT NULL,
     "connectedAt" timestamp with time zone NOT NULL
 );
 
@@ -2747,7 +2747,7 @@ ALTER SEQUENCE public.team_domains_id_seq OWNED BY public.team_domains.id;
 CREATE TABLE public.team_invites (
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "expiresAt" timestamp with time zone NOT NULL,
-    secret character varying(20) NOT NULL,
+    secret text NOT NULL,
     "teamId" bigint NOT NULL,
     email character varying(255) NOT NULL,
     "userLevel" text NOT NULL,
@@ -6921,7 +6921,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict POaje5UqwSBHz8IocaWxd6FBjTG5mkh72soPSwfVwRNziN8kQJlAfatyKMyCPjJ
+\unrestrict xhY2QlhdRUQ4n96wQomH08kpv2yUmz1qgvyJMKgbY2d82H4GC6Fi7SwbQIy4Csf
 
 -- Knex migrations
 
@@ -7193,3 +7193,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261029145630_media-version-poster-ready.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103125834_scim-user-created.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103223358_normalize-comment-reaction-emoji.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104100038_prepare-secret-encryption.js', 1, NOW());

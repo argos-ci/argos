@@ -1,8 +1,15 @@
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
-import { Model, type JSONSchema, type RelationMappings } from "objection";
+import {
+  Model,
+  type DatabaseJsonOptions,
+  type JSONSchema,
+  type Pojo,
+  type RelationMappings,
+} from "objection";
 import { z } from "zod";
 
 import { generateRandomString } from "../services/crypto";
+import { decrypt, encryptDeterministic } from "../services/encrypt";
 import { Team } from "./Team";
 import { User } from "./User";
 
@@ -41,6 +48,23 @@ export class TeamInvite extends Model {
   teamId!: string;
   userLevel!: z.infer<typeof TeamUserLevelSchema>;
   invitedById!: string;
+
+  // This model extends Objection's Model directly (no `id`, no `updatedAt`),
+  // so the encryption hooks of our base Model do not apply.
+  override $formatDatabaseJson(json: Pojo): Pojo {
+    json = super.$formatDatabaseJson(json);
+    if (typeof json["secret"] === "string") {
+      json["secret"] = encryptDeterministic(json["secret"]);
+    }
+    return json;
+  }
+
+  override $parseDatabaseJson(json: Pojo, options?: DatabaseJsonOptions): Pojo {
+    if (typeof json["secret"] === "string") {
+      json["secret"] = decrypt(json["secret"]);
+    }
+    return super.$parseDatabaseJson(json, options);
+  }
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -162,6 +162,8 @@ export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
 export class Account extends Model {
   static override tableName = "accounts";
 
+  static override encryptedAttributes = ["gitlabAccessToken"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

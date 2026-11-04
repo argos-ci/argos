@@ -31,6 +31,7 @@ import {
   checkCanBillAddOns,
   checkIsYearlyPlan,
 } from "@/database/services/add-ons";
+import { encryptDeterministic } from "@/database/services/encrypt";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -98,6 +99,15 @@ import { commonAccountResolvers } from "./Account";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
+
+/**
+ * Invite secrets are written encrypted, but rows from before this release stay
+ * plaintext until the data migration of the next one runs: match both forms
+ * until then.
+ */
+function inviteSecretCandidates(secret: string) {
+  return [encryptDeterministic(secret), secret];
+}
 
 export const typeDefs = gql`
   enum TeamMembersOrderBy {
@@ -968,7 +978,8 @@ export const resolvers: IResolvers = {
     teamInvite: async (_root, args) => {
       const team = await Team.query()
         .withGraphFetched("account")
-        .findOne({ inviteSecret: args.secret });
+        .whereIn("inviteSecret", inviteSecretCandidates(args.secret))
+        .first();
 
       if (team) {
         invariant(team.account, "Team account not loaded");
@@ -979,7 +990,7 @@ export const resolvers: IResolvers = {
     },
     invite: async (_root, args) => {
       const teamInvite = await TeamInvite.query()
-        .where("secret", args.secret)
+        .whereIn("secret", inviteSecretCandidates(args.secret))
         .whereRaw(`"expiresAt" > now()`)
         .first();
 
@@ -1216,7 +1227,8 @@ export const resolvers: IResolvers = {
 
       const team = await Team.query()
         .withGraphFetched("account")
-        .findOne({ inviteSecret: args.secret });
+        .whereIn("inviteSecret", inviteSecretCandidates(args.secret))
+        .first();
 
       invariant(team, "Invalid invite secret");
       invariant(team.account, "Team account not loaded");
@@ -1255,7 +1267,7 @@ export const resolvers: IResolvers = {
     },
     acceptInvite: async (_root, args, ctx) => {
       const teamInvite = await TeamInvite.query()
-        .where("secret", args.secret)
+        .whereIn("secret", inviteSecretCandidates(args.secret))
         .whereRaw(`"expiresAt" > now()`)
         .withGraphFetched("team.account")
         .first();

@@ -97,6 +97,14 @@ describe("inviteTeamMembers", () => {
     expect(sendEmailTemplate.mock.calls[0]?.[0]).toMatchObject({
       template: "team_invite",
     });
+    // The secret is stored encrypted: the link must carry the clear one.
+    const emailedPaths = sendEmailTemplate.mock.calls.map(([input]) => {
+      invariant(input.template === "team_invite", "Unexpected template");
+      return new URL(input.data.invite.url).pathname;
+    });
+    expect(emailedPaths.sort()).toEqual(
+      stored.map((invite) => `/invites/${invite.secret}`).sort(),
+    );
   });
 
   it("lower-cases the invited addresses", async () => {
