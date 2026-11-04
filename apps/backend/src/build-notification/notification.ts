@@ -107,6 +107,17 @@ async function getStatusContext(input: {
 }
 
 /**
+ * Nobody is asked to review a merge queue build: a pending status would hold
+ * the queue until it times out, so its changes always report a failure.
+ */
+export function getAwaitingReviewStatus(input: {
+  project: Project;
+  mergeQueue: boolean;
+}): Project["awaitingReviewStatus"] {
+  return input.mergeQueue ? "failure" : input.project.awaitingReviewStatus;
+}
+
+/**
  * Get the notification status for each platform based on the build
  * notification type and if it's an auto-approved build.
  */
@@ -272,7 +283,10 @@ export async function getNotificationPayload(args: {
   const states = getNotificationStates({
     buildNotificationType: buildNotification.type,
     buildType: build.type,
-    awaitingReviewStatus: project.awaitingReviewStatus,
+    awaitingReviewStatus: getAwaitingReviewStatus({
+      project,
+      mergeQueue: build.mergeQueue,
+    }),
   });
   const [context, buildUrl] = await Promise.all([
     getStatusContext({ build, project }),

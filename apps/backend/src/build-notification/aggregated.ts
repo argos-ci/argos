@@ -6,6 +6,7 @@ import type { Project } from "@/database/models/Project";
 import { ScreenshotBucket } from "@/database/models/ScreenshotBucket";
 
 import {
+  getAwaitingReviewStatus,
   getNotificationStates,
   type NotificationPayload,
 } from "./notification";
@@ -48,7 +49,7 @@ export async function getAggregatedNotificationPayload(args: {
 
   const [siblingBuilds, projectUrl] = await Promise.all([
     Build.query()
-      .select("builds.id")
+      .select("builds.id", "builds.mergeQueue")
       .whereIn("builds.id", queryCommitBuildIds({ project, commit }))
       .distinctOn("builds.name")
       .orderBy("builds.name")
@@ -102,7 +103,10 @@ export async function getAggregatedNotificationPayload(args: {
   const states = getNotificationStates({
     buildNotificationType: type,
     buildType,
-    awaitingReviewStatus: project.awaitingReviewStatus,
+    awaitingReviewStatus: getAwaitingReviewStatus({
+      project,
+      mergeQueue: siblingBuilds.some((build) => build.mergeQueue),
+    }),
   });
   const base = {
     context: "argos/summary",

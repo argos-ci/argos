@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { test as base, describe, expect } from "vitest";
 
 import type { Project } from "@/database/models";
@@ -279,6 +280,61 @@ describe("#getAggregatedNotificationPayload", () => {
         gitlab: { state: "success" },
         origin: { status: "completed", conclusion: "success" },
         url: await project.getUrl(),
+      });
+    });
+  });
+
+  describe("with changes awaiting review on a pending project", () => {
+    async function getSummaryStates(input: {
+      project: Project;
+      commit: string;
+      mergeQueue: boolean;
+    }) {
+      const project = await input.project
+        .$query()
+        .patchAndFetch({ awaitingReviewStatus: "pending" });
+      const compareBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        commit: input.commit,
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        baseScreenshotBucketId: null,
+        compareScreenshotBucketId: compareBucket.id,
+        mergeQueue: input.mergeQueue,
+      });
+      await factory.BuildNotification.create({
+        buildId: build.id,
+        type: "diff-detected",
+      });
+      const notification = await getAggregatedNotificationPayload({
+        project,
+        commit: input.commit,
+        buildType: "check",
+        summaryCheckConfig: "always",
+      });
+      invariant(notification);
+      const { github, gitlab, origin } = notification;
+      return { github, gitlab, origin };
+    }
+
+    test("reports a pending status", async ({ project, commit }) => {
+      expect(
+        await getSummaryStates({ project, commit, mergeQueue: false }),
+      ).toEqual({
+        github: { state: "pending" },
+        gitlab: { state: "running" },
+        origin: { status: "in_progress", conclusion: null },
+      });
+    });
+
+    test("reports a failure in a merge queue", async ({ project, commit }) => {
+      expect(
+        await getSummaryStates({ project, commit, mergeQueue: true }),
+      ).toEqual({
+        github: { state: "failure" },
+        gitlab: { state: "failed" },
+        origin: { status: "completed", conclusion: "failure" },
       });
     });
   });
