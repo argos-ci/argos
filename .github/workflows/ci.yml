@@ -15,8 +15,18 @@ on:
 env:
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+# The organization's plan runs 20 jobs at once, across every repository, and a
+# run takes 10. A pull request pushed again cancels its previous run instead of
+# queueing behind it. Pushes to `main` each get a group of their own: every
+# commit there needs its Argos builds, the baselines of later pull requests.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+# Short checks share a job with the others needing the same install and build:
+# each job spends a minute on checkout, install and build before running any.
 jobs:
-  static-analysis:
+  static-analysis-and-unit-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -28,39 +38,25 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Build
+        id: build
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run static checks
         run: pnpm exec -- turbo run static-checks
 
-  unit-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      NODE_ENV: test
-      TZ: UTC
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-deps
-
-      - name: Build
-        run: pnpm exec -- turbo run build --filter=\!@argos/frontend
-
       - name: Run unit tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm run test:unit
+        env:
+          NODE_ENV: test
+          TZ: UTC
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-  storybook-test:
+  storybook:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NODE_ENV: test
-      TZ: UTC
       ARGOS_TOKEN: ${{ secrets.ARGOS_STORYBOOK_TOKEN }}
 
     steps:
@@ -71,6 +67,7 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Setup
+        id: setup
         run: pnpm run build
         env:
           BUILD_MODE: production
@@ -80,29 +77,21 @@ jobs:
 
       - name: Run Storybook tests
         run: pnpm --dir apps/frontend run test-storybook
-
-  storybook-publish:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      ARGOS_TOKEN: ${{ secrets.ARGOS_STORYBOOK_TOKEN }}
-
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-deps
-
-      - name: Setup
-        run: pnpm run build
+        # Not job-wide: `storybook build` defaults NODE_ENV to production only
+        # when it is unset.
         env:
-          BUILD_MODE: production
+          NODE_ENV: test
+          TZ: UTC
 
+      # Published even when a story fails, so it can be looked at in the
+      # deployed Storybook.
       - name: Build Storybook
+        id: build-storybook
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: pnpm --dir apps/frontend run build-storybook
 
       - name: Publish Storybook to Argos
+        if: ${{ !cancelled() && steps.build-storybook.outcome == 'success' }}
         run: pnpm --dir apps/frontend run deploy-storybook
 
   integration-test:
@@ -187,6 +176,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
+      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.64.1-jammy
 
     services:
       redis:
@@ -227,6 +217,12 @@ jobs:
           - 5672:5672
 
     steps:
+      # A `docker://` step would pull the image before the job's first step,
+      # holding everything up for half a minute. Pulled in the background, it
+      # downloads while dependencies install and the app builds.
+      - name: Pull Playwright image
+        run: docker pull --quiet "$PLAYWRIGHT_IMAGE" > /dev/null 2>&1 &
+
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -238,16 +234,44 @@ jobs:
         env:
           BUILD_MODE: production
 
+      # The workspace and RUNNER_TEMP are mounted at their own paths, so the
+      # GITHUB_* variables pointing into them — the event payload the Argos
+      # reporter reads, for one — resolve inside the container too.
       - name: Run Playwright tests
-        uses: docker://mcr.microsoft.com/playwright:v1.64.1-jammy
-        with:
-          # Fix for Firefox, HOME=/root is required to avoid permission issues
-          # https://github.com/microsoft/playwright/issues/6500
-          args: env HOME=/root npm run test:e2e -- --shard=${{ matrix.shard }}/3
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
           AMQP_URL: amqp://rabbitmq
+          NETWORK: ${{ job.services.postgres.network }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          # Joins the background pull, or retries it if it failed.
+          docker pull --quiet "$PLAYWRIGHT_IMAGE"
+          github_env=()
+          for name in $(compgen -e | grep '^GITHUB_'); do
+            github_env+=(--env "$name")
+          done
+          # HOME=/root: Firefox fails on permissions otherwise
+          # https://github.com/microsoft/playwright/issues/6500
+          docker run --rm \
+            --network "$NETWORK" \
+            --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
+            --workdir "$GITHUB_WORKSPACE" \
+            "${github_env[@]}" \
+            --env CI \
+            --env HOME=/root \
+            --env API_BASE_URL \
+            --env NODE_ENV \
+            --env TZ \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            --env ARGOS_TOKEN \
+            --env REDIS_URL \
+            --env DATABASE_URL \
+            --env AMQP_URL \
+            "$PLAYWRIGHT_IMAGE" \
+            npm run test:e2e -- --shard="$SHARD/3"
 
   # The image only gets built on release otherwise, so a file the runtime stage
   # forgets to copy would first show up as a failed deploy.
@@ -259,17 +283,11 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
+      # The runner's Docker builds with BuildKit already. A buildx builder, as in
+      # the release workflow, is only worth it for a registry cache: here it
+      # cost ~45s to export the image back into Docker and tear itself down.
       - name: Build image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          target: runtime
-          load: true
-          tags: argos:ci
-          build-args: |
-            ASSETS_BASE_URL=https://assets.argos-ci.com
+        run: docker build --target runtime --tag argos:ci --build-arg ASSETS_BASE_URL=https://assets.argos-ci.com .
 
       - name: Check image
         run: scripts/check-image.sh argos:ci
@@ -279,9 +297,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       [
-        unit-test,
-        storybook-test,
-        storybook-publish,
+        static-analysis-and-unit-test,
+        storybook,
         integration-test,
         e2e-test,
         docker-image,
@@ -291,9 +308,8 @@ jobs:
     steps:
       - name: Fail if any test job failed or was cancelled
         run: |
-          if [ "${{ needs.unit-test.result }}" != "success" ] || \
-             [ "${{ needs.storybook-test.result }}" != "success" ] || \
-             [ "${{ needs.storybook-publish.result }}" != "success" ] || \
+          if [ "${{ needs.static-analysis-and-unit-test.result }}" != "success" ] || \
+             [ "${{ needs.storybook.result }}" != "success" ] || \
              [ "${{ needs.integration-test.result }}" != "success" ] || \
              [ "${{ needs.e2e-test.result }}" != "success" ] || \
              [ "${{ needs.docker-image.result }}" != "success" ]; then
