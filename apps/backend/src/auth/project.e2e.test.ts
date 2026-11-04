@@ -1,5 +1,6 @@
 import { test as base, beforeEach, describe, expect, vi } from "vitest";
 
+import { knex } from "@/database/knex";
 import type { Project as ProjectModel } from "@/database/models";
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -60,6 +61,19 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
         token: "project-token",
       },
     });
+  });
+
+  test("refuses the encrypted token as stored in the database", async ({
+    project,
+  }) => {
+    const { token: storedToken } = await knex("projects")
+      .where("id", project.id)
+      .first<{ token: string }>("token");
+    expect(storedToken).not.toBe("project-token");
+
+    await expect(
+      getAuthProjectPayloadFromBearerToken(storedToken),
+    ).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test("returns the auth payload for a matching short-lived project token", async ({
