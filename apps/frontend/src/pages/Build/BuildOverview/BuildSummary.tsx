@@ -6,17 +6,11 @@ import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { ShortcutHint } from "@/ui/ShortcutHint";
 
-import {
-  getReviewableCount,
-  useBuildDiffState,
-  useGoToNextDiff,
-} from "../BuildDiffState";
+import { useBuildDiffState, useGoToNextDiff } from "../BuildDiffState";
 import { useCanReviewBuild } from "../BuildReviewability";
 import { BuildSummaryDescription } from "./BuildSummaryDescription";
 import { ChangeSummary } from "./ChangeSummary";
 import { OrphanNextSteps } from "./OrphanNextSteps";
-import perfectMatchDarkUrl from "./perfect-match-2-dark.png";
-import perfectMatchUrl from "./perfect-match-2.png";
 import { SummaryBuildTitle } from "./SummaryBuildTitle";
 
 const _BuildFragment = graphql(`
@@ -81,47 +75,26 @@ function BrowseSnapshotSection(props: { build: Build }) {
   );
 }
 
-function PerfectMatchIllustration() {
-  return (
-    <div className="max-w-xl">
-      <img src={perfectMatchUrl} alt="perfect match" className="dark:hidden" />
-      <img
-        src={perfectMatchDarkUrl}
-        alt="perfect match dark"
-        className="hidden dark:block"
-      />
-    </div>
-  );
-}
-
 export function BuildSummary(props: { build: Build }) {
   const { build } = props;
-  const { stats, isSubsetBuild } = useBuildDiffState();
+  const { stats } = useBuildDiffState();
   const hasFailures = Boolean(stats?.failure);
-  const reviewableCount = stats
-    ? getReviewableCount(stats, { isSubsetBuild })
-    : 0;
   const canReview = useCanReviewBuild(build);
   // Failing tests take precedence over the visual review, so the change summary
   // steps aside for the failure-focused description.
   const showReviewInsights = canReview && !hasFailures;
-  const perfectMatch = reviewableCount === 0 && !hasFailures;
   const isOrphan = build.type === BuildType.Orphan;
   const hasSnapshots = (stats?.total ?? 0) > 0;
 
   return (
-    <section className="flex flex-col gap-10 pt-4">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col">
-          <SummaryBuildTitle build={build} hasFailures={hasFailures} />
-          <BuildSummaryDescription build={build} canReview={canReview} />
-        </div>
-        {showReviewInsights && <ChangeSummary build={build} />}
-        {isOrphan && <OrphanNextSteps build={build} />}
-        {hasSnapshots && <BrowseSnapshotSection build={build} />}
+    <section className="flex flex-col gap-6 pt-4">
+      <div className="flex flex-col">
+        <SummaryBuildTitle build={build} hasFailures={hasFailures} />
+        <BuildSummaryDescription build={build} canReview={canReview} />
       </div>
-
-      {perfectMatch && !isOrphan && <PerfectMatchIllustration />}
+      {showReviewInsights && <ChangeSummary build={build} />}
+      {isOrphan && <OrphanNextSteps build={build} />}
+      {hasSnapshots && <BrowseSnapshotSection build={build} />}
     </section>
   );
 }
