@@ -738,6 +738,17 @@ export function createConfig() {
 
   config.validate();
 
+  // The default key is in this file, so secrets encrypted with it are as good
+  // as plaintext. And `decrypt` returns what it cannot decrypt instead of
+  // throwing, so without this check a missing key would only show up later, as
+  // integrations sending ciphertext in place of their tokens.
+  if (
+    config.get("env") === "production" &&
+    config.get("encryption.key") === config.default("encryption.key")
+  ) {
+    throw new Error("ENCRYPTION_KEY must be set in production.");
+  }
+
   // Credentials that write *outside* Postgres, so the read-only role cannot
   // fence them. "Set" means overridden from the schema default.
   const writeCapableSecrets = (
