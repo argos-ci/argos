@@ -3,8 +3,10 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { describe, expect, test } from "vitest";
 
+import { knex } from "@/database/knex";
 import {
   type Account,
+  Team,
   TeamInvite,
   TeamUser,
   type User,
@@ -142,6 +144,49 @@ describe("acceptInvite signed in", () => {
         userId: viewer.user.id,
         verified: true,
       });
+    },
+  );
+});
+
+describe("invite secrets", () => {
+  withInvite(
+    "refuses the encrypted secrets as stored in the database",
+    async ({ teamAccount, invite }) => {
+      invariant(teamAccount.teamId, "team account has no team");
+      await Team.query()
+        .findById(teamAccount.teamId)
+        .patch({ inviteSecret: Team.generateInviteSecret() });
+      const [storedInvite, storedTeam] = await Promise.all([
+        knex("team_invites")
+          .where({ teamId: invite.teamId, email: invite.email })
+          .first<{ secret: string }>("secret"),
+        knex("teams")
+          .where({ id: teamAccount.teamId })
+          .first<{ inviteSecret: string }>("inviteSecret"),
+      ]);
+      expect(storedInvite.secret).not.toBe(invite.secret);
+
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        null,
+      );
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: `
+            query ($invite: String!, $team: String!) {
+              invite(secret: $invite) { email }
+              teamInvite(secret: $team) { id }
+            }
+          `,
+          variables: {
+            invite: storedInvite.secret,
+            team: storedTeam.inviteSecret,
+          },
+        });
+      expectNoGraphQLError(res);
+      expect(res.body.data).toEqual({ invite: null, teamInvite: null });
     },
   );
 });
