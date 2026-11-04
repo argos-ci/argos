@@ -229,6 +229,13 @@ loggedTest(
       /375×812.*Chromium/,
       /1280×720.*Chromium/,
     ]);
+    // Journeys come by file, as a pull request shows them, each file saying
+    // how many of its journeys are left to review.
+    const checkoutFile = page.getByRole("listitem").filter({
+      has: page.getByRole("heading", { level: 3, name: /^checkout\.spec\.ts/ }),
+    });
+    await expect(checkoutFile).toContainText("e2e/checkout.spec.ts");
+    await expect(checkoutFile).toContainText("1 to review");
     await expect(walkLink("complete a purchase").first()).toHaveAccessibleName(
       /375×812/,
     );
@@ -249,6 +256,11 @@ loggedTest(
     ).toBeVisible();
     await expect(walkLink("shows the home page")).toHaveCount(0);
 
+    // Opening the unchanged journeys scrolled the page: the capture starts at
+    // the section's heading.
+    await page
+      .getByRole("heading", { name: "Journeys", exact: true })
+      .evaluate((element) => element.scrollIntoView({ block: "start" }));
     await screenshot(page, "build-overview-journeys", {
       replacements: { [team.account.slug]: "acme" },
     });
@@ -262,7 +274,10 @@ loggedTest(
       page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
     await expect(heading("cart")).toBeVisible();
     await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
-    const journeyHeader = page.getByRole("region", { name: "Journey" });
+    const journeyHeader = page.getByRole("region", {
+      name: "Journey",
+      exact: true,
+    });
     await expect(journeyHeader).toContainText("complete a purchase");
     await expect(journeyHeader).toContainText("1280×720");
     const drawer = page.getByTestId("journey-drawer");

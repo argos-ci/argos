@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ChevronDownIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { ChevronRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import {
@@ -19,7 +19,7 @@ import {
 } from "@/gql/graphql";
 import { Details } from "@/ui/Details";
 import { HeadlessLink } from "@/ui/Link";
-import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
+import { getSurfaceClassName } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
 import { buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
@@ -40,7 +40,10 @@ import {
   viewportIcons,
 } from "../metadata/metadataIcons";
 import { formatViewport } from "../metadata/viewports/util";
-import { getLocationURL } from "../sidebar/metadata/LocationChip";
+import {
+  getRepositoryFileURL,
+  getRepositoryPath,
+} from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
 
 const _JourneyFragment = graphql(`
@@ -338,32 +341,34 @@ function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   );
 }
 
-/**
- * The build's end-to-end tests that walk several screens, each run as a strip
- * of its screens. A run opens the build on its first screen with the journey
- * filter on, a screen opens it on that screen: the review then walks the
- * journey screen by screen, the way a user clicks through the app.
- */
 /** The overview anchor of a journey, where walking it leads back to. */
 export function getJourneyAnchor(journeyId: string): string {
   return `journey-${journeyId}`;
 }
 
+/**
+ * The build's end-to-end tests that walk several screens, by file, each run
+ * as a card. A run opens the build on its first screen with the journey
+ * filter on, a screen opens it on that screen: the review then walks the
+ * journey screen by screen, the way a user clicks through the app.
+ *
+ * A section of the page rather than a panel among others: when a build has
+ * journeys, they are what its review goes through.
+ */
 export function JourneysSection(props: {
   build: Build;
   repoUrl: string | null;
 }) {
   const { build, repoUrl } = props;
   const { hash } = useLocation();
+  const headingId = useId();
   const tests = getJourneyTests(build.journeys, {
     isSubsetBuild: build.subset,
   });
   const checkIsWalked = (test: JourneyTest) =>
     test.runs.some((run) => `#${getJourneyAnchor(run.journey.id)}` === hash);
-  const changed = groupByPrefix(tests.filter((test) => test.changedCount > 0));
-  const unchanged = groupByPrefix(
-    tests.filter((test) => test.changedCount === 0),
-  );
+  const changed = tests.filter((test) => test.changedCount > 0);
+  const unchanged = tests.filter((test) => test.changedCount === 0);
   // Open with nothing else to walk, or back from an unchanged journey.
   const [showUnchanged, setShowUnchanged] = useState(
     () => changed.length === 0 || unchanged.some(checkIsWalked),
@@ -371,99 +376,200 @@ export function JourneysSection(props: {
   if (tests.length === 0) {
     return null;
   }
-  // Every changed journey is review work: all of them show. The unchanged
-  // ones wait in a folded section.
+  const fileContext = { repoUrl, branch: build.branch };
   const listProps = {
     checkIsWalked,
-    repoUrl,
-    branch: build.branch,
     reviewBlocker: getBuildReviewBlocker(build),
   };
   return (
     <>
       {changed.length > 0 ? (
-        <Panel elevation={0} className="pb-4">
-          <PanelHeader className="mb-3">
-            <PanelTitle icon={WaypointsIcon}>Journeys</PanelTitle>
-            <span className="text-low text-xs tabular-nums">
-              {plural(changed.length, "journey")}
-            </span>
-          </PanelHeader>
-          <JourneyTestList tests={changed} {...listProps} />
-        </Panel>
-      ) : null}
-      {/* A section of their own, below the journeys to review, folded:
-          nothing there needs a look. Its header is the panel header of the
-          other sections, with a chevron always shown: folded, the panel is
-          nothing but that header, and has to say it opens. */}
-      {unchanged.length > 0 ? (
-        <Panel elevation={0} spacing={false}>
-          <Details
-            open={showUnchanged}
-            onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
+        <section aria-labelledby={headingId} className="flex flex-col">
+          <h2
+            id={headingId}
+            className="flex items-center gap-2 text-lg font-semibold tracking-tight"
           >
-            <summary className="group/summary focus-ring text-low hover:bg-ui hover:text-default flex h-11 cursor-default list-none items-center justify-between gap-4 rounded-xl pr-3 pl-4 transition [details[open]>&]:rounded-b-none">
-              <PanelTitle
-                icon={UnchangedIcon}
-                className="group-hover/summary:text-default transition"
-              >
-                Unchanged journeys
-              </PanelTitle>
-              <span className="flex items-center gap-2 text-xs tabular-nums">
-                {plural(unchanged.length, "journey")}
-                <ChevronDownIcon className="size-4 transition [details[open]>summary_&]:rotate-180" />
-              </span>
-            </summary>
-            {showUnchanged ? (
-              <JourneyTestList
-                tests={unchanged}
-                className="pb-4"
-                {...listProps}
-              />
-            ) : null}
-          </Details>
-        </Panel>
+            <WaypointsIcon
+              className="text-primary-low size-5 shrink-0"
+              strokeWidth={1.75}
+            />
+            Journeys
+          </h2>
+          <p className="text-low mt-0.5 text-sm">
+            Tests that walk several screens. Open one to review its screens in
+            order.
+          </p>
+          <JourneyFileList
+            files={groupByFile(changed, fileContext)}
+            className="mt-4"
+            {...listProps}
+          />
+        </section>
+      ) : null}
+      {/* Nothing there needs a look: folded, under a heading that says it
+          opens. */}
+      {unchanged.length > 0 ? (
+        <Details
+          open={showUnchanged}
+          onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
+        >
+          <summary className="focus-ring text-low hover:text-default flex cursor-default list-none items-center gap-1.5 rounded-md transition">
+            <ChevronRightIcon className="size-4.5 shrink-0 transition [details[open]>summary_&]:rotate-90" />
+            <h2 className="text-lg font-semibold tracking-tight">
+              Unchanged journeys
+            </h2>
+            <span className="ml-auto text-sm tabular-nums">
+              {plural(unchanged.length, "journey")}
+            </span>
+          </summary>
+          {showUnchanged ? (
+            <JourneyFileList
+              files={groupByFile(unchanged, fileContext)}
+              className="mt-4"
+              {...listProps}
+            />
+          ) : null}
+        </Details>
       ) : null}
     </>
   );
 }
 
-const UnchangedIcon = getDiffGroupDefinition(
-  ScreenshotDiffStatus.Unchanged,
-).icon;
+type JourneyFile = {
+  key: string;
+  /** The file name, or the title path when the test has no location. */
+  name: string;
+  /** Where the file sits in the repository, when it says more than its name. */
+  path: string | null;
+  href: string | null;
+  tests: JourneyTest[];
+};
 
 /**
- * Journeys grouped by file. A rule only between files: within one, a title
- * sits close to its cards and far from the ones above, and the file opens its
- * group.
+ * `tests` by the file that holds them, the files in the order their first
+ * test comes in: the most changed first, as `tests` is sorted.
  */
-function JourneyTestList(props: {
-  tests: JourneyTest[];
+function groupByFile(
+  tests: JourneyTest[],
+  context: { repoUrl: string | null; branch: string | null },
+): JourneyFile[] {
+  const files = new Map<string, JourneyFile>();
+  for (const test of tests) {
+    const path = test.location ? getRepositoryPath(test.location.file) : null;
+    const key = path ?? test.prefix;
+    const file = files.get(key) ?? {
+      key,
+      name: path ? path.split("/").pop() || path : test.prefix,
+      path: path?.includes("/") ? path : null,
+      href: path ? getRepositoryFileURL({ file: path, ...context }) : null,
+      tests: [],
+    };
+    files.set(key, file);
+    file.tests.push(test);
+  }
+  return Array.from(files.values());
+}
+
+/**
+ * What the title path says about a test besides its file: `describe` blocks,
+ * a Playwright project. Cypress leaves the file out of it, Playwright puts it
+ * in, relative to its test directory.
+ */
+function getTestContext(test: JourneyTest, file: JourneyFile): string | null {
+  if (!test.location) {
+    // The file is named after the title path itself.
+    return null;
+  }
+  const filePath = file.path ?? file.name;
+  const context = test.prefix
+    .split(" › ")
+    .filter((segment) => segment && !filePath.endsWith(segment));
+  return context.length > 0 ? context.join(" › ") : null;
+}
+
+function checkNeedsReview(
+  test: JourneyTest,
+  statuses: Record<string, EvaluationStatus>,
+): boolean {
+  const diffs = getChangedDiffs(test.runs);
+  return diffs.length > 0 && getReviewMark(diffs, statuses) === null;
+}
+
+function JourneyFileList(props: {
+  files: JourneyFile[];
   checkIsWalked: (test: JourneyTest) => boolean;
-  repoUrl: string | null;
-  branch: string | null;
   reviewBlocker: ReviewBlocker;
   className?: string;
 }) {
-  const { tests, checkIsWalked, repoUrl, branch, reviewBlocker } = props;
+  const { files, ...itemProps } = props;
   return (
-    <ul className={clsx("flex flex-col gap-8", props.className)}>
-      {tests.map((test, index) => {
-        const opensGroup =
-          index === 0 || tests[index - 1]?.prefix !== test.prefix;
-        return (
+    <ul className={clsx("flex flex-col gap-6", props.className)}>
+      {files.map((file) => (
+        <JourneyFileCard key={file.key} file={file} {...itemProps} />
+      ))}
+    </ul>
+  );
+}
+
+/** A test file and its journeys, as a pull request review shows a file. */
+function JourneyFileCard(props: {
+  file: JourneyFile;
+  checkIsWalked: (test: JourneyTest) => boolean;
+  reviewBlocker: ReviewBlocker;
+}) {
+  const { file, checkIsWalked, reviewBlocker } = props;
+  const statuses = useReviewStatuses();
+  const toReviewCount = reviewBlocker
+    ? 0
+    : file.tests.filter((test) => checkNeedsReview(test, statuses)).length;
+  const fileLabel = (
+    <>
+      <span className="shrink-0 text-sm font-medium">{file.name}</span>{" "}
+      {file.path ? (
+        <span className="text-low truncate text-xs">{file.path}</span>
+      ) : null}
+    </>
+  );
+  return (
+    <li className={getSurfaceClassName({ elevation: 0 })}>
+      {/* Stuck to the top while its journeys scroll by, so a long file keeps
+          saying which one it is. */}
+      <div className="bg-app border-b-thin sticky top-0 z-10 flex h-11 items-center gap-2 rounded-t-xl px-4">
+        <FileCodeIcon className="text-low size-4 shrink-0" />
+        <h3 className="flex min-w-0">
+          {file.href ? (
+            <a
+              href={file.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-ring flex min-w-0 items-baseline gap-2 rounded-xs hover:underline"
+            >
+              {fileLabel}
+            </a>
+          ) : (
+            <span className="flex min-w-0 items-baseline gap-2">
+              {fileLabel}
+            </span>
+          )}
+        </h3>
+        {toReviewCount > 0 ? (
+          <span className="text-low ml-auto shrink-0 text-xs tabular-nums">
+            {toReviewCount} to review
+          </span>
+        ) : null}
+      </div>
+      <ul className="flex flex-col gap-8 px-4 pt-4 pb-5">
+        {file.tests.map((test) => (
           <JourneyTestItem
             key={test.key}
             test={test}
-            showPrefix={opensGroup}
+            context={getTestContext(test, file)}
             scrollIntoView={checkIsWalked(test)}
             reviewBlocker={reviewBlocker}
-            className={clsx(opensGroup && index > 0 && "border-t-thin pt-6")}
-            href={getLocationURL({ location: test.location, repoUrl, branch })}
           />
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </li>
   );
 }
 
@@ -498,31 +604,15 @@ function getChangedScreens(test: JourneyTest): NamedScreen[] {
   return Array.from(byLabel.values()).sort((a, b) => a.index - b.index);
 }
 
-/**
- * `tests` grouped by file and describe blocks, the groups in the order their
- * first test comes in, so the most changed first as `tests` is sorted.
- */
-function groupByPrefix(tests: JourneyTest[]): JourneyTest[] {
-  const groups = new Map<string, JourneyTest[]>();
-  for (const test of tests) {
-    const group = groups.get(test.prefix) ?? [];
-    groups.set(test.prefix, group);
-    group.push(test);
-  }
-  return Array.from(groups.values()).flat();
-}
-
 function JourneyTestItem(props: {
   test: JourneyTest;
-  href: string | null;
-  /** Whether the test opens a group of the same file, which names it. */
-  showPrefix: boolean;
+  /** What the title path says besides the file, shown before the title. */
+  context: string | null;
   /** Whether the review comes back from walking it, to show it first. */
   scrollIntoView: boolean;
   reviewBlocker: ReviewBlocker;
-  className?: string;
 }) {
-  const { test, href, showPrefix, scrollIntoView, reviewBlocker } = props;
+  const { test, context, scrollIntoView, reviewBlocker } = props;
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
     if (scrollIntoView) {
@@ -535,60 +625,33 @@ function JourneyTestItem(props: {
   const changedScreens = getChangedScreens(test);
   const namedScreens = changedScreens.slice(0, MAX_CHANGED_SCREEN_NAMES);
   return (
-    <li ref={ref} className={clsx("px-4", props.className)}>
-      <div className="flex items-start gap-4">
-        <div className="min-w-0 flex-1">
-          {test.prefix && showPrefix ? (
-            href ? (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-low hover:text-default flex w-fit max-w-full items-center gap-1 text-xs transition"
-              >
-                <FileCodeIcon className="size-3.5 shrink-0" />
-                <span className="truncate">{test.prefix}</span>
-              </a>
-            ) : (
-              <div className="text-low truncate text-xs">{test.prefix}</div>
-            )
-          ) : null}
-          <h3
-            className={clsx(
-              "text-sm/snug font-medium",
-              test.prefix && showPrefix && "mt-1.5",
-            )}
-          >
-            {test.title}
-            {mark ? (
-              <ReviewMark mark={mark} className="ml-1.5 align-[-0.125em]" />
-            ) : null}
-          </h3>
-          {namedScreens.length > 0 ? (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              {namedScreens.map((screen) => (
-                <HeadlessLink
-                  key={screen.label}
-                  href={getJourneyScreenURL(
-                    params,
-                    screen.journey,
-                    screen.diff,
-                  )}
-                  aria-label={`Screen ${screen.index + 1}, ${screen.label}, changed`}
-                  className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
-                >
-                  {screen.label}
-                </HeadlessLink>
-              ))}
-              {changedScreens.length > namedScreens.length ? (
-                <span className="text-low text-xxs px-0.5 tabular-nums">
-                  +{changedScreens.length - namedScreens.length}
-                </span>
-              ) : null}
-            </div>
+    <li ref={ref}>
+      <h4 className="text-sm/snug font-medium">
+        {context ? <span className="text-low">{context} › </span> : null}
+        {test.title}
+        {mark ? (
+          <ReviewMark mark={mark} className="ml-1.5 align-[-0.125em]" />
+        ) : null}
+      </h4>
+      {namedScreens.length > 0 ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+          {namedScreens.map((screen) => (
+            <HeadlessLink
+              key={screen.label}
+              href={getJourneyScreenURL(params, screen.journey, screen.diff)}
+              aria-label={`Screen ${screen.index + 1}, ${screen.label}, changed`}
+              className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
+            >
+              {screen.label}
+            </HeadlessLink>
+          ))}
+          {changedScreens.length > namedScreens.length ? (
+            <span className="text-low text-xxs px-0.5 tabular-nums">
+              +{changedScreens.length - namedScreens.length}
+            </span>
           ) : null}
         </div>
-      </div>
+      ) : null}
       <JourneyLineup test={test} reviewBlocker={reviewBlocker} />
     </li>
   );
@@ -714,10 +777,7 @@ function JourneyRunItem(props: {
   const ColorSchemeIcon =
     test.showColorScheme && colorScheme ? colorSchemeIcons[colorScheme] : null;
   return (
-    <li className="relative isolate">
-      {/* A journey is a stack of screens: a card peeks out behind, like
-          similar snapshots in the list. */}
-      <div className="bg-hover absolute inset-0 -z-10 translate-x-1.5 translate-y-1.5 rounded-lg border" />
+    <li>
       {/* The whole card walks the journey from its start. */}
       <HeadlessLink
         href={getJourneyScreenURL(params, journey, firstScreen.diff)}

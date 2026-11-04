@@ -13,15 +13,38 @@ export interface LocationChipProps extends Pick<
   tooltip?: string;
 }
 
-/** Where `location` reads in the repository, when the build knows it. */
-export function getLocationURL(
+/**
+ * A test file's path in the repository. A GitHub Action running in a
+ * container reports it under the workspace mount.
+ */
+export function getRepositoryPath(file: string): string {
+  return file.replace(/^\/github\/workspace\//, "");
+}
+
+/** Where `file` reads in the repository, when the build knows it. */
+export function getRepositoryFileURL(
+  props: Pick<LocationChipProps, "repoUrl" | "branch"> & { file: string },
+): string | null {
+  const { file, repoUrl, branch } = props;
+  if (!repoUrl || !branch) {
+    return null;
+  }
+  return `${repoUrl}/blob/${branch}/${getRepositoryPath(file)}`;
+}
+
+function getLocationURL(
   props: Pick<LocationChipProps, "location" | "repoUrl" | "branch">,
 ): string | null {
   const { location, repoUrl, branch } = props;
-  if (!location || !repoUrl || !branch) {
+  if (!location) {
     return null;
   }
-  return `${repoUrl}/blob/${branch}/${location.file.replace(/^\/github\/workspace\//, "")}#L${location.line}`;
+  const fileURL = getRepositoryFileURL({
+    file: location.file,
+    repoUrl,
+    branch,
+  });
+  return fileURL ? `${fileURL}#L${location.line}` : null;
 }
 
 export function LocationChip(props: LocationChipProps) {
