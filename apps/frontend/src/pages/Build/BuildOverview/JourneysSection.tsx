@@ -40,6 +40,7 @@ import {
   viewportIcons,
 } from "../metadata/metadataIcons";
 import { formatViewport } from "../metadata/viewports/util";
+import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import {
   getRepositoryFileURL,
   getRepositoryPath,
@@ -437,10 +438,10 @@ export function JourneysSection(props: {
 
 type JourneyFile = {
   key: string;
+  /** The folders before the file name in its repository path. */
+  dir: string | null;
   /** The file name, or the title path when the test has no location. */
   name: string;
-  /** Where the file sits in the repository, when it says more than its name. */
-  path: string | null;
   href: string | null;
   tests: JourneyTest[];
 };
@@ -457,10 +458,11 @@ function groupByFile(
   for (const test of tests) {
     const path = test.location ? getRepositoryPath(test.location.file) : null;
     const key = path ?? test.prefix;
+    const nameStart = path ? path.lastIndexOf("/") + 1 : 0;
     const file = files.get(key) ?? {
       key,
-      name: path ? path.split("/").pop() || path : test.prefix,
-      path: path?.includes("/") ? path : null,
+      dir: path && nameStart > 0 ? path.slice(0, nameStart) : null,
+      name: path ? path.slice(nameStart) : test.prefix,
       href: path ? getRepositoryFileURL({ file: path, ...context }) : null,
       tests: [],
     };
@@ -480,19 +482,30 @@ function getTestContext(test: JourneyTest, file: JourneyFile): string | null {
     // The file is named after the title path itself.
     return null;
   }
-  const filePath = file.path ?? file.name;
+  const filePath = `${file.dir ?? ""}${file.name}`;
   const context = test.prefix
     .split(" › ")
     .filter((segment) => segment && !filePath.endsWith(segment));
   return context.length > 0 ? context.join(" › ") : null;
 }
 
-function checkNeedsReview(
-  test: JourneyTest,
+/** The viewer's review of a file's changed screens, as the build counts it. */
+function getFileReviewProgression(
+  file: JourneyFile,
   statuses: Record<string, EvaluationStatus>,
-): boolean {
-  const diffs = getChangedDiffs(test.runs);
-  return diffs.length > 0 && getReviewMark(diffs, statuses) === null;
+) {
+  const toReview = file.tests.flatMap((test) => getChangedDiffs(test.runs));
+  return {
+    toReview,
+    reviewed: toReview.filter(
+      (diff) =>
+        statuses[diff.id] === EvaluationStatus.Accepted ||
+        statuses[diff.id] === EvaluationStatus.Rejected,
+    ),
+    rejected: toReview.filter(
+      (diff) => statuses[diff.id] === EvaluationStatus.Rejected,
+    ),
+  };
 }
 
 function JourneyFileList(props: {
@@ -519,15 +532,12 @@ function JourneyFileCard(props: {
 }) {
   const { file, checkIsWalked, reviewBlocker } = props;
   const statuses = useReviewStatuses();
-  const toReviewCount = reviewBlocker
-    ? 0
-    : file.tests.filter((test) => checkNeedsReview(test, statuses)).length;
+  // The path once, the name standing out: when it is long, the folders give
+  // way first.
   const fileLabel = (
     <>
-      <span className="shrink-0 text-sm font-medium">{file.name}</span>{" "}
-      {file.path ? (
-        <span className="text-low truncate text-xs">{file.path}</span>
-      ) : null}
+      {file.dir ? <span className="text-low truncate">{file.dir}</span> : null}
+      <span className="shrink-0 font-medium">{file.name}</span>
     </>
   );
   return (
@@ -536,27 +546,33 @@ function JourneyFileCard(props: {
           saying which one it is. */}
       <div className="bg-app border-b-thin sticky top-0 z-10 flex h-11 items-center gap-2 rounded-t-xl px-4">
         <FileCodeIcon className="text-low size-4 shrink-0" />
-        <h3 className="flex min-w-0">
+        {/* Named by the path itself: as flex items, the folders and the name
+            would be read as two words. */}
+        <h3
+          aria-label={`${file.dir ?? ""}${file.name}`}
+          className="flex min-w-0"
+        >
           {file.href ? (
             <a
               href={file.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="focus-ring flex min-w-0 items-baseline gap-2 rounded-xs hover:underline"
+              className="focus-ring flex min-w-0 rounded-xs text-sm hover:underline"
             >
               {fileLabel}
             </a>
           ) : (
-            <span className="flex min-w-0 items-baseline gap-2">
-              {fileLabel}
-            </span>
+            <span className="flex min-w-0 text-sm">{fileLabel}</span>
           )}
         </h3>
-        {toReviewCount > 0 ? (
-          <span className="text-low ml-auto shrink-0 text-xs tabular-nums">
-            {toReviewCount} to review
-          </span>
-        ) : null}
+        {reviewBlocker ? null : (
+          <div className="ml-auto shrink-0">
+            <ReviewProgressBadge
+              scale="xs"
+              progression={getFileReviewProgression(file, statuses)}
+            />
+          </div>
+        )}
       </div>
       <ul className="flex flex-col gap-8 px-4 pt-4 pb-5">
         {file.tests.map((test) => (

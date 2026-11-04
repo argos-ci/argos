@@ -229,13 +229,16 @@ loggedTest(
       /375×812.*Chromium/,
       /1280×720.*Chromium/,
     ]);
-    // Journeys come by file, as a pull request shows them, each file saying
-    // how many of its journeys are left to review.
+    // Journeys come by file, as a pull request shows them, each file with
+    // the build's review progress for its changed screens.
     const checkoutFile = page.getByRole("listitem").filter({
-      has: page.getByRole("heading", { level: 3, name: /^checkout\.spec\.ts/ }),
+      has: page.getByRole("heading", {
+        level: 3,
+        name: "e2e/checkout.spec.ts",
+        exact: true,
+      }),
     });
-    await expect(checkoutFile).toContainText("e2e/checkout.spec.ts");
-    await expect(checkoutFile).toContainText("1 to review");
+    await expect(checkoutFile).toContainText(/0 \/ \d+ reviewed/);
     await expect(walkLink("complete a purchase").first()).toHaveAccessibleName(
       /375×812/,
     );
