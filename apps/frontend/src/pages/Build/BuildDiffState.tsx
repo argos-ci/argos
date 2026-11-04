@@ -473,7 +473,7 @@ function useGetPreviousDiff() {
 
 export function useGoToPreviousDiff() {
   const getPreviousDiff = useGetPreviousDiff();
-  const { setActiveDiff, activeDiff } = useBuildDiffState();
+  const { setActiveDiff, activeDiff, journeyMode } = useBuildDiffState();
   const params = useBuildParams();
   const navigate = useNavigate();
   return useEventCallback(() => {
@@ -482,8 +482,10 @@ export function useGoToPreviousDiff() {
       setActiveDiff(previousDiff, true);
       return;
     }
-    // From the first diff, going up returns to the build overview.
-    if (activeDiff && params) {
+    // From the first diff, going up returns to the build overview. Not from
+    // the first screen of a journey: the walk stops there, one keypress
+    // should not end it.
+    if (activeDiff && params && !journeyMode) {
       navigate(getBuildOverviewURL(params), { replace: true });
     }
   });

@@ -277,6 +277,12 @@ loggedTest(
       page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
     await expect(heading("cart")).toBeVisible();
     await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
+    // The walk stops at its first screen: up does not leave it for the
+    // overview, as it does from the first snapshot of the list.
+    await expect(page.locator("button:has(.lucide-arrow-up)")).toBeDisabled();
+    await page.keyboard.press("ArrowUp");
+    await expect(heading("cart")).toBeVisible();
+    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
     const journeyHeader = page.getByRole("region", {
       name: "Journey",
       exact: true,

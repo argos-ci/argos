@@ -19,6 +19,7 @@ import { useProjectParams } from "../Project/ProjectParams";
 import { getTestURL } from "../Test/TestParams";
 import {
   Diff,
+  useBuildDiffState,
   useGoToBuildOverview,
   useGoToNextDiff,
   useGoToPreviousDiff,
@@ -109,10 +110,14 @@ const BuildNavButtons = memo(function BuildNavButtons() {
   const goToPreviousDiff = useGoToPreviousDiff();
   const hasPreviousDiff = useHasPreviousDiff();
   const goToBuildOverview = useGoToBuildOverview();
+  const { journeyMode } = useBuildDiffState();
   return (
     <>
+      {/* Up from the first snapshot goes to the overview, but a journey's
+          walk stops at its first screen: its header has the way out. */}
       <PreviousButton
-        toOverview={!hasPreviousDiff}
+        toOverview={!hasPreviousDiff && !journeyMode}
+        disabled={!hasPreviousDiff && journeyMode}
         onClick={() =>
           hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
         }

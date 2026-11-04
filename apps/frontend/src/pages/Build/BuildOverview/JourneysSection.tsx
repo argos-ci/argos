@@ -3,7 +3,7 @@ import { getStepLabel, getVariantSignature } from "@argos/schemas/journey";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ChevronRightIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
+import { ChevronDownIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import {
@@ -370,9 +370,10 @@ export function JourneysSection(props: {
     test.runs.some((run) => `#${getJourneyAnchor(run.journey.id)}` === hash);
   const changed = tests.filter((test) => test.changedCount > 0);
   const unchanged = tests.filter((test) => test.changedCount === 0);
-  // Open with nothing else to walk, or back from an unchanged journey.
-  const [showUnchanged, setShowUnchanged] = useState(
-    () => changed.length === 0 || unchanged.some(checkIsWalked),
+  // Folded even when nothing changed: open, the list would read as journeys
+  // to review. Open when the review comes back from one of them.
+  const [showUnchanged, setShowUnchanged] = useState(() =>
+    unchanged.some(checkIsWalked),
   );
   if (tests.length === 0) {
     return null;
@@ -407,20 +408,26 @@ export function JourneysSection(props: {
           />
         </section>
       ) : null}
-      {/* Nothing there needs a look: folded, under a heading that says it
-          opens. */}
+      {/* Built like the Journeys heading, muted, and saying why it is
+          folded. */}
       {unchanged.length > 0 ? (
         <Details
           open={showUnchanged}
           onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
         >
-          <summary className="focus-ring text-low hover:text-default flex cursor-default list-none items-center gap-1.5 rounded-md transition">
-            <ChevronRightIcon className="size-4.5 shrink-0 transition [details[open]>summary_&]:rotate-90" />
-            <h2 className="text-lg font-semibold tracking-tight">
-              Unchanged journeys
-            </h2>
-            <span className="ml-auto text-sm tabular-nums">
-              {plural(unchanged.length, "journey")}
+          <summary className="focus-ring text-low hover:text-default flex cursor-default list-none flex-col rounded-md transition">
+            <span className="flex items-center gap-2">
+              <UnchangedIcon className="size-5 shrink-0" strokeWidth={1.75} />
+              <h2 className="text-lg font-semibold tracking-tight">
+                Unchanged journeys
+              </h2>
+              <span className="ml-auto flex items-center gap-2 text-sm tabular-nums">
+                {plural(unchanged.length, "journey")}
+                <ChevronDownIcon className="size-4 shrink-0 transition [details[open]>summary_&]:rotate-180" />
+              </span>
+            </span>
+            <span className="mt-0.5 text-sm">
+              No changes in these journeys, nothing to review.
             </span>
           </summary>
           {showUnchanged ? (
@@ -435,6 +442,10 @@ export function JourneysSection(props: {
     </>
   );
 }
+
+const UnchangedIcon = getDiffGroupDefinition(
+  ScreenshotDiffStatus.Unchanged,
+).icon;
 
 type JourneyFile = {
   key: string;
