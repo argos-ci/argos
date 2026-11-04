@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xhY2QlhdRUQ4n96wQomH08kpv2yUmz1qgvyJMKgbY2d82H4GC6Fi7SwbQIy4Csf
+\restrict M9gbDohFqSpUam5VtEZpN7Xtvz04wmiC5PB0qpJjYmlQtU2bRgiUhEKOGy74Lby
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -6921,7 +6921,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xhY2QlhdRUQ4n96wQomH08kpv2yUmz1qgvyJMKgbY2d82H4GC6Fi7SwbQIy4Csf
+\unrestrict M9gbDohFqSpUam5VtEZpN7Xtvz04wmiC5PB0qpJjYmlQtU2bRgiUhEKOGy74Lby
 
 -- Knex migrations
 
@@ -7194,3 +7194,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103125834_scim-user-created.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261103223358_normalize-comment-reaction-emoji.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104100038_prepare-secret-encryption.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
