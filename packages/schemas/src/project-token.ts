@@ -2,9 +2,9 @@
  * What a project token can do on the projects it is linked to.
  *
  * The ids match the OAuth scopes that cover the same endpoints, so an API
- * operation declares one list for both (see `anyTokenOrOAuthAuth`).
- * `deployments:write` has no OAuth counterpart: deployments are only ever
- * uploaded from CI.
+ * operation declares one list for both. `deployments:write` has no OAuth
+ * counterpart: deployments are only ever uploaded from CI. Shared with the
+ * frontend, which shows the same titles and descriptions.
  */
 export const PROJECT_TOKEN_PERMISSIONS = {
   "builds:write": {
@@ -35,9 +35,3 @@ export type ProjectTokenPermission = keyof typeof PROJECT_TOKEN_PERMISSIONS;
 export const PROJECT_TOKEN_PERMISSION_LIST = Object.keys(
   PROJECT_TOKEN_PERMISSIONS,
 ) as ProjectTokenPermission[];
-
-export function isProjectTokenPermission(
-  value: string,
-): value is ProjectTokenPermission {
-  return Object.hasOwn(PROJECT_TOKEN_PERMISSIONS, value);
-}

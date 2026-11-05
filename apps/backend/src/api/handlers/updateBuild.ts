@@ -20,7 +20,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -125,8 +125,7 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
 
     // Before anything is answered about the build: ids are sequential, and the
     // retry path below returns the whole build.
-    const { projectId } = build;
-    const project = auth.projects.find((project) => project.id === projectId);
+    const project = findAuthProject(auth, build.projectId);
     if (!project) {
       throw boom(403, "Build does not belong to project");
     }

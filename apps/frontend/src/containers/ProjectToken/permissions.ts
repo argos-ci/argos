@@ -1,37 +1,27 @@
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  PROJECT_TOKEN_PERMISSIONS as CATALOG,
+  type ProjectTokenPermission as CatalogPermission,
+} from "@argos/schemas/project-token";
+
 import { ProjectTokenPermission } from "@/gql/graphql";
+
+const GRAPHQL_PERMISSIONS = {
+  "builds:write": ProjectTokenPermission.BuildsWrite,
+  "deployments:write": ProjectTokenPermission.DeploymentsWrite,
+  "projects:read": ProjectTokenPermission.ProjectsRead,
+  "media:read": ProjectTokenPermission.MediaRead,
+  "media:write": ProjectTokenPermission.MediaWrite,
+} satisfies Record<CatalogPermission, ProjectTokenPermission>;
 
 export const PROJECT_TOKEN_PERMISSIONS: {
   value: ProjectTokenPermission;
   title: string;
   description: string;
-}[] = [
-  {
-    value: ProjectTokenPermission.BuildsWrite,
-    title: "Upload builds",
-    description: "Create, update and finalize builds and their screenshots.",
-  },
-  {
-    value: ProjectTokenPermission.DeploymentsWrite,
-    title: "Upload deployments",
-    description: "Create and finalize deployments.",
-  },
-  {
-    value: ProjectTokenPermission.ProjectsRead,
-    title: "Read projects",
-    description: "Read builds, screenshot diffs, tests and deployments.",
-  },
-  {
-    value: ProjectTokenPermission.MediaRead,
-    title: "Read media",
-    description: "Read the images and videos uploaded to the projects.",
-  },
-  {
-    value: ProjectTokenPermission.MediaWrite,
-    title: "Upload media",
-    description:
-      "Upload images and videos, and delete the ones already uploaded.",
-  },
-];
+}[] = PROJECT_TOKEN_PERMISSION_LIST.map((permission) => ({
+  value: GRAPHQL_PERMISSIONS[permission],
+  ...CATALOG[permission],
+}));
 
 const ALL_PROJECT_TOKEN_PERMISSIONS = PROJECT_TOKEN_PERMISSIONS.map(
   (permission) => permission.value,

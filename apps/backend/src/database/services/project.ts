@@ -18,6 +18,7 @@ import {
 import { ProjectUser } from "../models/ProjectUser";
 import { TeamUser } from "../models/TeamUser";
 import type { User } from "../models/User";
+import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 import { moveProjectTokens } from "./project-token";
 
@@ -514,17 +515,20 @@ export async function transferProject(args: {
 
   const [previousAccount, transferredProject] = await Promise.all([
     Account.query().findById(previousAccountId),
-    project.$query().patchAndFetch({
-      accountId: targetAccount.id,
-      name: resolvedName,
+    transaction(async (trx) => {
+      const transferredProject = await project.$query(trx).patchAndFetch({
+        accountId: targetAccount.id,
+        name: resolvedName,
+      });
+      await moveProjectTokens({
+        projectId: project.id,
+        fromAccountId: previousAccountId,
+        toAccountId: targetAccount.id,
+        trx,
+      });
+      return transferredProject;
     }),
   ]);
-
-  await moveProjectTokens({
-    projectId: project.id,
-    fromAccountId: previousAccountId,
-    toAccountId: targetAccount.id,
-  });
 
   if (previousAccount) {
     await notifyProjectTransfer({

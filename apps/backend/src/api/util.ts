@@ -252,28 +252,6 @@ type Context = {
 };
 
 /**
- * The error the eager authentication answered a request with.
- */
-const answeredAuthErrors = new WeakMap<Request, unknown>();
-
-/**
- * Drop the rejection of `req.ctx.auth()` a handler forwards when the eager
- * authentication already answered with it. By then that path consumed the
- * rest of the route, so a second `next(error)` would leave it and answer a
- * second time from the app's error handler — while `lastUsedAt` is refreshed
- * in the background, the first answer is still held and nothing stops it.
- */
-function skipAnsweredAuthError(handler: RequestHandler): RequestHandler {
-  return (req, res, next) =>
-    handler(req, res, (error?: unknown) => {
-      if (error !== undefined && answeredAuthErrors.get(req) === error) {
-        return;
-      }
-      next(error);
-    });
-}
-
-/**
  * Register a handler for the given HTTP method.
  */
 function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
@@ -288,7 +266,7 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
     }
     const wrappedHandlers = handlers.map((handler) =>
       typeof handler === "function"
-        ? skipAnsweredAuthError(asyncHandler(handler as RequestHandler))
+        ? asyncHandler(handler as RequestHandler)
         : (handler as RequestHandler[]),
     );
     router[method](
@@ -369,7 +347,6 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
           if (operation.security && operation.security.length > 0) {
             auth().catch((error: unknown) => {
               if (!isResponseCommitted(res)) {
-                answeredAuthErrors.set(req, error);
                 next(error);
               }
             });
