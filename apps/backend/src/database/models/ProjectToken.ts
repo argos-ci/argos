@@ -93,8 +93,8 @@ export class ProjectToken extends Model {
   projects?: Project[];
 
   /**
-   * Generate a token. Same shape as the tokens stored on `projects.token`
-   * before: the SDK rejects anything but 40 characters.
+   * Generate a token. Same shape as the tokens projects had before
+   * `project_tokens`: the SDK rejects anything but 40 characters.
    */
   static generateToken() {
     return `argos_${generateRandomString(34)}`;

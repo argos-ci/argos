@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9LrHCRANNuI3l059Co7fZaYmvaj2wy8tZVcHLyd34aoipBc9XAiB7izuZ3TrUKm
+\restrict ycUDm8phStn67Ozcqyyo5uyPfJ36N68lahhQl8hvdaOONZ6fQl4uXUInxw0r51B
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2302,7 +2302,6 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    token text,
     private boolean,
     "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
@@ -5610,13 +5609,6 @@ CREATE INDEX projects_originrepositoryid_index ON public.projects USING btree ("
 
 
 --
--- Name: projects_token_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX projects_token_index ON public.projects USING btree (token);
-
-
---
 -- Name: screenshot_buckets_commit_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7092,7 +7084,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9LrHCRANNuI3l059Co7fZaYmvaj2wy8tZVcHLyd34aoipBc9XAiB7izuZ3TrUKm
+\unrestrict ycUDm8phStn67Ozcqyyo5uyPfJ36N68lahhQl8hvdaOONZ6fQl4uXUInxw0r51B
 
 -- Knex migrations
 
@@ -7368,3 +7360,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105093315_project-tokens.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105115241_drop-projects-token.js', 1, NOW());

@@ -1,14 +1,7 @@
 import { waitUntil } from "@/api/request-context";
 import type { AuthProjectPayload } from "@/auth/payload";
-import {
-  Project,
-  ProjectToken,
-  ProjectTokenProject,
-  UserAccessToken,
-} from "@/database/models";
+import { Project, ProjectToken, UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { encryptDeterministic } from "@/database/services/encrypt";
-import { transaction } from "@/database/transaction";
 import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 import { boom } from "@/util/error";
 
@@ -51,53 +44,10 @@ async function findProjectToken(bearer: string) {
     });
 }
 
-/**
- * Move a token from `projects.token` to `project_tokens`, and authenticate
- * with it.
- *
- * The migration copied every token, but the code serving while it ran kept
- * writing there until the deploy finished: projects created then, or whose
- * token was regenerated then, only have it there. The column is cleared once
- * moved, and when a token is deleted, so a revoked token never comes back.
- *
- * TODO: remove with the `projects.token` column.
- */
-async function moveLegacyProjectToken(bearer: string) {
-  const project = await Project.queryNotDeleted().findOne({
-    token: encryptDeterministic(bearer),
-  });
-  if (!project) {
-    return null;
-  }
-  await transaction(async (trx) => {
-    await ProjectToken.query(trx)
-      .insert({
-        accountId: project.accountId,
-        name: "Legacy token",
-        token: hashToken(bearer),
-        permissions: PROJECT_TOKEN_PERMISSION_LIST,
-      })
-      .onConflict("token")
-      .ignore();
-    const projectToken = await ProjectToken.query(trx)
-      .select("id")
-      .findOne({ token: hashToken(bearer) });
-    if (projectToken) {
-      await ProjectTokenProject.query(trx)
-        .insert({ projectTokenId: projectToken.id, projectId: project.id })
-        .onConflict(["projectTokenId", "projectId"])
-        .ignore();
-    }
-    await Project.query(trx).findById(project.id).patch({ token: null });
-  });
-  return findProjectToken(bearer);
-}
-
 async function getAuthPayloadFromProjectToken(
   bearer: string,
 ): Promise<AuthProjectPayload> {
-  const projectToken =
-    (await findProjectToken(bearer)) ?? (await moveLegacyProjectToken(bearer));
+  const projectToken = await findProjectToken(bearer);
 
   if (!projectToken) {
     throw boom(

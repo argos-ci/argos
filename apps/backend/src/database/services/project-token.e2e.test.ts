@@ -6,7 +6,7 @@ import { Project, ProjectToken } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { transferProject } from "./project";
-import { deleteProjectToken, getProjectTokenProjects } from "./project-token";
+import { getProjectTokenProjects } from "./project-token";
 
 /**
  * A user administering a personal account and a team, with two projects on the
@@ -35,44 +35,6 @@ async function createOwner() {
 describe("project tokens", () => {
   beforeEach(async () => {
     await setupDatabase();
-  });
-
-  describe("legacy tokens", () => {
-    it("moves a token left in `projects.token` on its first use", async () => {
-      const { web } = await createOwner();
-      await Project.query().findById(web.id).patch({ token: "argos_legacy" });
-
-      const auth = await getAuthProjectPayloadFromBearerToken("argos_legacy");
-      expect(auth.projects.map((project) => project.id)).toEqual([web.id]);
-      expect(auth.tokenId).not.toBeNull();
-
-      const project = await Project.query().findById(web.id);
-      expect(project?.token).toBeNull();
-      const tokens = await ProjectToken.query();
-      expect(tokens.map((token) => token.name)).toEqual(["Legacy token"]);
-
-      // Now found in `project_tokens` directly.
-      const again = await getAuthProjectPayloadFromBearerToken("argos_legacy");
-      expect(again.tokenId).toBe(auth.tokenId);
-    });
-
-    it("keeps a revoked token revoked while `projects.token` still holds it", async () => {
-      const { user, web } = await createOwner();
-      // What the migration leaves: the token copied, the column untouched.
-      await Project.query().findById(web.id).patch({ token: "argos_legacy" });
-      const { projectToken } = await factory.createProjectToken({
-        projects: [web],
-        token: "argos_legacy",
-      });
-
-      await deleteProjectToken({ projectToken, user });
-
-      await expect(
-        getAuthProjectPayloadFromBearerToken("argos_legacy"),
-      ).rejects.toThrow(/Project not found/);
-      const project = await Project.query().findById(web.id);
-      expect(project?.token).toBeNull();
-    });
   });
 
   it("records when a token was last used", async () => {
