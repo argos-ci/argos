@@ -34,13 +34,7 @@ loggedTest("project settings", async ({ page, team, auth, project }) => {
       id: "general",
       replacements: { [team.account.slug]: "acme" },
     },
-    {
-      name: "Authentication",
-      id: "authentication",
-      replacements: {
-        [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      },
-    },
+    { name: "Authentication", id: "authentication" },
     { name: "Access management", id: "access-management" },
     { name: "Git", id: "git" },
     { name: "Baseline builds", id: "baseline-builds" },
@@ -98,19 +92,48 @@ loggedTest(
 );
 
 loggedTest(
-  "project settings - the regenerate token dialog names itself",
+  "project settings - rotate a project token",
   async ({ page, team, auth, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     await page.goto(
       `/${team.account.slug}/${project.name}/settings/authentication`,
     );
-    await page.getByRole("button", { name: "Regenerate token" }).click();
+    const previousRow = page
+      .getByRole("row")
+      .filter({ hasText: "Default token" });
+    await expect(previousRow).toBeVisible();
 
+    await page.getByRole("button", { name: "Create token" }).click();
     // One box, and it is the one the title names. Nesting a `Dialog` inside
     // another leaves a second `aria-modal` around it with nothing to name it,
     // which a screen reader reads as a nameless dialog holding a dialog.
     const dialog = page.getByRole("dialog");
     await expect(dialog).toHaveCount(1);
-    await expect(dialog).toHaveAccessibleName("Regenerate token");
+    await expect(dialog).toHaveAccessibleName("Create Project Token");
+    await dialog
+      .getByRole("textbox", { name: "Token name" })
+      .fill("GitHub Actions");
+    await dialog.getByRole("button", { name: "Create token" }).click();
+
+    const createdDialog = page.getByRole("dialog", {
+      name: "Project Token Created",
+    });
+    await expect(createdDialog.getByText(/^argos_[a-z1-9]{34}$/)).toBeVisible();
+    await createdDialog.getByRole("button", { name: "Close" }).click();
+    await expect(createdDialog).toBeHidden();
+
+    const row = page.getByRole("row").filter({ hasText: "GitHub Actions" });
+    await expect(row).toBeVisible();
+
+    await previousRow
+      .getByRole("button", { name: "Default token options" })
+      .click();
+    await page.getByRole("option", { name: "Revoke" }).click();
+    const revokeDialog = page.getByRole("alertdialog", {
+      name: "Revoke Project Token",
+    });
+    await revokeDialog.getByRole("button", { name: "Revoke" }).click();
+    await expect(previousRow).toBeHidden();
+    await expect(row).toBeVisible();
   },
 );

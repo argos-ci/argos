@@ -1,3 +1,4 @@
+import type { ProjectTokenPermission } from "@argos/schemas/project-token";
 /**
  * Single source of truth for API authentication.
  *
@@ -50,9 +51,13 @@ export const securitySchemes = {
       "Authorization: Bearer <project-token>",
       "```",
       "",
-      "You can find your project token in your Argos project settings.",
-      "Project tokens are used by CI and the SDK to create builds and",
-      "deployments.",
+      "Create project tokens in your project settings, or in your team",
+      "settings for a token linked to several projects. Project tokens are",
+      "used by CI and the SDK to create builds and deployments.",
+      "",
+      "A token only reaches the projects it is linked to, and only the",
+      "endpoints its permissions cover: an operation lists the permissions",
+      "it needs in its `projectToken` security requirement.",
     ].join("\n"),
   },
   personalAccessToken: {
@@ -119,12 +124,15 @@ type UnknownAuth =
   | null;
 
 /**
- * Authenticate with a **project token**. Used by the build and deployment
- * endpoints that act on behalf of a project (typically from CI or the SDK).
+ * Authenticate with a **project token** holding every given permission. Used
+ * by the build and deployment endpoints that act on behalf of a project
+ * (typically from CI or the SDK).
  */
-export const projectTokenAuth: SecurityRequirement<AuthProjectPayload> = [
-  { projectToken: [] },
-];
+export function projectTokenAuth(
+  permissions: ProjectTokenPermission[],
+): SecurityRequirement<AuthProjectPayload> {
+  return [{ projectToken: permissions }];
+}
 
 /**
  * Authenticate with a **personal access token**. Used by endpoints that perform
@@ -136,15 +144,15 @@ export const personalAccessTokenAuth: SecurityRequirement<AuthPATPayload> = [
 ];
 
 /**
- * Accept a project token, a personal access token, or an OAuth access token
- * with the given scopes. Used by read-only endpoints that are reachable from
- * CI, a user, and OAuth clients (CLI, MCP agents).
+ * Accept a project token with the given permissions, a personal access token,
+ * or an OAuth access token with the same scopes. Used by endpoints that are
+ * reachable from CI, a user, and OAuth clients (CLI, MCP agents).
  */
 export function anyTokenOrOAuthAuth(
-  scopes: OAuthScope[],
+  scopes: (OAuthScope & ProjectTokenPermission)[],
 ): SecurityRequirement<AuthProjectPayload | AuthPATPayload | AuthOAuthPayload> {
   return [
-    { projectToken: [] },
+    { projectToken: scopes },
     { personalAccessToken: [] },
     { oauth2: scopes },
   ];
@@ -171,7 +179,7 @@ export const noAuth: SecurityRequirement<null> = [];
  * The auth payload exposed on `req.ctx.auth`, derived from the operation's
  * declared `security` via its phantom `__auth` marker:
  *   - `noAuth` → `null`
- *   - `projectTokenAuth` → {@link AuthProjectPayload}
+ *   - `projectTokenAuth(…)` → {@link AuthProjectPayload}
  *   - `personalAccessTokenAuth` → {@link AuthPATPayload}
  *   - `anyTokenAuth` → either payload
  *
@@ -195,25 +203,29 @@ const AUTH_TYPE_TO_SCHEME = {
 } as const satisfies Record<string, SecurityScheme>;
 
 /**
- * Enforce that an OAuth token holds all scopes required by at least one of the
- * operation's `oauth2` requirements (OR semantics across requirements).
+ * Enforce that a token holds everything at least one of the operation's
+ * requirements for `scheme` lists (OR semantics across requirements): the
+ * scopes of an OAuth token, the permissions of a project token.
  */
-function assertOAuthScopes(
-  auth: AuthOAuthPayload,
+function assertGranted(
+  scheme: "oauth2" | "projectToken",
+  granted: readonly string[],
   security: readonly Record<string, unknown>[],
 ): void {
-  const held = new Set(auth.oauthScopes);
-  const oauthRequirements = security
-    .map((requirement) => requirement["oauth2"])
+  const held = new Set(granted);
+  const requirements = security
+    .map((requirement) => requirement[scheme])
     .filter((value): value is string[] => Array.isArray(value));
-  const satisfied = oauthRequirements.some((required) =>
-    required.every((scope) => held.has(scope)),
+  const satisfied = requirements.some((required) =>
+    required.every((entry) => held.has(entry)),
   );
   if (!satisfied) {
-    const needed = oauthRequirements[0] ?? [];
+    const needed = (requirements[0] ?? []).join(", ");
     throw boom(
       403,
-      `Insufficient scope. This endpoint requires: ${needed.join(", ")}.`,
+      scheme === "oauth2"
+        ? `Insufficient scope. This endpoint requires: ${needed}.`
+        : `This project token lacks a permission. This endpoint requires: ${needed}.`,
     );
   }
 }
@@ -257,8 +269,13 @@ export async function authenticateRequest(
     throw boom(401, unauthorizedMessage(allowedSchemes));
   }
 
-  if (auth.type === "oauth") {
-    assertOAuthScopes(auth, security);
+  switch (auth.type) {
+    case "oauth":
+      assertGranted("oauth2", auth.oauthScopes, security);
+      break;
+    case "project":
+      assertGranted("projectToken", auth.permissions, security);
+      break;
   }
 
   return auth;

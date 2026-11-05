@@ -44,6 +44,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: teamAccount.id,
       name: "web",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     invariant(teamAccount.teamId);

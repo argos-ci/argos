@@ -66,6 +66,7 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import { getProjectsByTokenId } from "@/database/services/project-token";
 import {
   getSubscriptionRevenues,
   type SubscriptionRevenue,
@@ -581,6 +582,13 @@ function createDiscordWebhooksByAccountIdLoader() {
       {},
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
+}
+
+function createProjectTokenProjectsLoader() {
+  return new DataLoader<string, Project[]>(async (tokenIds) => {
+    const projectsByTokenId = await getProjectsByTokenId(tokenIds);
+    return tokenIds.map((tokenId) => projectsByTokenId.get(tokenId) ?? []);
   });
 }
 
@@ -2054,6 +2062,7 @@ export const createLoaders = () => ({
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
+  ProjectTokenProjects: createProjectTokenProjectsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
