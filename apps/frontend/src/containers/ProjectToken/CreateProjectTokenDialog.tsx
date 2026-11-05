@@ -1,5 +1,10 @@
 import { useId, useState } from "react";
+import type { ApolloClient, Reference } from "@apollo/client";
+import type { ModifierDetails } from "@apollo/client/cache";
 import { useApolloClient } from "@apollo/client/react";
+import { addDays } from "@argos/util/date";
+import { formatDate } from "@argos/util/date-format";
+import { invariant } from "@argos/util/invariant";
 import { AlertCircleIcon } from "lucide-react";
 import {
   useController,
@@ -11,7 +16,10 @@ import {
 
 import { CreatedTokenDialog } from "@/containers/CreatedTokenDialog";
 import { graphql } from "@/gql";
-import type { ProjectTokenPermission } from "@/gql/graphql";
+import type {
+  CreateProjectTokenInput,
+  ProjectTokenPermission,
+} from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
@@ -42,31 +50,59 @@ import {
   type ProjectTokenPreset,
 } from "./permissions";
 
-export const CreateProjectTokenMutation = graphql(`
+const CreateProjectTokenMutation = graphql(`
   mutation CreateProjectToken($input: CreateProjectTokenInput!) {
     createProjectToken(input: $input) {
       token
       projectToken {
         id
         ...ProjectTokenList_ProjectToken
-        projects {
-          id
-          tokens {
-            id
-            ...ProjectTokenList_ProjectToken
-          }
-        }
       }
       account {
         id
-        projectTokens {
-          id
-          ...ProjectTokenList_ProjectToken
-        }
       }
     }
   }
 `);
+
+/**
+ * Create a token and show it in the lists already in the cache — the
+ * account's and each linked project's — rather than refetching them.
+ */
+export async function createProjectToken(
+  client: ApolloClient,
+  input: CreateProjectTokenInput,
+) {
+  const result = await client.mutate({
+    mutation: CreateProjectTokenMutation,
+    variables: { input },
+    update(cache, { data }) {
+      if (!data) {
+        return;
+      }
+      const { projectToken, account } = data.createProjectToken;
+      const prepend = (
+        existingRefs: readonly Reference[] | null,
+        { toReference }: ModifierDetails,
+      ) => {
+        const ref = toReference(projectToken);
+        return existingRefs && ref ? [ref, ...existingRefs] : existingRefs;
+      };
+      cache.modify({
+        id: cache.identify(account),
+        fields: { projectTokens: prepend },
+      });
+      for (const project of projectToken.projects) {
+        cache.modify({
+          id: cache.identify({ __typename: "Project", id: project.id }),
+          fields: { tokens: prepend },
+        });
+      }
+    },
+  });
+  invariant(result.data, "Project token not created");
+  return result.data.createProjectToken;
+}
 
 const EXPIRATION_OPTIONS = [
   { label: "30 days", days: 30 },
@@ -85,14 +121,6 @@ const EXPIRATION_ITEMS = Object.fromEntries(
     option.label,
   ]),
 );
-
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 type Access = ProjectTokenPreset["value"] | "advanced";
 
@@ -150,29 +178,19 @@ export function CreateProjectTokenDialog(props: {
   });
 
   const create = async (data: Inputs) => {
-    const result = await client.mutate({
-      mutation: CreateProjectTokenMutation,
-      variables: {
-        input: {
-          accountId,
-          name: data.name,
-          projectIds: data.projectIds,
-          permissions: getGrantedPermissions(data),
-          expireInDays:
-            data.expireInDays === NO_EXPIRATION
-              ? null
-              : Number(data.expireInDays),
-        },
-      },
+    const { token, projectToken } = await createProjectToken(client, {
+      accountId,
+      name: data.name,
+      projectIds: data.projectIds,
+      permissions: getGrantedPermissions(data),
+      expireInDays:
+        data.expireInDays === NO_EXPIRATION ? null : Number(data.expireInDays),
     });
-    if (result.data) {
-      const { token, projectToken } = result.data.createProjectToken;
-      setStep({
-        name: "created",
-        token,
-        expireAt: projectToken.expireAt ?? null,
-      });
-    }
+    setStep({
+      name: "created",
+      token,
+      expireAt: projectToken.expireAt ?? null,
+    });
   };
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -212,7 +230,8 @@ export function CreateProjectTokenDialog(props: {
         >
           {step.expireAt && (
             <p className="text-low mt-2 text-sm">
-              This token expires on <strong>{formatDate(step.expireAt)}</strong>
+              This token expires on{" "}
+              <strong>{formatDate(new Date(step.expireAt), "longDate")}</strong>
               . Create its replacement before then.
             </p>
           )}
@@ -399,9 +418,7 @@ function ExpirationField(props: { control: Control<Inputs> }) {
           <AlertCircleIcon className="mt-0.5 size-3.5 shrink-0" />
           <span>
             CI stops uploading on{" "}
-            <strong>
-              {formatDate(new Date(Date.now() + days * 24 * 60 * 60 * 1000))}
-            </strong>
+            <strong>{formatDate(addDays(new Date(), days), "longDate")}</strong>
             . Create its replacement before then.
           </span>
         </div>

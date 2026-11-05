@@ -1,20 +1,21 @@
-import { invariant } from "@argos/util/invariant";
-
 import {
-  isProjectTokenPermission,
   PROJECT_TOKEN_PERMISSION_LIST,
   type ProjectTokenPermission,
-} from "@/project-token/permissions";
+} from "@argos/schemas/project-token";
+import { invariant } from "@argos/util/invariant";
+import type { TransactionOrKnex } from "objection";
+
 import { boom } from "@/util/error";
 
 import type { Account } from "../models/Account";
-import type { Project } from "../models/Project";
+import { Project } from "../models/Project";
 import { ProjectToken } from "../models/ProjectToken";
 import { ProjectTokenProject } from "../models/ProjectTokenProject";
 import type { User } from "../models/User";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 import { hashToken } from "./crypto";
+import { applyProjectVisibility } from "./project";
 
 /**
  * Whether a user can manage (create, rename, revoke) a token linked to these
@@ -47,35 +48,65 @@ export async function canManageProjectToken(args: {
 }
 
 /**
- * The live projects of the token's account it is linked to, sorted by name.
- * A project transferred away keeps no link to the tokens of its former account
- * (see {@link moveProjectTokens}), but the account check keeps a token from
- * ever reaching one.
+ * The live projects of its own account each token reaches, by token id, sorted
+ * by name. A token's account only changes along with its projects (see
+ * {@link moveProjectTokens}); the account check is what keeps a token from
+ * ever reaching a project transferred away.
  */
+export async function getProjectsByTokenId(
+  tokenIds: readonly string[],
+): Promise<Map<string, Project[]>> {
+  const links = await ProjectTokenProject.query()
+    .withGraphJoined("[project, projectToken]")
+    .whereIn("project_token_projects.projectTokenId", [...tokenIds])
+    .whereNull("project.deletedAt")
+    .whereColumn("project.accountId", "projectToken.accountId")
+    .orderBy("project.name");
+  const projectsByTokenId = new Map<string, Project[]>();
+  for (const link of links) {
+    invariant(link.project, "Project token link without project");
+    const projects = projectsByTokenId.get(link.projectTokenId) ?? [];
+    projects.push(link.project);
+    projectsByTokenId.set(link.projectTokenId, projects);
+  }
+  return projectsByTokenId;
+}
+
 export async function getProjectTokenProjects(
   projectToken: ProjectToken,
 ): Promise<Project[]> {
-  return ProjectToken.relatedQuery("projects")
-    .for(projectToken.id)
-    .whereNull("projects.deletedAt")
-    .where("projects.accountId", projectToken.accountId)
-    .orderBy("projects.name");
+  const projectsByTokenId = await getProjectsByTokenId([projectToken.id]);
+  return projectsByTokenId.get(projectToken.id) ?? [];
 }
 
 /**
  * The projects of a token a user may see: a token shown on a project's page
  * must not name the private projects of the team the viewer cannot reach.
  */
-export async function filterViewableProjects(
-  projects: Project[],
-  user: User,
-): Promise<Project[]> {
-  const permissions = await Promise.all(
-    projects.map((project) => project.$getPermissions(user)),
+export async function filterViewableProjects(args: {
+  projects: Project[];
+  account: Account;
+  user: User;
+}): Promise<Project[]> {
+  const { projects, account, user } = args;
+  if (projects.length === 0) {
+    return [];
+  }
+  const query = applyProjectVisibility(
+    Project.query()
+      .select("projects.id")
+      .where("projects.accountId", account.id)
+      .whereIn(
+        "projects.id",
+        projects.map((project) => project.id),
+      ),
+    { account, user },
   );
-  return projects.filter((_project, index) =>
-    permissions[index]?.includes("view"),
-  );
+  if (!query) {
+    return [];
+  }
+  const visibleIds = new Set((await query).map((project) => project.id));
+  return projects.filter((project) => visibleIds.has(project.id));
 }
 
 async function assertCanManage(args: {
@@ -92,17 +123,17 @@ async function assertCanManage(args: {
 }
 
 /**
- * The tokens of an account. Takes an administrator of the account: a token
- * may reach any of its projects.
+ * The tokens of an account, or `null` when the user does not administer it: a
+ * token may reach any of its projects.
  */
 export async function listAccountProjectTokens(args: {
   account: Account;
   user: User;
-}): Promise<ProjectToken[]> {
+}): Promise<ProjectToken[] | null> {
   const { account, user } = args;
   const permissions = await account.$getPermissions(user);
   if (!permissions.includes("admin")) {
-    throw boom(403, "You are not an administrator of this account.");
+    return null;
   }
   return ProjectToken.query()
     .where("accountId", account.id)
@@ -111,20 +142,16 @@ export async function listAccountProjectTokens(args: {
 }
 
 /**
- * The tokens linked to a project. Takes the permission that used to reveal the
- * project's token (`review`): only names and dates are listed now.
+ * The tokens linked to a project, or `null` when the user cannot review it.
  */
 export async function listProjectProjectTokens(args: {
   project: Project;
   user: User;
-}): Promise<ProjectToken[]> {
+}): Promise<ProjectToken[] | null> {
   const { project, user } = args;
   const permissions = await project.$getPermissions(user);
   if (!permissions.includes("review")) {
-    throw boom(
-      403,
-      "You do not have permission to view this project's tokens.",
-    );
+    return null;
   }
   return ProjectToken.query()
     .where("project_tokens.accountId", project.accountId)
@@ -151,13 +178,9 @@ function parseName(name: string): string {
   return trimmed;
 }
 
-function parsePermissions(permissions: string[]): ProjectTokenPermission[] {
-  const unknown = permissions.filter(
-    (permission) => !isProjectTokenPermission(permission),
-  );
-  if (unknown.length > 0) {
-    throw boom(400, `Unknown permission: ${unknown.join(", ")}.`);
-  }
+function parsePermissions(
+  permissions: readonly ProjectTokenPermission[],
+): ProjectTokenPermission[] {
   const parsed = PROJECT_TOKEN_PERMISSION_LIST.filter((permission) =>
     permissions.includes(permission),
   );
@@ -182,6 +205,35 @@ function parseExpireAt(expireAt: string | null): string | null {
 }
 
 /**
+ * Store a token, hashed, and link it to its projects.
+ */
+export async function insertProjectToken(args: {
+  accountId: string;
+  name: string;
+  token: string;
+  permissions: readonly ProjectTokenPermission[];
+  projectIds: readonly string[];
+  expireAt?: string | null;
+  createdById?: string | null;
+}): Promise<ProjectToken> {
+  const { projectIds, ...attributes } = args;
+  return transaction(async (trx) => {
+    const projectToken = await ProjectToken.query(trx).insertAndFetch({
+      ...attributes,
+      token: hashToken(args.token),
+      permissions: [...args.permissions],
+    });
+    await ProjectTokenProject.query(trx).insert(
+      projectIds.map((projectId) => ({
+        projectTokenId: projectToken.id,
+        projectId,
+      })),
+    );
+    return projectToken;
+  });
+}
+
+/**
  * Create a token linked to some projects of an account. The token itself is
  * only returned here: it is stored hashed.
  */
@@ -190,49 +242,33 @@ export async function createProjectToken(args: {
   user: User;
   name: string;
   projects: Project[];
-  permissions: string[];
+  permissions: readonly ProjectTokenPermission[];
   expireAt: string | null;
 }): Promise<{ projectToken: ProjectToken; token: string }> {
-  const { account, user } = args;
+  const { account, user, projects } = args;
   const name = parseName(args.name);
   const permissions = parsePermissions(args.permissions);
   const expireAt = parseExpireAt(args.expireAt);
 
-  const projects = [
-    ...new Map(args.projects.map((project) => [project.id, project])).values(),
-  ];
   if (projects.length === 0) {
     throw boom(400, "A token must be linked to at least one project.");
   }
-  if (
-    projects.some(
-      (project) => project.accountId !== account.id || project.deletedAt,
-    )
-  ) {
+  if (projects.some((project) => project.accountId !== account.id)) {
     throw boom(400, "A token can only be linked to projects of its account.");
   }
 
   await assertCanManage({ account, projects, user });
 
   const token = ProjectToken.generateToken();
-  const projectToken = await transaction(async (trx) => {
-    const projectToken = await ProjectToken.query(trx).insertAndFetch({
-      accountId: account.id,
-      name,
-      token: hashToken(token),
-      permissions,
-      expireAt,
-      createdById: user.id,
-    });
-    await ProjectTokenProject.query(trx).insert(
-      projects.map((project) => ({
-        projectTokenId: projectToken.id,
-        projectId: project.id,
-      })),
-    );
-    return projectToken;
+  const projectToken = await insertProjectToken({
+    accountId: account.id,
+    name,
+    token,
+    permissions,
+    projectIds: projects.map((project) => project.id),
+    expireAt,
+    createdById: user.id,
   });
-
   return { projectToken, token };
 }
 
@@ -301,42 +337,41 @@ export async function moveProjectTokens(args: {
   projectId: string;
   fromAccountId: string;
   toAccountId: string;
+  trx: TransactionOrKnex;
 }): Promise<void> {
-  const { projectId, fromAccountId, toAccountId } = args;
-  await transaction(async (trx) => {
-    const tokens = await ProjectToken.query(trx)
-      .select("project_tokens.id")
-      .where("project_tokens.accountId", fromAccountId)
-      .whereExists(
-        ProjectTokenProject.query(trx)
-          .whereColumn(
-            "project_token_projects.projectTokenId",
-            "project_tokens.id",
-          )
-          .where("project_token_projects.projectId", projectId),
-      );
-    if (tokens.length === 0) {
-      return;
-    }
-    const tokenIds = tokens.map((token) => token.id);
-    const shared = await ProjectTokenProject.query(trx)
-      .distinct("projectTokenId")
-      .whereIn("projectTokenId", tokenIds)
-      .whereNot("projectId", projectId);
-    const sharedIds = new Set(shared.map((link) => link.projectTokenId));
-    const movedIds = tokenIds.filter((id) => !sharedIds.has(id));
-    await Promise.all([
-      movedIds.length > 0
-        ? ProjectToken.query(trx)
-            .whereIn("id", movedIds)
-            .patch({ accountId: toAccountId })
-        : null,
-      sharedIds.size > 0
-        ? ProjectTokenProject.query(trx)
-            .whereIn("projectTokenId", [...sharedIds])
-            .where("projectId", projectId)
-            .delete()
-        : null,
-    ]);
-  });
+  const { projectId, fromAccountId, toAccountId, trx } = args;
+  const tokens = await ProjectToken.query(trx)
+    .select("project_tokens.id")
+    .where("project_tokens.accountId", fromAccountId)
+    .whereExists(
+      ProjectTokenProject.query(trx)
+        .whereColumn(
+          "project_token_projects.projectTokenId",
+          "project_tokens.id",
+        )
+        .where("project_token_projects.projectId", projectId),
+    );
+  if (tokens.length === 0) {
+    return;
+  }
+  const tokenIds = tokens.map((token) => token.id);
+  const shared = await ProjectTokenProject.query(trx)
+    .distinct("projectTokenId")
+    .whereIn("projectTokenId", tokenIds)
+    .whereNot("projectId", projectId);
+  const sharedIds = new Set(shared.map((link) => link.projectTokenId));
+  const movedIds = tokenIds.filter((id) => !sharedIds.has(id));
+  await Promise.all([
+    movedIds.length > 0
+      ? ProjectToken.query(trx)
+          .whereIn("id", movedIds)
+          .patch({ accountId: toAccountId })
+      : null,
+    sharedIds.size > 0
+      ? ProjectTokenProject.query(trx)
+          .whereIn("projectTokenId", [...sharedIds])
+          .where("projectId", projectId)
+          .delete()
+      : null,
+  ]);
 }

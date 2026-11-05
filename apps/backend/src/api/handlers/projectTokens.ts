@@ -1,21 +1,27 @@
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  PROJECT_TOKEN_PERMISSIONS,
+} from "@argos/schemas/project-token";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { Project, type ProjectToken, type User } from "@/database/models";
+import {
+  Project,
+  type Account,
+  type ProjectToken,
+  type User,
+} from "@/database/models";
 import {
   createProjectToken,
   deleteProjectToken,
   filterViewableProjects,
+  getProjectsByTokenId,
   getProjectTokenProjects,
   listAccountProjectTokens,
   listProjectProjectTokens,
   loadProjectToken,
 } from "@/database/services/project-token";
-import {
-  PROJECT_TOKEN_PERMISSION_LIST,
-  PROJECT_TOKEN_PERMISSIONS,
-} from "@/project-token/permissions";
 import { boom } from "@/util/error";
 
 import { getAccountForAuth, getProjectForAuth } from "../auth/project";
@@ -98,15 +104,28 @@ const CreateProjectTokenBodySchema = z.object({
   }),
 });
 
-async function serializeProjectToken(projectToken: ProjectToken, user: User) {
-  const projects = await filterViewableProjects(
-    await getProjectTokenProjects(projectToken),
-    user,
+/**
+ * Serialize tokens with the projects the user may see among the ones they
+ * reach: one query for the projects, one for their visibility.
+ */
+async function serializeProjectTokens(
+  projectTokens: ProjectToken[],
+  args: { account: Account; user: User },
+) {
+  const projectsByTokenId = await getProjectsByTokenId(
+    projectTokens.map((projectToken) => projectToken.id),
   );
-  return {
+  const viewable = await filterViewableProjects({
+    ...args,
+    projects: [...projectsByTokenId.values()].flat(),
+  });
+  const viewableIds = new Set(viewable.map((project) => project.id));
+  return projectTokens.map((projectToken) => ({
     id: projectToken.id,
     name: projectToken.name,
-    projects: projects.map((project) => project.name),
+    projects: (projectsByTokenId.get(projectToken.id) ?? [])
+      .filter((project) => viewableIds.has(project.id))
+      .map((project) => project.name),
     permissions: projectToken.permissions,
     createdAt: new Date(projectToken.createdAt).toISOString(),
     expireAt: projectToken.expireAt
@@ -115,7 +134,19 @@ async function serializeProjectToken(projectToken: ProjectToken, user: User) {
     lastUsedAt: projectToken.lastUsedAt
       ? new Date(projectToken.lastUsedAt).toISOString()
       : null,
-  };
+  }));
+}
+
+async function serializeCreatedProjectToken(
+  created: { projectToken: ProjectToken; token: string },
+  args: { account: Account; user: User },
+) {
+  const [serialized] = await serializeProjectTokens(
+    [created.projectToken],
+    args,
+  );
+  invariant(serialized, "Created token not serialized");
+  return { ...serialized, token: created.token };
 }
 
 const responses = {
@@ -152,10 +183,11 @@ export const listAccountProjectTokensHandler: CreateAPIHandler = ({ get }) => {
       slug: req.ctx.params.accountSlug,
     });
     const tokens = await listAccountProjectTokens({ account, user: auth.user });
+    if (!tokens) {
+      throw boom(403, "You are not an administrator of this account.");
+    }
     res.send(
-      await Promise.all(
-        tokens.map((token) => serializeProjectToken(token, auth.user)),
-      ),
+      await serializeProjectTokens(tokens, { account, user: auth.user }),
     );
   });
 };
@@ -207,7 +239,7 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
     if (missing.length > 0) {
       throw boom(404, `Project not found: ${missing.join(", ")}.`);
     }
-    const { projectToken, token } = await createProjectToken({
+    const created = await createProjectToken({
       account,
       user: auth.user,
       name: req.ctx.body.name,
@@ -215,10 +247,12 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
       permissions: req.ctx.body.permissions,
       expireAt: req.ctx.body.expireAt ?? null,
     });
-    res.status(201).send({
-      ...(await serializeProjectToken(projectToken, auth.user)),
-      token,
-    });
+    res.status(201).send(
+      await serializeCreatedProjectToken(created, {
+        account,
+        user: auth.user,
+      }),
+    );
   });
 };
 
@@ -276,17 +310,23 @@ export const listProjectTokensOperation = {
 
 export const listProjectTokensHandler: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/tokens", async (req, res) => {
-    const auth = await req.ctx.auth();
-    const project = await getProjectForAuth(
-      Promise.resolve(auth),
-      req.ctx.params,
-      null,
-    );
+    const [project, auth] = await Promise.all([
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
+      req.ctx.auth(),
+    ]);
+    invariant(project.account, "Project account not fetched");
     const tokens = await listProjectProjectTokens({ project, user: auth.user });
+    if (!tokens) {
+      throw boom(
+        403,
+        "You do not have permission to view this project's tokens.",
+      );
+    }
     res.send(
-      await Promise.all(
-        tokens.map((token) => serializeProjectToken(token, auth.user)),
-      ),
+      await serializeProjectTokens(tokens, {
+        account: project.account,
+        user: auth.user,
+      }),
     );
   });
 };
@@ -316,14 +356,12 @@ export const createProjectTokenOperation = {
 
 export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
   post("/projects/{owner}/{project}/tokens", async (req, res) => {
-    const auth = await req.ctx.auth();
-    const project = await getProjectForAuth(
-      Promise.resolve(auth),
-      req.ctx.params,
-      null,
-    );
+    const [project, auth] = await Promise.all([
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
+      req.ctx.auth(),
+    ]);
     invariant(project.account, "Project account not fetched");
-    const { projectToken, token } = await createProjectToken({
+    const created = await createProjectToken({
       account: project.account,
       user: auth.user,
       name: req.ctx.body.name,
@@ -331,10 +369,12 @@ export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
       permissions: req.ctx.body.permissions,
       expireAt: req.ctx.body.expireAt ?? null,
     });
-    res.status(201).send({
-      ...(await serializeProjectToken(projectToken, auth.user)),
-      token,
-    });
+    res.status(201).send(
+      await serializeCreatedProjectToken(created, {
+        account: project.account,
+        user: auth.user,
+      }),
+    );
   });
 };
 
@@ -358,12 +398,10 @@ export const deleteProjectTokenHandler: CreateAPIHandler = ({
   delete: del,
 }) => {
   del("/projects/{owner}/{project}/tokens/{tokenId}", async (req, res) => {
-    const auth = await req.ctx.auth();
-    const project = await getProjectForAuth(
-      Promise.resolve(auth),
-      req.ctx.params,
-      null,
-    );
+    const [project, auth] = await Promise.all([
+      getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
+      req.ctx.auth(),
+    ]);
     const projectToken = await loadProjectToken({
       id: req.ctx.params.tokenId,
       accountId: project.accountId,

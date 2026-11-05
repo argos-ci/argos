@@ -1,3 +1,4 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import { invariant } from "@argos/util/invariant";
 import express from "express";
 import request from "supertest";
@@ -7,7 +8,6 @@ import type { Account, Project, User } from "@/database/models";
 import { ProjectUser, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 
 import { openAPIRouter } from "../index";
 

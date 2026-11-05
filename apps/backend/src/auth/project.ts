@@ -1,8 +1,10 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
+import { invariant } from "@argos/util/invariant";
+
 import { waitUntil } from "@/api/request-context";
 import type { AuthProjectPayload } from "@/auth/payload";
 import { Project, ProjectToken, UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 import { boom } from "@/util/error";
 
 import {
@@ -30,18 +32,22 @@ function getSingleProjectPayload(
     type: "project",
     projects: [project],
     permissions: PROJECT_TOKEN_PERMISSION_LIST,
-    tokenId: null,
     sha,
   };
 }
 
+/**
+ * The token with its account and live projects, in the one query every CI
+ * request runs. Not `findOne`: its `LIMIT 1` would cut the joined rows.
+ */
 async function findProjectToken(bearer: string) {
-  return ProjectToken.query()
-    .findOne({ token: hashToken(bearer) })
-    .withGraphFetched("projects(live)")
+  const [projectToken] = await ProjectToken.query()
+    .where("project_tokens.token", hashToken(bearer))
+    .withGraphJoined("[account, projects(live)]")
     .modifiers({
       live: (query) => query.whereNull("projects.deletedAt"),
     });
+  return projectToken ?? null;
 }
 
 async function getAuthPayloadFromProjectToken(
@@ -60,11 +66,15 @@ async function getAuthPayloadFromProjectToken(
     throw boom(401, "This project token has expired, create a new one.");
   }
 
-  // A project transferred to another account leaves the tokens of its former
-  // account behind.
+  const { account } = projectToken;
+  invariant(account, "Project token account not fetched");
+  // The rule of `getProjectsByTokenId`: only the projects of its own account.
   const projects = (projectToken.projects ?? []).filter(
     (project) => project.accountId === projectToken.accountId,
   );
+  for (const project of projects) {
+    project.account = account;
+  }
 
   if (projects.length === 0) {
     throw boom(
@@ -89,7 +99,6 @@ async function getAuthPayloadFromProjectToken(
     type: "project",
     projects,
     permissions: projectToken.permissions,
-    tokenId: projectToken.id,
     sha: null,
   };
 }
