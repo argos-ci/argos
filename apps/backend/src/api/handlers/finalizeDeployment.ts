@@ -15,7 +15,7 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -218,8 +218,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
       throw boom(404, "Deployment not found");
     }
 
-    const { projectId } = deployment;
-    const project = auth.projects.find((project) => project.id === projectId);
+    const project = findAuthProject(auth, deployment.projectId);
     if (!project) {
       throw boom(401, "Unauthorized");
     }

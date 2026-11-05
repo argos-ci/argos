@@ -1,17 +1,17 @@
 import { randomBytes } from "node:crypto";
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  type ProjectTokenPermission,
+} from "@argos/schemas/project-token";
 import { addMonths, startOfDay } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
-import {
-  PROJECT_TOKEN_PERMISSION_LIST,
-  type ProjectTokenPermission,
-} from "@/project-token/permissions";
-
 import * as models from "../models";
 import { hashToken } from "../services/crypto";
+import { insertProjectToken } from "../services/project-token";
 
 class ObjectionAdapter<
   TEntity extends Model,
@@ -539,18 +539,13 @@ export async function createProjectToken(attributes: {
   const [project] = attributes.projects;
   invariant(project, "A project token needs a project");
   const token = attributes.token ?? models.ProjectToken.generateToken();
-  const projectToken = await models.ProjectToken.query().insertAndFetch({
+  const projectToken = await insertProjectToken({
     accountId: project.accountId,
     name: "Test token",
-    token: hashToken(token),
+    token,
     permissions: attributes.permissions ?? PROJECT_TOKEN_PERMISSION_LIST,
+    projectIds: attributes.projects.map((project) => project.id),
     expireAt: attributes.expireAt ?? null,
   });
-  await models.ProjectTokenProject.query().insert(
-    attributes.projects.map((project) => ({
-      projectTokenId: projectToken.id,
-      projectId: project.id,
-    })),
-  );
   return { projectToken, token };
 }

@@ -1,3 +1,5 @@
+import type { ProjectTokenPermission } from "@argos/schemas/project-token";
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
@@ -13,7 +15,6 @@ import {
   renameProjectToken,
 } from "@/database/services/project-token";
 import { loadAccountById } from "@/database/services/team-member";
-import type { ProjectTokenPermission } from "@/project-token/permissions";
 import { boom } from "@/util/error";
 
 import {
@@ -127,10 +128,6 @@ async function resolveAccountProjectTokens(
   if (!user) {
     throw unauthenticated();
   }
-  const permissions = await account.$getPermissions(user);
-  if (!permissions.includes("admin")) {
-    return null;
-  }
   return listAccountProjectTokens({ account, user });
 }
 
@@ -144,10 +141,12 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const projects = await ctx.loaders.ProjectTokenProjects.load(
-        projectToken.id,
-      );
-      return filterViewableProjects(projects, ctx.auth.user);
+      const [account, projects] = await Promise.all([
+        ctx.loaders.Account.load(projectToken.accountId),
+        ctx.loaders.ProjectTokenProjects.load(projectToken.id),
+      ]);
+      invariant(account, "Project token account not found");
+      return filterViewableProjects({ projects, account, user: ctx.auth.user });
     },
     createdBy: async (projectToken, _args, ctx) => {
       if (!projectToken.createdById) {
@@ -186,10 +185,6 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const permissions = await project.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("review")) {
-        return null;
-      }
       return listProjectProjectTokens({ project, user: ctx.auth.user });
     },
   },
@@ -218,9 +213,7 @@ export const resolvers: IResolvers = {
           ),
           expireAt:
             expireInDays != null
-              ? new Date(
-                  Date.now() + expireInDays * 24 * 60 * 60 * 1000,
-                ).toISOString()
+              ? addDays(new Date(), expireInDays).toISOString()
               : null,
         });
         return { ...created, account };
