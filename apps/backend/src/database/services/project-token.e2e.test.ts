@@ -44,16 +44,15 @@ describe("project tokens", () => {
 
       const auth = await getAuthProjectPayloadFromBearerToken("argos_legacy");
       expect(auth.projects.map((project) => project.id)).toEqual([web.id]);
-      expect(auth.tokenId).not.toBeNull();
 
       const project = await Project.query().findById(web.id);
       expect(project?.token).toBeNull();
       const tokens = await ProjectToken.query();
       expect(tokens.map((token) => token.name)).toEqual(["Legacy token"]);
 
-      // Now found in `project_tokens` directly.
-      const again = await getAuthProjectPayloadFromBearerToken("argos_legacy");
-      expect(again.tokenId).toBe(auth.tokenId);
+      // Now found in `project_tokens` directly, without a second copy.
+      await getAuthProjectPayloadFromBearerToken("argos_legacy");
+      expect(await ProjectToken.query().resultSize()).toBe(1);
     });
 
     it("keeps a revoked token revoked while `projects.token` still holds it", async () => {

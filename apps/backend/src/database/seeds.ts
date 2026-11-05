@@ -1,8 +1,8 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
 import { concludeBuild } from "@/build/concludeBuild";
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 import { decodeFingerprint } from "@/util/fingerprint";
 import { startOfUTCMonth } from "@/util/utc-month";
 
@@ -29,7 +29,6 @@ import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
 import { ProjectToken } from "./models/ProjectToken";
-import { ProjectTokenProject } from "./models/ProjectTokenProject";
 import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
@@ -41,8 +40,8 @@ import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
 import { User } from "./models/User";
 import { UserPasskey } from "./models/UserPasskey";
-import { hashToken } from "./services/crypto";
 import { ignoreChange } from "./services/ignored-change";
+import { insertProjectToken } from "./services/project-token";
 
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
@@ -157,15 +156,12 @@ export async function createProject(input: {
       defaultBaseBranch: input.defaultBaseBranch,
     }),
   });
-  const projectToken = await ProjectToken.query().insertAndFetch({
+  await insertProjectToken({
     accountId: project.accountId,
     name: "Default token",
-    token: hashToken(input.token ?? ProjectToken.generateToken()),
+    token: input.token ?? ProjectToken.generateToken(),
     permissions: PROJECT_TOKEN_PERMISSION_LIST,
-  });
-  await ProjectTokenProject.query().insert({
-    projectTokenId: projectToken.id,
-    projectId: project.id,
+    projectIds: [project.id],
   });
   return project;
 }

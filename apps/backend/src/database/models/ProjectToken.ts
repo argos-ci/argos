@@ -1,16 +1,14 @@
-import type { RelationMappings } from "objection";
-
 import {
   PROJECT_TOKEN_PERMISSION_LIST,
   type ProjectTokenPermission,
-} from "@/project-token/permissions";
+} from "@argos/schemas/project-token";
+import type { RelationMappings } from "objection";
 
 import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account } from "./Account";
 import { Project } from "./Project";
-import { User } from "./User";
 
 /**
  * A credential CI and the SDK authenticate with to act on projects. It belongs
@@ -67,14 +65,6 @@ export class ProjectToken extends Model {
           to: "accounts.id",
         },
       },
-      createdBy: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: User,
-        join: {
-          from: "project_tokens.createdById",
-          to: "users.id",
-        },
-      },
       projects: {
         relation: Model.ManyToManyRelation,
         modelClass: Project,
@@ -91,7 +81,6 @@ export class ProjectToken extends Model {
   }
 
   account?: Account;
-  createdBy?: User | null;
   projects?: Project[];
 
   /**
@@ -102,9 +91,6 @@ export class ProjectToken extends Model {
     return `argos_${generateRandomString(34)}`;
   }
 
-  /**
-   * Whether the token is past its expiration date.
-   */
   $isExpired() {
     return this.expireAt !== null && new Date(this.expireAt) <= new Date();
   }

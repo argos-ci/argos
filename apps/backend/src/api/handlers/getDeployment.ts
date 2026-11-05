@@ -4,6 +4,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { Deployment } from "@/database/models/Deployment";
 import { boom } from "@/util/error";
 
+import { findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -57,7 +58,7 @@ export const getDeployment: CreateAPIHandler = ({ get }) => {
       throw boom(404, "Deployment not found");
     }
 
-    if (!auth.projects.some((project) => project.id === deployment.projectId)) {
+    if (!findAuthProject(auth, deployment.projectId)) {
       throw boom(401, "Unauthorized");
     }
 
