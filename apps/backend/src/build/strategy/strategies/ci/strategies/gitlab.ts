@@ -31,10 +31,19 @@ export const GitlabStrategy: MergeBaseStrategy<GitlabProjectClient> = {
     );
     return result.id;
   },
-  listParentCommitShas: async (args) => {
-    const result = await args.ctx.client.Commits.all(args.ctx.gitlabProjectId, {
-      refName: args.sha,
-    });
-    return result.map((commit) => commit.id);
+  async *listCommitPages(args) {
+    const perPage = 100;
+    for (let page = 1; ; page++) {
+      // An explicit `page` makes gitbeaker fetch that page alone, instead of
+      // following every `next` link through the whole history.
+      const commits = await args.ctx.client.Commits.all(
+        args.ctx.gitlabProjectId,
+        { refName: args.sha, perPage, page },
+      );
+      yield commits.map((commit) => commit.id);
+      if (commits.length < perPage) {
+        return;
+      }
+    }
   },
 };

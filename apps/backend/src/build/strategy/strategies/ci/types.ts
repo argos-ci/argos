@@ -10,10 +10,14 @@ export type MergeBaseStrategy<TCtx> = {
     head: string;
     build: Build;
   }) => Promise<string | null>;
-  listParentCommitShas: (args: {
+  /**
+   * List `sha` followed by its ancestors, closest first, one page per request
+   * to the provider. The caller stops pulling pages once it has what it needs.
+   */
+  listCommitPages: (args: {
     project: Project;
     build: Build;
     ctx: TCtx;
     sha: string;
-  }) => Promise<string[]>;
+  }) => AsyncIterable<string[]>;
 };

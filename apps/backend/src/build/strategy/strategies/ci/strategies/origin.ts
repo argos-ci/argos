@@ -79,19 +79,27 @@ export const OriginStrategy: MergeBaseStrategy<{
       { retries: 3 },
     );
   },
-  listParentCommitShas: async (args) => {
+  async *listCommitPages(args) {
     // Same as above: without content access, the common logic falls back to
     // the last bucket on the base branch.
     if (!args.ctx.installation.hasScope(ORIGIN_CONTENTS_READ_SCOPE)) {
-      return [];
+      return;
     }
 
     try {
-      const commits = await args.ctx.api.listCommits(
-        { owner: args.ctx.owner, repo: args.ctx.repo },
-        { sha: args.sha },
-      );
-      return commits.map((commit) => commit.sha);
+      let pageToken = "";
+      do {
+        const page = await args.ctx.api.listCommits(
+          { owner: args.ctx.owner, repo: args.ctx.repo },
+          { sha: args.sha, pageToken },
+        );
+        yield page.commits.map((commit) => commit.sha);
+        // A token that does not advance would list the same commits again.
+        if (page.nextPageToken === pageToken) {
+          return;
+        }
+        pageToken = page.nextPageToken;
+      } while (pageToken);
     } catch (error) {
       if (checkOriginErrorStatus(404, error)) {
         throw boom(
