@@ -1,8 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { addMonths, startOfDay } from "@argos/util/date";
+import { invariant } from "@argos/util/invariant";
 import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import type { Model, ModelClass, PartialModelObject } from "objection";
+
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  type ProjectTokenPermission,
+} from "@/project-token/permissions";
 
 import * as models from "../models";
 import { hashToken } from "../services/crypto";
@@ -519,3 +525,32 @@ export const PullRequest = defineFactory(models.GithubPullRequest, () => ({
   date: new Date().toISOString(),
   githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
+
+/**
+ * Create a token linked to projects of a same account, with every permission
+ * unless told otherwise. Returns the model and the value to send as a bearer.
+ */
+export async function createProjectToken(attributes: {
+  projects: models.Project[];
+  token?: string;
+  permissions?: ProjectTokenPermission[];
+  expireAt?: string | null;
+}) {
+  const [project] = attributes.projects;
+  invariant(project, "A project token needs a project");
+  const token = attributes.token ?? models.ProjectToken.generateToken();
+  const projectToken = await models.ProjectToken.query().insertAndFetch({
+    accountId: project.accountId,
+    name: "Test token",
+    token: hashToken(token),
+    permissions: attributes.permissions ?? PROJECT_TOKEN_PERMISSION_LIST,
+    expireAt: attributes.expireAt ?? null,
+  });
+  await models.ProjectTokenProject.query().insert(
+    attributes.projects.map((project) => ({
+      projectTokenId: projectToken.id,
+      projectId: project.id,
+    })),
+  );
+  return { projectToken, token };
+}

@@ -5,7 +5,6 @@ import { minimatch } from "minimatch";
 import type {
   JSONSchema,
   Pojo,
-  QueryContext,
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
@@ -13,7 +12,6 @@ import { z } from "zod";
 
 import config from "@/config";
 
-import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
@@ -120,6 +118,10 @@ const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
 export class Project extends Model {
   static override tableName = "projects";
 
+  /**
+   * The token a project had before `project_tokens`. Only read to move the
+   * tokens written by the code still serving while the migration ran.
+   */
   static override deterministicEncryptedAttributes = ["token"];
 
   static override jsonSchema = {
@@ -130,7 +132,7 @@ export class Project extends Model {
         required: ["name", "accountId"],
         properties: {
           name: z.toJSONSchema(ProjectNameSchema) as JSONSchema,
-          token: { type: "string" },
+          token: { type: ["string", "null"] },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
@@ -187,7 +189,7 @@ export class Project extends Model {
   };
 
   name!: string;
-  token!: string;
+  token!: string | null;
   private!: boolean | null;
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
@@ -305,11 +307,6 @@ export class Project extends Model {
   githubRepository?: GithubRepository | null;
   gitlabProject?: GitlabProject | null;
   originRepository?: OriginRepository | null;
-
-  override async $beforeInsert(queryContext: QueryContext) {
-    await super.$beforeInsert(queryContext);
-    this.token = this.token || Project.generateToken();
-  }
 
   static async getPermissions(
     project: Project,
@@ -452,14 +449,6 @@ export class Project extends Model {
 
     // Origin repositories are never public.
     return false;
-  }
-
-  /**
-   * Generate a new token for the project.
-   */
-  static generateToken() {
-    const token = generateRandomString(34);
-    return `argos_${token}`;
   }
 
   /**

@@ -19,6 +19,7 @@ import { ProjectUser } from "../models/ProjectUser";
 import { TeamUser } from "../models/TeamUser";
 import type { User } from "../models/User";
 import { isValidPgBigInt } from "../util/biginteger";
+import { moveProjectTokens } from "./project-token";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
 
@@ -518,6 +519,12 @@ export async function transferProject(args: {
       name: resolvedName,
     }),
   ]);
+
+  await moveProjectTokens({
+    projectId: project.id,
+    fromAccountId: previousAccountId,
+    toAccountId: targetAccount.id,
+  });
 
   if (previousAccount) {
     await notifyProjectTransfer({

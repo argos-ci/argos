@@ -3,9 +3,12 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getEligibleBaselineBuildFromCommits } from "@/build/strategy/strategies/ci/query";
 
+import { resolveAuthProject } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
+import { TokenProjectPath } from "../schema/primitives/project";
 import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
+  forbidden,
   invalidParameters,
   serverError,
   unauthorized,
@@ -14,6 +17,7 @@ import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
+  project: TokenProjectPath,
   commits: z.array(Sha1HashSchema).min(1).meta({
     description:
       "The commits to look for an eligible baseline, ordered from the closest to the furthest ancestor. The first commit with an eligible baseline wins.",
@@ -42,7 +46,7 @@ export const findBaselineOperation = {
   description:
     "Find the build eligible to be used as a baseline among a list of commits. Useful when no Git provider is connected: the CLI can send the candidate ancestor commits and let Argos pick the closest one that has an eligible (complete, valid, approved and not rejected) baseline build.",
   tags: ["Builds"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["builds:write"]),
   requestBody: {
     content: {
       "application/json": {
@@ -61,6 +65,7 @@ export const findBaselineOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;
@@ -69,9 +74,10 @@ export const findBaseline: CreateAPIHandler = ({ post }) => {
   post("/baseline", async (req, res) => {
     const auth = await req.ctx.auth();
     const { commits, name, mode } = req.ctx.body;
+    const project = await resolveAuthProject(auth, req.ctx.body.project);
 
     const build = await getEligibleBaselineBuildFromCommits({
-      projectId: auth.project.id,
+      projectId: project.id,
       name,
       mode,
       shas: commits,
