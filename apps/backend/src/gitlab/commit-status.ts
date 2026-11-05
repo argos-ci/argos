@@ -7,9 +7,15 @@ import type { GitlabClient } from "@/gitlab";
 import { redisLock } from "@/util/redis";
 
 /**
+ * GitLab only moves an in-flight status forward: `pending` to `running`, then
+ * to a conclusion. Asking for `pending` again, or `running` again, is refused —
+ * the status is in flight either way, only its description goes stale.
+ */
+const IN_FLIGHT_TRANSITION_ERROR =
+  /^Cannot transition status via :(enqueue|run) from :(pending|running)\b/;
+
+/**
  * Set the commit status on GitLab.
- * Handle errors that occur if the status is already in "running" state.
- * Could happen if a build fails.
  */
 export async function setGitLabCommitStatus(args: {
   client: GitlabClient;
@@ -37,11 +43,8 @@ export async function setGitLabCommitStatus(args: {
       } catch (error) {
         if (
           error instanceof GitbeakerRequestError &&
-          error.message.startsWith(
-            "Cannot transition status via :run from :running",
-          )
+          IN_FLIGHT_TRANSITION_ERROR.test(error.message)
         ) {
-          // If the status is already running, we can safely ignore this error
           return;
         }
 

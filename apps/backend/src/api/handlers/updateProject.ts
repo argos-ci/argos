@@ -6,6 +6,7 @@ import { updateProject as updateProjectService } from "@/database/services/proje
 import { getProjectForAuth } from "../auth/project";
 import {
   AccountSlug,
+  AwaitingReviewStatus,
   DeploymentAuth,
   IgnoreConfigSchema,
   ProjectName,
@@ -52,6 +53,7 @@ const UpdateProjectBodySchema = z
         "Force the project's privacy. `null` inherits it from the linked repository.",
     }),
     summaryCheck: SummaryCheck,
+    awaitingReviewStatus: AwaitingReviewStatus,
     defaultUserLevel: ProjectUserLevel.nullable().meta({
       description:
         "Access given to team members that are not contributors on this project. `null` gives them none.",

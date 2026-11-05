@@ -86,16 +86,17 @@ async function checkHasSiblingProject(project: Project): Promise<boolean> {
 /**
  * Get the status context for the build.
  */
-async function getStatusContext(build: Build): Promise<string> {
+async function getStatusContext(input: {
+  build: Build;
+  project: Project;
+}): Promise<string> {
+  const { build, project } = input;
   let context = "argos";
 
-  await build.$fetchGraph("project", { skipFetched: true });
-  invariant(build.project, "Project not found", UnretryableError);
-
-  const hasSiblingProject = await checkHasSiblingProject(build.project);
+  const hasSiblingProject = await checkHasSiblingProject(project);
 
   if (hasSiblingProject) {
-    context = `${context}/${build.project.name}`;
+    context = `${context}/${project.name}`;
   }
 
   if (build.name === "default") {
@@ -106,18 +107,30 @@ async function getStatusContext(build: Build): Promise<string> {
 }
 
 /**
+ * Nobody is asked to review a merge queue build: a pending status would hold
+ * the queue until it times out, so its changes always report a failure.
+ */
+export function getAwaitingReviewStatus(input: {
+  project: Project;
+  mergeQueue: boolean;
+}): Project["awaitingReviewStatus"] {
+  return input.mergeQueue ? "failure" : input.project.awaitingReviewStatus;
+}
+
+/**
  * Get the notification status for each platform based on the build
  * notification type and if it's an auto-approved build.
  */
 export function getNotificationStates(args: {
   buildNotificationType: BuildNotification["type"];
   buildType: Build["type"];
+  awaitingReviewStatus: Project["awaitingReviewStatus"];
 }): {
   github: NotificationPayload["github"]["state"];
   gitlab: NotificationPayload["gitlab"]["state"];
   origin: NotificationPayload["origin"];
 } {
-  const { buildNotificationType, buildType } = args;
+  const { buildNotificationType, buildType, awaitingReviewStatus } = args;
   if (buildType === "skipped") {
     return {
       github: "success",
@@ -137,7 +150,9 @@ export function getNotificationStates(args: {
     case "progress": {
       return {
         github: "pending",
-        gitlab: "running",
+        // GitLab refuses `running` → `running`: a review wait reported
+        // `running` would keep "Build in progress..." as its description.
+        gitlab: awaitingReviewStatus === "pending" ? "pending" : "running",
         origin: { status: "in_progress", conclusion: null },
       };
     }
@@ -149,13 +164,24 @@ export function getNotificationStates(args: {
       };
     }
     case "diff-detected": {
+      if (isAutoApproved) {
+        return {
+          github: "success",
+          gitlab: "success",
+          origin: { status: "completed", conclusion: "success" },
+        };
+      }
+      if (awaitingReviewStatus === "pending") {
+        return {
+          github: "pending",
+          gitlab: "running",
+          origin: { status: "in_progress", conclusion: null },
+        };
+      }
       return {
-        github: isAutoApproved ? "success" : "failure",
-        gitlab: isAutoApproved ? "success" : "failed",
-        origin: {
-          status: "completed",
-          conclusion: isAutoApproved ? "success" : "failure",
-        },
+        github: "failure",
+        gitlab: "failed",
+        origin: { status: "completed", conclusion: "failure" },
       };
     }
     case "diff-accepted": {
@@ -247,6 +273,9 @@ export async function getNotificationPayload(args: {
   build: Build;
 }): Promise<NotificationPayload> {
   const { buildNotification, build } = args;
+  await build.$fetchGraph("project", { skipFetched: true });
+  const { project } = build;
+  invariant(project, "Project not found", UnretryableError);
   const description = getNotificationDescription({
     buildNotificationType: buildNotification.type,
     build: build,
@@ -254,9 +283,13 @@ export async function getNotificationPayload(args: {
   const states = getNotificationStates({
     buildNotificationType: buildNotification.type,
     buildType: build.type,
+    awaitingReviewStatus: getAwaitingReviewStatus({
+      project,
+      mergeQueue: build.mergeQueue,
+    }),
   });
   const [context, buildUrl] = await Promise.all([
-    getStatusContext(build),
+    getStatusContext({ build, project }),
     build.getUrl(),
   ]);
 

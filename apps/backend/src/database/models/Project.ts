@@ -148,6 +148,10 @@ export class Project extends Model {
             enum: ["public", "domain-private", "private"],
           },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+          awaitingReviewStatus: {
+            type: "string",
+            enum: ["failure", "pending"],
+          },
           buildNumber: { type: "integer", minimum: 0 },
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
@@ -201,6 +205,7 @@ export class Project extends Model {
   deploymentEnabled!: boolean;
   deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";
+  awaitingReviewStatus!: "failure" | "pending";
   defaultUserLevel!: UserLevel | null;
   ignoreConfig!: ProjectIgnoreConfig | null;
   deploymentProdBranchGlob!: string | null;

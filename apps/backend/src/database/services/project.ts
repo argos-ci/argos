@@ -297,6 +297,7 @@ export type UpdateProjectInput = {
   deploymentProductionBranchGlob?: string | null | undefined;
   private?: boolean | null | undefined;
   summaryCheck?: Project["summaryCheck"] | undefined;
+  awaitingReviewStatus?: Project["awaitingReviewStatus"] | undefined;
   defaultUserLevel?: Project["defaultUserLevel"] | undefined;
   ignoreConfig?: ResolvedIgnoreConfig | null | undefined;
   deploymentEnabled?: boolean | undefined;
@@ -342,6 +343,10 @@ export async function updateProject(args: {
 
   if (input.summaryCheck != null) {
     data.summaryCheck = input.summaryCheck;
+  }
+
+  if (input.awaitingReviewStatus != null) {
+    data.awaitingReviewStatus = input.awaitingReviewStatus;
   }
 
   if (input.defaultUserLevel !== undefined) {

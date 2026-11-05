@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { concludeBuild } from "@/build/concludeBuild";
 import { Build } from "@/database/models/Build";
 import { BuildNotification } from "@/database/models/BuildNotification";
+import type { Project } from "@/database/models/Project";
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
 
@@ -83,6 +84,58 @@ describe("#getNotificationPayload", () => {
         buildNotification,
       });
       expect(payload.context).toBe("argos/backend");
+    });
+  });
+
+  describe("with changes awaiting review", () => {
+    async function getAwaitingReviewPayload(
+      projectData: { awaitingReviewStatus?: Project["awaitingReviewStatus"] },
+      buildData: { mergeQueue?: boolean } = {},
+    ) {
+      const project = await factory.Project.create(projectData);
+      const build = await factory.Build.create({
+        projectId: project.id,
+        ...buildData,
+      });
+      return getNotificationPayload({
+        build,
+        buildNotification: { type: "diff-detected" },
+      });
+    }
+
+    it("reports a failure by default", async () => {
+      const payload = await getAwaitingReviewPayload({});
+      expect(payload.github.state).toBe("failure");
+      expect(payload.gitlab.state).toBe("failed");
+      expect(payload.origin).toEqual({
+        status: "completed",
+        conclusion: "failure",
+      });
+    });
+
+    it("reports a pending status when the project asks for it", async () => {
+      const payload = await getAwaitingReviewPayload({
+        awaitingReviewStatus: "pending",
+      });
+      expect(payload.github.state).toBe("pending");
+      expect(payload.gitlab.state).toBe("running");
+      expect(payload.origin).toEqual({
+        status: "in_progress",
+        conclusion: null,
+      });
+    });
+
+    it("reports a failure for a merge queue build, which nobody reviews", async () => {
+      const payload = await getAwaitingReviewPayload(
+        { awaitingReviewStatus: "pending" },
+        { mergeQueue: true },
+      );
+      expect(payload.github.state).toBe("failure");
+      expect(payload.gitlab.state).toBe("failed");
+      expect(payload.origin).toEqual({
+        status: "completed",
+        conclusion: "failure",
+      });
     });
   });
 });
