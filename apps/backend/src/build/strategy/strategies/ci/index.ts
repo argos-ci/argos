@@ -1,5 +1,4 @@
 import { invariant } from "@argos/util/invariant";
-import { minimatch } from "minimatch";
 
 import { UnretryableError } from "@/job-core";
 
@@ -16,7 +15,8 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   getContext: async (build) => {
     await build.$fetchGraph("project", { skipFetched: true });
     invariant(build.project, "no project found", UnretryableError);
-    const branchGlob = await build.project.$getAutoApprovedBranchGlob();
+    const isAutoApprovedBranch =
+      await build.project.$getAutoApprovedBranchMatcher();
     return {
       checkIsAutoApproved: (branch: string) => {
         // If there is a pull request, we never auto-approve the build.
@@ -24,7 +24,7 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
           return false;
         }
 
-        return minimatch(branch, branchGlob);
+        return isAutoApprovedBranch(branch);
       },
     };
   },

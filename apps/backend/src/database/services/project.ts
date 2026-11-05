@@ -294,6 +294,7 @@ export type UpdateProjectInput = {
   name?: string | undefined;
   defaultBaseBranch?: string | null | undefined;
   autoApprovedBranchGlob?: string | null | undefined;
+  autoApprovalEnabled?: boolean | undefined;
   deploymentProductionBranchGlob?: string | null | undefined;
   private?: boolean | null | undefined;
   summaryCheck?: Project["summaryCheck"] | undefined;
@@ -330,6 +331,13 @@ export async function updateProject(args: {
 
   if (input.autoApprovedBranchGlob !== undefined) {
     data.autoApprovedBranchGlob = input.autoApprovedBranchGlob ?? null;
+  }
+
+  if (
+    typeof input.autoApprovalEnabled === "boolean" &&
+    project.autoApprovalEnabled !== input.autoApprovalEnabled
+  ) {
+    data.autoApprovalEnabled = input.autoApprovalEnabled;
   }
 
   if (input.deploymentProductionBranchGlob !== undefined) {

@@ -244,10 +244,12 @@ export const typeDefs = gql`
     defaultBaseBranch: String!
     "Default base branch edited by the user"
     customDefaultBaseBranch: String
-    "Glob pattern for auto-approved branches"
+    "Glob pattern for auto-approved branches, ignored while autoApprovalEnabled is false"
     autoApprovedBranchGlob: String!
     "Glob pattern for auto-approved branches edited by the user"
     customAutoApprovedBranchGlob: String
+    "Whether builds on branches matching the auto-approved glob are approved automatically"
+    autoApprovalEnabled: Boolean!
     "Glob pattern for production deployment branches"
     deploymentProductionBranchGlob: String!
     "Glob pattern for production deployment branches edited by the user"
@@ -387,6 +389,7 @@ export const typeDefs = gql`
     id: ID!
     defaultBaseBranch: String
     autoApprovedBranchGlob: String
+    autoApprovalEnabled: Boolean
     deploymentProductionBranchGlob: String
     private: Boolean
     name: String
@@ -1259,6 +1262,7 @@ export const resolvers: IResolvers = {
             name: args.input.name ?? undefined,
             defaultBaseBranch: args.input.defaultBaseBranch,
             autoApprovedBranchGlob: args.input.autoApprovedBranchGlob,
+            autoApprovalEnabled: args.input.autoApprovalEnabled ?? undefined,
             deploymentProductionBranchGlob:
               args.input.deploymentProductionBranchGlob,
             private: args.input.private,

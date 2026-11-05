@@ -119,6 +119,7 @@ describe("getAuthProject", () => {
           defaultBaseBranch: "main",
           hasRemoteContentAccess: false,
           autoApprovedBranchGlob: "main",
+          autoApprovalEnabled: true,
           deploymentProductionBranchGlob: "main",
           private: true,
           summaryCheck: "auto",

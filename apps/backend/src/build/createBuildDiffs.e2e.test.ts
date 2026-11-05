@@ -277,6 +277,13 @@ describe("#createBuildDiffs", () => {
         const updatedBuild = await Build.query().findById(build.id);
         expect(updatedBuild?.type).toBe("reference");
       });
+
+      it("should update build type to 'check' when auto-approval is off", async () => {
+        await project.$query().patch({ autoApprovalEnabled: false });
+        await createBuildDiffs(build);
+        const updatedBuild = await Build.query().findById(build.id);
+        expect(updatedBuild?.type).toBe("check");
+      });
     });
 
     describe("with compare branch different than auto-approved branch", () => {
