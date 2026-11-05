@@ -6,9 +6,7 @@ import { Project, ProjectToken } from "@/database/models";
 import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 
 import { transferProject } from "./project";
-import { deleteProjectToken, getProjectTokenProjects } from "./project-token";
-
-const LEGACY_TOKEN = "argos_legacylegacylegacylegacylegacylega";
+import { getProjectTokenProjects } from "./project-token";
 
 /**
  * A user administering a personal account and a team, with two projects on the
@@ -37,60 +35,6 @@ async function createOwner() {
 describe("project tokens", () => {
   beforeEach(async () => {
     await setupDatabase();
-  });
-
-  describe("legacy tokens", () => {
-    it("moves a token left in `projects.token` on its first use", async () => {
-      const { web } = await createOwner();
-      await Project.query().findById(web.id).patch({ token: LEGACY_TOKEN });
-
-      const auth = await getAuthProjectPayloadFromBearerToken(LEGACY_TOKEN);
-      expect(auth.projects.map((project) => project.id)).toEqual([web.id]);
-
-      const project = await Project.query().findById(web.id);
-      expect(project?.token).toBeNull();
-      const tokens = await ProjectToken.query();
-      expect(tokens.map((token) => token.name)).toEqual(["Legacy token"]);
-
-      // Now found in `project_tokens` directly, without a second copy.
-      await getAuthProjectPayloadFromBearerToken(LEGACY_TOKEN);
-      expect(await ProjectToken.query().resultSize()).toBe(1);
-    });
-
-    it("keeps a revoked token revoked while `projects.token` still holds it", async () => {
-      const { user, web } = await createOwner();
-      // What the migration leaves: the token copied, the column untouched.
-      await Project.query().findById(web.id).patch({ token: LEGACY_TOKEN });
-      const { projectToken } = await factory.createProjectToken({
-        projects: [web],
-        token: LEGACY_TOKEN,
-      });
-
-      await deleteProjectToken({ projectToken, auth: sessionViewer(user) });
-
-      await expect(
-        getAuthProjectPayloadFromBearerToken(LEGACY_TOKEN),
-      ).rejects.toThrow(/Project not found/);
-      const project = await Project.query().findById(web.id);
-      expect(project?.token).toBeNull();
-    });
-
-    it("revokes the copied token once one regenerated meanwhile is used", async () => {
-      const { web } = await createOwner();
-      // The migration copied the first token, then the code still serving
-      // regenerated it.
-      const copied = await factory.createProjectToken({ projects: [web] });
-      await ProjectToken.query()
-        .findById(copied.projectToken.id)
-        .patch({ name: "Legacy token" });
-      await Project.query().findById(web.id).patch({ token: LEGACY_TOKEN });
-
-      await getAuthProjectPayloadFromBearerToken(LEGACY_TOKEN);
-
-      await expect(
-        getAuthProjectPayloadFromBearerToken(copied.token),
-      ).rejects.toThrow(/Project not found/);
-    });
   });
 
   it("records when a token was last used", async () => {

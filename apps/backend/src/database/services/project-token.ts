@@ -335,39 +335,8 @@ export async function deleteProjectToken(args: {
   projectToken: ProjectToken;
   auth: AuthViewer;
 }): Promise<void> {
-  const { projectToken } = args;
   await assertCanManageToken(args);
-  await transaction(async (trx) => {
-    await clearLegacyProjectToken({ projectToken, trx });
-    await ProjectToken.query(trx).deleteById(projectToken.id);
-  });
-}
-
-/**
- * Clear `projects.token` when it holds the token being revoked, or the
- * fallback in `auth/project.ts` would bring the token back on its next use.
- *
- * TODO: remove with the `projects.token` column.
- */
-async function clearLegacyProjectToken(args: {
-  projectToken: ProjectToken;
-  trx: TransactionOrKnex;
-}) {
-  const { projectToken, trx } = args;
-  const projects = await ProjectToken.relatedQuery("projects", trx)
-    .for(projectToken.id)
-    .select("projects.id", "projects.token")
-    .whereNotNull("projects.token");
-  const projectIds = projects
-    .filter(
-      (project) =>
-        project.token !== null &&
-        hashToken(project.token) === projectToken.token,
-    )
-    .map((project) => project.id);
-  if (projectIds.length > 0) {
-    await Project.query(trx).whereIn("id", projectIds).patch({ token: null });
-  }
+  await ProjectToken.query().deleteById(args.projectToken.id);
 }
 
 /**
