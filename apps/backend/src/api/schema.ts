@@ -101,6 +101,14 @@ import {
   updateProjectDomainOperation,
 } from "./handlers/projectDeployments";
 import {
+  createAccountProjectTokenOperation,
+  createProjectTokenOperation,
+  deleteAccountProjectTokenOperation,
+  deleteProjectTokenOperation,
+  listAccountProjectTokensOperation,
+  listProjectTokensOperation,
+} from "./handlers/projectTokens";
+import {
   removeBuildCommentReactionOperation,
   removeMediaCommentReactionOperation,
   removeTestCommentReactionOperation,
@@ -245,6 +253,12 @@ export const zodSchema = {
         "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
       "x-page-icon": "users",
     },
+    {
+      name: "Tokens",
+      description:
+        "Manage the project tokens CI authenticates with. A project can have several, so a token is rotated without downtime: create its replacement, update the CI secret, then revoke the old one.",
+      "x-page-icon": "key-round",
+    },
   ],
   components: {
     securitySchemes,
@@ -281,6 +295,13 @@ export const zodSchema = {
     },
     "/accounts/{accountSlug}/domains/{domain}": {
       delete: removeTeamDomainOperation,
+    },
+    "/accounts/{accountSlug}/project-tokens": {
+      get: listAccountProjectTokensOperation,
+      post: createAccountProjectTokenOperation,
+    },
+    "/accounts/{accountSlug}/project-tokens/{tokenId}": {
+      delete: deleteAccountProjectTokenOperation,
     },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
@@ -385,6 +406,13 @@ export const zodSchema = {
     "/projects/{owner}/{project}/contributors/{userId}": {
       put: setProjectContributorOperation,
       delete: removeProjectContributorOperation,
+    },
+    "/projects/{owner}/{project}/tokens": {
+      get: listProjectTokensOperation,
+      post: createProjectTokenOperation,
+    },
+    "/projects/{owner}/{project}/tokens/{tokenId}": {
+      delete: deleteProjectTokenOperation,
     },
     "/projects/{owner}/{project}/transfer": {
       post: transferProjectOperation,

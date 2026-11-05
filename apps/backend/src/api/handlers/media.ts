@@ -42,7 +42,7 @@ import {
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, resolveAuthProject } from "../auth/project";
 import {
   MediaBranchSchema,
   MediaInputSchema,
@@ -93,7 +93,7 @@ const CreateMediaRequestSchema = MediaInputSchema.extend({
     .nullish()
     .meta({
       description:
-        "Project to upload to, as `owner/project`. Required with a personal access token; ignored with a project token, which already identifies its project.",
+        "Project to upload to, as `owner/project`. Required with a personal access token, and with a project token linked to several projects.",
       examples: ["acme/web"],
     }),
   prNumber: z.number().int().min(1).nullish().meta({
@@ -742,9 +742,9 @@ async function findPullRequestId(args: {
  * Resolve the project a new media belongs to, and its account.
  *
  * Media is project-scoped, so a project is always required. A project token
- * identifies its own; a user token has to name one as `owner/project`, and naming
- * one it cannot reach is a 401 rather than a 404 — which keeps the existence of
- * other projects undisclosed.
+ * linked to a single project identifies it; any other token has to name one as
+ * `owner/project`, and naming one it cannot reach is a 401 rather than a 404 —
+ * which keeps the existence of other projects undisclosed.
  *
  * The account comes along because the plan decides the size cap, the retention
  * and the visibilities allowed.
@@ -757,7 +757,7 @@ async function resolveUploadTarget(args: {
 
   const project = await (async () => {
     if (auth.type === "project") {
-      return auth.project;
+      return resolveAuthProject(auth, projectPath);
     }
     if (!projectPath) {
       throw boom(
@@ -874,7 +874,7 @@ async function loadMediaForAuth(args: {
   }
 
   if (auth.type === "project") {
-    if (media.projectId !== auth.project.id) {
+    if (!auth.projects.some((project) => project.id === media.projectId)) {
       throw boom(404, "Media not found");
     }
     return media;

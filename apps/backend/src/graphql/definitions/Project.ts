@@ -209,7 +209,6 @@ export const typeDefs = gql`
   type Project implements Node {
     id: ID!
     name: String!
-    token: String
     "Total number of builds for this project"
     buildsCount: Int!
     "Builds associated to the project"
@@ -478,8 +477,6 @@ export const typeDefs = gql`
     importGitlabProject(input: ImportGitlabProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput!): Project!
-    "Regenerate project token"
-    regenerateProjectToken(id: ID!): Project!
     "Link GitHub Repository"
     linkGithubRepository(input: LinkGithubRepositoryInput!): Project!
     "Unlink GitHub Repository"
@@ -823,16 +820,6 @@ export const resolvers: IResolvers = {
     },
     ignoreConfig: (project) => {
       return project.$getIgnoreConfig();
-    },
-    token: async (project, _args, ctx) => {
-      if (!ctx.auth) {
-        return null;
-      }
-      const permissions = await project.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("review")) {
-        return null;
-      }
-      return project.token;
     },
     latestAutoApprovedBuild: async (project) => {
       const latestAutoApprovedBuild = await Build.query()
@@ -1591,18 +1578,6 @@ export const resolvers: IResolvers = {
       } catch (error) {
         throw toGraphQLError(error);
       }
-    },
-    regenerateProjectToken: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      const project = await getAdminProject({
-        id: args.id,
-        user: ctx.auth.user,
-      });
-
-      const token = Project.generateToken();
-      return project.$query().patchAndFetch({ token });
     },
   },
 };

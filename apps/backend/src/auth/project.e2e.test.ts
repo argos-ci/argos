@@ -19,7 +19,9 @@ const test = base.extend<{
     await use(factory);
   },
   project: async ({ factory }, use) => {
-    const project = await factory.Project.create({
+    const project = await factory.Project.create();
+    await factory.createProjectToken({
+      projects: [project],
       token: "project-token",
     });
     await use(project);
@@ -56,19 +58,21 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
 
     expect(payload).toMatchObject({
       type: "project",
-      project: {
-        id: project.id,
-        token: "project-token",
-      },
+      projects: [{ id: project.id }],
     });
   });
 
-  test("refuses the encrypted token as stored in the database", async ({
+  test("refuses the hashed token as stored in the database", async ({
     project,
   }) => {
-    const { token: storedToken } = await knex("projects")
-      .where("id", project.id)
-      .first<{ token: string }>("token");
+    const { token: storedToken } = await knex("project_tokens")
+      .join(
+        "project_token_projects",
+        "project_token_projects.projectTokenId",
+        "project_tokens.id",
+      )
+      .where("project_token_projects.projectId", project.id)
+      .first<{ token: string }>("project_tokens.token");
     expect(storedToken).not.toBe("project-token");
 
     await expect(
@@ -91,9 +95,7 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
 
     expect(payload).toMatchObject({
       type: "project",
-      project: {
-        id: project.id,
-      },
+      projects: [{ id: project.id }],
     });
   });
 
@@ -111,9 +113,7 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
       getAuthProjectPayloadFromBearerToken("tokenless-bearer"),
     ).resolves.toMatchObject({
       type: "project",
-      project: {
-        id: project.id,
-      },
+      projects: [{ id: project.id }],
     });
 
     expect(getProject).toHaveBeenCalledWith("tokenless-bearer");
@@ -141,7 +141,8 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
       getAuthProjectPayloadFromBearerToken("project-token"),
     ).rejects.toMatchObject({
       statusCode: 401,
-      message: `Project not found in Argos. If the issue persists, verify your token. (token: "project-token").`,
+      message:
+        "This project token is not linked to any project anymore, create a new one.",
     });
   });
 

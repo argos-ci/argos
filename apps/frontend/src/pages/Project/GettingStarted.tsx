@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
@@ -13,8 +13,11 @@ import {
 import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { CreateProjectTokenMutation } from "@/containers/ProjectToken/CreateProjectTokenDialog";
+import { UPLOAD_PRESET } from "@/containers/ProjectToken/permissions";
 import { DocumentType, graphql } from "@/gql";
-import { LinkButton } from "@/ui/Button";
+import { ProjectPermission } from "@/gql/graphql";
+import { Button, LinkButton } from "@/ui/Button";
 import { Code } from "@/ui/Code";
 import { HeadlessLink, Link, LinkStyleButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
@@ -24,12 +27,15 @@ import { Time } from "@/ui/Time";
 import { getItem, setItem } from "@/util/storage";
 
 import { AutomationLibraryIcon } from "../Build/metadata/automationLibrary/AutomationLibraryIcon";
+import { useProjectOutletContext } from "./ProjectOutletContext";
 import { useProjectParams } from "./ProjectParams";
 
 const _ProjectFragment = graphql(`
   fragment GettingStarted_Project on Project {
     id
-    token
+    account {
+      id
+    }
   }
 `);
 
@@ -255,7 +261,10 @@ export function GettingStarted(props: {
   const { project } = props;
   const params = useProjectParams();
   invariant(params, "it is a project route");
-  const token = project.token ?? "<ARGOS_TOKEN>";
+  // Tokens are only ever shown at creation: one generated here lasts until the
+  // page is left.
+  const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const token = createdToken ?? "<ARGOS_TOKEN>";
   const [framework, selectFramework] = useFramework(project.id);
 
   const { data, error } = useQuery(GettingStartedQuery, {
@@ -292,6 +301,13 @@ export function GettingStarted(props: {
             token={token}
             framework={framework}
             selectFramework={selectFramework}
+            tokenSetup={
+              <TokenSetup
+                project={project}
+                createdToken={createdToken}
+                onCreate={setCreatedToken}
+              />
+            }
           />
           <FirstBuildStep
             buildCount={buildCount}
@@ -325,8 +341,9 @@ function InstallStep(props: {
   token: string;
   framework: Framework;
   selectFramework: (id: Framework["id"]) => void;
+  tokenSetup: React.ReactNode;
 }) {
-  const { buildCount, token, framework, selectFramework } = props;
+  const { buildCount, token, framework, selectFramework, tokenSetup } = props;
   const [forceOpen, setForceOpen] = useState(false);
   const status = buildCount === 0 ? "active" : "complete";
   const open = status === "active" || forceOpen;
@@ -371,6 +388,7 @@ function InstallStep(props: {
               </Radio.Root>
             ))}
           </RadioGroup>
+          {tokenSetup}
           <p className="text-low text-sm">
             Copy this prompt into your AI assistant (Claude Code, Cursor,
             Copilot…) — or follow the{" "}
@@ -383,6 +401,70 @@ function InstallStep(props: {
         </>
       ) : null}
     </Step>
+  );
+}
+
+const GETTING_STARTED_TOKEN_DAYS = 90;
+
+/**
+ * Fill the commands with a token generated for the project, shown this once.
+ */
+function TokenSetup(props: {
+  project: DocumentType<typeof _ProjectFragment>;
+  createdToken: string | null;
+  onCreate: (token: string) => void;
+}) {
+  const { project, createdToken, onCreate } = props;
+  const { permissions } = useProjectOutletContext();
+  const client = useApolloClient();
+
+  if (createdToken) {
+    return (
+      <p className="text-low text-sm">
+        A project token was generated and filled in below. Copy it now: you
+        won’t be able to see it again. It can upload builds and deployments, and
+        expires in {GETTING_STARTED_TOKEN_DAYS} days — manage your tokens in the
+        project settings.
+      </p>
+    );
+  }
+
+  if (!permissions.includes(ProjectPermission.Admin)) {
+    return (
+      <p className="text-low text-sm">
+        Ask a project administrator for a project token, and use it as{" "}
+        <Code>ARGOS_TOKEN</Code>.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+      <p className="text-low text-sm">
+        Generate a project token to fill in <Code>ARGOS_TOKEN</Code> below.
+      </p>
+      <Button
+        variant="secondary"
+        onAsyncAction={async () => {
+          const result = await client.mutate({
+            mutation: CreateProjectTokenMutation,
+            variables: {
+              input: {
+                accountId: project.account.id,
+                name: "Getting started",
+                projectIds: [project.id],
+                permissions: [...UPLOAD_PRESET.permissions],
+                expireInDays: GETTING_STARTED_TOKEN_DAYS,
+              },
+            },
+          });
+          invariant(result.data, "Project token not created");
+          onCreate(result.data.createProjectToken.token);
+        }}
+      >
+        Generate token
+      </Button>
+    </div>
   );
 }
 

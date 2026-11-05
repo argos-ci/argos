@@ -48,6 +48,7 @@ import {
   Plan,
   Project,
   ProjectDomain,
+  ProjectTokenProject,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -581,6 +582,29 @@ function createDiscordWebhooksByAccountIdLoader() {
       {},
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
+}
+
+/**
+ * The live projects a token reaches, sorted by name: the ones of its own
+ * account (see `getProjectTokenProjects`).
+ */
+function createProjectTokenProjectsLoader() {
+  return new DataLoader<string, Project[]>(async (tokenIds) => {
+    const links = await ProjectTokenProject.query()
+      .withGraphJoined("[project, projectToken]")
+      .whereIn("project_token_projects.projectTokenId", tokenIds as string[])
+      .whereNull("project.deletedAt")
+      .whereColumn("project.accountId", "projectToken.accountId")
+      .orderBy("project.name");
+    const projectsByTokenId = new Map<string, Project[]>();
+    for (const link of links) {
+      invariant(link.project, "Project token link without project");
+      const projects = projectsByTokenId.get(link.projectTokenId) ?? [];
+      projects.push(link.project);
+      projectsByTokenId.set(link.projectTokenId, projects);
+    }
+    return tokenIds.map((tokenId) => projectsByTokenId.get(tokenId) ?? []);
   });
 }
 
@@ -2054,6 +2078,7 @@ export const createLoaders = () => ({
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
+  ProjectTokenProjects: createProjectTokenProjectsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),

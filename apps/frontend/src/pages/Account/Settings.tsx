@@ -15,6 +15,7 @@ import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
+import { AccountProjectTokens } from "@/containers/Account/ProjectTokens";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -100,6 +101,7 @@ const AccountQuery = graphql(`
       ...UserEmail_Account
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
+      ...AccountProjectTokens_Account
       ...OAuthApps_Account
     }
   }
@@ -276,8 +278,11 @@ function PageContent() {
     {
       name: "Tokens",
       slug: "tokens",
-      element: isUser && hasAdminPermission && (
-        <UserAccessTokens account={account} />
+      element: hasAdminPermission && (
+        <>
+          {isUser && <UserAccessTokens account={account} />}
+          <AccountProjectTokens account={account} />
+        </>
       ),
     },
     {

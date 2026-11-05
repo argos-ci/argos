@@ -58,6 +58,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "diffs-project",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "token-with-diffs",
     });
     await use(project);
@@ -211,7 +214,7 @@ describe("listBuildDiffs", () => {
             buildNumber: build.number,
           }),
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-with-diffs")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({
@@ -451,7 +454,7 @@ describe("listBuildDiffs", () => {
             }),
           )
           .query({ needsReview: "true" })
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-with-diffs")
           .expect(200);
 
         expect(res.body.pageInfo).toEqual({
@@ -476,7 +479,7 @@ describe("listBuildDiffs", () => {
               buildNumber: build.number,
             }),
           )
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-with-diffs")
           .expect(200);
 
         expect(res.body.pageInfo).toEqual({
@@ -564,7 +567,7 @@ describe("listBuildDiffs", () => {
           }),
         )
         .query({ needsReview: "true" })
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-with-diffs")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({

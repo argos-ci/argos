@@ -96,7 +96,9 @@ describe("exchangeGitHubActionsOidcToken", () => {
     expect(Date.parse(res.body.expiresAt)).toBeGreaterThan(Date.now());
 
     const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-    expect(auth.project.id).toBe(linkedProject.project.id);
+    expect(auth.projects.map((project) => project.id)).toEqual([
+      linkedProject.project.id,
+    ]);
     expect(auth.sha).toBe(sha);
   });
 
@@ -128,7 +130,7 @@ describe("exchangeGitHubActionsOidcToken", () => {
       .expect(200);
 
     const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-    expect(auth.project.id).toBe(live.id);
+    expect(auth.projects.map((project) => project.id)).toEqual([live.id]);
   });
 
   test("rejects when every linked project is deleted", async ({

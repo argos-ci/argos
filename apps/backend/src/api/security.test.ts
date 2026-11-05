@@ -2,6 +2,8 @@ import type { Request } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
+import { Project } from "@/database/models";
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 
 import { getAuthPayloadFromExpressReq } from "./auth/project";
 import {
@@ -17,11 +19,13 @@ vi.mock("./auth/project", () => ({
   getAuthPayloadFromExpressReq: vi.fn(),
 }));
 
-const projectPayload = {
+const projectPayload: AuthProjectPayload = {
   type: "project",
-  project: { id: "project-1" },
+  projects: [Project.fromJson({ id: "project-1" }, { skipValidation: true })],
+  permissions: PROJECT_TOKEN_PERMISSION_LIST,
+  tokenId: "project-token-1",
   sha: null,
-} as AuthProjectPayload;
+};
 
 const patPayload = {
   type: "pat",
@@ -52,10 +56,12 @@ describe("security definitions", () => {
   });
 
   it("declares the expected requirement shapes", () => {
-    expect(projectTokenAuth).toEqual([{ projectToken: [] }]);
+    expect(projectTokenAuth(["builds:write"])).toEqual([
+      { projectToken: ["builds:write"] },
+    ]);
     expect(personalAccessTokenAuth).toEqual([{ personalAccessToken: [] }]);
     expect(anyTokenOrOAuthAuth(["projects:read"])).toEqual([
-      { projectToken: [] },
+      { projectToken: ["projects:read"] },
       { personalAccessToken: [] },
       { oauth2: ["projects:read"] },
     ]);
@@ -71,9 +77,9 @@ describe("authenticateRequest", () => {
 
   it("returns the project payload for a project-token endpoint", async () => {
     resolveAs(projectPayload);
-    await expect(authenticateRequest(request, projectTokenAuth)).resolves.toBe(
-      projectPayload,
-    );
+    await expect(
+      authenticateRequest(request, projectTokenAuth(["builds:write"])),
+    ).resolves.toBe(projectPayload);
   });
 
   it("returns the PAT payload for a personal-access-token endpoint", async () => {
@@ -86,7 +92,7 @@ describe("authenticateRequest", () => {
   it("rejects a personal access token on a project-token endpoint", async () => {
     resolveAs(patPayload);
     await expect(
-      authenticateRequest(request, projectTokenAuth),
+      authenticateRequest(request, projectTokenAuth(["builds:write"])),
     ).rejects.toMatchObject({
       statusCode: 401,
       message: expect.stringContaining("project token"),
