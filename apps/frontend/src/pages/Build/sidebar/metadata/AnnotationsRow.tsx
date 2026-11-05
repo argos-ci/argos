@@ -1,7 +1,8 @@
-import { InfoIcon, TriangleAlertIcon, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 import { Linkify } from "@/containers/Linkify";
 import type { ScreenshotMetadataTestAnnotation } from "@/gql/graphql";
+import { InfoIcon, TriangleAlertIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Truncable } from "@/ui/Truncable";
 import type { UIColor } from "@/util/colors";

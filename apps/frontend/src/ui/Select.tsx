@@ -1,13 +1,14 @@
 import { createContext, use, type ReactNode } from "react";
 import { Select as BaseSelect } from "@base-ui/react/select";
 import { clsx } from "clsx";
-import { ChevronDownIcon } from "lucide-react";
 import {
   useController,
   type Control,
   type FieldValues,
   type Path,
 } from "react-hook-form";
+
+import { ChevronDownIcon } from "@/ui/argos-icons";
 
 import { FieldErrorContext } from "./FieldError";
 

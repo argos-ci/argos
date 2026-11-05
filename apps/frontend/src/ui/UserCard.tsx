@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSubscription } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { BotIcon, ClockIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { UserType } from "@/gql/graphql";
+import { BotIcon, ClockIcon } from "@/ui/argos-icons";
 
 import { type MentionUser } from "./Editor/mention";
 import { Time } from "./Time";

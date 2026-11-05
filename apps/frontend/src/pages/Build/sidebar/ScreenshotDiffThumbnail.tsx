@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
-import { FileIcon, ImageIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { FileIcon, ImageIcon } from "@/ui/argos-icons";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { checkIsImageContentType } from "@/util/content-type";
 

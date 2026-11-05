@@ -1,4 +1,4 @@
-import { GlobeIcon } from "lucide-react";
+import { GlobeIcon } from "@/ui/argos-icons";
 
 import chromeIcon from "./logos/chrome.svg";
 import chromiumIcon from "./logos/chromium.svg";

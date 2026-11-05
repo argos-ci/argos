@@ -1,10 +1,10 @@
 import { useFragment } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { CircleCheckIcon, FlagOffIcon, WavesIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
+import { CircleCheckIcon, FlagOffIcon, WavesIcon } from "@/ui/argos-icons";
 import { HeadlessLink } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";

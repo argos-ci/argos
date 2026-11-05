@@ -1,10 +1,10 @@
 import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { AlertTriangleIcon, HistoryIcon } from "lucide-react";
 
 import { useRefetchWhenActive } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
+import { HistoryIcon, TriangleAlertIcon } from "@/ui/argos-icons";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
@@ -134,7 +134,7 @@ export function NewerBuildBanner(props: { params: BuildParams }) {
     return `branch ${build.branch}`;
   })();
   const reviewing = hasReviewMarks && !build.viewerHasSubmittedReview;
-  const Icon = reviewing ? AlertTriangleIcon : HistoryIcon;
+  const Icon = reviewing ? TriangleAlertIcon : HistoryIcon;
 
   return (
     <Banner

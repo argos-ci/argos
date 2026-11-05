@@ -1,8 +1,8 @@
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { CheckIcon, ChevronDownIcon, CopyIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
+import { CheckIcon, ChevronDownIcon, CopyIcon } from "@/ui/argos-icons";
 import {
   Button,
   ButtonIcon,

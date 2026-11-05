@@ -1,9 +1,9 @@
 import { memo } from "react";
-import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission } from "@/gql/graphql";
+import { ThumbsDownIcon, ThumbsUpIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { useEventCallback } from "@/ui/useEventCallback";

@@ -1,10 +1,10 @@
 import { use, useMemo, useState } from "react";
 import { clsx } from "clsx";
-import { XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildReviewEvent, ScreenshotDiffStatus } from "@/gql/graphql";
+import { XIcon } from "@/ui/argos-icons";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { useOverlayTriggerState } from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";

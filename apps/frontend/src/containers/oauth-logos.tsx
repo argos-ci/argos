@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
-import { TerminalIcon } from "lucide-react";
+
+import { TerminalIcon } from "@/ui/argos-icons";
 
 /**
  * Official logos for verified well-known OAuth apps, keyed by `knownAppId` in

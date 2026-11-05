@@ -2,11 +2,11 @@ import { ComponentProps, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { EyeOffIcon } from "lucide-react";
 
 import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { EyeOffIcon } from "@/ui/argos-icons";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { toast } from "@/ui/Toaster";

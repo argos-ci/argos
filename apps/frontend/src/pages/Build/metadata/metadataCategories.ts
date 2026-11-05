@@ -5,7 +5,7 @@ import {
   PrinterIcon,
   SunMoonIcon,
   TagIcon,
-} from "lucide-react";
+} from "@/ui/argos-icons";
 
 export const MetadataCategory = {
   browser: "browser",

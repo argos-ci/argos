@@ -14,15 +14,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { useAtom, useAtomValue } from "jotai/react";
-import {
-  BlendIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  DownloadIcon,
-  FileDownIcon,
-  Layers2Icon,
-  type LucideIcon,
-} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 import {
   getCopyImageSubmenu,
@@ -40,6 +32,14 @@ import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { BranchLink, CommitLink } from "@/pages/Build/GitLink";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import {
+  BlendIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DownloadIcon,
+  FileDownIcon,
+  Layers2Icon,
+} from "@/ui/argos-icons";
 import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { MenuItem, MenuSeparator } from "@/ui/menu-kit";

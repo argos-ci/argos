@@ -1,17 +1,17 @@
 import {
-  CircleCheckIcon,
-  CircleXIcon,
-  InfoIcon,
-  TriangleAlertIcon,
-  XIcon,
-} from "lucide-react";
-import {
   ExternalToast,
   Toaster as Sonner,
   toast as sonnerToast,
   ToasterProps,
 } from "sonner";
 
+import {
+  CircleCheckIcon,
+  CircleXIcon,
+  InfoIcon,
+  TriangleAlertIcon,
+  XIcon,
+} from "@/ui/argos-icons";
 import { useColorMode } from "@/ui/ColorMode";
 import { Loader } from "@/ui/Loader";
 
@@ -21,18 +21,20 @@ export function Toaster(props: ToasterProps) {
     <Sonner
       theme={colorMode ?? "system"}
       closeButton
+      // The badges are painted solid, so they undo the 20% wash the icon set
+      // gives them.
       icons={{
         info: (
-          <InfoIcon className="size-4 text-(--gray-1) [&_circle]:fill-(--gray-12) [&_circle]:stroke-(--gray-12)" />
+          <InfoIcon className="size-4 text-(--gray-1) [&_circle]:fill-(--gray-12) [&_circle]:stroke-(--gray-12) [&_circle]:[fill-opacity:1]" />
         ),
         success: (
-          <CircleCheckIcon className="size-4 text-white [&_circle]:fill-(--grass-9) [&_circle]:stroke-(--grass-9)" />
+          <CircleCheckIcon className="size-4 text-white [&_circle]:fill-(--grass-9) [&_circle]:stroke-(--grass-9) [&_circle]:[fill-opacity:1]" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4 text-white [&_path:first-child]:fill-(--orange-9) [&_path:first-child]:stroke-(--orange-9)" />
+          <TriangleAlertIcon className="size-4 text-white [&_path:first-child]:fill-(--orange-9) [&_path:first-child]:stroke-(--orange-9) [&_path:first-child]:[fill-opacity:1]" />
         ),
         error: (
-          <CircleXIcon className="size-4 text-white [&_circle]:fill-(--tomato-9) [&_circle]:stroke-(--tomato-9)" />
+          <CircleXIcon className="size-4 text-white [&_circle]:fill-(--tomato-9) [&_circle]:stroke-(--tomato-9) [&_circle]:[fill-opacity:1]" />
         ),
         loading: <Loader delay={0} className="text-low size-4" />,
         close: <XIcon className="size-3.5" />,

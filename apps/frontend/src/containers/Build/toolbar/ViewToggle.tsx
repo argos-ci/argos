@@ -1,16 +1,16 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
 
-import { Button } from "@/ui/Button";
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import {
   BaselineViewIcon,
   ChangesViewIcon,
   OnionViewIcon,
   SplitViewIcon,
   SwipeViewIcon,
-} from "@/ui/Icons";
+} from "@/ui/argos-icons";
+import { Button } from "@/ui/Button";
+import { ButtonGroup } from "@/ui/ButtonGroup";
+import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { useBuildHotkey } from "../BuildHotkeys";

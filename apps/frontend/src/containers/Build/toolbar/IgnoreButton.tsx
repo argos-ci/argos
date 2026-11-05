@@ -1,13 +1,13 @@
 import { memo, useState } from "react";
 import { useApolloClient, useFragment } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { FlagOffIcon } from "lucide-react";
 
 import { useAuth } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { useProjectIgnoreEnabled } from "@/containers/Project/IgnoreContext";
 import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { FlagOffIcon } from "@/ui/argos-icons";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import {

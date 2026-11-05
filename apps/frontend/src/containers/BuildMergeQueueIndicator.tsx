@@ -1,5 +1,4 @@
-import { SquareStackIcon } from "lucide-react";
-
+import { SquareStackIcon } from "@/ui/argos-icons";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function BuildMergeQueueIndicator() {

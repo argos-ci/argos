@@ -5,7 +5,8 @@ import {
   type HTMLAttributeAnchorTarget,
 } from "react";
 import { clsx } from "clsx";
-import { ExternalLinkIcon } from "lucide-react";
+
+import { ExternalLinkIcon } from "@/ui/argos-icons";
 
 import { RouterLink } from "./RouterLink";
 

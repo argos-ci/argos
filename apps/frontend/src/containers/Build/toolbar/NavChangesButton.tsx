@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { ChevronLeftIcon, ChevronRightIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -21,7 +21,7 @@ function GoToChangesButton(props: { direction: -1 | 1 }) {
       enabled,
     },
   );
-  const Icon = direction === -1 ? ChevronLeft : ChevronRight;
+  const Icon = direction === -1 ? ChevronLeftIcon : ChevronRightIcon;
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
       <Button variant="secondary" iconOnly onClick={go} disabled={!enabled}>

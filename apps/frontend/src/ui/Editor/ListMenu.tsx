@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/react";
-import { ChevronDownIcon, ListIcon, ListOrderedIcon } from "lucide-react";
 
+import { ChevronDownIcon, ListIcon, ListOrderedIcon } from "@/ui/argos-icons";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { MOD, SHIFT } from "@/util/os";

@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { MessageSquareIcon, MessageSquareOffIcon } from "lucide-react";
 
+import { MessageSquareIcon, MessageSquareOffIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
 

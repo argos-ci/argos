@@ -1,6 +1,5 @@
-import { MessageSquareIcon } from "lucide-react";
-
 import { DocumentType, graphql } from "@/gql";
+import { MessageSquareIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 
 export const PendingCommentsSection_Build = graphql(`

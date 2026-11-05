@@ -1,7 +1,7 @@
 import { memo } from "react";
-import { AlertTriangleIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { TriangleAlertIcon } from "@/ui/argos-icons";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
@@ -35,7 +35,7 @@ export const OvercapacityBanner = memo(
         className="flex shrink-0 items-center justify-center gap-2 border-b"
         color={consumptionRatio >= 1 ? "danger" : "warning"}
       >
-        <AlertTriangleIcon className="size-4" />
+        <TriangleAlertIcon className="size-4" />
         <span>
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.

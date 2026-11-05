@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
-import { TagIcon } from "lucide-react";
 
+import { TagIcon } from "@/ui/argos-icons";
 import { Chip, type ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

@@ -4,9 +4,13 @@
  *
  * The chassis is Lucide's — 24px grid, 2px stroke, round caps and joins,
  * `currentColor` — and each icon is built with `createLucideIcon` under the
- * name (and aliases) of the Lucide icon it replaces. It takes the same props,
- * renders the same `lucide-<name>` classes Playwright locates icon-only
- * buttons by, and swaps in with an import change.
+ * name (and aliases) of the Lucide icon it replaced. It takes the same props
+ * and renders the same `lucide-<name>` classes, which Playwright locates
+ * icon-only buttons by: keep the name when redrawing one.
+ *
+ * Import icons from `@/ui/argos-icons`. A new one belongs to the family file
+ * it fits, follows the rules below, and gets an entry in `catalog.ts` so it
+ * shows up in Storybook.
  *
  * What makes them Argos:
  *

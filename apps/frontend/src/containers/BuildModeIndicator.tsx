@@ -1,13 +1,10 @@
 import { memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
-import {
-  GitPullRequestIcon,
-  TowerControlIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 import { BuildMode } from "@/gql/graphql";
+import { GitPullRequestIcon, TowerControlIcon } from "@/ui/argos-icons";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function BuildModeDescription(props: { mode: BuildMode }) {

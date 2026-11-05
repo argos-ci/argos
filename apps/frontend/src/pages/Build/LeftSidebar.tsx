@@ -1,9 +1,9 @@
 import { memo, startTransition, useCallback, useRef } from "react";
-import { SearchIcon, XIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
+import { SearchIcon, XIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { PillTab, TabList, TabPanel, Tabs } from "@/ui/Tab";

@@ -1,19 +1,19 @@
+import { type LucideIcon } from "lucide-react";
+
+import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
 import {
-  AlertCircleIcon,
-  CheckCircle2Icon,
+  CircleAlertIcon,
+  CircleCheckIcon,
+  CircleMinusIcon,
+  CirclePlusIcon,
+  CircleXIcon,
   FlagOffIcon,
-  MinusCircleIcon,
-  PlusCircleIcon,
   RotateCcwIcon,
   SquareSlashIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  XCircleIcon,
-  type LucideIcon,
-} from "lucide-react";
-
-import { ScreenshotDiffStatus } from "@/gql/graphql";
-import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
+} from "@/ui/argos-icons";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 
@@ -82,7 +82,7 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
   [ScreenshotDiffStatus.Failure]: {
     color: "danger",
     label: "Framework test failures",
-    icon: XCircleIcon,
+    icon: CircleXIcon,
   },
   [ScreenshotDiffStatus.RetryFailure]: {
     color: "neutral",
@@ -92,17 +92,17 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
   [ScreenshotDiffStatus.Changed]: {
     color: "warning",
     label: "Changed",
-    icon: AlertCircleIcon,
+    icon: CircleAlertIcon,
   },
   [ScreenshotDiffStatus.Added]: {
     color: "warning",
     label: "Added",
-    icon: PlusCircleIcon,
+    icon: CirclePlusIcon,
   },
   [ScreenshotDiffStatus.Removed]: {
     color: "warning",
     label: "Removed",
-    icon: MinusCircleIcon,
+    icon: CircleMinusIcon,
   },
   [SKIPPED_DIFF_GROUP]: {
     color: "neutral",
@@ -117,7 +117,7 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
   [ScreenshotDiffStatus.Unchanged]: {
     color: "success",
     label: "Unchanged",
-    icon: CheckCircle2Icon,
+    icon: CircleCheckIcon,
   },
   [EvaluationStatus.Rejected]: {
     color: "danger",

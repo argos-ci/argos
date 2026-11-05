@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import { SearchIcon, XIcon } from "lucide-react";
 
+import { SearchIcon, XIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Modal } from "@/ui/Modal";

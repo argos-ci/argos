@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useAtom } from "jotai/react";
-import { EyeIcon } from "lucide-react";
 
+import { EyeIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 

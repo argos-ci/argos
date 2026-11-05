@@ -1,11 +1,11 @@
 import { createContext, use, useId, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ChevronDownIcon } from "lucide-react";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
+import { ChevronDownIcon } from "@/ui/argos-icons";
 import { LinkButton } from "@/ui/Button";
 import {
   Dialog,

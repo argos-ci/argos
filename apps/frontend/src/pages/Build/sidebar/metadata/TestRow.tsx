@@ -1,6 +1,5 @@
-import { FlaskConicalIcon } from "lucide-react";
-
 import type { ScreenshotMetadataTest } from "@/gql/graphql";
+import { FlaskConicalIcon } from "@/ui/argos-icons";
 
 import { LocationChip } from "./LocationChip";
 import { MetadataRow } from "./MetadataRow";

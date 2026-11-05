@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { clsx } from "clsx";
+
 import {
   BoldIcon,
   CodeIcon,
@@ -10,8 +11,7 @@ import {
   SquareCodeIcon,
   StrikethroughIcon,
   UnderlineIcon,
-} from "lucide-react";
-
+} from "@/ui/argos-icons";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { ALT, MOD, SHIFT } from "@/util/os";
 

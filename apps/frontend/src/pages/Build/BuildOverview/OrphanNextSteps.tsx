@@ -1,7 +1,6 @@
-import { LightBulbIcon } from "@primer/octicons-react";
-
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
+import { LightbulbIcon } from "@/ui/argos-icons";
 import { Link } from "@/ui/Link";
 
 import { getProjectURL } from "../../Project/ProjectParams";
@@ -68,7 +67,7 @@ export function OrphanNextSteps(props: { build: Build }) {
       </ol>
       {params ? (
         <p className="text-low mt-4 text-sm">
-          <LightBulbIcon className="text-low mr-2 inline-block size-4" />
+          <LightbulbIcon className="text-low mr-2 inline-block size-4" />
           You can configure the base branch in the{" "}
           <Link href={`${getProjectURL(params)}/settings/baseline-builds`}>
             project settings

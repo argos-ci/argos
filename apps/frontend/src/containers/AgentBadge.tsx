@@ -1,6 +1,5 @@
-import { BotIcon } from "lucide-react";
-
 import { KNOWN_APP_LOGOS } from "@/containers/brand-logos";
+import { BotIcon } from "@/ui/argos-icons";
 import { Tooltip } from "@/ui/Tooltip";
 
 export type Agent = {

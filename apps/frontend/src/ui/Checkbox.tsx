@@ -1,6 +1,5 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 import clsx from "clsx";
-import { Check, Minus } from "lucide-react";
 import {
   useController,
   type FieldValues,
@@ -8,6 +7,7 @@ import {
   type UseControllerProps,
 } from "react-hook-form";
 
+import { CheckIcon, MinusIcon } from "@/ui/argos-icons";
 import { mergeRefs } from "@/util/merge-refs";
 
 interface CheckboxProps
@@ -72,9 +72,9 @@ export function Checkbox(props: CheckboxProps) {
       >
         <BaseCheckbox.Indicator className="flex">
           {indeterminate ? (
-            <Minus className="size-4" />
+            <MinusIcon className="size-4" />
           ) : (
-            <Check className="size-4" />
+            <CheckIcon className="size-4" />
           )}
         </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>

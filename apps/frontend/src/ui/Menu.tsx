@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
-import { ChevronsUpDownIcon } from "lucide-react";
+
+import { ChevronsUpDownIcon } from "@/ui/argos-icons";
 
 /**
  * The stubby chevron button a breadcrumb hangs its menu from — all that is

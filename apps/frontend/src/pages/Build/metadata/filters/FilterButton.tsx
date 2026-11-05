@@ -1,8 +1,8 @@
 import { memo, use, useState } from "react";
 import { invariant } from "@argos/util/invariant";
-import { FilterIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { FunnelIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
@@ -37,7 +37,7 @@ function InnerFilterButton(props: { state: FilterState }) {
       >
         <MenuTrigger>
           <Button variant="ghost" iconOnly size="small">
-            <FilterIcon />
+            <FunnelIcon />
           </Button>
         </MenuTrigger>
       </HotkeyTooltip>

@@ -1,21 +1,30 @@
 ---
 name: lucide-style-icons
-description: Design original SVG icons that match the Lucide icon set used across the Argos frontend — grid, stroke and corner conventions, createLucideIcon wiring, Storybook documentation, 16px verification. Use when a concept has no fitting Lucide icon and needs a custom one, or when reviewing/adjusting the existing custom icons.
+description: Design original SVG icons for the Argos frontend — the Argos icon set the build page draws from, and Lucide-style icons elsewhere — grid, stroke, corner and wash conventions, createLucideIcon wiring, Storybook documentation, 16px verification. Use when the build page needs a new icon, when a concept has no fitting Lucide icon, or when reviewing/adjusting the existing custom icons.
 ---
 
 # Lucide-style custom icons
 
-Custom icons live in `apps/frontend/src/ui/Icons.tsx` and are documented in
-`apps/frontend/src/ui/Icons.stories.tsx`. Read both before adding one — new
-icons should extend the metaphors already there, not invent parallel ones.
+Custom icons live in `apps/frontend/src/ui/argos-icons/`: the Argos set,
+which the build page and the components it shares draw every icon from. Read
+`language.ts` (the rules that make them Argos's), `catalog.ts` (every icon and
+where it is used) and `ArgosIcons.stories.tsx` before adding one — new icons
+should extend the metaphors already there, not invent parallel ones.
 
-## First: prove Lucide doesn't have it
+## First: find the metaphor in Lucide
 
 Search https://lucide.dev/icons/ (or grep the export list in
 `node_modules/lucide-react/dist/lucide-react.d.ts`) for the concept **and its
-synonyms**. Only draw a custom icon when nothing fits, and say in the icon's
-JSDoc which Lucide icons it borrows from. A custom icon that duplicates a
-Lucide drawing is a bug: it will drift from upstream refinements.
+synonyms**.
+
+- **On the build page** (and anything it imports), add the icon to the Argos
+  set: redraw the Lucide metaphor in the Argos language, under the Lucide name
+  and aliases so the `lucide-<name>` classes stay the same. Never import
+  `lucide-react` icons there directly — one stock icon among Argos's reads as
+  a mistake.
+- **Elsewhere**, pages still import Lucide directly. Only draw a custom icon
+  when nothing fits, and say in its JSDoc which Lucide icons it borrows from:
+  a custom icon that duplicates a Lucide drawing drifts from upstream.
 
 ## Lucide's design language
 
@@ -25,9 +34,11 @@ Lucide drawing is a bug: it will drift from upstream refinements.
   centered.
 - **Stroke only**: 2px stroke, round caps and joins, no fill. Color is
   `currentColor`. `createLucideIcon` applies all of this — never restate it.
+  The Argos set adds one fill, the 20% wash on an icon's subject (`TINT`).
 - **Corners**: 2px radius. `rx="2"` on rects; mid-path either the arc
   `a2 2 0 0 1 -2 2` or the cubic `c-1 0-2-1-2-2` official icons use — both
-  draw the same corner.
+  draw the same corner. The Argos set rounds frames 12 and wider at 3
+  (`FRAME_RADIUS`).
 - **Coordinates**: snap to whole pixels. Sub-pixel values only when optical
   centering demands it (official icons use `.1`/`.9` in cubics, nothing
   finer).
@@ -48,8 +59,8 @@ When several icons sit in the same button group, they are one drawing in
 several states, not several drawings. Build them from **shared geometry
 constants** and change only the ink — the set then reads as a single control,
 and the eye compares the difference instead of re-reading each icon. The
-comparison set in `Icons.tsx` does this: the same two panels every time, solid
-for the side on screen and ghosted for the side held back.
+view modes in `argos-icons/viewer.ts` do this: the same two panels every time,
+washed for the side on screen and ghosted for the side held back.
 
 ## Ghosting a shape
 
@@ -76,13 +87,15 @@ from there (a half-frame from `square-split-horizontal`, the corner peek from
 
 ## Implementation
 
-```tsx
+```ts
 import { createLucideIcon } from "lucide-react";
+
+import { FRAME_RADIUS, TINT } from "./language";
 
 /** What the drawing says, and which Lucide icons it borrows from. */
 export const MyThingIcon = createLucideIcon("my-thing", [
-  ["rect", { x: "3", y: "3", width: "12", height: "12", rx: "2", key: "back" }],
-  ["path", { d: "M21 12v7a2 2 0 0 1-2 2h-7", key: "front-peek" }],
+  ["rect", { x: "3", y: "3", width: "12", height: "12", rx: FRAME_RADIUS, key: "back" }],
+  ["path", { d: "M21 12v7a3 3 0 0 1-3 3h-6", ...TINT, key: "front-peek" }],
 ]);
 ```
 
@@ -97,13 +110,15 @@ export const MyThingIcon = createLucideIcon("my-thing", [
 
 ## Document and validate
 
-1. Add the icon to `Icons.stories.tsx`: at 24px with its name, at 16px, and
-   inside a secondary `iconOnly` `Button` (with `aria-label`) next to the
-   Lucide icons it will sit beside in the real toolbar.
+1. Add the icon to `catalog.ts`, with the Lucide icon it stands in for as
+   `replaced`: the Catalog and AtButtonSize stories then render it at
+   32/24/16px, light and dark. If it sits in a toolbar, add it to the
+   InContext story inside a secondary `iconOnly` `Button` (with
+   `aria-label`).
 2. Run Storybook (`pnpm run --filter @argos/frontend storybook`) and check:
    - legibility at 16px — squint test: is it still distinct from its
      neighbors in the set?
-   - stroke weight looks identical to the adjacent Lucide originals;
+   - stroke weight and wash look like the rest of the set;
    - nothing clips the viewBox edge; the icon doesn't look off-center;
    - both light and dark color schemes.
 3. `pnpm run static-checks` before finishing, like any change.

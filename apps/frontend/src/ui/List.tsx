@@ -1,6 +1,7 @@
 import { ComponentPropsWithRef, memo, ReactNode, useTransition } from "react";
 import { clsx } from "clsx";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
+
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "@/ui/argos-icons";
 
 import { Button } from "./Button";
 import { HeadlessLink, type HeadlessLinkProps } from "./Link";

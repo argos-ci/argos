@@ -1,8 +1,8 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ImageIcon, ScanTextIcon } from "lucide-react";
 
 import { useBuildDiffState } from "@/pages/Build/BuildDiffState";
+import { ImageIcon, ScanTextIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 

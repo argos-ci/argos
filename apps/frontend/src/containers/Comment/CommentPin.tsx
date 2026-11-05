@@ -1,8 +1,7 @@
-import { MessageSquareIcon } from "lucide-react";
-
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import type { ScreenPoint } from "@/containers/Build/projection";
 import { ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "@/containers/Build/Zoomer";
+import { MessageSquareIcon } from "@/ui/argos-icons";
 
 type Avatar = React.ComponentProps<typeof AccountAvatar>["avatar"];
 

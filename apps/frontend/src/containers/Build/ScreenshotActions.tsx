@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import { captureException } from "@sentry/react";
+import { useClipboard } from "use-clipboard-copy";
+
 import {
   CodeIcon,
   CopyIcon,
   DownloadIcon,
   EllipsisVerticalIcon,
   LinkIcon,
-} from "lucide-react";
-import { useClipboard } from "use-clipboard-copy";
-
+} from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import {
   Menu,

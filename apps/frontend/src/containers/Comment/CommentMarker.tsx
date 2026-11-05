@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { flip, useFloating } from "@floating-ui/react-dom";
 import { clsx } from "clsx";
-import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
@@ -11,6 +10,7 @@ import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   ZOOMER_OVERLAY_SCROLLABLE_CLASS,
 } from "@/containers/Build/Zoomer";
+import { CheckIcon, MessageSquareIcon } from "@/ui/argos-icons";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { Time } from "@/ui/Time";
 import { getMentionUser } from "@/ui/UserCard";

@@ -1,5 +1,4 @@
-import { BellIcon, BellOffIcon } from "lucide-react";
-
+import { BellIcon, BellOffIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";

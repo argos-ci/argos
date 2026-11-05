@@ -1,3 +1,9 @@
+import { type LucideIcon } from "lucide-react";
+
+import {
+  ScreenshotMetadataColorScheme,
+  ScreenshotMetadataMediaType,
+} from "@/gql/graphql";
 import {
   LaptopIcon,
   MonitorIcon,
@@ -6,13 +12,7 @@ import {
   SmartphoneIcon,
   SunIcon,
   TabletIcon,
-  type LucideIcon,
-} from "lucide-react";
-
-import {
-  ScreenshotMetadataColorScheme,
-  ScreenshotMetadataMediaType,
-} from "@/gql/graphql";
+} from "@/ui/argos-icons";
 
 export const viewportIcons = {
   desktop: LaptopIcon,

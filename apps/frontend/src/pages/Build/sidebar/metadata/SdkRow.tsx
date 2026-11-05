@@ -1,8 +1,8 @@
 import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
-import { CloudDownloadIcon, PackageXIcon } from "lucide-react";
 
 import type { ScreenshotMetadataSdk } from "@/gql/graphql";
+import { CloudDownloadIcon, PackageXIcon } from "@/ui/argos-icons";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip, ChipLink } from "@/ui/Chip";
 import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";

@@ -16,8 +16,8 @@ import { interpolate } from "d3-interpolate";
 import { pointer, select, Selection } from "d3-selection";
 import { transition } from "d3-transition";
 import { zoom, ZoomBehavior, zoomIdentity, ZoomTransform } from "d3-zoom";
-import { MaximizeIcon, MinusIcon, PlusIcon } from "lucide-react";
 
+import { MaximizeIcon, MinusIcon, PlusIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";

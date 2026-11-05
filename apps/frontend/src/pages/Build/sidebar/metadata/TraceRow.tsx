@@ -1,5 +1,4 @@
-import { BugPlayIcon } from "lucide-react";
-
+import { BugPlayIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Link } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";

@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
-import { FlaskConicalIcon } from "lucide-react";
 
+import { FlaskConicalIcon } from "@/ui/argos-icons";
 import { capitalize } from "@/util/string";
 
 import cypressDarkIcon from "./logos/cypress-dark.svg";

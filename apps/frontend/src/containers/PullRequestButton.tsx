@@ -1,13 +1,13 @@
+import { clsx } from "clsx";
+
+import { DocumentType, graphql } from "@/gql";
+import { PullRequestState } from "@/gql/graphql";
 import {
   GitMergeIcon,
   GitPullRequestClosedIcon,
   GitPullRequestDraftIcon,
   GitPullRequestIcon,
-} from "@primer/octicons-react";
-import { clsx } from "clsx";
-
-import { DocumentType, graphql } from "@/gql";
-import { PullRequestState } from "@/gql/graphql";
+} from "@/ui/argos-icons";
 import { Button, ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";

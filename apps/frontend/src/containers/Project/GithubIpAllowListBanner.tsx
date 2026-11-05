@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
-import { AlertTriangleIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
+import { TriangleAlertIcon } from "@/ui/argos-icons";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
@@ -63,7 +63,7 @@ export const GithubIpAllowListBanner = memo(
         className="flex shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b"
         color="danger"
       >
-        <AlertTriangleIcon className="size-4 shrink-0" />
+        <TriangleAlertIcon className="size-4 shrink-0" />
         <span>
           An IP allow list on GitHub blocks Argos from {repository.fullName}:
           builds may fail, and statuses and comments are not posted.

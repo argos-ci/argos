@@ -1,5 +1,4 @@
-import { BookMarkedIcon } from "lucide-react";
-
+import { BookMarkedIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

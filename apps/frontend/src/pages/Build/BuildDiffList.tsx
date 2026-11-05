@@ -16,13 +16,6 @@ import {
   useVirtualizer,
 } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
-import {
-  ChevronDownIcon,
-  CornerDownRightIcon,
-  HomeIcon,
-  ImagesIcon,
-  SquareStackIcon,
-} from "lucide-react";
 import memoize from "memoize";
 
 import {
@@ -42,6 +35,13 @@ import {
 } from "@/containers/Build/BuildDiffListPrimitives";
 import { NoScreenshotsBuildEmptyState } from "@/containers/Build/BuildEmptyStates";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import {
+  ChevronDownIcon,
+  CornerDownRightIcon,
+  HouseIcon,
+  ImagesIcon,
+  SquareStackIcon,
+} from "@/ui/argos-icons";
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
@@ -989,7 +989,7 @@ function OverviewButton() {
         aria-label="Overview"
         aria-current={selected ? "page" : undefined}
       >
-        <HomeIcon />
+        <HouseIcon />
       </LinkButton>
     </Tooltip>
   );

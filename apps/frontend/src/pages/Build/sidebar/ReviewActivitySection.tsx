@@ -3,7 +3,6 @@ import type { Reference } from "@apollo/client";
 import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { BanIcon, FileUpIcon, MailCheckIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useParams } from "react-router";
 
@@ -20,6 +19,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission, ReviewChangeType } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { Activity, ActivityItem } from "@/ui/Activity";
+import { BanIcon, FileUpIcon, MailCheckIcon } from "@/ui/argos-icons";
 import type { MentionUser } from "@/ui/Editor/mention";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";

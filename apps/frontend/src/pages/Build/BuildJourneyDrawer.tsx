@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { clsx } from "clsx";
-import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
 import {
   type DiffGroupName,
@@ -12,6 +11,7 @@ import {
   useBuildHotkey,
 } from "@/containers/Build/BuildHotkeys";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { ChevronRightIcon, WaypointsIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";

@@ -1,20 +1,20 @@
 import clsx from "clsx";
+import { useLocation } from "react-router";
+
+import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
-  ActivitySquareIcon,
+  CirclePlusIcon,
   CommandIcon,
   FileTextIcon,
   LogOutIcon,
   MessagesSquareIcon,
   MonitorIcon,
   MoonIcon,
-  PlusCircleIcon,
   SettingsIcon,
+  SquareActivityIcon,
   SunIcon,
-} from "lucide-react";
-import { useLocation } from "react-router";
-
-import { logout, useAuth, type AuthAccount } from "@/containers/Auth";
-import { getAccountURL } from "@/pages/Account/AccountParams";
+} from "@/ui/argos-icons";
 import { LinkButton } from "@/ui/Button";
 import { ColorMode, useColorMode } from "@/ui/ColorMode";
 import {
@@ -108,12 +108,12 @@ function UserMenu(props: { account: AuthAccount }) {
       </MenuTrigger>
       <Menu side="bottom" align="end" className="w-60">
         <MenuItem
-          icon={<PlusCircleIcon />}
+          icon={<CirclePlusIcon />}
           href={`${getAccountURL({ accountSlug: account.slug })}/new`}
         >
           New Project
         </MenuItem>
-        <MenuItem icon={<PlusCircleIcon />} href="/teams/new">
+        <MenuItem icon={<CirclePlusIcon />} href="/teams/new">
           New Team
         </MenuItem>
         <MenuItem
@@ -149,7 +149,7 @@ function UserMenu(props: { account: AuthAccount }) {
           Discord community
         </MenuItem>
         <MenuItem
-          icon={<ActivitySquareIcon />}
+          icon={<SquareActivityIcon />}
           href="https://argos.openstatus.dev"
           target="_blank"
         >

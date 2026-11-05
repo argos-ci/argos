@@ -1,12 +1,12 @@
+import { type LucideIcon } from "lucide-react";
+
+import { ReviewState } from "@/gql/graphql";
 import {
   ClockIcon,
   MessageCircleIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  type LucideIcon,
-} from "lucide-react";
-
-import { ReviewState } from "@/gql/graphql";
+} from "@/ui/argos-icons";
 
 type ReviewLike = {
   date: string;

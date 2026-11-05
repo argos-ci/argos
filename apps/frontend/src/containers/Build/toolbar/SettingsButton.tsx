@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom } from "jotai/react";
-import { PaintbrushIcon } from "lucide-react";
 
+import { PaintbrushIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { ColorSwatchPicker, ColorSwatchPickerItem } from "@/ui/ColorPicker";
 import { Dialog, DialogBody, DialogTitle, DialogTrigger } from "@/ui/Dialog";

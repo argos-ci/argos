@@ -1,5 +1,7 @@
 import React from "react";
 import { clsx } from "clsx";
+
+import { DocumentType, graphql } from "@/gql";
 import {
   CheckCheckIcon,
   ClockIcon,
@@ -12,9 +14,7 @@ import {
   MonitorSmartphoneIcon,
   ScanEyeIcon,
   SunMoonIcon,
-} from "lucide-react";
-
-import { DocumentType, graphql } from "@/gql";
+} from "@/ui/argos-icons";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { lowTextColorClassNames, UIColor } from "@/util/colors";
 import { capitalize } from "@/util/string";

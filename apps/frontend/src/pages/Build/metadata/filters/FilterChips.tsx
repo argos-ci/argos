@@ -1,7 +1,7 @@
 import { memo, use } from "react";
 import { invariant } from "@argos/util/invariant";
-import { XIcon } from "lucide-react";
 
+import { XIcon } from "@/ui/argos-icons";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip, ChipButton } from "@/ui/Chip";
 import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";

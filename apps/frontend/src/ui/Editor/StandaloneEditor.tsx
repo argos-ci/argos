@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import clsx from "clsx";
-import { ArrowUpIcon } from "lucide-react";
 
+import { ArrowUpIcon } from "@/ui/argos-icons";
 import { toast } from "@/ui/Toaster";
 import { MOD } from "@/util/os";
 

@@ -1,10 +1,6 @@
-import {
-  EllipsisIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
+import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "@/ui/argos-icons";
 import { Chip, type ChipColor } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

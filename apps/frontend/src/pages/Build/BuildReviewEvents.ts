@@ -1,11 +1,11 @@
+import { type LucideIcon } from "lucide-react";
+
+import { BuildReviewEvent } from "@/gql/graphql";
 import {
   MessageCircleIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  type LucideIcon,
-} from "lucide-react";
-
-import { BuildReviewEvent } from "@/gql/graphql";
+} from "@/ui/argos-icons";
 import type { UIColor } from "@/util/colors";
 
 export type BuildReviewEventDefinition = {

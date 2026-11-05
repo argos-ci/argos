@@ -1,12 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import { useSetAtom } from "jotai/react";
-import { MapPinIcon } from "lucide-react";
 
 import {
   commentsVisibleAtom,
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
 import { DocumentType, graphql } from "@/gql";
+import { MapPinIcon } from "@/ui/argos-icons";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";

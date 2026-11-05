@@ -1,19 +1,19 @@
-import {
-  BellIcon,
-  BellOffIcon,
-  CheckIcon,
-  LinkIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  SparklesIcon,
-  Trash2Icon,
-} from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
 import {
   getAiPromptTargetItems,
   useAiPromptTarget,
 } from "@/containers/AiPromptButton";
+import {
+  BellIcon,
+  BellOffIcon,
+  CheckIcon,
+  EllipsisIcon,
+  LinkIcon,
+  PencilIcon,
+  SparklesIcon,
+  TrashIcon,
+} from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import {
   Menu,
@@ -72,7 +72,7 @@ export function CommentActionsMenu(props: {
           size="small"
           aria-label="Comment actions"
         >
-          <MoreHorizontalIcon />
+          <EllipsisIcon />
         </Button>
       </MenuTrigger>
       <Menu side="bottom" align="end" aria-label="Comment actions">
@@ -132,11 +132,7 @@ export function CommentActionsMenu(props: {
         {onDelete ? (
           <>
             <MenuSeparator />
-            <MenuItem
-              icon={<Trash2Icon />}
-              variant="danger"
-              onAction={onDelete}
-            >
+            <MenuItem icon={<TrashIcon />} variant="danger" onAction={onDelete}>
               Delete
             </MenuItem>
           </>

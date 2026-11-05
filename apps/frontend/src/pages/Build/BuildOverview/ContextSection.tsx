@@ -1,8 +1,8 @@
 import { clsx } from "clsx";
-import { MonitorSmartphoneIcon, SunMoonIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
+import { MonitorSmartphoneIcon, SunMoonIcon } from "@/ui/argos-icons";
 import { Link } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { StackedItems } from "@/ui/StackedItems";

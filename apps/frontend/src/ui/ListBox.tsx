@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Select as BaseSelect } from "@base-ui/react/select";
 import { clsx } from "clsx";
-import { CheckIcon } from "lucide-react";
+
+import { CheckIcon } from "@/ui/argos-icons";
 
 import {
   getMenuItemClassName,

@@ -1,6 +1,5 @@
 import { ComponentProps, memo } from "react";
 import clsx from "clsx";
-import { RefreshCcwIcon } from "lucide-react";
 
 import { AiPromptButton } from "@/containers/AiPromptButton";
 import { useAuth } from "@/containers/Auth";
@@ -14,6 +13,7 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";
+import { RefreshCcwIcon } from "@/ui/argos-icons";
 import { BrandShield } from "@/ui/BrandShield";
 import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";

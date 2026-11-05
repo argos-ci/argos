@@ -1,5 +1,4 @@
-import { GitCompareArrowsIcon } from "lucide-react";
-
+import { GitCompareArrowsIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
 

@@ -1,5 +1,4 @@
-import { LinkIcon } from "lucide-react";
-
+import { LinkIcon } from "@/ui/argos-icons";
 import { ChipLink } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 import { canParseURL } from "@/util/url";

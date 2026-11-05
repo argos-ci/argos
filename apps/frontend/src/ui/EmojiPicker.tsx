@@ -1,6 +1,5 @@
 import { lazy, Suspense, type ComponentProps } from "react";
 import { clsx } from "clsx";
-import { SmilePlusIcon } from "lucide-react";
 import {
   useController,
   type Control,
@@ -8,6 +7,7 @@ import {
   type Path,
 } from "react-hook-form";
 
+import { SmilePlusIcon } from "@/ui/argos-icons";
 import { requestIdle } from "@/util/idle";
 import { mergeRefs } from "@/util/merge-refs";
 

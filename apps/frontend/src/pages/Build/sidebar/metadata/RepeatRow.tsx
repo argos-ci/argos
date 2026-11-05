@@ -1,6 +1,5 @@
-import { RepeatIcon } from "lucide-react";
-
 import type { ScreenshotMetadataTest } from "@/gql/graphql";
+import { RepeatIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

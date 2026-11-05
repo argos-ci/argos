@@ -1,10 +1,10 @@
 import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { SmilePlusIcon } from "lucide-react";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
+import { SmilePlusIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { EmojiPickerPopover, EmojiPickerTrigger } from "@/ui/EmojiPicker";
 import { toast } from "@/ui/Toaster";

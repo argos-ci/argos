@@ -13,14 +13,15 @@ import {
 } from "react";
 import { Popover as BasePopover } from "@base-ui/react/popover";
 import { clsx } from "clsx";
+import { flushSync } from "react-dom";
+
 import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   InfoIcon,
   SearchIcon,
-} from "lucide-react";
-import { flushSync } from "react-dom";
+} from "@/ui/argos-icons";
 
 import {
   getMenuItemClassName,

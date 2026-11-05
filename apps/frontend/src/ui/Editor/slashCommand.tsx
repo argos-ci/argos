@@ -10,6 +10,8 @@ import Suggestion, {
   type SuggestionProps,
 } from "@tiptap/suggestion";
 import { clsx } from "clsx";
+import { type LucideIcon } from "lucide-react";
+
 import {
   Heading1Icon,
   Heading2Icon,
@@ -18,9 +20,7 @@ import {
   ListOrderedIcon,
   QuoteIcon,
   SquareCodeIcon,
-  type LucideIcon,
-} from "lucide-react";
-
+} from "@/ui/argos-icons";
 import { getMenuItemClassName, menuListClassName } from "@/ui/menuStyle";
 import { popupSurfaceClassName } from "@/ui/popupSurface";
 import { Shortcut } from "@/ui/Shortcut";

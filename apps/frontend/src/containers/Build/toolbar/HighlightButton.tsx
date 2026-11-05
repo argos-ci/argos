@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { LocateFixedIcon } from "lucide-react";
 
+import { LocateFixedIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { useEventCallback } from "@/ui/useEventCallback";

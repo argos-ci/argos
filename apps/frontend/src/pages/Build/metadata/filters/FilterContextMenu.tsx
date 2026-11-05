@@ -5,8 +5,8 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { FunnelPlusIcon, FunnelXIcon } from "lucide-react";
 
+import { FunnelPlusIcon, FunnelXIcon } from "@/ui/argos-icons";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 
 import { FilterStateContext } from "./FilterState";

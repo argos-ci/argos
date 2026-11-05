@@ -188,17 +188,19 @@ export const Language: Story = {
 };
 
 function IconCard({ entry }: { entry: IconEntry }) {
-  const { name, Icon, replaces: Replaced, usage } = entry;
+  const { name, Icon, replaced: Replaced, usage } = entry;
   return (
     <div className="flex flex-col gap-2 rounded-lg border p-3">
       <div className="flex items-end gap-3">
         <Icon size={32} />
         <Icon size={24} />
         <Icon size={16} />
-        <span className="text-low ml-auto flex items-center gap-1.5 text-xs">
-          was
-          <Replaced size={16} />
-        </span>
+        {Replaced ? (
+          <span className="text-low ml-auto flex items-center gap-1.5 text-xs">
+            was
+            <Replaced size={16} />
+          </span>
+        ) : null}
       </div>
       <div className="font-mono text-xs">{name}</div>
       <div className="text-low text-xs">{usage}</div>
@@ -224,7 +226,10 @@ export const Catalog: Story = {
   ),
 };
 
-/** Every group as a strip, today's icons over Argos's, at button size. */
+/**
+ * Every group as a strip at button size: the stock icons they replaced over
+ * Argos's. A gap holds the place of an icon that was already Argos's own.
+ */
 function Strips() {
   return (
     <div className="flex flex-col gap-4">
@@ -232,9 +237,13 @@ function Strips() {
         <section key={group.title} className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">{group.title}</h3>
           <div className="flex flex-wrap gap-x-4 gap-y-2 opacity-60">
-            {group.icons.map(({ name, replaces: Replaced }, index) => (
-              <Replaced key={`${name}-${index}`} size={16} />
-            ))}
+            {group.icons.map(({ name, replaced: Replaced }, index) =>
+              Replaced ? (
+                <Replaced key={`${name}-${index}`} size={16} />
+              ) : (
+                <span key={`${name}-${index}`} className="size-4" />
+              ),
+            )}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {group.icons.map(({ name, Icon }, index) => (

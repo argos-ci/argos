@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
-import { MessageSquarePlusIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
+import { MessageSquarePlusIcon } from "@/ui/argos-icons";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";

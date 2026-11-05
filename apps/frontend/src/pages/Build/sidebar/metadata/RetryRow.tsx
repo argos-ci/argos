@@ -1,6 +1,5 @@
-import { RotateCcwIcon } from "lucide-react";
-
 import type { ScreenshotMetadataTest } from "@/gql/graphql";
+import { RotateCcwIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

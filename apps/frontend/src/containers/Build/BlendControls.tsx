@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
+import { ChevronLeftIcon, ChevronRightIcon } from "@/ui/argos-icons";
 import { Slider, SliderThumb, SliderTrack } from "@/ui/Slider";
 import { useEventCallback } from "@/ui/useEventCallback";
 

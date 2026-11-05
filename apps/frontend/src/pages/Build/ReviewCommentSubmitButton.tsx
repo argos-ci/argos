@@ -1,8 +1,7 @@
-import { ArrowUpIcon, MessageSquarePlusIcon } from "lucide-react";
-
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
+import { ArrowUpIcon, MessageSquarePlusIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { MOD } from "@/util/os";

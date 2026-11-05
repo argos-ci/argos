@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ComponentIcon, FlaskConicalIcon, RadarIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { ComponentIcon, FlaskConicalIcon, RadarIcon } from "@/ui/argos-icons";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Truncable } from "@/ui/Truncable";
 

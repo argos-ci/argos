@@ -1,9 +1,8 @@
-import { SlidersHorizontalIcon } from "lucide-react";
-
 import {
   ScreenshotMetadataColorScheme,
   ScreenshotMetadataMediaType,
 } from "@/gql/graphql";
+import { SlidersHorizontalIcon } from "@/ui/argos-icons";
 import { Chip } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 

@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import clsx from "clsx";
 import { useAtom } from "jotai";
-import { PanelRightIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
+import { PanelRightIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Sidebar } from "@/ui/Sidebar";

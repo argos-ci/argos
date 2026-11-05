@@ -1,5 +1,4 @@
-import { ImagesIcon, SquareSlashIcon } from "lucide-react";
-
+import { ImagesIcon, SquareSlashIcon } from "@/ui/argos-icons";
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import {

@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { HandIcon, MessageSquarePlusIcon } from "lucide-react";
 
+import { HandIcon, MessageSquarePlusIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";

@@ -1,9 +1,9 @@
 import type { ComponentProps, ReactNode } from "react";
 import { formatRelativeDate } from "@argos/util/date-format";
 import clsx from "clsx";
-import { BanIcon } from "lucide-react";
 
 import { ReviewState } from "@/gql/graphql";
+import { BanIcon } from "@/ui/argos-icons";
 import { Tooltip } from "@/ui/Tooltip";
 import { UserHoverCard, type UserCardData } from "@/ui/UserCard";
 import {

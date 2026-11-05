@@ -1,6 +1,7 @@
 import type { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
-import { InfoIcon } from "lucide-react";
+
+import { InfoIcon } from "@/ui/argos-icons";
 
 export function TooltipIndicator(
   props: ComponentPropsWithRef<typeof InfoIcon>,

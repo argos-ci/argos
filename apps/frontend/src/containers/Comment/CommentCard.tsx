@@ -2,12 +2,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
 import { clsx } from "clsx";
-import {
-  ArrowUpIcon,
-  ChevronsDownUpIcon,
-  ChevronsUpDownIcon,
-  MessageSquareCheckIcon,
-} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useClipboard } from "use-clipboard-copy";
 
@@ -17,6 +11,12 @@ import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useProjectRepositoryUrl } from "@/containers/Project/RepositoryContext";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
+import {
+  ArrowUpIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
+  MessageSquareCheckIcon,
+} from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";

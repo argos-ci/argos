@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { type Editor } from "@tiptap/react";
 import { clsx } from "clsx";
-import { ExternalLinkIcon, Trash2Icon } from "lucide-react";
 
+import { ExternalLinkIcon, TrashIcon } from "@/ui/argos-icons";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 import { Button } from "../Button";
@@ -134,7 +134,7 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
           disabled={!hasLink}
           onClick={remove}
         >
-          <Trash2Icon />
+          <TrashIcon />
         </Button>
       </HotkeyTooltip>
     </form>

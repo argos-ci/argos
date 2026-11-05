@@ -1,8 +1,7 @@
-import { FileUpIcon } from "lucide-react";
-
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
 import { Activity, ActivityItem } from "@/ui/Activity";
+import { FileUpIcon } from "@/ui/argos-icons";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";

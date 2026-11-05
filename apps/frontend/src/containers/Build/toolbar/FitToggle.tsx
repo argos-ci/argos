@@ -1,7 +1,7 @@
 import { memo, startTransition } from "react";
 import { useAtom } from "jotai/react";
-import { ExpandIcon, ShrinkIcon } from "lucide-react";
 
+import { ExpandIcon, ShrinkIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 

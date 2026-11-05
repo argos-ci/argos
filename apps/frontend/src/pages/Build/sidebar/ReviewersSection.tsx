@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { BanIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAuth } from "@/containers/Auth";
@@ -12,6 +11,7 @@ import { useProjectPermissions } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { BanIcon, EllipsisIcon, PlusIcon } from "@/ui/argos-icons";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -401,7 +401,7 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
           size="small"
           aria-label="Review actions"
         >
-          <MoreHorizontalIcon />
+          <EllipsisIcon />
         </Button>
       </MenuTrigger>
       <Menu side="bottom" align="end" aria-label="Review actions">

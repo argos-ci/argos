@@ -1,24 +1,4 @@
 import { assertNever } from "@argos/util/assertNever";
-import {
-  AlertTriangleIcon,
-  BadgeCheckIcon,
-  BookmarkCheckIcon,
-  BookmarkXIcon,
-  CheckCircle2Icon,
-  CheckIcon,
-  CircleCheckIcon,
-  CircleDotIcon,
-  CircleSlashIcon,
-  ClockIcon,
-  HourglassIcon,
-  PauseIcon,
-  RefreshCcwDotIcon,
-  SquareSlashIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  XCircleIcon,
-  XIcon,
-} from "lucide-react";
 
 import {
   BuildBaselineIneligibilityReason,
@@ -26,6 +6,25 @@ import {
   BuildType,
   TestReportStatus,
 } from "@/gql/graphql";
+import {
+  BadgeCheckIcon,
+  BookmarkCheckIcon,
+  BookmarkXIcon,
+  CheckIcon,
+  CircleCheckIcon,
+  CircleDotIcon,
+  CircleSlashIcon,
+  CircleXIcon,
+  ClockIcon,
+  HourglassIcon,
+  PauseIcon,
+  RefreshCcwDotIcon,
+  SquareSlashIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  TriangleAlertIcon,
+  XIcon,
+} from "@/ui/argos-icons";
 
 export const buildStatusDescriptors: Record<
   BuildStatus,
@@ -38,12 +37,12 @@ export const buildStatusDescriptors: Record<
   [BuildStatus.NoChanges]: {
     label: "No changes",
     color: "success" as const,
-    icon: CheckCircle2Icon,
+    icon: CircleCheckIcon,
   },
   [BuildStatus.ChangesDetected]: {
     label: "Changes detected",
     color: "warning" as const,
-    icon: AlertTriangleIcon,
+    icon: TriangleAlertIcon,
   },
   [BuildStatus.Pending]: {
     label: "Scheduled",
@@ -58,12 +57,12 @@ export const buildStatusDescriptors: Record<
   [BuildStatus.Error]: {
     label: "Failed",
     color: "danger" as const,
-    icon: XCircleIcon,
+    icon: CircleXIcon,
   },
   [BuildStatus.Aborted]: {
     label: "Aborted",
     color: "neutral" as const,
-    icon: XCircleIcon,
+    icon: CircleXIcon,
   },
   [BuildStatus.Expired]: {
     label: "Expired",
