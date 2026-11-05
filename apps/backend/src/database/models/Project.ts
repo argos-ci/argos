@@ -1,6 +1,7 @@
 import { ProjectNameSchema } from "@argos/schemas/project";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { minimatch } from "minimatch";
 import type {
   JSONSchema,
   Pojo,
@@ -133,6 +134,7 @@ export class Project extends Model {
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
+          autoApprovalEnabled: { type: "boolean" },
           deploymentProdBranchGlob: { type: ["null", "string"] },
           accountId: { type: "string" },
           deletedAt: { type: ["string", "null"] },
@@ -189,6 +191,7 @@ export class Project extends Model {
   private!: boolean | null;
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
+  autoApprovalEnabled!: boolean;
   accountId!: string;
   /**
    * When the project was soft-deleted, or `null` while it is live. Deleting a
@@ -496,15 +499,27 @@ export class Project extends Model {
 
   /**
    * Get the auto-approved branch glob for the project.
-   * All branches that match this will be considered as auto-approved branches.
    * A `autoApprovedBranchGlob` that is null means that the default
    * branch of the repository should be used.
+   * It is ignored while `autoApprovalEnabled` is off: use
+   * `$getAutoApprovedBranchMatcher` to know whether a branch is auto-approved.
    */
   async $getAutoApprovedBranchGlob() {
     if (this.autoApprovedBranchGlob) {
       return this.autoApprovedBranchGlob;
     }
     return this.$getDefaultBaseBranch();
+  }
+
+  /**
+   * Get a function telling whether builds on a branch are auto-approved.
+   */
+  async $getAutoApprovedBranchMatcher(): Promise<(branch: string) => boolean> {
+    if (!this.autoApprovalEnabled) {
+      return () => false;
+    }
+    const glob = await this.$getAutoApprovedBranchGlob();
+    return (branch) => minimatch(branch, glob);
   }
 
   /**

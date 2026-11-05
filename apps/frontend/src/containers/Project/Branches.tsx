@@ -6,6 +6,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Code } from "@/ui/Code";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
+import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Link } from "@/ui/Link";
@@ -17,17 +18,20 @@ const UpdateBranchesMutation = graphql(`
     $id: ID!
     $defaultBaseBranch: String
     $autoApprovedBranchGlob: String
+    $autoApprovalEnabled: Boolean
   ) {
     updateProject(
       input: {
         id: $id
         defaultBaseBranch: $defaultBaseBranch
         autoApprovedBranchGlob: $autoApprovedBranchGlob
+        autoApprovalEnabled: $autoApprovalEnabled
       }
     ) {
       id
       customDefaultBaseBranch
       customAutoApprovedBranchGlob
+      autoApprovalEnabled
     }
   }
 `);
@@ -37,6 +41,7 @@ const _ProjectFragment = graphql(`
     id
     customDefaultBaseBranch
     customAutoApprovedBranchGlob
+    autoApprovalEnabled
     repository {
       __typename
       id
@@ -169,8 +174,19 @@ function DefaultBaseBranchCard(props: { project: Project }) {
   );
 }
 
+type AutoApprovalMode = "default-base-branch" | "pattern" | "none";
+
+function getAutoApprovalMode(project: Project): AutoApprovalMode {
+  if (!project.autoApprovalEnabled) {
+    return "none";
+  }
+  return project.customAutoApprovedBranchGlob === null
+    ? "default-base-branch"
+    : "pattern";
+}
+
 type AutoApprovedBranchesInputs = {
-  noCustomApprovedBranchGlob: boolean;
+  mode: AutoApprovalMode;
   autoApprovedBranchGlob: string;
 };
 
@@ -179,7 +195,7 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
   const effectiveDefaultBaseBranch = getEffectiveDefaultBaseBranch(project);
   const form = useForm<AutoApprovedBranchesInputs>({
     defaultValues: {
-      noCustomApprovedBranchGlob: project.customAutoApprovedBranchGlob === null,
+      mode: getAutoApprovalMode(project),
       autoApprovedBranchGlob:
         project.customAutoApprovedBranchGlob || effectiveDefaultBaseBranch,
     },
@@ -192,20 +208,27 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
       mutation: UpdateBranchesMutation,
       variables: {
         id: project.id,
-        autoApprovedBranchGlob: data.noCustomApprovedBranchGlob
-          ? null
-          : data.autoApprovedBranchGlob,
+        autoApprovalEnabled: data.mode !== "none",
+        autoApprovedBranchGlob: (
+          {
+            "default-base-branch": null,
+            pattern: data.autoApprovedBranchGlob,
+            // Turning auto-approval off keeps the pattern, so turning it back
+            // on restores it.
+            none: undefined,
+          } satisfies Record<AutoApprovalMode, string | null | undefined>
+        )[data.mode],
       },
     });
     form.reset(data);
   };
 
-  const noCustomApprovedBranchGlob = form.watch("noCustomApprovedBranchGlob");
+  const mode = form.watch("mode");
 
   const autoApprovedBranchGlobFieldProps = form.register(
     "autoApprovedBranchGlob",
     {
-      required: { message: "Pattern required", value: true },
+      required: { message: "Pattern required", value: mode === "pattern" },
     },
   );
 
@@ -215,50 +238,63 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
         <CardBody>
           <CardTitle>Auto-approved branches</CardTitle>
           <CardParagraph>
-            Any branch that matches the specified pattern will be automatically
-            approved and have a success status check.
+            Builds pushed to an auto-approved branch are approved automatically
+            and have a success status check. Pull request builds are never
+            auto-approved.
           </CardParagraph>
-          <FormSwitch
-            control={form.control}
-            name="noCustomApprovedBranchGlob"
-            label={
-              effectiveDefaultBaseBranch ? (
-                <>
-                  Auto-approve only the default base branch:{" "}
-                  <Code>{effectiveDefaultBaseBranch}</Code>
-                </>
-              ) : (
-                "Auto-approve only the default base branch"
-              )
-            }
-          />
-          {!noCustomApprovedBranchGlob && (
-            <>
+          <FormRadioGroup>
+            <FormRadio
+              {...form.register("mode")}
+              value="default-base-branch"
+              label={
+                <div className="ml-2">
+                  Auto-approve the default base branch
+                  <p className="text-low text-sm font-normal">
+                    Builds on <Code>{effectiveDefaultBaseBranch}</Code> are
+                    approved automatically.
+                  </p>
+                </div>
+              }
+            />
+            <FormRadio
+              {...form.register("mode")}
+              value="pattern"
+              label={
+                <div className="ml-2">
+                  Auto-approve branches matching a pattern
+                  <p className="text-low text-sm font-normal">
+                    Use patterns like <Code>main</Code>,{" "}
+                    <Code>{`{main,production}`}</Code>, or{" "}
+                    <Code>release/**</Code>.
+                  </p>
+                </div>
+              }
+            />
+            {mode === "pattern" && (
               <FormTextInput
                 control={form.control}
                 {...autoApprovedBranchGlobFieldProps}
-                ref={(element) => {
-                  autoApprovedBranchGlobFieldProps.ref(element);
-                  if (element) {
-                    if (
-                      !noCustomApprovedBranchGlob &&
-                      form.formState.defaultValues
-                        ?.noCustomApprovedBranchGlob !==
-                        noCustomApprovedBranchGlob
-                    ) {
-                      element.focus();
-                    }
-                  }
-                }}
+                autoFocus={form.formState.defaultValues?.mode !== "pattern"}
                 label="Auto-approved branch pattern"
-                className="mt-4"
+                className="ml-7"
               />
-              <p className="text-low mt-2 text-sm">
-                Use patterns like <Code>main</Code>,{" "}
-                <Code>{`{main,production}`}</Code>, or <Code>release/**</Code>.
-              </p>
-            </>
-          )}
+            )}
+            <FormRadio
+              {...form.register("mode")}
+              value="none"
+              label={
+                <div className="ml-2">
+                  Don't auto-approve any branch
+                  <p className="text-low text-sm font-normal">
+                    Every build needs a review, including on the base branch: a
+                    build there is used as a baseline only once approved. Flaky
+                    change detection learns from auto-approved builds, so it
+                    stops collecting data.
+                  </p>
+                </div>
+              }
+            />
+          </FormRadioGroup>
         </CardBody>
         <FormCardFooter control={form.control}>
           <LearnMoreFooter />

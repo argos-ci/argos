@@ -12,14 +12,15 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "@/ui/argos-icons";
-import { useColorMode } from "@/ui/ColorMode";
 import { Loader } from "@/ui/Loader";
 
 export function Toaster(props: ToasterProps) {
-  const { colorMode } = useColorMode();
   return (
     <Sonner
-      theme={colorMode ?? "system"}
+      // Sonner's injected stylesheet still colors the close button and the
+      // description of unstyled toasts under its dark theme. The classNames
+      // below follow the app's color mode, so keep sonner on light.
+      theme="light"
       closeButton
       // The badges are painted solid, so they undo the 20% wash the icon set
       // gives them.

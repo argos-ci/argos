@@ -63,15 +63,19 @@ const UserAccessTokenCacheFragment = graphql(`
 `);
 
 const EXPIRATION_OPTIONS = [
-  { label: "No expiration", days: null },
-  { label: "1 day", days: 1 },
-  { label: "7 days", days: 7 },
-  { label: "30 days", days: 30 },
-  { label: "60 days", days: 60 },
-  { label: "90 days", days: 90 },
-  { label: "180 days", days: 180 },
-  { label: "1 year", days: 365 },
+  { value: "no-expiration", label: "No expiration", days: null },
+  { value: "1", label: "1 day", days: 1 },
+  { value: "7", label: "7 days", days: 7 },
+  { value: "30", label: "30 days", days: 30 },
+  { value: "60", label: "60 days", days: 60 },
+  { value: "90", label: "90 days", days: 90 },
+  { value: "180", label: "180 days", days: 180 },
+  { value: "365", label: "1 year", days: 365 },
 ] as const;
+
+const EXPIRATION_LABELS = Object.fromEntries(
+  EXPIRATION_OPTIONS.map((option) => [option.value, option.label]),
+);
 
 const _AccountFragment = graphql(`
   fragment CreateTokenDialog_Account on User {
@@ -124,7 +128,7 @@ export function CreateTokenDialog(props: {
 
   const expireInDaysValue = form.watch("expireInDays");
   const selectedExpiration = EXPIRATION_OPTIONS.find(
-    (o) => String(o.days ?? "no-expiration") === expireInDaysValue,
+    (o) => o.value === expireInDaysValue,
   );
   const expirationDate =
     selectedExpiration?.days != null
@@ -278,16 +282,17 @@ export function CreateTokenDialog(props: {
 
             <div>
               <Label>Expiration</Label>
-              <SelectField control={form.control} name="expireInDays">
+              <SelectField
+                control={form.control}
+                name="expireInDays"
+                items={EXPIRATION_LABELS}
+              >
                 <SelectButton className="w-full text-sm">
                   <SelectValue />
                 </SelectButton>
                 <ListBox>
                   {EXPIRATION_OPTIONS.map((option) => (
-                    <ListBoxItem
-                      key={String(option.days ?? "no-expiration")}
-                      value={String(option.days ?? "no-expiration")}
-                    >
+                    <ListBoxItem key={option.value} value={option.value}>
                       {option.label}
                     </ListBoxItem>
                   ))}

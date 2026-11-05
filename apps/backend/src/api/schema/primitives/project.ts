@@ -74,7 +74,11 @@ export const ProjectSchema = z
     hasRemoteContentAccess: z.boolean(),
     autoApprovedBranchGlob: z.string().meta({
       description:
-        "Glob matching the branches whose builds are approved automatically.",
+        "Glob matching the branches whose builds are approved automatically. Ignored while `autoApprovalEnabled` is `false`.",
+    }),
+    autoApprovalEnabled: z.boolean().meta({
+      description:
+        "Whether builds on branches matching `autoApprovedBranchGlob` are approved automatically. When `false`, every build needs a review, including the ones on the base branch.",
     }),
     deploymentProductionBranchGlob: z.string().meta({
       description:
@@ -162,6 +166,7 @@ export async function serializeProject(
     defaultBaseBranch,
     hasRemoteContentAccess,
     autoApprovedBranchGlob,
+    autoApprovalEnabled: project.autoApprovalEnabled,
     deploymentProductionBranchGlob,
     private: !isPublic,
     summaryCheck: project.summaryCheck,

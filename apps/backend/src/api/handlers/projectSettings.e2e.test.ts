@@ -108,6 +108,24 @@ describe("updateProject", () => {
     expect(reloaded?.prCommentEnabled).toBe(project.prCommentEnabled);
   });
 
+  test("turns auto-approval off without losing the pattern", async ({
+    project,
+    token,
+  }) => {
+    await project.$query().patch({ autoApprovedBranchGlob: "release/**" });
+
+    const res = await request(app)
+      .patch("/projects/acme/web")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ autoApprovalEnabled: false })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      autoApprovalEnabled: false,
+      autoApprovedBranchGlob: "release/**",
+    });
+  });
+
   test("renames the project", async ({ project, token }) => {
     const res = await request(app)
       .patch("/projects/acme/web")

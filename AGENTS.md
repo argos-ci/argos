@@ -78,6 +78,32 @@ Comment the part that is actually surprising, not the whole block around it.
 When the explanation keeps growing, the code usually wants a named function
 instead.
 
+## Learning from review
+
+Every human correction — a requested change on a pull request, a comment pinned
+to an Argos screenshot, a "no, do it this way" in the session — means these
+instructions were missing something. Fix the instance, then fix the cause, so
+the next agent does not make the same mistake.
+
+- **Write down the rule that would have prevented it**, not the instance: the
+  convention behind "rename this", not the rename. Keep it as narrow as the
+  review; a rule broader than what the reviewer objected to forbids things
+  nobody asked to forbid. When the intent is unclear, ask in the thread first.
+- **Put it where it gets enforced, strongest first.** A lint rule
+  (`.oxlintrc.json`, or `tools/oxlint-plugin-argos.js` for a custom one), a type
+  or a test fails CI on the next attempt; a sentence can be skimmed past.
+  Otherwise add it to the matching section of this file, or to the skill in
+  `.agents/skills/` when only that workflow needs it.
+- **Edit, don't append.** Fold the lesson into the section it belongs to, and
+  replace a rule the review contradicts instead of keeping both. Record the rule
+  and why it holds, not the story: the pull request and who asked are in git
+  history.
+- **Ship it in the same pull request as the fix**, so the reviewer checks the
+  rule as well as the code.
+
+Skip what will not recur: a typo, a one-off judgment call, a question answered
+without a change.
+
 ## TypeScript
 
 - Never use `!` (non-null assertion). Use `invariant` for required values.
