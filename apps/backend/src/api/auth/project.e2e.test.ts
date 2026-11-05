@@ -1,3 +1,4 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 import request from "supertest";
@@ -13,7 +14,6 @@ import {
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 import { formatTestId } from "@/util/test-id";
 
 import { getBuild } from "../handlers/getBuild";
@@ -116,7 +116,6 @@ function createProjectPayload(
     type: "project",
     projects: [Project.fromJson({ id: projectId }, { skipValidation: true })],
     permissions: PROJECT_TOKEN_PERMISSION_LIST,
-    tokenId: null,
     sha,
   };
 }

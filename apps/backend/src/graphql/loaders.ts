@@ -49,7 +49,6 @@ import {
   Plan,
   Project,
   ProjectDomain,
-  ProjectTokenProject,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -68,6 +67,7 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import { getProjectsByTokenId } from "@/database/services/project-token";
 import {
   getSubscriptionRevenues,
   type SubscriptionRevenue,
@@ -586,25 +586,9 @@ function createDiscordWebhooksByAccountIdLoader() {
   });
 }
 
-/**
- * The live projects a token reaches, sorted by name: the ones of its own
- * account (see `getProjectTokenProjects`).
- */
 function createProjectTokenProjectsLoader() {
   return new DataLoader<string, Project[]>(async (tokenIds) => {
-    const links = await ProjectTokenProject.query()
-      .withGraphJoined("[project, projectToken]")
-      .whereIn("project_token_projects.projectTokenId", tokenIds as string[])
-      .whereNull("project.deletedAt")
-      .whereColumn("project.accountId", "projectToken.accountId")
-      .orderBy("project.name");
-    const projectsByTokenId = new Map<string, Project[]>();
-    for (const link of links) {
-      invariant(link.project, "Project token link without project");
-      const projects = projectsByTokenId.get(link.projectTokenId) ?? [];
-      projects.push(link.project);
-      projectsByTokenId.set(link.projectTokenId, projects);
-    }
+    const projectsByTokenId = await getProjectsByTokenId(tokenIds);
     return tokenIds.map((tokenId) => projectsByTokenId.get(tokenId) ?? []);
   });
 }

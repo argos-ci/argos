@@ -13,7 +13,7 @@ import {
 import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
-import { CreateProjectTokenMutation } from "@/containers/ProjectToken/CreateProjectTokenDialog";
+import { createProjectToken } from "@/containers/ProjectToken/CreateProjectTokenDialog";
 import { UPLOAD_PRESET } from "@/containers/ProjectToken/permissions";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -446,20 +446,14 @@ function TokenSetup(props: {
       <Button
         variant="secondary"
         onAsyncAction={async () => {
-          const result = await client.mutate({
-            mutation: CreateProjectTokenMutation,
-            variables: {
-              input: {
-                accountId: project.account.id,
-                name: "Getting started",
-                projectIds: [project.id],
-                permissions: [...UPLOAD_PRESET.permissions],
-                expireInDays: GETTING_STARTED_TOKEN_DAYS,
-              },
-            },
+          const { token } = await createProjectToken(client, {
+            accountId: project.account.id,
+            name: "Getting started",
+            projectIds: [project.id],
+            permissions: [...UPLOAD_PRESET.permissions],
+            expireInDays: GETTING_STARTED_TOKEN_DAYS,
           });
-          invariant(result.data, "Project token not created");
-          onCreate(result.data.createProjectToken.token);
+          onCreate(token);
         }}
       >
         Generate token

@@ -1,9 +1,9 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import type { Request } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
 import { Project } from "@/database/models";
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 
 import { getAuthPayloadFromExpressReq } from "./auth/project";
 import {
@@ -23,7 +23,6 @@ const projectPayload: AuthProjectPayload = {
   type: "project",
   projects: [Project.fromJson({ id: "project-1" }, { skipValidation: true })],
   permissions: PROJECT_TOKEN_PERMISSION_LIST,
-  tokenId: "project-token-1",
   sha: null,
 };
 

@@ -1,3 +1,4 @@
+import type { ProjectTokenPermission } from "@argos/schemas/project-token";
 /**
  * Single source of truth for API authentication.
  *
@@ -27,7 +28,6 @@ import {
   OAUTH_SCOPES,
   type OAuthScope,
 } from "@/oauth/scopes";
-import type { ProjectTokenPermission } from "@/project-token/permissions";
 import { boom } from "@/util/error";
 
 import { getAuthPayloadFromExpressReq } from "./auth/project";

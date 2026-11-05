@@ -43,7 +43,9 @@ import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 import {
+  findAuthProject,
   getProjectForAuth,
+  parseProjectPath,
   resolveAuthProject,
   throwOutsideScope,
 } from "../auth/project";
@@ -769,10 +771,7 @@ async function resolveUploadTarget(args: {
         "`project` is required when uploading with a personal access token. Pass it as `owner/project`.",
       );
     }
-    const [owner, name] = projectPath.split("/");
-    if (!owner || !name) {
-      throw boom(400, "`project` must be in the `owner/project` format.");
-    }
+    const { owner, name } = parseProjectPath(projectPath);
     // Uploading spends the account's quota and publishes a link under the
     // project's name, so it takes more than read access.
     return getProjectForAuth(
@@ -878,7 +877,7 @@ async function loadMediaForAuth(args: {
   }
 
   if (auth.type === "project") {
-    if (!auth.projects.some((project) => project.id === media.projectId)) {
+    if (!findAuthProject(auth, media.projectId)) {
       throw boom(404, "Media not found");
     }
     return media;

@@ -72,7 +72,7 @@ export function assertProjectAccess(
 ) {
   switch (auth.type) {
     case "project": {
-      if (!auth.projects.some((project) => project.id === params.projectId)) {
+      if (!findAuthProject(auth, params.projectId)) {
         throw boom(401);
       }
       break;
@@ -123,6 +123,31 @@ export function throwOutsideScope(
 }
 
 /**
+ * Split a `project` request parameter in the `owner/project` format.
+ */
+export function parseProjectPath(projectPath: string): {
+  owner: string;
+  name: string;
+} {
+  const [owner, name, ...rest] = projectPath.split("/");
+  if (!owner || !name || rest.length > 0) {
+    throw boom(400, "`project` must be in the `owner/project` format.");
+  }
+  return { owner, name };
+}
+
+/**
+ * The project a project token reaches by id, or `undefined`, for a resource
+ * that names its own project (a build, a deployment, a media).
+ */
+export function findAuthProject(
+  auth: AuthProjectPayload,
+  projectId: string | null,
+): Project | undefined {
+  return auth.projects.find((project) => project.id === projectId);
+}
+
+/**
  * Resolve the project a project token acts on, for the endpoints that are not
  * addressed by project (creating a build, a deployment…).
  *
@@ -146,11 +171,7 @@ export async function resolveAuthProject(
     return project;
   }
 
-  const [owner, name, ...rest] = projectPath.split("/");
-  if (!owner || !name || rest.length > 0) {
-    throw boom(400, "`project` must be in the `owner/project` format.");
-  }
-
+  const { owner, name } = parseProjectPath(projectPath);
   for (const project of auth.projects) {
     if (project.name !== name) {
       continue;
