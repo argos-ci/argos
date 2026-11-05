@@ -25,9 +25,9 @@ const test = base.extend<Fixtures>({
     await use(await factory.TeamAccount.create({ slug: "awesome-team" }));
   },
   project: async ({ account }, use) => {
-    await use(
-      await factory.Project.create({ token: TOKEN, accountId: account.id }),
-    );
+    const project = await factory.Project.create({ accountId: account.id });
+    await factory.createProjectToken({ projects: [project], token: TOKEN });
+    await use(project);
   },
 });
 

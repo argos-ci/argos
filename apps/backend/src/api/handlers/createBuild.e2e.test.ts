@@ -15,8 +15,11 @@ const test = base.extend<{ project: Project }>({
     await setupDatabase();
     const account = await factory.TeamAccount.create({ slug: "awesome-team" });
     const project = await factory.Project.create({
-      token: "the-awesome-token",
       accountId: account.id,
+    });
+    await factory.createProjectToken({
+      projects: [project],
+      token: "the-awesome-token",
     });
     await use(project);
   },

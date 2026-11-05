@@ -7,8 +7,9 @@ import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
 import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
+import { TokenProjectPath } from "../schema/primitives/project";
 import {
   conflict,
   forbidden,
@@ -20,7 +21,10 @@ import {
 import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
-const RequestBodySchema = z.object({ parallelNonce: z.string().min(1) });
+const RequestBodySchema = z.object({
+  parallelNonce: z.string().min(1),
+  project: TokenProjectPath,
+});
 
 const ResponseSchema = z.object({ builds: z.array(BuildSchema) });
 
@@ -30,7 +34,7 @@ export const finalizeBuildsOperation = {
   description:
     "Mark every parallel shard sharing the given `parallelNonce` as complete. Once finalized, Argos compares the aggregated screenshots and starts processing the build.",
   tags: ["Builds"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["builds:write"]),
   requestBody: {
     content: {
       "application/json": {
@@ -60,11 +64,12 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
   return post("/builds/finalize", async (req, res) => {
     const auth = await req.ctx.auth();
 
-    const { parallelNonce } = req.body;
+    const { parallelNonce } = req.ctx.body;
+    const project = await resolveAuthProject(auth, req.ctx.body.project);
 
     const builds = await Build.query()
       .withGraphFetched("compareScreenshotBucket")
-      .where("builds.projectId", auth.project.id)
+      .where("builds.projectId", project.id)
       .where("builds.externalId", parallelNonce)
       .where("builds.totalBatch", -1);
 

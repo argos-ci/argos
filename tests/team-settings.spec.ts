@@ -1,7 +1,10 @@
 import { expect } from "@playwright/test";
 
 import { TeamUser } from "../apps/backend/src/database/models";
-import { createUserAccount } from "../apps/backend/src/database/seeds";
+import {
+  createProject,
+  createUserAccount,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, getUniqueTestIdentifier, screenshot } from "./util";
 
@@ -42,6 +45,44 @@ loggedTest("team settings - members", async ({ page, team, auth }) => {
       [auth.account.name]: "John Doe",
     },
   });
+});
+
+loggedTest("team settings - tokens", async ({ page, team, project }) => {
+  await createProject({ accountId: team.account.id, name: "glitter" });
+  await page.goto(`/${team.account.slug}/settings/tokens`);
+  await expect(
+    page.getByRole("heading", { name: "Project tokens" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Create token" }).click();
+  const dialog = page.getByRole("dialog", { name: "Create Project Token" });
+  await dialog.getByRole("textbox", { name: "Token name" }).fill("Monorepo CI");
+  await dialog.getByRole("checkbox", { name: project.name }).click();
+  await dialog.getByRole("checkbox", { name: "glitter" }).click();
+  await dialog.getByRole("radio", { name: "Advanced" }).click();
+  await dialog.getByRole("checkbox", { name: /Read projects/ }).click();
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "No expiration" }).click();
+  await dialog.getByRole("button", { name: "Create token" }).click();
+
+  const confirmDialog = page.getByRole("alertdialog", {
+    name: "Create a Token That Never Expires?",
+  });
+  await confirmDialog
+    .getByRole("button", { name: "Create without expiration" })
+    .click();
+  const createdDialog = page.getByRole("dialog", {
+    name: "Project Token Created",
+  });
+  await createdDialog.getByRole("button", { name: "Close" }).click();
+  await expect(createdDialog).toBeHidden();
+
+  const row = page.getByRole("row").filter({ hasText: "Monorepo CI" });
+  await expect(row).toContainText(`glitter, ${project.name}`);
+  await expect(row).toContainText(
+    "Upload builds, Upload deployments, Read projects",
+  );
+  await screenshot(page, "team-settings-tokens");
 });
 
 loggedTest("team settings - integrations", async ({ page, team }) => {

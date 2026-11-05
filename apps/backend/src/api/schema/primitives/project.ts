@@ -7,6 +7,15 @@ import { ORIGIN_CONTENTS_READ_SCOPE } from "@/origin/url";
 export const AccountSlug = z.string().min(1);
 export const ProjectName = z.string().min(1);
 
+/**
+ * The project a project token acts on, for the endpoints not addressed by
+ * project. See `resolveAuthProject`.
+ */
+export const TokenProjectPath = z.string().min(1).nullish().meta({
+  description:
+    "Project to act on, as `owner/project`. Required when the project token is linked to several projects, optional when it is linked to only one.",
+});
+
 const AccountSchema = z
   .object({
     id: z.string(),

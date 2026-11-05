@@ -21,6 +21,7 @@ import { asyncHandler } from "@/web/util";
 
 import {
   gateResponseOnRequestScope,
+  isResponseCommitted,
   runInRequestScope,
 } from "./request-context";
 import { zodSchema } from "./schema";
@@ -187,7 +188,7 @@ export const errorHandler: ErrorRequestHandler = (
   // The same error can reach here twice (e.g. eager auth enforcement and a
   // handler that also awaited `req.ctx.auth()`); once the response is committed
   // there is nothing left to do.
-  if (res.headersSent) {
+  if (isResponseCommitted(res)) {
     return;
   }
 
@@ -251,6 +252,28 @@ type Context = {
 };
 
 /**
+ * The error the eager authentication answered a request with.
+ */
+const answeredAuthErrors = new WeakMap<Request, unknown>();
+
+/**
+ * Drop the rejection of `req.ctx.auth()` a handler forwards when the eager
+ * authentication already answered with it. By then that path consumed the
+ * rest of the route, so a second `next(error)` would leave it and answer a
+ * second time from the app's error handler — while `lastUsedAt` is refreshed
+ * in the background, the first answer is still held and nothing stops it.
+ */
+function skipAnsweredAuthError(handler: RequestHandler): RequestHandler {
+  return (req, res, next) =>
+    handler(req, res, (error?: unknown) => {
+      if (error !== undefined && answeredAuthErrors.get(req) === error) {
+        return;
+      }
+      next(error);
+    });
+}
+
+/**
  * Register a handler for the given HTTP method.
  */
 function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
@@ -265,7 +288,7 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
     }
     const wrappedHandlers = handlers.map((handler) =>
       typeof handler === "function"
-        ? asyncHandler(handler as RequestHandler)
+        ? skipAnsweredAuthError(asyncHandler(handler as RequestHandler))
         : (handler as RequestHandler[]),
     );
     router[method](
@@ -345,7 +368,8 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
           // forwarded to the error handler when nothing else has responded yet.
           if (operation.security && operation.security.length > 0) {
             auth().catch((error: unknown) => {
-              if (!res.headersSent) {
+              if (!isResponseCommitted(res)) {
+                answeredAuthErrors.set(req, error);
                 next(error);
               }
             });

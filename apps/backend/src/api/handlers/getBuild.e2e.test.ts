@@ -39,6 +39,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "web",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     await use(project);

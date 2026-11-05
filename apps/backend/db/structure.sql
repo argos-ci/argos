@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict LZ9gYoOGdZLbVIppK7MkSeaYzG0Yz7G6HhT6Lr4T2TII6RUBTcrhWqtu2W0pZor
+\restrict kfqf0jj2Bx1TIUpSV99hnRbWFQIzckLqpujkmcL8Y0zoj9yiyHgNde0HICc3M6Y
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2183,6 +2183,83 @@ ALTER SEQUENCE public.project_domains_id_seq OWNED BY public.project_domains.id;
 
 
 --
+-- Name: project_token_projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_token_projects (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "projectTokenId" bigint NOT NULL,
+    "projectId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.project_token_projects OWNER TO postgres;
+
+--
+-- Name: project_token_projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_token_projects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_token_projects_id_seq OWNER TO postgres;
+
+--
+-- Name: project_token_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_token_projects_id_seq OWNED BY public.project_token_projects.id;
+
+
+--
+-- Name: project_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    token character varying(64) NOT NULL,
+    permissions jsonb NOT NULL,
+    "expireAt" timestamp with time zone,
+    "lastUsedAt" timestamp with time zone,
+    "createdById" bigint
+);
+
+
+ALTER TABLE public.project_tokens OWNER TO postgres;
+
+--
+-- Name: project_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: project_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_tokens_id_seq OWNED BY public.project_tokens.id;
+
+
+--
 -- Name: project_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2229,7 +2306,7 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    token text NOT NULL,
+    token text,
     private boolean,
     "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
@@ -3641,6 +3718,20 @@ ALTER TABLE ONLY public.project_domains ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: project_token_projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects ALTER COLUMN id SET DEFAULT nextval('public.project_token_projects_id_seq'::regclass);
+
+
+--
+-- Name: project_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens ALTER COLUMN id SET DEFAULT nextval('public.project_tokens_id_seq'::regclass);
+
+
+--
 -- Name: project_users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4502,6 +4593,38 @@ ALTER TABLE ONLY public.project_domains
 
 ALTER TABLE ONLY public.project_domains
     ADD CONSTRAINT project_domains_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_token_projects project_token_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_token_projects project_token_projects_projecttokenid_projectid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projecttokenid_projectid_unique UNIQUE ("projectTokenId", "projectId");
+
+
+--
+-- Name: project_tokens project_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_tokens project_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_token_unique UNIQUE (token);
 
 
 --
@@ -5429,6 +5552,20 @@ CREATE INDEX project_domains_pending_index ON public.project_domains USING btree
 --
 
 CREATE INDEX project_domains_projectid_index ON public.project_domains USING btree ("projectId");
+
+
+--
+-- Name: project_token_projects_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_token_projects_projectid_index ON public.project_token_projects USING btree ("projectId");
+
+
+--
+-- Name: project_tokens_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_tokens_accountid_index ON public.project_tokens USING btree ("accountId");
 
 
 --
@@ -6536,6 +6673,38 @@ ALTER TABLE ONLY public.project_domains
 
 
 --
+-- Name: project_token_projects project_token_projects_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_token_projects project_token_projects_projecttokenid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projecttokenid_foreign FOREIGN KEY ("projectTokenId") REFERENCES public.project_tokens(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_tokens project_tokens_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_tokens project_tokens_createdbyid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_createdbyid_foreign FOREIGN KEY ("createdById") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: project_users project_users_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6939,7 +7108,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict LZ9gYoOGdZLbVIppK7MkSeaYzG0Yz7G6HhT6Lr4T2TII6RUBTcrhWqtu2W0pZor
+\unrestrict kfqf0jj2Bx1TIUpSV99hnRbWFQIzckLqpujkmcL8Y0zoj9yiyHgNde0HICc3M6Y
 
 -- Knex migrations
 
@@ -7214,6 +7383,7 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104100038_prepare-secret-encryption.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105093315_project-tokens.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());

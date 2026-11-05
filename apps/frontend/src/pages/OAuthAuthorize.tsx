@@ -1,9 +1,6 @@
 import { useId, useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { isHttpUri, isSafeUri } from "@argos/util/url";
-import { Radio } from "@base-ui/react/radio";
-import { RadioGroup } from "@base-ui/react/radio-group";
-import { clsx } from "clsx";
 import {
   Building2Icon,
   CheckCheckIcon,
@@ -40,6 +37,7 @@ import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import { Container } from "@/ui/Container";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
+import { RadioOption, RadioOptionGroup } from "@/ui/RadioOption";
 import { Tooltip } from "@/ui/Tooltip";
 import {
   getConsentPresets,
@@ -49,7 +47,6 @@ import {
   getRememberedConsent,
   rememberConsent,
   REQUIRED_SCOPES,
-  type ConsentAccess,
   type ConsentPreset,
   type ConsentValues,
 } from "@/util/oauth-consent";
@@ -189,50 +186,6 @@ function groupScopes(scopes: readonly ConsentScope[]): ScopeGroup[] {
   return groups;
 }
 
-function AccessOption(props: {
-  value: ConsentAccess;
-  label: string;
-  description: string;
-}) {
-  const { value, label, description } = props;
-  const labelId = useId();
-  const descriptionId = useId();
-  return (
-    // Base UI renders each radio's hidden input beside it: without a wrapper,
-    // the input would count as a row of the list and draw its own divider.
-    <div>
-      <Radio.Root
-        value={value}
-        aria-labelledby={labelId}
-        aria-describedby={descriptionId}
-        className={clsx(
-          "group/option flex w-full cursor-default items-start gap-3 px-4 py-3 select-none",
-          "data-checked:bg-primary-subtle not-data-checked:hover:bg-subtle",
-          "focus-visible:ring-primary-active focus-visible:ring-2 focus-visible:outline-hidden focus-visible:ring-inset",
-        )}
-      >
-        <span
-          aria-hidden="true"
-          className={clsx(
-            "border-primary mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-            "group-data-checked/option:border-primary-active group-data-checked/option:bg-primary-solid",
-          )}
-        >
-          <span className="hidden size-1.5 rounded-full bg-white group-data-checked/option:block" />
-        </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span id={labelId} className="text-sm font-medium">
-            {label}
-          </span>
-          <span id={descriptionId} className="text-low text-xs">
-            {description}
-          </span>
-        </span>
-      </Radio.Root>
-    </div>
-  );
-}
-
 function AccessField(props: {
   control: Control<ConsentValues>;
   presets: readonly ConsentPreset[];
@@ -247,7 +200,7 @@ function AccessField(props: {
       <div id={labelId} className="text-sm font-semibold">
         Permissions
       </div>
-      <RadioGroup
+      <RadioOptionGroup
         aria-labelledby={labelId}
         value={field.value}
         onValueChange={(value) => {
@@ -256,23 +209,22 @@ function AccessField(props: {
           }
           field.onChange(value);
         }}
-        className="border-thin divide-y-thin overflow-hidden rounded-lg"
       >
         {presets.map((preset) => (
-          <AccessOption
+          <RadioOption
             key={preset.level}
             value={preset.level}
             {...PRESETS[preset.level]}
           />
         ))}
         {canCustomize && (
-          <AccessOption
+          <RadioOption
             value="custom"
             label="Custom"
             description="Pick individual permissions."
           />
         )}
-      </RadioGroup>
+      </RadioOptionGroup>
     </div>
   );
 }

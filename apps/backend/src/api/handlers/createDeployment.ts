@@ -21,10 +21,12 @@ import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
+import { TokenProjectPath } from "../schema/primitives/project";
 import { Sha1HashSchema, Sha256HashSchema } from "../schema/primitives/sha";
 import {
+  forbidden,
   invalidParameters,
   serverError,
   unauthorized,
@@ -40,6 +42,7 @@ const FileEntrySchema = z.object({
 });
 
 const RequestBodySchema = z.object({
+  project: TokenProjectPath,
   commit: Sha1HashSchema.meta({ description: "The commit SHA" }),
   branch: GitBranchSchema.meta({ description: "The branch name" }),
   prNumber: GitPRNumberSchema.nullish().meta({
@@ -76,7 +79,7 @@ export const createDeploymentOperation = {
   description:
     "Create a deployment and receive signed upload URLs for the files Argos doesn't already store. Files already present (matched by content hash) are reused and omitted from `uploadFiles`. The environment is inferred from the branch when omitted.",
   tags: ["Deployments"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["deployments:write"]),
   requestBody: {
     content: {
       "application/json": {
@@ -95,6 +98,7 @@ export const createDeploymentOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;
@@ -238,7 +242,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     const auth = await req.ctx.auth();
     assertAuthAttributes(auth, { sha: body.commit });
 
-    const project = auth.project;
+    const project = await resolveAuthProject(auth, body.project);
 
     const [pullRequest] = await Promise.all([
       body.prNumber && project.githubRepositoryId

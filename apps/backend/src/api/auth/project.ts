@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
 import {
@@ -71,7 +72,7 @@ export function assertProjectAccess(
 ) {
   switch (auth.type) {
     case "project": {
-      if (auth.project.id !== params.projectId) {
+      if (!auth.projects.some((project) => project.id === params.projectId)) {
         throw boom(401);
       }
       break;
@@ -119,6 +120,52 @@ export function throwOutsideScope(
     );
   }
   throw otherwise;
+}
+
+/**
+ * Resolve the project a project token acts on, for the endpoints that are not
+ * addressed by project (creating a build, a deployment…).
+ *
+ * A token linked to a single project needs nothing more. A token linked to
+ * several has to name one as `owner/project` — the SDK sends `ARGOS_PROJECT`.
+ * Naming one the token cannot reach is a 401 rather than a 404, which keeps
+ * the existence of other projects undisclosed.
+ */
+export async function resolveAuthProject(
+  auth: AuthProjectPayload,
+  projectPath: string | null | undefined,
+): Promise<Project> {
+  if (!projectPath) {
+    const [project, ...others] = auth.projects;
+    if (!project || others.length > 0) {
+      throw boom(
+        400,
+        "This project token is linked to several projects. Pass `project` as `owner/project` (`ARGOS_PROJECT` in the SDK) to choose one.",
+      );
+    }
+    return project;
+  }
+
+  const [owner, name, ...rest] = projectPath.split("/");
+  if (!owner || !name || rest.length > 0) {
+    throw boom(400, "`project` must be in the `owner/project` format.");
+  }
+
+  for (const project of auth.projects) {
+    if (project.name !== name) {
+      continue;
+    }
+    await project.$fetchGraph("account", { skipFetched: true });
+    invariant(project.account, "Project account not found");
+    if (project.account.slug === owner) {
+      return project;
+    }
+  }
+
+  throw boom(
+    401,
+    `This project token does not have access to the project "${projectPath}".`,
+  );
 }
 
 export async function getAuthPayloadFromExpressReq(

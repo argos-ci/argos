@@ -72,6 +72,14 @@ import {
   listProjectDeployments,
   updateProjectDomain,
 } from "./handlers/projectDeployments";
+import {
+  createAccountProjectTokenHandler,
+  createProjectTokenHandler,
+  deleteAccountProjectTokenHandler,
+  deleteProjectTokenHandler,
+  listAccountProjectTokensHandler,
+  listProjectTokensHandler,
+} from "./handlers/projectTokens";
 import { removeCommentReaction } from "./handlers/removeCommentReaction";
 import {
   resolveCommentThread,
@@ -187,6 +195,12 @@ registerHandler(router, unsubscribeTest);
 registerHandler(router, getAccount);
 registerHandler(router, updateAccount);
 registerHandler(router, listProjectContributors);
+registerHandler(router, listProjectTokensHandler);
+registerHandler(router, createProjectTokenHandler);
+registerHandler(router, deleteProjectTokenHandler);
+registerHandler(router, listAccountProjectTokensHandler);
+registerHandler(router, createAccountProjectTokenHandler);
+registerHandler(router, deleteAccountProjectTokenHandler);
 registerHandler(router, setProjectContributor);
 registerHandler(router, removeProjectContributorHandler);
 registerHandler(router, listAutomationRules);

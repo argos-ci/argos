@@ -5,10 +5,15 @@ import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
-import type { Account, Project, TeamUser } from "@/database/models";
-import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
+import type { Account, TeamUser } from "@/database/models";
+import {
+  Project,
+  UserAccessToken,
+  UserAccessTokenScope,
+} from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@/project-token/permissions";
 import { formatTestId } from "@/util/test-id";
 
 import { getBuild } from "../handlers/getBuild";
@@ -39,6 +44,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "web",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "project-token",
     });
     await use(project);
@@ -100,6 +108,19 @@ async function createReadPaths(project: Project) {
   };
 }
 
+function createProjectPayload(
+  projectId: string,
+  sha: string | null = null,
+): AuthProjectPayload {
+  return {
+    type: "project",
+    projects: [Project.fromJson({ id: projectId }, { skipValidation: true })],
+    permissions: PROJECT_TOKEN_PERMISSION_LIST,
+    tokenId: null,
+    sha,
+  };
+}
+
 function createRequest(authHeader?: string): Request {
   return {
     get(name: string) {
@@ -120,10 +141,7 @@ function captureSyncError(callback: () => void) {
 describe("api/auth/project", () => {
   describe("assertProjectAccess", () => {
     test("allows matching project tokens", () => {
-      const auth = {
-        type: "project",
-        project: { id: "project-1" },
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("project-1");
 
       expect(() =>
         assertProjectAccess(auth, {
@@ -134,10 +152,7 @@ describe("api/auth/project", () => {
     });
 
     test("rejects project tokens for another project", () => {
-      const auth = {
-        type: "project",
-        project: { id: "project-1" },
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("project-1");
 
       const error = captureSyncError(() =>
         assertProjectAccess(auth, {
@@ -199,20 +214,12 @@ describe("api/auth/project", () => {
     const sha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
 
     test("no-op when attributes is undefined", () => {
-      const auth = {
-        type: "project",
-        project: { id: "p" },
-        sha,
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("p", sha);
       expect(() => assertAuthAttributes(auth, undefined)).not.toThrow();
     });
 
     test("no-op when token has no bound sha", () => {
-      const auth = {
-        type: "project",
-        project: { id: "p" },
-        sha: null,
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("p");
       expect(() => assertAuthAttributes(auth, { sha })).not.toThrow();
     });
 
@@ -225,20 +232,12 @@ describe("api/auth/project", () => {
     });
 
     test("passes when token sha matches", () => {
-      const auth = {
-        type: "project",
-        project: { id: "p" },
-        sha,
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("p", sha);
       expect(() => assertAuthAttributes(auth, { sha })).not.toThrow();
     });
 
     test("throws when token sha does not match", () => {
-      const auth = {
-        type: "project",
-        project: { id: "p" },
-        sha,
-      } as AuthProjectPayload;
+      const auth = createProjectPayload("p", sha);
       const error = captureSyncError(() =>
         assertAuthAttributes(auth, {
           sha: "0000000000000000000000000000000000000000",
@@ -265,7 +264,7 @@ describe("api/auth/project", () => {
         getAuthPayloadFromExpressReq(createRequest("Bearer project-token")),
       ).resolves.toMatchObject({
         type: "project",
-        project: { id: project.id },
+        projects: [{ id: project.id }],
       });
     });
 
