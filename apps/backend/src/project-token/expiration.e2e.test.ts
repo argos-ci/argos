@@ -1,3 +1,4 @@
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import { test as base, describe, expect } from "vitest";
 
@@ -11,12 +12,6 @@ import { factory, setupDatabase } from "@/database/testing";
 
 import { warnExpiringProjectTokens } from "./expiration";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function inDays(now: Date, days: number) {
-  return new Date(now.getTime() + days * DAY_MS).toISOString();
-}
-
 async function getWarnings() {
   return NotificationWorkflow.query()
     .where("type", "project_token_expiration")
@@ -24,8 +19,7 @@ async function getWarnings() {
 }
 
 const test = base.extend<{
-  team: { account: Account; ownerId: string };
-  projects: [Project, Project];
+  team: { account: Account; ownerId: string; web: Project; docs: Project };
   personalAccount: Account;
 }>({
   team: async ({}, use) => {
@@ -38,15 +32,12 @@ const test = base.extend<{
       { teamId: account.teamId, userId: owner.id, userLevel: "owner" },
       { teamId: account.teamId, userId: member.id, userLevel: "member" },
     ]);
-    await use({ account, ownerId: owner.id });
-  },
-  projects: async ({ team }, use) => {
     const [web, docs] = await Promise.all([
-      factory.Project.create({ accountId: team.account.id, name: "web" }),
-      factory.Project.create({ accountId: team.account.id, name: "docs" }),
+      factory.Project.create({ accountId: account.id, name: "web" }),
+      factory.Project.create({ accountId: account.id, name: "docs" }),
     ]);
     invariant(web && docs);
-    await use([web, docs]);
+    await use({ account, ownerId: owner.id, web, docs });
   },
   personalAccount: async ({}, use) => {
     await setupDatabase();
@@ -57,11 +48,10 @@ const test = base.extend<{
 describe("warnExpiringProjectTokens", () => {
   test("warns the team owners once about a token expiring soon", async ({
     team,
-    projects,
   }) => {
     const now = new Date();
-    const [web, docs] = projects;
-    const expireAt = inDays(now, 3);
+    const { web, docs } = team;
+    const expireAt = addDays(now, 3).toISOString();
     const { projectToken: expiringSoon } = await factory.createProjectToken({
       projects: [web, docs],
       expireAt,
@@ -69,11 +59,11 @@ describe("warnExpiringProjectTokens", () => {
     await Promise.all([
       factory.createProjectToken({
         projects: [web],
-        expireAt: inDays(now, 30),
+        expireAt: addDays(now, 30).toISOString(),
       }),
       factory.createProjectToken({
         projects: [web],
-        expireAt: inDays(now, -1),
+        expireAt: addDays(now, -1).toISOString(),
       }),
       factory.createProjectToken({ projects: [web], expireAt: null }),
     ]);
@@ -83,7 +73,7 @@ describe("warnExpiringProjectTokens", () => {
       warnExpiringProjectTokens(now),
       warnExpiringProjectTokens(now),
     ]);
-    await warnExpiringProjectTokens(new Date(now.getTime() + DAY_MS));
+    await warnExpiringProjectTokens(addDays(now, 1));
 
     const warnings = await getWarnings();
     expect(warnings).toHaveLength(1);
@@ -113,16 +103,17 @@ describe("warnExpiringProjectTokens", () => {
     const project = await factory.Project.create({ accountId: account.id });
     await factory.createProjectToken({
       projects: [project],
-      expireAt: inDays(now, 6),
+      expireAt: addDays(now, 6).toISOString(),
     });
 
     await warnExpiringProjectTokens(now);
 
     const warnings = await getWarnings();
-    expect(
-      warnings.map((warning) =>
-        warning.recipients?.map((recipient) => recipient.userId),
-      ),
-    ).toEqual([[account.userId]]);
+    expect(warnings).toHaveLength(1);
+    const [warning] = warnings;
+    invariant(warning?.recipients);
+    expect(warning.recipients.map((recipient) => recipient.userId)).toEqual([
+      account.userId,
+    ]);
   });
 });
