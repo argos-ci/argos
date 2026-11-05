@@ -19,7 +19,13 @@ import { Button, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { SelectButton, Select, SelectField, SelectValue } from "@/ui/Select";
+import {
+  SelectButton,
+  Select,
+  SelectField,
+  SelectValue,
+  SelectValueLabel,
+} from "@/ui/Select";
 
 import { useAccountParams } from "../Account/AccountParams";
 import {
@@ -216,6 +222,14 @@ function SendWebhookMessageAction(props: {
         name={`${name}.payload.webhookId`}
         aria-label={`${productName} channel`}
         placeholder="Select a channel…"
+        items={Object.fromEntries(
+          webhooks.map((webhook) => [
+            webhook.id,
+            <SelectValueLabel key={webhook.id} icon={<Logo />}>
+              {webhook.name}
+            </SelectValueLabel>,
+          ]),
+        )}
       >
         {/* Wide enough for a typical channel name next to the product's logo;
             longer ones ellipsize rather than push the arrow out. */}
