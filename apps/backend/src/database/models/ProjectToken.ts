@@ -38,6 +38,7 @@ export class ProjectToken extends Model {
           expireAt: { type: ["string", "null"] },
           lastUsedAt: { type: ["string", "null"] },
           createdById: { type: ["string", "null"] },
+          expiryWarnedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -50,6 +51,7 @@ export class ProjectToken extends Model {
   expireAt!: string | null;
   lastUsedAt!: string | null;
   createdById!: string | null;
+  expiryWarnedAt!: string | null;
 
   static override get jsonAttributes() {
     return ["permissions"];

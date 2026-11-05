@@ -9,6 +9,7 @@ import * as github_ip_allow_list from "./github_ip_allow_list";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as overage_alert from "./overage_alert";
 import * as project_deleted from "./project_deleted";
+import * as project_token_expiration from "./project_token_expiration";
 import * as review_dismissed from "./review_dismissed";
 import * as review_requested from "./review_requested";
 import * as review_submitted from "./review_submitted";
@@ -29,6 +30,7 @@ export const notificationHandlers = [
   invalid_gitlab_token.handler,
   overage_alert.handler,
   project_deleted.handler,
+  project_token_expiration.handler,
   review_dismissed.handler,
   review_requested.handler,
   review_submitted.handler,

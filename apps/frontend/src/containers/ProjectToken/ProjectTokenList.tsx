@@ -1,8 +1,10 @@
+import { PROJECT_TOKEN_EXPIRY_WARNING_MS } from "@argos/schemas/project-token";
 import clsx from "clsx";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
+import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
@@ -115,8 +117,13 @@ export function ProjectTokenList(props: {
           <div />
         </ListHeaderRow>
         {tokens.map((token) => {
-          const isExpired =
-            token.expireAt != null && new Date(token.expireAt) < now;
+          const expireAt = token.expireAt ? new Date(token.expireAt) : null;
+          const isExpired = expireAt !== null && expireAt < now;
+          const expiresSoon =
+            expireAt !== null &&
+            !isExpired &&
+            expireAt.getTime() - now.getTime() <=
+              PROJECT_TOKEN_EXPIRY_WARNING_MS;
           return (
             <ListRow
               key={token.id}
@@ -126,7 +133,14 @@ export function ProjectTokenList(props: {
               )}
             >
               <div className="min-w-0 py-2">
-                <div className="truncate font-medium">{token.name}</div>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium">{token.name}</span>
+                  {expiresSoon && (
+                    <Chip scale="xs" color="warning" className="shrink-0">
+                      Expires soon
+                    </Chip>
+                  )}
+                </div>
                 <TokenScope token={token} projectId={projectId} />
               </div>
               <div
@@ -144,7 +158,11 @@ export function ProjectTokenList(props: {
               <div
                 className={clsx(
                   "min-w-0 truncate py-2 text-xs whitespace-nowrap",
-                  isExpired ? "text-danger-low" : "text-low",
+                  isExpired
+                    ? "text-danger-low"
+                    : expiresSoon
+                      ? "text-warning-low"
+                      : "text-low",
                 )}
                 data-visual-test="transparent"
               >

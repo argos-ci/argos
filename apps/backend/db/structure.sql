@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9LrHCRANNuI3l059Co7fZaYmvaj2wy8tZVcHLyd34aoipBc9XAiB7izuZ3TrUKm
+\restrict WwzYTBOBsDRNCf3Xu1ToU6weRfWcEbagYddFWwkYVaVdHwEvJEpD2jDJZnWEHx6
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2228,7 +2228,8 @@ CREATE TABLE public.project_tokens (
     permissions jsonb NOT NULL,
     "expireAt" timestamp with time zone,
     "lastUsedAt" timestamp with time zone,
-    "createdById" bigint
+    "createdById" bigint,
+    "expiryWarnedAt" timestamp with time zone
 );
 
 
@@ -7092,7 +7093,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9LrHCRANNuI3l059Co7fZaYmvaj2wy8tZVcHLyd34aoipBc9XAiB7izuZ3TrUKm
+\unrestrict WwzYTBOBsDRNCf3Xu1ToU6weRfWcEbagYddFWwkYVaVdHwEvJEpD2jDJZnWEHx6
 
 -- Knex migrations
 
@@ -7368,3 +7369,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105093315_project-tokens.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105105421_project-token-expiry-warning.js', 1, NOW());
