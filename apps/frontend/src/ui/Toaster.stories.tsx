@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Button } from "./Button";
-import { ColorModeProvider } from "./ColorMode";
 import { toast, Toaster } from "./Toaster";
 
 const meta: Meta<typeof Toaster> = {
@@ -9,10 +8,10 @@ const meta: Meta<typeof Toaster> = {
   component: Toaster,
   decorators: [
     (Story) => (
-      <ColorModeProvider>
+      <>
         <Story />
         <Toaster />
-      </ColorModeProvider>
+      </>
     ),
   ],
 };
