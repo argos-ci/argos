@@ -98,6 +98,8 @@ type ReviewMarkChange = {
   before: Record<Diff["id"], EvaluationStatus>;
   /** Statuses to restore when the change is redone, keyed by diff id. */
   after: Record<Diff["id"], EvaluationStatus>;
+  /** The status the marking wrote on every diff it touched. */
+  mark: EvaluationStatus;
   /**
    * Diff to bring back on screen when the change is undone or redone, so the
    * reviewer looks at what just moved. For a group, its first diff.
@@ -111,6 +113,8 @@ export type AppliedReviewMarkChange = {
   statuses: Record<Diff["id"], EvaluationStatus>;
   /** Statuses it replaced, so the caller can tell which way it moved. */
   replaced: Record<Diff["id"], EvaluationStatus>;
+  /** The marking that was taken back or applied again. */
+  mark: EvaluationStatus;
   diffId: Diff["id"];
 };
 
@@ -610,7 +614,7 @@ function useReviewMarkHistory(args: {
         return;
       }
       const stacks = getStacks();
-      stacks.undo.push({ before, after, diffId: firstDiffId });
+      stacks.undo.push({ before, after, mark: status, diffId: firstDiffId });
       if (stacks.undo.length > MAX_HISTORY_LENGTH) {
         stacks.undo.shift();
       }
@@ -631,6 +635,7 @@ function useReviewMarkHistory(args: {
     return {
       statuses: change.before,
       replaced: change.after,
+      mark: change.mark,
       diffId: change.diffId,
     };
   });
@@ -646,6 +651,7 @@ function useReviewMarkHistory(args: {
     return {
       statuses: change.after,
       replaced: change.before,
+      mark: change.mark,
       diffId: change.diffId,
     };
   });

@@ -1,43 +1,32 @@
-import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
-
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { toast } from "@/ui/Toaster";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { useBuildDiffState } from "./BuildDiffState";
+import { useBuildDiffState, type Diff } from "./BuildDiffState";
 import {
   useBuildReviewAPI,
   type AppliedReviewMarkChange,
   type BuildReviewAPI,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import {
+  showReviewMarkToast,
+  type ReviewMarkToastProps,
+} from "./ReviewMarkToast";
 
 /**
- * Sum up what an undo or a redo wrote, from the reviewer's point of view: the
- * state the changes are in *now*, not the one they came from.
+ * Name the snapshot a marking touched, or count them when it marked a group or
+ * reapplied previous approvals.
  */
-function describeAppliedChange(change: AppliedReviewMarkChange): string {
-  const statuses = Object.values(change.statuses);
-  const [firstStatus] = statuses;
-  invariant(firstStatus, "A marking always touches at least one diff");
-  const count = statuses.length;
-  const noun = count === 1 ? "change" : "changes";
-  if (statuses.some((status) => status !== firstStatus)) {
-    return `${count} review marks restored`;
+function getSubject(change: AppliedReviewMarkChange, allDiffs: Diff[]): string {
+  const count = Object.keys(change.statuses).length;
+  if (count > 1) {
+    return `${count} snapshots`;
   }
-  switch (firstStatus) {
-    case EvaluationStatus.Accepted:
-      return `${count} ${noun} marked as accepted`;
-    case EvaluationStatus.Rejected:
-      return `${count} ${noun} marked as rejected`;
-    case EvaluationStatus.Pending:
-      return count === 1
-        ? "1 change is pending review again"
-        : `${count} changes are pending review again`;
-    default:
-      assertNever(firstStatus);
-  }
+  // Every loaded diff, not the filtered list: a search typed since the marking
+  // hides the snapshot from the list, not from what the reviewer did.
+  const diff = allDiffs.find((diff) => diff.id === change.diffId);
+  // Previous approvals can name a diff from a page that has not loaded yet.
+  return diff ? diff.name : "1 snapshot";
 }
 
 /**
@@ -74,25 +63,31 @@ export function BuildReviewUndoHotkeys() {
 
 function UndoHotkeys(props: { api: BuildReviewAPI }) {
   const { api } = props;
-  const { diffs, setActiveDiff } = useBuildDiffState();
+  const { diffs, allDiffs, setActiveDiff } = useBuildDiffState();
 
-  const apply = useEventCallback((change: AppliedReviewMarkChange | null) => {
-    if (!change) {
-      return;
-    }
-    const diff = diffs.find((diff) => diff.id === change.diffId);
-    if (diff) {
-      setActiveDiff(diff, true);
-    }
-    toast.success(describeAppliedChange(change), {
-      description: checkTakesBackRejection(change)
-        ? "Any note you left explaining the rejection stays on the snapshot."
-        : undefined,
-    });
-  });
+  const apply = useEventCallback(
+    (
+      move: ReviewMarkToastProps["move"],
+      change: AppliedReviewMarkChange | null,
+    ) => {
+      if (!change) {
+        return;
+      }
+      const diff = diffs.find((diff) => diff.id === change.diffId);
+      if (diff) {
+        setActiveDiff(diff, true);
+      }
+      showReviewMarkToast({
+        move,
+        mark: change.mark,
+        subject: getSubject(change, allDiffs),
+        takesBackRejection: checkTakesBackRejection(change),
+      });
+    },
+  );
 
-  useBuildHotkey("undoReviewMark", () => apply(api.undo()));
-  useBuildHotkey("redoReviewMark", () => apply(api.redo()));
+  useBuildHotkey("undoReviewMark", () => apply("undo", api.undo()));
+  useBuildHotkey("redoReviewMark", () => apply("redo", api.redo()));
 
   return null;
 }
