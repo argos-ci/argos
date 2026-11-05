@@ -159,21 +159,26 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     return [];
   };
 
+  // On an auto-approved base branch, merging is the approval, so any build can
+  // be the baseline. Anywhere else it has to be approved: a push to a base
+  // branch without auto-approval walks the ancestors below, and would otherwise
+  // compare with the previous push whether anyone reviewed it or not.
+  const isBaseBranchAutoApproved = baseBranch
+    ? context.checkIsAutoApproved(baseBranch)
+    : false;
+  const approved = isBaseBranchAutoApproved ? undefined : true;
+
   // When we have a merge base commit that differs from the head, we first try
   // to find a bucket for that exact commit.
   if (mergeBaseCommitSha && mergeBaseCommitSha !== head) {
-    const isBaseBranchAutoApproved = baseBranch
-      ? context.checkIsAutoApproved(baseBranch)
-      : false;
-
     const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
       build,
       mergeBaseCommitSha,
-      {
-        // If the base branch is auto-approved, then we don't need to check if the build is approved.
-        // We assume that by merging the base branch, the user has approved the build.
-        approved: isBaseBranchAutoApproved ? undefined : true,
-      },
+      // A reference commit names its baseline explicitly
+      // (ARGOS_REFERENCE_COMMIT), so the build on it is trusted without
+      // approval. Without a Git provider the CLI sends one too: the commit of
+      // the closest approved build, or the merge base when it found none.
+      { approved: build.baseCommit ? undefined : approved },
     );
 
     // A bucket exists for the merge base commit.
@@ -183,13 +188,14 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
   }
 
   // Otherwise we have to find an ancestor. This happens when:
-  // - the merge base is the same as the head (e.g. on an auto-approved branch),
+  // - the merge base is the same as the head (a push to the base branch),
   // - no bucket exists for the merge base commit,
   // - there is no merge base at all (no git provider and no baseCommit).
   const shas = await listParentCommitShas(mergeBaseCommitSha ?? head);
   const baseBucket = await getBucketFromCommits({
     shas: shas.slice(1),
     build,
+    approved,
   });
 
   return result(baseBucket);
