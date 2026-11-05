@@ -192,6 +192,18 @@ export const iconGroups: IconGroup[] = [
         usage: "Commented review",
       },
       {
+        name: "Undo2Icon",
+        Icon: Navigation.Undo2Icon,
+        replaced: Lucide.Undo2Icon,
+        usage: "Undo a review mark",
+      },
+      {
+        name: "Redo2Icon",
+        Icon: Navigation.Redo2Icon,
+        replaced: Lucide.Redo2Icon,
+        usage: "Redo a review mark",
+      },
+      {
         name: "CheckCheckIcon",
         Icon: Navigation.CheckCheckIcon,
         replaced: Lucide.CheckCheckIcon,

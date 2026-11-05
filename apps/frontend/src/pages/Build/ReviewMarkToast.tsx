@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
-import { Redo2Icon, Undo2Icon } from "lucide-react";
 
+import { Redo2Icon, Undo2Icon } from "@/ui/argos-icons";
 import { toast } from "@/ui/Toaster";
 
 import { EvaluationStatus } from "./EvaluationStatus";

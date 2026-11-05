@@ -225,6 +225,16 @@ export const HistoryIcon = createLucideIcon(
   ["history"],
 );
 
+export const Undo2Icon = createLucideIcon("undo-2", [
+  ["path", { d: "M9 14 4 9l5-5", key: "head" }],
+  ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 0 11H11", key: "shaft" }],
+]);
+
+export const Redo2Icon = createLucideIcon("redo-2", [
+  ["path", { d: "m15 14 5-5-5-5", key: "head" }],
+  ["path", { d: "M20 9H9.5a5.5 5.5 0 0 0 0 11H13", key: "shaft" }],
+]);
+
 export const RepeatIcon = createLucideIcon("repeat", [
   ["path", { d: "m17 2 4 4-4 4", key: "top-head" }],
   ["path", { d: "M3 11v-1a4 4 0 0 1 4-4h14", key: "top" }],
