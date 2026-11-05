@@ -117,13 +117,14 @@ export function ProjectTokenList(props: {
           <div />
         </ListHeaderRow>
         {tokens.map((token) => {
-          const expireAt = token.expireAt ? new Date(token.expireAt) : null;
-          const isExpired = expireAt !== null && expireAt < now;
+          const msLeft = token.expireAt
+            ? new Date(token.expireAt).getTime() - now.getTime()
+            : null;
+          const isExpired = msLeft !== null && msLeft < 0;
           const expiresSoon =
-            expireAt !== null &&
+            msLeft !== null &&
             !isExpired &&
-            expireAt.getTime() - now.getTime() <=
-              PROJECT_TOKEN_EXPIRY_WARNING_MS;
+            msLeft <= PROJECT_TOKEN_EXPIRY_WARNING_MS;
           return (
             <ListRow
               key={token.id}

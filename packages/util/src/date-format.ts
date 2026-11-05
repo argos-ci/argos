@@ -60,22 +60,28 @@ const DATE_FORMAT_OPTIONS: Record<DateFormat, Intl.DateTimeFormatOptions> = {
 type FormatOptions = {
   /** BCP 47 locale tag. Defaults to `en-US`. */
   locale?: string;
+  /** IANA time zone. Defaults to the runtime's. */
+  timeZone?: string | undefined;
 };
 
 // `Intl` formatters are expensive to construct and cheap to reuse, and callers
-// re-render on a timer, so keep one per locale/format pair.
+// re-render on a timer, so keep one per locale/time zone/format triple.
 const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 
-function getDateTimeFormatter(format: DateFormat, locale: string) {
-  const key = `${locale}|${format}`;
+function getDateTimeFormatter(
+  format: DateFormat,
+  locale: string,
+  timeZone: string | undefined,
+) {
+  const key = `${locale}|${timeZone ?? ""}|${format}`;
   const cached = dateTimeFormatters.get(key);
   if (cached) {
     return cached;
   }
-  const formatter = new Intl.DateTimeFormat(
-    locale,
-    DATE_FORMAT_OPTIONS[format],
-  );
+  const formatter = new Intl.DateTimeFormat(locale, {
+    ...DATE_FORMAT_OPTIONS[format],
+    timeZone,
+  });
   dateTimeFormatters.set(key, formatter);
   return formatter;
 }
@@ -87,7 +93,7 @@ export function formatDate(
   options?: FormatOptions,
 ): string {
   const locale = options?.locale ?? DEFAULT_LOCALE;
-  return getDateTimeFormatter(format, locale).format(date);
+  return getDateTimeFormatter(format, locale, options?.timeZone).format(date);
 }
 
 const MS_PER_SECOND = 1000;

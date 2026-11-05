@@ -1,3 +1,4 @@
+import { formatDate } from "@argos/util/date-format";
 import { z } from "zod";
 
 import config from "@/config";
@@ -11,21 +12,6 @@ import {
   Signature,
 } from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
-
-function formatExpirationDate(expireAt: string, options: { time: boolean }) {
-  const date = new Date(expireAt);
-  if (!options.time) {
-    return date.toLocaleDateString("en-US", {
-      dateStyle: "long",
-      timeZone: "UTC",
-    });
-  }
-  return `${date.toLocaleString("en-US", {
-    dateStyle: "long",
-    timeStyle: "short",
-    timeZone: "UTC",
-  })} UTC`;
-}
 
 export const handler = defineNotificationHandler({
   type: "project_token_expiration",
@@ -49,7 +35,8 @@ export const handler = defineNotificationHandler({
       config.get("server.url"),
     ).href;
     const projects = projectNames.map((name) => `${accountSlug}/${name}`);
-    const subjectDate = formatExpirationDate(expireAt, { time: false });
+    const date = new Date(expireAt);
+    const subjectDate = formatDate(date, "longDate", { timeZone: "UTC" });
     return {
       subject: `[${accountSlug}] Project token "${tokenName}" expires on ${subjectDate}`,
       body: (
@@ -60,8 +47,10 @@ export const handler = defineNotificationHandler({
           <Hi name={ctx.user.name} />
           <Paragraph>
             The project token <strong>{tokenName}</strong> expires on{" "}
-            <strong>{formatExpirationDate(expireAt, { time: true })}</strong>.
-            From then on, Argos rejects the builds CI sends with it.
+            <strong>
+              {formatDate(date, "dateTime", { timeZone: "UTC" })} UTC
+            </strong>
+            . From then on, Argos rejects the builds CI sends with it.
           </Paragraph>
           <Paragraph>
             It is linked to{" "}
