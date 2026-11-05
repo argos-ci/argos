@@ -244,7 +244,7 @@ export const typeDefs = gql`
     defaultBaseBranch: String!
     "Default base branch edited by the user"
     customDefaultBaseBranch: String
-    "Glob pattern for auto-approved branches"
+    "Glob pattern for auto-approved branches, ignored while autoApprovalEnabled is false"
     autoApprovedBranchGlob: String!
     "Glob pattern for auto-approved branches edited by the user"
     customAutoApprovedBranchGlob: String

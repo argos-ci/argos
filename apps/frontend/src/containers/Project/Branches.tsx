@@ -209,14 +209,15 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
       variables: {
         id: project.id,
         autoApprovalEnabled: data.mode !== "none",
-        // Turning auto-approval off keeps the pattern, so turning it back on
-        // restores it.
-        autoApprovedBranchGlob:
-          data.mode === "none"
-            ? undefined
-            : data.mode === "pattern"
-              ? data.autoApprovedBranchGlob
-              : null,
+        autoApprovedBranchGlob: (
+          {
+            "default-base-branch": null,
+            pattern: data.autoApprovedBranchGlob,
+            // Turning auto-approval off keeps the pattern, so turning it back
+            // on restores it.
+            none: undefined,
+          } satisfies Record<AutoApprovalMode, string | null | undefined>
+        )[data.mode],
       },
     });
     form.reset(data);
@@ -273,15 +274,7 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
               <FormTextInput
                 control={form.control}
                 {...autoApprovedBranchGlobFieldProps}
-                ref={(element) => {
-                  autoApprovedBranchGlobFieldProps.ref(element);
-                  if (
-                    element &&
-                    form.formState.defaultValues?.mode !== "pattern"
-                  ) {
-                    element.focus();
-                  }
-                }}
+                autoFocus={form.formState.defaultValues?.mode !== "pattern"}
                 label="Auto-approved branch pattern"
                 className="ml-7"
               />
