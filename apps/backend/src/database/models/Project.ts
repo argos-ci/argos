@@ -117,12 +117,6 @@ const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
 export class Project extends Model {
   static override tableName = "projects";
 
-  /**
-   * The token a project had before `project_tokens`. Only read to move the
-   * tokens written by the code still serving while the migration ran.
-   */
-  static override deterministicEncryptedAttributes = ["token"];
-
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -131,7 +125,6 @@ export class Project extends Model {
         required: ["name", "accountId"],
         properties: {
           name: z.toJSONSchema(ProjectNameSchema) as JSONSchema,
-          token: { type: ["string", "null"] },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
@@ -187,7 +180,6 @@ export class Project extends Model {
   };
 
   name!: string;
-  token!: string | null;
   private!: boolean | null;
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
