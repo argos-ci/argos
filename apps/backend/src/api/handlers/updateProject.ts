@@ -44,6 +44,10 @@ const UpdateProjectBodySchema = z
       description:
         "Glob matching the branches whose builds are approved automatically. `null` falls back to the default base branch.",
     }),
+    autoApprovalEnabled: z.boolean().meta({
+      description:
+        "Turn auto-approval on or off. When `false`, no branch is auto-approved and every build needs a review, including the ones on the base branch.",
+    }),
     deploymentProductionBranchGlob: z.string().nullable().meta({
       description:
         "Glob matching the branches whose deployments count as production. `null` falls back to the repository's default branch.",

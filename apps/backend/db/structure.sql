@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5XHFeBYAXQw2Vp673w5QbspzqzDUxwtwmY3Zw3DuP4d0iAlXUgCoUnlFNiPEJUf
+\restrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2246,6 +2246,7 @@ CREATE TABLE public.projects (
     "originRepositoryId" bigint,
     "deletedAt" timestamp with time zone,
     "awaitingReviewStatus" text DEFAULT 'failure'::text NOT NULL,
+    "autoApprovalEnabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "projects_awaitingReviewStatus_check" CHECK (("awaitingReviewStatus" = ANY (ARRAY['failure'::text, 'pending'::text]))),
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -6923,7 +6924,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5XHFeBYAXQw2Vp673w5QbspzqzDUxwtwmY3Zw3DuP4d0iAlXUgCoUnlFNiPEJUf
+\unrestrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
 
 -- Knex migrations
 
@@ -7198,3 +7199,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104100038_prepare-secret-encryption.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());

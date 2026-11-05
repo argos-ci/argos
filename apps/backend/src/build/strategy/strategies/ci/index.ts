@@ -16,6 +16,9 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   getContext: async (build) => {
     await build.$fetchGraph("project", { skipFetched: true });
     invariant(build.project, "no project found", UnretryableError);
+    if (!build.project.autoApprovalEnabled) {
+      return { checkIsAutoApproved: () => false };
+    }
     const branchGlob = await build.project.$getAutoApprovedBranchGlob();
     return {
       checkIsAutoApproved: (branch: string) => {

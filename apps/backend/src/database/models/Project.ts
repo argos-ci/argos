@@ -133,6 +133,7 @@ export class Project extends Model {
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
+          autoApprovalEnabled: { type: "boolean" },
           deploymentProdBranchGlob: { type: ["null", "string"] },
           accountId: { type: "string" },
           deletedAt: { type: ["string", "null"] },
@@ -189,6 +190,11 @@ export class Project extends Model {
   private!: boolean | null;
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
+  /**
+   * When `false`, no branch is auto-approved, whatever
+   * `autoApprovedBranchGlob` says.
+   */
+  autoApprovalEnabled!: boolean;
   accountId!: string;
   /**
    * When the project was soft-deleted, or `null` while it is live. Deleting a
