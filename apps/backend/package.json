@@ -73,8 +73,8 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.3",
     "file-type": "^22.3.0",
-    "free-email-domains": "^1.15.24",
-    "google-auth-library": "^11.3.2",
+    "free-email-domains": "^1.15.26",
+    "google-auth-library": "^11.3.3",
     "graphql": "16.14.2",
     "graphql-scalars": "^2.0.1",
     "graphql-tag": "^2.12.7",
@@ -139,7 +139,7 @@
     "msw": "^3.0.3",
     "pino-pretty": "^13.2.0",
     "supertest": "^7.3.1",
-    "tsdown": "^0.23.4"
+    "tsdown": "^0.23.5"
   },
   "optionalDependencies": {
     "@argos-ci/mask-fingerprint-darwin-arm64": "^0.1.3"

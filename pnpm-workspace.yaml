@@ -12,7 +12,7 @@ catalog:
   # tsrs ports one exact TypeScript build (`tsrs --version` prints it), and
   # `typescript` is pinned to that build so the editor and every tool peering on
   # it see the compiler CI checks with. Bump the two together.
-  tsrs: 0.20.1-ts7.1.0-beta
+  tsrs: 0.21.0-ts7.1.0-beta
   typescript: 7.1.0-beta
   zod: ^4.6.7
 
@@ -23,6 +23,11 @@ overrides:
   dompurify: ^3.4.0
   esbuild: ^0.28.1
   file-type: ^22.1.1
+  # A CVE floor across a major: GHSA-3g3m-2fjr-6pw4 is fixed only in 14.0.2,
+  # while react-email, @sentry/bundler-plugins and the Storybook docgen plugin
+  # still ask for ^13. None of them uses what 14 removed (the `debug` option)
+  # or changed (ignore patterns starting with `/`).
+  glob: ^14.0.3
   # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
   # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
   # rewrites that peer range too: pnpm reports no conflict even when it is
@@ -31,8 +36,8 @@ overrides:
   ip-address: ^10.7.4
   lodash: ^4.17.23
   lodash-es: ^4.18.1
-  # A floor, not a cap: glob 13 and graphql-config still need minimatch 10,
-  # while the backend matches user-defined globs and takes 11.
+  # A floor, not a cap: graphql-config still needs minimatch 10, while glob 14
+  # and the backend, which matches user-defined globs, take 11.
   minimatch@<10.2.6: ^10.2.6
   react: "catalog:"
   react-dom: "catalog:"
