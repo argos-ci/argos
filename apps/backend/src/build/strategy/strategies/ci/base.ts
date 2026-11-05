@@ -174,7 +174,11 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
       build,
       mergeBaseCommitSha,
-      { approved },
+      // A reference commit names its baseline explicitly
+      // (ARGOS_REFERENCE_COMMIT), so the build on it is trusted without
+      // approval. Without a Git provider the CLI sends one too: the commit of
+      // the closest approved build, or the merge base when it found none.
+      { approved: build.baseCommit ? undefined : approved },
     );
 
     // A bucket exists for the merge base commit.
