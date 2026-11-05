@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo } from "react";
+import { useEffect, useId, useMemo, type ReactNode } from "react";
 import type { AutomationInputCondition } from "@argos/schemas/automation-condition";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -9,7 +9,13 @@ import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
+import {
+  Select,
+  SelectButton,
+  SelectField,
+  SelectValue,
+  SelectValueLabel,
+} from "@/ui/Select";
 import {
   checkIsGlobCondition,
   checkIsNotCondition,
@@ -32,16 +38,40 @@ type ConditionValueName =
   | `conditions.${number}.not.value`
   | `conditions.${number}.not.glob.value`;
 
+type IconOption = { value: string; label: string; icon: ReactNode };
+
+function getValueLabels(options: IconOption[]) {
+  return Object.fromEntries(
+    options.map(({ value, label, icon }) => [
+      value,
+      <SelectValueLabel key={value} icon={icon}>
+        {label}
+      </SelectValueLabel>,
+    ]),
+  );
+}
+
+const buildConclusionOptions: IconOption[] = [
+  { status: BuildStatus.NoChanges, value: "no-changes" },
+  { status: BuildStatus.ChangesDetected, value: "changes-detected" },
+].map(({ status, value }) => {
+  const descriptor = buildStatusDescriptors[status];
+  const Icon = descriptor.icon;
+  return {
+    value,
+    label: descriptor.label,
+    icon: <Icon className={lowTextColorClassNames[descriptor.color]} />,
+  };
+});
+
+const buildConclusionLabels = getValueLabels(buildConclusionOptions);
+
 function BuildConclusionCondition(props: {
   form: AutomationForm;
   name: ConditionValueName;
 }) {
   const { form, name } = props;
   const id = useId();
-  const conclusions = [
-    { status: BuildStatus.NoChanges, value: "no-changes" },
-    { status: BuildStatus.ChangesDetected, value: "changes-detected" },
-  ];
 
   return (
     <div className="flex items-center gap-2 max-md:flex-wrap">
@@ -54,28 +84,23 @@ function BuildConclusionCondition(props: {
         aria-label="Build Conclusion"
         orientation="horizontal"
         placeholder="Select build conclusion…"
+        items={buildConclusionLabels}
       >
         <SelectButton className="text-sm">
           <SelectValue />
         </SelectButton>
         <FieldError />
         <ListBox>
-          {conclusions.map(({ status, value }) => {
-            const descriptor = buildStatusDescriptors[status];
-            const Icon = descriptor.icon;
-            return (
-              <ListBoxItem
-                key={value}
-                value={value}
-                className="text-sm"
-                icon={
-                  <Icon className={lowTextColorClassNames[descriptor.color]} />
-                }
-              >
-                {descriptor.label}
-              </ListBoxItem>
-            );
-          })}
+          {buildConclusionOptions.map(({ value, label, icon }) => (
+            <ListBoxItem
+              key={value}
+              value={value}
+              className="text-sm"
+              icon={icon}
+            >
+              {label}
+            </ListBoxItem>
+          ))}
         </ListBox>
       </SelectField>
     </div>
@@ -157,18 +182,20 @@ function BuildNameCondition(props: {
   );
 }
 
-const buildModeOptions = [
+const buildModeOptions: IconOption[] = [
   {
-    mode: BuildMode.Ci,
+    value: BuildMode.Ci,
     label: "CI",
-    icon: GitPullRequestIcon,
+    icon: <GitPullRequestIcon />,
   },
   {
-    mode: BuildMode.Monitoring,
+    value: BuildMode.Monitoring,
     label: "Monitoring",
-    icon: TowerControlIcon,
+    icon: <TowerControlIcon />,
   },
 ];
+
+const buildModeLabels = getValueLabels(buildModeOptions);
 
 function BuildModeCondition(props: {
   form: AutomationForm;
@@ -207,18 +234,19 @@ function BuildModeCondition(props: {
         orientation="horizontal"
         name={name}
         placeholder="Select build mode…"
+        items={buildModeLabels}
       >
         <SelectButton className="text-sm">
           <SelectValue />
         </SelectButton>
         <FieldError />
         <ListBox>
-          {buildModeOptions.map(({ mode, label, icon: Icon }) => (
+          {buildModeOptions.map(({ value, label, icon }) => (
             <ListBoxItem
-              key={mode}
-              value={mode}
+              key={value}
+              value={value}
               className="text-sm"
-              icon={<Icon />}
+              icon={icon}
             >
               <ListBoxItemLabel>{label}</ListBoxItemLabel>
             </ListBoxItem>
@@ -228,6 +256,18 @@ function BuildModeCondition(props: {
     </div>
   );
 }
+
+const buildTypeOptions: IconOption[] = Object.values(BuildType).map((type) => {
+  const descriptor = buildTypeDescriptors[type];
+  const Icon = descriptor.icon;
+  return {
+    value: type,
+    label: descriptor.label,
+    icon: <Icon className={lowTextColorClassNames[descriptor.color]} />,
+  };
+});
+
+const buildTypeLabels = getValueLabels(buildTypeOptions);
 
 function BuildTypeCondition(props: {
   form: AutomationForm;
@@ -247,28 +287,23 @@ function BuildTypeCondition(props: {
         orientation="horizontal"
         name={name}
         placeholder="Select build type…"
+        items={buildTypeLabels}
       >
         <SelectButton className="text-sm">
           <SelectValue />
         </SelectButton>
         <FieldError />
         <ListBox>
-          {Object.values(BuildType).map((type) => {
-            const descriptor = buildTypeDescriptors[type];
-            const Icon = descriptor.icon;
-            return (
-              <ListBoxItem
-                key={type}
-                value={type}
-                className="text-sm"
-                icon={
-                  <Icon className={lowTextColorClassNames[descriptor.color]} />
-                }
-              >
-                <ListBoxItemLabel>{descriptor.label}</ListBoxItemLabel>
-              </ListBoxItem>
-            );
-          })}
+          {buildTypeOptions.map(({ value, label, icon }) => (
+            <ListBoxItem
+              key={value}
+              value={value}
+              className="text-sm"
+              icon={icon}
+            >
+              <ListBoxItemLabel>{label}</ListBoxItemLabel>
+            </ListBoxItem>
+          ))}
         </ListBox>
       </SelectField>
     </div>
@@ -348,6 +383,7 @@ function OperatorSelector(props: {
   return (
     <Select
       aria-label="Operator"
+      items={labels}
       value={operator}
       onValueChange={(value) => {
         const rawCondition = form.getValues(conditionName);
@@ -380,6 +416,13 @@ function OperatorSelector(props: {
 
 type BranchOperator = "eq" | "neq" | "glob" | "not-glob";
 
+const branchOperatorLabels: Record<BranchOperator, string> = {
+  eq: "is",
+  neq: "is not",
+  glob: "matches",
+  "not-glob": "does not match",
+};
+
 function getBranchOperator(
   condition: AutomationInputCondition,
 ): BranchOperator {
@@ -400,6 +443,7 @@ function BranchOperatorSelector(props: {
   return (
     <Select
       aria-label="Operator"
+      items={branchOperatorLabels}
       value={operator}
       onValueChange={(value) => {
         const rawCondition = form.getValues(name);
@@ -437,10 +481,11 @@ function BranchOperatorSelector(props: {
         <SelectValue />
       </SelectButton>
       <ListBox>
-        <ListBoxItem value="eq">is</ListBoxItem>
-        <ListBoxItem value="neq">is not</ListBoxItem>
-        <ListBoxItem value="glob">matches</ListBoxItem>
-        <ListBoxItem value="not-glob">does not match</ListBoxItem>
+        {Object.entries(branchOperatorLabels).map(([value, label]) => (
+          <ListBoxItem key={value} value={value}>
+            {label}
+          </ListBoxItem>
+        ))}
       </ListBox>
     </Select>
   );

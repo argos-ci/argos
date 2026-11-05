@@ -107,6 +107,24 @@ export function SelectValue(props: {
   );
 }
 
+/**
+ * What `items` holds for an option that leads with an icon, so the trigger
+ * shows the chosen option the way its row does: Base UI only reads labels
+ * from `items`, never from the rows.
+ */
+export function SelectValueLabel(props: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  const { icon, children } = props;
+  return (
+    <>
+      <span className="text-low flex shrink-0 [&_svg]:size-[1em]">{icon}</span>
+      <span className="truncate">{children}</span>
+    </>
+  );
+}
+
 export type SelectButtonProps = {
   ref?: React.Ref<HTMLButtonElement>;
   children: ReactNode;
