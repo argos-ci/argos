@@ -84,28 +84,32 @@ export const GithubStrategy: MergeBaseStrategy<{
       { retries: 3 },
     );
   },
-  listParentCommitShas: async (args) => {
+  async *listCommitPages(args) {
     // If the app is light, we just find the last bucket ancest on the base branch.
     // We can't know for sure that it's a parent, but it's the best we can do.
     // It can result into diffs that includes changes more recent than the current branch.
-    // It is already handled in the common logic, so at this point we return [].
+    // It is already handled in the common logic, so at this point we list nothing.
     // Note it may indicates a bad setup.
     if (args.ctx.installation.app === "light") {
-      return [];
+      return;
     }
 
     try {
-      const response = await args.ctx.octokit.repos.listCommits({
-        owner: args.ctx.owner,
-        repo: args.ctx.repo,
-        sha: args.sha,
-        per_page: 100,
-      });
-      return response.data.map((commit) => commit.sha);
+      for await (const response of args.ctx.octokit.paginate.iterator(
+        args.ctx.octokit.rest.repos.listCommits,
+        {
+          owner: args.ctx.owner,
+          repo: args.ctx.repo,
+          sha: args.sha,
+          per_page: 100,
+        },
+      )) {
+        yield response.data.map((commit) => commit.sha);
+      }
     } catch (error) {
       // 409 = Git Repository is empty.
       if (checkOctokitErrorStatus(409, error)) {
-        return [];
+        return;
       }
       if (checkOctokitErrorStatus(404, error)) {
         throw boom(

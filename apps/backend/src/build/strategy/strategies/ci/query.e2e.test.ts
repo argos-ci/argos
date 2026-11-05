@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Build, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getBaseBucketForBuildAndCommit, getBucketFromCommits } from "./query";
+import {
+  getBaseBucketForBuildAndCommit,
+  getBucketFromAncestors,
+  getBucketFromCommits,
+  MAX_LISTED_COMMITS,
+} from "./query";
 
 describe("#getBaseBucketForBuildAndCommit", () => {
   describe("when the build is triggered by a pull request", () => {
@@ -348,5 +353,93 @@ describe("#getBucketFromCommits", () => {
       build,
     });
     expect(result).toBeNull();
+  });
+});
+
+describe("#getBucketFromAncestors", () => {
+  let build: Build;
+
+  beforeEach(async () => {
+    await setupDatabase();
+    const project = await factory.Project.create();
+    const compareBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      mode: "ci",
+      name: "default",
+    });
+    build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareBucket.id,
+      jobStatus: "pending",
+      name: "default",
+      mode: "ci",
+      type: "check",
+    });
+  });
+
+  // A commit followed by its ancestors, longer than the search goes.
+  const shas = Array.from({ length: MAX_LISTED_COMMITS + 100 }, (_, i) =>
+    (i + 1).toString(16).padStart(40, "0"),
+  );
+
+  /**
+   * Page the commits by 100, as Git providers do, counting the pages pulled.
+   */
+  function paginate() {
+    const pulled = { count: 0 };
+    async function* pages() {
+      for (let i = 0; i < shas.length; i += 100) {
+        pulled.count++;
+        yield shas.slice(i, i + 100);
+      }
+    }
+    return { pages: pages(), pulled };
+  }
+
+  async function createEligibleBucket(commit: string) {
+    const bucket = await factory.ScreenshotBucket.create({
+      projectId: build.projectId,
+      commit,
+      mode: build.mode,
+      name: build.name,
+    });
+    await factory.Build.create({
+      projectId: build.projectId,
+      compareScreenshotBucketId: bucket.id,
+      jobStatus: "complete",
+      name: build.name,
+      mode: build.mode,
+      type: "reference",
+    });
+    return bucket;
+  }
+
+  it("searches past the first page and stops pulling pages at the first match", async () => {
+    const bucket = await createEligibleBucket(shas[250]!);
+    await createEligibleBucket(shas[350]!);
+    const { pages, pulled } = paginate();
+    const result = await getBucketFromAncestors({ pages, build });
+    expect(result).toEqual(bucket);
+    expect(pulled.count).toBe(3);
+  });
+
+  it("does not consider the starting commit", async () => {
+    await createEligibleBucket(shas[0]!);
+    const result = await getBucketFromAncestors({ pages: [shas], build });
+    expect(result).toBeNull();
+  });
+
+  it(`searches ${MAX_LISTED_COMMITS} commits, the starting commit included`, async () => {
+    await createEligibleBucket(shas[MAX_LISTED_COMMITS]!);
+    const beyond = paginate();
+    expect(
+      await getBucketFromAncestors({ pages: beyond.pages, build }),
+    ).toBeNull();
+    expect(beyond.pulled.count).toBe(MAX_LISTED_COMMITS / 100);
+
+    const last = await createEligibleBucket(shas[MAX_LISTED_COMMITS - 1]!);
+    expect(
+      await getBucketFromAncestors({ pages: paginate().pages, build }),
+    ).toEqual(last);
   });
 });

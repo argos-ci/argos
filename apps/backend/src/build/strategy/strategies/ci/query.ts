@@ -202,6 +202,44 @@ export async function getBucketFromCommits(args: {
 }
 
 /**
+ * Number of commits listed, the starting commit included, when searching its
+ * ancestors for a baseline. The CLI searches as far when it resolves the
+ * baseline itself, without a Git provider connected.
+ */
+export const MAX_LISTED_COMMITS = 5000;
+
+/**
+ * Get the bucket from the ancestors of a commit, closest first.
+ *
+ * `pages` lists the commit followed by its ancestors, as a Git provider pages
+ * through the history. The commit itself is not a candidate. Pages are pulled
+ * one at a time, so the provider is no longer queried once a bucket is found.
+ */
+export async function getBucketFromAncestors(args: {
+  pages: AsyncIterable<string[]> | Iterable<string[]>;
+  build: Build;
+  approved?: QueryBaseBucketOptions["approved"];
+}) {
+  let listed = 0;
+  for await (const page of args.pages) {
+    const shas = page.slice(0, MAX_LISTED_COMMITS - listed);
+    const bucket = await getBucketFromCommits({
+      shas: listed === 0 ? shas.slice(1) : shas,
+      build: args.build,
+      approved: args.approved,
+    });
+    if (bucket) {
+      return bucket;
+    }
+    listed += shas.length;
+    if (listed >= MAX_LISTED_COMMITS) {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
  * Find the build eligible to be used as a baseline among a list of commits.
  *
  * Commits are searched in the order they are given: the first commit that has

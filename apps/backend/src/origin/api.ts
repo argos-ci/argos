@@ -379,15 +379,13 @@ export class OriginApi {
   }
 
   /**
-   * List up to 100 commits reachable from a revision, most recent first.
+   * List a page of up to 100 commits reachable from a revision, most recent
+   * first.
    */
-  async listCommits(id: RepoIdentifier, input: { sha: string }) {
-    const page = await this.#request(
-      ListCommitsResponseSchema,
-      `${repoPath(id)}/commits`,
-      { query: { sha: input.sha, pageSize: 100 } },
-    );
-    return page.commits;
+  listCommits(id: RepoIdentifier, input: { sha: string; pageToken: string }) {
+    return this.#request(ListCommitsResponseSchema, `${repoPath(id)}/commits`, {
+      query: { sha: input.sha, pageSize: 100, pageToken: input.pageToken },
+    });
   }
 
   /**

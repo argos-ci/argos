@@ -12,7 +12,7 @@ import type { CIStrategyContext } from ".";
 import type { GetBaseResult } from "../../types";
 import {
   getBaseBucketForBuildAndCommit,
-  getBucketFromCommits,
+  getBucketFromAncestors,
   getSameCommitBaseBucket,
 } from "./query";
 import { GithubStrategy } from "./strategies/github";
@@ -146,15 +146,17 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     return result(null);
   }
 
-  // Lists the parent commits used to find an ancestor bucket. We prefer the
-  // parent commits sent by the build (CLI), and fall back to the git provider
-  // when one is available.
-  const listParentCommitShas = async (sha: string): Promise<string[]> => {
+  // Lists the commits used to find an ancestor bucket. We prefer the parent
+  // commits sent by the build (CLI), and fall back to the git provider when
+  // one is available.
+  const listCommitPages = (
+    sha: string,
+  ): AsyncIterable<string[]> | Iterable<string[]> => {
     if (build.parentCommits) {
-      return build.parentCommits;
+      return [build.parentCommits];
     }
     if (gitProvider && ctx) {
-      return gitProvider.listParentCommitShas({ project, build, ctx, sha });
+      return gitProvider.listCommitPages({ project, build, ctx, sha });
     }
     return [];
   };
@@ -191,9 +193,8 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
   // - the merge base is the same as the head (a push to the base branch),
   // - no bucket exists for the merge base commit,
   // - there is no merge base at all (no git provider and no baseCommit).
-  const shas = await listParentCommitShas(mergeBaseCommitSha ?? head);
-  const baseBucket = await getBucketFromCommits({
-    shas: shas.slice(1),
+  const baseBucket = await getBucketFromAncestors({
+    pages: listCommitPages(mergeBaseCommitSha ?? head),
     build,
     approved,
   });
