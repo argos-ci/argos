@@ -13,7 +13,7 @@ export const ProjectName = z.string().min(1);
  */
 export const TokenProjectPath = z.string().min(1).nullish().meta({
   description:
-    "Project to act on, as `owner/project`. Required when the project token is linked to several projects, optional when it is linked to only one.",
+    "Project to act on, as `owner/project`. Required when the project token is linked to several projects, ignored when it is linked to only one.",
 });
 
 const AccountSchema = z

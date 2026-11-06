@@ -32,6 +32,11 @@ export const PROJECT_TOKEN_PERMISSIONS = {
 
 export type ProjectTokenPermission = keyof typeof PROJECT_TOKEN_PERMISSIONS;
 
-export const PROJECT_TOKEN_PERMISSION_LIST = Object.keys(
-  PROJECT_TOKEN_PERMISSIONS,
-) as ProjectTokenPermission[];
+function isProjectTokenPermission(
+  value: string,
+): value is ProjectTokenPermission {
+  return Object.hasOwn(PROJECT_TOKEN_PERMISSIONS, value);
+}
+
+export const PROJECT_TOKEN_PERMISSION_LIST: ProjectTokenPermission[] =
+  Object.keys(PROJECT_TOKEN_PERMISSIONS).filter(isProjectTokenPermission);
