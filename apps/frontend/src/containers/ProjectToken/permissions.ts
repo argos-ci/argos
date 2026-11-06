@@ -35,7 +35,7 @@ export const PROJECT_TOKEN_PRESETS = [
   {
     value: "upload",
     label: "Upload from CI",
-    description: "Upload builds and deployments: all CI needs.",
+    description: "Upload builds and deployments, but not media.",
     permissions: [
       ProjectTokenPermission.BuildsWrite,
       ProjectTokenPermission.DeploymentsWrite,

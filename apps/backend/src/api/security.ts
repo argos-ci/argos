@@ -124,14 +124,18 @@ type UnknownAuth =
   | null;
 
 /**
- * Authenticate with a **project token** holding every given permission. Used
- * by the build and deployment endpoints that act on behalf of a project
- * (typically from CI or the SDK).
+ * Authenticate with a **project token** holding every given permission, or
+ * every permission of one of the alternative lists. Used by the build and
+ * deployment endpoints that act on behalf of a project (typically from CI or
+ * the SDK).
  */
 export function projectTokenAuth(
   permissions: ProjectTokenPermission[],
+  ...alternatives: ProjectTokenPermission[][]
 ): SecurityRequirement<AuthProjectPayload> {
-  return [{ projectToken: permissions }];
+  return [permissions, ...alternatives].map((required) => ({
+    projectToken: required,
+  }));
 }
 
 /**

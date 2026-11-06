@@ -103,7 +103,11 @@ describe("project tokens", () => {
     const created = await request(app)
       .post("/projects/acme/web/tokens")
       .set(bearer(ownerPat))
-      .send({ name: "GitHub Actions" })
+      .send({
+        name: "GitHub Actions",
+        permissions: PROJECT_TOKEN_PERMISSION_LIST,
+        expireAt: null,
+      })
       .expect(201);
     expect(created.body).toMatchObject({
       name: "GitHub Actions",
@@ -151,13 +155,13 @@ describe("project tokens", () => {
     const created = await request(app)
       .post("/projects/acme/web/tokens")
       .set(bearer(contributorPat))
-      .send({ name: "Web CI" })
+      .send({ name: "Web CI", expireAt: null })
       .expect(201);
 
     await request(app)
       .post("/projects/acme/docs/tokens")
       .set(bearer(contributorPat))
-      .send({ name: "Docs CI" })
+      .send({ name: "Docs CI", expireAt: null })
       .expect(403);
 
     // A token reaching docs too is not theirs to revoke, nor to learn about
@@ -202,7 +206,7 @@ describe("project tokens", () => {
     const created = await request(app)
       .post("/accounts/acme/project-tokens")
       .set(bearer(ownerPat))
-      .send({ name: "Monorepo", projects: ["web", "docs"] })
+      .send({ name: "Monorepo", projects: ["web", "docs"], expireAt: null })
       .expect(201);
     expect(created.body.projects).toEqual(["docs", "web"]);
     const token: string = created.body.token;
@@ -251,7 +255,11 @@ describe("project tokens", () => {
     const created = await request(app)
       .post("/projects/acme/web/tokens")
       .set(bearer(ownerPat))
-      .send({ name: "Read only", permissions: ["projects:read"] })
+      .send({
+        name: "Read only",
+        permissions: ["projects:read"],
+        expireAt: null,
+      })
       .expect(201);
 
     const res = await request(app)

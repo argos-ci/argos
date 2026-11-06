@@ -27,6 +27,10 @@ import { tokenlessStrategies } from "./tokenless";
  */
 const LAST_USED_AT_PRECISION_MS = 5 * 60 * 1000;
 
+/** Name the migration gave the tokens it copied from `projects.token`. */
+const LEGACY_TOKEN_NAME = "Legacy token";
+const LEGACY_TOKEN_LENGTH = 40;
+
 /**
  * Payload of a bearer bound to a single project with every permission: a
  * short-lived token minted from a CI identity, or a tokenless CI bearer.
@@ -63,31 +67,52 @@ async function findProjectToken(bearer: string) {
  *
  * The migration copied every token, but the code serving while it ran kept
  * writing there until the deploy finished: projects created then, or whose
- * token was regenerated then, only have it there. The column is cleared once
- * moved, and when a token is deleted, so a revoked token never comes back.
+ * token was regenerated then, only have it there. A regenerated token
+ * replaces the one the migration copied, which is revoked here. The column is
+ * cleared once moved, and when a token is deleted, so a revoked token never
+ * comes back.
  *
  * TODO: remove with the `projects.token` column.
  */
 async function moveLegacyProjectToken(bearer: string) {
+  // Every token ever written there has this length: the SDK rejects any
+  // other, so an unknown bearer of another length skips the lookup.
+  if (bearer.length !== LEGACY_TOKEN_LENGTH) {
+    return null;
+  }
   const project = await Project.queryNotDeleted().findOne({
     token: encryptDeterministic(bearer),
   });
   if (!project) {
     return null;
   }
+  const token = hashToken(bearer);
   await transaction(async (trx) => {
+    await ProjectToken.query(trx)
+      .where("name", LEGACY_TOKEN_NAME)
+      .whereNull("createdById")
+      .whereNot("token", token)
+      .whereExists(
+        ProjectTokenProject.query(trx)
+          .whereColumn(
+            "project_token_projects.projectTokenId",
+            "project_tokens.id",
+          )
+          .where("project_token_projects.projectId", project.id),
+      )
+      .delete();
     await ProjectToken.query(trx)
       .insert({
         accountId: project.accountId,
-        name: "Legacy token",
-        token: hashToken(bearer),
+        name: LEGACY_TOKEN_NAME,
+        token,
         permissions: PROJECT_TOKEN_PERMISSION_LIST,
       })
       .onConflict("token")
       .ignore();
     const projectToken = await ProjectToken.query(trx)
       .select("id")
-      .findOne({ token: hashToken(bearer) });
+      .findOne({ token });
     if (projectToken) {
       await ProjectTokenProject.query(trx)
         .insert({ projectTokenId: projectToken.id, projectId: project.id })
@@ -118,8 +143,9 @@ async function getAuthPayloadFromProjectToken(
 
   const { account } = projectToken;
   invariant(account, "Project token account not fetched");
+  invariant(projectToken.projects, "Project token projects not fetched");
   // The rule of `getProjectsByTokenId`: only the projects of its own account.
-  const projects = (projectToken.projects ?? []).filter(
+  const projects = projectToken.projects.filter(
     (project) => project.accountId === projectToken.accountId,
   );
   for (const project of projects) {

@@ -96,11 +96,14 @@ const CreateProjectTokenBodySchema = z.object({
   permissions: z
     .array(ProjectTokenPermissionSchema)
     .min(1)
-    .default(PROJECT_TOKEN_PERMISSION_LIST)
-    .meta({ description: "What the token can do. Defaults to everything." }),
-  expireAt: z.iso.datetime().nullish().meta({
+    .default(["builds:write", "deployments:write"])
+    .meta({
+      description:
+        "What the token can do. Defaults to uploading builds and deployments.",
+    }),
+  expireAt: z.iso.datetime().nullable().meta({
     description:
-      "When the token stops working. Omit it for a token that never expires.",
+      "When the token stops working, or `null` for a token that never expires.",
   }),
 });
 
@@ -230,9 +233,15 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
       slug: req.ctx.params.accountSlug,
     });
     const names = [...new Set(req.ctx.body.projects)];
-    const projects = await Project.queryNotDeleted()
-      .where("accountId", account.id)
-      .whereIn("name", names);
+    // A project the user cannot see is reported missing, so that its name
+    // cannot be probed.
+    const projects = await filterViewableProjects({
+      account,
+      user: auth.user,
+      projects: await Project.queryNotDeleted()
+        .where("accountId", account.id)
+        .whereIn("name", names),
+    });
     const missing = names.filter(
       (name) => !projects.some((project) => project.name === name),
     );
@@ -245,7 +254,7 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
       name: req.ctx.body.name,
       projects,
       permissions: req.ctx.body.permissions,
-      expireAt: req.ctx.body.expireAt ?? null,
+      expireAt: req.ctx.body.expireAt,
     });
     res.status(201).send(
       await serializeCreatedProjectToken(created, {
@@ -367,7 +376,7 @@ export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
       name: req.ctx.body.name,
       projects: [project],
       permissions: req.ctx.body.permissions,
-      expireAt: req.ctx.body.expireAt ?? null,
+      expireAt: req.ctx.body.expireAt,
     });
     res.status(201).send(
       await serializeCreatedProjectToken(created, {

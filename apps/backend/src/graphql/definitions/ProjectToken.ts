@@ -8,7 +8,6 @@ import {
   canManageProjectToken,
   createProjectToken,
   deleteProjectToken,
-  filterViewableProjects,
   listAccountProjectTokens,
   listProjectProjectTokens,
   loadProjectToken,
@@ -121,6 +120,14 @@ const PERMISSION_FROM_GRAPHQL = {
   [IProjectTokenPermission.MediaWrite]: "media:write",
 } satisfies Record<IProjectTokenPermission, ProjectTokenPermission>;
 
+function getExpireAt(expireInDays: number): string {
+  const expireAt = addDays(new Date(), expireInDays);
+  if (Number.isNaN(expireAt.getTime())) {
+    throw boom(400, "Invalid expiration date.");
+  }
+  return expireAt.toISOString();
+}
+
 async function resolveAccountProjectTokens(
   account: Account,
   user: User | undefined,
@@ -141,12 +148,17 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
+      const { user } = ctx.auth;
       const [account, projects] = await Promise.all([
         ctx.loaders.Account.load(projectToken.accountId),
         ctx.loaders.ProjectTokenProjects.load(projectToken.id),
       ]);
       invariant(account, "Project token account not found");
-      return filterViewableProjects({ projects, account, user: ctx.auth.user });
+      const visibleIds = await ctx.loaders.VisibleProjectIds.load({
+        account,
+        user,
+      });
+      return projects.filter((project) => visibleIds.has(project.id));
     },
     createdBy: async (projectToken, _args, ctx) => {
       if (!projectToken.createdById) {
@@ -165,10 +177,17 @@ export const resolvers: IResolvers = {
         ctx.loaders.ProjectTokenProjects.load(projectToken.id),
       ]);
       invariant(account, "Project token account not found");
+      const { user } = ctx.auth;
       return canManageProjectToken({
         account,
         projects,
-        user: ctx.auth.user,
+        user,
+        getPermissions: {
+          account: (account) =>
+            ctx.loaders.AccountPermissions.load({ account, user }),
+          project: (project) =>
+            ctx.loaders.ProjectPermissions.load({ project, user }),
+        },
       });
     },
   },
@@ -211,10 +230,7 @@ export const resolvers: IResolvers = {
           permissions: permissions.map(
             (permission) => PERMISSION_FROM_GRAPHQL[permission],
           ),
-          expireAt:
-            expireInDays != null
-              ? addDays(new Date(), expireInDays).toISOString()
-              : null,
+          expireAt: expireInDays != null ? getExpireAt(expireInDays) : null,
         });
         return { ...created, account };
       } catch (error) {
