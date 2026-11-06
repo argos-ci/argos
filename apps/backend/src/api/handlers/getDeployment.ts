@@ -24,7 +24,7 @@ export const getDeploymentOperation = {
   summary: "Get a deployment",
   description: "Retrieve a single deployment by its ID.",
   tags: ["Deployments"],
-  security: projectTokenAuth(["deployments:write"]),
+  security: projectTokenAuth(["deployments:write"], ["projects:read"]),
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),

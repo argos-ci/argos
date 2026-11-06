@@ -131,24 +131,28 @@ export function findAuthProject(
  * Resolve the project a project token acts on, for the endpoints that are not
  * addressed by project (creating a build, a deployment…).
  *
- * A token linked to a single project needs nothing more. A token linked to
- * several has to name one as `owner/project` — the SDK sends `ARGOS_PROJECT`.
- * Naming one the token cannot reach is a 401 rather than a 404, which keeps
- * the existence of other projects undisclosed.
+ * A token linked to a single project acts on it whatever `project` says: the
+ * released SDK sends `ARGOS_PROJECT` with any token, and a stale value (a
+ * renamed or transferred project) used to be ignored. A token linked to
+ * several has to name one as `owner/project`. Naming one the token cannot
+ * reach is a 401 rather than a 404, which keeps the existence of other
+ * projects undisclosed.
  */
 export async function resolveAuthProject(
   auth: AuthProjectPayload,
   projectPath: string | null | undefined,
 ): Promise<Project> {
+  const [single, ...others] = auth.projects;
+  invariant(single, "A project auth payload has at least one project");
+  if (others.length === 0) {
+    return single;
+  }
+
   if (!projectPath) {
-    const [project, ...others] = auth.projects;
-    if (!project || others.length > 0) {
-      throw boom(
-        400,
-        "This project token is linked to several projects. Pass `project` as `owner/project` (`ARGOS_PROJECT` in the SDK) to choose one.",
-      );
-    }
-    return project;
+    throw boom(
+      400,
+      "This project token is linked to several projects. Pass `project` as `owner/project` (`ARGOS_PROJECT` in the SDK) to choose one.",
+    );
   }
 
   const { owner, name } = parseProjectPath(projectPath);

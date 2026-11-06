@@ -7,8 +7,8 @@ import type { TransactionOrKnex } from "objection";
 
 import { boom } from "@/util/error";
 
-import type { Account } from "../models/Account";
-import { Project } from "../models/Project";
+import type { Account, AccountPermission } from "../models/Account";
+import { Project, type ProjectPermission } from "../models/Project";
 import { ProjectToken } from "../models/ProjectToken";
 import { ProjectTokenProject } from "../models/ProjectTokenProject";
 import type { User } from "../models/User";
@@ -24,15 +24,25 @@ import { applyProjectVisibility } from "./project";
  * administer. A token linked to no project anymore takes an account
  * administrator.
  *
- * Backs both the `viewerCanManage` field and the guard of every mutation.
+ * Backs both the `viewerCanManage` field and the guard of every mutation. A
+ * list of tokens passes `getPermissions` backed by the request's loaders, so
+ * the same account and projects are not checked once per token.
  */
 export async function canManageProjectToken(args: {
   account: Account;
   projects: Project[];
   user: User;
+  getPermissions?: {
+    account: (account: Account) => Promise<AccountPermission[]>;
+    project: (project: Project) => Promise<ProjectPermission[]>;
+  };
 }): Promise<boolean> {
   const { account, projects, user } = args;
-  const accountPermissions = await account.$getPermissions(user);
+  const getPermissions = args.getPermissions ?? {
+    account: (account: Account) => account.$getPermissions(user),
+    project: (project: Project) => project.$getPermissions(user),
+  };
+  const accountPermissions = await getPermissions.account(account);
   if (accountPermissions.includes("admin")) {
     return true;
   }
@@ -40,7 +50,7 @@ export async function canManageProjectToken(args: {
     return false;
   }
   const projectPermissions = await Promise.all(
-    projects.map((project) => project.$getPermissions(user)),
+    projects.map((project) => getPermissions.project(project)),
   );
   return projectPermissions.every((permissions) =>
     permissions.includes("admin"),
@@ -386,10 +396,14 @@ export async function moveProjectTokens(args: {
     return;
   }
   const tokenIds = tokens.map((token) => token.id);
+  // A link to a deleted project reaches nothing: a token whose only live
+  // project is this one moves along.
   const shared = await ProjectTokenProject.query(trx)
-    .distinct("projectTokenId")
-    .whereIn("projectTokenId", tokenIds)
-    .whereNot("projectId", projectId);
+    .joinRelated("project")
+    .distinct("project_token_projects.projectTokenId")
+    .whereIn("project_token_projects.projectTokenId", tokenIds)
+    .whereNot("project_token_projects.projectId", projectId)
+    .whereNull("project.deletedAt");
   const sharedIds = new Set(shared.map((link) => link.projectTokenId));
   const movedIds = tokenIds.filter((id) => !sharedIds.has(id));
   await Promise.all([
