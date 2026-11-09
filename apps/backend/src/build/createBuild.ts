@@ -14,6 +14,7 @@ import {
 import { subscribeBuildPullRequestCreator } from "@/database/services/build-notification-subscription";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
+import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import {
   getOrCreateOriginPullRequest,
   resolveOriginPullRequestNumber,
@@ -78,6 +79,9 @@ export async function createBuild(params: {
       );
     }
     case "flat-rate":
+      // The build job sends this alert, but an account that crossed the limit
+      // through media uploads runs no build job before being rejected.
+      await sendPlanLimitAlert(account);
       throw boom(
         402,
         `You have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,

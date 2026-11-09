@@ -191,6 +191,8 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
+          lastPlanLimitAlertThreshold: { type: ["integer", "null"] },
+          lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
         },
       },
@@ -223,6 +225,14 @@ export class Account extends Model {
    * configured, not to report usage.
    */
   lastOverageAlertThreshold!: number | null;
+  /**
+   * Highest plan limit alert sent to the owners in the billing period holding
+   * `lastPlanLimitAlertAt`, null when none was. Unlike the overage alert, it is
+   * sent again every period: a flat-rate plan rejects builds again every time
+   * it runs out.
+   */
+  lastPlanLimitAlertThreshold!: number | null;
+  lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
 

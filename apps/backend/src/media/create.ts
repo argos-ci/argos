@@ -8,6 +8,7 @@ import { isUniqueViolationError } from "@/database/error";
 import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
+import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import { getS3Client } from "@/storage/s3";
 import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
@@ -385,6 +386,9 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
       );
     }
     case "flat-rate":
+      // The build job sends this alert, but an account that crossed the limit
+      // through media uploads runs no build job before being rejected.
+      await sendPlanLimitAlert(account);
       throw boom(
         402,
         `Upload rejected: you have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,

@@ -1,7 +1,11 @@
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Project, Subscription } from "@/database/models";
+import {
+  NotificationWorkflowRecipient,
+  type Project,
+  type Subscription,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as notification from "@/notification";
 import { stripe } from "@/stripe";
@@ -144,6 +148,64 @@ describe("build", () => {
         );
         expect(update).not.toHaveBeenCalled();
       });
+    });
+
+    it("rejects the build of a flat-rate plan out of capacity and alerts its owners", async () => {
+      const [team, owner, member, plan] = await Promise.all([
+        factory.Team.create(),
+        factory.User.create(),
+        factory.User.create(),
+        factory.Plan.create({ usageBased: false, includedScreenshots: 10 }),
+      ]);
+      const account = await factory.TeamAccount.create({ teamId: team.id });
+      await factory.TeamUser.createMany(2, [
+        { teamId: team.id, userId: owner.id, userLevel: "owner" },
+        { teamId: team.id, userId: member.id, userLevel: "member" },
+      ]);
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: plan.id,
+        provider: "github",
+      });
+      const fullProject = await factory.Project.create({
+        accountId: account.id,
+        githubRepositoryId: null,
+      });
+      await factory.ScreenshotBucket.create({
+        projectId: fullProject.id,
+        complete: true,
+        screenshotCount: 12,
+      });
+
+      await expect(
+        createBuild({
+          project: fullProject,
+          prHeadCommit: null,
+          prNumber: null,
+          argosSdk: "@argos-ci/core@3.2.0",
+          baseBranch: "main",
+          baseCommit: null,
+          commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+          branch: "main",
+          runAttempt: null,
+          runId: null,
+          ciProvider: "github-actions",
+          mode: "ci",
+          buildName: null,
+          parallel: null,
+          parentCommits: null,
+          skipped: null,
+          mergeQueue: false,
+          subset: false,
+        }),
+      ).rejects.toThrow("You have reached the maximum screenshot capacity");
+
+      const recipients = await NotificationWorkflowRecipient.query()
+        .joinRelated("workflow")
+        .where("workflow.type", "plan_limit");
+      expect(recipients.map((recipient) => recipient.userId)).toEqual([
+        owner.id,
+      ]);
     });
 
     it("creates a build", async () => {

@@ -9,6 +9,7 @@ import { GITLAB_PROJECT_SYNC_INTERVAL, syncGitlabProject } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
+import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import { originPullRequestJob } from "@/origin-pull-request/job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { updateStripeUsage } from "@/stripe";
@@ -39,7 +40,8 @@ async function pushDiffs(input: {
 
 /**
  * Update the usage in Stripe, then send the spend alert that became due: a
- * spend limit threshold when a limit is set, an overage alert otherwise.
+ * spend limit threshold when a limit is set, an overage alert otherwise. A
+ * flat-rate plan has no usage to bill, only a limit to warn about.
  */
 async function updateUsage(project: Project) {
   const { account } = project;
@@ -48,6 +50,7 @@ async function updateUsage(project: Project) {
   const isUsageBased = await manager.checkIsUsageBasedPlan();
 
   if (!isUsageBased) {
+    await sendPlanLimitAlert(account);
     return;
   }
 

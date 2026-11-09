@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
+\restrict xKnFioZKWftjRWhBSMhUGNX5iQnBootesbbPAz5VqEaoUQLKktIB0ZEBvUWycFR
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -129,6 +129,8 @@ CREATE TABLE public.accounts (
     "originInstallationId" bigint,
     "lastOverageAlertThreshold" integer,
     "lastMonthlyReportAt" timestamp with time zone,
+    "lastPlanLimitAlertThreshold" integer,
+    "lastPlanLimitAlertAt" timestamp with time zone,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -6924,7 +6926,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
+\unrestrict xKnFioZKWftjRWhBSMhUGNX5iQnBootesbbPAz5VqEaoUQLKktIB0ZEBvUWycFR
 
 -- Knex migrations
 
@@ -7200,3 +7202,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
