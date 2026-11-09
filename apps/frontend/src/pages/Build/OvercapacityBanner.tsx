@@ -32,20 +32,6 @@ export const OvercapacityBanner = memo(
       return null;
     }
 
-    const action = (() => {
-      if (account.permissions.includes(AccountPermission.Admin)) {
-        return (
-          <Link href={`${getAccountURL({ accountSlug })}/settings/billing`}>
-            Upgrade plan
-          </Link>
-        );
-      }
-      if (account.__typename === "Team") {
-        return <span>Ask a team owner to upgrade the plan.</span>;
-      }
-      return null;
-    })();
-
     return (
       <Banner
         className="flex shrink-0 items-center justify-center gap-2 border-b"
@@ -56,7 +42,13 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.
         </span>
-        {action}
+        {account.permissions.includes(AccountPermission.Admin) ? (
+          <Link href={`${getAccountURL({ accountSlug })}/settings/billing`}>
+            Upgrade plan
+          </Link>
+        ) : account.__typename === "Team" ? (
+          <span>Ask a team owner to upgrade the plan.</span>
+        ) : null}
       </Banner>
     );
   },
