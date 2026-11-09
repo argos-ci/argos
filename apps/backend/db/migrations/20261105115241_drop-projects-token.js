@@ -4,8 +4,8 @@ import process from "node:process";
 
 // `20261105093315_project-tokens` copied every `projects.token`, but the code
 // still serving while it ran kept writing there. Copy what it wrote once more,
-// then drop the column. A revoked token had its column cleared, so it does not
-// come back.
+// as the fallback that moved such a token on first use did, then drop the
+// column. A revoked token had its column cleared, so it does not come back.
 
 /**
  * @param { import("knex").Knex } knex
@@ -82,6 +82,8 @@ function hashToken(token) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+const LEGACY_TOKEN_NAME = "Legacy token";
+
 const LEGACY_PERMISSIONS = [
   "builds:write",
   "deployments:write",
@@ -113,29 +115,56 @@ async function copyLegacyTokens(knex) {
     }
     lastId = last.id;
 
-    const now = new Date();
-    const projectIdByHash = new Map();
-    const rows = [];
+    const projectByHash = new Map();
     for (const project of projects) {
       const hash = hashToken(decrypt(key, project.token));
       // Two projects never share a token, but the unique index would reject
       // the whole batch if they did.
-      if (projectIdByHash.has(hash)) {
-        continue;
+      if (!projectByHash.has(hash)) {
+        projectByHash.set(hash, project);
       }
-      projectIdByHash.set(hash, project.id);
-      rows.push({
-        createdAt: project.createdAt,
-        updatedAt: now,
-        accountId: project.accountId,
-        name: "Legacy token",
-        token: hash,
-        permissions: JSON.stringify(LEGACY_PERMISSIONS),
-      });
     }
 
+    const copied = new Set(
+      await knex("project_tokens")
+        .whereIn("token", [...projectByHash.keys()])
+        .pluck("token"),
+    );
+    const missing = [...projectByHash].filter(([hash]) => !copied.has(hash));
+    if (missing.length === 0) {
+      continue;
+    }
+
+    // A token regenerated while the first migration ran replaces the one it
+    // copied, which would otherwise stay valid.
+    await knex("project_tokens")
+      .where("name", LEGACY_TOKEN_NAME)
+      .whereNull("createdById")
+      .whereExists(
+        knex("project_token_projects")
+          .whereColumn(
+            "project_token_projects.projectTokenId",
+            "project_tokens.id",
+          )
+          .whereIn(
+            "project_token_projects.projectId",
+            missing.map(([, project]) => project.id),
+          ),
+      )
+      .delete();
+
+    const now = new Date();
     const inserted = await knex("project_tokens")
-      .insert(rows)
+      .insert(
+        missing.map(([hash, project]) => ({
+          createdAt: project.createdAt,
+          updatedAt: now,
+          accountId: project.accountId,
+          name: LEGACY_TOKEN_NAME,
+          token: hash,
+          permissions: JSON.stringify(LEGACY_PERMISSIONS),
+        })),
+      )
       .onConflict("token")
       .ignore()
       .returning(["id", "token"]);
@@ -146,7 +175,7 @@ async function copyLegacyTokens(knex) {
           createdAt: now,
           updatedAt: now,
           projectTokenId: row.id,
-          projectId: projectIdByHash.get(row.token),
+          projectId: projectByHash.get(row.token).id,
         })),
       );
     }
