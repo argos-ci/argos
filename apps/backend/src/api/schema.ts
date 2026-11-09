@@ -42,7 +42,6 @@ import {
   deleteTestCommentOperation,
 } from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
-import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchangeGitHubActionsTokenlessToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
@@ -342,9 +341,6 @@ export const zodSchema = {
     },
     "/baseline": {
       post: findBaselineOperation,
-    },
-    "/auth/cli/token": {
-      post: exchangeCliTokenOperation,
     },
     "/auth/github-actions/oidc/exchange": {
       post: exchangeGitHubActionsOidcTokenOperation,

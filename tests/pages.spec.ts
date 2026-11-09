@@ -138,7 +138,7 @@ loggedTest("teams, new team and welcome", async ({ page, auth }) => {
   await screenshot(page, "welcome", await maskViewer(page, auth));
 });
 
-loggedTest("links from emails and the CLI", async ({ page, auth }) => {
+loggedTest("links from emails", async ({ page, auth }) => {
   await visit(page, "/verify", () =>
     expect(page.getByText("Invalid verification link")).toBeVisible(),
   );
@@ -152,13 +152,6 @@ loggedTest("links from emails and the CLI", async ({ page, auth }) => {
     "account-delete-confirm",
     await maskViewer(page, auth),
   );
-
-  // The title is set before the viewer has loaded, and `maskViewer` only masks
-  // the handle once it is on screen: wait for the handle itself.
-  await visit(page, "/auth/cli?port=4242&state=a-state&pkce=a-challenge", () =>
-    expect(page.getByText(`Signed in as @${auth.account.slug}`)).toBeVisible(),
-  );
-  await screenshot(page, "auth-cli", await maskViewer(page, auth));
 
   await visit(page, "/this/page/does/not/exist", () =>
     expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible(),

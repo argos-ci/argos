@@ -152,8 +152,7 @@ Look for:
 - GitHub Actions OIDC and tokenless exchanges: can a fork or another
   repository's workflow get a token for my project? Audience, issuer,
   repository id and owner checks, replay.
-- Short-lived project tokens and the CLI token exchange: binding, expiry,
-  scope.
+- Short-lived project tokens: binding, expiry, scope.
 - User access token scopes and expiry. Timing-safe token comparison.
 - Uploads: can one tenant's upload overwrite another tenant's files? Size
   limits.

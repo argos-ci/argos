@@ -30,9 +30,9 @@ describe("getPostAuthURL", () => {
       getPostAuthURL({
         creation: false,
         hasAutoInvite: false,
-        redirect: `${ORIGIN}/auth/cli?port=4321`,
+        redirect: `${ORIGIN}/oauth/authorize?client_id=argos-cli`,
       }),
-    ).toBe("/auth/cli?port=4321");
+    ).toBe("/oauth/authorize?client_id=argos-cli");
   });
 
   it.each([
@@ -161,23 +161,27 @@ describe("resolveWelcomeRedirect", () => {
   });
 
   it("keeps a same-origin absolute destination", () => {
-    // `AuthCLI` and `OAuthAuthorize` pass `window.location.href`, so dropping
-    // absolute URLs stranded first-time CLI logins on the dashboard.
+    // `OAuthAuthorize` passes `window.location.href`, so dropping absolute URLs
+    // stranded first-time CLI logins on the dashboard.
     expect(
-      resolveWelcomeRedirect(`${ORIGIN}/auth/cli?port=1234&state=abc`),
-    ).toBe("/auth/cli?port=1234&state=abc");
+      resolveWelcomeRedirect(
+        `${ORIGIN}/oauth/authorize?client_id=argos-cli&state=abc`,
+      ),
+    ).toBe("/oauth/authorize?client_id=argos-cli&state=abc");
   });
 });
 
 describe("the CLI login round trip", () => {
-  it("returns the user to the CLI callback after the welcome page", () => {
-    const cliUrl = `${ORIGIN}/auth/cli?port=1234&state=abc`;
+  it("returns the user to the CLI consent screen after the welcome page", () => {
+    const cliUrl = `${ORIGIN}/oauth/authorize?client_id=argos-cli&state=abc`;
     const welcomeUrl = getPostAuthURL({
       creation: true,
       hasAutoInvite: false,
       redirect: cliUrl,
     });
     const r = new URL(welcomeUrl, ORIGIN).searchParams.get("r");
-    expect(resolveWelcomeRedirect(r)).toBe("/auth/cli?port=1234&state=abc");
+    expect(resolveWelcomeRedirect(r)).toBe(
+      "/oauth/authorize?client_id=argos-cli&state=abc",
+    );
   });
 });

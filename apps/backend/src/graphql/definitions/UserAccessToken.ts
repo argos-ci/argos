@@ -1,7 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { createCliAuthCode } from "@/auth/cli";
 import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
@@ -33,17 +32,12 @@ export const typeDefs = gql`
     accessToken: UserAccessToken!
     "The token value, only returned once at creation"
     token: String!
-    "PKCE authorization code, present for CLI tokens. Exchange it for the token via POST /auth/cli/token."
-    code: String
   }
 
   input CreateUserAccessTokenInput {
     name: String!
     accountIds: [ID!]!
     expireInDays: Int
-    source: UserAccessTokenSource
-    "PKCE S256 code challenge (base64url-encoded SHA-256 of the code_verifier). Required when source is cli."
-    codeChallenge: String
   }
 
   input DeleteUserAccessTokenInput {
@@ -86,21 +80,10 @@ export const resolvers: IResolvers = {
       }
       const userId = ctx.auth.user.id;
 
-      const { name, accountIds, expireInDays, source, codeChallenge } =
-        args.input;
+      const { name, accountIds, expireInDays } = args.input;
 
       if (!name.trim()) {
         throw badUserInput("Token name cannot be empty");
-      }
-
-      const tokenSource = source ?? "user";
-
-      if (tokenSource === "cli" && !codeChallenge) {
-        throw badUserInput("codeChallenge is required for CLI tokens");
-      }
-
-      if (tokenSource !== "cli" && codeChallenge) {
-        throw badUserInput("codeChallenge is only supported for CLI tokens");
       }
 
       const accessibleAccounts = await getAccessibleAccounts({
@@ -128,7 +111,7 @@ export const resolvers: IResolvers = {
             token: hashToken(token),
             lastUsedAt: null,
             expireAt,
-            source: tokenSource,
+            source: "user",
           },
         );
 
@@ -142,15 +125,7 @@ export const resolvers: IResolvers = {
         return userAccessToken;
       });
 
-      const code = codeChallenge
-        ? await createCliAuthCode({ token, codeChallenge })
-        : null;
-
-      return {
-        accessToken,
-        token: code ? "" : token,
-        code,
-      };
+      return { accessToken, token };
     },
     updateUserAccessToken: async (_root, args, ctx) => {
       if (!ctx.auth) {
