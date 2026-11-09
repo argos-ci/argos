@@ -195,7 +195,7 @@ router.get(
     await synchronizeFromInstallationId(installation.id);
 
     const url = new URL(
-      `/${account.slug}/settings#github-without-content-access`,
+      `/${account.slug}/settings/integrations#github-without-content-access`,
       config.get("server.url"),
     );
     res.redirect(String(url));

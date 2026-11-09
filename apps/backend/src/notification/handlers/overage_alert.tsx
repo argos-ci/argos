@@ -45,10 +45,12 @@ export const handler = defineNotificationHandler({
     const { threshold, currency, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
     const amount = formatAmount(threshold, currency);
-    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
-      .href;
+    const settingsHref = new URL(
+      `/${props.accountSlug}/settings/billing`,
+      baseUrl,
+    ).href;
     const spendManagementHref = new URL(
-      `/${props.accountSlug}/settings#spend-management`,
+      `/${props.accountSlug}/settings/billing#spend-management`,
       baseUrl,
     ).href;
     const content = (() => {

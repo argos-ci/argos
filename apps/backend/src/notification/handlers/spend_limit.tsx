@@ -34,8 +34,14 @@ export const handler = defineNotificationHandler({
   email: (props) => {
     const { threshold, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
-    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
-      .href;
+    const billingHref = new URL(
+      `/${props.accountSlug}/settings/billing`,
+      baseUrl,
+    ).href;
+    const spendManagementHref = new URL(
+      `/${props.accountSlug}/settings/billing#spend-management`,
+      baseUrl,
+    ).href;
     return {
       subject: `Your team has reached ${threshold}% of its spend limit`,
       body: (
@@ -61,7 +67,7 @@ export const handler = defineNotificationHandler({
                       usage and avoid any surprises. If you’d like to review
                       your current usage details or adjust your plan, feel free
                       to visit your{" "}
-                      <Link href={settingsHref}>team settings</Link>.
+                      <Link href={billingHref}>team settings</Link>.
                     </Paragraph>
                   </>
                 );
@@ -77,7 +83,7 @@ export const handler = defineNotificationHandler({
                     <Paragraph>
                       We recommend keeping an eye on your remaining usage. If
                       you think you might exceed your limit, you can{" "}
-                      <Link href={settingsHref}>
+                      <Link href={spendManagementHref}>
                         adjust your spend limit in the team settings
                       </Link>
                       .
@@ -98,7 +104,7 @@ export const handler = defineNotificationHandler({
                         To prevent any further charges,{" "}
                         <strong>all builds have been paused</strong>. Please
                         review your current usage or disable the pause in the{" "}
-                        <Link href={settingsHref}>team settings</Link> to
+                        <Link href={spendManagementHref}>team settings</Link> to
                         continue to use Argos.
                       </Paragraph>
                     ) : (
@@ -109,7 +115,7 @@ export const handler = defineNotificationHandler({
                         </strong>{" "}
                         Please review your current usage or adjust your spend
                         limit in the{" "}
-                        <Link href={settingsHref}>team settings</Link>.
+                        <Link href={spendManagementHref}>team settings</Link>.
                       </Paragraph>
                     )}
                   </>

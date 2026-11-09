@@ -89,7 +89,7 @@ router.use(
       const session = await stripe.billingPortal.sessions.create({
         customer: stripeCustomerId,
         return_url: new URL(
-          `/${account.slug}/settings`,
+          `/${account.slug}/settings/billing`,
           config.get("server.url"),
         ).href,
       });

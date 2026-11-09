@@ -35,8 +35,10 @@ export const handler = defineNotificationHandler({
   email: (props) => {
     const { planName, includedScreenshots, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
-    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
-      .href;
+    const settingsHref = new URL(
+      `/${props.accountSlug}/settings/billing`,
+      baseUrl,
+    ).href;
     const includedLabel = includedScreenshots.toLocaleString("en-US");
     return {
       subject: `Your ${planName} trial has ended`,
