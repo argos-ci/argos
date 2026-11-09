@@ -1,12 +1,10 @@
 import { assertNever } from "@argos/util/assertNever";
+import { formatDate } from "@argos/util/date-format";
 import { Section } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
-import {
-  PlanLimitPlanKindSchema,
-  PlanLimitThresholdSchema,
-} from "@/database/services/plan-limit";
+import { PlanLimitAlertSchema } from "@/database/services/plan-limit";
 
 import {
   Button,
@@ -29,12 +27,7 @@ const upgradeHobbyDocsHref =
 export const handler = defineNotificationHandler({
   type: "plan_limit",
   category: "billing",
-  schema: z.object({
-    threshold: PlanLimitThresholdSchema,
-    planKind: PlanLimitPlanKindSchema,
-    planName: z.string(),
-    includedScreenshots: z.number(),
-    periodEndDate: z.string(),
+  schema: PlanLimitAlertSchema.extend({
     accountType: z.enum(["team", "user"]),
     accountName: z.string().nullish(),
     accountSlug: z.string(),
@@ -61,30 +54,27 @@ export const handler = defineNotificationHandler({
         {props.includedScreenshots.toLocaleString("en-US")} screenshots
       </strong>
     );
-    const resetDate = new Date(props.periodEndDate).toLocaleDateString(
-      "en-US",
-      { month: "long", day: "numeric", timeZone: "UTC" },
+    const resetDate = formatDate(new Date(props.periodEndDate), "longMonthDay");
+    const isTeam = accountType === "team";
+    const accountHas = isTeam ? (
+      <>
+        Your team, <strong>{accountName}</strong>, has
+      </>
+    ) : (
+      "You have"
     );
+    const its = isTeam ? "its" : "your";
 
     const upgrade = (() => {
       switch (planKind) {
         case "github":
-          return {
-            paragraph: (
-              <Paragraph>
-                Your plan is billed through GitHub Marketplace, so you can
-                upgrade it on GitHub from your{" "}
-                <Link href={billingHref}>billing settings</Link>.
-              </Paragraph>
-            ),
-            unblock: ", or as soon as you upgrade your plan",
-            button: { label: "Upgrade plan", href: billingHref },
-          };
         case "stripe":
           return {
             paragraph: (
               <Paragraph>
-                You can upgrade your plan from your{" "}
+                {planKind === "github"
+                  ? "Your plan is billed through GitHub Marketplace, so you can upgrade it on GitHub from your"
+                  : "You can upgrade your plan from your"}{" "}
                 <Link href={billingHref}>billing settings</Link>.
               </Paragraph>
             ),
@@ -135,27 +125,14 @@ export const handler = defineNotificationHandler({
       switch (threshold) {
         case 90: {
           return {
-            subject:
-              accountType === "team"
-                ? `${accountName} has used 90% of its ${planName} plan`
-                : `You have used 90% of your ${planName} plan`,
+            subject: `${isTeam ? `${accountName} has` : "You have"} used 90% of ${its} ${planName} plan`,
             preview: `Past 110% of the limit, new builds will be rejected until ${resetDate}.`,
             title: `Your ${planName} plan is at 90%`,
             intro: (
               <>
                 <Paragraph>
-                  {accountType === "team" ? (
-                    <>
-                      Your team, <strong>{accountName}</strong>, has used 90% of
-                      the {included} included in its <strong>{planName}</strong>{" "}
-                      plan this billing period.
-                    </>
-                  ) : (
-                    <>
-                      You have used 90% of the {included} included in your{" "}
-                      <strong>{planName}</strong> plan this billing period.
-                    </>
-                  )}
+                  {accountHas} used 90% of the {included} included in {its}{" "}
+                  <strong>{planName}</strong> plan this billing period.
                 </Paragraph>
                 <Paragraph>
                   Argos keeps accepting builds for now, but{" "}
@@ -171,29 +148,17 @@ export const handler = defineNotificationHandler({
         }
         case 110: {
           return {
-            subject:
-              accountType === "team"
-                ? `Argos is now rejecting new builds for ${accountName}`
-                : "Argos is now rejecting your new builds",
+            subject: isTeam
+              ? `Argos is now rejecting new builds for ${accountName}`
+              : "Argos is now rejecting your new builds",
             preview: `Builds will be accepted again on ${resetDate}, when the period resets.`,
             title: "New builds are being rejected",
             intro: (
               <>
                 <Paragraph>
-                  {accountType === "team" ? (
-                    <>
-                      Your team, <strong>{accountName}</strong>, has gone past
-                      110% of the {included} included in its{" "}
-                      <strong>{planName}</strong> plan this billing period, so{" "}
-                      <strong>Argos now rejects its new builds</strong>.
-                    </>
-                  ) : (
-                    <>
-                      You have gone past 110% of the {included} included in your{" "}
-                      <strong>{planName}</strong> plan this billing period, so{" "}
-                      <strong>Argos now rejects your new builds</strong>.
-                    </>
-                  )}
+                  {accountHas} gone past 110% of the {included} included in{" "}
+                  {its} <strong>{planName}</strong> plan this billing period, so{" "}
+                  <strong>Argos now rejects {its} new builds</strong>.
                 </Paragraph>
                 <Paragraph>
                   Builds will be accepted again on <strong>{resetDate}</strong>,

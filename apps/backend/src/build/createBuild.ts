@@ -61,6 +61,8 @@ export async function createBuild(params: {
     );
   }
 
+  await sendPlanLimitAlert(account);
+
   switch (outOfCapacityReason) {
     case null: {
       break;
@@ -79,9 +81,6 @@ export async function createBuild(params: {
       );
     }
     case "flat-rate":
-      // The build job sends this alert, but an account that crossed the limit
-      // through media uploads runs no build job before being rejected.
-      await sendPlanLimitAlert(account);
       throw boom(
         402,
         `You have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,

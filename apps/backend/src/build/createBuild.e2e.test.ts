@@ -30,6 +30,29 @@ describe("build", () => {
   describe("createBuild", () => {
     let project: Project;
 
+    function createMainBuild(buildProject: Project) {
+      return createBuild({
+        project: buildProject,
+        prHeadCommit: null,
+        prNumber: null,
+        argosSdk: "@argos-ci/core@3.2.0",
+        baseBranch: "main",
+        baseCommit: null,
+        commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+        branch: "main",
+        runAttempt: null,
+        runId: null,
+        ciProvider: "github-actions",
+        mode: "ci",
+        buildName: null,
+        parallel: null,
+        parentCommits: null,
+        skipped: null,
+        mergeQueue: false,
+        subset: false,
+      });
+    }
+
     beforeEach(async () => {
       const plan = await factory.Plan.create({});
       const account = await factory.TeamAccount.create({
@@ -83,29 +106,6 @@ describe("build", () => {
         });
       });
 
-      function createTrialBuild() {
-        return createBuild({
-          project: trialProject,
-          prHeadCommit: null,
-          prNumber: null,
-          argosSdk: "@argos-ci/core@3.2.0",
-          baseBranch: "main",
-          baseCommit: null,
-          commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-          branch: "main",
-          runAttempt: null,
-          runId: null,
-          ciProvider: "github-actions",
-          mode: "ci",
-          buildName: null,
-          parallel: null,
-          parentCommits: null,
-          skipped: null,
-          mergeQueue: false,
-          subset: false,
-        });
-      }
-
       it("ends the trial and creates the build", async () => {
         vi.spyOn(stripe.subscriptions, "retrieve").mockResolvedValue(
           TRIALING_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
@@ -119,7 +119,7 @@ describe("build", () => {
           .spyOn(notification, "sendNotification")
           .mockResolvedValue(undefined);
 
-        const build = await createTrialBuild();
+        const build = await createMainBuild(trialProject);
 
         expect(build.id).toBeDefined();
         expect(update).toHaveBeenCalledWith(TRIAL_STRIPE_SUBSCRIPTION_ID, {
@@ -143,7 +143,7 @@ describe("build", () => {
         );
         await trialSubscription.$query().patch({ paymentMethodFilled: false });
 
-        await expect(createTrialBuild()).rejects.toThrow(
+        await expect(createMainBuild(trialProject)).rejects.toThrow(
           "You have reached the maximum screenshot capacity",
         );
         expect(update).not.toHaveBeenCalled();
@@ -177,28 +177,9 @@ describe("build", () => {
         screenshotCount: 12,
       });
 
-      await expect(
-        createBuild({
-          project: fullProject,
-          prHeadCommit: null,
-          prNumber: null,
-          argosSdk: "@argos-ci/core@3.2.0",
-          baseBranch: "main",
-          baseCommit: null,
-          commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-          branch: "main",
-          runAttempt: null,
-          runId: null,
-          ciProvider: "github-actions",
-          mode: "ci",
-          buildName: null,
-          parallel: null,
-          parentCommits: null,
-          skipped: null,
-          mergeQueue: false,
-          subset: false,
-        }),
-      ).rejects.toThrow("You have reached the maximum screenshot capacity");
+      await expect(createMainBuild(fullProject)).rejects.toThrow(
+        "You have reached the maximum screenshot capacity",
+      );
 
       const recipients = await NotificationWorkflowRecipient.query()
         .joinRelated("workflow")

@@ -372,6 +372,8 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
     );
   }
 
+  await sendPlanLimitAlert(account);
+
   switch (outOfCapacityReason) {
     case null:
       break;
@@ -386,9 +388,6 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
       );
     }
     case "flat-rate":
-      // The build job sends this alert, but an account that crossed the limit
-      // through media uploads runs no build job before being rejected.
-      await sendPlanLimitAlert(account);
       throw boom(
         402,
         `Upload rejected: you have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,

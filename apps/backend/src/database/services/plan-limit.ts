@@ -3,38 +3,24 @@ import { z } from "zod";
 
 import { Account, type Subscription } from "../models";
 
-export const PlanLimitThresholdSchema = z.union([
-  z.literal(90),
-  z.literal(110),
-]);
+export const PlanLimitAlertSchema = z.object({
+  threshold: z.union([z.literal(90), z.literal(110)]),
+  /**
+   * Where the flat-rate plan comes from, which decides how its owners get more
+   * screenshots: on GitHub, through Stripe, by moving to a team, or through us.
+   */
+  planKind: z.enum(["github", "stripe", "hobby", "forced"]),
+  planName: z.string(),
+  includedScreenshots: z.number(),
+  periodEndDate: z.string(),
+});
 
-type PlanLimitThreshold = z.infer<typeof PlanLimitThresholdSchema>;
-
-/**
- * Where a flat-rate plan comes from, which decides how its owners get more
- * screenshots: on GitHub, through Stripe, by moving to a team, or through us.
- */
-export const PlanLimitPlanKindSchema = z.enum([
-  "github",
-  "stripe",
-  "hobby",
-  "forced",
-]);
-
-type PlanLimitPlanKind = z.infer<typeof PlanLimitPlanKindSchema>;
-
-type PlanLimitAlert = {
-  threshold: PlanLimitThreshold;
-  planKind: PlanLimitPlanKind;
-  planName: string;
-  includedScreenshots: number;
-  periodEndDate: string;
-};
+type PlanLimitAlert = z.infer<typeof PlanLimitAlertSchema>;
 
 function getPlanKind(
   account: Account,
   subscription: Subscription | null,
-): PlanLimitPlanKind {
+): PlanLimitAlert["planKind"] {
   if (account.forcedPlanId) {
     return "forced";
   }
@@ -76,28 +62,22 @@ export async function claimPlanLimitAlert(
       manager.getCurrentPeriodEndDate(),
     ]);
 
-  // The 110% alert follows the check that rejects builds rather than a ratio of
-  // its own, so it never says builds are rejected while they are not.
-  const threshold: PlanLimitThreshold | null = (() => {
-    if (outOfCapacity === "flat-rate") {
-      return 110;
-    }
-    return consumptionRatio >= 0.9 ? 90 : null;
-  })();
-
-  if (threshold === null) {
+  if (outOfCapacity !== "flat-rate" && consumptionRatio < 0.9) {
     return null;
   }
+  // The 110% alert follows the check that rejects builds rather than a ratio of
+  // its own, so it never says builds are rejected while they are not.
+  const threshold = outOfCapacity === "flat-rate" ? 110 : 90;
 
   // A claim only raises the threshold within a period, so the loaded account,
   // even stale, can hide a claim but never invent one: skipping on it is safe,
   // claiming on it is not.
-  const claimedThisPeriod =
-    account.lastPlanLimitAlertAt !== null &&
-    new Date(account.lastPlanLimitAlertAt) >= periodStart;
+  const { lastPlanLimitAlertAt, lastPlanLimitAlertThreshold } = account;
   if (
-    claimedThisPeriod &&
-    (account.lastPlanLimitAlertThreshold ?? 0) >= threshold
+    lastPlanLimitAlertAt !== null &&
+    lastPlanLimitAlertThreshold !== null &&
+    new Date(lastPlanLimitAlertAt) >= periodStart &&
+    lastPlanLimitAlertThreshold >= threshold
   ) {
     return null;
   }
