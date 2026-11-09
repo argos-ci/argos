@@ -536,10 +536,13 @@ export function createConfig() {
         },
       },
       pool: {
+        // Zero, not Knex's historical 2: a minimum is held open for the life of
+        // the process, so every task would pin that many of the database's
+        // connection slots while idle, and tasks scale out where slots do not.
         min: {
           doc: "Minimum connections per pool",
           format: Number,
-          default: 2,
+          default: 0,
           env: "PG_POOL_MIN",
         },
         max: {

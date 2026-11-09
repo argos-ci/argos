@@ -298,12 +298,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # `pg-pool-max` is what a task can take from the database at worst, so
+          # tasks × max has to stay under the instance's `max_connections`.
           - service: argos-app
             task-definition: aws/tasks/argos-app.json
             container-name: argos-app
+            pg-pool-max: 6
+          # A worker runs one job per queue and its heavy work (S3, image
+          # diffing) holds no connection, so it needs far fewer than the number
+          # of queues it consumes. Every job transaction keeps its queries on
+          # its own connection, which is what makes a small pool queue rather
+          # than deadlock.
           - service: argos-worker
             task-definition: aws/tasks/argos-worker.json
             container-name: argos-worker
+            pg-pool-max: 3
 
     steps:
       - name: Check out repository code
@@ -336,6 +345,7 @@ jobs:
           environment-variables: |
             NODE_ENV=production
             PG_IAM_AUTH=true
+            PG_POOL_MAX=${{ matrix.pg-pool-max }}
             API_BASE_URL=https://api.argos-ci.com
             MCP_BASE_URL=https://mcp.argos-ci.com
             SERVER_URL=https://app.argos-ci.com
