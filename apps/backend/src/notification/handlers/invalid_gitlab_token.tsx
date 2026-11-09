@@ -23,7 +23,7 @@ export const handler = defineNotificationHandler({
     account: {
       name: "Acme Corp",
       settingsURL: new URL(
-        "https://argos-ci.com/acme-corp/settings",
+        "https://app.argos-ci.com/acme-corp/settings/integrations#gitlab",
       ).toString(),
     },
   },
