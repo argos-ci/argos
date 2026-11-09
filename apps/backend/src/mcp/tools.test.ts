@@ -119,7 +119,6 @@ describe("buildMcpTools", () => {
       "finalizeDeployment",
       "getDeployment",
       // Internal token-exchange operations.
-      "exchangeCliToken",
       "exchangeGitHubActionsOidcToken",
       "exchangeGitHubActionsTokenlessToken",
       // Public operations.
@@ -274,11 +273,11 @@ describe("x-gitbook-mcp stamping", () => {
       | undefined;
     expect(createBuild).toBeDefined();
     expect(createBuild!["x-gitbook-mcp"]).toBeUndefined();
-    const exchangeCliToken = schema.paths?.["/auth/cli/token"]?.post as
-      | Record<string, unknown>
-      | undefined;
-    expect(exchangeCliToken).toBeDefined();
-    expect(exchangeCliToken!["x-gitbook-mcp"]).toBeUndefined();
+    const exchangeOidcToken = schema.paths?.[
+      "/auth/github-actions/oidc/exchange"
+    ]?.post as Record<string, unknown> | undefined;
+    expect(exchangeOidcToken).toBeDefined();
+    expect(exchangeOidcToken!["x-gitbook-mcp"]).toBeUndefined();
   });
 
   it("advertises the MCP server URL at the document root", () => {
