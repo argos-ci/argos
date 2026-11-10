@@ -9,8 +9,16 @@ import { Account, type Subscription } from "../models";
  */
 export const PLAN_LIMIT_WARNING_RATIO = 0.9;
 
+/**
+ * Plan limit alerts, in the order they are sent within a billing period:
+ * usage is getting close to the limit, then builds are rejected.
+ */
+const PlanLimitAlertLevelSchema = z.enum(["warning", "rejected"]);
+
+export type PlanLimitAlertLevel = z.infer<typeof PlanLimitAlertLevelSchema>;
+
 export const PlanLimitAlertSchema = z.object({
-  level: z.enum(Account.planLimitAlertLevels),
+  level: PlanLimitAlertLevelSchema,
   /**
    * Where the flat-rate plan comes from, which decides how its owners get more
    * screenshots: on GitHub, through Stripe, by moving to a team, or through us.

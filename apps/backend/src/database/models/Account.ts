@@ -7,6 +7,7 @@ import { memoize } from "lodash-es";
 import { raw, type Pojo, type RelationMappings } from "objection";
 
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
+import type { PlanLimitAlertLevel } from "../services/plan-limit-alert";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { DiscordWebhook } from "./DiscordWebhook";
@@ -170,12 +171,6 @@ export class Account extends Model {
 
   static override encryptedAttributes = ["gitlabAccessToken"];
 
-  /**
-   * Plan limit alerts, in the order they are sent within a billing period:
-   * usage is getting close to the limit, then builds are rejected.
-   */
-  static planLimitAlertLevels = ["warning", "rejected"] as const;
-
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -203,10 +198,7 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
-          lastPlanLimitAlertLevel: {
-            type: ["string", "null"],
-            enum: [...Account.planLimitAlertLevels, null],
-          },
+          lastPlanLimitAlertLevel: { type: ["string", "null"] },
           lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
         },
@@ -246,9 +238,7 @@ export class Account extends Model {
    * sent again every period: a flat-rate plan rejects builds again every time
    * it runs out.
    */
-  lastPlanLimitAlertLevel!:
-    | (typeof Account.planLimitAlertLevels)[number]
-    | null;
+  lastPlanLimitAlertLevel!: PlanLimitAlertLevel | null;
   lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;

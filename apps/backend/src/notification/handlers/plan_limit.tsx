@@ -29,8 +29,6 @@ const upgradeHobbyDocsHref =
   "https://argos-ci.com/docs/learn/billing-and-subscription/how-to-subscribe#upgrade-a-hobby-account-to-a-pro-team";
 
 const percentFormat = new Intl.NumberFormat("en-US", { style: "percent" });
-const warningPercent = percentFormat.format(PLAN_LIMIT_WARNING_RATIO);
-const rejectionPercent = percentFormat.format(FLAT_RATE_MAX_CONSUMPTION_RATIO);
 
 export const handler = defineNotificationHandler({
   type: "plan_limit",
@@ -52,6 +50,12 @@ export const handler = defineNotificationHandler({
   },
   email: (props) => {
     const { level, planKind, planName, accountType, ctx } = props;
+    // Read at render time: the models import the handlers, so this module can
+    // load before `Account` and its ratio are defined.
+    const warningPercent = percentFormat.format(PLAN_LIMIT_WARNING_RATIO);
+    const rejectionPercent = percentFormat.format(
+      FLAT_RATE_MAX_CONSUMPTION_RATIO,
+    );
     const accountName = props.accountName || props.accountSlug;
     const billingHref = new URL(
       `/${props.accountSlug}/settings/billing`,
