@@ -14,6 +14,7 @@ import {
   stubWorkflowRuns,
   type LinkedProject,
 } from "@/auth/tokenless/github-actions.test-util";
+import { GithubInstallation } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { setupRedis } from "@/util/redis/testing";
 
@@ -90,6 +91,24 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       .expect((res) => {
         expect(res.body.error).toBe(
           "Tokenless authentication is disabled for this project. Set the ARGOS_TOKEN environment variable to authenticate.",
+        );
+      });
+    expect(lookups).toEqual([]);
+  });
+
+  test("rejects repositories connected through GitHub without content access, without asking GitHub", async ({
+    linkedProject,
+  }) => {
+    const lookups = stubWorkflowRuns({ 42: {} });
+    await GithubInstallation.query()
+      .where("githubId", 789)
+      .patch({ app: "light" });
+
+    await exchange(linkedProject.bearer)
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          "Tokenless authentication is not supported for repositories connected through GitHub without content access, because Argos cannot look up their workflow runs. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable. Learn more: https://argos-ci.com/docs/learn/integrations/github-actions-authentication#tokenless-limitations",
         );
       });
     expect(lookups).toEqual([]);
