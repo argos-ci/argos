@@ -103,8 +103,7 @@ export const handler = defineNotificationHandler({
                 trial, no credit card required.
               </Paragraph>
             ),
-            unblock:
-              ". The builds of a project you transfer to a team on the Pro plan are accepted right away",
+            unblock: "",
             button: {
               label: "Create a team",
               href: new URL("/teams/new", baseUrl).href,
@@ -137,7 +136,7 @@ export const handler = defineNotificationHandler({
               <>
                 <Paragraph>
                   {accountHas} used {warningPercent} of the {included} included
-                  in {its} <strong>{planName}</strong> plan this billing period.
+                  in {its} <strong>{planName}</strong> plan.
                 </Paragraph>
                 <Paragraph>
                   <strong>
