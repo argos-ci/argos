@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
@@ -320,30 +320,49 @@ function PageContent() {
     checkIsNonEmptyElement(route.element),
   );
 
+  const [firstRoute] = matchedRoutes;
+
   return (
     <SettingsLayout>
       <SettingsNav
-        sections={matchedRoutes.map((route, index) => ({
+        sections={matchedRoutes.map((route) => ({
           name: route.name,
-          href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
+          href: route.slug ? `${settingsUrl}/${route.slug}` : settingsUrl,
         }))}
       />
       <SettingsPage>
         <Routes>
-          {matchedRoutes.map((route, index) => {
-            return (
-              <Route
-                key={route.slug}
-                index={index === 0}
-                path={index === 0 ? "" : route.slug}
-                element={route.element}
-              />
-            );
-          })}
+          {firstRoute?.slug ? (
+            <Route
+              index
+              element={
+                <RedirectToSection url={`${settingsUrl}/${firstRoute.slug}`} />
+              }
+            />
+          ) : null}
+          {matchedRoutes.map((route) => (
+            <Route
+              key={route.slug}
+              index={!route.slug}
+              path={route.slug || undefined}
+              element={route.element}
+            />
+          ))}
         </Routes>
       </SettingsPage>
     </SettingsLayout>
   );
+}
+
+/**
+ * `/settings` for someone without the General section, a team member who is
+ * not an owner: opens the first section they have. Each section keeps its own
+ * URL whatever comes before it, so a link to `/settings/members` works for
+ * owners and members alike.
+ */
+function RedirectToSection(props: { url: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: props.url, search, hash }} replace />;
 }
 
 function checkIsNonEmptyElement(element: ReactNode): boolean {

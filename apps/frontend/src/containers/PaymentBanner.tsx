@@ -7,6 +7,7 @@ import { invariant } from "@argos/util/invariant";
 import { config } from "@/config";
 import { ResumeSubscriptionButton } from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
+import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
 import { DocumentType, graphql } from "@/gql";
 import {
   AccountPermission,
@@ -22,6 +23,7 @@ import { Time } from "@/ui/Time";
 const _PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
+    slug
     subscriptionStatus
     permissions
     stripeCustomerId
@@ -128,6 +130,7 @@ export const PaymentBanner = memo(
     }
 
     const userIsAdmin = permissions.includes(AccountPermission.Admin);
+    const askOwners = !userIsAdmin && account.__typename === "Team";
 
     const trialing = checkIsTrialingSubscriptionStatus(subscriptionStatus);
 
@@ -140,6 +143,16 @@ export const PaymentBanner = memo(
             Your {subscriptionTypeLabel} has been canceled. You can still use
             team features until the{" "}
             <Time date={pendingCancelAt} format="longDate" />.
+            {askOwners ? (
+              <>
+                {" "}
+                Ask{" "}
+                <TeamOwnersLink account={account}>
+                  a team owner
+                </TeamOwnersLink>{" "}
+                to resume it.
+              </>
+            ) : null}
           </p>
           {userIsAdmin &&
             // The portal's renew control goes away with its cancel section,
@@ -181,7 +194,17 @@ export const PaymentBanner = memo(
               ) : daysRemaining ? (
                 <>Your trial ends in {daysRemaining} days. </>
               ) : null}
-              Add a payment method to retain access to team features.
+              {askOwners ? (
+                <>
+                  Ask{" "}
+                  <TeamOwnersLink account={account}>
+                    a team owner
+                  </TeamOwnersLink>{" "}
+                  to add a payment method to retain access to team features.
+                </>
+              ) : (
+                "Add a payment method to retain access to team features."
+              )}
             </p>
             {userIsAdmin && (
               <ManageStripeButton
@@ -198,7 +221,18 @@ export const PaymentBanner = memo(
         return (
           <BannerTemplate color="danger">
             <p>
-              Your subscription is past due. Please update your payment method.
+              Your subscription is past due.{" "}
+              {askOwners ? (
+                <>
+                  Ask{" "}
+                  <TeamOwnersLink account={account}>
+                    a team owner
+                  </TeamOwnersLink>{" "}
+                  to update the payment method.
+                </>
+              ) : (
+                "Please update your payment method."
+              )}
             </p>
             {userIsAdmin && (
               <ManageStripeButton
@@ -215,8 +249,18 @@ export const PaymentBanner = memo(
         return (
           <BannerTemplate color="danger">
             <p>
-              Your subscription is unpaid. Please proceed to payment to retain
-              access to team features.
+              Your subscription is unpaid.{" "}
+              {askOwners ? (
+                <>
+                  Ask{" "}
+                  <TeamOwnersLink account={account}>
+                    a team owner
+                  </TeamOwnersLink>{" "}
+                  to pay it to retain access to team features.
+                </>
+              ) : (
+                "Please proceed to payment to retain access to team features."
+              )}
             </p>
             {userIsAdmin && (
               <ManageStripeButton
@@ -233,8 +277,18 @@ export const PaymentBanner = memo(
         return (
           <BannerTemplate color="danger">
             <p>
-              Your trial has expired. Subscribe to Pro plan to use team
-              features.
+              Your trial has expired.{" "}
+              {askOwners ? (
+                <>
+                  Ask{" "}
+                  <TeamOwnersLink account={account}>
+                    a team owner
+                  </TeamOwnersLink>{" "}
+                  to subscribe to the Pro plan to use team features.
+                </>
+              ) : (
+                "Subscribe to Pro plan to use team features."
+              )}
             </p>
             {userIsAdmin && (
               <div className="flex flex-wrap items-center gap-2">
@@ -252,7 +306,19 @@ export const PaymentBanner = memo(
       case AccountSubscriptionStatus.Canceled: {
         return (
           <BannerTemplate color="danger">
-            <p>Subscribe to Pro plan to use team features.</p>
+            <p>
+              {askOwners ? (
+                <>
+                  Ask{" "}
+                  <TeamOwnersLink account={account}>
+                    a team owner
+                  </TeamOwnersLink>{" "}
+                  to subscribe to the Pro plan to use team features.
+                </>
+              ) : (
+                "Subscribe to Pro plan to use team features."
+              )}
+            </p>
             {userIsAdmin && (
               <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe

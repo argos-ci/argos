@@ -2,7 +2,7 @@ import { GitBranchIcon } from "@primer/octicons-react";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
-import { DeploymentStatus } from "@/gql/graphql";
+import { AccountPermission, DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
@@ -21,6 +21,7 @@ import { HeadlessLink, Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
+import { TeamOwnersLink } from "./Team/TeamOwnersLink";
 
 const _ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -146,6 +147,13 @@ function CreateProjectButton(props: Omit<LinkButtonProps, "children">) {
 export function ProjectList(props: {
   projects: Project[];
   canCreateProject: boolean;
+  account: {
+    __typename: "Team" | "User";
+    slug: string;
+    permissions: AccountPermission[];
+  };
+  /** A contributor sees only the projects they were added to. */
+  isContributor: boolean;
 }) {
   const { projects } = props;
 
@@ -174,13 +182,26 @@ export function ProjectList(props: {
         </EmptyStateIcon>
         <Heading>No projects</Heading>
         <EmptyStateDescription>
-          You haven't created any project yet.
+          {props.account.__typename !== "Team" ? (
+            "This account has no projects yet."
+          ) : props.isContributor ? (
+            <>
+              You have not been added to any project yet. Ask{" "}
+              <TeamOwnersLink account={props.account}>
+                a team owner
+              </TeamOwnersLink>{" "}
+              to add you to one.
+            </>
+          ) : (
+            <>
+              Only{" "}
+              <TeamOwnersLink account={props.account}>
+                team owners
+              </TeamOwnersLink>{" "}
+              can create projects.
+            </>
+          )}
         </EmptyStateDescription>
-        {props.canCreateProject && (
-          <EmptyStateActions>
-            <CreateProjectButton />
-          </EmptyStateActions>
-        )}
       </EmptyState>
     );
   }

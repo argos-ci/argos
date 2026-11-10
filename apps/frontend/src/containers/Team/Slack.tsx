@@ -33,10 +33,12 @@ import {
   SlackInstallButton,
   SlackOwnerOnlyTooltip,
 } from "../Slack";
+import { TeamOwnersLink } from "./TeamOwnersLink";
 
 const _AccountFragment = graphql(`
   fragment TeamSlack_Account on Account {
     id
+    slug
     slackInstallation {
       id
       connectedAt
@@ -138,9 +140,19 @@ export function TeamSlack(props: {
                 <TriangleAlertIcon className="inline size-4" /> Action Required
               </div>
               <p className="text-sm">
-                {hasAdminPermission
-                  ? "Slack permissions need an update, please reconnect."
-                  : "Slack permissions need an update, ask a team owner to reconnect."}
+                {hasAdminPermission ? (
+                  "Slack permissions need an update, please reconnect."
+                ) : (
+                  <>
+                    Slack permissions need an update, ask{" "}
+                    <TeamOwnersLink
+                      account={{ slug: account.slug, permissions }}
+                    >
+                      a team owner
+                    </TeamOwnersLink>{" "}
+                    to reconnect.
+                  </>
+                )}
               </p>
             </div>
             <SlackInstallButton

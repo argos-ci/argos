@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+import { useSearchParams } from "react-router";
 import z from "zod";
 
 import { TeamUserLevel } from "@/gql/graphql";
@@ -12,6 +14,37 @@ const FilterUserLevelSchema = z.enum([
 ]);
 
 export type FilterUserLevel = z.infer<typeof FilterUserLevelSchema>;
+
+/**
+ * The role filter, kept in the URL (`?role=owner`) so a note telling a member
+ * to ask an owner can link to the list of owners.
+ */
+export function useFilterUserLevelParam(): [
+  FilterUserLevel,
+  (value: FilterUserLevel) => void,
+] {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsed = FilterUserLevelSchema.safeParse(searchParams.get("role"));
+  const value = parsed.success ? parsed.data : "all";
+  const setValue = useCallback(
+    (value: FilterUserLevel) => {
+      setSearchParams(
+        (params) => {
+          const next = new URLSearchParams(params);
+          if (value === "all") {
+            next.delete("role");
+          } else {
+            next.set("role", value);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+  return [value, setValue];
+}
 
 /** What each role is called, so the trigger can name the chosen one. */
 const FilterUserLevelLabels: Record<FilterUserLevel, string> = {

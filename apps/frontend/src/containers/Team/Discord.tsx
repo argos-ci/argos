@@ -50,10 +50,12 @@ import { toast } from "@/ui/Toaster";
 import { Truncable } from "@/ui/Truncable";
 
 import { DiscordLogo } from "../DiscordLogo";
+import { TeamOwnersLink } from "./TeamOwnersLink";
 
 const _AccountFragment = graphql(`
   fragment TeamDiscord_Account on Account {
     id
+    slug
     discordWebhooks {
       id
       name
@@ -192,7 +194,15 @@ export function TeamDiscord(props: { account: Account }) {
                 className="flex-1"
               />
             </div>
-          ) : null}
+          ) : (
+            <p className="text-low text-sm">
+              Only{" "}
+              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
+                team owners
+              </TeamOwnersLink>{" "}
+              can manage Discord channels.
+            </p>
+          )}
         </CardBody>
         <CardFooter className="flex items-center justify-between gap-4">
           <p>

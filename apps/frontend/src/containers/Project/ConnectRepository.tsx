@@ -29,12 +29,14 @@ import {
   OriginRepositoryList,
   type OriginRepository,
 } from "../OriginRepositoryList";
+import { TeamOwnersLink } from "../Team/TeamOwnersLink";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
     account(slug: $accountSlug) {
       __typename
       id
+      slug
       gitlabAccessToken
       glNamespaces {
         edges {
@@ -371,9 +373,8 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
   if (!account.permissions.includes(AccountPermission.Admin)) {
     return (
       <div>
-        You can't import a project in this team. Only team owners can import
-        projects. If you want to import a project, please contact your team
-        owner.
+        Only <TeamOwnersLink account={account}>team owners</TeamOwnersLink> can
+        import projects into this team. Ask one to import yours.
       </div>
     );
   }

@@ -29,6 +29,8 @@ import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
 import { formatCurrency } from "@/util/intl";
 
+import { TeamOwnersLink } from "./TeamOwnersLink";
+
 const _AccountFragment = graphql(`
   fragment TeamSpendManagement_Account on Account {
     id
@@ -246,6 +248,15 @@ function SpendManagementForm(props: {
               </>
             ) : null}
           </div>
+          {hasAdminPermission ? null : (
+            <p className="text-low mt-4 text-sm">
+              Only{" "}
+              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
+                team owners
+              </TeamOwnersLink>{" "}
+              can change the spend limit.
+            </p>
+          )}
         </CardBody>
         <FormCardFooter control={form.control} isSuccessful={isSuccessful}>
           Learn more about{" "}

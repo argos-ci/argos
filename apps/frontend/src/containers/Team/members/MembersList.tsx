@@ -27,7 +27,10 @@ import { ListLoadMore } from "@/ui/List";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { MemberLevelEditor } from "./MemberLevelEditor";
-import { MemberLevelFilter, type FilterUserLevel } from "./MemberLevelFilter";
+import {
+  MemberLevelFilter,
+  useFilterUserLevelParam,
+} from "./MemberLevelFilter";
 import { type RemovedUser } from "./RemoveFromTeamDialog";
 import { SearchFilter } from "./SearchFilter";
 import { SortFilter } from "./SortFilter";
@@ -88,7 +91,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
   const authAccount = useAssertAuthAccount();
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source>("everyone");
-  const [level, setLevel] = useState<FilterUserLevel>("all");
+  const [level, setLevel] = useFilterUserLevelParam();
   const [orderBy, setOrderBy] = useState<TeamMembersOrderBy>(
     TeamMembersOrderBy.Date,
   );
@@ -200,6 +203,7 @@ export function TeamMembersList(props: TeamMembersListProps) {
               onClick={() => {
                 setSearch("");
                 setSource("everyone");
+                setLevel("all");
                 setOrderBy(TeamMembersOrderBy.Date);
               }}
             >

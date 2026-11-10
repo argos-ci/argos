@@ -16,6 +16,7 @@ import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Tab, TabList, tabListScrollClassName, TabPanel, Tabs } from "@/ui/Tab";
 
+import { TeamOwnersLink } from "../TeamOwnersLink";
 import { TeamGithubMembersList } from "./GitHubMembersList";
 import { InviteDialog } from "./InviteDialog";
 import { TeamInvitesList } from "./InvitesList";
@@ -154,9 +155,10 @@ export function TeamMembers(props: {
             </DialogTrigger>
           </>
         ) : (
-          <>
-            <div>Only a owners can invite people in the team.</div>
-          </>
+          <div>
+            Only <TeamOwnersLink account={team}>team owners</TeamOwnersLink> can
+            invite people.
+          </div>
         )}
       </CardFooter>
     </Card>
