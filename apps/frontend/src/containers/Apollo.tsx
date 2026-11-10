@@ -11,6 +11,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { ApolloProvider as BaseApolloProvider } from "@apollo/client/react";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { invariant } from "@argos/util/invariant";
+import { OperationTypeNode } from "graphql";
 import { createClient } from "graphql-ws";
 
 import fragments from "@/gql-fragments.json";
@@ -36,7 +37,13 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
 
     const retryLink = new RetryLink({
       attempts: {
-        retryIf: (error: unknown) => {
+        retryIf: (error: unknown, operation) => {
+          // A mutation that failed with a 5xx or a network error may still be
+          // running on the server (a load balancer gave up on a slow request),
+          // so resending it could apply it twice.
+          if (operation.operationType !== OperationTypeNode.QUERY) {
+            return false;
+          }
           if (
             error instanceof Error &&
             "statusCode" in error &&
