@@ -1,4 +1,3 @@
-import { fingerprintDiff } from "@argos-ci/mask-fingerprint";
 import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
 import * as Sentry from "@sentry/node";
@@ -19,7 +18,6 @@ import { upsertTestStats } from "@/metrics/test";
 import { S3FileHandle, type ImageHandle } from "@/storage";
 import { getArgosBotUserId } from "@/util/argos-bot";
 import { chunk } from "@/util/chunk";
-import { hashFileSha256 } from "@/util/hash";
 import { redisLock } from "@/util/redis";
 
 import { diffImages } from "./diff/image";
@@ -326,27 +324,12 @@ async function processDiffResultFile(
       },
     },
     async () => {
-      const key = await hashFileSha256(resultFile.path);
-      const { file, isCreated, fingerprint } = await getOrCreateDiffFile({
-        key,
+      const { file, isCreated } = await getOrCreateDiffFile({
         resultFile,
         context,
       });
-      return { file, isCreated, fingerprint };
+      return { file, isCreated, fingerprint: resultFile.fingerprint };
     },
-  );
-}
-
-async function computeDiffFingerprint(args: { key: string; path: string }) {
-  return Sentry.startSpan(
-    {
-      name: "fingerprintDiff",
-      attributes: {
-        "argos.diff.key": args.key,
-        "argos.diff.path": args.path,
-      },
-    },
-    () => fingerprintDiff(args.path),
   );
 }
 
@@ -515,20 +498,20 @@ async function lockAndUploadDiffFile(args: {
  * If not, uploads the new diff using a lock to avoid concurrency issues.
  */
 async function getOrCreateDiffFile(args: {
-  key: string;
   resultFile: NonNullable<DiffResult["file"]>;
   context: ComputeDiffContext;
-}): Promise<{ isCreated: boolean; file: File; fingerprint: string }> {
+}): Promise<{ isCreated: boolean; file: File }> {
+  const { resultFile, context } = args;
+  const key = resultFile.sha256;
   return Sentry.startSpan(
     {
       name: "getOrCreateDiffFile",
       attributes: {
-        "argos.diff.key": args.key,
-        "argos.diff.content_type": args.resultFile.contentType,
+        "argos.diff.key": key,
+        "argos.diff.content_type": resultFile.contentType,
       },
     },
     async () => {
-      const { key, resultFile, context } = args;
       const fileHandle = new S3FileHandle({
         ...context,
         key,
@@ -536,9 +519,6 @@ async function getOrCreateDiffFile(args: {
         contentType: resultFile.contentType,
       });
       const existing = await File.query().findOne({ key });
-      const fingerprint =
-        existing?.fingerprint ??
-        (await computeDiffFingerprint({ key, path: resultFile.path }));
       const { file, isCreated } = await (async () => {
         if (!existing) {
           const file = await lockAndUploadDiffFile({
@@ -547,21 +527,23 @@ async function getOrCreateDiffFile(args: {
             contentType: resultFile.contentType,
             width: resultFile.width,
             height: resultFile.height,
-            fingerprint,
+            fingerprint: resultFile.fingerprint,
           });
-          return { file, fingerprint, isCreated: true };
+          return { file, isCreated: true };
         }
 
         if (!existing.fingerprint) {
-          await File.query().findById(existing.id).patch({ fingerprint });
-          existing.fingerprint = fingerprint;
+          await File.query()
+            .findById(existing.id)
+            .patch({ fingerprint: resultFile.fingerprint });
+          existing.fingerprint = resultFile.fingerprint;
         }
 
-        return { file: existing, fingerprint, isCreated: false };
+        return { file: existing, isCreated: false };
       })();
 
       await fileHandle.unlink();
-      return { file, fingerprint, isCreated };
+      return { file, isCreated };
     },
   );
 }

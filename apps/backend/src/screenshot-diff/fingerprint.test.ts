@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fingerprintDiff } from "@argos-ci/mask-fingerprint";
+import { fingerprintDiff } from "@argos-ci/iris";
 import { describe, expect, it } from "vitest";
 
 describe("diff fingerprint", () => {

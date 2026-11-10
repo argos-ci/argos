@@ -3,8 +3,12 @@ export type DiffResult = {
   file?: {
     path: string;
     contentType: string;
-    width?: number;
-    height?: number;
+    width: number;
+    height: number;
+    /** SHA-256 of the file: the key it is stored under. */
+    sha256: string;
+    /** Equal for diffs that look alike: ignore rules are keyed on it. */
+    fingerprint: string;
   };
 };
 

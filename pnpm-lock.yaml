@@ -111,9 +111,9 @@ importers:
       '@apollo/server':
         specifier: ^5.5.1
         version: 5.5.1(graphql@16.14.2)(supports-color@10.2.2)
-      '@argos-ci/mask-fingerprint':
-        specifier: ^0.1.3
-        version: 0.1.3
+      '@argos-ci/iris':
+        specifier: 0.1.0-beta.0
+        version: 0.1.0-beta.0
       '@argos/knex-scripts':
         specifier: workspace:*
         version: link:../../packages/knex-scripts
@@ -294,9 +294,6 @@ importers:
       objection:
         specifier: ^4.4.2
         version: 4.4.2(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2))(typescript@7.1.0-beta)
-      odiff-bin:
-        specifier: ^4.5.0
-        version: 4.5.0
       ora:
         specifier: ^10.0.0
         version: 10.0.0
@@ -439,10 +436,6 @@ importers:
       tsdown:
         specifier: ^0.23.5
         version: 0.23.5(oxc-resolver@11.24.2)(tsrs@0.21.0-ts7.1.0-beta)(typescript@7.1.0-beta)
-    optionalDependencies:
-      '@argos-ci/mask-fingerprint-darwin-arm64':
-        specifier: ^0.1.3
-        version: 0.1.3
 
   apps/frontend:
     devDependencies:
@@ -949,41 +942,41 @@ packages:
     resolution: {integrity: sha512-Y7pdBqlz6G9hjFLLBDthKmJL0s3AOyTyZ4i7iK4279xanQCxsxMNY30oJKGUtcaSD9a/QKxqJnYNuNC/2pJlvA==}
     engines: {node: '>=22.0.0'}
 
-  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.3':
-    resolution: {integrity: sha512-9q3pNRnrvXPM2JkSPQfR29rjU0eoL/mABWl38ynOytJEYbgKWYZSObjaq50+xTqyZDjvSYWYFtYv0QCDPE5Tbg==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris-darwin-arm64@0.1.0-beta.0':
+    resolution: {integrity: sha512-ICg3OUuuAOvef82kSI5WYApK9iZ24NIlcW3xe62spaOtuMvshZqDFpAR6SRRX44vHPEg9DbVE78FZJKGbYk4wQ==}
+    engines: {node: '>=22'}
     cpu: [arm64]
     os: [darwin]
 
-  '@argos-ci/mask-fingerprint-darwin-x64@0.1.3':
-    resolution: {integrity: sha512-wJE8CFs1rARUI/ffxEBbCOI4ruOuDmcGyB5OrVP7y7BUp8G9JUdsWonBVFxHJPqOIDMzCG/q6Rf/Ac18GIzsnw==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris-darwin-x64@0.1.0-beta.0':
+    resolution: {integrity: sha512-C4hWgW5OL58rs5doazMt+J80ooVqataPpHm6DRBj4FOG4fMqQ5kZGWYSSGM/wKeH373GIRH26goyanLdeYwuWg==}
+    engines: {node: '>=22'}
     cpu: [x64]
     os: [darwin]
 
-  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.3':
-    resolution: {integrity: sha512-wITfHNT3IOlzanytGV8XOu+xFSBv3I19Ds2+kdAB8RJEwv+wLmLQly8PvYEyjkqGuPFXvRmXCiYlJpRsrErDqQ==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris-linux-arm64-gnu@0.1.0-beta.0':
+    resolution: {integrity: sha512-GLRUaApY7C6nW++mneDhAP54GuQq545DzrO1572XgCwPzA+yMVkxc59lWwLTk6EGa9lpwfHxgV8Q7XPdbrpHFQ==}
+    engines: {node: '>=22'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.3':
-    resolution: {integrity: sha512-Dq5YKp/dxXUXxVAIVqXlpk/8PgvBWs5qBuqZaWq0KlLq7BYJhbaG2brJkUpoXmMvNIbfUxb73L9YAZ+T/cPXAA==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris-linux-x64-gnu@0.1.0-beta.0':
+    resolution: {integrity: sha512-HUPNWUJJek2NyJ0A+O+QFJzBPzmO4EStjt2GYOooJ4RcMO+TL0rmhIR4C+uMMr9dHwbxjWfpmJtmzjLheRGUsQ==}
+    engines: {node: '>=22'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.3':
-    resolution: {integrity: sha512-3MHEDAG2QN0xZugvN6ELQwz/fFcHUf8/Dz+7Y75wiy8b29ksAFnL1r5xCFHrOMHSspQ1nRjm13k4Yv/t3pm+cQ==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris-win32-x64-msvc@0.1.0-beta.0':
+    resolution: {integrity: sha512-6d30cmRZcgOeBEwrCwqd8LvHSIWoihlLm4HvOru2G8mvO+DUsVjIc0oOMQHxkyIHLt47S8AnINDHatnuPuYXsw==}
+    engines: {node: '>=22'}
     cpu: [x64]
     os: [win32]
 
-  '@argos-ci/mask-fingerprint@0.1.3':
-    resolution: {integrity: sha512-SRwfDiLLTSVorPJeFwcsUJBrEB6S3DbjdZVm3U7YgNr+Zd4woelMy4sljJMxTJ3wvgUOGWDrt4v1QVDV6/oo5w==}
-    engines: {node: '>24.0.0'}
+  '@argos-ci/iris@0.1.0-beta.0':
+    resolution: {integrity: sha512-3zDU5iZDNp5dLB1BUuNoNkX6EPA+Qdeh1VOtYF/4njoI7Mq/czlR20lorn/VUNOH76kSGpCvz8wd/hJpoy2dNA==}
+    engines: {node: '>=22'}
 
   '@argos-ci/playwright@7.8.0':
     resolution: {integrity: sha512-LFvhcscGBstip1lHjvP0sqGel1+c0tn0673hG6awV+3P/yZaIGUdTK9zQJMFEvq/IO7qE3pSbXco/r7PZfsvmg==}
@@ -2348,41 +2341,6 @@ packages:
   '@octokit/webhooks@14.2.0':
     resolution: {integrity: sha512-da6KbdNCV5sr1/txD896V+6W0iamFWrvVl8cHkBSPT+YlvmT3DwXa4jxZnQc+gnuTEqSWbBeoSZYTayXH9wXcw==}
     engines: {node: '>= 20'}
-
-  '@odiff/darwin-arm64@4.5.0':
-    resolution: {integrity: sha512-fztpr/73BNwJqua2xSjGaxkZr9xMVDqYFIKFnZS/MAW1MzHg6lN9r0kno2aY9FSIbCyE6c6/0MqbHs/+AkDhXw==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@odiff/darwin-x64@4.5.0':
-    resolution: {integrity: sha512-UXm/Ak+arL5tP8fwUNKR8vuuUGtm9aYOPS2oLzhkoV5/GfK5vY09nusW6Z5c5ka9VYQQyDHRKOUieXTIZKNdxg==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@odiff/linux-arm64@4.5.0':
-    resolution: {integrity: sha512-tAuSZSW4H6D6rscqpTtZ68dzK+FxbeSSzJHfJqcAmn9k7WWzXIseNRH6XLgFQE8t3bY1u6DqtOxQbE7nQV3ciw==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@odiff/linux-riscv64@4.5.0':
-    resolution: {integrity: sha512-LZ42duK8HpPWNTJplqPufQWD9d5ce26imO1DOHWJoq6sGrYaNaihHJNXOX6EV363lmSEeEZNXZr+xOMgOGJoVg==}
-    cpu: [riscv64]
-    os: [linux]
-
-  '@odiff/linux-x64@4.5.0':
-    resolution: {integrity: sha512-9Png/tO5M70Btcsv68wvIGk2GXIbc2CAw71rbeSOyUm7acFK/rOOCt5m4aJR4ZPC+bqEpB5RBp0kccNv9/Ji3A==}
-    cpu: [x64]
-    os: [linux]
-
-  '@odiff/win32-arm64@4.5.0':
-    resolution: {integrity: sha512-Icz19TRoJXU6hEHppbEd8p4bGhDkE/aeECC/lnQuMMrUE14Meqmj+8Dwr+9/KWifIqDhgebwtH8wnNwH98x5/A==}
-    cpu: [arm64]
-    os: [win32]
-
-  '@odiff/win32-x64@4.5.0':
-    resolution: {integrity: sha512-KSwUwFSmIbLxM+aJPrQggqLhMD+AUJMtsxX531Oiskp1n3z3o2V/6meIBdY6w7ZXb6ZvU/M1WjojPViCqiQFLw==}
-    cpu: [x64]
-    os: [win32]
 
   '@open-draft/until@3.0.1':
     resolution: {integrity: sha512-s7/9ELP4aP9YZtW7RJaa0Xf3RISaRH9+EFN18FtykJYRHGNrl8f9ymvoNXzjhrjmftFvkQudtuDU9RYhk0xs3A==}
@@ -6661,10 +6619,6 @@ packages:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
     engines: {node: '>=12.20.0'}
 
-  odiff-bin@4.5.0:
-    resolution: {integrity: sha512-FaXidbI0XDLCjLAet5n5OvRDfr6Fwt/C5SyWPfwgSUvYhCej1rjZjDXb/xdk+N6yTOCeAFaJ5mwTmU4ZthvPaA==}
-    hasBin: true
-
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
@@ -8397,28 +8351,28 @@ snapshots:
       - '@types/node'
       - supports-color
 
-  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.3':
+  '@argos-ci/iris-darwin-arm64@0.1.0-beta.0':
     optional: true
 
-  '@argos-ci/mask-fingerprint-darwin-x64@0.1.3':
+  '@argos-ci/iris-darwin-x64@0.1.0-beta.0':
     optional: true
 
-  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.3':
+  '@argos-ci/iris-linux-arm64-gnu@0.1.0-beta.0':
     optional: true
 
-  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.3':
+  '@argos-ci/iris-linux-x64-gnu@0.1.0-beta.0':
     optional: true
 
-  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.3':
+  '@argos-ci/iris-win32-x64-msvc@0.1.0-beta.0':
     optional: true
 
-  '@argos-ci/mask-fingerprint@0.1.3':
+  '@argos-ci/iris@0.1.0-beta.0':
     optionalDependencies:
-      '@argos-ci/mask-fingerprint-darwin-arm64': 0.1.3
-      '@argos-ci/mask-fingerprint-darwin-x64': 0.1.3
-      '@argos-ci/mask-fingerprint-linux-arm64-gnu': 0.1.3
-      '@argos-ci/mask-fingerprint-linux-x64-gnu': 0.1.3
-      '@argos-ci/mask-fingerprint-win32-x64-msvc': 0.1.3
+      '@argos-ci/iris-darwin-arm64': 0.1.0-beta.0
+      '@argos-ci/iris-darwin-x64': 0.1.0-beta.0
+      '@argos-ci/iris-linux-arm64-gnu': 0.1.0-beta.0
+      '@argos-ci/iris-linux-x64-gnu': 0.1.0-beta.0
+      '@argos-ci/iris-win32-x64-msvc': 0.1.0-beta.0
 
   '@argos-ci/playwright@7.8.0(@types/node@26.6.6)(supports-color@10.2.2)':
     dependencies:
@@ -10012,27 +9966,6 @@ snapshots:
       '@octokit/openapi-webhooks-types': 12.1.0
       '@octokit/request-error': 7.1.2
       '@octokit/webhooks-methods': 6.0.0
-
-  '@odiff/darwin-arm64@4.5.0':
-    optional: true
-
-  '@odiff/darwin-x64@4.5.0':
-    optional: true
-
-  '@odiff/linux-arm64@4.5.0':
-    optional: true
-
-  '@odiff/linux-riscv64@4.5.0':
-    optional: true
-
-  '@odiff/linux-x64@4.5.0':
-    optional: true
-
-  '@odiff/win32-arm64@4.5.0':
-    optional: true
-
-  '@odiff/win32-x64@4.5.0':
-    optional: true
 
   '@open-draft/until@3.0.1': {}
 
@@ -13651,16 +13584,6 @@ snapshots:
   obliterator@1.6.1: {}
 
   obug@3.0.0: {}
-
-  odiff-bin@4.5.0:
-    optionalDependencies:
-      '@odiff/darwin-arm64': 4.5.0
-      '@odiff/darwin-x64': 4.5.0
-      '@odiff/linux-arm64': 4.5.0
-      '@odiff/linux-riscv64': 4.5.0
-      '@odiff/linux-x64': 4.5.0
-      '@odiff/win32-arm64': 4.5.0
-      '@odiff/win32-x64': 4.5.0
 
   on-exit-leak-free@2.1.2: {}
 
