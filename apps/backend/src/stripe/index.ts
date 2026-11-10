@@ -533,12 +533,30 @@ export async function createArgosSubscriptionFromStripe({
   return newSubscription;
 }
 
+/**
+ * Cancel a subscription now; one that is already canceled counts as done.
+ *
+ * Stripe refuses to cancel a canceled subscription with the same 404
+ * `resource_missing` it gives an unknown id, though a retrieve still returns
+ * it, so the retrieve tells the two apart. It has to come after the cancel:
+ * checked first, a concurrent cancel — the same deletion replayed — lands in
+ * between and the 404 escapes.
+ */
 export async function cancelStripeSubscription(subscriptionId: string) {
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  if (subscription.status === "canceled") {
-    return;
+  try {
+    await stripe.subscriptions.cancel(subscriptionId);
+  } catch (error) {
+    if (
+      error instanceof Stripe.errors.StripeInvalidRequestError &&
+      error.code === "resource_missing"
+    ) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      if (subscription.status === "canceled") {
+        return;
+      }
+    }
+    throw error;
   }
-  await stripe.subscriptions.cancel(subscriptionId);
 }
 
 export type StripeCancellationFeedback =
