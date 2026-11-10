@@ -5,7 +5,6 @@ import { Section } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
-import { FLAT_RATE_MAX_CONSUMPTION_RATIO } from "@/database/models";
 import { PlanLimitAlertSchema } from "@/database/services/plan-limit-alert";
 
 import {
@@ -26,7 +25,9 @@ const contactHref = "https://argos-ci.com/contact";
 const upgradeHobbyDocsHref =
   "https://argos-ci.com/docs/learn/billing-and-subscription/how-to-subscribe#upgrade-a-hobby-account-to-a-pro-team";
 
-const percentFormat = new Intl.NumberFormat("en-US", { style: "percent" });
+const warningPercent = new Intl.NumberFormat("en-US", {
+  style: "percent",
+}).format(PLAN_LIMIT_WARNING_RATIO);
 
 export const handler = defineNotificationHandler({
   type: "plan_limit",
@@ -48,12 +49,6 @@ export const handler = defineNotificationHandler({
   },
   email: (props) => {
     const { level, planKind, planName, accountType, ctx } = props;
-    // Read at render time: the models import the handlers, so this module can
-    // load before `Account` and its ratio are defined.
-    const warningPercent = percentFormat.format(PLAN_LIMIT_WARNING_RATIO);
-    const rejectionPercent = percentFormat.format(
-      FLAT_RATE_MAX_CONSUMPTION_RATIO,
-    );
     const accountName = props.accountName || props.accountSlug;
     const billingHref = new URL(
       `/${props.accountSlug}/settings/billing`,
@@ -136,7 +131,7 @@ export const handler = defineNotificationHandler({
         case "warning": {
           return {
             subject: `${isTeam ? `${accountName} has` : "You have"} used ${warningPercent} of ${its} ${planName} plan`,
-            preview: `Past ${rejectionPercent} of the limit, new builds will be rejected until ${resetDate}.`,
+            preview: `Once usage goes over the limit, new builds will be rejected until ${resetDate}.`,
             title: `Your ${planName} plan is at ${warningPercent}`,
             intro: (
               <>
@@ -145,10 +140,8 @@ export const handler = defineNotificationHandler({
                   in {its} <strong>{planName}</strong> plan this billing period.
                 </Paragraph>
                 <Paragraph>
-                  Argos keeps accepting builds for now, but{" "}
                   <strong>
-                    once usage goes past {rejectionPercent} of the limit, new
-                    builds will be rejected
+                    Once usage goes over the limit, new builds will be rejected
                   </strong>{" "}
                   until the period resets on <strong>{resetDate}</strong>.
                 </Paragraph>
@@ -166,9 +159,8 @@ export const handler = defineNotificationHandler({
             intro: (
               <>
                 <Paragraph>
-                  {accountHas} gone past {rejectionPercent} of the {included}{" "}
-                  included in {its} <strong>{planName}</strong> plan this
-                  billing period, so{" "}
+                  {accountHas} gone over the {included} included in {its}{" "}
+                  <strong>{planName}</strong> plan this billing period, so{" "}
                   <strong>Argos now rejects {its} new builds</strong>.
                 </Paragraph>
                 <Paragraph>
