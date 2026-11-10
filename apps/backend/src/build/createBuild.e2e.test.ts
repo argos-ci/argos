@@ -183,12 +183,15 @@ describe("build", () => {
         "You have reached the maximum screenshot capacity",
       );
 
-      const recipients = await NotificationWorkflowRecipient.query()
-        .joinRelated("workflow")
-        .where("workflow.type", "plan_limit");
-      expect(recipients.map((recipient) => recipient.userId)).toEqual([
-        owner.id,
-      ]);
+      // The alert runs in the background of the rejected build.
+      await vi.waitFor(async () => {
+        const recipients = await NotificationWorkflowRecipient.query()
+          .joinRelated("workflow")
+          .where("workflow.type", "plan_limit");
+        expect(recipients.map((recipient) => recipient.userId)).toEqual([
+          owner.id,
+        ]);
+      });
     });
 
     it("creates the build of a team left without an owner past the warning", async () => {

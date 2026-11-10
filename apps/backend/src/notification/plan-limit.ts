@@ -12,14 +12,15 @@ import { sendNotification } from ".";
  * Tell the owners of an account on a flat-rate plan that it is about to run
  * out of screenshots, or that it ran out and its builds are now rejected.
  *
- * Called from the capacity checks of build creation and media upload: the
- * account's subscription manager has already loaded the usage it reads, so it
- * costs no query until an alert is due. The warning reached by a build is sent
- * at the next build or upload, and the rejection alert at the first one that
- * is rejected.
+ * Started, not awaited, by the capacity checks of build creation and media
+ * upload: the account's subscription manager has already loaded the usage it
+ * reads, so it costs no query until an alert is due, and the queries it then
+ * runs once a period never delay the build or upload. The warning reached by a
+ * build is sent at the next build or upload, and the rejection alert at the
+ * first one that is rejected.
  *
- * Never throws: the email is a side effect of the build or upload, and must
- * not fail it.
+ * Never throws: nothing awaits it, and the email must not fail the build or
+ * upload that triggered it.
  */
 export async function sendPlanLimitAlert(account: Account): Promise<void> {
   try {

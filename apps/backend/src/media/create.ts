@@ -372,7 +372,7 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
     );
   }
 
-  await sendPlanLimitAlert(account);
+  void sendPlanLimitAlert(account);
 
   switch (outOfCapacityReason) {
     case null:

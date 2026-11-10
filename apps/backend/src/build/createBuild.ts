@@ -61,7 +61,7 @@ export async function createBuild(params: {
     );
   }
 
-  await sendPlanLimitAlert(account);
+  void sendPlanLimitAlert(account);
 
   switch (outOfCapacityReason) {
     case null: {
