@@ -159,7 +159,7 @@ export const handler = defineNotificationHandler({
               <>
                 <Paragraph>
                   {accountHas} gone over the {included} included in {its}{" "}
-                  <strong>{planName}</strong> plan this billing period, so{" "}
+                  <strong>{planName}</strong> plan, so{" "}
                   <strong>Argos now rejects {its} new builds</strong>.
                 </Paragraph>
                 <Paragraph>
