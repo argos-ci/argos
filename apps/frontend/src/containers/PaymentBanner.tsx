@@ -125,7 +125,9 @@ export const PaymentBanner = memo(
     const { subscription, subscriptionStatus, permissions, stripeCustomerId } =
       account;
 
-    if (!data.me) {
+    // A visitor of a public project reads the team's account too, and its
+    // billing is not theirs.
+    if (!data.me || !permissions.includes(AccountPermission.View)) {
       return null;
     }
 

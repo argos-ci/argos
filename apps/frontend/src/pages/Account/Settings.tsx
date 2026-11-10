@@ -321,6 +321,10 @@ function PageContent() {
   );
 
   const [firstRoute] = matchedRoutes;
+  invariant(firstRoute, "A settings viewer has at least one section");
+  const firstSectionUrl = firstRoute.slug
+    ? `${settingsUrl}/${firstRoute.slug}`
+    : settingsUrl;
 
   return (
     <SettingsLayout>
@@ -332,12 +336,10 @@ function PageContent() {
       />
       <SettingsPage>
         <Routes>
-          {firstRoute?.slug ? (
+          {firstRoute.slug ? (
             <Route
               index
-              element={
-                <RedirectToSection url={`${settingsUrl}/${firstRoute.slug}`} />
-              }
+              element={<RedirectToSection url={firstSectionUrl} />}
             />
           ) : null}
           {matchedRoutes.map((route) => (
@@ -348,6 +350,10 @@ function PageContent() {
               element={route.element}
             />
           ))}
+          <Route
+            path="*"
+            element={<RedirectToSection url={firstSectionUrl} />}
+          />
         </Routes>
       </SettingsPage>
     </SettingsLayout>
@@ -355,10 +361,9 @@ function PageContent() {
 }
 
 /**
- * `/settings` for someone without the General section, a team member who is
- * not an owner: opens the first section they have. Each section keeps its own
- * URL whatever comes before it, so a link to `/settings/members` works for
- * owners and members alike.
+ * A settings URL with nothing to show this viewer opens the first section they
+ * have: `/settings` for a member, who has no General section, or a section they
+ * lack, which the account switcher reaches by keeping the path across teams.
  */
 function RedirectToSection(props: { url: string }) {
   const { search, hash } = useLocation();

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 
 import { AccountPermission } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
@@ -10,13 +10,17 @@ import { Link } from "@/ui/Link";
 export function TeamOwnersLink(props: {
   account: { slug: string; permissions: readonly AccountPermission[] };
   children: ReactNode;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 }) {
-  const { account, children } = props;
+  const { account, children, onClick } = props;
   if (!account.permissions.includes(AccountPermission.View)) {
     return children;
   }
   return (
-    <Link href={`/${account.slug}/settings/members?role=owner`}>
+    <Link
+      href={`/${account.slug}/settings/members?role=owner`}
+      onClick={onClick}
+    >
       {children}
     </Link>
   );

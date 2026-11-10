@@ -19,13 +19,18 @@ export type FilterUserLevel = z.infer<typeof FilterUserLevelSchema>;
  * The role filter, kept in the URL (`?role=owner`) so a note telling a member
  * to ask an owner can link to the list of owners.
  */
-export function useFilterUserLevelParam(): [
-  FilterUserLevel,
-  (value: FilterUserLevel) => void,
-] {
+export function useFilterUserLevelParam(options: {
+  hasFineGrainedAccessControl: boolean;
+}): [FilterUserLevel, (value: FilterUserLevel) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
   const parsed = FilterUserLevelSchema.safeParse(searchParams.get("role"));
-  const value = parsed.success ? parsed.data : "all";
+  // Without fine-grained access control the filter offers no Contributor.
+  const value =
+    parsed.success &&
+    (parsed.data !== TeamUserLevel.Contributor ||
+      options.hasFineGrainedAccessControl)
+      ? parsed.data
+      : "all";
   const setValue = useCallback(
     (value: FilterUserLevel) => {
       setSearchParams(

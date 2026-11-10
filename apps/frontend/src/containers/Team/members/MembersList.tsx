@@ -91,7 +91,9 @@ export function TeamMembersList(props: TeamMembersListProps) {
   const authAccount = useAssertAuthAccount();
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source>("everyone");
-  const [level, setLevel] = useFilterUserLevelParam();
+  const [level, setLevel] = useFilterUserLevelParam({
+    hasFineGrainedAccessControl: props.hasFineGrainedAccessControl,
+  });
   const [orderBy, setOrderBy] = useState<TeamMembersOrderBy>(
     TeamMembersOrderBy.Date,
   );
