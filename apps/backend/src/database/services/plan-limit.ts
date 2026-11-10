@@ -31,6 +31,12 @@ function getPlanKind(
   return subscription.provider;
 }
 
+type PlanLimitClaim = {
+  alert: PlanLimitAlert;
+  /** What the claim wrote, so it can be given back if the alert is not sent. */
+  claimedAt: string;
+};
+
 /**
  * Claim the plan limit alert due for an account on a flat-rate plan: the
  * highest threshold its usage has reached this billing period and that the
@@ -41,7 +47,7 @@ function getPlanKind(
  */
 export async function claimPlanLimitAlert(
   account: Account,
-): Promise<PlanLimitAlert | null> {
+): Promise<PlanLimitClaim | null> {
   const manager = account.$getSubscriptionManager();
   const [plan, includedScreenshots] = await Promise.all([
     manager.getPlan(),
@@ -54,13 +60,11 @@ export async function claimPlanLimitAlert(
     return null;
   }
 
-  const [outOfCapacity, consumptionRatio, periodStart, periodEnd] =
-    await Promise.all([
-      manager.checkIsOutOfCapacity(),
-      manager.getCurrentPeriodConsumptionRatio(),
-      manager.getCurrentPeriodStartDate(),
-      manager.getCurrentPeriodEndDate(),
-    ]);
+  const [outOfCapacity, consumptionRatio, periodStart] = await Promise.all([
+    manager.checkIsOutOfCapacity(),
+    manager.getCurrentPeriodConsumptionRatio(),
+    manager.getCurrentPeriodStartDate(),
+  ]);
 
   if (outOfCapacity !== "flat-rate" && consumptionRatio < 0.9) {
     return null;
@@ -82,12 +86,21 @@ export async function claimPlanLimitAlert(
     return null;
   }
 
+  // Everything the email needs is read before claiming, so a failure here
+  // leaves the alert unclaimed for the next build to retry.
+  const [periodEnd, subscription] = await Promise.all([
+    manager.getCurrentPeriodEndDate(),
+    manager.getActiveSubscription(),
+  ]);
+  const planKind = getPlanKind(account, subscription);
+
   // The update makes the check itself: no row updated means a concurrent run
   // already claimed this threshold in this period.
+  const claimedAt = new Date().toISOString();
   const claimed = await Account.query()
     .patch({
       lastPlanLimitAlertThreshold: threshold,
-      lastPlanLimitAlertAt: new Date().toISOString(),
+      lastPlanLimitAlertAt: claimedAt,
     })
     .where("id", account.id)
     .where((query) =>
@@ -102,15 +115,36 @@ export async function claimPlanLimitAlert(
     return null;
   }
 
-  const subscription = await manager.getActiveSubscription();
-  const planKind = getPlanKind(account, subscription);
-
   return {
-    threshold,
-    planKind,
-    // Personal accounts run on the free plan, which the app calls Hobby.
-    planName: planKind === "hobby" ? "Hobby" : plan.displayName,
-    includedScreenshots,
-    periodEndDate: periodEnd.toISOString(),
+    alert: {
+      threshold,
+      planKind,
+      // Personal accounts run on the free plan, which the app calls Hobby.
+      planName: planKind === "hobby" ? "Hobby" : plan.displayName,
+      includedScreenshots,
+      periodEndDate: periodEnd.toISOString(),
+    },
+    claimedAt,
   };
+}
+
+/**
+ * Give back a claim whose alert could not be sent, so that the next build or
+ * upload tries again. It writes back the values of the account the claim was
+ * made from, and only while the claim is still the latest one.
+ */
+export async function releasePlanLimitAlert(
+  account: Account,
+  claim: PlanLimitClaim,
+): Promise<void> {
+  await Account.query()
+    .patch({
+      lastPlanLimitAlertThreshold: account.lastPlanLimitAlertThreshold,
+      lastPlanLimitAlertAt: account.lastPlanLimitAlertAt,
+    })
+    .where({
+      id: account.id,
+      lastPlanLimitAlertThreshold: claim.alert.threshold,
+      lastPlanLimitAlertAt: claim.claimedAt,
+    });
 }

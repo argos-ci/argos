@@ -48,13 +48,13 @@ async function consume(project: Project, ratio: number) {
 }
 
 /**
- * Claim from a freshly loaded account, as the build job does: the subscription
- * manager caches the usage on the instance.
+ * Claim from a freshly loaded account, as build creation does: the
+ * subscription manager caches the usage on the instance.
  */
 async function claim(account: Account) {
   const fresh = await Account.query().findById(account.id).throwIfNotFound();
-  const alert = await claimPlanLimitAlert(fresh);
-  return alert?.threshold ?? null;
+  const claim = await claimPlanLimitAlert(fresh);
+  return claim?.alert.threshold ?? null;
 }
 
 describe("claimPlanLimitAlert", () => {
@@ -131,9 +131,7 @@ describe("claimPlanLimitAlert", () => {
     await consume(project, 1.5);
     const fresh = await Account.query().findById(account.id).throwIfNotFound();
     await expect(claimPlanLimitAlert(fresh)).resolves.toMatchObject({
-      threshold: 110,
-      planKind: "hobby",
-      planName: "Hobby",
+      alert: { threshold: 110, planKind: "hobby", planName: "Hobby" },
     });
   });
 });

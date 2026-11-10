@@ -189,6 +189,38 @@ describe("build", () => {
       ]);
     });
 
+    it("creates the build of a team left without an owner past 90%", async () => {
+      const [team, member, plan] = await Promise.all([
+        factory.Team.create(),
+        factory.User.create(),
+        factory.Plan.create({ usageBased: false, includedScreenshots: 10 }),
+      ]);
+      const account = await factory.TeamAccount.create({ teamId: team.id });
+      await factory.TeamUser.create({
+        teamId: team.id,
+        userId: member.id,
+        userLevel: "member",
+      });
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: plan.id,
+        provider: "github",
+      });
+      const nearlyFullProject = await factory.Project.create({
+        accountId: account.id,
+        githubRepositoryId: null,
+      });
+      await factory.ScreenshotBucket.create({
+        projectId: nearlyFullProject.id,
+        complete: true,
+        screenshotCount: 9,
+      });
+
+      const build = await createMainBuild(nearlyFullProject);
+
+      expect(build.id).toBeDefined();
+    });
+
     it("creates a build", async () => {
       const build = await createBuild({
         project,

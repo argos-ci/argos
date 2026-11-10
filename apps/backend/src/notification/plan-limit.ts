@@ -1,5 +1,10 @@
+import { captureException } from "@sentry/node";
+
 import type { Account } from "@/database/models";
-import { claimPlanLimitAlert } from "@/database/services/plan-limit";
+import {
+  claimPlanLimitAlert,
+  releasePlanLimitAlert,
+} from "@/database/services/plan-limit";
 
 import { sendNotification } from ".";
 
@@ -12,21 +17,37 @@ import { sendNotification } from ".";
  * costs no query until a threshold is due. A threshold crossed by a build is
  * announced at the next build or upload, and the 110% one at the first that is
  * rejected.
+ *
+ * Never throws: the email is a side effect of the build or upload, and must
+ * not fail it.
  */
 export async function sendPlanLimitAlert(account: Account): Promise<void> {
-  const alert = await claimPlanLimitAlert(account);
-  if (alert === null) {
-    return;
+  try {
+    const claim = await claimPlanLimitAlert(account);
+    if (claim === null) {
+      return;
+    }
+    try {
+      const ownerIds = await account.$getOwnerIds();
+      // SCIM offboarding can leave a team without an owner: nobody to tell.
+      if (ownerIds.length === 0) {
+        return;
+      }
+      await sendNotification({
+        type: "plan_limit",
+        data: {
+          accountType: account.type,
+          accountName: account.name,
+          accountSlug: account.slug,
+          ...claim.alert,
+        },
+        recipients: ownerIds,
+      });
+    } catch (error) {
+      await releasePlanLimitAlert(account, claim);
+      throw error;
+    }
+  } catch (error) {
+    captureException(error);
   }
-  const ownerIds = await account.$getOwnerIds();
-  await sendNotification({
-    type: "plan_limit",
-    data: {
-      accountType: account.type,
-      accountName: account.name,
-      accountSlug: account.slug,
-      ...alert,
-    },
-    recipients: ownerIds,
-  });
 }
