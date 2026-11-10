@@ -4,7 +4,11 @@ import { Section } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
-import { PlanLimitAlertSchema } from "@/database/services/plan-limit";
+import { FLAT_RATE_MAX_CONSUMPTION_RATIO } from "@/database/models";
+import {
+  PLAN_LIMIT_WARNING_RATIO,
+  PlanLimitAlertSchema,
+} from "@/database/services/plan-limit-alert";
 
 import {
   Button,
@@ -24,6 +28,10 @@ const contactHref = "https://argos-ci.com/contact";
 const upgradeHobbyDocsHref =
   "https://argos-ci.com/docs/learn/billing-and-subscription/how-to-subscribe#upgrade-a-hobby-account-to-a-pro-team";
 
+const percentFormat = new Intl.NumberFormat("en-US", { style: "percent" });
+const warningPercent = percentFormat.format(PLAN_LIMIT_WARNING_RATIO);
+const rejectionPercent = percentFormat.format(FLAT_RATE_MAX_CONSUMPTION_RATIO);
+
 export const handler = defineNotificationHandler({
   type: "plan_limit",
   category: "billing",
@@ -33,7 +41,7 @@ export const handler = defineNotificationHandler({
     accountSlug: z.string(),
   }),
   previewData: {
-    threshold: 90,
+    level: "warning",
     planKind: "github",
     planName: "Starter",
     includedScreenshots: 40000,
@@ -43,7 +51,7 @@ export const handler = defineNotificationHandler({
     accountSlug: "argos",
   },
   email: (props) => {
-    const { threshold, planKind, planName, accountType, ctx } = props;
+    const { level, planKind, planName, accountType, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
     const billingHref = new URL(
       `/${props.accountSlug}/settings/billing`,
@@ -122,23 +130,23 @@ export const handler = defineNotificationHandler({
     })();
 
     const content = (() => {
-      switch (threshold) {
-        case 90: {
+      switch (level) {
+        case "warning": {
           return {
-            subject: `${isTeam ? `${accountName} has` : "You have"} used 90% of ${its} ${planName} plan`,
-            preview: `Past 110% of the limit, new builds will be rejected until ${resetDate}.`,
-            title: `Your ${planName} plan is at 90%`,
+            subject: `${isTeam ? `${accountName} has` : "You have"} used ${warningPercent} of ${its} ${planName} plan`,
+            preview: `Past ${rejectionPercent} of the limit, new builds will be rejected until ${resetDate}.`,
+            title: `Your ${planName} plan is at ${warningPercent}`,
             intro: (
               <>
                 <Paragraph>
-                  {accountHas} used 90% of the {included} included in {its}{" "}
-                  <strong>{planName}</strong> plan this billing period.
+                  {accountHas} used {warningPercent} of the {included} included
+                  in {its} <strong>{planName}</strong> plan this billing period.
                 </Paragraph>
                 <Paragraph>
                   Argos keeps accepting builds for now, but{" "}
                   <strong>
-                    once usage goes past 110% of the limit, new builds will be
-                    rejected
+                    once usage goes past {rejectionPercent} of the limit, new
+                    builds will be rejected
                   </strong>{" "}
                   until the period resets on <strong>{resetDate}</strong>.
                 </Paragraph>
@@ -146,7 +154,7 @@ export const handler = defineNotificationHandler({
             ),
           };
         }
-        case 110: {
+        case "rejected": {
           return {
             subject: isTeam
               ? `Argos is now rejecting new builds for ${accountName}`
@@ -156,8 +164,9 @@ export const handler = defineNotificationHandler({
             intro: (
               <>
                 <Paragraph>
-                  {accountHas} gone past 110% of the {included} included in{" "}
-                  {its} <strong>{planName}</strong> plan this billing period, so{" "}
+                  {accountHas} gone past {rejectionPercent} of the {included}{" "}
+                  included in {its} <strong>{planName}</strong> plan this
+                  billing period, so{" "}
                   <strong>Argos now rejects {its} new builds</strong>.
                 </Paragraph>
                 <Paragraph>
@@ -169,7 +178,7 @@ export const handler = defineNotificationHandler({
           };
         }
         default:
-          assertNever(threshold);
+          assertNever(level);
       }
     })();
 

@@ -2,10 +2,12 @@ import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  FLAT_RATE_MAX_CONSUMPTION_RATIO,
   NotificationWorkflowRecipient,
   type Project,
   type Subscription,
 } from "@/database/models";
+import { PLAN_LIMIT_WARNING_RATIO } from "@/database/services/plan-limit-alert";
 import { factory, setupDatabase } from "@/database/testing";
 import * as notification from "@/notification";
 import { stripe } from "@/stripe";
@@ -174,7 +176,7 @@ describe("build", () => {
       await factory.ScreenshotBucket.create({
         projectId: fullProject.id,
         complete: true,
-        screenshotCount: 12,
+        screenshotCount: Math.round(10 * FLAT_RATE_MAX_CONSUMPTION_RATIO) + 1,
       });
 
       await expect(createMainBuild(fullProject)).rejects.toThrow(
@@ -189,7 +191,7 @@ describe("build", () => {
       ]);
     });
 
-    it("creates the build of a team left without an owner past 90%", async () => {
+    it("creates the build of a team left without an owner past the warning", async () => {
       const [team, member, plan] = await Promise.all([
         factory.Team.create(),
         factory.User.create(),
@@ -213,7 +215,7 @@ describe("build", () => {
       await factory.ScreenshotBucket.create({
         projectId: nearlyFullProject.id,
         complete: true,
-        screenshotCount: 9,
+        screenshotCount: Math.round(10 * PLAN_LIMIT_WARNING_RATIO),
       });
 
       const build = await createMainBuild(nearlyFullProject);

@@ -159,10 +159,22 @@ export type AccountPermission = "admin" | "view";
 
 export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
 
+/**
+ * Usage a flat-rate plan may reach, as a share of its included screenshots,
+ * before its builds and uploads are rejected.
+ */
+export const FLAT_RATE_MAX_CONSUMPTION_RATIO = 1.1;
+
 export class Account extends Model {
   static override tableName = "accounts";
 
   static override encryptedAttributes = ["gitlabAccessToken"];
+
+  /**
+   * Plan limit alerts, in the order they are sent within a billing period:
+   * usage is getting close to the limit, then builds are rejected.
+   */
+  static planLimitAlertLevels = ["warning", "rejected"] as const;
 
   static override jsonSchema = {
     allOf: [
@@ -191,7 +203,10 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
-          lastPlanLimitAlertThreshold: { type: ["integer", "null"] },
+          lastPlanLimitAlertLevel: {
+            type: ["string", "null"],
+            enum: [...Account.planLimitAlertLevels, null],
+          },
           lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
         },
@@ -226,12 +241,14 @@ export class Account extends Model {
    */
   lastOverageAlertThreshold!: number | null;
   /**
-   * Highest plan limit alert sent to the owners in the billing period holding
+   * Last plan limit alert sent to the owners, in the billing period holding
    * `lastPlanLimitAlertAt`, null when none was. Unlike the overage alert, it is
    * sent again every period: a flat-rate plan rejects builds again every time
    * it runs out.
    */
-  lastPlanLimitAlertThreshold!: number | null;
+  lastPlanLimitAlertLevel!:
+    | (typeof Account.planLimitAlertLevels)[number]
+    | null;
   lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
@@ -695,7 +712,9 @@ export class Account extends Model {
         // then we are never out of capacity
         return null;
       }
-      return consumptionRatio > 1.1 ? "flat-rate" : null;
+      return consumptionRatio > FLAT_RATE_MAX_CONSUMPTION_RATIO
+        ? "flat-rate"
+        : null;
     });
 
     const getAdditionalScreenshotCost: AccountSubscriptionManager["getAdditionalScreenshotCost"] =

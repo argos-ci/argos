@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xKnFioZKWftjRWhBSMhUGNX5iQnBootesbbPAz5VqEaoUQLKktIB0ZEBvUWycFR
+\restrict YGwd41tGXtcJEsomdi7TEEMqPez07o1M8bVMd2bXtmM6g5PVEVR9JVrvustb0CL
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -129,8 +129,9 @@ CREATE TABLE public.accounts (
     "originInstallationId" bigint,
     "lastOverageAlertThreshold" integer,
     "lastMonthlyReportAt" timestamp with time zone,
-    "lastPlanLimitAlertThreshold" integer,
+    "lastPlanLimitAlertLevel" text,
     "lastPlanLimitAlertAt" timestamp with time zone,
+    CONSTRAINT "accounts_lastPlanLimitAlertLevel_check" CHECK (("lastPlanLimitAlertLevel" = ANY (ARRAY['warning'::text, 'rejected'::text]))),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -6926,7 +6927,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xKnFioZKWftjRWhBSMhUGNX5iQnBootesbbPAz5VqEaoUQLKktIB0ZEBvUWycFR
+\unrestrict YGwd41tGXtcJEsomdi7TEEMqPez07o1M8bVMd2bXtmM6g5PVEVR9JVrvustb0CL
 
 -- Knex migrations
 

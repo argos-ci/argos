@@ -4,7 +4,7 @@ import type { Account } from "@/database/models";
 import {
   claimPlanLimitAlert,
   releasePlanLimitAlert,
-} from "@/database/services/plan-limit";
+} from "@/database/services/plan-limit-alert";
 
 import { sendNotification } from ".";
 
@@ -14,9 +14,9 @@ import { sendNotification } from ".";
  *
  * Called from the capacity checks of build creation and media upload: the
  * account's subscription manager has already loaded the usage it reads, so it
- * costs no query until a threshold is due. A threshold crossed by a build is
- * announced at the next build or upload, and the 110% one at the first that is
- * rejected.
+ * costs no query until an alert is due. The warning reached by a build is sent
+ * at the next build or upload, and the rejection alert at the first one that
+ * is rejected.
  *
  * Never throws: the email is a side effect of the build or upload, and must
  * not fail it.

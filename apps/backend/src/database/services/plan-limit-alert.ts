@@ -3,8 +3,14 @@ import { z } from "zod";
 
 import { Account, type Subscription } from "../models";
 
+/**
+ * Usage, as a share of the included screenshots, at which the owners of a
+ * flat-rate plan are warned, so they can act before builds are rejected.
+ */
+export const PLAN_LIMIT_WARNING_RATIO = 0.9;
+
 export const PlanLimitAlertSchema = z.object({
-  threshold: z.union([z.literal(90), z.literal(110)]),
+  level: z.enum(Account.planLimitAlertLevels),
   /**
    * Where the flat-rate plan comes from, which decides how its owners get more
    * screenshots: on GitHub, through Stripe, by moving to a team, or through us.
@@ -39,11 +45,11 @@ type PlanLimitClaim = {
 
 /**
  * Claim the plan limit alert due for an account on a flat-rate plan: the
- * highest threshold its usage has reached this billing period and that the
- * owners have not been alerted about yet in that period.
+ * highest level its usage has reached this billing period and that the owners
+ * have not been alerted about yet in that period.
  *
  * Returns null on a usage-based plan (overage is billed, builds keep running),
- * when no new threshold is reached, or when another run claimed it first.
+ * when no new level is reached, or when another run claimed it first.
  */
 export async function claimPlanLimitAlert(
   account: Account,
@@ -66,22 +72,27 @@ export async function claimPlanLimitAlert(
     manager.getCurrentPeriodStartDate(),
   ]);
 
-  if (outOfCapacity !== "flat-rate" && consumptionRatio < 0.9) {
+  // The rejection alert follows the check that rejects builds rather than a
+  // ratio of its own, so it never says builds are rejected while they are not.
+  const level =
+    outOfCapacity === "flat-rate"
+      ? "rejected"
+      : consumptionRatio >= PLAN_LIMIT_WARNING_RATIO
+        ? "warning"
+        : null;
+  if (level === null) {
     return null;
   }
-  // The 110% alert follows the check that rejects builds rather than a ratio of
-  // its own, so it never says builds are rejected while they are not.
-  const threshold = outOfCapacity === "flat-rate" ? 110 : 90;
 
-  // A claim only raises the threshold within a period, so the loaded account,
-  // even stale, can hide a claim but never invent one: skipping on it is safe,
-  // claiming on it is not.
-  const { lastPlanLimitAlertAt, lastPlanLimitAlertThreshold } = account;
+  // Within a period, a warning is due only if nothing was sent yet, and a
+  // rejection only if at most a warning was. A claim only raises the level, so
+  // the loaded account, even stale, can hide a claim but never invent one:
+  // skipping on it is safe, claiming on it is not.
+  const { lastPlanLimitAlertAt, lastPlanLimitAlertLevel } = account;
   if (
     lastPlanLimitAlertAt !== null &&
-    lastPlanLimitAlertThreshold !== null &&
     new Date(lastPlanLimitAlertAt) >= periodStart &&
-    lastPlanLimitAlertThreshold >= threshold
+    (level === "warning" || lastPlanLimitAlertLevel === "rejected")
   ) {
     return null;
   }
@@ -95,20 +106,22 @@ export async function claimPlanLimitAlert(
   const planKind = getPlanKind(account, subscription);
 
   // The update makes the check itself: no row updated means a concurrent run
-  // already claimed this threshold in this period.
+  // already claimed this level in this period.
   const claimedAt = new Date().toISOString();
   const claimed = await Account.query()
     .patch({
-      lastPlanLimitAlertThreshold: threshold,
+      lastPlanLimitAlertLevel: level,
       lastPlanLimitAlertAt: claimedAt,
     })
     .where("id", account.id)
-    .where((query) =>
+    .where((query) => {
       query
         .whereNull("lastPlanLimitAlertAt")
-        .orWhere("lastPlanLimitAlertAt", "<", periodStart.toISOString())
-        .orWhere("lastPlanLimitAlertThreshold", "<", threshold),
-    )
+        .orWhere("lastPlanLimitAlertAt", "<", periodStart.toISOString());
+      if (level === "rejected") {
+        query.orWhere("lastPlanLimitAlertLevel", "warning");
+      }
+    })
     .returning("id");
 
   if (claimed.length === 0) {
@@ -117,7 +130,7 @@ export async function claimPlanLimitAlert(
 
   return {
     alert: {
-      threshold,
+      level,
       planKind,
       // Personal accounts run on the free plan, which the app calls Hobby.
       planName: planKind === "hobby" ? "Hobby" : plan.displayName,
@@ -139,12 +152,12 @@ export async function releasePlanLimitAlert(
 ): Promise<void> {
   await Account.query()
     .patch({
-      lastPlanLimitAlertThreshold: account.lastPlanLimitAlertThreshold,
+      lastPlanLimitAlertLevel: account.lastPlanLimitAlertLevel,
       lastPlanLimitAlertAt: account.lastPlanLimitAlertAt,
     })
     .where({
       id: account.id,
-      lastPlanLimitAlertThreshold: claim.alert.threshold,
+      lastPlanLimitAlertLevel: claim.alert.level,
       lastPlanLimitAlertAt: claim.claimedAt,
     });
 }

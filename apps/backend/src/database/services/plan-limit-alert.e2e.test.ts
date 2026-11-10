@@ -1,11 +1,26 @@
 import { describe, expect, test } from "vitest";
 
-import { Account, type Plan, type Project } from "@/database/models";
+import {
+  Account,
+  FLAT_RATE_MAX_CONSUMPTION_RATIO,
+  type Plan,
+  type Project,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { claimPlanLimitAlert } from "./plan-limit";
+import {
+  claimPlanLimitAlert,
+  PLAN_LIMIT_WARNING_RATIO,
+} from "./plan-limit-alert";
 
 const INCLUDED_SCREENSHOTS = 1000;
+const WARNING_SCREENSHOTS = Math.round(
+  INCLUDED_SCREENSHOTS * PLAN_LIMIT_WARNING_RATIO,
+);
+/** The most a flat-rate plan may use before its builds are rejected. */
+const MAX_SCREENSHOTS = Math.round(
+  INCLUDED_SCREENSHOTS * FLAT_RATE_MAX_CONSUMPTION_RATIO,
+);
 
 type Ctx = {
   plan: Plan;
@@ -40,10 +55,10 @@ const withFlatRateTeam = test.extend<Ctx>({
   },
 });
 
-async function consume(project: Project, ratio: number) {
+async function consume(project: Project, screenshotCount: number) {
   await factory.ScreenshotBucket.create({
     projectId: project.id,
-    screenshotCount: Math.round(INCLUDED_SCREENSHOTS * ratio),
+    screenshotCount,
   });
 }
 
@@ -54,36 +69,39 @@ async function consume(project: Project, ratio: number) {
 async function claim(account: Account) {
   const fresh = await Account.query().findById(account.id).throwIfNotFound();
   const claim = await claimPlanLimitAlert(fresh);
-  return claim?.alert.threshold ?? null;
+  return claim?.alert.level ?? null;
 }
 
 describe("claimPlanLimitAlert", () => {
-  withFlatRateTeam("claims nothing below 90%", async ({ account, project }) => {
-    await consume(project, 0.89);
-    await expect(claim(account)).resolves.toBeNull();
-  });
-
   withFlatRateTeam(
-    "claims 90% once, then 110% once builds are rejected",
+    "claims nothing below the warning",
     async ({ account, project }) => {
-      await consume(project, 0.9);
-      await expect(claim(account)).resolves.toBe(90);
-      await expect(claim(account)).resolves.toBeNull();
-      // Exactly 110% is still accepted, so the alert saying builds are
-      // rejected must wait for the next screenshot.
-      await consume(project, 0.2);
-      await expect(claim(account)).resolves.toBeNull();
-      await consume(project, 0.01);
-      await expect(claim(account)).resolves.toBe(110);
+      await consume(project, WARNING_SCREENSHOTS - 1);
       await expect(claim(account)).resolves.toBeNull();
     },
   );
 
   withFlatRateTeam(
-    "claims only 110% when both thresholds are reached at once",
+    "claims the warning once, then the rejection once builds are rejected",
     async ({ account, project }) => {
-      await consume(project, 1.5);
-      await expect(claim(account)).resolves.toBe(110);
+      await consume(project, WARNING_SCREENSHOTS);
+      await expect(claim(account)).resolves.toBe("warning");
+      await expect(claim(account)).resolves.toBeNull();
+      // The limit itself is still accepted, so the alert saying builds are
+      // rejected must wait for the next screenshot.
+      await consume(project, MAX_SCREENSHOTS - WARNING_SCREENSHOTS);
+      await expect(claim(account)).resolves.toBeNull();
+      await consume(project, 1);
+      await expect(claim(account)).resolves.toBe("rejected");
+      await expect(claim(account)).resolves.toBeNull();
+    },
+  );
+
+  withFlatRateTeam(
+    "claims only the rejection when both levels are reached at once",
+    async ({ account, project }) => {
+      await consume(project, MAX_SCREENSHOTS + 1);
+      await expect(claim(account)).resolves.toBe("rejected");
       await expect(claim(account)).resolves.toBeNull();
     },
   );
@@ -91,20 +109,20 @@ describe("claimPlanLimitAlert", () => {
   withFlatRateTeam(
     "claims again in a new billing period",
     async ({ account, project }) => {
-      await consume(project, 1.5);
+      await consume(project, MAX_SCREENSHOTS + 1);
       await account.$query().patch({
-        lastPlanLimitAlertThreshold: 110,
+        lastPlanLimitAlertLevel: "rejected",
         lastPlanLimitAlertAt: new Date("2021-01-15").toISOString(),
       });
-      await expect(claim(account)).resolves.toBe(110);
+      await expect(claim(account)).resolves.toBe("rejected");
       await expect(claim(account)).resolves.toBeNull();
     },
   );
 
   withFlatRateTeam(
-    "lets a single concurrent run claim a threshold",
+    "lets a single concurrent run claim an alert",
     async ({ account, project }) => {
-      await consume(project, 1.5);
+      await consume(project, MAX_SCREENSHOTS + 1);
       const alerts = await Promise.all([claim(account), claim(account)]);
       expect(alerts.filter((alert) => alert !== null)).toHaveLength(1);
     },
@@ -114,7 +132,7 @@ describe("claimPlanLimitAlert", () => {
     "claims nothing on a usage-based plan",
     async ({ plan, account, project }) => {
       await plan.$query().patch({ usageBased: true });
-      await consume(project, 1.5);
+      await consume(project, MAX_SCREENSHOTS + 1);
       await expect(claim(account)).resolves.toBeNull();
     },
   );
@@ -128,10 +146,10 @@ describe("claimPlanLimitAlert", () => {
     });
     const account = await factory.UserAccount.create();
     const project = await factory.Project.create({ accountId: account.id });
-    await consume(project, 1.5);
+    await consume(project, MAX_SCREENSHOTS + 1);
     const fresh = await Account.query().findById(account.id).throwIfNotFound();
     await expect(claimPlanLimitAlert(fresh)).resolves.toMatchObject({
-      alert: { threshold: 110, planKind: "hobby", planName: "Hobby" },
+      alert: { level: "rejected", planKind: "hobby", planName: "Hobby" },
     });
   });
 });
