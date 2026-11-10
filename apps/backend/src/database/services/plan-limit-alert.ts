@@ -1,13 +1,8 @@
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { Account, type Subscription } from "../models";
-
-/**
- * Usage, as a share of the included screenshots, at which the owners of a
- * flat-rate plan are warned, so they can act before builds are rejected.
- */
-export const PLAN_LIMIT_WARNING_RATIO = 0.9;
 
 /**
  * Plan limit alerts, in the order they are sent within a billing period:

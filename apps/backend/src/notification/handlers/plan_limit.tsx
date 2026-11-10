@@ -1,3 +1,4 @@
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { assertNever } from "@argos/util/assertNever";
 import { formatDate } from "@argos/util/date-format";
 import { Section } from "react-email";
@@ -5,10 +6,7 @@ import { z } from "zod";
 
 import config from "@/config";
 import { FLAT_RATE_MAX_CONSUMPTION_RATIO } from "@/database/models";
-import {
-  PLAN_LIMIT_WARNING_RATIO,
-  PlanLimitAlertSchema,
-} from "@/database/services/plan-limit-alert";
+import { PlanLimitAlertSchema } from "@/database/services/plan-limit-alert";
 
 import {
   Button,

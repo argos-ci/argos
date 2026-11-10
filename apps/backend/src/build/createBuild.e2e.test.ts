@@ -1,3 +1,4 @@
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +8,6 @@ import {
   type Project,
   type Subscription,
 } from "@/database/models";
-import { PLAN_LIMIT_WARNING_RATIO } from "@/database/services/plan-limit-alert";
 import { factory, setupDatabase } from "@/database/testing";
 import * as notification from "@/notification";
 import { stripe } from "@/stripe";

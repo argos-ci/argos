@@ -1,3 +1,4 @@
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -8,10 +9,7 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import {
-  claimPlanLimitAlert,
-  PLAN_LIMIT_WARNING_RATIO,
-} from "./plan-limit-alert";
+import { claimPlanLimitAlert } from "./plan-limit-alert";
 
 const INCLUDED_SCREENSHOTS = 1000;
 const WARNING_SCREENSHOTS = Math.round(

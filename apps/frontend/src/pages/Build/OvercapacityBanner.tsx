@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { AlertTriangleIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
@@ -27,7 +28,8 @@ export const OvercapacityBanner = memo(
   }) => {
     const { accountSlug, account } = props;
     const { plan, consumptionRatio } = account;
-    const visible = plan && !plan.usageBased && consumptionRatio >= 0.9;
+    const visible =
+      plan && !plan.usageBased && consumptionRatio >= PLAN_LIMIT_WARNING_RATIO;
     if (!visible) {
       return null;
     }
