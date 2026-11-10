@@ -7,6 +7,7 @@ import { memoize } from "lodash-es";
 import { raw, type Pojo, type RelationMappings } from "objection";
 
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
+import type { PlanLimitAlertLevel } from "../services/plan-limit-alert";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { DiscordWebhook } from "./DiscordWebhook";
@@ -159,6 +160,12 @@ export type AccountPermission = "admin" | "view";
 
 export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
 
+/**
+ * Usage a flat-rate plan may reach, as a share of its included screenshots,
+ * before its builds and uploads are rejected.
+ */
+export const FLAT_RATE_MAX_CONSUMPTION_RATIO = 1.1;
+
 export class Account extends Model {
   static override tableName = "accounts";
 
@@ -191,6 +198,8 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
+          lastPlanLimitAlertLevel: { type: ["string", "null"] },
+          lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
         },
       },
@@ -223,6 +232,14 @@ export class Account extends Model {
    * configured, not to report usage.
    */
   lastOverageAlertThreshold!: number | null;
+  /**
+   * Last plan limit alert sent to the owners, in the billing period holding
+   * `lastPlanLimitAlertAt`, null when none was. Unlike the overage alert, it is
+   * sent again every period: a flat-rate plan rejects builds again every time
+   * it runs out.
+   */
+  lastPlanLimitAlertLevel!: PlanLimitAlertLevel | null;
+  lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
 
@@ -685,7 +702,9 @@ export class Account extends Model {
         // then we are never out of capacity
         return null;
       }
-      return consumptionRatio > 1.1 ? "flat-rate" : null;
+      return consumptionRatio > FLAT_RATE_MAX_CONSUMPTION_RATIO
+        ? "flat-rate"
+        : null;
     });
 
     const getAdditionalScreenshotCost: AccountSubscriptionManager["getAdditionalScreenshotCost"] =

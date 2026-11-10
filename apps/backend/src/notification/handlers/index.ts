@@ -8,6 +8,7 @@ import * as email_removed from "./email_removed";
 import * as github_ip_allow_list from "./github_ip_allow_list";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as overage_alert from "./overage_alert";
+import * as plan_limit from "./plan_limit";
 import * as project_deleted from "./project_deleted";
 import * as review_dismissed from "./review_dismissed";
 import * as review_requested from "./review_requested";
@@ -28,6 +29,7 @@ export const notificationHandlers = [
   github_ip_allow_list.handler,
   invalid_gitlab_token.handler,
   overage_alert.handler,
+  plan_limit.handler,
   project_deleted.handler,
   review_dismissed.handler,
   review_requested.handler,

@@ -8,6 +8,7 @@ import { isUniqueViolationError } from "@/database/error";
 import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
+import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import { getS3Client } from "@/storage/s3";
 import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
@@ -370,6 +371,8 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
       "Upload rejected: subscribe to a Pro plan to use Team features.",
     );
   }
+
+  void sendPlanLimitAlert(account);
 
   switch (outOfCapacityReason) {
     case null:
