@@ -62,7 +62,6 @@ allowBuilds:
   # top it up in src/util/public-email-domains.ts.
   free-email-domains: false
   msw: true
-  odiff-bin: true
   oxc-resolver: true
   sharp: true
 

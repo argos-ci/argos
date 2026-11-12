@@ -156,7 +156,7 @@ internet, which is why the script only ever runs `pnpm run dev`, never
 If you encounter this error:
 
 ```txt
-MODULE_NOT_FOUND: @argos-ci/mask-fingerprint
+MODULE_NOT_FOUND: @argos-ci/iris
 ```
 
 Run:

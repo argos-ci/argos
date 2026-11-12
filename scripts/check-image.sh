@@ -113,19 +113,20 @@ running worker || fail "worker exited" worker
 # reaches them.
 echo "Diff binaries"
 docker run --rm -w /app/apps/backend "$image" node --input-type=module -e '
-  import { fingerprintDiff } from "@argos-ci/mask-fingerprint";
-  import { compare } from "odiff-bin";
+  import { diff, fingerprintDiff } from "@argos-ci/iris";
   import sharp from "sharp";
 
   const image = (background) =>
     sharp({ create: { width: 8, height: 8, channels: 3, background } }).png();
   await image("#f00").toFile("/tmp/base.png");
   await image("#00f").toFile("/tmp/head.png");
-  const result = await compare("/tmp/base.png", "/tmp/head.png", "/tmp/diff.png");
-  if (result.match || result.diffCount !== 64) {
-    throw new Error(`unexpected odiff result: ${JSON.stringify(result)}`);
+  const result = await diff("/tmp/base.png", "/tmp/head.png", { output: "/tmp/diff.png" });
+  if (result.diffPixels !== 64 || !result.fingerprint) {
+    throw new Error(`unexpected iris result: ${JSON.stringify(result)}`);
   }
-  await fingerprintDiff("/tmp/diff.png");
+  if ((await fingerprintDiff("/tmp/diff.png")) !== result.fingerprint) {
+    throw new Error("the stored mask does not fingerprint the same");
+  }
 ' || fail "diff binaries failed"
 
 echo "check-image: $image OK"

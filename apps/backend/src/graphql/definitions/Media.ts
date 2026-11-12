@@ -93,7 +93,8 @@ export const typeDefs = gql`
     height: Int
     """
     Share of pixels that differ, 0 to 1. Null until the diff has been computed,
-    0 when the two halves are identical, and 1 when their layouts differ.
+    0 when the two halves are identical, and 1 without a mask when they are
+    too large to compare.
     """
     score: Float
     "The version this was computed from on the \`before\` side"
