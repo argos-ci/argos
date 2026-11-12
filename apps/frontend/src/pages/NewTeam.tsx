@@ -1,7 +1,6 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { AccountNameSchema } from "@argos/schemas/account";
-import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router";
 
@@ -24,16 +23,9 @@ import {
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
-import { getWelcomeURL } from "@/util/welcome";
-
-import { getAccountURL } from "./Account/AccountParams";
 
 const AutoInvitesQuery = graphql(`
   query NewTeam_autoInvites {
-    me {
-      id
-      welcomeCompleted
-    }
     autoInvites {
       id
       ...TeamJoin_AutoInvite
@@ -55,8 +47,6 @@ const AutoCreateTeam = ({ name }: { name: string }) => {
 };
 
 /**
- * Creates the team, unless colleagues already have one the viewer can join.
- *
  * Signup sends people who picked team projects here, and their email domain
  * may already lead to a team. Creating a second one without a word splits the
  * company across two teams, so the existing ones are offered first.
@@ -69,11 +59,6 @@ function JoinOrCreateTeam(props: { name: string }) {
   if (isCreating || data.autoInvites.length === 0) {
     return <AutoCreateTeam name={name} />;
   }
-
-  invariant(data.me, "Expected an authenticated user");
-  // A signup that creates its team answers the welcome questions after
-  // `createTeam`, so one that joins instead has not been asked them yet.
-  const { welcomeCompleted } = data.me;
 
   return (
     <StandalonePage>
@@ -88,13 +73,7 @@ function JoinOrCreateTeam(props: { name: string }) {
             <strong>{name}</strong>.
           </p>
         </div>
-        <AutoInviteList
-          autoInvites={data.autoInvites}
-          getRedirect={(team) => {
-            const teamURL = getAccountURL({ accountSlug: team.slug });
-            return welcomeCompleted ? teamURL : getWelcomeURL(teamURL);
-          }}
-        />
+        <AutoInviteList autoInvites={data.autoInvites} />
         <div className="flex justify-center">
           <Button variant="secondary" onClick={() => setIsCreating(true)}>
             Create {name}

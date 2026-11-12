@@ -57,7 +57,7 @@ type OAuthResult = {
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: AuthMethod,
+  method: Exclude<AuthMethod, "saml">,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -216,6 +216,7 @@ router.use(
       signedInUserId: auth?.user.id ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
+    invariant(teamAccount.teamId, "SAML is only available for team accounts");
     res.send(
       // No `alreadySignedIn`: SAML never attaches the login to the session's
       // account, so an account it creates is a new person's, whoever was
@@ -225,6 +226,7 @@ router.use(
         res,
         userId: account.userId,
         method: "saml",
+        samlTeamId: teamAccount.teamId,
         creation,
       }),
     );

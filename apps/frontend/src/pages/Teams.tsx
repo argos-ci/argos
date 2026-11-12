@@ -5,12 +5,12 @@ import { useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard, RedirectToWebsite } from "@/containers/AuthGuard";
-import { AutoInviteList, JoinTeamButton } from "@/containers/Team/Join";
+import { AutoInviteList, JoinTeamRow } from "@/containers/Team/Join";
 import { graphql } from "@/gql";
 import { Heading } from "@/ui/Heading";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
-import { List, ListHeaderRow, ListRow, ListRowLink } from "@/ui/List";
+import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
 
 import { getAccountURL } from "./Account/AccountParams";
 
@@ -39,11 +39,7 @@ const TeamsQuery = graphql(`
         }
         team {
           id
-          slug
-          name
-          avatar {
-            ...AccountAvatarFragment
-          }
+          ...TeamJoin_Team
         }
       }
     }
@@ -93,34 +89,18 @@ function TeamsList() {
         <List>
           <ListHeaderRow>Invitations</ListHeaderRow>
           {data.me.invites.map((invite) => (
-            <ListRow
+            <JoinTeamRow
               key={invite.team.id}
-              className="flex items-center justify-between gap-3 p-4 text-lg"
-            >
-              <div className="flex items-center gap-3">
-                <AccountAvatar
-                  avatar={invite.team.avatar}
-                  className="size-11"
-                />
-                <div className="flex flex-col">
-                  <span>{invite.team.name || invite.team.slug}</span>
-                  <span className="text-low text-xs">
-                    Invited by {invite.invitedBy.name || invite.invitedBy.slug}
-                  </span>
-                </div>
-              </div>
-              <JoinTeamButton teamAccountId={invite.team.id}>
-                Join
-              </JoinTeamButton>
-            </ListRow>
+              team={invite.team}
+              reason={
+                <>Invited by {invite.invitedBy.name || invite.invitedBy.slug}</>
+              }
+            />
           ))}
         </List>
       ) : null}
       {autoInvites.length > 0 ? (
-        <AutoInviteList
-          autoInvites={autoInvites}
-          getRedirect={() => redirect}
-        />
+        <AutoInviteList autoInvites={autoInvites} redirect={redirect} />
       ) : null}
       <List>
         {data.me.invites.length > 0 || autoInvites.length > 0 ? (

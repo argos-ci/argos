@@ -81,11 +81,15 @@ export async function getOrCreateUserByVerifiedEmail(
 export async function markUserLastAuthMethod(args: {
   userId: string;
   method: TeamUserAuthMethod;
+  /** Restricts the mark to this team's membership. */
+  teamId?: string | null;
   trx?: TransactionOrKnex;
 }) {
-  await TeamUser.query(args.trx)
-    .where("userId", args.userId)
-    .patch({ lastAuthMethod: args.method });
+  const query = TeamUser.query(args.trx).where("userId", args.userId);
+  if (args.teamId) {
+    query.where("teamId", args.teamId);
+  }
+  await query.patch({ lastAuthMethod: args.method });
 }
 
 /**
@@ -158,10 +162,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
 
   if (teamUser) {
     invariant(teamUser.user?.account, "User and account not fetched");
-    await teamUser.$query().patch({
-      ssoVerifiedAt: now,
-      lastAuthMethod: "saml",
-    });
+    await teamUser.$query().patch({ ssoVerifiedAt: now });
     return { account: teamUser.user.account, creation: false };
   }
 
@@ -194,10 +195,9 @@ export async function getOrCreateUserAccountFromSaml(input: {
       userLevel: team.defaultUserLevel,
       ssoSubject: input.ssoSubject,
       ssoVerifiedAt: now,
-      lastAuthMethod: "saml",
     })
     .onConflict(["teamId", "userId"])
-    .merge(["ssoSubject", "ssoVerifiedAt", "lastAuthMethod", "updatedAt"]);
+    .merge(["ssoSubject", "ssoVerifiedAt", "updatedAt"]);
   return { account, creation };
 }
 

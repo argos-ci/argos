@@ -11,6 +11,14 @@ import { setSessionCookies } from "./session-cookie";
  * tell whether the current session satisfies it. */
 export type AuthMethod = (typeof TeamUser.authMethods)[number];
 
+/**
+ * A SAML login names the team whose IdP vouched for the user: it authenticates
+ * that membership alone, and must not satisfy another team's enforcement.
+ */
+type LoginMethod =
+  | { method: "saml"; samlTeamId: string }
+  | { method: Exclude<AuthMethod, "saml"> };
+
 /** What every login entry point hands back to the client. */
 export type AuthPayload = {
   creation: boolean;
@@ -64,17 +72,18 @@ export async function startSession(
  * already exists: that is not a signup, so it never triggers the auto-invite
  * detour however new the account row looks.
  */
-export async function completeLogin(input: {
-  req: Request;
-  res: Response;
-  userId: string;
-  method: AuthMethod;
-  /** Whether this login created the account. */
-  creation: boolean;
-  /** Whether the caller already had a session (OAuth account linking). */
-  alreadySignedIn?: boolean;
-}): Promise<AuthPayload> {
-  const { req, res, userId, method, creation } = input;
+export async function completeLogin(
+  input: {
+    req: Request;
+    res: Response;
+    userId: string;
+    /** Whether this login created the account. */
+    creation: boolean;
+    /** Whether the caller already had a session (OAuth account linking). */
+    alreadySignedIn?: boolean;
+  } & LoginMethod,
+): Promise<AuthPayload> {
+  const { req, res, userId, creation } = input;
   const isSignup = creation && !input.alreadySignedIn;
 
   const hasAutoInvite = isSignup
@@ -82,12 +91,13 @@ export async function completeLogin(input: {
     : false;
 
   // Skipped when linking a provider to an existing session: the method that
-  // opened that session is still the one that authenticated it. Skipped for
-  // SAML too, which vouches only for the team whose IdP answered: marking every
-  // membership would let one team's IdP satisfy another team's SAML
-  // enforcement. `getOrCreateUserAccountFromSaml` marks that one membership.
-  if (!input.alreadySignedIn && method !== "saml") {
-    await markUserLastAuthMethod({ userId, method });
+  // opened that session is still the one that authenticated it.
+  if (!input.alreadySignedIn) {
+    await markUserLastAuthMethod({
+      userId,
+      method: input.method,
+      teamId: input.method === "saml" ? input.samlTeamId : null,
+    });
   }
 
   await startSession(req, res, userId);

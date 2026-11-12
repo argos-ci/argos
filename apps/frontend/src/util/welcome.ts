@@ -69,16 +69,12 @@ export function getPostAuthURL(input: {
   const destination = hasAutoInvite
     ? getAutoInviteTeamsURL(redirect)
     : redirect;
-  return getWelcomeURL(destination);
-}
-
-export function getWelcomeURL(redirect: string | null | undefined): string {
   // Left off when there is nowhere in particular to go: the welcome page already
   // falls back to the root, so `?r=%2F` would only be noise in the URL.
-  if (!redirect) {
+  if (!destination) {
     return WELCOME_PATH;
   }
-  const searchParams = new URLSearchParams({ r: redirect });
+  const searchParams = new URLSearchParams({ r: destination });
   return `${WELCOME_PATH}?${searchParams}`;
 }
 

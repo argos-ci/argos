@@ -337,6 +337,12 @@ export const typeDefs = gql`
     redirectUrl: String!
   }
 
+  type JoinTeamResult {
+    team: Team!
+    "Path to send the user to once they have joined: the team, or the welcome page first."
+    redirectPath: String!
+  }
+
   input EnableGitHubSSOOnTeamInput {
     teamAccountId: ID!
     ghInstallationId: Int!
@@ -420,7 +426,7 @@ export const typeDefs = gql`
       input: RemoveUserFromTeamInput!
     ): RemoveUserFromTeamPayload!
     "Join a team (if the user has an invite)"
-    joinTeam(teamAccountId: ID!): Team!
+    joinTeam(teamAccountId: ID!): JoinTeamResult!
     "Accept an invite"
     acceptInvite(secret: String!): AcceptInvitePayload!
     "Accept a team invite"
@@ -471,17 +477,28 @@ export const typeDefs = gql`
 `;
 
 /**
- * URL of the welcome page for a team that was just created, sending the user on
- * to the team once the questions are answered or skipped.
+ * Where a user lands on entering a team they just created or joined: the team,
+ * or the welcome page first when they have not been through it yet.
  *
- * The slug is carried explicitly so the page knows which team to offer
- * email-domain auto-join for, rather than guessing from the user's memberships.
+ * `offerAutoJoin` names the team in the welcome URL so the page offers to open
+ * that one to the user's email domain, rather than guessing from their
+ * memberships. Only a team's creator is asked.
  */
-function getWelcomeUrl(input: { teamSlug: string }): string {
-  const url = new URL("/~/welcome", config.get("server.url"));
-  url.searchParams.set("team", input.teamSlug);
-  url.searchParams.set("r", `/${input.teamSlug}`);
-  return url.href;
+function getTeamEntryPath(input: {
+  user: User;
+  teamSlug: string;
+  offerAutoJoin: boolean;
+}): string {
+  const teamPath = `/${input.teamSlug}`;
+  if (input.user.signupSourceAskedAt) {
+    return teamPath;
+  }
+  const searchParams = new URLSearchParams();
+  if (input.offerAutoJoin) {
+    searchParams.set("team", input.teamSlug);
+  }
+  searchParams.set("r", teamPath);
+  return `/~/welcome?${searchParams}`;
 }
 
 /**
@@ -1027,12 +1044,14 @@ export const resolvers: IResolvers = {
 
       const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
         .href;
-      // A user who has not been through the welcome page yet lands there first:
-      // it asks how they found Argos and offers to open the team to their email
-      // domain, which needs the team to exist already.
-      const doneUrl = auth.user.signupSourceAskedAt
-        ? teamUrl
-        : getWelcomeUrl({ teamSlug: teamAccount.slug });
+      const doneUrl = new URL(
+        getTeamEntryPath({
+          user: auth.user,
+          teamSlug: teamAccount.slug,
+          offerAutoJoin: true,
+        }),
+        config.get("server.url"),
+      ).href;
 
       const redirectToStripe = async ({ trial }: { trial: boolean }) => {
         const session = await createStripeCheckoutSession({
@@ -1386,7 +1405,14 @@ export const resolvers: IResolvers = {
         await Promise.all(mutations);
       });
 
-      return teamAccount;
+      return {
+        team: teamAccount,
+        redirectPath: getTeamEntryPath({
+          user: auth.user,
+          teamSlug: teamAccount.slug,
+          offerAutoJoin: false,
+        }),
+      };
     },
     setTeamMemberLevel: async (_root, args, ctx) => {
       if (!ctx.auth) {

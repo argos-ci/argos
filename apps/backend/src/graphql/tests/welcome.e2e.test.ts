@@ -317,12 +317,10 @@ describe("User.eligibleAutoJoinDomain", () => {
       expect(res.body.data.me.eligibleAutoJoinDomain).toBeNull();
     },
   );
-});
 
-describe("User fields only the user can read", () => {
-  welcomeTest.for(["eligibleAutoJoinDomain", "welcomeCompleted"])(
-    "refuses to read %s off a teammate",
-    async (field, { teamAccount, post }) => {
+  welcomeTest(
+    "refuses to read it off a teammate",
+    async ({ teamAccount, post }) => {
       // A teammate is the one other `User` a viewer can legitimately reach, so
       // it is the path this field has to stay out of.
       const otherAccount = await factory.UserAccount.create();
@@ -341,7 +339,7 @@ describe("User fields only the user can read", () => {
 
       const res = await post({
         query: `
-          query TeammateField($teamAccountId: ID!) {
+          query TeammateEligibleDomain($teamAccountId: ID!) {
             teamById(id: $teamAccountId) {
               id
               ... on Team {
@@ -350,7 +348,7 @@ describe("User fields only the user can read", () => {
                     id
                     user {
                       id
-                      ${field}
+                      eligibleAutoJoinDomain
                     }
                   }
                 }

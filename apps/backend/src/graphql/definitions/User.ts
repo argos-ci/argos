@@ -179,8 +179,6 @@ export const typeDefs = gql`
     staff: Boolean
     "Email domain the user can open a team to, so that anyone with a verified address on it joins automatically. Null when they have none. Readable only by the user themselves — selecting it on anyone else is an error."
     eligibleAutoJoinDomain: String
-    "Whether the user has been through the welcome page, answering it or skipping it. Readable only by the user themselves — selecting it on anyone else is an error."
-    welcomeCompleted: Boolean
   }
 
   enum UserType {
@@ -757,12 +755,6 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
       return getEligibleAutoJoinDomain({ userId: account.userId });
-    },
-    welcomeCompleted: (account, _args, ctx) => {
-      if (!ctx.auth || ctx.auth.user.id !== account.userId) {
-        throw forbidden();
-      }
-      return ctx.auth.user.signupSourceAskedAt !== null;
     },
     lastSeenAt: async (account, _args, ctx) => {
       if (!account.userId) {

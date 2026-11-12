@@ -1,51 +1,77 @@
+import type { ReactNode } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useNavigate } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
-import { getAccountURL } from "@/pages/Account/AccountParams";
-import { Button, type ButtonProps } from "@/ui/Button";
+import { Button } from "@/ui/Button";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
 
 const JoinMutation = graphql(`
   mutation TeamJoin_joinTeam($teamAccountId: ID!) {
     joinTeam(teamAccountId: $teamAccountId) {
-      id
-      slug
+      redirectPath
+    }
+  }
+`);
+
+function JoinTeamButton(props: {
+  teamAccountId: string;
+  redirect: string | null;
+}) {
+  const { teamAccountId, redirect } = props;
+  const navigate = useNavigate();
+  const [join, { data, loading }] = useMutation(JoinMutation, {
+    variables: { teamAccountId },
+    onCompleted(data) {
+      navigate(redirect ?? data.joinTeam.redirectPath);
+    },
+  });
+  return (
+    <Button
+      disabled={loading || Boolean(data)}
+      onClick={() => {
+        join().catch(() => {});
+      }}
+    >
+      Join
+    </Button>
+  );
+}
+
+const _TeamFragment = graphql(`
+  fragment TeamJoin_Team on Team {
+    id
+    slug
+    name
+    avatar {
+      ...AccountAvatarFragment
     }
   }
 `);
 
 /**
- * Join a team the viewer has an invite to, by email or by email domain, then
- * go to `redirect`, or to the team when there is none.
+ * A team the viewer has an invite to, by email or by email domain.
  */
-export function JoinTeamButton(
-  props: { teamAccountId: string; redirect?: string | null } & Omit<
-    ButtonProps,
-    "onClick"
-  >,
-) {
-  const { redirect, teamAccountId, ...buttonProps } = props;
-  const navigate = useNavigate();
-  const [accept, { data, loading }] = useMutation(JoinMutation, {
-    variables: {
-      teamAccountId,
-    },
-    onCompleted(data) {
-      const team = data.joinTeam;
-      const redirectURL = redirect ?? getAccountURL({ accountSlug: team.slug });
-      navigate(redirectURL);
-    },
-  });
+export function JoinTeamRow(props: {
+  team: DocumentType<typeof _TeamFragment>;
+  /** Why the viewer may join, shown under the team's name. */
+  reason: ReactNode;
+  /** Where to go once joined, instead of where the server sends them. */
+  redirect?: string | null;
+}) {
+  const { team, reason, redirect = null } = props;
   return (
-    <Button
-      {...buttonProps}
-      disabled={loading || !!data || buttonProps.disabled}
-      onClick={() => {
-        accept().catch(() => {});
-      }}
-    />
+    <ListRow className="flex items-center justify-between gap-3 p-4 text-lg">
+      <div className="flex items-center gap-3">
+        <AccountAvatar avatar={team.avatar} className="size-11" />
+        <div className="flex flex-col">
+          <span>{team.name || team.slug}</span>
+          <span className="text-low text-xs">{reason}</span>
+        </div>
+      </div>
+      <JoinTeamButton teamAccountId={team.id} redirect={redirect} />
+    </ListRow>
   );
 }
 
@@ -55,12 +81,7 @@ const _AutoInviteFragment = graphql(`
     email
     domain
     team {
-      id
-      slug
-      name
-      avatar {
-        ...AccountAvatarFragment
-      }
+      ...TeamJoin_Team
     }
   }
 `);
@@ -71,38 +92,24 @@ const _AutoInviteFragment = graphql(`
  */
 export function AutoInviteList(props: {
   autoInvites: DocumentType<typeof _AutoInviteFragment>[];
-  /** Where to go once a team is joined; the team itself when null. */
-  getRedirect: (team: { slug: string }) => string | null;
+  redirect?: string | null;
 }) {
-  const { autoInvites, getRedirect } = props;
+  const { autoInvites, redirect } = props;
   return (
     <List>
       <ListHeaderRow>Teams matching your email domain</ListHeaderRow>
       {autoInvites.map((autoInvite) => (
-        <ListRow
+        <JoinTeamRow
           key={autoInvite.id}
-          className="flex items-center justify-between gap-3 p-4 text-lg"
-        >
-          <div className="flex items-center gap-3">
-            <AccountAvatar
-              avatar={autoInvite.team.avatar}
-              className="size-11"
-            />
-            <div className="flex flex-col">
-              <span>{autoInvite.team.name || autoInvite.team.slug}</span>
-              <span className="text-low text-xs">
-                <strong>{autoInvite.email}</strong> matches the{" "}
-                <strong>{autoInvite.domain}</strong> team domain.
-              </span>
-            </div>
-          </div>
-          <JoinTeamButton
-            teamAccountId={autoInvite.team.id}
-            redirect={getRedirect(autoInvite.team)}
-          >
-            Join
-          </JoinTeamButton>
-        </ListRow>
+          team={autoInvite.team}
+          redirect={redirect}
+          reason={
+            <>
+              <strong>{autoInvite.email}</strong> matches the{" "}
+              <strong>{autoInvite.domain}</strong> team domain.
+            </>
+          }
+        />
       ))}
     </List>
   );
