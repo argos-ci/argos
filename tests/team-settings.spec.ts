@@ -60,7 +60,8 @@ loggedTest("team settings - tokens", async ({ page, team, project }) => {
   await dialog.getByRole("checkbox", { name: project.name }).click();
   await dialog.getByRole("checkbox", { name: "glitter" }).click();
   await dialog.getByRole("radio", { name: "Advanced" }).click();
-  await dialog.getByRole("checkbox", { name: /Read projects/ }).click();
+  await dialog.getByRole("checkbox", { name: /Read media/ }).click();
+  await dialog.getByRole("checkbox", { name: /Upload media/ }).click();
   await dialog.getByRole("combobox").click();
   await page.getByRole("option", { name: "No expiration" }).click();
   await dialog.getByRole("button", { name: "Create token" }).click();

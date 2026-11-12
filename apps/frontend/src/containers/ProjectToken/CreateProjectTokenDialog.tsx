@@ -44,10 +44,9 @@ import { RadioOption, RadioOptionGroup } from "@/ui/RadioOption";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
 import {
+  ALL_PROJECT_TOKEN_PERMISSIONS,
+  FULL_ACCESS,
   PROJECT_TOKEN_PERMISSIONS,
-  PROJECT_TOKEN_PRESETS,
-  UPLOAD_PRESET,
-  type ProjectTokenPreset,
 } from "./permissions";
 
 const CreateProjectTokenMutation = graphql(`
@@ -122,13 +121,10 @@ const EXPIRATION_ITEMS = Object.fromEntries(
   ]),
 );
 
-type Access = ProjectTokenPreset["value"] | "advanced";
+type Access = "full" | "advanced";
 
 function checkIsAccess(value: unknown): value is Access {
-  return (
-    value === "advanced" ||
-    PROJECT_TOKEN_PRESETS.some((preset) => preset.value === value)
-  );
+  return value === "full" || value === "advanced";
 }
 
 type Inputs = {
@@ -143,13 +139,9 @@ type Inputs = {
 function getGrantedPermissions(
   data: Pick<Inputs, "access" | "permissions">,
 ): ProjectTokenPermission[] {
-  if (data.access === "advanced") {
-    return data.permissions;
-  }
-  const preset = PROJECT_TOKEN_PRESETS.find(
-    (preset) => preset.value === data.access,
-  );
-  return preset ? [...preset.permissions] : [];
+  return data.access === "advanced"
+    ? data.permissions
+    : [...ALL_PROJECT_TOKEN_PERMISSIONS];
 }
 
 export function CreateProjectTokenDialog(props: {
@@ -171,8 +163,8 @@ export function CreateProjectTokenDialog(props: {
     defaultValues: {
       name: "",
       projectIds: projects.length === 1 ? projects.map((p) => p.id) : [],
-      access: UPLOAD_PRESET.value,
-      permissions: [...UPLOAD_PRESET.permissions],
+      access: "full",
+      permissions: [...ALL_PROJECT_TOKEN_PERMISSIONS],
       expireInDays: "90",
     },
   });
@@ -311,10 +303,6 @@ function ProjectsField(props: {
   );
 }
 
-/**
- * A preset per common use, like the OAuth consent screen; "Advanced" reveals
- * the individual permissions, starting from the preset it replaces.
- */
 function PermissionsField(props: { control: Control<Inputs> }) {
   const { control } = props;
   const labelId = useId();
@@ -343,14 +331,11 @@ function PermissionsField(props: { control: Control<Inputs> }) {
           access.onChange(value);
         }}
       >
-        {PROJECT_TOKEN_PRESETS.map((preset) => (
-          <RadioOption
-            key={preset.value}
-            value={preset.value}
-            label={preset.label}
-            description={preset.description}
-          />
-        ))}
+        <RadioOption
+          value="full"
+          label={FULL_ACCESS.label}
+          description={FULL_ACCESS.description}
+        />
         <RadioOption
           value="advanced"
           label="Advanced"

@@ -14,7 +14,7 @@ import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { createProjectToken } from "@/containers/ProjectToken/CreateProjectTokenDialog";
-import { UPLOAD_PRESET } from "@/containers/ProjectToken/permissions";
+import { ALL_PROJECT_TOKEN_PERMISSIONS } from "@/containers/ProjectToken/permissions";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -450,7 +450,7 @@ function TokenSetup(props: {
             accountId: project.account.id,
             name: "Getting started",
             projectIds: [project.id],
-            permissions: [...UPLOAD_PRESET.permissions],
+            permissions: [...ALL_PROJECT_TOKEN_PERMISSIONS],
             expireInDays: GETTING_STARTED_TOKEN_DAYS,
           });
           onCreate(token);

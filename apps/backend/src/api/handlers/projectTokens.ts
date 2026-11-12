@@ -96,10 +96,9 @@ const CreateProjectTokenBodySchema = z.object({
   permissions: z
     .array(ProjectTokenPermissionSchema)
     .min(1)
-    .default(["builds:write", "deployments:write"])
+    .default(PROJECT_TOKEN_PERMISSION_LIST)
     .meta({
-      description:
-        "What the token can do. Defaults to uploading builds and deployments.",
+      description: "What the token can do. Defaults to every permission.",
     }),
   expireAt: z.iso.datetime().nullable().meta({
     description:
