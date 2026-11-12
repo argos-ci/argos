@@ -62,8 +62,9 @@ export class MediaDiff extends Model {
   afterMediaVersionId!: string;
   jobStatus!: JobStatus;
   /**
-   * Share of pixels that differ, 0 to 1. Null until the job has run, and 0
-   * when the two halves are identical.
+   * Share of pixels that differ, 0 to 1. Null until the job has run, 0 when
+   * the two halves are identical, and 1 without a mask when they are too
+   * large to compare.
    */
   score!: number | null;
   /**

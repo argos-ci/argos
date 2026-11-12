@@ -2,11 +2,29 @@ import { diff } from "@argos-ci/iris";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 
-import { tmpName, type ImageHandle } from "@/storage";
+import logger from "@/logger";
+import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 
 import type { DiffOptions, DiffResult } from "../types";
 
 const DEFAULT_THRESHOLD = 0.5;
+
+/**
+ * Most memory one comparison may take. It runs inside the worker, which has
+ * 3 GB and runs a screenshot diff and a media diff at once: at this size both
+ * fit next to Node's own heap.
+ */
+const MAX_COMPARISON_BYTES = 1024 ** 3;
+
+/**
+ * What a comparison holds: both decoded images, four bytes a pixel, and a
+ * quarter of a byte per pixel of the canvas that holds them.
+ */
+function comparisonBytes(base: Dimensions, head: Dimensions): number {
+  const canvas =
+    Math.max(base.width, head.width) * Math.max(base.height, head.height);
+  return 4 * (base.width * base.height + head.width * head.height) + canvas / 4;
+}
 
 /**
  * Compute the difference between two images.
@@ -30,6 +48,20 @@ export async function diffImages(
       attributes: { "argos.diff.threshold": threshold },
     },
     async (span) => {
+      const [baseSize, headSize] = await Promise.all([
+        base.getDimensions(),
+        head.getDimensions(),
+      ]);
+      const bytes = comparisonBytes(baseSize, headSize);
+      if (bytes > MAX_COMPARISON_BYTES) {
+        // Refused from the headers, before a pixel is decoded: an image this
+        // large would take the worker down with every job it holds. Reported
+        // as a change without a mask, as a text snapshot is.
+        logger.warn({ baseSize, headSize, bytes }, "Images too large to diff");
+        span.setAttribute("argos.diff.too_large", true);
+        return { score: 1 };
+      }
+
       const [basePath, headPath, output] = await Promise.all([
         base.getFilepath(),
         head.getFilepath(),
