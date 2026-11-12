@@ -81,11 +81,15 @@ export async function getOrCreateUserByVerifiedEmail(
 export async function markUserLastAuthMethod(args: {
   userId: string;
   method: TeamUserAuthMethod;
+  /** Restricts the mark to this team's membership. */
+  teamId?: string | null;
   trx?: TransactionOrKnex;
 }) {
-  await TeamUser.query(args.trx)
-    .where("userId", args.userId)
-    .patch({ lastAuthMethod: args.method });
+  const query = TeamUser.query(args.trx).where("userId", args.userId);
+  if (args.teamId) {
+    query.where("teamId", args.teamId);
+  }
+  await query.patch({ lastAuthMethod: args.method });
 }
 
 /**
@@ -134,7 +138,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
   ssoSubject: string;
   /** The user of the session the SAML login completes in, if any. */
   signedInUserId: string | null;
-}): Promise<Account> {
+}): Promise<{ account: Account; creation: boolean }> {
   const email = sanitizeEmail(input.email);
   const now = new Date().toISOString();
   const domain = email.split("@")[1]?.toLowerCase();
@@ -158,11 +162,8 @@ export async function getOrCreateUserAccountFromSaml(input: {
 
   if (teamUser) {
     invariant(teamUser.user?.account, "User and account not fetched");
-    await teamUser.$query().patch({
-      ssoVerifiedAt: now,
-      lastAuthMethod: "saml",
-    });
-    return teamUser.user.account;
+    await teamUser.$query().patch({ ssoVerifiedAt: now });
+    return { account: teamUser.user.account, creation: false };
   }
 
   // The IdP is configured by the team, so it vouches for whatever email its
@@ -183,7 +184,8 @@ export async function getOrCreateUserAccountFromSaml(input: {
     );
   }
 
-  const { user, account } = await getOrCreateUserByVerifiedEmail(email);
+  const { user, account, creation } =
+    await getOrCreateUserByVerifiedEmail(email);
   // Even a user created just now may be a member: creating it accepts the
   // invites pending for its email.
   await TeamUser.query()
@@ -193,11 +195,10 @@ export async function getOrCreateUserAccountFromSaml(input: {
       userLevel: team.defaultUserLevel,
       ssoSubject: input.ssoSubject,
       ssoVerifiedAt: now,
-      lastAuthMethod: "saml",
     })
     .onConflict(["teamId", "userId"])
-    .merge(["ssoSubject", "ssoVerifiedAt", "lastAuthMethod", "updatedAt"]);
-  return account;
+    .merge(["ssoSubject", "ssoVerifiedAt", "updatedAt"]);
+  return { account, creation };
 }
 
 /**

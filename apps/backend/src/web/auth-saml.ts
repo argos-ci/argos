@@ -140,7 +140,6 @@ router.post(
       teamAccountId: account.id,
       email,
       ssoSubject: parsed.subject ?? email,
-      redirect: parsed.redirect,
     });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));
     loginUrl.searchParams.set("code", code);

@@ -3,7 +3,7 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { completeLogin, startSession, type AuthMethod } from "@/auth/login";
+import { completeLogin, type AuthMethod } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
@@ -57,7 +57,7 @@ type OAuthResult = {
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: AuthMethod,
+  method: Exclude<AuthMethod, "saml">,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -209,19 +209,26 @@ router.use(
       safeSessionAuthFromExpressReq(req),
       AccountModel.query().findById(payload.teamAccountId).throwIfNotFound(),
     ]);
-    const account = await getOrCreateUserAccountFromSaml({
+    const { account, creation } = await getOrCreateUserAccountFromSaml({
       email: payload.email,
       teamAccount,
       ssoSubject: payload.ssoSubject,
       signedInUserId: auth?.user.id ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
-    // Not `completeLogin`: SAML answers with a redirect rather than an
-    // AuthPayload, and `getOrCreateUserAccountFromSaml` already recorded
-    // `lastAuthMethod` as "saml".
-    await startSession(req, res, account.userId);
-    res.send({
-      redirect: payload.redirect,
-    });
+    invariant(teamAccount.teamId, "SAML is only available for team accounts");
+    res.send(
+      // No `alreadySignedIn`: SAML never attaches the login to the session's
+      // account, so an account it creates is a new person's, whoever was
+      // signed in.
+      await completeLogin({
+        req,
+        res,
+        userId: account.userId,
+        method: "saml",
+        samlTeamId: teamAccount.teamId,
+        creation,
+      }),
+    );
   }),
 );

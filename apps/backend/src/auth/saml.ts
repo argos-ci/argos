@@ -38,7 +38,6 @@ const SamlAuthCodePayloadSchema = z.object({
   teamAccountId: z.string(),
   email: z.string(),
   ssoSubject: z.string(),
-  redirect: z.string(),
 });
 
 type SamlAuthCodePayload = z.infer<typeof SamlAuthCodePayloadSchema>;
