@@ -111,7 +111,7 @@ describe("project tokens", () => {
       .findById(web.id)
       .patch({ deletedAt: new Date().toISOString() });
     await expect(getAuthProjectPayloadFromBearerToken(token)).rejects.toThrow(
-      /not linked to any project/,
+      /no longer linked to any project/,
     );
   });
 
