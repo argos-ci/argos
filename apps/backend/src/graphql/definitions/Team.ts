@@ -73,6 +73,7 @@ import {
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
+  TRIAL_DAYS,
 } from "@/stripe";
 import { sanitizeEmail } from "@/util/email";
 
@@ -1093,7 +1094,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),
@@ -1159,7 +1160,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),

@@ -1323,21 +1323,25 @@ export async function handleStripeEvent({
   }
 }
 
+/** How long the trial a team takes out on its own lasts. */
+export const TRIAL_DAYS = 14;
+
 /**
  * Get Stripe subscription data common to all subscriptions.
  */
 export function getSubscriptionData(args: {
   accountId: string;
   subscriberId: string;
-  trial: boolean;
+  /** Length of the trial the subscription opens on, null for none. */
+  trialDays: number | null;
 }) {
   return {
-    ...(args.trial
+    ...(args.trialDays !== null
       ? {
           trial_settings: {
             end_behavior: { missing_payment_method: "cancel" as const },
           },
-          trial_period_days: 14,
+          trial_period_days: args.trialDays,
         }
       : {}),
     metadata: {
@@ -1345,6 +1349,61 @@ export function getSubscriptionData(args: {
       subscriberId: args.subscriberId,
     },
   } satisfies Partial<Stripe.SubscriptionCreateParams>;
+}
+
+/**
+ * Open a trial of the Pro plan for a team, server side rather than through
+ * checkout, and record it.
+ */
+export async function createStripeTrialSubscription(args: {
+  teamAccount: Account;
+  subscriberId: string;
+  stripeCustomerId: string;
+  days: number;
+}): Promise<Subscription> {
+  const { teamAccount, subscriberId, stripeCustomerId, days } = args;
+  const plan = await getStripeProPlanOrThrow();
+  const items = await getDefaultTeamPlanItems(plan);
+  const stripeSubscription = await stripe.subscriptions.create({
+    customer: stripeCustomerId,
+    items,
+    ...getSubscriptionData({
+      trialDays: days,
+      accountId: teamAccount.id,
+      subscriberId,
+    }),
+  });
+  return createArgosSubscriptionFromStripe({
+    stripeSubscription,
+    account: teamAccount,
+    subscriberId,
+  });
+}
+
+/**
+ * Push back the end of a running trial by `days` days.
+ *
+ * Read off Stripe rather than our row: the extension is added to the end
+ * Stripe holds, which a webhook still in flight may not have written yet.
+ */
+export async function extendStripeTrial(args: {
+  stripeSubscriptionId: string;
+  days: number;
+}): Promise<Subscription> {
+  const { stripeSubscriptionId, days } = args;
+  const current = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  invariant(
+    current.status === "trialing" && current.trial_end,
+    `Stripe subscription ${stripeSubscriptionId} is not trialing`,
+  );
+  const stripeSubscription = await stripe.subscriptions.update(
+    stripeSubscriptionId,
+    {
+      trial_end: current.trial_end + days * 24 * 60 * 60,
+      proration_behavior: "none",
+    },
+  );
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
 }
 
 /**
@@ -1377,7 +1436,7 @@ export async function createStripeCheckoutSession(args: {
   return stripe.checkout.sessions.create({
     line_items: items,
     subscription_data: getSubscriptionData({
-      trial,
+      trialDays: trial ? TRIAL_DAYS : null,
       accountId: teamAccount.id,
       subscriberId: subscriberAccount.userId,
     }),
