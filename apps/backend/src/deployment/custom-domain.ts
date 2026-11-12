@@ -483,5 +483,5 @@ export function getReconcileErrorMessage(error: unknown): string {
   if (checkIsTerminalTenantError(error)) {
     return error instanceof Error ? error.message : String(error);
   }
-  return "Argos could not reach CloudFront to set this domain up. We are looking into it — no action is needed on your side.";
+  return "Argos could not reach CloudFront to set this domain up. We are looking into it. No action is needed on your side.";
 }

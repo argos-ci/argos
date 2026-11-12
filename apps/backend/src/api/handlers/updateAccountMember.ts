@@ -27,7 +27,7 @@ const MemberPathSchema = z.object({
   accountSlug: AccountSlug.meta({ description: "Slug of the team." }),
   userId: z.string().meta({
     description:
-      "Identifier of the user to act on — the `user.id` returned by `listAccountMembers`, which is the user's account id.",
+      "Identifier of the user to act on: the `user.id` returned by `listAccountMembers`, which is the user's account id.",
   }),
 });
 

@@ -905,8 +905,8 @@ function UnavailableState() {
               step="In your pull request"
               title="Embed it where you review"
             >
-              Drop the Markdown into a pull request, an issue or a changelog —
-              before and after render side by side.
+              Drop the Markdown into a pull request, an issue or a changelog.
+              Before and after render side by side.
             </EmptyStateStep>
             <EmptyStateStep
               icon={<MessagesSquareIcon />}

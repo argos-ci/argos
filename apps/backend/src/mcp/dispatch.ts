@@ -201,7 +201,7 @@ function formatApiError(payload: string): string {
     const details = (parsed.details ?? [])
       .map((detail) => detail.message)
       .filter(Boolean);
-    return details.length > 0 ? `${message} — ${details.join("; ")}` : message;
+    return details.length > 0 ? `${message}: ${details.join("; ")}` : message;
   } catch {
     return payload || "Unknown error";
   }

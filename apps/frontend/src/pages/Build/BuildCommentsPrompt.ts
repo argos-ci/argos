@@ -41,14 +41,14 @@ export function createHandleCommentsPrompt(input: {
     `- Argos build: ${buildUrl}`,
     ...(threadId ? [`- Thread to handle: \`${threadId}\``] : []),
     "",
-    "Drive Argos through its CLI — load the `argos-cli` skill for the token model and the flags, or run `npx @argos-ci/cli comment --help`.",
+    "Drive Argos through its CLI. Load the `argos-cli` skill for the token model and the flags, or run `npx @argos-ci/cli comment --help`.",
     "",
     threadId
-      ? `1. Read the thread: \`argos comment get ${buildUrl} ${threadId} --json\`, and its replies — the comments whose \`threadId\` is \`${threadId}\` in \`argos comment list ${buildUrl} --json\`. Leave the rest of the build alone.`
-      : `1. Read the comments: \`argos comment list ${buildUrl} --json\`. Take every thread whose root has no \`resolvedAt\` — the others are done. Skip the \`pending\` ones: they are drafts of a review nobody has submitted.`,
-    `2. See what each one points at. A comment carries \`screenshotDiffId\` and an \`anchor\` (a point in normalized 0-1 coordinates, or a line range) but no image, so match it against \`argos build snapshots ${buildUrl} --json\` and open that diff's \`url\`, \`base.url\` and \`head.url\`. A comment names its target loosely — "this button" — and the capture says which one it is.`,
+      ? `1. Read the thread: \`argos comment get ${buildUrl} ${threadId} --json\`, and its replies (the comments whose \`threadId\` is \`${threadId}\` in \`argos comment list ${buildUrl} --json\`). Leave the rest of the build alone.`
+      : `1. Read the comments: \`argos comment list ${buildUrl} --json\`. Take every thread whose root has no \`resolvedAt\`. The others are done. Skip the \`pending\` ones: they are drafts of a review nobody has submitted.`,
+    `2. See what each one points at. A comment carries \`screenshotDiffId\` and an \`anchor\` (a point in normalized 0-1 coordinates, or a line range) but no image, so match it against \`argos build snapshots ${buildUrl} --json\` and open that diff's \`url\`, \`base.url\` and \`head.url\`. A comment names its target loosely ("this button"), and the capture says which one it is.`,
     "3. Do what it asks, in this repository. When it asks a question rather than for a change, answer it instead of touching the code. Keep to what was asked, and leave the rest of the visual diff alone. Run the repository's checks, then commit following its conventions.",
-    `4. Reply in the thread — \`argos comment create ${buildUrl} --reply-to ${threadId ?? "<rootCommentId>"} --body "..."\` — and resolve it only once its change is committed. Leave open what you could not handle, and say why in the reply.`,
+    `4. Reply in the thread with \`argos comment create ${buildUrl} --reply-to ${threadId ?? "<rootCommentId>"} --body "..."\`, and resolve it only once its change is committed. Leave open what you could not handle, and say why in the reply.`,
     "",
     "The captures only change on the next build, so this build's diffs will not move.",
   ];

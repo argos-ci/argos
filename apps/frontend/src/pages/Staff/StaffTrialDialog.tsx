@@ -218,7 +218,7 @@ function StaffTrialForm(props: {
             <dt className="text-low">Days left</dt>
             <dd className="font-medium tabular-nums">{daysLeft}</dd>
             <dt className="text-low">Ends on</dt>
-            <dd>{currentEnd ? formatDate(currentEnd, "longDate") : "—"}</dd>
+            <dd>{currentEnd ? formatDate(currentEnd, "longDate") : "-"}</dd>
           </dl>
           <FormTextInput
             control={form.control}
@@ -236,7 +236,7 @@ function StaffTrialForm(props: {
           <p className="text-low mt-2 text-sm" data-visual-test="transparent">
             New end date:{" "}
             <span className="text-default font-medium">
-              {newEnd ? formatDate(newEnd, "longDate") : "—"}
+              {newEnd ? formatDate(newEnd, "longDate") : "-"}
             </span>
           </p>
         </DialogBody>

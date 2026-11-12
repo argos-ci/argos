@@ -116,7 +116,7 @@ describe("getBuild", () => {
           status: "no-changes",
           url: "http://localhost:3000/acme/web/builds/1",
           notification: {
-            description: "3 changed, 1 added, 4 removed — no changes found",
+            description: "3 changed, 1 added, 4 removed, no changes found",
             context: "argos",
             github: { state: "success" },
             gitlab: { state: "success" },

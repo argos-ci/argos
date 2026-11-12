@@ -314,7 +314,7 @@ export const typeDefs = gql`
   enum CustomDomainsAvailability {
     "Usable now"
     available
-    "The team has no active subscription — subscribing unlocks it"
+    "The team has no active subscription: subscribing unlocks it"
     requires_subscription
     "The plan does not include it and cannot be changed without us"
     requires_contact

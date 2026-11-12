@@ -33,7 +33,7 @@ no per-workspace `lint` script. It lints the whole monorepo in well under a
 second, so `pnpm run lint` at the root is the only command you need. The rule set
 is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
 `react` and `vitest` plugins, plus the deviations listed in `rules` /
-`overrides`. Two project-specific guards live there:
+`overrides`. Three project-specific guards live there:
 
 - `no-restricted-imports` keeps `sonner` out of the frontend (import from
   `@/ui/Toaster` instead).
@@ -41,6 +41,10 @@ is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
   `tools/oxlint-plugin-argos.js`, wired up through `jsPlugins` — rejects
   `import.meta.dirname` / `__dirname` in the bundled backend. Oxlint has no
   `no-restricted-syntax` equivalent, so the rule is hand-written.
+- `argos/no-dashes-in-copy`, in the same plugin, enforces the dash ban from
+  [Copy](#copy): it rejects em and en dashes in every string and JSX text in
+  `apps/frontend/src` and `apps/backend/src`, tests and generated code aside.
+  Write a range with a hyphen or "to": "2-5 min", "Nov 1 to Dec 1".
 
 Suppress with `// oxlint-disable-next-line <rule>`. Oxlint still honours
 `eslint-disable` comments, but do not write new ones.
@@ -77,6 +81,33 @@ So do not write:
 Comment the part that is actually surprising, not the whole block around it.
 When the explanation keeps growing, the code usually wants a named function
 instead.
+
+## Copy
+
+Copy is every word a user reads: UI text, toasts, emails, error messages, API
+and MCP descriptions, CLI output. Write it the way Vercel or Linear do. Keep it
+short, plain and confident, and respect the reader's time.
+
+- **No em dashes (—) or en dashes (–).** Use a period, a colon, a comma or
+  parentheses instead. Two short sentences beat one long one.
+- **Lead with what matters.** Say what happened or what the user can do, then
+  stop. "Token revoked", not "The token has been successfully revoked."
+- **Active voice, second person.** "Argos rejects the next upload" and "your
+  CI", not "uploads will be rejected" and "the user's CI".
+- **Be specific.** Name the thing and the consequence: "CI using **Monorepo
+  CI** is rejected from its next upload", not "this may break things".
+- **No filler, hype or alarm.** No "simply", "just", "easily", "seamless",
+  "powerful", "please" or exclamation marks. State a risk once, plainly,
+  without a list of ways it could happen.
+- **Errors say what went wrong, then what to do**, in two sentences: "This
+  project token has expired. Create a new one."
+- **Toasts are a noun and a past participle**, without a period: "Token
+  renamed".
+- **One name per concept.** Use the words the rest of the product and the docs
+  use: project token, build, screenshot, team.
+
+Older copy predates these rules, so don't take it as a model. Fix the strings
+you touch.
 
 ## Learning from review
 

@@ -22,7 +22,7 @@ export const CommentToolToggle = memo(() => {
   );
   return (
     <ButtonGroup>
-      <Tooltip content="Move tool — drag to pan, scroll to zoom">
+      <Tooltip content="Move tool: drag to pan, scroll to zoom">
         <Button
           variant="secondary"
           iconOnly
@@ -34,7 +34,7 @@ export const CommentToolToggle = memo(() => {
         </Button>
       </Tooltip>
       <HotkeyTooltip
-        description="Comment tool — click the image to comment"
+        description="Comment tool: click the image to comment"
         keys={hotkey.displayKeys}
         keysEnabled={mode !== "comment"}
       >

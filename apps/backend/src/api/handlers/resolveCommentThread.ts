@@ -52,7 +52,7 @@ export const resolveBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: commentResponses("Thread resolved — returns the root comment"),
+  responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unresolveBuildCommentThreadOperation = {
@@ -62,7 +62,7 @@ export const unresolveBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: commentResponses("Thread reopened — returns the root comment"),
+  responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const resolveTestCommentThreadOperation = {
@@ -72,7 +72,7 @@ export const resolveTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: commentResponses("Thread resolved — returns the root comment"),
+  responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const resolveMediaCommentThreadOperation = {
@@ -82,7 +82,7 @@ export const resolveMediaCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: MediaPathParams },
-  responses: commentResponses("Thread resolved — returns the root comment"),
+  responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unresolveTestCommentThreadOperation = {
@@ -92,7 +92,7 @@ export const unresolveTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: commentResponses("Thread reopened — returns the root comment"),
+  responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unresolveMediaCommentThreadOperation = {
@@ -102,7 +102,7 @@ export const unresolveMediaCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: MediaPathParams },
-  responses: commentResponses("Thread reopened — returns the root comment"),
+  responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;
 
 /**

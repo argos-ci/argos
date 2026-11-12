@@ -211,7 +211,7 @@ export const zodSchema = {
     {
       name: "Tests",
       description:
-        "Inspect a test's flakiness — how often it changed and how erratically — list the changes that keep coming back, and ignore the ones that are only noise.",
+        "Inspect a test's flakiness (how often it changed and how erratically), list the changes that keep coming back, and ignore the ones that are only noise.",
       "x-page-icon": "flask",
     },
     {
@@ -229,7 +229,7 @@ export const zodSchema = {
     {
       name: "Automations",
       description:
-        "Run actions when a build event matches your conditions — post to Slack, Microsoft Teams or Discord when a build completes or is reviewed.",
+        "Run actions when a build event matches your conditions: post to Slack, Microsoft Teams or Discord when a build completes or is reviewed.",
       "x-page-icon": "workflow",
     },
     {

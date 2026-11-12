@@ -58,7 +58,7 @@ export const ignoreChangeOperation = {
   },
   responses: {
     "200": {
-      description: "Change ignored — returns the updated change",
+      description: "The ignored change",
       content: {
         "application/json": {
           schema: ChangeSchema,
@@ -86,7 +86,7 @@ export const unignoreChangeOperation = {
   },
   responses: {
     "200": {
-      description: "Change unignored — returns the updated change",
+      description: "The unignored change",
       content: {
         "application/json": {
           schema: ChangeSchema,

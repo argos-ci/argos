@@ -505,7 +505,7 @@ function ScreenshotsCell(props: {
   // Nothing is metered at all: a team on a flat plan, on a granted one, or with
   // no subscription.
   if (!periodUsage) {
-    return <span className="text-low">—</span>;
+    return <span className="text-low">-</span>;
   }
 
   // Usage to read means a usage-based plan was resolved to read it against.
@@ -520,7 +520,7 @@ function ScreenshotsCell(props: {
       : includedScreenshots.toLocaleString();
 
   return (
-    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage — except on a trial, whose usage Stripe never bills.">
+    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage, except on a trial, whose usage Stripe never bills.">
       <div>
         <div className="font-medium">
           {periodUsage.currentPeriodScreenshotsCount.toLocaleString()}
@@ -553,7 +553,7 @@ function BilledAmount(props: {
           <span className="font-medium">{formatPrice(billed.amount)}</span>
         </Tooltip>
       ) : (
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
       )}
       {footnote}
     </div>

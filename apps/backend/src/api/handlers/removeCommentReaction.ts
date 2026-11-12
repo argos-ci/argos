@@ -43,7 +43,7 @@ export const removeBuildCommentReactionOperation = {
     }),
     query: RemoveReactionQuerySchema,
   },
-  responses: commentResponses("Reaction removed — returns the comment"),
+  responses: commentResponses("The comment, with the reaction removed"),
 } satisfies ZodOpenApiOperationObject;
 
 export const removeTestCommentReactionOperation = {
@@ -62,7 +62,7 @@ export const removeTestCommentReactionOperation = {
     }),
     query: RemoveReactionQuerySchema,
   },
-  responses: commentResponses("Reaction removed — returns the comment"),
+  responses: commentResponses("The comment, with the reaction removed"),
 } satisfies ZodOpenApiOperationObject;
 
 export const removeMediaCommentReactionOperation = {
@@ -79,7 +79,7 @@ export const removeMediaCommentReactionOperation = {
     }),
     query: RemoveReactionQuerySchema,
   },
-  responses: commentResponses("Reaction removed — returns the comment"),
+  responses: commentResponses("The comment, with the reaction removed"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped remove-reaction endpoints. */

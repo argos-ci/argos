@@ -68,7 +68,7 @@ export async function unfurlBuild(
   })();
 
   const attachment: Bolt.types.MessageAttachment = {
-    title: `Build ${build.number} — ${build.name} — ${build.project.account.displayName}/${build.project.name}`,
+    title: `Build ${build.number} · ${build.name} · ${build.project.account.displayName}/${build.project.name}`,
     fields: [
       { title: "Status", value: getBuildLabel(build.type, status) },
       statsMessage ? { title: "Screenshots", value: statsMessage } : null,
@@ -147,7 +147,7 @@ export async function unfurlTest(
   })();
 
   const attachment: Bolt.types.MessageAttachment = {
-    title: `${test.name} — ${test.project.account.displayName}/${test.project.name}`,
+    title: `${test.name} · ${test.project.account.displayName}/${test.project.name}`,
     fields: [
       { title: "Flakiness", value: formatPercent(metrics.flakiness) },
       { title: "Stability", value: formatPercent(metrics.stability) },

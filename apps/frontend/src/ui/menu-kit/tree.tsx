@@ -252,7 +252,7 @@ function getItemNode(element: ReactElement, id: string): ItemNode {
   ) {
     warnedTextlessRows.add(id);
     console.warn(
-      "A menu row has no text a query could match: its children are not plain text and it declares no `textValue`. Filtering will drop it — give it a `textValue`.",
+      "A menu row has no text a query could match: its children are not plain text and it declares no `textValue`. Filtering will drop it. Give it a `textValue`.",
       element,
     );
   }

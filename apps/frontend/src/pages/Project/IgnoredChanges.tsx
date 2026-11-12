@@ -478,7 +478,7 @@ function FeatureDisabledEmptyState(props: { params: ProjectParams }) {
       </EmptyStateIcon>
       <Heading>Ignoring is turned off</Heading>
       <EmptyStateDescription>
-        New builds on this project ignore nothing — every change is treated as
+        New builds on this project ignore nothing: every change is treated as
         needing review. Turn the feature on to let reviewers mute recurring
         flaky changes.
       </EmptyStateDescription>
@@ -512,7 +512,7 @@ function NothingIgnoredEmptyState(props: { params: ProjectParams }) {
       <Heading>Nothing is ignored yet</Heading>
       <EmptyStateDescription>
         Ignoring a change tells Argos to stop asking you to review it. Reach for
-        it when a diff is flaky — the kind that keeps coming back build after
+        it when a diff is flaky, the kind that keeps coming back build after
         build without anything really changing.
       </EmptyStateDescription>
       {canViewSettings && (
@@ -648,7 +648,7 @@ function IgnoredChangesList(props: {
           tooltip={
             <>
               Number of auto-approved builds that have shown this exact change
-              since it was ignored — the review noise it has absorbed.
+              since it was ignored: the review noise it has absorbed.
             </>
           }
           className="w-24"

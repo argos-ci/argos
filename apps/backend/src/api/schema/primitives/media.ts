@@ -39,7 +39,7 @@ export const MediaVersionSchema = z
   .object({
     id: z.string().meta({
       description:
-        "Unique identifier of this version — what a comment's `mediaVersionId` points at.",
+        "Unique identifier of this version: what a comment's `mediaVersionId` points at.",
     }),
     number: z.number().meta({
       description:
@@ -88,11 +88,11 @@ export const MediaSchema = z
     }),
     url: z.url().meta({
       description:
-        "Share page URL. This is the link to put in a pull request or a chat message, and it keeps working across versions — it always shows the newest one.",
+        "Share page URL. This is the link to put in a pull request or a chat message, and it keeps working across versions: it always shows the newest one.",
     }),
     markdown: z.string().meta({
       description:
-        "Ready-to-paste Markdown: the picture — the image itself, or a video's poster frame — embedded from the CDN and linked to the share page. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
+        "Ready-to-paste Markdown: the picture (the image itself, or a video's poster frame) embedded from the CDN and linked to the share page. Embed this rather than building your own from `url`: that is an HTML page, and an image embed pointing at it renders as a broken image.",
     }),
     version: z.number().meta({
       description:
@@ -100,7 +100,7 @@ export const MediaSchema = z
     }),
     versionCount: z.number().meta({
       description:
-        "How many uploaded versions this media has. Above 1, `GET /media/{mediaId}/versions` lists them — which is how a comment's `mediaVersionId` resolves to the file it was written against.",
+        "How many uploaded versions this media has. Above 1, `GET /media/{mediaId}/versions` lists them, which is how a comment's `mediaVersionId` resolves to the file it was written against.",
     }),
     fileUrl: z.url().meta({
       description:
@@ -117,7 +117,7 @@ export const MediaSchema = z
     visibility: MediaVisibilitySchema,
     status: z.enum(["pending", "ready"]).meta({
       description:
-        "`pending` until the bytes are uploaded, then `ready`. There is no processing step — Argos serves the bytes it was given.",
+        "`pending` until the bytes are uploaded, then `ready`. There is no processing step: Argos serves the bytes it was given.",
     }),
     expiresAt: z.string().nullable().meta({
       description:
@@ -153,7 +153,7 @@ export const MediaBranchSchema = z
   .max(255)
   .meta({
     description:
-      "Branch this media belongs to. Upload against a branch when the pull request does not exist yet: the media is staged until one opens for that branch, and Argos publishes it — and posts the comment — on its own at that point. No GitHub connection is needed to name a branch.",
+      "Branch this media belongs to. Upload against a branch when the pull request does not exist yet: the media is staged until one opens for that branch, and Argos publishes it (and posts the comment) on its own at that point. No GitHub connection is needed to name a branch.",
     examples: ["feat/checkout"],
   });
 
@@ -183,7 +183,7 @@ export const MediaInputSchema = z.object({
   }),
   visibility: MediaVisibilitySchema.nullish().meta({
     description:
-      "Who can open the media share page. `team` requires an Argos session with access to the owning account; `public` only requires the share URL. Omit it — the usual case — and the media follows its project's visibility: `public` for a public project, `team` for a private one. `team` requires a paid plan.",
+      "Who can open the media share page. `team` requires an Argos session with access to the owning account; `public` only requires the share URL. Omit it (the usual case) and the media follows its project's visibility: `public` for a public project, `team` for a private one. `team` requires a paid plan.",
   }),
 });
 

@@ -123,8 +123,8 @@ function ReapplyPreviousApprovalsButton(props: {
               remaining === null
                 ? undefined
                 : remaining === 0
-                  ? "All changes are reviewed — you're ready to submit your review."
-                  : `${remaining === 1 ? "1 change" : `${remaining} changes`} left to review — taking you to the first one.`,
+                  ? "All changes are reviewed. You're ready to submit your review."
+                  : `${remaining === 1 ? "1 change" : `${remaining} changes`} left to review. Taking you to the first one.`,
           },
         );
         acknowledge();

@@ -1215,7 +1215,7 @@ async function assertMirrorCovers(scanStart: Date, now: Date): Promise<void> {
 
   if (!deepestSync || new Date(deepestSync.sinceDate) > scanStart) {
     throw new MirrorCoverageError(
-      "The Stripe invoice mirror was never swept deep enough for this window — run stripe/bin/sync-stripe-invoices with a deeper window to backfill it.",
+      "The Stripe invoice mirror was never swept deep enough for this window. Run stripe/bin/sync-stripe-invoices with a deeper window to backfill it.",
     );
   }
   invariant(freshestSync, "a deepest sync means there is a freshest one");
@@ -1224,7 +1224,7 @@ async function assertMirrorCovers(scanStart: Date, now: Date): Promise<void> {
     STALE_MIRROR_MS
   ) {
     throw new MirrorCoverageError(
-      `The Stripe invoice mirror has not been swept since ${freshestSync.completedAt} — the stripe-invoice-sync cron is not running.`,
+      `The Stripe invoice mirror has not been swept since ${freshestSync.completedAt}: the stripe-invoice-sync cron is not running.`,
     );
   }
 }

@@ -39,9 +39,7 @@ export const deleteBuildCommentOperation = {
       commentId: CommentId,
     }),
   },
-  responses: commentResponses(
-    "Comment deleted successfully — returns the comment",
-  ),
+  responses: commentResponses("The deleted comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const deleteTestCommentOperation = {
@@ -59,9 +57,7 @@ export const deleteTestCommentOperation = {
       commentId: CommentId,
     }),
   },
-  responses: commentResponses(
-    "Comment deleted successfully — returns the comment",
-  ),
+  responses: commentResponses("The deleted comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const deleteMediaCommentOperation = {
@@ -77,9 +73,7 @@ export const deleteMediaCommentOperation = {
       commentId: CommentId,
     }),
   },
-  responses: commentResponses(
-    "Comment deleted successfully — returns the comment",
-  ),
+  responses: commentResponses("The deleted comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped delete endpoints. */

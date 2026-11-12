@@ -61,7 +61,7 @@ export const subscribeBuildOperation = {
   operationId: "subscribeBuild",
   summary: "Subscribe to a build",
   description:
-    "Start receiving notifications about a build — new comments, reviews, and status changes. Clears a previous explicit unsubscription.",
+    "Start receiving notifications about a build: new comments, reviews, and status changes. Clears a previous explicit unsubscription.",
   tags: ["Builds"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathSchema },
@@ -128,7 +128,7 @@ export const subscribeTestOperation = {
   operationId: "subscribeTest",
   summary: "Subscribe to a test",
   description:
-    "Start receiving notifications about a test — new comments and the changes it produces. Clears a previous explicit unsubscription.",
+    "Start receiving notifications about a test: new comments and the changes it produces. Clears a previous explicit unsubscription.",
   tags: ["Tests"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathSchema },

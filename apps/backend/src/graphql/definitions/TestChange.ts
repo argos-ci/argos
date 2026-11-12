@@ -34,8 +34,8 @@ export const typeDefs = gql`
     stats(period: MetricsPeriod!): TestChangeStats!
     """
     Most recent diff carrying this fingerprint, whatever its period or build
-    type — unlike \`stats.lastSeenDiff\`, which is scoped to a metrics period and
-    to auto-approved builds. Null when the diff's image is no longer available.
+    type (unlike \`stats.lastSeenDiff\`, which is scoped to a metrics period and
+    to auto-approved builds). Null when the diff's image is no longer available.
     """
     lastSeenDiff: ScreenshotDiff
     ignored: Boolean!
@@ -45,13 +45,13 @@ export const typeDefs = gql`
     """
     ignoredAt: DateTime
     """
-    Who last ignored the change — the Argos bot when auto-ignore did. Null when
+    Who last ignored the change: the Argos bot when auto-ignore did. Null when
     the change has never been ignored.
     """
     ignoredBy: User
     """
     Number of auto-approved builds that have shown this exact change since it
-    was last ignored — how much review noise the ignore has absorbed. 0 when the
+    was last ignored: how much review noise the ignore has absorbed. 0 when the
     change has never been ignored.
     """
     occurrencesSinceIgnored: Int!

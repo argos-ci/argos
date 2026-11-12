@@ -61,7 +61,7 @@ describe("unfurlTest", () => {
     );
 
     invariant(attachment);
-    expect(attachment.title).toBe("Home page — Acme Inc/my-project");
+    expect(attachment.title).toBe("Home page · Acme Inc/my-project");
     expect(attachment.fields).toContainEqual({
       title: "Flakiness",
       value: "0%",
