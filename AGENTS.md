@@ -215,6 +215,13 @@ flight — never track that with a local `loading` boolean.
   `role="alertdialog"`, `variant="destructive"` for destructive actions, and
   `toast.success(...)` on completion.
 
+**Reusable pieces belong in `@/ui` with a story.** Before styling a piece of UI
+by hand (an inline warning, a badge…), look for the component in `@/ui` — e.g.
+`Callout` for a warning inside a form. When markup is about to be copied, extract
+it there with a `*.stories.tsx`, so Argos screenshots it. To line an icon up with
+the first line of text, wrap it in `flex h-lh items-center` rather than picking
+an `mt-*`: the box is one line-height tall at any text size.
+
 If possible, put some screenshots or videos using `/argos-upload` skill.
 
 ## Notifications

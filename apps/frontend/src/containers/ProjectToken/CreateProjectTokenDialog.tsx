@@ -5,7 +5,6 @@ import { useApolloClient } from "@apollo/client/react";
 import { addDays } from "@argos/util/date";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
-import { AlertCircleIcon } from "lucide-react";
 import {
   useController,
   useForm,
@@ -21,6 +20,7 @@ import type {
   ProjectTokenPermission,
 } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
+import { Callout } from "@/ui/Callout";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import { Code } from "@/ui/Code";
@@ -399,14 +399,11 @@ function ExpirationField(props: { control: Control<Inputs> }) {
         </ListBox>
       </SelectField>
       {days ? (
-        <div className="bg-pending-subtle text-pending-low mt-2 flex items-start gap-2 rounded-md p-2 text-xs">
-          <AlertCircleIcon className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            CI stops uploading on{" "}
-            <strong>{formatDate(addDays(new Date(), days), "longDate")}</strong>
-            . Create its replacement before then.
-          </span>
-        </div>
+        <Callout className="mt-2">
+          CI stops uploading on{" "}
+          <strong>{formatDate(addDays(new Date(), days), "longDate")}</strong>.
+          Create its replacement before then.
+        </Callout>
       ) : null}
     </div>
   );
