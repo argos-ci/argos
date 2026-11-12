@@ -27,15 +27,19 @@ export const ABSOLUTE_TIMEOUT_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
  */
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-type SessionCacheEntry = {
+export type AuthMethod = (typeof UserSession.authMethods)[number];
+
+/** How a session is opened. A SAML login names the team whose IdP answered. */
+export type SessionAuthMethod =
+  | { method: "saml"; samlTeamId: string }
+  | { method: Exclude<AuthMethod, "saml"> };
+
+/** What `resolveSession` returns, and what Redis caches for it. */
+export type ResolvedSession = {
   /** Session row id. */
   sid: string;
   userId: string;
-};
-
-export type ResolvedSession = {
-  sid: string;
-  userId: string;
+  samlTeamId: string | null;
 };
 
 function getRedisKey(tokenHash: string): string {
@@ -54,7 +58,7 @@ function getCacheTtlSeconds(absoluteExpiryMs: number): number {
 
 async function writeCache(
   tokenHash: string,
-  entry: SessionCacheEntry,
+  entry: ResolvedSession,
   absoluteExpiryMs: number,
 ): Promise<void> {
   const redis = await getRedisClient();
@@ -68,21 +72,34 @@ async function writeCache(
  * written, or in an older format — the caller then treats it as a cache miss
  * rather than letting a bad value throw and turn an auth check into a 500.
  */
-function parseCacheEntry(raw: string): SessionCacheEntry | null {
+function parseCacheEntry(raw: string): ResolvedSession | null {
   try {
     const value = JSON.parse(raw);
     if (
       value &&
       typeof value === "object" &&
       typeof value.sid === "string" &&
-      typeof value.userId === "string"
+      typeof value.userId === "string" &&
+      (typeof value.samlTeamId === "string" || value.samlTeamId === null)
     ) {
-      return { sid: value.sid, userId: value.userId };
+      return {
+        sid: value.sid,
+        userId: value.userId,
+        samlTeamId: value.samlTeamId,
+      };
     }
   } catch {
     // Fall through to treat as a cache miss.
   }
   return null;
+}
+
+function getCacheEntry(session: UserSession): ResolvedSession {
+  return {
+    sid: session.id,
+    userId: session.userId,
+    samlTeamId: session.samlTeamId,
+  };
 }
 
 function findMatch(
@@ -129,15 +146,17 @@ export function parseDeviceLabel(userAgent: string | null): string | null {
  * cookie) and the persisted session row. The raw token is never stored — only
  * its sha256.
  */
-export async function createSession(input: {
-  userId: string;
-  ip?: string | null;
-  userAgent?: string | null;
-  deviceLabel?: string | null;
-  city?: string | null;
-  region?: string | null;
-  country?: string | null;
-}): Promise<{ rawToken: string; session: UserSession }> {
+export async function createSession(
+  input: {
+    userId: string;
+    ip?: string | null;
+    userAgent?: string | null;
+    deviceLabel?: string | null;
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+  } & SessionAuthMethod,
+): Promise<{ rawToken: string; session: UserSession }> {
   const rawToken = randomBytes(32).toString("base64url");
   const tokenHash = hashToken(rawToken);
   const now = Date.now();
@@ -155,11 +174,13 @@ export async function createSession(input: {
     city: input.city ?? null,
     region: input.region ?? null,
     country: input.country ?? null,
+    authMethod: input.method,
+    samlTeamId: input.method === "saml" ? input.samlTeamId : null,
   });
 
   await writeCache(
     tokenHash,
-    { sid: session.id, userId: session.userId },
+    getCacheEntry(session),
     new Date(expiresAt).getTime(),
   );
 
@@ -167,7 +188,7 @@ export async function createSession(input: {
 }
 
 /**
- * Resolve a raw session token to `{ sid, userId }`, or `null` if it is missing,
+ * Resolve a raw session token to its session, or `null` if it is missing,
  * expired, idle, or revoked.
  *
  * A Redis hit is trusted for the short cache window. On a miss it falls back to
@@ -208,13 +229,10 @@ export async function resolveSession(
 
   // Slide the idle window forward and repopulate the cache.
   await session.$query().patch({ lastSeenAt: now.toISOString() });
-  await writeCache(
-    tokenHash,
-    { sid: session.id, userId: session.userId },
-    new Date(session.expiresAt).getTime(),
-  );
+  const entry = getCacheEntry(session);
+  await writeCache(tokenHash, entry, new Date(session.expiresAt).getTime());
 
-  return { sid: session.id, userId: session.userId };
+  return entry;
 }
 
 /**

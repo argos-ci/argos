@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict YGwd41tGXtcJEsomdi7TEEMqPez07o1M8bVMd2bXtmM6g5PVEVR9JVrvustb0CL
+\restrict PdbcgS7JldKxhOHUzN05eoS7V2nIXPhFBK5WgI2mU2k661yrVviNDDAyAdg30wc
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -3242,7 +3242,11 @@ CREATE TABLE public.user_sessions (
     "deviceLabel" character varying(255),
     city character varying(255),
     region character varying(255),
-    country character varying(255)
+    country character varying(255),
+    "authMethod" text,
+    "samlTeamId" bigint,
+    CONSTRAINT "user_sessions_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
+    CONSTRAINT "user_sessions_samlTeamId_check" CHECK ((("samlTeamId" IS NULL) OR ("authMethod" = 'saml'::text)))
 );
 
 
@@ -6900,6 +6904,14 @@ ALTER TABLE ONLY public.user_passkeys
 
 
 --
+-- Name: user_sessions user_sessions_samlteamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_samlteamid_foreign FOREIGN KEY ("samlTeamId") REFERENCES public.teams(id) ON DELETE SET NULL;
+
+
+--
 -- Name: user_sessions user_sessions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6927,7 +6939,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict YGwd41tGXtcJEsomdi7TEEMqPez07o1M8bVMd2bXtmM6g5PVEVR9JVrvustb0CL
+\unrestrict PdbcgS7JldKxhOHUzN05eoS7V2nIXPhFBK5WgI2mU2k661yrVviNDDAyAdg30wc
 
 -- Knex migrations
 
@@ -7204,3 +7216,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
