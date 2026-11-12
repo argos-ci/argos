@@ -57,11 +57,6 @@ export async function startSession(
  * three different ways across OAuth, email and passkey, with nothing forcing
  * them to agree. Owning the sequence here is what keeps a new login method from
  * having to rediscover the rules by reading the others.
- *
- * `alreadySignedIn` is the OAuth case of linking a provider to a session that
- * already exists: that is not a signup, so it never triggers the auto-invite
- * detour however new the account row looks, and it keeps that session, whose
- * method — a SAML login above all — is still the one that authenticated it.
  */
 export async function completeLogin(
   input: {
@@ -70,20 +65,15 @@ export async function completeLogin(
     userId: string;
     /** Whether this login created the account. */
     creation: boolean;
-    /** Whether the caller already had a session (OAuth account linking). */
-    alreadySignedIn?: boolean;
   } & SessionAuthMethod,
 ): Promise<AuthPayload> {
   const { req, res, userId, creation } = input;
-  const isSignup = creation && !input.alreadySignedIn;
 
-  const hasAutoInvite = isSignup
+  const hasAutoInvite = creation
     ? await hasAutoInviteForUser({ userId })
     : false;
 
-  if (!input.alreadySignedIn) {
-    await startSession(req, res, input);
-  }
+  await startSession(req, res, input);
 
   return { creation, hasAutoInvite };
 }

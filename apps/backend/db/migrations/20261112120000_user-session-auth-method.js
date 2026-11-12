@@ -3,7 +3,6 @@
  */
 export const up = async (knex) => {
   await knex.schema.alterTable("user_sessions", (table) => {
-    // Null on sessions opened before this column existed.
     table.enum("authMethod", [
       "email",
       "google",

@@ -29,22 +29,18 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export type AuthMethod = (typeof UserSession.authMethods)[number];
 
-/**
- * How a session is opened. A SAML login names the team whose IdP vouched for
- * the user: the session satisfies that team's SAML enforcement and no other's.
- */
+/** How a session is opened. A SAML login names the team whose IdP answered. */
 export type SessionAuthMethod =
   | { method: "saml"; samlTeamId: string }
   | { method: Exclude<AuthMethod, "saml"> };
 
-type SessionCacheEntry = {
+/** What `resolveSession` returns, and what Redis caches for it. */
+export type ResolvedSession = {
   /** Session row id. */
   sid: string;
   userId: string;
   samlTeamId: string | null;
 };
-
-export type ResolvedSession = SessionCacheEntry;
 
 function getRedisKey(tokenHash: string): string {
   return `session:${tokenHash}`;
@@ -62,7 +58,7 @@ function getCacheTtlSeconds(absoluteExpiryMs: number): number {
 
 async function writeCache(
   tokenHash: string,
-  entry: SessionCacheEntry,
+  entry: ResolvedSession,
   absoluteExpiryMs: number,
 ): Promise<void> {
   const redis = await getRedisClient();
@@ -76,7 +72,7 @@ async function writeCache(
  * written, or in an older format — the caller then treats it as a cache miss
  * rather than letting a bad value throw and turn an auth check into a 500.
  */
-function parseCacheEntry(raw: string): SessionCacheEntry | null {
+function parseCacheEntry(raw: string): ResolvedSession | null {
   try {
     const value = JSON.parse(raw);
     if (
@@ -98,7 +94,7 @@ function parseCacheEntry(raw: string): SessionCacheEntry | null {
   return null;
 }
 
-function getCacheEntry(session: UserSession): SessionCacheEntry {
+function getCacheEntry(session: UserSession): ResolvedSession {
   return {
     sid: session.id,
     userId: session.userId,

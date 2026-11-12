@@ -3,7 +3,6 @@ import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
 import { generateAuthEmailCode } from "@/auth/email";
-import { createSamlAuthCode } from "@/auth/saml";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import {
   Plan,
@@ -14,8 +13,7 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { setupRedis } from "@/util/redis/testing";
-import authRouter from "@/web/api/auth";
-import { createTestApp } from "@/web/test-util";
+import { exchangeSamlCode } from "@/web/api/auth.test-util";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
@@ -34,6 +32,7 @@ type SessionCaller = { cookie: string };
 async function createTeamUser(input: {
   teamAccount: Account;
   userLevel: TeamUser["userLevel"];
+  ssoSubject?: string;
 }): Promise<Viewer> {
   invariant(input.teamAccount.teamId, "team account has no team");
   const account = await factory.UserAccount.create();
@@ -43,6 +42,7 @@ async function createTeamUser(input: {
     teamId: input.teamAccount.teamId,
     userId: account.user.id,
     userLevel: input.userLevel,
+    ssoSubject: input.ssoSubject ?? null,
   });
   return { user: account.user, account };
 }
@@ -67,23 +67,12 @@ async function createSamlEnforcedTeam(plan: Plan): Promise<Account> {
   return teamAccount;
 }
 
-/** Make `user` a member whom `teamAccount`'s IdP knows as `SSO_SUBJECT`. */
-async function addSamlMember(teamAccount: Account, user: User) {
-  invariant(teamAccount.teamId, "team account has no team");
-  await factory.TeamUser.create({
-    teamId: teamAccount.teamId,
-    userId: user.id,
-    userLevel: "member",
-    ssoSubject: SSO_SUBJECT,
-  });
-}
-
 const it = base.extend<{
   plan: Plan;
   teamAccount: Account;
   owner: Viewer;
   member: Viewer;
-  samlMember: User;
+  samlMember: Viewer;
 }>({
   plan: async ({}, use) => {
     await setupDatabase();
@@ -99,25 +88,26 @@ const it = base.extend<{
     await use(await createTeamUser({ teamAccount, userLevel: "member" }));
   },
   samlMember: async ({ teamAccount }, use) => {
-    const account = await factory.UserAccount.create();
-    await account.$fetchGraph("user");
-    invariant(account.user, "user not fetched");
+    const viewer = await createTeamUser({
+      teamAccount,
+      userLevel: "member",
+      ssoSubject: SSO_SUBJECT,
+    });
     await factory.UserEmail.create({
-      userId: account.user.id,
+      userId: viewer.user.id,
       email: EMAIL,
       verified: true,
     });
-    await addSamlMember(teamAccount, account.user);
-    await use(account.user);
+    await use(viewer);
   },
 });
 
 async function graphql(
-  caller: Viewer | SessionCaller,
+  caller: Viewer | SessionCaller | null,
   query: string,
   variables: Record<string, unknown>,
 ) {
-  const isSession = "cookie" in caller;
+  const isSession = caller !== null && "cookie" in caller;
   const app = await createApolloServerApp(
     apolloServer,
     createApolloMiddleware,
@@ -178,45 +168,35 @@ function getSessionCaller(res: request.Response): SessionCaller {
   return { cookie: pair };
 }
 
-/**
- * Log in through `teamAccount`'s IdP, as the callback page does once the IdP
- * has vouched for `EMAIL`.
- */
 async function logInWithSaml(teamAccount: Account): Promise<SessionCaller> {
-  const code = await createSamlAuthCode({
-    teamAccountId: teamAccount.id,
+  const res = await exchangeSamlCode({
+    teamAccount,
     email: EMAIL,
     ssoSubject: SSO_SUBJECT,
   });
-  const res = await request(createTestApp(authRouter))
-    .post("/auth/saml")
-    .send({ code });
   expect(res.status).toBe(200);
   return getSessionCaller(res);
 }
 
 async function logInWithEmail(): Promise<SessionCaller> {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
+  const res = await graphql(
     null,
-  );
-  const res = await request(app)
-    .post("/graphql")
-    .send({
-      query: `
-        mutation AuthenticateWithEmail($input: AuthFromEmailInput!) {
-          authenticateWithEmail(input: $input) {
-            creation
-          }
+    `
+      mutation AuthenticateWithEmail($input: AuthFromEmailInput!) {
+        authenticateWithEmail(input: $input) {
+          creation
         }
-      `,
-      variables: {
-        input: { email: EMAIL, code: await generateAuthEmailCode(EMAIL) },
-      },
-    });
+      }
+    `,
+    { input: { email: EMAIL, code: await generateAuthEmailCode(EMAIL) } },
+  );
   expectNoGraphQLError(res);
   return getSessionCaller(res);
+}
+
+function expectAccountVisible(res: request.Response, account: Account) {
+  expectNoGraphQLError(res);
+  expect(res.body.data.account.id).toBe(account.id);
 }
 
 function expectSamlRequired(res: request.Response) {
@@ -245,8 +225,7 @@ describe("GraphQL team SAML enforcement", () => {
 
     const res = await queryAccount(member, teamAccount.slug);
 
-    expectNoGraphQLError(res);
-    expect(res.body.data.account.id).toBe(teamAccount.id);
+    expectAccountVisible(res, teamAccount);
   });
 
   it("requires SAML again once it is re-enabled", async ({
@@ -271,8 +250,7 @@ describe("GraphQL team SAML enforcement", () => {
 
     const res = await queryAccount(member, teamAccount.slug);
 
-    expectNoGraphQLError(res);
-    expect(res.body.data.account.id).toBe(teamAccount.id);
+    expectAccountVisible(res, teamAccount);
   });
 
   it("satisfies only the team whose IdP opened the session", async ({
@@ -281,25 +259,26 @@ describe("GraphQL team SAML enforcement", () => {
     samlMember,
   }) => {
     const otherTeamAccount = await createSamlEnforcedTeam(plan);
-    await addSamlMember(otherTeamAccount, samlMember);
+    invariant(otherTeamAccount.teamId, "team account has no team");
+    await factory.TeamUser.create({
+      teamId: otherTeamAccount.teamId,
+      userId: samlMember.user.id,
+      userLevel: "member",
+      ssoSubject: SSO_SUBJECT,
+    });
     // The member has been through the other team's IdP too, on another device.
     const otherTeamSession = await logInWithSaml(otherTeamAccount);
 
     const session = await logInWithSaml(teamAccount);
 
     const res = await queryAccount(session, teamAccount.slug);
-    expectNoGraphQLError(res);
-    expect(res.body.data.account).toEqual({
-      id: teamAccount.id,
-      viewerSignedInWithSaml: true,
-    });
+    expectAccountVisible(res, teamAccount);
+    expect(res.body.data.account.viewerSignedInWithSaml).toBe(true);
     expectSamlRequired(await queryAccount(session, otherTeamAccount.slug));
-    const otherRes = await queryAccount(
-      otherTeamSession,
-      otherTeamAccount.slug,
+    expectAccountVisible(
+      await queryAccount(otherTeamSession, otherTeamAccount.slug),
+      otherTeamAccount,
     );
-    expectNoGraphQLError(otherRes);
-    expect(otherRes.body.data.account.id).toBe(otherTeamAccount.id);
   });
 
   it("keeps a SAML session through a login with another method elsewhere", async ({
@@ -311,8 +290,7 @@ describe("GraphQL team SAML enforcement", () => {
     const emailSession = await logInWithEmail();
 
     const res = await queryAccount(samlSession, teamAccount.slug);
-    expectNoGraphQLError(res);
-    expect(res.body.data.account.id).toBe(teamAccount.id);
+    expectAccountVisible(res, teamAccount);
     expectSamlRequired(await queryAccount(emailSession, teamAccount.slug));
   });
 });

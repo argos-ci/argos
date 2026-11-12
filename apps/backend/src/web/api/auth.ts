@@ -3,7 +3,7 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { completeLogin } from "@/auth/login";
+import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import type { AuthMethod } from "@/auth/session";
@@ -78,6 +78,13 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
+        if (auth) {
+          // The provider was linked to the signed-in account. That is no
+          // signup, and the session stays the one it was linked from, with the
+          // method that opened it: replacing it would drop a SAML login.
+          res.send({ creation, hasAutoInvite: false } satisfies AuthPayload);
+          return;
+        }
         res.send(
           await completeLogin({
             req,
@@ -85,7 +92,6 @@ function withOAuth(
             userId: account.userId,
             method,
             creation,
-            alreadySignedIn: Boolean(auth),
           }),
         );
       } catch (error) {
@@ -219,9 +225,6 @@ router.use(
     invariant(account.userId, "Expected account to have userId");
     invariant(teamAccount.teamId, "SAML is only available for team accounts");
     res.send(
-      // No `alreadySignedIn`: SAML never attaches the login to the session's
-      // account, so an account it creates is a new person's, whoever was
-      // signed in.
       await completeLogin({
         req,
         res,
