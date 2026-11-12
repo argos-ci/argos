@@ -134,7 +134,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
   ssoSubject: string;
   /** The user of the session the SAML login completes in, if any. */
   signedInUserId: string | null;
-}): Promise<Account> {
+}): Promise<{ account: Account; creation: boolean }> {
   const email = sanitizeEmail(input.email);
   const now = new Date().toISOString();
   const domain = email.split("@")[1]?.toLowerCase();
@@ -162,7 +162,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
       ssoVerifiedAt: now,
       lastAuthMethod: "saml",
     });
-    return teamUser.user.account;
+    return { account: teamUser.user.account, creation: false };
   }
 
   // The IdP is configured by the team, so it vouches for whatever email its
@@ -183,7 +183,8 @@ export async function getOrCreateUserAccountFromSaml(input: {
     );
   }
 
-  const { user, account } = await getOrCreateUserByVerifiedEmail(email);
+  const { user, account, creation } =
+    await getOrCreateUserByVerifiedEmail(email);
   // Even a user created just now may be a member: creating it accepts the
   // invites pending for its email.
   await TeamUser.query()
@@ -197,7 +198,7 @@ export async function getOrCreateUserAccountFromSaml(input: {
     })
     .onConflict(["teamId", "userId"])
     .merge(["ssoSubject", "ssoVerifiedAt", "lastAuthMethod", "updatedAt"]);
-  return account;
+  return { account, creation };
 }
 
 /**

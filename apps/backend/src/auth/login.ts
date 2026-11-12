@@ -58,7 +58,7 @@ export async function startSession(
  * wrote them out for itself they drifted — the auto-invite lookup was gated
  * three different ways across OAuth, email and passkey, with nothing forcing
  * them to agree. Owning the sequence here is what keeps a new login method from
- * having to rediscover the rules by reading the other three.
+ * having to rediscover the rules by reading the others.
  *
  * `alreadySignedIn` is the OAuth case of linking a provider to a session that
  * already exists: that is not a signup, so it never triggers the auto-invite
@@ -82,8 +82,11 @@ export async function completeLogin(input: {
     : false;
 
   // Skipped when linking a provider to an existing session: the method that
-  // opened that session is still the one that authenticated it.
-  if (!input.alreadySignedIn) {
+  // opened that session is still the one that authenticated it. Skipped for
+  // SAML too, which vouches only for the team whose IdP answered: marking every
+  // membership would let one team's IdP satisfy another team's SAML
+  // enforcement. `getOrCreateUserAccountFromSaml` marks that one membership.
+  if (!input.alreadySignedIn && method !== "saml") {
     await markUserLastAuthMethod({ userId, method });
   }
 
