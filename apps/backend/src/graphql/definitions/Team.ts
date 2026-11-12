@@ -73,6 +73,7 @@ import {
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
+  TRIAL_DAYS,
 } from "@/stripe";
 import { sanitizeEmail } from "@/util/email";
 
@@ -185,6 +186,8 @@ export const typeDefs = gql`
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
     samlPurchased: Boolean!
+    "Whether the current session was opened by a login through this team's SAML identity provider"
+    viewerSignedInWithSaml: Boolean!
     "Whether Argos reaches GitHub from its static IP addresses for this team"
     staticIpEnabled: Boolean!
     "Argos's static IP addresses, for the team to add to its GitHub IP allow list"
@@ -250,7 +253,6 @@ export const typeDefs = gql`
     user: User!
     level: TeamUserLevel!
     fromSSO: Boolean!
-    lastAuthMethod: String
     "Whether the member has the monthly report on. It is only sent to the owners of a team on an annual plan."
     receivesMonthlyReport: Boolean!
   }
@@ -664,6 +666,15 @@ export const resolvers: IResolvers = {
       }
 
       return teamUser;
+    },
+    viewerSignedInWithSaml: (account, _args, ctx) => {
+      invariant(account.teamId, "not a team account");
+
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      return ctx.auth.samlTeamId === account.teamId;
     },
     members: async (account, args, ctx) => {
       invariant(account.teamId, "not a team account");
@@ -1093,7 +1104,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),
@@ -1159,7 +1170,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),
@@ -1313,7 +1324,12 @@ export const resolvers: IResolvers = {
         });
 
         invariant(ctx.req && ctx.res, "Login is only available over HTTP");
-        await startSession(ctx.req, ctx.res, user.id);
+        // The invite link was mailed to this address, so holding it proves the
+        // email the same way a login code does.
+        await startSession(ctx.req, ctx.res, {
+          userId: user.id,
+          method: "email",
+        });
         return { team: teamAccount };
       }
 

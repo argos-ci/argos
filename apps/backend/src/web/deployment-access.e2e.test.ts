@@ -24,7 +24,10 @@ const getRedirectLocation = (headers: IncomingHttpHeaders) => {
 
 const createSessionCookie = async (account: Account) => {
   invariant(account.userId, "Account has no userId");
-  const { rawToken } = await createSession({ userId: account.userId });
+  const { rawToken } = await createSession({
+    userId: account.userId,
+    method: "email",
+  });
   return `theme=dark; ${SESSION_COOKIE_NAME}=${rawToken}; other=value`;
 };
 

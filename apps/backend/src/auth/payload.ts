@@ -18,6 +18,8 @@ export type AuthSessionPayload = {
   user: User;
   /** Id of the `user_sessions` row backing this request. */
   sessionId: string;
+  /** The team whose SAML login opened this session, if any. */
+  samlTeamId: string | null;
 };
 
 export type AuthPATPayload = {

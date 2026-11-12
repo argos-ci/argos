@@ -13,7 +13,7 @@ import { createTestApp } from "./test-util";
 const app = createTestApp(router);
 
 const createSessionCookie = async (userId: string) => {
-  const { rawToken } = await createSession({ userId });
+  const { rawToken } = await createSession({ userId, method: "email" });
   return `${SESSION_COOKIE_NAME}=${rawToken}`;
 };
 

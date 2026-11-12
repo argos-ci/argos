@@ -39,7 +39,6 @@ const RESERVED_SLUGS = [
   "account",
 ];
 
-type TeamUserAuthMethod = (typeof TeamUser.authMethods)[number];
 type AccountAuthResult = {
   account: Account;
   creation: boolean;
@@ -76,20 +75,6 @@ export async function getOrCreateUserByVerifiedEmail(
     ...(accountData && { accountData }),
   });
   return { ...created, creation: true };
-}
-
-export async function markUserLastAuthMethod(args: {
-  userId: string;
-  method: TeamUserAuthMethod;
-  /** Restricts the mark to this team's membership. */
-  teamId?: string | null;
-  trx?: TransactionOrKnex;
-}) {
-  const query = TeamUser.query(args.trx).where("userId", args.userId);
-  if (args.teamId) {
-    query.where("teamId", args.teamId);
-  }
-  await query.patch({ lastAuthMethod: args.method });
 }
 
 /**
@@ -758,8 +743,6 @@ export async function authenticateWithEmail(args: {
     });
   }
 
-  const { user, account, creation } =
-    await getOrCreateUserByVerifiedEmail(email);
-  await markUserLastAuthMethod({ userId: user.id, method: "email" });
+  const { account, creation } = await getOrCreateUserByVerifiedEmail(email);
   return { account, creation };
 }

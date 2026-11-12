@@ -79,10 +79,7 @@ const _TeamFragment = graphql(`
       enabled
       enforced
     }
-    me {
-      id
-      lastAuthMethod
-    }
+    viewerSignedInWithSaml
   }
 `);
 
@@ -246,7 +243,7 @@ export function TeamSAMLSSO(props: {
                 </MenuRoot>
               </div>
             </div>
-            {team.me?.lastAuthMethod === "saml" ? (
+            {team.viewerSignedInWithSaml ? (
               <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
                 Require Team Members to login with SAML to access this Team.
                 <Switch

@@ -1,7 +1,11 @@
 import { ADD_ONS } from "@argos/schemas/add-ons";
+import { checkHasSubscriptionStatus } from "@argos/schemas/subscription-status";
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
+import config from "@/config";
 import {
   Account,
   StaffTeamContact,
@@ -15,6 +19,13 @@ import {
   type AccountBilling,
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
+import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
+import { formatDiscordLink, notifyDiscord } from "@/discord";
+import {
+  createStripeTrialSubscription,
+  extendStripeTrial,
+  getCustomerIdFromUserAccount,
+} from "@/stripe";
 import {
   getStaffRevenue,
   getInvoiceRevenue,
@@ -74,6 +85,70 @@ const MAX_TRIAL_PIPELINE_DAYS = 365;
 
 /** Upper bound on the cancellations window, which reads the invoice mirror. */
 const MAX_CANCELLATIONS_DAYS = 365;
+
+/**
+ * How far out staff may set a trial's end, counted from today whether the
+ * trial is started or extended. Stripe's own bound is 730 days.
+ */
+const MAX_STAFF_TRIAL_DAYS = 365;
+
+/** The end of a running trial, null when the subscription is not one. */
+function getRunningTrialEnd(subscription: Subscription | null): Date | null {
+  if (subscription?.status !== "trialing" || !subscription.trialEndDate) {
+    return null;
+  }
+  return new Date(subscription.trialEndDate);
+}
+
+/**
+ * Refuse days a staff trial cannot be given: none at all, or so many that the
+ * trial would end past `MAX_STAFF_TRIAL_DAYS` from today.
+ */
+function assertStaffTrialDays(args: { from: Date; days: number }) {
+  const { from, days } = args;
+  if (days < 1) {
+    throw badUserInput("Add at least one day.", { field: "days" });
+  }
+  if (addDays(from, days) > addDays(new Date(), MAX_STAFF_TRIAL_DAYS)) {
+    throw badUserInput(
+      `A trial can end at most ${MAX_STAFF_TRIAL_DAYS} days from today.`,
+      { field: "days" },
+    );
+  }
+}
+
+/** The team a staff trial mutation acts on. */
+async function getStaffTrialTeamAccount(
+  teamAccountId: string,
+): Promise<Account> {
+  const teamAccount = await Account.query()
+    .findById(teamAccountId)
+    .throwIfNotFound();
+  if (!teamAccount.teamId) {
+    throw badUserInput("Account is not a team.");
+  }
+  return teamAccount;
+}
+
+/**
+ * Tell Discord, where every other subscription event of the team lands, that
+ * staff changed its trial — Stripe's own events do not say who did it.
+ */
+async function notifyStaffTrial(args: {
+  teamAccount: Account;
+  staffEmail: string | null;
+  action: string;
+}) {
+  const { teamAccount, staffEmail, action } = args;
+  const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
+    .href;
+  const team = formatDiscordLink(teamAccount.displayName, teamUrl);
+  await notifyDiscord({
+    content: `${action} for ${team} by staff (${staffEmail ?? "unknown email"})`,
+  }).catch((error) => {
+    captureException(error);
+  });
+}
 
 /**
  * Upper bound on a directory page.
@@ -419,6 +494,13 @@ export const typeDefs = gql`
     includedScreenshots: Int
     "Billing usage. Null when the team is not on a usage-based plan."
     periodUsage: TeamStaffPeriodUsage
+    """
+    When the running trial ends. Null when the team is not on a trial.
+
+    A query per team, so meant to be read for one team rather than across the
+    directory.
+    """
+    trialEndsAt: DateTime
   }
 
   extend type Team {
@@ -434,6 +516,18 @@ export const typeDefs = gql`
   input SetStaffCancellationContactInput {
     subscriptionId: ID!
     contacted: Boolean!
+  }
+
+  input StartStaffTrialInput {
+    teamAccountId: ID!
+    "How long the trial lasts, in days."
+    days: Int!
+  }
+
+  input ExtendStaffTrialInput {
+    teamAccountId: ID!
+    "Days added to the end of the running trial."
+    days: Int!
   }
 
   "How the team directory can be ordered."
@@ -771,6 +865,14 @@ export const typeDefs = gql`
     setStaffCancellationContact(
       input: SetStaffCancellationContactInput!
     ): StaffCancellation!
+    """
+    Put a team that holds no subscription back on a trial of the Pro plan, in
+    the name of one of its owners (staff only). Like any trial, it is canceled
+    at the end unless a payment method was added.
+    """
+    startStaffTrial(input: StartStaffTrialInput!): Team!
+    "Push back the end of a team's running trial (staff only)."
+    extendStaffTrial(input: ExtendStaffTrialInput!): Team!
   }
 `;
 
@@ -830,6 +932,12 @@ export const resolvers: IResolvers = {
       const { periodUsage: usage } =
         await ctx.loaders.AccountBillingByAccountId.load(account.id);
       return usage ? account : null;
+    },
+    trialEndsAt: async (account) => {
+      const subscription = await account
+        .$getSubscriptionManager()
+        .getActiveSubscription();
+      return getRunningTrialEnd(subscription);
     },
   },
   TeamStaffPeriodUsage: {
@@ -1113,6 +1221,89 @@ export const resolvers: IResolvers = {
       }
 
       return subscription.$query();
+    },
+    startStaffTrial: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const { teamAccountId, days } = args.input;
+      assertStaffTrialDays({ from: new Date(), days });
+      const teamAccount = await getStaffTrialTeamAccount(teamAccountId);
+
+      // The rule checkout applies, so the menu that offers this and the guard
+      // that honors it agree.
+      const status = await teamAccount
+        .$getSubscriptionManager()
+        .getSubscriptionStatus();
+      if (checkHasSubscriptionStatus(status)) {
+        throw badUserInput("This team already has a subscription.");
+      }
+
+      const subscriber = await getStaffTrialSubscriber(teamAccount);
+      if (!subscriber) {
+        throw badUserInput("This team has no owner to start the trial for.");
+      }
+      invariant(subscriber.userId, "subscriber is not a user account");
+
+      // The team's own customer when it has one, so the trial lands beside its
+      // previous invoices rather than on the owner's personal customer.
+      const stripeCustomerId =
+        teamAccount.stripeCustomerId ??
+        (await getCustomerIdFromUserAccount(subscriber));
+      if (!stripeCustomerId) {
+        throw badUserInput(
+          "This team has no Stripe customer, and its owner has no email to create one.",
+        );
+      }
+      if (!teamAccount.stripeCustomerId) {
+        await teamAccount.$query().patch({ stripeCustomerId });
+      }
+
+      await createStripeTrialSubscription({
+        teamAccount,
+        subscriberId: subscriber.userId,
+        stripeCustomerId,
+        days,
+      });
+
+      await notifyStaffTrial({
+        teamAccount,
+        staffEmail: ctx.auth.user.email,
+        action: `Trial of ${days} days started`,
+      });
+
+      return teamAccount.$query();
+    },
+    extendStaffTrial: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const { teamAccountId, days } = args.input;
+      const teamAccount = await getStaffTrialTeamAccount(teamAccountId);
+      const subscription = await teamAccount
+        .$getSubscriptionManager()
+        .getActiveSubscription();
+      const trialEnd = getRunningTrialEnd(subscription);
+
+      if (!subscription || !trialEnd) {
+        throw badUserInput("This team is not on a trial.");
+      }
+      invariant(
+        subscription.stripeSubscriptionId,
+        "a trial is a Stripe subscription",
+      );
+      assertStaffTrialDays({ from: trialEnd, days });
+
+      await extendStripeTrial({
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        days,
+      });
+
+      await notifyStaffTrial({
+        teamAccount,
+        staffEmail: ctx.auth.user.email,
+        action: `Trial extended by ${days} days`,
+      });
+
+      return teamAccount.$query();
     },
   },
 };

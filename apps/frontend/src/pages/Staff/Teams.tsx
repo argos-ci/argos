@@ -1,10 +1,19 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
+import {
+  checkHasSubscriptionStatus,
+  checkIsTrialingSubscriptionStatus,
+} from "@argos/schemas/subscription-status";
 import { diffInCalendarDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { CreditCardIcon, SearchIcon } from "lucide-react";
+import {
+  CreditCardIcon,
+  HourglassIcon,
+  MoreVerticalIcon,
+  SearchIcon,
+} from "lucide-react";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { Helmet } from "react-helmet";
 
@@ -19,6 +28,7 @@ import {
 } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
+import { useDialogValueState } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
 import {
   Page,
@@ -31,6 +41,14 @@ import {
 import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Loader } from "@/ui/Loader";
+import {
+  Menu,
+  MenuItem,
+  MenuItemTooltip,
+  MenuRoot,
+  MenuTrigger,
+} from "@/ui/menu-kit";
+import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton } from "@/ui/Select";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
@@ -45,6 +63,7 @@ import {
   PRO_PLAN_NAME,
   type PricedPlan,
 } from "./pricing";
+import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
 import { StripeCustomerLink } from "./stripe";
 
 const StaffTeamsQuery = graphql(`
@@ -638,14 +657,57 @@ function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
   );
 }
 
+function StaffTeamActionsMenu(props: {
+  team: TeamItem;
+  onTrial: (mode: StaffTrialMode) => void;
+}) {
+  const { team, onTrial } = props;
+  const isTrialing = checkIsTrialingSubscriptionStatus(team.subscriptionStatus);
+  // The rule the start mutation enforces: a trial over a live subscription
+  // would leave the team with two in Stripe.
+  const hasSubscription = checkHasSubscriptionStatus(team.subscriptionStatus);
+  const label = `${team.name || team.slug} actions`;
+
+  return (
+    <MenuRoot>
+      <MenuTrigger>
+        <Button variant="ghost" size="small" iconOnly aria-label={label}>
+          <MoreVerticalIcon />
+        </Button>
+      </MenuTrigger>
+      <Menu aria-label={label}>
+        {isTrialing ? (
+          <MenuItem icon={<HourglassIcon />} onAction={() => onTrial("extend")}>
+            Extend trial…
+          </MenuItem>
+        ) : (
+          <MenuItem
+            icon={<HourglassIcon />}
+            disabled={hasSubscription}
+            suffix={
+              hasSubscription ? (
+                <MenuItemTooltip content="The team already has a subscription" />
+              ) : null
+            }
+            onAction={() => onTrial("start")}
+          >
+            Start trial…
+          </MenuItem>
+        )}
+      </Menu>
+    </MenuRoot>
+  );
+}
+
 function StaffTeamRow(props: {
   team: TeamItem;
   index: number;
   isLast: boolean;
   isOpened: boolean;
   toggleMembers: () => void;
+  onTrial: (mode: StaffTrialMode) => void;
 }) {
-  const { team, index, isLast, isOpened, toggleMembers } = props;
+  const { team, index, isLast, isOpened, toggleMembers, onTrial } = props;
   const teamURL = getAccountURL({ accountSlug: team.slug });
   const billing = getTeamBilling(team);
   const {
@@ -714,9 +776,12 @@ function StaffTeamRow(props: {
         </td>
         <BilledPeriodCells team={team} billing={billing} />
         <td className="p-4 text-right text-sm">
-          <Button variant="secondary" size="small" onClick={toggleMembers}>
-            {isOpened ? "Hide members" : "Show members"}
-          </Button>
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="secondary" size="small" onClick={toggleMembers}>
+              {isOpened ? "Hide members" : "Show members"}
+            </Button>
+            <StaffTeamActionsMenu team={team} onTrial={onTrial} />
+          </div>
         </td>
       </tr>
       {isOpened ? (
@@ -764,6 +829,10 @@ function StaffTeamsTable(props: {
     isRefreshing,
   } = props;
   const isBusy = useDelayedFlag(isRefreshing, BUSY_DELAY_MS);
+  const trialDialog = useDialogValueState<{
+    team: TeamItem;
+    mode: StaffTrialMode;
+  } | null>(null);
 
   return (
     // The rows stay put while the next page loads — replacing them with a
@@ -800,7 +869,7 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[26%] text-left"
+                className="w-[23%] text-left"
               />
               <SortHeader
                 label="Created"
@@ -847,7 +916,7 @@ function StaffTeamsTable(props: {
                 onSort={onSort}
                 className="w-[12%] text-right"
               />
-              <th className="w-[14%] px-4 py-3 text-right">Actions</th>
+              <th className="w-[17%] px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -864,11 +933,26 @@ function StaffTeamsTable(props: {
                     [team.id]: !state[team.id],
                   }));
                 }}
+                onTrial={(mode) => trialDialog.open({ team, mode })}
               />
             ))}
           </tbody>
         </table>
       </div>
+      {trialDialog.value ? (
+        <Modal
+          open={trialDialog.isOpen}
+          onOpenChange={trialDialog.onOpenChange}
+        >
+          <StaffTrialDialog
+            teamAccountId={trialDialog.value.team.id}
+            teamName={
+              trialDialog.value.team.name || trialDialog.value.team.slug
+            }
+            mode={trialDialog.value.mode}
+          />
+        </Modal>
+      ) : null}
     </div>
   );
 }
