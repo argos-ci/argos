@@ -27,20 +27,28 @@ describe("session service", () => {
   });
 
   test("creates a session and resolves it from the cache", async () => {
-    const { rawToken, session } = await createSession({ userId });
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "email",
+    });
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId });
+    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: null });
   });
 
   test("falls back to Postgres on a cache miss and repopulates", async () => {
-    const { rawToken, session } = await createSession({ userId });
+    const team = await factory.Team.create();
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "saml",
+      samlTeamId: team.id,
+    });
 
     // Drop the hot-path cache to force the Postgres fallback.
     const redis = await getRedisClient();
     await redis.flushDb();
 
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId });
+    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: team.id });
 
     // The fallback should have repopulated the cache.
     const cached = await redis.get(`session:${hashToken(rawToken)}`);
@@ -52,18 +60,44 @@ describe("session service", () => {
   });
 
   test("treats a corrupt cache entry as a miss and falls back to Postgres", async () => {
-    const { rawToken, session } = await createSession({ userId });
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "email",
+    });
 
     // Simulate a corrupt / partially-written / old-format cache entry.
     const redis = await getRedisClient();
     await redis.set(`session:${hashToken(rawToken)}`, "}not json{");
 
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId });
+    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: null });
+  });
+
+  test("rereads an entry cached without samlTeamId from Postgres", async () => {
+    const team = await factory.Team.create();
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "saml",
+      samlTeamId: team.id,
+    });
+
+    // Written by a server that predates the field: reading it as "no SAML
+    // login" would lock the session out of its team until the entry expires.
+    const redis = await getRedisClient();
+    await redis.set(
+      `session:${hashToken(rawToken)}`,
+      JSON.stringify({ sid: session.id, userId }),
+    );
+
+    const resolved = await resolveSession(rawToken);
+    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: team.id });
   });
 
   test("revokes a session and never resurrects it from Postgres", async () => {
-    const { rawToken, session } = await createSession({ userId });
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "email",
+    });
     await revokeSession({ sessionId: session.id, userId });
 
     expect(await resolveSession(rawToken)).toBeNull();
@@ -75,7 +109,10 @@ describe("session service", () => {
   });
 
   test("scopes revocation to the owner", async () => {
-    const { rawToken, session } = await createSession({ userId });
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "email",
+    });
     const other = await factory.User.create();
 
     // Another user cannot revoke this session.
@@ -84,7 +121,7 @@ describe("session service", () => {
   });
 
   test("revokes by raw token (logout)", async () => {
-    const { rawToken } = await createSession({ userId });
+    const { rawToken } = await createSession({ userId, method: "email" });
     await revokeSessionByToken(rawToken);
     expect(await resolveSession(rawToken)).toBeNull();
   });
@@ -118,8 +155,8 @@ describe("session service", () => {
   });
 
   test("lists active sessions and excludes revoked ones", async () => {
-    const a = await createSession({ userId });
-    const b = await createSession({ userId });
+    const a = await createSession({ userId, method: "email" });
+    const b = await createSession({ userId, method: "email" });
     await revokeSession({ sessionId: b.session.id, userId });
 
     const active = await listActiveSessions(userId);
@@ -127,8 +164,8 @@ describe("session service", () => {
   });
 
   test("revoke-all keeps the excepted session", async () => {
-    const keep = await createSession({ userId });
-    const drop = await createSession({ userId });
+    const keep = await createSession({ userId, method: "email" });
+    const drop = await createSession({ userId, method: "email" });
 
     await revokeAllSessions({ userId, exceptSessionId: keep.session.id });
 

@@ -3,9 +3,10 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { completeLogin, type AuthMethod } from "@/auth/login";
+import { completeLogin } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
+import type { AuthMethod } from "@/auth/session";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";

@@ -1,23 +1,13 @@
 import type { Request, Response } from "express";
 
-import type { TeamUser } from "@/database/models";
-import { markUserLastAuthMethod } from "@/database/services/account";
 import { hasAutoInviteForUser } from "@/database/services/team-domain";
 
-import { createSession, parseDeviceLabel } from "./session";
+import {
+  createSession,
+  parseDeviceLabel,
+  type SessionAuthMethod,
+} from "./session";
 import { setSessionCookies } from "./session-cookie";
-
-/** How a user got in. Recorded per team membership, so SAML enforcement can
- * tell whether the current session satisfies it. */
-export type AuthMethod = (typeof TeamUser.authMethods)[number];
-
-/**
- * A SAML login names the team whose IdP vouched for the user: it authenticates
- * that membership alone, and must not satisfy another team's enforcement.
- */
-type LoginMethod =
-  | { method: "saml"; samlTeamId: string }
-  | { method: Exclude<AuthMethod, "saml"> };
 
 /** What every login entry point hands back to the client. */
 export type AuthPayload = {
@@ -36,17 +26,18 @@ function getHeaderString(req: Request, name: string): string | null {
 
 /**
  * Start a new authenticated session for a user: create the server-side session
- * row and set the session cookies on the response. Used by every login entry
- * point (OAuth, SAML, email auth, invite sign-up).
+ * row, recording how the user got in, and set the session cookies on the
+ * response. Used by every login entry point (OAuth, SAML, email auth, invite
+ * sign-up).
  */
 export async function startSession(
   req: Request,
   res: Response,
-  userId: string,
+  input: { userId: string } & SessionAuthMethod,
 ): Promise<void> {
   const userAgent = req.get("user-agent") ?? null;
   const { rawToken } = await createSession({
-    userId,
+    ...input,
     ip: req.ip ?? null,
     userAgent,
     deviceLabel: parseDeviceLabel(userAgent),
@@ -59,10 +50,9 @@ export async function startSession(
 }
 
 /**
- * Finish a login: record how the user got in, work out where to send them, and
- * open the session.
+ * Finish a login: work out where to send the user, and open the session.
  *
- * Every entry point needs the same four steps in the same order, and when each
+ * Every entry point needs the same steps in the same order, and when each
  * wrote them out for itself they drifted — the auto-invite lookup was gated
  * three different ways across OAuth, email and passkey, with nothing forcing
  * them to agree. Owning the sequence here is what keeps a new login method from
@@ -70,7 +60,8 @@ export async function startSession(
  *
  * `alreadySignedIn` is the OAuth case of linking a provider to a session that
  * already exists: that is not a signup, so it never triggers the auto-invite
- * detour however new the account row looks.
+ * detour however new the account row looks, and it keeps that session, whose
+ * method — a SAML login above all — is still the one that authenticated it.
  */
 export async function completeLogin(
   input: {
@@ -81,7 +72,7 @@ export async function completeLogin(
     creation: boolean;
     /** Whether the caller already had a session (OAuth account linking). */
     alreadySignedIn?: boolean;
-  } & LoginMethod,
+  } & SessionAuthMethod,
 ): Promise<AuthPayload> {
   const { req, res, userId, creation } = input;
   const isSignup = creation && !input.alreadySignedIn;
@@ -90,17 +81,9 @@ export async function completeLogin(
     ? await hasAutoInviteForUser({ userId })
     : false;
 
-  // Skipped when linking a provider to an existing session: the method that
-  // opened that session is still the one that authenticated it.
   if (!input.alreadySignedIn) {
-    await markUserLastAuthMethod({
-      userId,
-      method: input.method,
-      teamId: input.method === "saml" ? input.samlTeamId : null,
-    });
+    await startSession(req, res, input);
   }
-
-  await startSession(req, res, userId);
 
   return { creation, hasAutoInvite };
 }

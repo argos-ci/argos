@@ -224,8 +224,8 @@ NODE_ENV=test pnpm run --filter @argos/backend db:reset
 
 To debug with real data shapes, the app can run locally against the production
 database through the `argos_dev_ro` Postgres role — read-only except for what
-the login flow writes (`user_sessions`, `team_users.lastAuthMethod`, and
-`github_accounts` when signing in with GitHub).
+the login flow writes (`user_sessions`, and `github_accounts` when signing in
+with GitHub).
 
 For connecting by hand (TablePlus, `psql`) and for how production authenticates
 at all, see [docs/database-access.md](docs/database-access.md).

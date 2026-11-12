@@ -16,10 +16,10 @@ import { User } from "./User";
 
 export type GetPermissionsOptions = {
   /**
-   * Throw if SSO is not enabled.
-   * @boolean
+   * The session the request runs on. A team that enforces SAML then throws
+   * unless that session was opened by a login through the team's own IdP.
    */
-  enforceSSO?: boolean;
+  enforceSSO?: { samlTeamId: string | null };
 };
 
 export class Team extends Model {
@@ -154,7 +154,7 @@ export class Team extends Model {
 
     const [teamUser, teamAccount] = await Promise.all([
       TeamUser.query()
-        .select("id", "userLevel", "lastAuthMethod")
+        .select("id", "userLevel")
         .findOne({ userId: user.id, teamId: teamId })
         .withGraphFetched("team"),
       options?.enforceSSO
@@ -168,7 +168,7 @@ export class Team extends Model {
       return [];
     }
 
-    if (options?.enforceSSO && teamUser.lastAuthMethod !== "saml") {
+    if (options?.enforceSSO && options.enforceSSO.samlTeamId !== teamId) {
       invariant(teamAccount, "Team account not found");
       if (await checkTeamSamlEnforced(teamAccount)) {
         throw boom(403, "SAML Single Sign-On required", {

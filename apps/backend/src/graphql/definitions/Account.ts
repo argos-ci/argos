@@ -324,7 +324,7 @@ async function accountByIdResolver(
     return null;
   }
   const permissions = await account.$getPermissions(ctx.auth.user, {
-    enforceSSO: true,
+    enforceSSO: ctx.auth,
   });
   if (!permissions.includes("view")) {
     return null;
@@ -621,14 +621,16 @@ export const resolvers: IResolvers = {
   },
   Query: {
     account: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        return null;
+      }
       const account = await Account.query().findOne({ slug: args.slug });
       if (!account) {
         return null;
       }
-      const permissions = await account.$getPermissions(
-        ctx.auth?.user ?? null,
-        { enforceSSO: true },
-      );
+      const permissions = await account.$getPermissions(ctx.auth.user, {
+        enforceSSO: ctx.auth,
+      });
       if (!permissions.includes("view")) {
         return null;
       }
