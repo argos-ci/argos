@@ -59,14 +59,14 @@ export const CommentAnchorSchema = z
   ])
   .meta({
     description:
-      "Where on the referenced screenshot diff the comment points. A point uses normalized (0–1) coordinates; lines is a 1-based inclusive range.",
+      "Where on the referenced screenshot diff the comment points. A point uses normalized (0-1) coordinates; lines is a 1-based inclusive range.",
   });
 
 export const CommentSchema = z
   .object({
     id: z.string().meta({
       description:
-        "Public ID of the comment (e.g. `comment-xf23d`) — the one the app links to, and the one every endpoint taking a comment ID expects.",
+        "Public ID of the comment (e.g. `comment-xf23d`): the one the app links to, and the one every endpoint taking a comment ID expects.",
     }),
     buildId: z.string().nullable().meta({
       description:
@@ -82,7 +82,7 @@ export const CommentSchema = z
     }),
     mediaVersionId: z.string().nullable().meta({
       description:
-        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload — match this id against `GET /media/{mediaId}/versions` to get the right file.",
+        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload. Match this id against `GET /media/{mediaId}/versions` to get the right file.",
     }),
     threadId: z
       .string()

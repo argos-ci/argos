@@ -204,8 +204,7 @@ export function UserDelete(props: {
         <CardTitle>Delete Account</CardTitle>
         <CardParagraph>
           Permanently remove your account and all of its contents from the Argos
-          platform. This action is not reversible — please continue with
-          caution.
+          platform. This action is not reversible. Continue with caution.
         </CardParagraph>
       </CardBody>
       <CardFooter className="flex items-center justify-end">

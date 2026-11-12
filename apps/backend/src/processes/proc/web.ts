@@ -17,7 +17,7 @@ const createServer = (requestListener: RequestListener): Server => {
     const certPath = resolveFromRepositoryRoot("_wildcard.argos-ci.dev.pem");
     invariant(
       keyPath && certPath,
-      "development TLS certificates not found — run from within the repository",
+      "development TLS certificates not found. Run from within the repository.",
     );
     return createHttpsServer(
       { key: readFileSync(keyPath), cert: readFileSync(certPath) },
@@ -30,7 +30,7 @@ const createServer = (requestListener: RequestListener): Server => {
 
 if (config.get("target") === "prod-ro") {
   logger.warn(
-    "⚠ ARGOS_TARGET=prod-ro — this process reads PRODUCTION data. Postgres writes are limited to the login flow; worker, migrations and third-party credentials are disabled.",
+    "⚠ ARGOS_TARGET=prod-ro: this process reads PRODUCTION data. Postgres writes are limited to the login flow; worker, migrations and third-party credentials are disabled.",
   );
 }
 

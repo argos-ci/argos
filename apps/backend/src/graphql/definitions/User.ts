@@ -175,9 +175,9 @@ export const typeDefs = gql`
     role(accountSlug: String!, projectName: String!): TeamUserLevel
     "Whether the account is a real person or an automated account (e.g. the Argos bot)."
     type: UserType!
-    "Whether the user has staff privileges. Readable only by the user themselves — selecting it on anyone else is an error."
+    "Whether the user has staff privileges. Readable only by the user themselves. Selecting it on anyone else is an error."
     staff: Boolean
-    "Email domain the user can open a team to, so that anyone with a verified address on it joins automatically. Null when they have none. Readable only by the user themselves — selecting it on anyone else is an error."
+    "Email domain the user can open a team to, so that anyone with a verified address on it joins automatically. Null when they have none. Readable only by the user themselves. Selecting it on anyone else is an error."
     eligibleAutoJoinDomain: String
   }
 
@@ -302,7 +302,7 @@ export const resolvers: IResolvers = {
       const email = ctx.auth.user.email;
       if (!email) {
         throw badUserInput(
-          "Your account has no primary email — cannot send confirmation",
+          "Your account has no primary email, so Argos cannot send the confirmation.",
         );
       }
       await sendAccountDeletionRequestEmail({ account, email });

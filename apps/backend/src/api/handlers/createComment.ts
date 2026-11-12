@@ -68,7 +68,7 @@ const CreateMediaCommentBodySchema = z.object({
 
 const responses = {
   "201": {
-    description: "Comment created successfully — returns the comment",
+    description: "The created comment",
     content: {
       "application/json": {
         schema: CommentSchema,
@@ -217,7 +217,7 @@ export const createMediaCommentOperation = {
   operationId: "createMediaComment",
   summary: "Post a comment (or reply) on a media",
   description:
-    "Post a comment on an uploaded media. Start a new thread, or reply to an existing one with `threadId`. Pass an `anchor` to pin the comment to a point on the image — normalized coordinates, so it survives any scaling — which is how a reviewer marks up a screenshot.",
+    "Post a comment on an uploaded media. Start a new thread, or reply to an existing one with `threadId`. Pass an `anchor` to pin the comment to a point on the image (normalized coordinates, so it survives any scaling). This is how a reviewer marks up a screenshot.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: {

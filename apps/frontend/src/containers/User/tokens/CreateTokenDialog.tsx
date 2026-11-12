@@ -250,7 +250,7 @@ export function CreateTokenDialog(props: {
             />
 
             <div>
-              <Label>Scope — accounts this token can access</Label>
+              <Label>Scope: accounts this token can access</Label>
 
               {/* react-aria's group pushed `isInvalid` down to its checkboxes
                   through context; Base UI's does not, so the flag is passed to

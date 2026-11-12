@@ -395,7 +395,7 @@ function RevenueCell(props: { cancellation: Cancellation }) {
   if (monthlyRevenue === null) {
     return (
       <div>
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
         {checkWasTrial(props.cancellation) ? (
           <div className="text-low text-xs">trial</div>
         ) : null}
@@ -519,7 +519,7 @@ function CancellationRow(props: { cancellation: Cancellation; index: number }) {
         {cancellation.canceledAt ? (
           <Time date={cancellation.canceledAt} />
         ) : (
-          <span className="text-low">—</span>
+          <span className="text-low">-</span>
         )}
       </td>
       <td className="p-2 text-sm">

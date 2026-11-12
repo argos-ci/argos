@@ -373,7 +373,7 @@ function InstallStep(props: {
           </RadioGroup>
           <p className="text-low text-sm">
             Copy this prompt into your AI assistant (Claude Code, Cursor,
-            Copilot…) — or follow the{" "}
+            Copilot…), or follow the{" "}
             <Link href={framework.docsURL} target="_blank">
               {framework.name} quickstart
             </Link>{" "}
@@ -443,9 +443,10 @@ function DiffStep(props: {
         <>
           <p className="text-low text-sm">{getFirstBuildDescription(build)}</p>
           <p className="text-low text-sm">
-            Now change something visible in your UI — a color, a label — and run
-            Argos again. Builds on the same branch and commit are compared with
-            each other, so the new build is compared with this first one.
+            Now change something visible in your UI, like a color or a label,
+            and run Argos again. Builds on the same branch and commit are
+            compared with each other, so the new build is compared with this
+            first one.
           </p>
           <Pre code={framework.getCommand(token)} className="text-xs" />
           <Waiting>Waiting for your next build…</Waiting>
@@ -459,7 +460,7 @@ function getFirstBuildDescription(build: Build) {
   switch (build.type) {
     case null:
     case undefined:
-      return "Argos is processing your first build — screenshots are being received and analyzed.";
+      return "Argos is receiving and analyzing the screenshots of your first build.";
     case "reference":
       return "Your first build ran on an auto-approved branch: it has been approved automatically and serves as a baseline for future builds.";
     default:
@@ -495,8 +496,8 @@ function ReviewStep(props: {
           <BuildCard build={build} />
           <p className="text-low text-sm">
             Argos compared this build with your first one and detected what
-            changed. Approve or reject the changes — the same workflow you will
-            use on every pull request.
+            changed. Approve or reject the changes, as you will on every pull
+            request.
           </p>
           <div>
             <ReviewBuildButton build={build} />

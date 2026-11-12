@@ -150,7 +150,7 @@ function PageContentFound(props: { project: ProjectDocument }) {
               step="When"
               title="Pick a trigger"
             >
-              Start from a build event — a review submitted, a build failing, an
+              Start from a build event: a review submitted, a build failing, an
               auto-approved build finishing.
             </EmptyStateStep>
             <EmptyStateStep

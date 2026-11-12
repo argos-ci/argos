@@ -300,7 +300,7 @@ export const deactivateAutomationRuleOperation = {
   operationId: "deactivateAutomationRule",
   summary: "Deactivate an automation rule",
   description:
-    "Stop a rule from firing. Rules are never deleted — a deactivated one keeps its run history, which is what tells you why something fired. Requires administrator access to the project.",
+    "Stop a rule from firing. Rules are never deleted: a deactivated one keeps its run history, which is what tells you why something fired. Requires administrator access to the project.",
   tags: ["Automations"],
   security: patOrOAuthAuth(["projects:write"]),
   requestParams: { path: RulePathSchema },

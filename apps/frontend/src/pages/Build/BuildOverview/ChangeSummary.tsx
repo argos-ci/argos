@@ -96,13 +96,13 @@ function getTimeEstimate(uniqueChangeCount: number): string {
     return "< 2 min";
   }
   if (uniqueChangeCount <= 15) {
-    return "2–5 min";
+    return "2-5 min";
   }
   if (uniqueChangeCount <= 40) {
-    return "5–15 min";
+    return "5-15 min";
   }
   if (uniqueChangeCount <= 80) {
-    return "15–30 min";
+    return "15-30 min";
   }
   return "30+ min";
 }
@@ -162,7 +162,7 @@ function ChangeSentence(props: {
     if (added > 0 && removed === 0) {
       return (
         <>
-          {added} new snapshot{added > 1 ? "s" : ""} added — no changes to
+          {added} new snapshot{added > 1 ? "s" : ""} added. No changes to
           existing baselines.
         </>
       );
@@ -205,7 +205,7 @@ function ChangeSentence(props: {
     return (
       <>
         {countPhrase} rippling across {entityCount} {entityWord}s (
-        {changedCount} snapshots) — likely a shared{" "}
+        {changedCount} snapshots), likely a shared{" "}
         {useComponents ? "style" : "change"}.
       </>
     );

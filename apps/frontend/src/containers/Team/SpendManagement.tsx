@@ -178,7 +178,7 @@ function SpendManagementForm(props: {
                     </div>
                   ) : (
                     <div className="font-medium">
-                      Current period additional costs —{" "}
+                      Current period additional costs:{" "}
                       {formatCurrency(additionalScreenshotsCost, currency)}
                     </div>
                   )}

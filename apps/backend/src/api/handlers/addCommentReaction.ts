@@ -52,7 +52,7 @@ export const addBuildCommentReactionOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses("Reaction added — returns the comment"),
+  responses: commentResponses("The comment, with the reaction added"),
 } satisfies ZodOpenApiOperationObject;
 
 export const addTestCommentReactionOperation = {
@@ -71,7 +71,7 @@ export const addTestCommentReactionOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses("Reaction added — returns the comment"),
+  responses: commentResponses("The comment, with the reaction added"),
 } satisfies ZodOpenApiOperationObject;
 
 export const addMediaCommentReactionOperation = {
@@ -88,7 +88,7 @@ export const addMediaCommentReactionOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses("Reaction added — returns the comment"),
+  responses: commentResponses("The comment, with the reaction added"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped add-reaction endpoints. */

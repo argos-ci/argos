@@ -54,7 +54,7 @@ export const handler = defineEmailTemplate({
           <Hr />
           <InfoText>
             If you didn't request to delete your account, you can safely ignore
-            this email — your account will remain active. <SafetyDisclaimer />
+            this email. Your account will remain active. <SafetyDisclaimer />
           </InfoText>
         </EmailLayout>
       ),

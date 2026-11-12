@@ -249,7 +249,7 @@ function UserCardBotInfo() {
     <div className="text-low border-t-thin mt-3 flex items-center gap-2 pt-3 text-xs">
       <BotIcon className="size-3.5 shrink-0 opacity-70" />
       <span>
-        Automated account — actions are performed by Argos, not a person.
+        Automated account. Actions are performed by Argos, not a person.
       </span>
     </div>
   );

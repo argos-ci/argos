@@ -98,7 +98,7 @@ const CreateMediaRequestSchema = MediaInputSchema.extend({
     }),
   prNumber: z.number().int().min(1).nullish().meta({
     description:
-      "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time — attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
+      "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time. Attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
   }),
   branch: MediaBranchSchema.nullish(),
 });
@@ -107,7 +107,7 @@ const CreateMediaResponseSchema = z.object({
   media: MediaSchema,
   upload: MediaUploadTargetSchema.nullable().meta({
     description:
-      "Where to send the bytes, or `null` when Argos already holds this exact file — in which case the media is ready and nothing needs uploading.",
+      "Where to send the bytes, or `null` when Argos already holds this exact file, in which case the media is ready and nothing needs uploading.",
   }),
 });
 
@@ -119,13 +119,13 @@ export const createMediaOperation = {
     "",
     "Uploading takes three calls:",
     "",
-    "1. `POST /media` — declare the file and get back an `upload` target.",
+    "1. `POST /media`: declare the file and get back an `upload` target.",
     "2. `POST` the file to `upload.url` as `multipart/form-data`, appending every entry of `upload.fields` **before** the `file` part.",
-    "3. `POST /media/{mediaId}/finalize` — confirm the bytes landed.",
+    "3. `POST /media/{mediaId}/finalize`: confirm the bytes landed.",
     "",
     "When `upload` comes back `null`, Argos already holds this exact file and steps 2 and 3 are unnecessary.",
     "",
-    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is **staged**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment — nothing has to come back and connect the two.",
+    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is **staged**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment. Nothing has to come back and connect the two.",
     "",
     "The `argos media upload` CLI command does all of this in one step.",
   ].join("\n"),
@@ -351,9 +351,9 @@ export const listMediaVersionsOperation = {
   description: [
     "A media's most recent uploaded versions, newest first, up to 100.",
     "",
-    "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first — at 1 there is nothing here you do not already have.",
+    "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first: at 1 there is nothing here you do not already have.",
     "",
-    "When you do need it, it is because a comment carries the `mediaVersionId` it was written against. A pin describes a spot on *those* bytes, so feedback written on an earlier upload has to be read against that upload — match the id here to get its file.",
+    "When you do need it, it is because a comment carries the `mediaVersionId` it was written against. A pin describes a spot on *those* bytes, so feedback written on an earlier upload has to be read against that upload. Match the id here to get its file.",
   ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
@@ -475,7 +475,7 @@ export const listMediaOperation = {
   description: [
     "List the standalone images and videos uploaded to a project, most recent first.",
     "",
-    "`branch` and `prNumber` are what this is usually for: everything uploaded for the work in hand, whether or not a pull request exists yet. `branch` covers both — a media keeps its branch after publishing — so it stays a single query across the moment the pull request opens.",
+    "`branch` and `prNumber` are what this is usually for: everything uploaded for the work in hand, whether or not a pull request exists yet. `branch` covers both (a media keeps its branch after publishing), so it stays a single query across the moment the pull request opens.",
   ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
@@ -582,7 +582,7 @@ export const updateMediaOperation = {
   description: [
     "Change a staged media's name, description or branch.",
     "",
-    "Staged media only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
+    "Staged media only. A media's name and branch are its identity: they decide whether the next upload of that name is a new version or a new media, and which pull request will publish it. Once it is published, that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
     "",
     "Omitted fields are left alone. `description` and `branch` accept `null` to clear them; `name` is required and has no cleared state. Clearing a staged media's branch leaves it attached to nothing, so no pull request will ever publish it.",
   ].join("\n"),

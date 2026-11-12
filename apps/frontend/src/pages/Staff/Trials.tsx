@@ -500,7 +500,7 @@ function getPlanHint(input: {
   const { staff, plan, priced } = input;
 
   if (!priced) {
-    return `On ${plan.displayName}, which Argos does not bill by usage — there is no overage of ours to put a figure on.`;
+    return `On ${plan.displayName}, which Argos does not bill by usage. There is no overage of ours to put a figure on.`;
   }
 
   if (staff.flatPrice === null) {
@@ -551,7 +551,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
   if (price === null) {
     return (
       <div>
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
         {plan ? (
           <PlanMarker staff={team.staff} plan={plan} priced={false} />
         ) : null}
@@ -573,7 +573,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
       <Tooltip
         content={
           period?.closed
-            ? "The plan's price, plus the overage of the last billing period that closed — a settled figure, so it does not move with the day it is read on. Read per month, whatever the subscription is billed in."
+            ? "The plan's price, plus the overage of the last billing period that closed. It is a settled figure, so it does not move with the day it is read on. Read per month, whatever the subscription is billed in."
             : "The plan's price, plus the overage accrued so far. No period has closed yet, so this is a floor. A running trial owes the plan's price only: trial usage is never billed."
         }
       >
@@ -882,7 +882,7 @@ function checkIsConverted(team: PipelineTeam) {
 
 function formatShare(value: number, total: number) {
   if (total === 0) {
-    return "—";
+    return "-";
   }
   return `${Math.round((value / total) * 100)}% of ${total}`;
 }

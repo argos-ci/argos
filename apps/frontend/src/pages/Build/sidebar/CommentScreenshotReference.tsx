@@ -39,7 +39,7 @@ function getAnchorLabel(anchor: CommentAnchor | null): string | null {
     case "CommentLinesAnchor":
       return anchor.from === anchor.to
         ? `Line ${anchor.from}`
-        : `Lines ${anchor.from}–${anchor.to}`;
+        : `Lines ${anchor.from}-${anchor.to}`;
     case "CommentPointAnchor":
       return null;
     default:

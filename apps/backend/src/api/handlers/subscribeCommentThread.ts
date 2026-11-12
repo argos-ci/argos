@@ -53,7 +53,7 @@ export const subscribeBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: commentResponses("Subscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the subscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unsubscribeBuildCommentThreadOperation = {
@@ -64,7 +64,7 @@ export const unsubscribeBuildCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: BuildPathParams },
-  responses: commentResponses("Unsubscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the unsubscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const subscribeTestCommentThreadOperation = {
@@ -75,7 +75,7 @@ export const subscribeTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: commentResponses("Subscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the subscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const subscribeMediaCommentThreadOperation = {
@@ -86,7 +86,7 @@ export const subscribeMediaCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: MediaPathParams },
-  responses: commentResponses("Subscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the subscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unsubscribeTestCommentThreadOperation = {
@@ -97,7 +97,7 @@ export const unsubscribeTestCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: TestPathParams },
-  responses: commentResponses("Unsubscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the unsubscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 export const unsubscribeMediaCommentThreadOperation = {
@@ -108,7 +108,7 @@ export const unsubscribeMediaCommentThreadOperation = {
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: MediaPathParams },
-  responses: commentResponses("Unsubscribed — returns the root comment"),
+  responses: commentResponses("The root comment of the unsubscribed thread"),
 } satisfies ZodOpenApiOperationObject;
 
 /**

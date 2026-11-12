@@ -451,7 +451,7 @@ function ProjectionSplit(props: { projection: RevenueProjection }) {
       <SplitAmount
         amount={projection.monthlyPlans}
         label="Monthly"
-        tooltip={`This month's invoices, plus ${formatEuros(projection.estimated)} the cycles have not raised yet — what the subscriptions still to be billed have run up so far. A floor: their usage keeps accruing until the cycle closes.`}
+        tooltip={`This month's invoices, plus ${formatEuros(projection.estimated)} the cycles have not raised yet: what the subscriptions still to be billed have run up so far. A floor: their usage keeps accruing until the cycle closes.`}
       />
       {" · "}
       <SplitAmount
@@ -907,7 +907,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {team.currency === null ? (
-                    <span className="text-low">—</span>
+                    <span className="text-low">-</span>
                   ) : expectedAt ? (
                     // The grey the row is written in says the amount was not
                     // invoiced; what it is made of takes a sentence, so it is
@@ -951,7 +951,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   {expectedAt ? (
                     DATE_FORMAT.format(expectedAt)
                   ) : newestInvoice === null ? (
-                    <span className="text-low">—</span>
+                    <span className="text-low">-</span>
                   ) : team.invoices.length === 1 ? (
                     DATE_FORMAT.format(new Date(newestInvoice.invoicedAt))
                   ) : (
@@ -1040,7 +1040,7 @@ function HistoryRow(props: {
         </td>
         <td className="p-4 text-right text-sm tabular-nums">
           {percent === null ? (
-            <span className="text-low">—</span>
+            <span className="text-low">-</span>
           ) : (
             <span
               className={percent < 0 ? "text-danger-low" : "text-success-low"}
@@ -1058,7 +1058,7 @@ function HistoryRow(props: {
               month.monthlyPlans.revenue / month.monthlyPlans.teamsCount,
             )
           ) : (
-            <span className="text-low">—</span>
+            <span className="text-low">-</span>
           )}
         </td>
         <td className="p-4 text-right text-sm">
@@ -1211,7 +1211,7 @@ function ContractUsageCell(props: { usage: ContractUsage | null }) {
   if (!usage) {
     return (
       <td className="p-4 text-right text-sm tabular-nums">
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
       </td>
     );
   }
@@ -1284,7 +1284,7 @@ function ContractPlanCell(props: { contract: YearlyContract }) {
       ) : (
         // Invoices in more than one currency have no single original amount;
         // the monthly rate beside this one still holds.
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
       )}
     </Hint>
   );
@@ -1309,7 +1309,7 @@ function ContractPlanCell(props: { contract: YearlyContract }) {
         <div>
           <Hint
             className="text-warning-low"
-            content="Raised, not yet paid. Counted — expected to clear."
+            content="Raised, not yet paid. Counted, since it is expected to clear."
           >
             Awaiting payment
           </Hint>
@@ -1357,7 +1357,7 @@ function ContractPerMonthCell(props: {
   if (contract.amount === null) {
     return (
       <td className="p-4 text-right text-sm tabular-nums">
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
       </td>
     );
   }
@@ -1445,7 +1445,7 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
         {contract.usage ? (
           <Time date={contract.usage.periodEndsAt} />
         ) : (
-          <span className="text-low">—</span>
+          <span className="text-low">-</span>
         )}
       </td>
     </tr>
@@ -1503,7 +1503,7 @@ function YearlyContracts(props: { contracts: readonly YearlyContract[] }) {
                   </Hint>
                 </th>
                 <th className="w-[14%] px-4 py-3 text-right">
-                  <Hint content="What it adds to this month, in euros — contract plus overage.">
+                  <Hint content="What it adds to this month, in euros: contract plus overage.">
                     Per month
                   </Hint>
                 </th>

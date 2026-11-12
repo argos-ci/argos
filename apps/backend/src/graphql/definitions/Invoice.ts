@@ -14,7 +14,7 @@ export const typeDefs = gql`
     "Raised, not settled yet."
     open
     paid
-    "Canceled — it was raised in error and owes nothing."
+    "Canceled: it was raised in error and owes nothing."
     void
     "Written off after collection failed."
     uncollectible
@@ -27,7 +27,7 @@ export const typeDefs = gql`
   """
   type Invoice implements Node {
     id: ID!
-    "The number that reads on the document — how a customer refers to it."
+    "The number that reads on the document: how a customer refers to it."
     number: String
     "When Stripe raised it."
     date: DateTime!
@@ -66,7 +66,7 @@ export const typeDefs = gql`
   What the next invoice would come to if it were raised now.
 
   Previewed from Stripe at read time, so it carries everything that moves the
-  figure — the plan, the metered screenshots consumed so far, add-ons, coupons,
+  figure: the plan, the metered screenshots consumed so far, add-ons, coupons,
   tax and any mid-period proration. It is a forecast: usage keeps accruing
   until the period closes.
   """
@@ -74,7 +74,7 @@ export const typeDefs = gql`
     "What coupons take off, as a positive amount."
     discountAmount: Float!
     taxAmount: Float!
-    "Everything above, resolved — what the account will owe."
+    "Everything above, resolved: what the account will owe."
     total: Float!
     currency: String!
     """
@@ -84,8 +84,8 @@ export const typeDefs = gql`
     periodStart: DateTime!
     periodEnd: DateTime!
     """
-    What the total is made of, empty when Stripe did not state every line —
-    a breakdown that does not add up to its own total is worse than none.
+    What the total is made of, empty when Stripe did not state every line.
+    A breakdown that does not add up to its own total is worse than none.
     """
     lines: [UpcomingInvoiceLine!]!
   }

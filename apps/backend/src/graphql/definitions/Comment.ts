@@ -203,7 +203,7 @@ export const typeDefs = gql`
   }
 
   """
-  A point on a screenshot diff, in normalized coordinates (0–1 of the image's
+  A point on a screenshot diff, in normalized coordinates (0-1 of the image's
   width/height). The baseline and compare sides render at the same scale, so a
   single coordinate applies to both.
   """

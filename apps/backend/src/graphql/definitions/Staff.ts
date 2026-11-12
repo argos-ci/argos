@@ -329,8 +329,8 @@ export const typeDefs = gql`
     "False while the period is still accumulating usage."
     closed: Boolean!
     """
-    Screenshots consumed over the period — Storybook ones included, and the
-    units standalone media uploads are billed as. So it runs above the sum of
+    Screenshots consumed over the period (Storybook ones included, and the
+    units standalone media uploads are billed as). So it runs above the sum of
     the period's buckets on a project that records video.
     """
     screenshotsCount: Int!
@@ -363,7 +363,7 @@ export const typeDefs = gql`
     Screenshots consumed since the current period opened, billed or not.
 
     Apart from \`billingPeriods\` because it answers a different question: that
-    list is what Stripe invoices, so it is empty on a trial — and a trial is
+    list is what Stripe invoices, so it is empty on a trial, and a trial is
     precisely when what a team consumes is worth watching.
     """
     currentPeriodScreenshotsCount: Int!
@@ -395,7 +395,7 @@ export const typeDefs = gql`
     contact: TeamStaffContact
     """
     The plan the team is on, granted plans included. Null when it has no
-    subscription at all — which is most of a trial pipeline.
+    subscription at all, which is most of a trial pipeline.
     """
     plan: Plan
     """
@@ -472,13 +472,13 @@ export const typeDefs = gql`
   What Argos invoiced over one calendar month.
 
   Read from the Stripe invoices themselves rather than recomputed from usage, so
-  the amounts carry what Stripe actually charged — negotiated prices, coupons,
-  credit notes — instead of a second pricing engine of ours that would have to
+  the amounts carry what Stripe actually charged (negotiated prices, coupons,
+  credit notes) instead of a second pricing engine of ours that would have to
   agree with the first. Amounts exclude tax, are net of credit notes, and are
   stated in euros, dollars converted at a fixed rate.
   """
   type StaffRevenueMonth {
-    "The first instant of the month, in UTC — what names it on screen."
+    "The first instant of the month, in UTC: what names it on screen."
     month: DateTime!
     "The three splits below, added up."
     revenue: Float!
@@ -489,7 +489,7 @@ export const typeDefs = gql`
     monthlyPlans: StaffRevenueSplit!
     """
     What the annual contracts contributed to the month: their invoices
-    amortized, day by day, over the stretch each one pays for — the monthly
+    amortized, day by day, over the stretch each one pays for: the monthly
     equivalent of the annual book. A renewal weighs on the twelve months it
     covers, an upsell on the stretch it was sold for, and a month's figure
     never moves once written.
@@ -499,7 +499,7 @@ export const typeDefs = gql`
     What GitHub Marketplace brought in over the month: the subscriptions
     running then, at their plans' list prices, each earning the share of the
     month it was subscribed for. Billed by GitHub rather than invoiced by
-    Argos, and counted in \`revenue\` like the two above it — the figure states
+    Argos, and counted in \`revenue\` like the two above it. The figure states
     what the month was worth, whoever raised the bill.
     """
     githubPlans: StaffRevenueSplit!
@@ -531,7 +531,7 @@ export const typeDefs = gql`
     stripeCustomerId: String!
     "What the invoices add up to, in \`currency\`."
     amount: Float!
-    "The currency the team is invoiced in — null when a month mixes several."
+    "The currency the team is invoiced in. Null when a month mixes several."
     currency: String
     "In euros, like the split it sums into."
     revenue: Float!
@@ -542,7 +542,7 @@ export const typeDefs = gql`
     """
     screenshotsCount: Int!
     """
-    What the plan itself costs over a period, before any usage — null when the
+    What the plan itself costs over a period, before any usage. Null when the
     subscription carries no amount, or when the team is no longer billed.
 
     This and the two below describe the subscription as it stands today, not as
@@ -562,7 +562,7 @@ export const typeDefs = gql`
     null on every line read from a real invoice.
 
     Such a line is an estimate read off the usage so far, and it is left out of
-    the month's own figures — they report what was invoiced.
+    the month's own figures: they report what was invoiced.
     """
     estimatedAt: DateTime
   }
@@ -571,7 +571,7 @@ export const typeDefs = gql`
   type StaffContractInvoice {
     "Net of tax and credit notes, in the currency it was raised in."
     amount: Float!
-    "The currency it was raised in — the contract's total converts it."
+    "The currency it was raised in. The contract's total converts it."
     currency: String!
     "True while it is raised but not yet cleared."
     awaitingPayment: Boolean!
@@ -588,7 +588,7 @@ export const typeDefs = gql`
 
   The term rather than the month: a yearly quota resets once a year, so what
   says whether a contract is about to be re-priced is the whole year against
-  the whole quota — the question a renewal is negotiated on.
+  the whole quota: the question a renewal is negotiated on.
   """
   type StaffContractUsage {
     "The term the figures below are read over, and the day it renews on."
@@ -601,14 +601,14 @@ export const typeDefs = gql`
     "What the overage run up so far comes to, in euros."
     additionalCost: Float!
     """
-    That same overage in the currency Stripe prices it in — what the contract's
+    That same overage in the currency Stripe prices it in: what the contract's
     own column adds it to, where the euro figure above is what the page's
     monthly rate is built from.
     """
     additionalPrice: StaffRevenuePrice!
     """
     That same overage averaged over the months of the term that have gone by,
-    in euros — what a month of the contract's usage has been worth.
+    in euros: what a month of the contract's usage has been worth.
 
     A mean rather than the month's own: the quota is crossed once somewhere in
     the year and every month after it bills, so a term two months in reads
@@ -625,7 +625,7 @@ export const typeDefs = gql`
   One annual contract in force, and the invoices its rate is read from: the
   latest annual bill plus whatever was sold on top of it since.
 
-  Listed so the yearly figure can be audited contract by contract — including
+  Listed so the yearly figure can be audited contract by contract, including
   the contracts that contributed nothing, which the total alone would hide.
   """
   type StaffYearlyContract {
@@ -637,7 +637,7 @@ export const typeDefs = gql`
     stripeCustomerId: String!
     """
     The invoices below added up, in euros. Null when the team is billed yearly
-    but no invoice of its contract could be found — an anomaly worth seeing
+    but no invoice of its contract could be found, an anomaly worth seeing
     rather than hiding.
     """
     amount: Float
@@ -646,13 +646,13 @@ export const typeDefs = gql`
     "The invoices the contract is worth, newest first."
     invoices: [StaffContractInvoice!]!
     """
-    True when any invoice found is still awaiting payment — the unpaid
+    True when any invoice found is still awaiting payment. The unpaid
     renewal beside a settled upsell is exactly the one worth watching.
     Counted all the same: a contract invoice raised is money on its way.
     """
     awaitingPayment: Boolean!
     """
-    What the team's running term has consumed, and where it lands — null when
+    What the team's running term has consumed, and where it lands. Null when
     no yearly subscription of the team's can be read for it: one no longer
     billed, one on a plan nothing is metered against, or a contract invoiced
     by hand with no subscription behind it.
@@ -680,7 +680,7 @@ export const typeDefs = gql`
     """
     The part of \`monthlyPlans\` no invoice exists for: what the subscriptions
     still to be billed have run up so far, which is a floor rather than a
-    forecast — their usage keeps accruing until the cycle closes.
+    forecast: their usage keeps accruing until the cycle closes.
     """
     estimated: Float!
   }
@@ -711,8 +711,8 @@ export const typeDefs = gql`
     screenshot the year produced.
 
     They sum to that month's \`monthlyPlans\`, except on the running month,
-    which also carries the bills its cycles have not raised yet — marked by
-    \`estimatedAt\`, and in no figure the month reports.
+    which also carries the bills its cycles have not raised yet (marked by
+    \`estimatedAt\`, and in no figure the month reports).
     """
     staffRevenueMonthTeams(
       "Any instant of the month; the month it falls in is what is read."
@@ -754,7 +754,7 @@ export const typeDefs = gql`
     made of (staff only).
 
     Read from the \`stripe_invoices\` mirror, which the Stripe webhooks keep
-    current and a reconciliation sweep backs up — a window the mirror was
+    current and a reconciliation sweep backs up. A window the mirror was
     never backfilled for is refused rather than reported as zeros. The staff
     revenue page is the only consumer today.
     """

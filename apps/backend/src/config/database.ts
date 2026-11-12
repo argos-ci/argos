@@ -40,7 +40,7 @@ function getPassword(config: Config): string | (() => Promise<string>) {
   const region = hostname.match(/\.([a-z0-9-]+)\.rds\.amazonaws\.com$/)?.[1];
   invariant(
     region,
-    `cannot derive an AWS region from Postgres host "${hostname}" — PG_IAM_AUTH expects an RDS endpoint`,
+    `cannot derive an AWS region from Postgres host "${hostname}": PG_IAM_AUTH expects an RDS endpoint`,
   );
 
   const signer = new Signer({

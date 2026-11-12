@@ -320,7 +320,7 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
                       {run.completedAt ? (
                         <Time date={run.completedAt} />
                       ) : (
-                        <span className="text-low">—</span>
+                        <span className="text-low">-</span>
                       )}
                     </td>
                     <td className="max-w-xs py-2 whitespace-pre-line">
@@ -329,7 +329,7 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
                           {run.failureReason}
                         </span>
                       ) : (
-                        <span className="text-low">—</span>
+                        <span className="text-low">-</span>
                       )}
                     </td>
                   </tr>

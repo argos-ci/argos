@@ -39,7 +39,7 @@ export const dismissReviewOperation = {
   },
   responses: {
     "200": {
-      description: "Review dismissed successfully — returns the review",
+      description: "The dismissed review",
       content: {
         "application/json": {
           schema: BuildReviewSchema,

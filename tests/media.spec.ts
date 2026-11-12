@@ -73,7 +73,7 @@ loggedTest("media share page", async ({ team, page, auth, project }) => {
     page.getByText("The primary button is misaligned here."),
   ).toBeVisible();
   await expect(
-    page.getByText("Agreed — it should align with the input above."),
+    page.getByText("Agreed, it should align with the input above."),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^Open comment from/ }),
