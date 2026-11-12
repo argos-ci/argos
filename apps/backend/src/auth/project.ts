@@ -138,7 +138,7 @@ async function getAuthPayloadFromProjectToken(
   }
 
   if (projectToken.$isExpired()) {
-    throw boom(401, "This project token has expired, create a new one.");
+    throw boom(401, "This project token has expired. Create a new one.");
   }
 
   const { account } = projectToken;
@@ -155,7 +155,7 @@ async function getAuthPayloadFromProjectToken(
   if (projects.length === 0) {
     throw boom(
       401,
-      "This project token is not linked to any project anymore, create a new one.",
+      "This project token is no longer linked to any project. Create a new one.",
     );
   }
 

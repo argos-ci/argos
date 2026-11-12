@@ -1,3 +1,4 @@
+import type { ApolloClient } from "@apollo/client";
 import { useApolloClient } from "@apollo/client/react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
@@ -37,6 +38,17 @@ const DeleteProjectTokenMutation = graphql(`
     deleteProjectToken(input: $input)
   }
 `);
+
+export async function deleteProjectToken(client: ApolloClient, id: string) {
+  await client.mutate({
+    mutation: DeleteProjectTokenMutation,
+    variables: { input: { id } },
+    update(cache) {
+      cache.evict({ id: cache.identify({ __typename: "ProjectToken", id }) });
+      cache.gc();
+    },
+  });
+}
 
 export function RenameProjectTokenDialog(props: ProjectTokenDialogValue) {
   const { id, name } = props;
@@ -98,16 +110,7 @@ export function RevokeProjectTokenDialog(props: ProjectTokenDialogValue) {
         <DialogActionButton
           variant="destructive"
           onAsyncAction={async () => {
-            await client.mutate({
-              mutation: DeleteProjectTokenMutation,
-              variables: { input: { id } },
-              update(cache) {
-                cache.evict({
-                  id: cache.identify({ __typename: "ProjectToken", id }),
-                });
-                cache.gc();
-              },
-            });
+            await deleteProjectToken(client, id);
             state.close();
             toast.success("Token revoked", { id: "project-token-revoked" });
           }}

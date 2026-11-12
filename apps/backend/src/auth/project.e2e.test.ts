@@ -142,7 +142,7 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
     ).rejects.toMatchObject({
       statusCode: 401,
       message:
-        "This project token is not linked to any project anymore, create a new one.",
+        "This project token is no longer linked to any project. Create a new one.",
     });
   });
 

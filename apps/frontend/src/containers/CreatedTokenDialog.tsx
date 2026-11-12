@@ -21,16 +21,30 @@ export function CreatedTokenDialog(props: {
       <DialogBody>
         <DialogTitle>{props.title}</DialogTitle>
         <DialogText>{props.description}</DialogText>
-        <Pre code={props.token} className="mt-4" />
-        <div className="text-warning-low flex items-start gap-2 p-2 text-sm">
-          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
-          <p>Copy your token now. You won’t be able to see it again.</p>
-        </div>
+        <CreatedTokenValue token={props.token} className="mt-4" />
         {props.children}
       </DialogBody>
       <DialogFooter>
         <DialogDismiss>Close</DialogDismiss>
       </DialogFooter>
     </Dialog>
+  );
+}
+
+/**
+ * A token's value, shown the only time it ever is.
+ */
+export function CreatedTokenValue(props: {
+  token: string;
+  className?: string;
+}) {
+  return (
+    <div className={props.className}>
+      <Pre code={props.token} />
+      <div className="text-warning-low flex items-start gap-2 p-2 text-sm">
+        <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+        <p>Copy your token now. You won’t be able to see it again.</p>
+      </div>
+    </div>
   );
 }

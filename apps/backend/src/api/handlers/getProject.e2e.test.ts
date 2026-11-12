@@ -94,7 +94,7 @@ describe("getProject", () => {
       .set("Authorization", "Bearer the-awesome-token")
       .expect((res) => {
         expect(res.body.error).toBe(
-          "This project token is not linked to any project anymore, create a new one.",
+          "This project token is no longer linked to any project. Create a new one.",
         );
       })
       .expect(401);

@@ -1,7 +1,15 @@
 import { expect } from "@playwright/test";
 
-import { ProjectUser } from "../apps/backend/src/database/models";
-import { createUserAccount } from "../apps/backend/src/database/seeds";
+import {
+  ProjectToken,
+  ProjectTokenProject,
+  ProjectUser,
+} from "../apps/backend/src/database/models";
+import {
+  createProject,
+  createUserAccount,
+} from "../apps/backend/src/database/seeds";
+import { insertProjectToken } from "../apps/backend/src/database/services/project-token";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, getUniqueTestIdentifier, screenshot } from "./util";
 
@@ -13,6 +21,74 @@ loggedTest("project builds", async ({ page, auth, team, project, builds }) => {
   await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
   await screenshot(page, "project-builds");
 });
+
+loggedTest(
+  "getting started - replace the project's own tokens",
+  async ({ page, team, auth }, testInfo) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const id = getUniqueTestIdentifier(testInfo);
+    const project = await createProject({
+      accountId: team.account.id,
+      name: `onboarding-${id}`,
+    });
+    const other = await createProject({
+      accountId: team.account.id,
+      name: `other-${id}`,
+    });
+    await insertProjectToken({
+      accountId: team.account.id,
+      name: "Monorepo CI",
+      token: ProjectToken.generateToken(),
+      permissions: ["builds:write"],
+      projectIds: [project.id, other.id],
+    });
+
+    await page.goto(`/${team.account.slug}/${project.name}`);
+    await page.getByRole("button", { name: "Generate token" }).click();
+    const dialog = page.getByRole("alertdialog", {
+      name: "Delete Existing Token?",
+    });
+    // Deleting a token linked to other projects too would break them.
+    await expect(dialog.getByRole("listitem")).toHaveText([/^Default token/]);
+    // The page shows a loader for as long as it waits for a first build.
+    const stabilize = { waitForAriaBusy: false };
+    await screenshot(page, "project-getting-started-existing-token", {
+      element: dialog,
+      stabilize,
+    });
+    await dialog.getByRole("button", { name: "Delete and generate" }).click();
+    await expect(dialog).toBeHidden();
+
+    const step = page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("heading", { name: "Install Argos" }) });
+    await expect(step).toContainText("Your project token is ready.");
+    const token = await step.locator("pre code").first().textContent();
+    if (!token) {
+      throw new Error("Token not shown");
+    }
+    expect(token).toMatch(/^argos_/);
+    await expect(step.locator("pre code").nth(1)).toContainText(token);
+    await screenshot(page, "project-getting-started-token", {
+      element: step,
+      stabilize,
+      replacements: { [token]: "argos_0123456789abcdefghijklmnopqrstuvwx" },
+    });
+
+    const tokens = await ProjectToken.query()
+      .whereIn(
+        "id",
+        ProjectTokenProject.query()
+          .select("projectTokenId")
+          .where("projectId", project.id),
+      )
+      .orderBy("name");
+    expect(tokens.map((token) => token.name)).toEqual([
+      "Getting started",
+      "Monorepo CI",
+    ]);
+  },
+);
 
 loggedTest("project settings", async ({ page, team, auth, project }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });

@@ -13,14 +13,27 @@ import {
 import { useResolvedPath } from "react-router";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { CreatedTokenValue } from "@/containers/CreatedTokenDialog";
 import { createProjectToken } from "@/containers/ProjectToken/CreateProjectTokenDialog";
 import { ALL_PROJECT_TOKEN_PERMISSIONS } from "@/containers/ProjectToken/permissions";
+import { deleteProjectToken } from "@/containers/ProjectToken/ProjectTokenDialogs";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Code } from "@/ui/Code";
+import {
+  Dialog,
+  DialogActionButton,
+  DialogBody,
+  DialogDismiss,
+  DialogFooter,
+  DialogText,
+  DialogTitle,
+  useDialogValueState,
+} from "@/ui/Dialog";
 import { HeadlessLink, Link, LinkStyleButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
+import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { Pre } from "@/ui/Pre";
 import { Time } from "@/ui/Time";
@@ -28,7 +41,7 @@ import { getItem, setItem } from "@/util/storage";
 
 import { AutomationLibraryIcon } from "../Build/metadata/automationLibrary/AutomationLibraryIcon";
 import { useProjectOutletContext } from "./ProjectOutletContext";
-import { useProjectParams } from "./ProjectParams";
+import { getProjectURL, useProjectParams } from "./ProjectParams";
 
 const _ProjectFragment = graphql(`
   fragment GettingStarted_Project on Project {
@@ -62,6 +75,23 @@ const GettingStartedQuery = graphql(`
         edges {
           id
           ...GettingStartedBuild_Build
+        }
+      }
+    }
+  }
+`);
+
+const GettingStartedTokensQuery = graphql(`
+  query GettingStarted_tokens($accountSlug: String!, $projectName: String!) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
+      id
+      tokens {
+        id
+        name
+        lastUsedAt
+        viewerCanManage
+        projects {
+          id
         }
       }
     }
@@ -415,17 +445,24 @@ function TokenSetup(props: {
   onCreate: (token: string) => void;
 }) {
   const { project, createdToken, onCreate } = props;
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
   const { permissions } = useProjectOutletContext();
-  const client = useApolloClient();
 
   if (createdToken) {
     return (
-      <p className="text-low text-sm">
-        A project token was generated and filled in below. Copy it now: you
-        won’t be able to see it again. It can upload builds and deployments, and
-        expires in {GETTING_STARTED_TOKEN_DAYS} days — manage your tokens in the
-        project settings.
-      </p>
+      <div>
+        <p className="text-low text-sm">
+          Your project token is ready. It has full access, expires in{" "}
+          {GETTING_STARTED_TOKEN_DAYS} days and is filled in below. Manage it in
+          the{" "}
+          <Link href={`${getProjectURL(params)}/settings/authentication`}>
+            project settings
+          </Link>
+          .
+        </p>
+        <CreatedTokenValue token={createdToken} className="mt-2" />
+      </div>
     );
   }
 
@@ -443,22 +480,144 @@ function TokenSetup(props: {
       <p className="text-low text-sm">
         Generate a project token to fill in <Code>ARGOS_TOKEN</Code> below.
       </p>
+      <GenerateTokenButton project={project} onCreate={onCreate} />
+    </div>
+  );
+}
+
+type ExistingToken = {
+  id: string;
+  name: string;
+  lastUsedAt?: string | null;
+};
+
+/**
+ * A token is only ever shown at creation, so the ones the project already has
+ * are of no use here. Offer to delete them first, but only those linked to this
+ * project alone: deleting a shared token would break the other projects.
+ */
+function GenerateTokenButton(props: {
+  project: DocumentType<typeof _ProjectFragment>;
+  onCreate: (token: string) => void;
+}) {
+  const { project, onCreate } = props;
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
+  const client = useApolloClient();
+  const { data, error } = useQuery(GettingStartedTokensQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+    },
+  });
+  // Captured when the dialog opens, so deleting the tokens does not change
+  // the list while it is still on screen.
+  const existing = useDialogValueState<ExistingToken[] | null>(null);
+
+  if (error) {
+    throw error;
+  }
+
+  const generate = async () => {
+    const { token } = await createProjectToken(client, {
+      accountId: project.account.id,
+      name: "Getting started",
+      projectIds: [project.id],
+      permissions: [...ALL_PROJECT_TOKEN_PERMISSIONS],
+      expireInDays: GETTING_STARTED_TOKEN_DAYS,
+    });
+    onCreate(token);
+  };
+
+  const tokens = data?.project?.tokens;
+
+  return (
+    <>
       <Button
         variant="secondary"
+        disabled={!tokens}
         onAsyncAction={async () => {
-          const { token } = await createProjectToken(client, {
-            accountId: project.account.id,
-            name: "Getting started",
-            projectIds: [project.id],
-            permissions: [...ALL_PROJECT_TOKEN_PERMISSIONS],
-            expireInDays: GETTING_STARTED_TOKEN_DAYS,
-          });
-          onCreate(token);
+          invariant(tokens, "the button is disabled until tokens are loaded");
+          const deletable = tokens.filter(
+            (token) =>
+              token.viewerCanManage &&
+              token.projects.every((linked) => linked.id === project.id),
+          );
+          if (deletable.length > 0) {
+            existing.open(deletable);
+            return;
+          }
+          await generate();
         }}
       >
         Generate token
       </Button>
-    </div>
+      {existing.value ? (
+        <Modal open={existing.isOpen} onOpenChange={existing.onOpenChange}>
+          <ExistingTokensDialog tokens={existing.value} onGenerate={generate} />
+        </Modal>
+      ) : null}
+    </>
+  );
+}
+
+function ExistingTokensDialog(props: {
+  tokens: ExistingToken[];
+  onGenerate: () => Promise<void>;
+}) {
+  const { tokens, onGenerate } = props;
+  const client = useApolloClient();
+  const isSingle = tokens.length === 1;
+  return (
+    <Dialog size="medium" role="alertdialog">
+      <DialogBody>
+        <DialogTitle>
+          {isSingle ? "Delete Existing Token?" : "Delete Existing Tokens?"}
+        </DialogTitle>
+        <DialogText>
+          A token is only shown once, so Argos will generate a new one.{" "}
+          {isSingle
+            ? "Delete this project’s existing token unless your CI already uses it."
+            : "Delete this project’s existing tokens unless your CI already uses them."}
+        </DialogText>
+        <ul className="divide-y rounded-md border text-left text-sm">
+          {tokens.map((token) => (
+            <li
+              key={token.id}
+              className="flex items-center justify-between gap-4 px-3 py-2"
+            >
+              <span className="truncate font-medium">{token.name}</span>
+              <span className="text-low shrink-0 text-xs">
+                {token.lastUsedAt ? (
+                  <>
+                    Last used <Time date={token.lastUsedAt} />
+                  </>
+                ) : (
+                  "Never used"
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>Cancel</DialogDismiss>
+        <DialogActionButton variant="secondary" onAsyncAction={onGenerate}>
+          Keep and generate
+        </DialogActionButton>
+        <DialogActionButton
+          variant="destructive"
+          onAsyncAction={async () => {
+            await Promise.all(
+              tokens.map((token) => deleteProjectToken(client, token.id)),
+            );
+            await onGenerate();
+          }}
+        >
+          Delete and generate
+        </DialogActionButton>
+      </DialogFooter>
+    </Dialog>
   );
 }
 

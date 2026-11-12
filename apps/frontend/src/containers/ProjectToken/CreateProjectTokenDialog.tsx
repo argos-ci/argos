@@ -423,14 +423,11 @@ function NoExpirationDialog(props: {
         <DialogTitle>Create a Token That Never Expires?</DialogTitle>
         <DialogText>
           A token without an expiration date stays valid until someone revokes
-          it. If it leaks — in a CI log, a forked workflow, a former teammate’s
-          machine — whoever holds it can upload to your projects for as long as
-          nobody notices.
+          it. If it leaks, anyone who has it keeps access to your projects.
         </DialogText>
         <DialogText>
-          Prefer an expiration date, and rotate the token before it ends: create
-          its replacement, update the secret in your CI, then revoke the old
-          one.
+          Set an expiration date instead, and rotate the token before it
+          expires.
         </DialogText>
       </DialogBody>
       <DialogFooter>
