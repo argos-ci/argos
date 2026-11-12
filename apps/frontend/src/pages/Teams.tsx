@@ -1,12 +1,12 @@
-import { useMutation, useSuspenseQuery } from "@apollo/client/react";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard, RedirectToWebsite } from "@/containers/AuthGuard";
+import { AutoInviteList, JoinTeamButton } from "@/containers/Team/Join";
 import { graphql } from "@/gql";
-import { Button, type ButtonProps } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
@@ -18,16 +18,7 @@ const TeamsQuery = graphql(`
   query Teams_me {
     autoInvites {
       id
-      email
-      domain
-      team {
-        id
-        slug
-        name
-        avatar {
-          ...AccountAvatarFragment
-        }
-      }
+      ...TeamJoin_AutoInvite
     }
     me {
       id
@@ -118,41 +109,18 @@ function TeamsList() {
                   </span>
                 </div>
               </div>
-              <JoinButton teamAccountId={invite.team.id}>Join</JoinButton>
+              <JoinTeamButton teamAccountId={invite.team.id}>
+                Join
+              </JoinTeamButton>
             </ListRow>
           ))}
         </List>
       ) : null}
       {autoInvites.length > 0 ? (
-        <List>
-          <ListHeaderRow>Teams matching your email domain</ListHeaderRow>
-          {autoInvites.map((autoInvite) => (
-            <ListRow
-              key={autoInvite.id}
-              className="flex items-center justify-between gap-3 p-4 text-lg"
-            >
-              <div className="flex items-center gap-3">
-                <AccountAvatar
-                  avatar={autoInvite.team.avatar}
-                  className="size-11"
-                />
-                <div className="flex flex-col">
-                  <span>{autoInvite.team.name || autoInvite.team.slug}</span>
-                  <span className="text-low text-xs">
-                    <strong>{autoInvite.email}</strong> matches the{" "}
-                    <strong>{autoInvite.domain}</strong> team domain.
-                  </span>
-                </div>
-              </div>
-              <JoinButton
-                teamAccountId={autoInvite.team.id}
-                redirect={redirect}
-              >
-                Join
-              </JoinButton>
-            </ListRow>
-          ))}
-        </List>
+        <AutoInviteList
+          autoInvites={autoInvites}
+          getRedirect={() => redirect}
+        />
       ) : null}
       <List>
         {data.me.invites.length > 0 || autoInvites.length > 0 ? (
@@ -177,44 +145,6 @@ function TeamsList() {
         </ListRowLink>
       </List>
     </div>
-  );
-}
-
-const JoinMutation = graphql(`
-  mutation Teams_joinTeam($teamAccountId: ID!) {
-    joinTeam(teamAccountId: $teamAccountId) {
-      id
-      slug
-    }
-  }
-`);
-
-function JoinButton(
-  props: { teamAccountId: string; redirect?: string | null } & Omit<
-    ButtonProps,
-    "onClick"
-  >,
-) {
-  const { redirect, teamAccountId, ...buttonProps } = props;
-  const navigate = useNavigate();
-  const [accept, { data, loading }] = useMutation(JoinMutation, {
-    variables: {
-      teamAccountId,
-    },
-    onCompleted(data) {
-      const team = data.joinTeam;
-      const redirectURL = redirect ?? getAccountURL({ accountSlug: team.slug });
-      navigate(redirectURL);
-    },
-  });
-  return (
-    <Button
-      {...buttonProps}
-      disabled={loading || !!data || buttonProps.disabled}
-      onClick={() => {
-        accept().catch(() => {});
-      }}
-    />
   );
 }
 

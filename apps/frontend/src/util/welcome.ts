@@ -60,7 +60,8 @@ export function getPostAuthURL(input: {
   // wrapped it, the team-creation target is buried in a nested `r=` param and
   // this no longer sees it — which sent the user to the welcome page before any
   // team existed, so the domain question could never be asked and `createTeam`
-  // then skipped its own welcome hop.
+  // then skipped its own welcome hop. The auto-invite is not dropped: the
+  // team-creation page offers the matching teams before it creates one.
   if (redirect && checkCreatesTeam(redirect)) {
     return redirect;
   }
@@ -68,12 +69,16 @@ export function getPostAuthURL(input: {
   const destination = hasAutoInvite
     ? getAutoInviteTeamsURL(redirect)
     : redirect;
+  return getWelcomeURL(destination);
+}
+
+export function getWelcomeURL(redirect: string | null | undefined): string {
   // Left off when there is nowhere in particular to go: the welcome page already
   // falls back to the root, so `?r=%2F` would only be noise in the URL.
-  if (!destination) {
+  if (!redirect) {
     return WELCOME_PATH;
   }
-  const searchParams = new URLSearchParams({ r: destination });
+  const searchParams = new URLSearchParams({ r: redirect });
   return `${WELCOME_PATH}?${searchParams}`;
 }
 
