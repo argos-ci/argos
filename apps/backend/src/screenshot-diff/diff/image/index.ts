@@ -6,9 +6,6 @@ import { tmpName, type ImageHandle } from "@/storage";
 
 import type { DiffOptions, DiffResult } from "../types";
 
-/**
- * The default threshold for the diff.
- */
 const DEFAULT_THRESHOLD = 0.5;
 
 /**
@@ -32,13 +29,22 @@ export async function diffImages(
       name: "diffImages",
       attributes: { "argos.diff.threshold": threshold },
     },
-    async () => {
+    async (span) => {
       const [basePath, headPath, output] = await Promise.all([
         base.getFilepath(),
         head.getFilepath(),
         tmpName({ postfix: ".png" }),
       ]);
       const result = await diff(basePath, headPath, { threshold, output });
+      span.setAttributes({
+        "argos.diff.score": result.score,
+        "argos.diff.width": result.width,
+        "argos.diff.height": result.height,
+        "argos.diff.antialiased_pixels": result.antialiasedPixels,
+        ...(result.tier !== undefined
+          ? { "argos.diff.tier": result.tier }
+          : {}),
+      });
       if (result.score === 0) {
         return { score: 0 };
       }
