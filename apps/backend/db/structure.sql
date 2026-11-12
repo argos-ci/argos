@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict PdbcgS7JldKxhOHUzN05eoS7V2nIXPhFBK5WgI2mU2k661yrVviNDDAyAdg30wc
+\restrict LZ9gYoOGdZLbVIppK7MkSeaYzG0Yz7G6HhT6Lr4T2TII6RUBTcrhWqtu2W0pZor
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2903,9 +2903,7 @@ CREATE TABLE public.team_users (
     "userLevel" text NOT NULL,
     "ssoSubject" character varying(255),
     "ssoVerifiedAt" timestamp with time zone,
-    "lastAuthMethod" text,
     "monthlyReportOptedOutAt" timestamp with time zone,
-    CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
     CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
 
@@ -6939,7 +6937,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PdbcgS7JldKxhOHUzN05eoS7V2nIXPhFBK5WgI2mU2k661yrVviNDDAyAdg30wc
+\unrestrict LZ9gYoOGdZLbVIppK7MkSeaYzG0Yz7G6HhT6Lr4T2TII6RUBTcrhWqtu2W0pZor
 
 -- Knex migrations
 
@@ -7217,3 +7215,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());
