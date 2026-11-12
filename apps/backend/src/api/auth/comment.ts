@@ -6,7 +6,7 @@ import {
   type CommentTarget,
 } from "@/comment/target";
 import { getCommentThreadRoot } from "@/comment/thread";
-import { Comment, type ProjectPermission, type User } from "@/database/models";
+import { Comment, type ProjectPermission } from "@/database/models";
 import { resolveCommentMediaVersionId } from "@/media/version";
 import { boom } from "@/util/error";
 
@@ -73,16 +73,16 @@ export async function loadCommentTargetForUserAuth(
  */
 export async function assertCommentTargetPermission(input: {
   target: CommentTarget;
-  user: User;
+  auth: AuthPATPayload | AuthOAuthPayload;
   permission: ProjectPermission;
   message: string;
 }): Promise<void> {
-  const { target, user, permission, message } = input;
+  const { target, auth, permission, message } = input;
   const project = await getCommentTargetProject(target);
   const permissions =
     target.type === "media"
-      ? await project.$getMembershipPermissions(user)
-      : await project.$getPermissions(user);
+      ? await project.$getMembershipPermissions(auth)
+      : await project.$getPermissions(auth);
   if (!permissions.includes(permission)) {
     throw boom(403, message);
   }

@@ -189,6 +189,12 @@ created (empty array = conflict ignored, e.g. don't send the notification).
   `src/comment/permissions.ts`) so the same function backs both the `permissions`
   resolver and the guard inside the mutation. **Always enforce the check in the
   mutation — never trust the client.**
+- Team and project permissions (`Account`/`Team`/`Project` `getPermissions`,
+  `getProjectVisibility`) take the request's auth (`AuthViewer`: `ctx.auth`, or
+  the REST token payload), never a bare `User`: what a member may reach depends
+  on how the request authenticated — a team enforcing SAML keeps out members
+  whose session or token did not come through its IdP. Resolve team membership
+  through `Team.getAccess`, not a raw `team_users` lookup.
 
 ## Frontend
 

@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { RelationExpression, TransactionOrKnex } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import {
   Account,
   BuildReview,
@@ -65,13 +66,13 @@ async function deleteUserAccessTokenScopesByAccountId(args: {
  */
 export async function getAdminAccount(args: {
   id: string;
-  user: User | undefined | null;
+  auth: AuthViewer | null;
   withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
   }
-  if (!args.user) {
+  if (!args.auth) {
     throw unauthenticated();
   }
   const query = Account.query().findById(args.id).throwIfNotFound();
@@ -79,7 +80,7 @@ export async function getAdminAccount(args: {
     query.withGraphFetched(args.withGraphFetched);
   }
   const account = await query;
-  const permissions = await account.$getPermissions(args.user);
+  const permissions = await account.$getPermissions(args.auth);
   if (!permissions.includes("admin")) {
     throw forbidden("user is not an admin of the account");
   }
@@ -118,11 +119,11 @@ export async function getAccessibleAccounts(args: {
  */
 export async function deleteAccount(args: {
   id: string;
-  user: User | undefined | null;
+  auth: AuthViewer | null;
 }): Promise<void> {
   const account = await getAdminAccount({
     id: args.id,
-    user: args.user,
+    auth: args.auth,
     withGraphFetched: "[projects,slackInstallation,user]",
   });
   const projects = account.projects;

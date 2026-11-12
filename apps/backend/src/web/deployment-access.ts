@@ -2,10 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { signDeploymentAccessToken } from "@/auth/deployment-access";
-import { resolveSession } from "@/auth/session";
-import { readSessionCookie } from "@/auth/session-cookie";
+import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
-import { Account, Project, ProjectDomain } from "@/database/models";
+import { Project, ProjectDomain } from "@/database/models";
 import { resolveDeploymentByDomain } from "@/deployment/resolve";
 import { boom } from "@/util/error";
 
@@ -61,9 +60,8 @@ router.get(
       throw boom(400, "Invalid return_to");
     }
 
-    const rawToken = readSessionCookie(req);
-    const session = rawToken ? await resolveSession(rawToken) : null;
-    if (!session) {
+    const auth = await safeSessionAuthFromExpressReq(req);
+    if (!auth) {
       const requestUrl = new URL(req.originalUrl, config.get("server.url"));
       const loginUrl = new URL("/login", config.get("server.url"));
       loginUrl.searchParams.set("r", requestUrl.toString());
@@ -76,13 +74,6 @@ router.get(
       throw boom(404, "Deployment not found");
     }
 
-    const account = await Account.query()
-      .withGraphFetched("user")
-      .findOne({ userId: session.userId });
-    if (!account?.user) {
-      throw boom(401, "Invalid session");
-    }
-
     const project = await Project.queryNotDeleted().findById(
       deployment.projectId,
     );
@@ -90,14 +81,14 @@ router.get(
       throw boom(404, "Project not found");
     }
 
-    const permissions = await Project.getPermissions(project, account.user);
+    const permissions = await Project.getPermissions(project, auth);
     if (!permissions.includes("view")) {
       throw boom(403, "You do not have access to this deployment");
     }
 
     const token = signDeploymentAccessToken({
       projectId: deployment.projectId,
-      sub: account.user.id,
+      sub: auth.user.id,
     });
 
     const callbackUrl = new URL("/__argos/auth", returnTo.origin);

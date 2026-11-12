@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { queryAccountProjects } from "@/database/services/project";
+import {
+  getProjectVisibility,
+  queryAccountProjects,
+} from "@/database/services/project";
 
 import { getAccountForAuth } from "../auth/project";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
@@ -62,7 +65,10 @@ export const listProjects: CreateAPIHandler = ({ get }) => {
     });
 
     // Shared with the GraphQL API — same visibility rules, same ordering.
-    const query = queryAccountProjects({ account, user: auth.user });
+    const query = queryAccountProjects({
+      account,
+      visibility: await getProjectVisibility({ account, auth }),
+    });
     if (!query) {
       res.send({ results: [], pageInfo: { total: 0, page, perPage } });
       return;

@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
 import type { TransactionOrKnex } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { checkHasAccessToSAML } from "@/auth/saml";
 import { isUniqueViolationError } from "@/database/error";
 import {
@@ -11,7 +12,6 @@ import {
   TeamUser,
   type Account,
   type Team,
-  type User,
 } from "@/database/models";
 import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { hashToken } from "@/database/services/crypto";
@@ -40,7 +40,7 @@ const SAML_REQUIRED_MESSAGE =
  */
 export async function generateTeamScimToken(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<string> {
   const teamId = await assertTeamAdmin(args);
   if (!(await checkHasAccessToSAML(args.account))) {
@@ -56,7 +56,7 @@ export async function generateTeamScimToken(args: {
 
 export async function revokeTeamScimToken(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<void> {
   const teamId = await assertTeamAdmin(args);
   await TeamScimToken.query().where({ teamId }).delete();

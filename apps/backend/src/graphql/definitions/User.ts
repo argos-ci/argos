@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import type { AuthViewer } from "@/auth/payload";
 import { type UserPresence } from "@/auth/presence";
 import { subscribeToUserPresenceChanges } from "@/auth/presenceEvents";
 import { listActiveSessions } from "@/auth/session";
@@ -81,7 +82,7 @@ async function loadVisiblePresence(
  */
 async function resolveAutoJoinTeamId(args: {
   slug: string;
-  user: User;
+  auth: AuthViewer;
 }): Promise<string> {
   // One error for every way this can fail — unknown slug, someone else's team,
   // a personal account. Distinguishing them turned the mutation into an
@@ -94,7 +95,7 @@ async function resolveAutoJoinTeamId(args: {
     throw refuse();
   }
 
-  const permissions = await account.$getPermissions(args.user);
+  const permissions = await account.$getPermissions(args.auth);
   if (!permissions.includes("admin") || !account.teamId) {
     throw refuse();
   }
@@ -287,7 +288,7 @@ export const resolvers: IResolvers = {
       }
       const account = await getAdminAccount({
         id: args.input.accountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
       if (account.type !== "user") {
         throw badUserInput(
@@ -332,7 +333,7 @@ export const resolvers: IResolvers = {
       // Capture the email *before* deletion — afterwards the user is nulled.
       const email = user.email;
       const displayName = account.displayName;
-      await deleteAccount({ id: account.id, user });
+      await deleteAccount({ id: account.id, auth: ctx.auth });
       if (email) {
         try {
           await sendAccountDeletedEmail({ name: displayName, email });
@@ -500,7 +501,7 @@ export const resolvers: IResolvers = {
       const autoJoinTeamId = autoJoinTeamSlug
         ? await resolveAutoJoinTeamId({
             slug: autoJoinTeamSlug,
-            user: auth.user,
+            auth,
           })
         : null;
 
@@ -650,7 +651,7 @@ export const resolvers: IResolvers = {
         ? await ctx.loaders.Project.load(args.projectId)
         : null;
       const permissions = project
-        ? await project.$getPermissions(ctx.auth.user)
+        ? await project.$getPermissions(ctx.auth)
         : [];
       const required =
         ctx.auth.user.id === account.userId ? "view" : "view_settings";

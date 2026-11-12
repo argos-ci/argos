@@ -10,7 +10,7 @@ import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { completeLogin } from "@/auth/login";
 import config from "@/config";
-import { Account, StripeInvoice } from "@/database/models";
+import { Account, StripeInvoice, Team } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
@@ -20,6 +20,7 @@ import {
 } from "@/database/services/account";
 import {
   getRestrictedVisibleProjectIds,
+  getProjectVisibility,
   queryAccountProjects,
 } from "@/database/services/project";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
@@ -323,10 +324,20 @@ async function accountByIdResolver(
   if (!account) {
     return null;
   }
-  const permissions = await account.$getPermissions(ctx.auth.user, {
-    enforceSSO: ctx.auth,
-  });
+  return checkAccountVisible(account, ctx);
+}
+
+/**
+ * The account when the viewer may see it, `null` otherwise. A member kept out
+ * by the team's SAML enforcement is told to sign in with SAML instead.
+ */
+async function checkAccountVisible(
+  account: Account,
+  ctx: Context,
+): Promise<Account | null> {
+  const permissions = await account.$getPermissions(ctx.auth);
   if (!permissions.includes("view")) {
+    await Team.assertSamlSatisfied(account.teamId, ctx.auth);
     return null;
   }
   return account;
@@ -340,7 +351,7 @@ async function assertAccountAdmin(
   account: Account,
   ctx: Context,
 ): Promise<void> {
-  const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+  const permissions = await account.$getPermissions(ctx.auth);
   if (!permissions.includes("admin")) {
     throw forbidden("user is not an admin of the account");
   }
@@ -361,8 +372,12 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!auth) {
       throw unauthenticated();
     }
-    const query = queryAccountProjects({ account, user: auth.user });
+    const query = queryAccountProjects({
+      account,
+      visibility: await getProjectVisibility({ account, auth }),
+    });
     if (!query) {
+      await Team.assertSamlSatisfied(account.teamId, auth);
       throw unauthenticated();
     }
     const result = await query.range(args.after, args.after + args.first - 1);
@@ -379,7 +394,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     }
     const projectIds = await getVisibleProjectIds({
       account,
-      user: auth.user,
+      auth,
     });
     if (projectIds.length === 0) {
       return {
@@ -464,14 +479,14 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return manager.getPlan();
   },
   permissions: async (account, _args, ctx) => {
-    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    const permissions = await account.$getPermissions(ctx.auth);
     return permissions as IAccountPermission[];
   },
   gitlabAccessToken: async (account, _args, ctx) => {
     if (!account.gitlabAccessToken) {
       return null;
     }
-    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    const permissions = await account.$getPermissions(ctx.auth);
     if (!permissions.includes("admin")) {
       return `••••••••`;
     }
@@ -483,7 +498,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
   glNamespaces: async (account, _args, ctx) => {
     // Listed with the account's own GitLab token, which reaches namespaces no
     // visitor of a public project should learn about.
-    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    const permissions = await account.$getPermissions(ctx.auth);
     if (!permissions.includes("admin")) {
       return null;
     }
@@ -535,7 +550,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     }
     // Origin repositories are never public, and the installation exposes every
     // one it reaches — so this is admin-only, like the install URL below.
-    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    const permissions = await account.$getPermissions(ctx.auth);
     if (!permissions.includes("admin")) {
       return null;
     }
@@ -555,7 +570,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!config.get("origin.appId")) {
       return null;
     }
-    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    const permissions = await account.$getPermissions(ctx.auth);
     if (!permissions.includes("admin")) {
       return null;
     }
@@ -577,7 +592,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     // list every project behind it, private ones included.
     const visibleProjectIds = await getRestrictedVisibleProjectIds({
       account,
-      user: ctx.auth.user,
+      auth: ctx.auth,
     }).catch((error: unknown) => {
       throw toGraphQLError(error);
     });
@@ -628,13 +643,7 @@ export const resolvers: IResolvers = {
       if (!account) {
         return null;
       }
-      const permissions = await account.$getPermissions(ctx.auth.user, {
-        enforceSSO: ctx.auth,
-      });
-      if (!permissions.includes("view")) {
-        return null;
-      }
-      return account;
+      return checkAccountVisible(account, ctx);
     },
     accountById: accountByIdResolver,
     teamById: accountByIdResolver,
@@ -642,7 +651,7 @@ export const resolvers: IResolvers = {
   Mutation: {
     updateAccount: async (_root, args, ctx) => {
       const { id, ...input } = args.input;
-      const account = await getAdminAccount({ id, user: ctx.auth?.user });
+      const account = await getAdminAccount({ id, auth: ctx.auth });
 
       const data: PartialModelRow<Account> = {};
 
@@ -779,7 +788,7 @@ export const resolvers: IResolvers = {
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
         withGraphFetched: "slackInstallation",
       });
       if (!account.slackInstallation) {
@@ -795,7 +804,7 @@ export const resolvers: IResolvers = {
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       if (!account.originInstallationId) {
         return account;
@@ -807,7 +816,7 @@ export const resolvers: IResolvers = {
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       return disconnectGitHubAuth(account);
     },
@@ -815,7 +824,7 @@ export const resolvers: IResolvers = {
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       return disconnectGitLabAuth(account);
     },
@@ -823,7 +832,7 @@ export const resolvers: IResolvers = {
       const { accountId } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       return disconnectGoogleAuth(account);
     },

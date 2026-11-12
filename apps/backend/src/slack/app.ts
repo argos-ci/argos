@@ -209,9 +209,7 @@ export const receiver = new ExpressReceiver({
         // The signed cookie is all the OAuth callback trusts: whichever
         // account it names gets the new workspace in `storeInstallation`.
         const account = await Account.query().findById(accountId);
-        const permissions = account
-          ? await account.$getPermissions(auth.user)
-          : [];
+        const permissions = account ? await account.$getPermissions(auth) : [];
         if (!permissions.includes("admin")) {
           return rejectInstall(
             res,

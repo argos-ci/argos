@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
 
-import { resolveSession } from "@/auth/session";
-import { readSessionCookie } from "@/auth/session-cookie";
+import type { AuthViewer } from "@/auth/payload";
+import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
-import { Account, StripeInvoice, User } from "@/database/models";
+import { Account, StripeInvoice } from "@/database/models";
 import { stripe } from "@/stripe";
 import {
   INVOICE_DOCUMENTS,
@@ -20,11 +20,11 @@ import { asyncHandler } from "./util";
  */
 async function canReadInvoices(
   stripeCustomerId: string,
-  user: User,
+  auth: AuthViewer,
 ): Promise<boolean> {
   const accounts = await Account.query().where({ stripeCustomerId });
   const permissions = await Promise.all(
-    accounts.map((account) => account.$getPermissions(user)),
+    accounts.map((account) => account.$getPermissions(auth)),
   );
   return permissions.some((granted) => granted.includes("admin"));
 }
@@ -45,9 +45,8 @@ router.get(
     }
     const { invoiceId, document } = params.data;
 
-    const rawToken = readSessionCookie(req);
-    const session = rawToken ? await resolveSession(rawToken) : null;
-    if (!session) {
+    const auth = await safeSessionAuthFromExpressReq(req);
+    if (!auth) {
       const requestUrl = new URL(req.originalUrl, config.get("server.url"));
       const loginUrl = new URL("/login", config.get("server.url"));
       loginUrl.searchParams.set("r", requestUrl.toString());
@@ -55,13 +54,7 @@ router.get(
       return;
     }
 
-    const [invoice, user] = await Promise.all([
-      StripeInvoice.query().findById(invoiceId),
-      User.query().findById(session.userId),
-    ]);
-    if (!user) {
-      throw boom(401, "Invalid session");
-    }
+    const invoice = await StripeInvoice.query().findById(invoiceId);
     if (!invoice) {
       throw boom(404, "Invoice not found");
     }
@@ -72,7 +65,7 @@ router.get(
     const stripeInvoice = Promise.allSettled([
       stripe.invoices.retrieve(invoice.stripeInvoiceId),
     ]).then(([result]) => result);
-    if (!(await canReadInvoices(invoice.stripeCustomerId, user))) {
+    if (!(await canReadInvoices(invoice.stripeCustomerId, auth))) {
       throw boom(404, "Invoice not found");
     }
     const retrieved = await stripeInvoice;

@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
+import type { AuthViewer } from "@/auth/payload";
 import { Test } from "@/database/models/Test";
-import type { User } from "@/database/models/User";
 import { safeParseTestId } from "@/util/test-id";
 
 import { forbidden, notFound } from "./util";
@@ -40,14 +40,14 @@ async function getTestByGraphqlId(id: string): Promise<Test> {
  */
 export async function getTestForUser(input: {
   id: string;
-  user: User | null;
+  auth: AuthViewer | null;
   permission: "view" | "review";
   message: string;
 }): Promise<Test> {
-  const { id, user, permission, message } = input;
+  const { id, auth, permission, message } = input;
   const test = await getTestByGraphqlId(id);
   invariant(test.project, "Test project not fetched");
-  const permissions = await test.project.$getPermissions(user);
+  const permissions = await test.project.$getPermissions(auth);
   if (!permissions.includes(permission)) {
     throw forbidden(message);
   }

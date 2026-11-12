@@ -13,6 +13,7 @@ import { invariant } from "@argos/util/invariant";
 import type { QueryBuilder } from "objection";
 
 import { getAccountAvatar, getAvatarColor } from "@/account/avatar";
+import type { AuthViewer } from "@/auth/payload";
 import config from "@/config";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { sanitizeEmail } from "@/util/email";
@@ -21,7 +22,6 @@ import type { RequestLocation } from "@/util/request-location";
 
 import type { Account } from "../models/Account";
 import { TeamInvite } from "../models/TeamInvite";
-import type { User } from "../models/User";
 import { UserEmail } from "../models/UserEmail";
 import { assertTeamAdmin, type TeamUserLevel } from "./team-member";
 
@@ -80,7 +80,7 @@ export type TeamInviteRequest = {
  */
 export async function inviteTeamMembers(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   /** The acting user's own account, shown as the sender in the email. */
   actorAccount: Account;
   members: TeamInviteRequest[];
@@ -88,7 +88,8 @@ export async function inviteTeamMembers(args: {
   requestLocation?: RequestLocation | null | undefined;
 }): Promise<TeamInvite[]> {
   const teamId = await assertTeamAdmin(args);
-  const { account: teamAccount, user, actorAccount, members } = args;
+  const { account: teamAccount, auth, actorAccount, members } = args;
+  const { user } = auth;
 
   if (members.length === 0) {
     throw boom(400, "At least one member is required.");
@@ -198,7 +199,7 @@ export async function inviteTeamMembers(args: {
  */
 export async function cancelTeamInvite(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   inviteId: string;
 }): Promise<void> {
   const teamId = await assertTeamAdmin(args);

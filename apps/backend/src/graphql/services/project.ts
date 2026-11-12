@@ -2,6 +2,7 @@ import { PROJECT_NAME_MAX_LENGTH } from "@argos/schemas/project";
 import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import {
   Account,
   AuditTrail,
@@ -24,10 +25,10 @@ import {
   ScreenshotDiffReview,
   TeamUser,
   Test,
-  User,
 } from "@/database/models";
 import {
-  applyProjectVisibility,
+  getProjectVisibility,
+  queryVisibleProjectIds,
   DELETED_PROJECT_NAME_PREFIX,
 } from "@/database/services/project";
 import { detachDomainAlias } from "@/database/services/project-domain";
@@ -89,19 +90,19 @@ async function getProjectDeleteNotificationRecipients(project: Project) {
  */
 export async function getAdminProject(args: {
   id: string;
-  user: User | undefined | null;
+  auth: AuthViewer | null;
   withGraphFetched?: string;
 }): Promise<Project> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
   }
-  invariant(args.user, "no user");
+  invariant(args.auth, "no user");
   const query = Project.queryNotDeleted().findById(args.id).throwIfNotFound();
   if (args.withGraphFetched) {
     query.withGraphFetched(args.withGraphFetched);
   }
   const project = await query;
-  const permissions = await project.$getPermissions(args.user);
+  const permissions = await project.$getPermissions(args.auth);
   invariant(permissions.includes("admin"), "not admin");
   return project;
 }
@@ -115,17 +116,10 @@ export async function getAdminProject(args: {
  */
 export async function getVisibleProjectIds(args: {
   account: Account;
-  user: { id: string; staff: boolean };
+  auth: AuthViewer;
 }): Promise<string[]> {
-  const query = applyProjectVisibility(
-    Project.query().where("accountId", args.account.id).select("projects.id"),
-    args,
-  );
-  if (!query) {
-    return [];
-  }
-  const rows = await query;
-  return rows.map((row) => row.id);
+  const visibility = await getProjectVisibility(args);
+  return visibility ? queryVisibleProjectIds(args.account.id, visibility) : [];
 }
 
 /**
@@ -140,11 +134,11 @@ export async function getVisibleProjectIds(args: {
  */
 export async function deleteProject(args: {
   id: string;
-  user: User | undefined | null;
+  auth: AuthViewer | null;
 }) {
   const project = await getAdminProject({
     id: args.id,
-    user: args.user,
+    auth: args.auth,
     withGraphFetched: "account",
   });
   const recipients = await getProjectDeleteNotificationRecipients(project);

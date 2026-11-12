@@ -1,5 +1,6 @@
 import gqlTag from "graphql-tag";
 
+import { checkAuthSatisfiesTeamSaml } from "@/auth/payload";
 import { OAuthGrant, OAuthGrantAccount } from "@/database/models";
 import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
@@ -142,10 +143,11 @@ export const resolvers: IResolvers = {
   },
   Mutation: {
     authorizeOAuthConsent: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const { auth } = ctx;
+      if (!auth) {
         throw forbidden();
       }
-      const userId = ctx.auth.user.id;
+      const userId = auth.user.id;
       const {
         clientId,
         redirectUri,
@@ -217,6 +219,7 @@ export const resolvers: IResolvers = {
           accessibleAccounts.map((account) => ({
             oauthGrantId: saved.id,
             accountId: account.id,
+            samlAuthorized: checkAuthSatisfiesTeamSaml(auth, account.teamId),
           })),
         );
         return saved;

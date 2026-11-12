@@ -130,7 +130,7 @@ export const resolvers: IResolvers = {
       const { accountId, reason, comment } = args.input;
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       const subscriptionId = await getStripeSubscriptionIdOrThrow(account);
       const trimmedComment = comment?.trim() || null;
@@ -150,7 +150,7 @@ export const resolvers: IResolvers = {
     resumeSubscription: async (_root, args, ctx) => {
       const account = await getAdminAccount({
         id: args.input.accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
       const subscriptionId = await getStripeSubscriptionIdOrThrow(account);
       await resumeStripeSubscription(subscriptionId);

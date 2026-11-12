@@ -42,7 +42,7 @@ import {
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { getProjectForAuth } from "../auth/project";
+import { getProjectForAuth, throwOutsideScope } from "../auth/project";
 import {
   MediaBranchSchema,
   MediaInputSchema,
@@ -882,8 +882,10 @@ async function loadMediaForAuth(args: {
 
   invariant(media.project?.account, "Media project account not fetched");
 
-  if (!auth.scope.some((account) => account.id === media.project?.accountId)) {
-    throw boom(404, "Media not found");
+  const isMediaAccount = (account: Account) =>
+    account.id === media.project?.accountId;
+  if (!auth.scope.some(isMediaAccount)) {
+    throwOutsideScope(auth, isMediaAccount, boom(404, "Media not found"));
   }
 
   // The project's own permissions, straight — deliberately *not* through
@@ -896,9 +898,8 @@ async function loadMediaForAuth(args: {
   // the id space and read every public media in every project — including ones
   // they hold nothing on — with the share token's unguessability, the only
   // control the design names, routed around entirely.
-  const membershipPermissions = await media.project.$getMembershipPermissions(
-    auth.user,
-  );
+  const membershipPermissions =
+    await media.project.$getMembershipPermissions(auth);
   const required = MEDIA_ACTION_PERMISSION[action];
   if (!membershipPermissions.includes(required)) {
     throw boom(404, "Media not found");

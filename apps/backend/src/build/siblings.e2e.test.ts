@@ -8,7 +8,7 @@ import type {
   ScreenshotBucket,
   User,
 } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 
 import { getSiblingBuilds } from "./siblings";
 
@@ -115,7 +115,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([storybookBuild.id]);
   });
@@ -135,7 +135,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([docsBuild.id]);
   });
@@ -164,7 +164,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([docsBuild.id]);
   });
@@ -183,7 +183,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([rerun.id]);
   });
@@ -198,7 +198,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings).toEqual([]);
   });
@@ -216,7 +216,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings).toEqual([]);
   });
@@ -235,7 +235,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user: null,
+      auth: null,
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([storybookBuild.id]);
   });
@@ -254,7 +254,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings).toEqual([]);
   });
@@ -277,7 +277,7 @@ describe("getSiblingBuilds", () => {
     const siblings = await getSiblingBuilds({
       build,
       compareBucket: await getCompareBucket(build),
-      user,
+      auth: sessionViewer(user),
     });
     expect(siblings.map((sibling) => sibling.id)).toEqual([
       storybookBuild.id,

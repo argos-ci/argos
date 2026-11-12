@@ -66,7 +66,7 @@ export const listTeamDomainsHandler: CreateAPIHandler = ({ get }) => {
       slug: req.ctx.params.accountSlug,
     });
 
-    const teamId = await assertTeamAdmin({ account, user: auth.user });
+    const teamId = await assertTeamAdmin({ account, auth });
     const domains = await listTeamDomains(teamId);
 
     res.send(
@@ -122,7 +122,7 @@ export const addTeamDomainHandler: CreateAPIHandler = ({ post }) => {
     // rules.
     const teamDomain = await addTeamDomain({
       account,
-      user: auth.user,
+      auth,
       domain: req.ctx.body.domain,
     });
 
@@ -166,7 +166,7 @@ export const removeTeamDomainHandler: CreateAPIHandler = ({ delete: del }) => {
 
     await removeTeamDomain({
       account,
-      user: auth.user,
+      auth,
       domain: req.ctx.params.domain,
     });
 

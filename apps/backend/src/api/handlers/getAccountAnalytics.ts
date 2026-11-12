@@ -167,7 +167,7 @@ export const getAccountAnalytics: CreateAPIHandler = ({ get }) => {
 
     const visibleProjectIds = await getRestrictedVisibleProjectIds({
       account,
-      user: auth.user,
+      auth,
     });
     try {
       const metrics = await getAccountMetrics({

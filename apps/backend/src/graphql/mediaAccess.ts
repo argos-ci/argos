@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
+import type { AuthViewer } from "@/auth/payload";
 import { Media } from "@/database/models/Media";
-import type { User } from "@/database/models/User";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 
 import { forbidden, notFound } from "./util";
@@ -18,11 +18,11 @@ import { forbidden, notFound } from "./util";
  */
 export async function getMediaForUser(input: {
   id: string;
-  user: User | null;
+  auth: AuthViewer | null;
   permission: "view" | "review";
   message: string;
 }): Promise<Media> {
-  const { id, user, permission, message } = input;
+  const { id, auth, permission, message } = input;
   if (!isValidPgBigInt(id)) {
     throw notFound("Media not found");
   }
@@ -33,7 +33,7 @@ export async function getMediaForUser(input: {
     throw notFound("Media not found");
   }
   invariant(media.project?.account, "Media project account not found");
-  const permissions = await media.project.$getMembershipPermissions(user);
+  const permissions = await media.project.$getMembershipPermissions(auth);
   if (!permissions.includes(permission)) {
     throw forbidden(message);
   }

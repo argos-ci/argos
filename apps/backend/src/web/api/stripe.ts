@@ -68,7 +68,6 @@ router.use(
   express.json(),
   asyncHandler(async (req, res) => {
     const auth = await sessionAuthFromExpressReq(req);
-    const { user } = auth;
 
     try {
       const { stripeCustomerId, accountId } = req.body;
@@ -78,7 +77,7 @@ router.use(
 
       const account = await getAdminAccount({
         id: accountId,
-        user,
+        auth,
       });
 
       invariant(
@@ -120,7 +119,7 @@ router.use(
       invariant(accountId, "accountId missing");
 
       const [teamAccount, proPlan, noTrial] = await Promise.all([
-        getAdminAccount({ id: accountId, user: auth.user }),
+        getAdminAccount({ id: accountId, auth }),
         getStripeProPlanOrThrow(),
         auth.account.$checkHasSubscribedToTrial(),
       ]);

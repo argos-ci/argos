@@ -153,7 +153,7 @@ export const setProjectContributor: CreateAPIHandler = ({ put }) => {
     // Shared with the GraphQL API — same admin check, same idempotence.
     const projectUser = await addOrUpdateProjectContributor({
       project,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
       level: req.ctx.body.level,
     });
@@ -201,7 +201,7 @@ export const removeProjectContributorHandler: CreateAPIHandler = ({
 
     await removeProjectContributor({
       project,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
     });
 

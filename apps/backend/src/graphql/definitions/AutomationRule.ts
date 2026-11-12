@@ -328,7 +328,7 @@ export const resolvers: IResolvers = {
         // Shared with the REST API — same admin check.
         return await getAutomationRuleForAdmin({
           id: args.id,
-          user: auth.user,
+          auth,
         });
       } catch (error) {
         throw toGraphQLError(error);
@@ -345,7 +345,7 @@ export const resolvers: IResolvers = {
         // Shared with the REST API — same admin check, same action resolution.
         return await createAutomationRule({
           projectId: args.input.projectId,
-          user: auth.user,
+          auth,
           input: parseAutomationRuleInput(args.input),
         });
       } catch (error) {
@@ -360,7 +360,7 @@ export const resolvers: IResolvers = {
       try {
         return await updateAutomationRule({
           id: args.input.id,
-          user: auth.user,
+          auth,
           input: parseAutomationRuleInput(args.input),
         });
       } catch (error) {
@@ -373,7 +373,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
       try {
-        return await deactivateAutomationRule({ id, user: auth.user });
+        return await deactivateAutomationRule({ id, auth });
       } catch (error) {
         throw toGraphQLError(error);
       }
@@ -392,7 +392,7 @@ export const resolvers: IResolvers = {
         throw notFound("Project not found.");
       }
 
-      const permissions = await project.$getPermissions(auth.user);
+      const permissions = await project.$getPermissions(auth);
 
       if (!permissions.includes("admin")) {
         throw forbidden();

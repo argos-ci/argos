@@ -1,6 +1,9 @@
 import type { Knex } from "knex";
 
+import type { AuthViewer } from "@/auth/payload";
+
 import { knex } from "../knex";
+import type { User } from "../models";
 
 const KNEX_TABLES = ["knex_migrations", "knex_migrations_lock"];
 
@@ -40,3 +43,8 @@ export async function truncateAll(knex: Knex) {
 export const setupDatabase = async () => {
   await truncateAll(knex);
 };
+
+/** A request by `user` on a session that went through no SAML IdP. */
+export function sessionViewer(user: User): AuthViewer {
+  return { type: "session", user, samlTeamId: null };
+}

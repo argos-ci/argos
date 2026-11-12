@@ -73,7 +73,7 @@ export const createProject: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — enforces admin permission and name rules.
     const project = await createProjectService({
       account,
-      user: auth.user,
+      auth,
       name: body.name,
       source: null,
     });

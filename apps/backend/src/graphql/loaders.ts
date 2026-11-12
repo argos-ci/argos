@@ -5,6 +5,7 @@ import DataLoader from "dataloader";
 import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { getPresences, type UserPresence } from "@/auth/presence";
 import {
   filterVisibleComments,
@@ -1255,18 +1256,20 @@ function createMediaVersionsLoader() {
  */
 function createProjectMembershipPermissionsLoader() {
   return new DataLoader<
-    { project: Project; user: User | null },
+    { project: Project; auth: AuthViewer | null },
     ProjectPermission[],
     string
   >(
     async (inputs) =>
       Promise.all(
         inputs.map((input) =>
-          Project.getMembershipPermissions(input.project, input.user),
+          Project.getMembershipPermissions(input.project, input.auth),
         ),
       ),
     {
-      cacheKeyFn: (input) => `${input.project.id}:${input.user?.id ?? ""}`,
+      // The loaders live for one request, so one viewer: the user id is
+      // enough to key on.
+      cacheKeyFn: (input) => `${input.project.id}:${input.auth?.user.id ?? ""}`,
     },
   );
 }

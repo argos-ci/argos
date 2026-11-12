@@ -6,6 +6,8 @@ import { slugJsonSchema } from "@argos/util/slug";
 import { memoize } from "lodash-es";
 import { raw, type Pojo, type RelationMappings } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
+
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
 import type { PlanLimitAlertLevel } from "../services/plan-limit-alert";
 import { Model } from "../util/model";
@@ -21,7 +23,7 @@ import { Project } from "./Project";
 import { clampedStorybookCount, ScreenshotBucket } from "./ScreenshotBucket";
 import { SlackInstallation } from "./SlackInstallation";
 import { Subscription } from "./Subscription";
-import { Team, type GetPermissionsOptions } from "./Team";
+import { Team } from "./Team";
 import { TeamSamlConfig } from "./TeamSamlConfig";
 import { User } from "./User";
 
@@ -873,14 +875,16 @@ export class Account extends Model {
 
   static async getPermissions(
     account: Account,
-    user: User | null,
-    options?: GetPermissionsOptions,
+    auth: AuthViewer | null,
   ): Promise<AccountPermission[]> {
     switch (account.type) {
       case "user":
-        return User.getPermissions(account.userId as string, user);
+        return User.getPermissions(
+          account.userId as string,
+          auth?.user ?? null,
+        );
       case "team":
-        return Team.getPermissions(account.teamId as string, user, options);
+        return Team.getPermissions(account.teamId as string, auth);
       default:
         assertNever(account.type);
     }
@@ -899,10 +903,7 @@ export class Account extends Model {
     throw new Error("Incoherent account type");
   }
 
-  async $getPermissions(
-    user: User | null,
-    options?: GetPermissionsOptions,
-  ): Promise<AccountPermission[]> {
-    return Account.getPermissions(this, user, options);
+  async $getPermissions(auth: AuthViewer | null): Promise<AccountPermission[]> {
+    return Account.getPermissions(this, auth);
   }
 }

@@ -15,13 +15,13 @@ import { invariant } from "@argos/util/invariant";
 import type { QueryBuilder, TransactionOrKnex } from "objection";
 import type { z } from "zod";
 
+import type { AuthViewer } from "@/auth/payload";
 import { boom } from "@/util/error";
 
 import { Account } from "../models/Account";
 import { GithubAccountMember } from "../models/GithubAccountMember";
 import { Team } from "../models/Team";
 import { TeamUser } from "../models/TeamUser";
-import type { User } from "../models/User";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 
@@ -41,13 +41,13 @@ export type TeamDefaultUserLevel = Team["defaultUserLevel"];
  */
 export async function assertTeamAdmin(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<string> {
-  const { account, user } = args;
+  const { account, auth } = args;
   if (account.type !== "team" || !account.teamId) {
     throw boom(400, "This account is not a team.");
   }
-  const permissions = await account.$getPermissions(user);
+  const permissions = await account.$getPermissions(auth);
   if (!permissions.includes("admin")) {
     throw boom(403, "You are not an administrator of this team.");
   }
@@ -188,7 +188,7 @@ async function getTeamUserByAccountId(args: {
  */
 export async function setTeamMemberLevel(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   userAccountId: string;
   level: TeamUserLevel;
 }): Promise<TeamUser> {
@@ -210,7 +210,7 @@ export async function setTeamMemberLevel(args: {
  */
 export async function removeTeamMember(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   userAccountId: string;
 }): Promise<{ teamMemberId: string }> {
   const teamId = await assertTeamAdmin(args);
@@ -313,7 +313,7 @@ export async function changeTeamMembershipLevel(args: {
  */
 export async function setTeamDefaultUserLevel(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   level: TeamDefaultUserLevel;
 }): Promise<Account> {
   const teamId = await assertTeamAdmin(args);
@@ -327,7 +327,7 @@ export async function setTeamDefaultUserLevel(args: {
  */
 export async function resetTeamInviteLink(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<string> {
   const teamId = await assertTeamAdmin(args);
   const team = await Team.query().findById(teamId);

@@ -198,7 +198,7 @@ export const getAutomationRule: CreateAPIHandler = ({ get }) => {
 
       const rule = await getAutomationRuleForAdmin({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
       });
 
@@ -242,7 +242,7 @@ export const createAutomationRule: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — same admin check, same action resolution.
     const rule = await createRule({
       projectId: project.id,
-      user: auth.user,
+      auth,
       input: req.ctx.body,
     });
 
@@ -286,7 +286,7 @@ export const updateAutomationRule: CreateAPIHandler = ({ put }) => {
 
       const rule = await updateRule({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
         input: req.ctx.body,
       });
@@ -328,7 +328,7 @@ export const deactivateAutomationRule: CreateAPIHandler = ({ post }) => {
 
       const rule = await deactivateRule({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
       });
 

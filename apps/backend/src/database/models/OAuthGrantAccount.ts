@@ -17,6 +17,7 @@ export class OAuthGrantAccount extends Model {
         properties: {
           oauthGrantId: { type: "string" },
           accountId: { type: "string" },
+          samlAuthorized: { type: "boolean" },
         },
       },
     ],
@@ -24,6 +25,11 @@ export class OAuthGrantAccount extends Model {
 
   oauthGrantId!: string;
   accountId!: string;
+  /**
+   * Whether the token may reach this account while it is a team enforcing
+   * SAML: set when it was issued from a session opened through the team's IdP.
+   */
+  samlAuthorized!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {
