@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
-    "@argos-ci/iris": "0.1.0-beta.0",
+    "@argos-ci/iris": "0.1.0-beta.1",
     "@argos/knex-scripts": "workspace:*",
     "@argos/schemas": "workspace:*",
     "@argos/util": "workspace:*",
