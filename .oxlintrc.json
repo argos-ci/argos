@@ -94,6 +94,19 @@
       "rules": {
         "argos/no-module-relative-paths": "error"
       }
+    },
+    {
+      "files": ["apps/frontend/src/**", "apps/backend/src/**"],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/__generated__/**",
+        "apps/frontend/src/gql/**"
+      ],
+      "jsPlugins": ["./tools/oxlint-plugin-argos.js"],
+      "rules": {
+        "argos/no-dashes-in-copy": "error"
+      }
     }
   ]
 }
