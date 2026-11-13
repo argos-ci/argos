@@ -26,8 +26,8 @@ export const PROJECT_TOKEN_PERMISSIONS: {
 export const ALL_PROJECT_TOKEN_PERMISSIONS: readonly ProjectTokenPermission[] =
   PROJECT_TOKEN_PERMISSIONS.map((permission) => permission.value);
 
-export const FULL_ACCESS = {
-  label: "Full access",
+export const STANDARD_PERMISSIONS = {
+  label: "Standard",
   description:
     "Upload builds and deployments, read projects, and upload or delete media.",
 };
@@ -40,7 +40,7 @@ export function formatProjectTokenPermissions(
       permissions.includes(permission),
     )
   ) {
-    return FULL_ACCESS.label;
+    return "Standard permissions";
   }
   return PROJECT_TOKEN_PERMISSIONS.filter((permission) =>
     permissions.includes(permission.value),

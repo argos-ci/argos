@@ -45,7 +45,7 @@ import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
 import {
   ALL_PROJECT_TOKEN_PERMISSIONS,
-  FULL_ACCESS,
+  STANDARD_PERMISSIONS,
   PROJECT_TOKEN_PERMISSIONS,
 } from "./permissions";
 
@@ -121,10 +121,10 @@ const EXPIRATION_ITEMS = Object.fromEntries(
   ]),
 );
 
-type Access = "full" | "advanced";
+type Access = "standard" | "advanced";
 
 function checkIsAccess(value: unknown): value is Access {
-  return value === "full" || value === "advanced";
+  return value === "standard" || value === "advanced";
 }
 
 type Inputs = {
@@ -163,7 +163,7 @@ export function CreateProjectTokenDialog(props: {
     defaultValues: {
       name: "",
       projectIds: projects.length === 1 ? projects.map((p) => p.id) : [],
-      access: "full",
+      access: "standard",
       permissions: [...ALL_PROJECT_TOKEN_PERMISSIONS],
       expireInDays: "90",
     },
@@ -332,9 +332,9 @@ function PermissionsField(props: { control: Control<Inputs> }) {
         }}
       >
         <RadioOption
-          value="full"
-          label={FULL_ACCESS.label}
-          description={FULL_ACCESS.description}
+          value="standard"
+          label={STANDARD_PERMISSIONS.label}
+          description={STANDARD_PERMISSIONS.description}
         />
         <RadioOption
           value="advanced"

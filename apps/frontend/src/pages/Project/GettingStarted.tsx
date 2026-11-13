@@ -453,9 +453,9 @@ function TokenSetup(props: {
     return (
       <div>
         <p className="text-low text-sm">
-          Your project token is ready. It has full access, expires in{" "}
-          {GETTING_STARTED_TOKEN_DAYS} days and is filled in below. Manage it in
-          the{" "}
+          Your project token is ready. It has the standard permissions, expires
+          in {GETTING_STARTED_TOKEN_DAYS} days and is filled in below. Manage it
+          in the{" "}
           <Link href={`${getProjectURL(params)}/settings/authentication`}>
             project settings
           </Link>
