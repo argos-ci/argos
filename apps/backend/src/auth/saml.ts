@@ -6,10 +6,11 @@ import z from "zod";
 import config from "@/config";
 import { Team, type Account, type TeamSamlConfig } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
-import { boom } from "@/util/error";
+import logger from "@/logger";
+import { boom, HTTPError } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
-const CLOCK_SKEW_SECONDS = 5 * 60;
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 /**
  * Time allowed to store the login state.
@@ -20,7 +21,6 @@ const LOGIN_STATE_TTL_MS = 10 * 60 * 1000;
  * Time allowed to exchange a SAML code for a JWT token.
  */
 const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const ASSERTION_REPLAY_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 type SamlAttributeValue = string | string[];
 type SamlAttributes = Record<string, SamlAttributeValue>;
@@ -42,18 +42,50 @@ const SamlAuthCodePayloadSchema = z.object({
 
 type SamlAuthCodePayload = z.infer<typeof SamlAuthCodePayloadSchema>;
 
+const SamlValuesSchema = z.union([z.string(), z.array(z.string())]);
+
+const SamlExtractSchema = z.object({
+  nameID: SamlValuesSchema.nullish(),
+  response: z.object({ inResponseTo: z.string().optional() }).nullish(),
+  subjectConfirmations: SamlValuesSchema.nullish(),
+  attributes: z.record(z.string(), SamlValuesSchema).nullish(),
+});
+
+const SubjectConfirmationSchema = z.object({
+  method: z.string().optional(),
+  recipient: z.string().optional(),
+  inResponseTo: z.string().optional(),
+});
+
+const SUBJECT_CONFIRMATION_FIELDS: samlify.Extractor.ExtractorFields = [
+  { key: "method", localPath: ["SubjectConfirmation"], attributes: ["Method"] },
+  {
+    key: "recipient",
+    localPath: ["SubjectConfirmation", "SubjectConfirmationData"],
+    attributes: ["Recipient"],
+  },
+  {
+    key: "inResponseTo",
+    localPath: ["SubjectConfirmation", "SubjectConfirmationData"],
+    attributes: ["InResponseTo"],
+  },
+];
+
+const BEARER_METHOD = "urn:oasis:names:tc:SAML:2.0:cm:bearer";
+
 type SamlResponseExtract = {
-  issuer: string;
-  audience: string;
   nameId: string | null;
-  response: {
-    destination: string;
-    inResponseTo: string | null;
-  };
-  conditions: {
-    notBefore: string | null;
-    notOnOrAfter: string | null;
-  };
+  /**
+   * Whether every bearer `SubjectConfirmationData` of the verified assertion
+   * names a `Recipient`.
+   */
+  bearerRecipientsPresent: boolean;
+  /**
+   * The request the response answers: the signed `SubjectConfirmationData`
+   * value, else the outer one, which samlify only lets through when the whole
+   * Response is signed.
+   */
+  inResponseTo: string | null;
   attributes: SamlAttributes;
 };
 
@@ -79,8 +111,8 @@ function getAuthCodeKey(code: string) {
   return `saml:auth-code:${code}`;
 }
 
-function getAssertionReplayKey(teamSlug: string, assertionId: string) {
-  return `saml:assertion:${teamSlug}:${assertionId}`;
+function getAssertionReplayKey(teamSlug: string, key: string) {
+  return `saml:assertion:${teamSlug}:${key}`;
 }
 
 function getTeamSamlUrls(teamSlug: string) {
@@ -106,14 +138,40 @@ function createServiceProvider(args: {
     relayState: args.relayState,
     authnRequestsSigned: args.requestSigned,
     wantAssertionsSigned: true,
-    wantMessageSigned: true,
+    // Requiring a signed <Response> locks out IdPs that sign only the
+    // assertion (the default of Entra ID and Google Workspace), and SP metadata
+    // cannot ask them for more. samlify still rejects a response unless the
+    // assertion or the whole Response verifies against the team's certificate.
+    wantMessageSigned: false,
     assertionConsumerService: [
       {
         Binding: samlify.Constants.namespace.binding.post,
         Location: urls.acsUrl,
       },
     ],
-    clockDrifts: [-CLOCK_SKEW_SECONDS, CLOCK_SKEW_SECONDS],
+    clockDrifts: [-CLOCK_SKEW_MS, CLOCK_SKEW_MS],
+    replayCache: {
+      saveIfAbsent: async (key, expiresAt) => {
+        try {
+          const redis = await getRedisClient();
+          const result = await redis.set(
+            getAssertionReplayKey(args.teamSlug, key),
+            "1",
+            {
+              expiration: { type: "PXAT", value: expiresAt.getTime() },
+              condition: "NX",
+            },
+          );
+          return result === "OK";
+        } catch (error) {
+          // An HTTPError passes through the SAML response parser as is, so an
+          // outage is not reported as an invalid response.
+          throw boom(503, "SAML replay store is unavailable.", {
+            cause: error,
+          });
+        }
+      },
+    },
   });
 }
 
@@ -198,146 +256,27 @@ function getString(input: string | string[] | null | undefined) {
   return null;
 }
 
-function readExtract(result: { extract: object }): SamlResponseExtract {
-  const raw = result.extract as {
-    issuer?: string | null;
-    audience?: string | null;
-    nameID?: string | { value?: string } | null;
-    nameId?: string | { value?: string } | null;
-    response?: {
-      destination?: string | null;
-      inResponseTo?: string | null;
-    };
-    conditions?: {
-      notBefore?: string | null;
-      notOnOrAfter?: string | null;
-    };
-    attributes?: SamlAttributes;
-  };
-  const rawNameId = raw.nameID ?? raw.nameId ?? null;
-  const nameId =
-    typeof rawNameId === "string"
-      ? rawNameId
-      : rawNameId && typeof rawNameId.value === "string"
-        ? rawNameId.value
-        : null;
-
+function readExtract(extract: unknown): SamlResponseExtract {
+  const raw = SamlExtractSchema.parse(extract);
+  const confirmations = [raw.subjectConfirmations ?? []]
+    .flat()
+    .map((xml) =>
+      SubjectConfirmationSchema.parse(
+        samlify.Extractor.extract(xml, SUBJECT_CONFIRMATION_FIELDS),
+      ),
+    );
   return {
-    issuer: raw.issuer ?? "",
-    audience: raw.audience ?? "",
-    nameId,
-    response: {
-      destination: raw.response?.destination ?? "",
-      inResponseTo: raw.response?.inResponseTo ?? null,
-    },
-    conditions: {
-      notBefore: raw.conditions?.notBefore ?? null,
-      notOnOrAfter: raw.conditions?.notOnOrAfter ?? null,
-    },
+    nameId: getString(raw.nameID),
+    bearerRecipientsPresent: confirmations
+      .filter((confirmation) => confirmation.method === BEARER_METHOD)
+      .every((confirmation) => Boolean(confirmation.recipient)),
+    inResponseTo:
+      confirmations.find((confirmation) => confirmation.inResponseTo)
+        ?.inResponseTo ||
+      raw.response?.inResponseTo ||
+      null,
     attributes: raw.attributes ?? {},
   };
-}
-
-function assertSamlTiming(conditions: SamlResponseExtract["conditions"]) {
-  const now = Date.now();
-  const skewMs = CLOCK_SKEW_SECONDS * 1000;
-  if (conditions.notBefore) {
-    const notBefore = new Date(conditions.notBefore).getTime();
-    if (Number.isFinite(notBefore) && now + skewMs < notBefore) {
-      throw boom(401, "SAML response is not yet valid.");
-    }
-  }
-  if (conditions.notOnOrAfter) {
-    const notOnOrAfter = new Date(conditions.notOnOrAfter).getTime();
-    if (Number.isFinite(notOnOrAfter) && now - skewMs >= notOnOrAfter) {
-      throw boom(401, "SAML response has expired.");
-    }
-  }
-}
-
-function assertContainsSignature(samlContent: string) {
-  const hasSignatureTag = /<(?:\w+:)?Signature\b/.test(samlContent);
-  if (!hasSignatureTag) {
-    throw boom(401, "SAML response is not signed.");
-  }
-}
-
-function assertSamlAudienceAndRecipient(args: {
-  extract: SamlResponseExtract;
-  teamSlug: string;
-  idpEntityId: string;
-}) {
-  const urls = getTeamSamlUrls(args.teamSlug);
-  if (args.extract.issuer !== args.idpEntityId) {
-    throw boom(401, "Invalid SAML issuer.");
-  }
-  if (args.extract.audience !== urls.entityId) {
-    throw boom(401, "Invalid SAML audience.");
-  }
-  if (args.extract.response.destination !== urls.acsUrl) {
-    throw boom(401, "Invalid SAML destination.");
-  }
-}
-
-function assertSamlRecipientInXml(args: {
-  samlContent: string;
-  acsUrl: string;
-}) {
-  const recipientMatch = args.samlContent.match(/Recipient="([^"]+)"/);
-  const recipient = recipientMatch?.[1] ?? null;
-  if (!recipient || recipient !== args.acsUrl) {
-    throw boom(401, "Invalid SAML recipient.");
-  }
-}
-
-function extractAssertionIdFromXml(samlContent: string) {
-  const assertionMatch = samlContent.match(
-    /<(?:\w+:)?Assertion\b[^>]*\bID="([^"]+)"/,
-  );
-  const assertionId = assertionMatch?.[1] ?? null;
-  if (!assertionId) {
-    throw boom(401, "Invalid SAML assertion.");
-  }
-  return assertionId;
-}
-
-async function assertSamlAssertionNotReplayed(args: {
-  teamSlug: string;
-  assertionId: string;
-}) {
-  const redis = await getRedisClient();
-  const result = await redis.set(
-    getAssertionReplayKey(args.teamSlug, args.assertionId),
-    "1",
-    {
-      expiration: {
-        type: "PX",
-        value: ASSERTION_REPLAY_TTL_MS,
-      },
-      condition: "NX",
-    },
-  );
-  if (result !== "OK") {
-    throw boom(
-      401,
-      `SAML assertion was already used for team ${args.teamSlug}.`,
-    );
-  }
-}
-
-function assertSamlRequestBinding(args: {
-  inResponseTo: string | null;
-  loginState: SamlLoginState | null;
-}) {
-  if (!args.inResponseTo) {
-    return;
-  }
-  if (!args.loginState) {
-    throw boom(401, "Invalid SAML InResponseTo.");
-  }
-  if (args.inResponseTo !== args.loginState.requestId) {
-    throw boom(401, "Invalid SAML InResponseTo.");
-  }
 }
 
 export function extractEmailFromSaml(attributes: SamlAttributes) {
@@ -409,34 +348,52 @@ export async function parseAndValidateSamlLoginResponse(args: {
     requestSigned: false,
   });
   const idp = createIdentityProvider(args.samlConfig);
-  const result = await sp.parseLoginResponse(idp, "post", {
-    body: {
-      SAMLResponse: args.samlResponse,
-      RelayState: relayState ?? "",
-    },
-  });
+  const result = await sp
+    .parseLoginResponse(
+      idp,
+      "post",
+      {
+        body: {
+          SAMLResponse: args.samlResponse,
+          RelayState: relayState ?? "",
+        },
+      },
+      // Without a pending request, a response answering one is rejected. With
+      // one, the check runs below: some IdPs leave InResponseTo out.
+      loginState ? {} : { inResponseTo: null },
+    )
+    .catch((error: unknown) => {
+      if (error instanceof HTTPError) {
+        throw error;
+      }
+      logger.warn({ error, teamSlug: args.teamSlug }, "SAML response rejected");
+      throw boom(
+        401,
+        "Argos could not verify the SAML response from your identity provider. Ask a team admin to check the SAML settings.",
+        { cause: error },
+      );
+    });
 
-  const extract = readExtract({ extract: result.extract });
-  const assertionId = extractAssertionIdFromXml(result.samlContent);
-  assertContainsSignature(result.samlContent);
-  assertSamlTiming(extract.conditions);
-  assertSamlAudienceAndRecipient({
-    extract,
-    teamSlug: args.teamSlug,
-    idpEntityId: args.samlConfig.idpEntityId ?? "",
-  });
-  assertSamlRecipientInXml({
-    samlContent: result.samlContent,
-    acsUrl: getTeamSamlUrls(args.teamSlug).acsUrl,
-  });
-  assertSamlRequestBinding({
-    inResponseTo: extract.response.inResponseTo,
-    loginState,
-  });
-  await assertSamlAssertionNotReplayed({
-    teamSlug: args.teamSlug,
-    assertionId,
-  });
+  // samlify checks issuer, audience, destination, recipient and timing itself,
+  // but only warns when a bearer confirmation has no Recipient, which
+  // saml-profiles §4.1.4.2 requires.
+  const extract = readExtract(result.extract);
+  if (!extract.bearerRecipientsPresent) {
+    throw boom(
+      401,
+      "The SAML response names no recipient. Ask a team admin to check the SAML settings.",
+    );
+  }
+  if (
+    loginState &&
+    extract.inResponseTo &&
+    extract.inResponseTo !== loginState.requestId
+  ) {
+    throw boom(
+      401,
+      "The SAML response answers another login. Try signing in again.",
+    );
+  }
 
   return {
     attributes: extract.attributes,
@@ -574,12 +531,3 @@ function parseCertificates(certificates: unknown) {
   }
   return typeof certificates === "string" ? [certificates] : [];
 }
-
-export const samlTestUtils = {
-  assertSamlTiming,
-  assertSamlAudienceAndRecipient,
-  assertSamlRecipientInXml,
-  assertSamlRequestBinding,
-  assertSamlAssertionNotReplayed,
-  extractAssertionIdFromXml,
-};

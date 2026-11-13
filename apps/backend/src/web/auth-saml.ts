@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express, { Router, type ErrorRequestHandler } from "express";
 import { z } from "zod";
 
 import {
@@ -12,7 +12,8 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { Account } from "@/database/models";
-import { boom } from "@/util/error";
+import logger from "@/logger";
+import { boom, HTTPError } from "@/util/error";
 
 import { asyncHandler } from "./util";
 
@@ -24,6 +25,33 @@ const AcsBodySchema = z.object({
   SAMLResponse: z.string(),
   RelayState: z.string().optional(),
 });
+
+function getLoginErrorUrl(message: string) {
+  const loginUrl = new URL("/login", config.get("server.url"));
+  loginUrl.searchParams.set("error", message);
+  return loginUrl.toString();
+}
+
+/**
+ * The browser reaches these routes by navigation (the IdP's page posts to the
+ * ACS), so a failed login goes back to the login page with the reason instead
+ * of ending on a bare error response.
+ */
+const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
+  error,
+  _req,
+  res,
+  _next,
+) => {
+  if (error instanceof HTTPError && error.statusCode < 500) {
+    res.redirect(getLoginErrorUrl(error.message));
+    return;
+  }
+  logger.error({ error }, "SAML login failed");
+  res.redirect(
+    getLoginErrorUrl("SAML login failed on the Argos side. Try again shortly."),
+  );
+};
 
 /**
  * A same-origin path to land on after login. Resolved with the URL parser
@@ -81,31 +109,24 @@ const router: Router = Router();
 router.get(
   "/auth/saml/:teamSlug/login",
   asyncHandler(async (req, res) => {
-    try {
-      const teamSlug = getFirstString(req.params["teamSlug"]);
-      if (!teamSlug) {
-        throw boom(400, "Team slug is missing.");
-      }
-      const query = LoginQuerySchema.safeParse(req.query);
-      const redirect = getSafeRedirect(
-        query.success ? getFirstString(query.data.r) : undefined,
-      );
-      const account = await getTeamAccountOrThrow(teamSlug);
-      const samlConfig = await getEnabledTeamSamlConfig(account);
-      const loginUrl = await createSamlLoginRedirect({
-        teamSlug,
-        samlConfig,
-        redirect,
-      });
-      res.redirect(loginUrl);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start SAML login.";
-      const loginUrl = new URL("/login", config.get("server.url"));
-      loginUrl.searchParams.set("error", message);
-      res.redirect(loginUrl.toString());
+    const teamSlug = getFirstString(req.params["teamSlug"]);
+    if (!teamSlug) {
+      throw boom(400, "Team slug is missing.");
     }
+    const query = LoginQuerySchema.safeParse(req.query);
+    const redirect = getSafeRedirect(
+      query.success ? getFirstString(query.data.r) : undefined,
+    );
+    const account = await getTeamAccountOrThrow(teamSlug);
+    const samlConfig = await getEnabledTeamSamlConfig(account);
+    const loginUrl = await createSamlLoginRedirect({
+      teamSlug,
+      samlConfig,
+      redirect,
+    });
+    res.redirect(loginUrl);
   }),
+  redirectFailedLoginToLoginPage,
 );
 
 router.post(
@@ -116,14 +137,20 @@ router.post(
     if (!teamSlug) {
       throw boom(400, "Team slug is missing.");
     }
-    const body = AcsBodySchema.parse(req.body);
+    const body = AcsBodySchema.safeParse(req.body);
+    if (!body.success) {
+      throw boom(
+        400,
+        "Argos could not read the SAML response. Try signing in again.",
+      );
+    }
     const account = await getTeamAccountOrThrow(teamSlug);
     const samlConfig = await getEnabledTeamSamlConfig(account);
     const parsed = await parseAndValidateSamlLoginResponse({
       teamSlug,
       samlConfig,
-      samlResponse: body.SAMLResponse,
-      relayState: body.RelayState ?? null,
+      samlResponse: body.data.SAMLResponse,
+      relayState: body.data.RelayState ?? null,
     });
 
     // For Okta email is the subject (NameID)
@@ -151,6 +178,7 @@ router.post(
     );
     res.redirect(loginUrl.toString());
   }),
+  redirectFailedLoginToLoginPage,
 );
 
 router.get(
