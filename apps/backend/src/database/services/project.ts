@@ -18,8 +18,6 @@ import {
 } from "../models/Project";
 import { ProjectUser } from "../models/ProjectUser";
 import { Team } from "../models/Team";
-import { TeamUser } from "../models/TeamUser";
-import type { User } from "../models/User";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 import { moveProjectTokens } from "./project-token";
@@ -117,7 +115,7 @@ export async function getProjectVisibility(args: {
  * Restrict a `Project` query to the projects a viewer may see. A soft-deleted
  * project is listed to nobody, staff included.
  */
-function applyProjectVisibility<R>(
+export function applyProjectVisibility<R>(
   query: QueryBuilder<Project, R>,
   visibility: NonNullable<ProjectVisibility>,
 ): QueryBuilder<Project, R> {

@@ -6,12 +6,8 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import {
-  Project,
-  type Account,
-  type ProjectToken,
-  type User,
-} from "@/database/models";
+import type { AuthViewer } from "@/auth/payload";
+import { Project, type Account, type ProjectToken } from "@/database/models";
 import {
   createProjectToken,
   deleteProjectToken,
@@ -107,12 +103,12 @@ const CreateProjectTokenBodySchema = z.object({
 });
 
 /**
- * Serialize tokens with the projects the user may see among the ones they
+ * Serialize tokens with the projects the viewer may see among the ones they
  * reach: one query for the projects, one for their visibility.
  */
 async function serializeProjectTokens(
   projectTokens: ProjectToken[],
-  args: { account: Account; user: User },
+  args: { account: Account; auth: AuthViewer },
 ) {
   const projectsByTokenId = await getProjectsByTokenId(
     projectTokens.map((projectToken) => projectToken.id),
@@ -141,7 +137,7 @@ async function serializeProjectTokens(
 
 async function serializeCreatedProjectToken(
   created: { projectToken: ProjectToken; token: string },
-  args: { account: Account; user: User },
+  args: { account: Account; auth: AuthViewer },
 ) {
   const [serialized] = await serializeProjectTokens(
     [created.projectToken],
@@ -184,13 +180,11 @@ export const listAccountProjectTokensHandler: CreateAPIHandler = ({ get }) => {
     const account = getAccountForAuth(auth, {
       slug: req.ctx.params.accountSlug,
     });
-    const tokens = await listAccountProjectTokens({ account, user: auth.user });
+    const tokens = await listAccountProjectTokens({ account, auth });
     if (!tokens) {
       throw boom(403, "You are not an administrator of this account.");
     }
-    res.send(
-      await serializeProjectTokens(tokens, { account, user: auth.user }),
-    );
+    res.send(await serializeProjectTokens(tokens, { account, auth }));
   });
 };
 
@@ -232,11 +226,11 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
       slug: req.ctx.params.accountSlug,
     });
     const names = [...new Set(req.ctx.body.projects)];
-    // A project the user cannot see is reported missing, so that its name
+    // A project the viewer cannot see is reported missing, so that its name
     // cannot be probed.
     const projects = await filterViewableProjects({
       account,
-      user: auth.user,
+      auth,
       projects: await Project.queryNotDeleted()
         .where("accountId", account.id)
         .whereIn("name", names),
@@ -249,7 +243,7 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
     }
     const created = await createProjectToken({
       account,
-      user: auth.user,
+      auth,
       name: req.ctx.body.name,
       projects,
       permissions: req.ctx.body.permissions,
@@ -258,7 +252,7 @@ export const createAccountProjectTokenHandler: CreateAPIHandler = ({
     res.status(201).send(
       await serializeCreatedProjectToken(created, {
         account,
-        user: auth.user,
+        auth,
       }),
     );
   });
@@ -292,7 +286,7 @@ export const deleteAccountProjectTokenHandler: CreateAPIHandler = ({
       id: req.ctx.params.tokenId,
       accountId: account.id,
     });
-    await deleteProjectToken({ projectToken, user: auth.user });
+    await deleteProjectToken({ projectToken, auth });
     res.status(204).send();
   });
 };
@@ -323,7 +317,7 @@ export const listProjectTokensHandler: CreateAPIHandler = ({ get }) => {
       req.ctx.auth(),
     ]);
     invariant(project.account, "Project account not fetched");
-    const tokens = await listProjectProjectTokens({ project, user: auth.user });
+    const tokens = await listProjectProjectTokens({ project, auth });
     if (!tokens) {
       throw boom(
         403,
@@ -333,7 +327,7 @@ export const listProjectTokensHandler: CreateAPIHandler = ({ get }) => {
     res.send(
       await serializeProjectTokens(tokens, {
         account: project.account,
-        user: auth.user,
+        auth,
       }),
     );
   });
@@ -371,7 +365,7 @@ export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
     invariant(project.account, "Project account not fetched");
     const created = await createProjectToken({
       account: project.account,
-      user: auth.user,
+      auth,
       name: req.ctx.body.name,
       projects: [project],
       permissions: req.ctx.body.permissions,
@@ -380,7 +374,7 @@ export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
     res.status(201).send(
       await serializeCreatedProjectToken(created, {
         account: project.account,
-        user: auth.user,
+        auth,
       }),
     );
   });
@@ -418,7 +412,7 @@ export const deleteProjectTokenHandler: CreateAPIHandler = ({
     if (!projects.some((linked) => linked.id === project.id)) {
       throw boom(404, "Token not found.");
     }
-    await deleteProjectToken({ projectToken, user: auth.user });
+    await deleteProjectToken({ projectToken, auth });
     res.status(204).send();
   });
 };

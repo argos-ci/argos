@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { Project, ProjectToken } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 
 import { transferProject } from "./project";
 import { deleteProjectToken, getProjectTokenProjects } from "./project-token";
@@ -66,7 +66,7 @@ describe("project tokens", () => {
         token: LEGACY_TOKEN,
       });
 
-      await deleteProjectToken({ projectToken, user });
+      await deleteProjectToken({ projectToken, auth: sessionViewer(user) });
 
       await expect(
         getAuthProjectPayloadFromBearerToken(LEGACY_TOKEN),
@@ -127,7 +127,7 @@ describe("project tokens", () => {
 
     await transferProject({
       project: web,
-      user,
+      auth: sessionViewer(user),
       targetAccount: teamAccount,
       name: "web",
     });

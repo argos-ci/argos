@@ -600,12 +600,16 @@ function createProjectTokenProjectsLoader() {
  * project tokens asks it for each token, always about the same account.
  */
 function createVisibleProjectIdsLoader() {
-  return new DataLoader<{ account: Account; user: User }, Set<string>, string>(
+  return new DataLoader<
+    { account: Account; auth: AuthViewer },
+    Set<string>,
+    string
+  >(
     async (inputs) =>
       Promise.all(
         inputs.map(async (input) => new Set(await getVisibleProjectIds(input))),
       ),
-    { cacheKeyFn: (input) => `${input.account.id}:${input.user.id}` },
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
   );
 }
 
@@ -615,15 +619,15 @@ function createVisibleProjectIdsLoader() {
  */
 function createAccountPermissionsLoader() {
   return new DataLoader<
-    { account: Account; user: User },
+    { account: Account; auth: AuthViewer },
     AccountPermission[],
     string
   >(
     async (inputs) =>
       Promise.all(
-        inputs.map((input) => input.account.$getPermissions(input.user)),
+        inputs.map((input) => input.account.$getPermissions(input.auth)),
       ),
-    { cacheKeyFn: (input) => `${input.account.id}:${input.user.id}` },
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
   );
 }
 
@@ -633,15 +637,15 @@ function createAccountPermissionsLoader() {
  */
 function createProjectPermissionsLoader() {
   return new DataLoader<
-    { project: Project; user: User },
+    { project: Project; auth: AuthViewer },
     ProjectPermission[],
     string
   >(
     async (inputs) =>
       Promise.all(
-        inputs.map((input) => input.project.$getPermissions(input.user)),
+        inputs.map((input) => input.project.$getPermissions(input.auth)),
       ),
-    { cacheKeyFn: (input) => `${input.project.id}:${input.user.id}` },
+    { cacheKeyFn: (input) => `${input.project.id}:${input.auth.user.id}` },
   );
 }
 

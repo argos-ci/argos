@@ -3,7 +3,8 @@ import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Project, type Account, type User } from "@/database/models";
+import type { AuthViewer } from "@/auth/payload";
+import { Project, type Account } from "@/database/models";
 import {
   canManageProjectToken,
   createProjectToken,
@@ -130,12 +131,12 @@ function getExpireAt(expireInDays: number): string {
 
 async function resolveAccountProjectTokens(
   account: Account,
-  user: User | undefined,
+  auth: AuthViewer | null,
 ) {
-  if (!user) {
+  if (!auth) {
     throw unauthenticated();
   }
-  return listAccountProjectTokens({ account, user });
+  return listAccountProjectTokens({ account, auth });
 }
 
 export const resolvers: IResolvers = {
@@ -148,7 +149,7 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const { user } = ctx.auth;
+      const { auth } = ctx;
       const [account, projects] = await Promise.all([
         ctx.loaders.Account.load(projectToken.accountId),
         ctx.loaders.ProjectTokenProjects.load(projectToken.id),
@@ -156,7 +157,7 @@ export const resolvers: IResolvers = {
       invariant(account, "Project token account not found");
       const visibleIds = await ctx.loaders.VisibleProjectIds.load({
         account,
-        user,
+        auth,
       });
       return projects.filter((project) => visibleIds.has(project.id));
     },
@@ -177,34 +178,34 @@ export const resolvers: IResolvers = {
         ctx.loaders.ProjectTokenProjects.load(projectToken.id),
       ]);
       invariant(account, "Project token account not found");
-      const { user } = ctx.auth;
+      const { auth } = ctx;
       return canManageProjectToken({
         account,
         projects,
-        user,
+        auth,
         getPermissions: {
           account: (account) =>
-            ctx.loaders.AccountPermissions.load({ account, user }),
+            ctx.loaders.AccountPermissions.load({ account, auth }),
           project: (project) =>
-            ctx.loaders.ProjectPermissions.load({ project, user }),
+            ctx.loaders.ProjectPermissions.load({ project, auth }),
         },
       });
     },
   },
   Team: {
     projectTokens: (account, _args, ctx) =>
-      resolveAccountProjectTokens(account, ctx.auth?.user),
+      resolveAccountProjectTokens(account, ctx.auth),
   },
   User: {
     projectTokens: (account, _args, ctx) =>
-      resolveAccountProjectTokens(account, ctx.auth?.user),
+      resolveAccountProjectTokens(account, ctx.auth),
   },
   Project: {
     tokens: async (project, _args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      return listProjectProjectTokens({ project, user: ctx.auth.user });
+      return listProjectProjectTokens({ project, auth: ctx.auth });
     },
   },
   Mutation: {
@@ -224,7 +225,7 @@ export const resolvers: IResolvers = {
         }
         const created = await createProjectToken({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           name,
           projects,
           permissions: permissions.map(
@@ -245,7 +246,7 @@ export const resolvers: IResolvers = {
         const projectToken = await loadProjectToken({ id: args.input.id });
         return await renameProjectToken({
           projectToken,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           name: args.input.name,
         });
       } catch (error) {
@@ -258,7 +259,7 @@ export const resolvers: IResolvers = {
       }
       try {
         const projectToken = await loadProjectToken({ id: args.input.id });
-        await deleteProjectToken({ projectToken, user: ctx.auth.user });
+        await deleteProjectToken({ projectToken, auth: ctx.auth });
         return projectToken.id;
       } catch (error) {
         throw toGraphQLError(error);

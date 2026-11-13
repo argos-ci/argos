@@ -5,20 +5,20 @@ import {
 import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { boom } from "@/util/error";
 
 import type { Account, AccountPermission } from "../models/Account";
 import { Project, type ProjectPermission } from "../models/Project";
 import { ProjectToken } from "../models/ProjectToken";
 import { ProjectTokenProject } from "../models/ProjectTokenProject";
-import type { User } from "../models/User";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 import { hashToken } from "./crypto";
-import { applyProjectVisibility } from "./project";
+import { applyProjectVisibility, getProjectVisibility } from "./project";
 
 /**
- * Whether a user can manage (create, rename, revoke) a token linked to these
+ * Whether a viewer can manage (create, rename, revoke) a token linked to these
  * projects of the account: an administrator of the account can manage any,
  * and a project administrator the ones linked only to projects they
  * administer. A token linked to no project anymore takes an account
@@ -31,16 +31,16 @@ import { applyProjectVisibility } from "./project";
 export async function canManageProjectToken(args: {
   account: Account;
   projects: Project[];
-  user: User;
+  auth: AuthViewer;
   getPermissions?: {
     account: (account: Account) => Promise<AccountPermission[]>;
     project: (project: Project) => Promise<ProjectPermission[]>;
   };
 }): Promise<boolean> {
-  const { account, projects, user } = args;
+  const { account, projects, auth } = args;
   const getPermissions = args.getPermissions ?? {
-    account: (account: Account) => account.$getPermissions(user),
-    project: (project: Project) => project.$getPermissions(user),
+    account: (account: Account) => account.$getPermissions(auth),
+    project: (project: Project) => project.$getPermissions(auth),
   };
   const accountPermissions = await getPermissions.account(account);
   if (accountPermissions.includes("admin")) {
@@ -90,16 +90,20 @@ export async function getProjectTokenProjects(
 }
 
 /**
- * The projects of a token a user may see: a token shown on a project's page
+ * The projects of a token a viewer may see: a token shown on a project's page
  * must not name the private projects of the team the viewer cannot reach.
  */
 export async function filterViewableProjects(args: {
   projects: Project[];
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<Project[]> {
-  const { projects, account, user } = args;
+  const { projects, account, auth } = args;
   if (projects.length === 0) {
+    return [];
+  }
+  const visibility = await getProjectVisibility({ account, auth });
+  if (!visibility) {
     return [];
   }
   const query = applyProjectVisibility(
@@ -110,11 +114,8 @@ export async function filterViewableProjects(args: {
         "projects.id",
         projects.map((project) => project.id),
       ),
-    { account, user },
+    visibility,
   );
-  if (!query) {
-    return [];
-  }
   const visibleIds = new Set((await query).map((project) => project.id));
   return projects.filter((project) => visibleIds.has(project.id));
 }
@@ -122,7 +123,7 @@ export async function filterViewableProjects(args: {
 async function assertCanManage(args: {
   account: Account;
   projects: Project[];
-  user: User;
+  auth: AuthViewer;
 }) {
   if (!(await canManageProjectToken(args))) {
     throw boom(
@@ -133,15 +134,15 @@ async function assertCanManage(args: {
 }
 
 /**
- * The tokens of an account, or `null` when the user does not administer it: a
+ * The tokens of an account, or `null` when the viewer does not administer it: a
  * token may reach any of its projects.
  */
 export async function listAccountProjectTokens(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
 }): Promise<ProjectToken[] | null> {
-  const { account, user } = args;
-  const permissions = await account.$getPermissions(user);
+  const { account, auth } = args;
+  const permissions = await account.$getPermissions(auth);
   if (!permissions.includes("admin")) {
     return null;
   }
@@ -152,14 +153,14 @@ export async function listAccountProjectTokens(args: {
 }
 
 /**
- * The tokens linked to a project, or `null` when the user cannot review it.
+ * The tokens linked to a project, or `null` when the viewer cannot review it.
  */
 export async function listProjectProjectTokens(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
 }): Promise<ProjectToken[] | null> {
-  const { project, user } = args;
-  const permissions = await project.$getPermissions(user);
+  const { project, auth } = args;
+  const permissions = await project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     return null;
   }
@@ -249,13 +250,13 @@ export async function insertProjectToken(args: {
  */
 export async function createProjectToken(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   name: string;
   projects: Project[];
   permissions: readonly ProjectTokenPermission[];
   expireAt: string | null;
 }): Promise<{ projectToken: ProjectToken; token: string }> {
-  const { account, user, projects } = args;
+  const { account, auth, projects } = args;
   const name = parseName(args.name);
   const permissions = parsePermissions(args.permissions);
   const expireAt = parseExpireAt(args.expireAt);
@@ -267,7 +268,7 @@ export async function createProjectToken(args: {
     throw boom(400, "A token can only be linked to projects of its account.");
   }
 
-  await assertCanManage({ account, projects, user });
+  await assertCanManage({ account, projects, auth });
 
   const token = ProjectToken.generateToken();
   const projectToken = await insertProjectToken({
@@ -277,7 +278,7 @@ export async function createProjectToken(args: {
     permissions,
     projectIds: projects.map((project) => project.id),
     expireAt,
-    createdById: user.id,
+    createdById: auth.user.id,
   });
   return { projectToken, token };
 }
@@ -306,20 +307,20 @@ export async function loadProjectToken(args: {
 
 async function assertCanManageToken(args: {
   projectToken: ProjectToken;
-  user: User;
+  auth: AuthViewer;
 }) {
-  const { projectToken, user } = args;
+  const { projectToken, auth } = args;
   const [account, projects] = await Promise.all([
     projectToken.$relatedQuery("account"),
     getProjectTokenProjects(projectToken),
   ]);
   invariant(account, "Project token account not found");
-  await assertCanManage({ account, projects, user });
+  await assertCanManage({ account, projects, auth });
 }
 
 export async function renameProjectToken(args: {
   projectToken: ProjectToken;
-  user: User;
+  auth: AuthViewer;
   name: string;
 }): Promise<ProjectToken> {
   const name = parseName(args.name);
@@ -332,7 +333,7 @@ export async function renameProjectToken(args: {
  */
 export async function deleteProjectToken(args: {
   projectToken: ProjectToken;
-  user: User;
+  auth: AuthViewer;
 }): Promise<void> {
   const { projectToken } = args;
   await assertCanManageToken(args);
