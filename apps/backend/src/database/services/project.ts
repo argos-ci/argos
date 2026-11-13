@@ -18,7 +18,9 @@ import {
 } from "../models/Project";
 import { ProjectUser } from "../models/ProjectUser";
 import { Team } from "../models/Team";
+import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
+import { moveProjectTokens } from "./project-token";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
 
@@ -113,7 +115,7 @@ export async function getProjectVisibility(args: {
  * Restrict a `Project` query to the projects a viewer may see. A soft-deleted
  * project is listed to nobody, staff included.
  */
-function applyProjectVisibility<R>(
+export function applyProjectVisibility<R>(
   query: QueryBuilder<Project, R>,
   visibility: NonNullable<ProjectVisibility>,
 ): QueryBuilder<Project, R> {
@@ -518,9 +520,18 @@ export async function transferProject(args: {
 
   const [previousAccount, transferredProject] = await Promise.all([
     Account.query().findById(previousAccountId),
-    project.$query().patchAndFetch({
-      accountId: targetAccount.id,
-      name: resolvedName,
+    transaction(async (trx) => {
+      const transferredProject = await project.$query(trx).patchAndFetch({
+        accountId: targetAccount.id,
+        name: resolvedName,
+      });
+      await moveProjectTokens({
+        projectId: project.id,
+        fromAccountId: previousAccountId,
+        toAccountId: targetAccount.id,
+        trx,
+      });
+      return transferredProject;
     }),
   ]);
 

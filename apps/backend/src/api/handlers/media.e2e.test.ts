@@ -113,7 +113,6 @@ const test = base.extend<{
     await use(
       await factory.Project.create({
         accountId: account.id,
-        token: "project-token",
       }),
     );
   },
@@ -130,7 +129,11 @@ const test = base.extend<{
     await use(token);
   },
   projectToken: async ({ project }, use) => {
-    await use(project.token);
+    const { token } = await factory.createProjectToken({
+      projects: [project],
+      token: "project-token",
+    });
+    await use(token);
   },
 });
 
@@ -244,12 +247,15 @@ describe("createMedia", () => {
     const unpaid = await factory.TeamAccount.create({ slug: "unpaid" });
     const unpaidProject = await factory.Project.create({
       accountId: unpaid.id,
+    });
+    const { token: unpaidProjectToken } = await factory.createProjectToken({
+      projects: [unpaidProject],
       token: "unpaid-project-token",
     });
 
     const res = await request(app)
       .post("/media")
-      .set("Authorization", `Bearer ${unpaidProject.token}`)
+      .set("Authorization", `Bearer ${unpaidProjectToken}`)
       .send({
         name: "before.png",
         contentType: "image/png",

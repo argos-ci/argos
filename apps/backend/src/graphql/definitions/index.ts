@@ -39,6 +39,7 @@ import * as OriginRepository from "./OriginRepository";
 import * as PageInfo from "./PageInfo";
 import * as Plan from "./Plan";
 import * as Project from "./Project";
+import * as ProjectToken from "./ProjectToken";
 import * as PullRequest from "./PullRequest";
 import * as Repository from "./Repository";
 import * as schema from "./schema";
@@ -99,6 +100,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   PageInfo,
   Plan,
   Project,
+  ProjectToken,
   PullRequest,
   Repository,
   schema,

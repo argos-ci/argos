@@ -15,12 +15,13 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
 } from "../schema/primitives/deployment";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -182,7 +183,7 @@ export const finalizeDeploymentOperation = {
   description:
     "Mark a deployment as ready once all of its files have been uploaded. Argos assigns the deployment's aliases and starts serving it.",
   tags: ["Deployments"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["deployments:write"]),
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),
@@ -199,6 +200,7 @@ export const finalizeDeploymentOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -211,14 +213,13 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
       req.ctx.auth(),
       Deployment.query().findById(deploymentId),
     ]);
-    const { project } = auth;
-
     let deployment = initialDeployment;
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }
 
-    if (deployment.projectId !== auth.project.id) {
+    const project = findAuthProject(auth, deployment.projectId);
+    if (!project) {
       throw boom(401, "Unauthorized");
     }
 

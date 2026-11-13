@@ -4,11 +4,13 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { Deployment } from "@/database/models/Deployment";
 import { boom } from "@/util/error";
 
+import { findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
 } from "../schema/primitives/deployment";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -22,7 +24,7 @@ export const getDeploymentOperation = {
   summary: "Get a deployment",
   description: "Retrieve a single deployment by its ID.",
   tags: ["Deployments"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["deployments:write"], ["projects:read"]),
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),
@@ -39,6 +41,7 @@ export const getDeploymentOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -55,7 +58,7 @@ export const getDeployment: CreateAPIHandler = ({ get }) => {
       throw boom(404, "Deployment not found");
     }
 
-    if (deployment.projectId !== auth.project.id) {
+    if (!findAuthProject(auth, deployment.projectId)) {
       throw boom(401, "Unauthorized");
     }
 

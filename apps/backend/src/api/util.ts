@@ -21,6 +21,7 @@ import { asyncHandler } from "@/web/util";
 
 import {
   gateResponseOnRequestScope,
+  isResponseCommitted,
   runInRequestScope,
 } from "./request-context";
 import { zodSchema } from "./schema";
@@ -187,7 +188,7 @@ export const errorHandler: ErrorRequestHandler = (
   // The same error can reach here twice (e.g. eager auth enforcement and a
   // handler that also awaited `req.ctx.auth()`); once the response is committed
   // there is nothing left to do.
-  if (res.headersSent) {
+  if (isResponseCommitted(res)) {
     return;
   }
 
@@ -345,7 +346,7 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
           // forwarded to the error handler when nothing else has responded yet.
           if (operation.security && operation.security.length > 0) {
             auth().catch((error: unknown) => {
-              if (!res.headersSent) {
+              if (!isResponseCommitted(res)) {
                 next(error);
               }
             });

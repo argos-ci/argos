@@ -103,7 +103,6 @@ const test = base.extend<{
     await use(
       await factory.Project.create({
         accountId: account.id,
-        token: "project-token",
         githubRepositoryId: repository.id,
       }),
     );
