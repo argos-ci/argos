@@ -7,6 +7,7 @@
  * MCP clients get the exact same validation the REST API applies.
  */
 import { invariant } from "@argos/util/invariant";
+import { isRecord } from "@argos/util/isRecord";
 import { trimTrailingSlash } from "@argos/util/url";
 import {
   McpServer,
@@ -91,23 +92,17 @@ function validateOnly(
   const standard = schema["~standard"];
   return {
     "~standard": {
-      version: standard.version,
-      vendor: standard.vendor,
-      jsonSchema: standard.jsonSchema,
+      ...standard,
       validate: async (value) => {
         const result = await standard.validate(value);
         if (result.issues) {
           return result;
         }
-        invariant(isArgumentObject(value), "tool arguments are not an object");
+        invariant(isRecord(value), "tool arguments are not an object");
         return { value };
       },
     },
   };
-}
-
-function isArgumentObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**

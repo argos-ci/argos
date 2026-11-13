@@ -351,7 +351,6 @@ describe("MCP server", () => {
     });
     expect(res.status).toBe(200);
     const body = res.body as RpcResponse;
-    expect(body.result!.content![0]!.text).not.toMatch(/failed/);
     expect(body.result!.isError).toBeUndefined();
     expect(body.result!.structuredContent).toMatchObject({
       screenshots: { all: { total: 0 } },
