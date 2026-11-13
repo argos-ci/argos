@@ -488,7 +488,7 @@ export const resolvers: IResolvers = {
       return getSiblingBuilds({
         build,
         compareBucket,
-        user: ctx.auth?.user ?? null,
+        auth: ctx.auth,
       });
     },
     newerBuild: async (build, _args, ctx) => {

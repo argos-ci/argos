@@ -287,7 +287,7 @@ async function createTargetComment(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "review",
     message: `You do not have permission to comment on this ${target.type}`,
   });

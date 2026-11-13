@@ -122,7 +122,7 @@ async function setTargetThreadResolution(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "review",
     message: resolved
       ? "You do not have permission to resolve this thread"

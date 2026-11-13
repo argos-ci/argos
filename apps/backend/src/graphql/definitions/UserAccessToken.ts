@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { checkAuthSatisfiesTeamSaml } from "@/auth/payload";
 import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
@@ -75,10 +76,11 @@ export const resolvers: IResolvers = {
   },
   Mutation: {
     createUserAccessToken: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const { auth } = ctx;
+      if (!auth) {
         throw forbidden();
       }
-      const userId = ctx.auth.user.id;
+      const userId = auth.user.id;
 
       const { name, accountIds, expireInDays } = args.input;
 
@@ -119,6 +121,7 @@ export const resolvers: IResolvers = {
           accessibleAccounts.map((account) => ({
             userAccessTokenId: userAccessToken.id,
             accountId: account.id,
+            samlAuthorized: checkAuthSatisfiesTeamSaml(auth, account.teamId),
           })),
         );
 

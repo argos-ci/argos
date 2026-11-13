@@ -380,7 +380,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       if (!membershipPermissions.includes("view")) {
         return null;
@@ -396,7 +396,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       // Scoped to this media's own project: a pull request can carry media from
       // several projects, and access is decided per project.
@@ -471,7 +471,7 @@ export const resolvers: IResolvers = {
       // A public share page is opened by people with no Argos account, and the
       // project's name can itself be unreleased information. Only viewers who
       // could reach the project anyway get it as context.
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
       return permissions.includes("view") ? project : null;
     },
     comments: async (media, _args, ctx) => {
@@ -489,7 +489,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
         });
       const permissions = getMediaPermissions({
         visibility: media.visibility,
@@ -523,7 +523,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       return getMediaPermissions({
         visibility: media.visibility,
@@ -561,7 +561,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
 
       return checkCanViewMedia({
@@ -603,7 +603,7 @@ async function resolveVisibleCounterpart(
   const membershipPermissions =
     await ctx.loaders.ProjectMembershipPermissions.load({
       project,
-      user: ctx.auth?.user ?? null,
+      auth: ctx.auth,
     });
   return checkCanViewMedia({
     visibility: counterpart.visibility,

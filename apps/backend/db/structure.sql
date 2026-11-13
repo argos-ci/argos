@@ -1842,7 +1842,8 @@ CREATE TABLE public.oauth_grant_accounts (
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "oauthGrantId" bigint NOT NULL,
-    "accountId" bigint NOT NULL
+    "accountId" bigint NOT NULL,
+    "samlAuthorized" boolean DEFAULT false NOT NULL
 );
 
 
@@ -3060,7 +3061,8 @@ CREATE TABLE public.user_access_token_scopes (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "userAccessTokenId" bigint NOT NULL,
-    "accountId" bigint NOT NULL
+    "accountId" bigint NOT NULL,
+    "samlAuthorized" boolean DEFAULT false NOT NULL
 );
 
 
@@ -7215,4 +7217,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112211844_token-saml-authorization.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());

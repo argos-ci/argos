@@ -94,7 +94,7 @@ async function listTargetComments(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "view",
     message: `You do not have permission to view this ${target.type}`,
   });

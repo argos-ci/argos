@@ -70,7 +70,7 @@ export const setAccountMemberLevel: CreateAPIHandler = ({ patch }) => {
     // Shared with the GraphQL API — same admin check, same rules.
     const teamUser = await setTeamMemberLevel({
       account,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
       level: req.ctx.body.level,
     });
@@ -110,7 +110,7 @@ export const removeAccountMember: CreateAPIHandler = ({ delete: del }) => {
 
     await removeTeamMember({
       account,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
     });
 

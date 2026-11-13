@@ -16,6 +16,7 @@ import { invariant } from "@argos/util/invariant";
 import type { QueryBuilder } from "objection";
 import { z } from "zod";
 
+import type { AuthViewer } from "@/auth/payload";
 import type { AutomationActionTypeDef } from "@/automation/actions";
 import {
   getSlackChannelById,
@@ -30,7 +31,6 @@ import { MsTeamsWebhook } from "../models/MsTeamsWebhook";
 import type { Project } from "../models/Project";
 import { SlackChannel } from "../models/SlackChannel";
 import type { SlackInstallation } from "../models/SlackInstallation";
-import type { User } from "../models/User";
 import { isValidPgBigInt } from "../util/biginteger";
 import { assertProjectAdmin, loadProjectById } from "./project";
 
@@ -310,7 +310,7 @@ export function queryAutomationRules(args: {
  */
 export async function getAutomationRuleForAdmin(args: {
   id: string;
-  user: User;
+  auth: AuthViewer;
   /** When set, the rule must belong to this project. */
   projectId?: string;
 }): Promise<AutomationRule> {
@@ -337,7 +337,7 @@ export async function getAutomationRuleForAdmin(args: {
 
   await assertProjectAdmin({
     project: automationRule.project,
-    user: args.user,
+    auth: args.auth,
   });
 
   return automationRule;
@@ -345,18 +345,18 @@ export async function getAutomationRuleForAdmin(args: {
 
 export async function createAutomationRule(args: {
   projectId: string;
-  user: User;
+  auth: AuthViewer;
   input: AutomationRuleInput;
 }): Promise<AutomationRule> {
   const project = await loadProjectById(args.projectId);
-  await assertProjectAdmin({ project, user: args.user });
+  await assertProjectAdmin({ project, auth: args.auth });
   const data = await buildAutomationRuleData({ project, input: args.input });
   return AutomationRule.query().insertAndFetch(data);
 }
 
 export async function updateAutomationRule(args: {
   id: string;
-  user: User;
+  auth: AuthViewer;
   projectId?: string;
   input: AutomationRuleInput;
 }): Promise<AutomationRule> {
@@ -377,7 +377,7 @@ export async function updateAutomationRule(args: {
  */
 export async function deactivateAutomationRule(args: {
   id: string;
-  user: User;
+  auth: AuthViewer;
   projectId?: string;
 }): Promise<AutomationRule> {
   const automationRule = await getAutomationRuleForAdmin(args);

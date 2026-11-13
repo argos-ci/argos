@@ -60,14 +60,17 @@ describe("invoice documents", () => {
     invoice,
   }) => {
     invariant(teamAccount.teamId, "Account has no team");
-    const teamUser = await factory.TeamUser.create({
+    const memberAccount = await factory.UserAccount.create();
+    invariant(memberAccount.userId, "Account has no user");
+    await factory.TeamUser.create({
       teamId: teamAccount.teamId,
+      userId: memberAccount.userId,
       userLevel: "member",
     });
 
     await request(app)
       .get(`/invoices/${invoice.id}/view`)
-      .set("Cookie", await createSessionCookie(teamUser.userId))
+      .set("Cookie", await createSessionCookie(memberAccount.userId))
       .expect(404);
   });
 

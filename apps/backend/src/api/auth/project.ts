@@ -24,7 +24,7 @@ import {
   type Account,
   type ProjectPermission,
 } from "@/database/models";
-import { boom } from "@/util/error";
+import { boom, type HTTPError } from "@/util/error";
 
 /**
  * Optional caller-asserted attributes that must match the token's bound
@@ -83,22 +83,42 @@ export function assertProjectAccess(
       // PAT/OAuth scopes are stored as accounts, but callers may identify the
       // authorized account either with its public slug or with an internal
       // identifier field that is already slug-shaped.
-      if (
-        !auth.scope.some((account) => {
-          if ("slug" in params.account) {
-            return account.slug === params.account.slug;
-          }
-          if ("id" in params.account) {
-            return account.slug === params.account.id;
-          }
-          return false;
-        })
-      ) {
-        throw boom(401);
+      const isRouted = (account: Account) => {
+        if ("slug" in params.account) {
+          return account.slug === params.account.slug;
+        }
+        if ("id" in params.account) {
+          return account.slug === params.account.id;
+        }
+        return false;
+      };
+      if (!auth.scope.some(isRouted)) {
+        throwOutsideScope(auth, isRouted, boom(401));
       }
       break;
     }
   }
+}
+
+/**
+ * Throw for an account a token's scope does not reach: a 403 that says so when
+ * it is a team enforcing SAML the token was not issued through, `otherwise`
+ * when it is out of the scope altogether.
+ */
+export function throwOutsideScope(
+  auth: AuthPATPayload | AuthOAuthPayload,
+  isAccount: (account: Account) => boolean,
+  otherwise: HTTPError,
+): never {
+  const account = auth.samlRequiredScope.find(isAccount);
+  if (account) {
+    throw boom(
+      403,
+      `The team "${account.slug}" requires SAML Single Sign-On, and this token was not issued from a session signed in with it. Sign in to Argos with SSO, then create a new token or authorize the application again.`,
+      { code: "SAML_SSO_REQUIRED" },
+    );
+  }
+  throw otherwise;
 }
 
 export async function getAuthPayloadFromExpressReq(
@@ -166,8 +186,8 @@ export async function assertProjectPermission(
     return;
   }
   const permissions = access.membership
-    ? await project.$getMembershipPermissions(auth.user)
-    : await project.$getPermissions(auth.user);
+    ? await project.$getMembershipPermissions(auth)
+    : await project.$getPermissions(auth);
   if (!permissions.includes(access.permission)) {
     throw boom(403, access.message);
   }
@@ -231,11 +251,16 @@ export function getAccountForAuth(
   if (auth.type !== "pat" && auth.type !== "oauth") {
     throw boom(401);
   }
-  const account = auth.scope.find((account) => account.slug === params.slug);
+  const isRouted = (account: Account) => account.slug === params.slug;
+  const account = auth.scope.find(isRouted);
   if (!account) {
-    throw boom(
-      401,
-      "You do not have access to this account. Check that your personal access token is scoped to it.",
+    throwOutsideScope(
+      auth,
+      isRouted,
+      boom(
+        401,
+        "You do not have access to this account. Check that your personal access token is scoped to it.",
+      ),
     );
   }
   return account;

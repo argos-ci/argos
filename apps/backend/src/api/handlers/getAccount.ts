@@ -194,7 +194,7 @@ export const updateAccount: CreateAPIHandler = ({ patch }) => {
     // Shared with the GraphQL API — same admin check.
     await setTeamDefaultUserLevel({
       account,
-      user: auth.user,
+      auth,
       level: req.ctx.body.defaultUserLevel,
     });
 

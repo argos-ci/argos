@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Account, Project } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 import { HTTPError } from "@/util/error";
 
@@ -61,7 +61,7 @@ describe("createProject service", () => {
 
     const project = await createProject({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       name: "my-project",
     });
 
@@ -80,7 +80,7 @@ describe("createProject service", () => {
 
     const project = await createProject({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       name: "  my-project  ",
     });
 
@@ -90,7 +90,11 @@ describe("createProject service", () => {
   it("notifies Discord when a team account creates a project", async () => {
     const { teamAccount, user } = await createTeamOwner();
 
-    await createProject({ account: teamAccount, user, name: "my-project" });
+    await createProject({
+      account: teamAccount,
+      auth: sessionViewer(user),
+      name: "my-project",
+    });
 
     expect(vi.mocked(notifyDiscord)).toHaveBeenCalledOnce();
   });
@@ -102,7 +106,7 @@ describe("createProject service", () => {
 
     await createProject({
       account: userAccount,
-      user: userAccount.user,
+      auth: sessionViewer(userAccount.user),
       name: "my-project",
     });
 
@@ -123,7 +127,7 @@ describe("createProject service", () => {
     const error = await expectHttpError(
       createProject({
         account: teamAccount,
-        user: memberAccount.user,
+        auth: sessionViewer(memberAccount.user),
         name: "no-permission",
       }),
       403,
@@ -140,7 +144,11 @@ describe("createProject service", () => {
     const { teamAccount, user } = await createTeamOwner();
 
     const error = await expectHttpError(
-      createProject({ account: teamAccount, user, name: "has spaces" }),
+      createProject({
+        account: teamAccount,
+        auth: sessionViewer(user),
+        name: "has spaces",
+      }),
       400,
     );
     expect(error.code).toBe("PROJECT_NAME_INVALID");
@@ -154,7 +162,11 @@ describe("createProject service", () => {
     const { teamAccount, user } = await createTeamOwner();
 
     const error = await expectHttpError(
-      createProject({ account: teamAccount, user, name: "settings" }),
+      createProject({
+        account: teamAccount,
+        auth: sessionViewer(user),
+        name: "settings",
+      }),
       400,
     );
     expect(error.message).toBe("Name is reserved for internal usage");
@@ -166,7 +178,11 @@ describe("createProject service", () => {
     await factory.Project.create({ accountId: teamAccount.id, name: "web" });
 
     const error = await expectHttpError(
-      createProject({ account: teamAccount, user, name: "WEB" }),
+      createProject({
+        account: teamAccount,
+        auth: sessionViewer(user),
+        name: "WEB",
+      }),
       400,
     );
     expect(error.message).toBe("Name is already used by another project");

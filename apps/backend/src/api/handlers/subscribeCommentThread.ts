@@ -127,7 +127,7 @@ async function setTargetThreadSubscription(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "view",
     message: "You do not have permission to access this thread",
   });

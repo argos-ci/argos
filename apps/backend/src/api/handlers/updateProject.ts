@@ -114,7 +114,7 @@ export const updateProject: CreateAPIHandler = ({ patch }) => {
     // Shared with the GraphQL API — same admin check, same validation.
     const updated = await updateProjectService({
       project,
-      user: auth.user,
+      auth,
       input: req.ctx.body,
     });
 

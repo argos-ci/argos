@@ -1,12 +1,12 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { waitUntil } from "@/api/request-context";
-import { Account, UserAccessToken } from "@/database/models";
+import { UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 
 import { boom } from "../util/error";
 import type { AuthPATPayload } from "./payload";
+import { resolveTokenScope } from "./token-scope";
 
 /**
  * Generate a auth payload from a user access token.
@@ -21,7 +21,7 @@ export async function getAuthPayloadFromUserAccessToken(
 
   const userAccessToken = await UserAccessToken.query()
     .findOne({ token: hashToken(token) })
-    .withGraphFetched("[user.[account,teams],scope.account]");
+    .withGraphFetched("[user.[account,teams],scope.account.teamSamlConfig]");
 
   if (!userAccessToken) {
     throw boom(401, "Access token not found");
@@ -37,32 +37,13 @@ export async function getAuthPayloadFromUserAccessToken(
   const { user, scope } = userAccessToken;
   invariant(scope);
   invariant(user?.account);
-  invariant(user.teams);
 
-  const userTeamIds = new Set(user.teams.map((team) => team.id));
-  const scopeAccounts = scope.reduce<Account[]>((accounts, entry) => {
-    invariant(entry.account);
-    switch (entry.account.type) {
-      case "team": {
-        invariant(entry.account.teamId);
-        if (userTeamIds.has(entry.account.teamId)) {
-          accounts.push(entry.account);
-        }
-        return accounts;
-      }
-      case "user": {
-        invariant(entry.account.userId);
-        if (entry.account.userId === userAccessToken.userId) {
-          accounts.push(entry.account);
-        }
-        return accounts;
-      }
-      default:
-        assertNever(entry.account.type);
-    }
-  }, []);
+  const tokenScope = await resolveTokenScope(user, scope);
 
-  if (scopeAccounts.length === 0) {
+  if (
+    tokenScope.scope.length === 0 &&
+    tokenScope.samlRequiredScope.length === 0
+  ) {
     throw boom(
       401,
       "This token has no valid scope, probably because you are not anymore in the team that was in the scope, please generate a new one.",
@@ -86,7 +67,7 @@ export async function getAuthPayloadFromUserAccessToken(
     type: "pat",
     account: user.account,
     user,
-    scope: scopeAccounts,
+    ...tokenScope,
     tokenId: userAccessToken.id,
   };
 }

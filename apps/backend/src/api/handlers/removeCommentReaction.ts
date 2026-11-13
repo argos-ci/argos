@@ -95,7 +95,7 @@ async function removeTargetCommentReaction(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "review",
     message: "You do not have permission to react to this comment",
   });

@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { Project } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 
 /**
  * `Project.getPermissions` is where a deleted project is refused for the whole
@@ -43,12 +43,18 @@ describe("Project permissions on a deleted project", () => {
 
   it("grants an owner nothing", async () => {
     const { user, project } = await seed();
-    await expect(project.$getPermissions(user)).resolves.toContain("admin");
+    await expect(
+      project.$getPermissions(sessionViewer(user)),
+    ).resolves.toContain("admin");
 
     const deleted = await markDeleted(project);
 
-    await expect(deleted.$getPermissions(user)).resolves.toEqual([]);
-    await expect(deleted.$getMembershipPermissions(user)).resolves.toEqual([]);
+    await expect(deleted.$getPermissions(sessionViewer(user))).resolves.toEqual(
+      [],
+    );
+    await expect(
+      deleted.$getMembershipPermissions(sessionViewer(user)),
+    ).resolves.toEqual([]);
   });
 
   it("grants staff nothing", async () => {
@@ -56,12 +62,18 @@ describe("Project permissions on a deleted project", () => {
     // case a guard placed after the staff short-circuit would miss.
     const { project } = await seed();
     const staff = await factory.User.create({ staff: true });
-    await expect(project.$getPermissions(staff)).resolves.toContain("admin");
+    await expect(
+      project.$getPermissions(sessionViewer(staff)),
+    ).resolves.toContain("admin");
 
     const deleted = await markDeleted(project);
 
-    await expect(deleted.$getPermissions(staff)).resolves.toEqual([]);
-    await expect(deleted.$getMembershipPermissions(staff)).resolves.toEqual([]);
+    await expect(
+      deleted.$getPermissions(sessionViewer(staff)),
+    ).resolves.toEqual([]);
+    await expect(
+      deleted.$getMembershipPermissions(sessionViewer(staff)),
+    ).resolves.toEqual([]);
   });
 
   it("grants an anonymous visitor nothing on what was a public project", async () => {
@@ -84,6 +96,8 @@ describe("Project permissions on a deleted project", () => {
 
     await markDeleted(project);
 
-    await expect(sibling.$getPermissions(user)).resolves.toContain("admin");
+    await expect(
+      sibling.$getPermissions(sessionViewer(user)),
+    ).resolves.toContain("admin");
   });
 });

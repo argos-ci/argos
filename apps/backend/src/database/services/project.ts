@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import type { PartialModelRow, QueryBuilder } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { invalidateProjectDeploymentCache } from "@/deployment/invalidate";
 import { formatDiscordLink, getProjectUrl, notifyDiscord } from "@/discord";
 import { boom } from "@/util/error";
@@ -16,8 +17,7 @@ import {
   type ResolvedIgnoreConfig,
 } from "../models/Project";
 import { ProjectUser } from "../models/ProjectUser";
-import { TeamUser } from "../models/TeamUser";
-import type { User } from "../models/User";
+import { Team } from "../models/Team";
 import { isValidPgBigInt } from "../util/biginteger";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
@@ -62,68 +62,94 @@ export const resolveProjectName = async (args: {
 };
 
 /**
- * Apply the project-visibility rules for a user to a `Project` query, returning
- * the filtered query — or `null` when the user can see no project at all, so the
- * caller can decide whether to throw or return an empty result.
- *
- * This is the single source of truth shared by the GraphQL API
- * (`Account.projects`, `getVisibleProjectIds`) and the public REST API
- * (`GET /accounts/{accountSlug}/projects`):
- * - a soft-deleted project is listed to nobody, staff included
- * - staff see every other project
+ * Which projects of an account a viewer may see: every one, only those a team
+ * contributor was given, or none (`null`).
+ */
+export type ProjectVisibility =
+  | { type: "all" }
+  | { type: "contributor"; userId: string }
+  | null;
+
+/**
+ * The project-visibility rules for a viewer, the single source of truth shared
+ * by the GraphQL API (`Account.projects`, `getVisibleProjectIds`) and the
+ * public REST API (`GET /accounts/{accountSlug}/projects`):
+ * - staff see every project
  * - on a user account, only the owner
  * - on a team, owners/members see all; contributors see projects they are a
- *   contributor on (or that expose a default user level)
+ *   contributor on (or that expose a default user level); a member kept out
+ *   by the team's SAML enforcement sees nothing
  */
-export function applyProjectVisibility<R>(
-  query: QueryBuilder<Project, R>,
-  args: { account: Account; user: { id: string; staff: boolean } },
-): QueryBuilder<Project, R> | null {
-  const { account, user } = args;
-
-  query.whereNull("projects.deletedAt");
+export async function getProjectVisibility(args: {
+  account: Account;
+  auth: AuthViewer;
+}): Promise<ProjectVisibility> {
+  const { account, auth } = args;
 
   // Staff can view all projects
-  if (user.staff) {
-    return query;
+  if (auth.user.staff) {
+    return { type: "all" };
   }
 
   switch (account.type) {
     case "user":
-      return account.userId === user.id ? query : null;
+      return account.userId === auth.user.id ? { type: "all" } : null;
     case "team": {
-      const teamUserQuery = TeamUser.query().where({
-        teamId: account.teamId,
-        userId: user.id,
-      });
-      return query.where((qb) => {
-        // User is a team member or owner
-        qb.whereExists(
-          teamUserQuery
-            .select(1)
-            .clone()
-            .whereIn("userLevel", ["owner", "member"]),
-        ).orWhere((qb) => {
-          // User is a contributor
-          qb.whereExists(
-            teamUserQuery.select(1).clone().where("userLevel", "contributor"),
-          ).where((qb) => {
-            // And is a contributor to the project
-            qb.whereExists(
-              ProjectUser.query()
-                .select(1)
-                .whereRaw(`projects.id = project_users."projectId"`)
-                .where("userId", user.id),
-            )
-              // Or where there is a default user level set on the project
-              .orWhereNotNull("projects.defaultUserLevel");
-          });
-        });
-      });
+      invariant(account.teamId, "Team account has no team");
+      const access = await Team.getAccess(account.teamId, auth);
+      if (access.type !== "member") {
+        return null;
+      }
+      return access.userLevel === "contributor"
+        ? { type: "contributor", userId: auth.user.id }
+        : { type: "all" };
     }
     default:
       return assertNever(account.type);
   }
+}
+
+/**
+ * Restrict a `Project` query to the projects a viewer may see. A soft-deleted
+ * project is listed to nobody, staff included.
+ */
+function applyProjectVisibility<R>(
+  query: QueryBuilder<Project, R>,
+  visibility: NonNullable<ProjectVisibility>,
+): QueryBuilder<Project, R> {
+  query.whereNull("projects.deletedAt");
+  switch (visibility.type) {
+    case "all":
+      return query;
+    case "contributor":
+      return query.where((qb) => {
+        // A contributor to the project
+        qb.whereExists(
+          ProjectUser.query()
+            .select(1)
+            .whereRaw(`projects.id = project_users."projectId"`)
+            .where("userId", visibility.userId),
+        )
+          // Or where there is a default user level set on the project
+          .orWhereNotNull("projects.defaultUserLevel");
+      });
+    default:
+      return assertNever(visibility);
+  }
+}
+
+/**
+ * The ids of the projects of an account a viewer may see.
+ */
+export async function queryVisibleProjectIds(
+  accountId: string,
+  visibility: NonNullable<ProjectVisibility>,
+): Promise<string[]> {
+  const rows = await applyProjectVisibility(
+    Project.query().where("accountId", accountId).select("projects.id"),
+    visibility,
+  );
+  return rows.map((row) => row.id);
 }
 
 /**
@@ -136,45 +162,21 @@ export function applyProjectVisibility<R>(
  */
 export async function getRestrictedVisibleProjectIds(args: {
   account: Account;
-  user: { id: string; staff: boolean };
+  auth: AuthViewer;
 }): Promise<string[] | null> {
-  const { account, user } = args;
-  if (user.staff) {
+  const visibility = await getProjectVisibility(args);
+  if (!visibility) {
+    throw boom(403, "You do not have access to this account.");
+  }
+  if (visibility.type === "all") {
     return null;
   }
-  switch (account.type) {
-    case "user": {
-      if (account.userId !== user.id) {
-        throw boom(403, "You do not have access to this account.");
-      }
-      return null;
-    }
-    case "team": {
-      const teamUser = await TeamUser.query()
-        .select("userLevel")
-        .findOne({ teamId: account.teamId, userId: user.id });
-      if (!teamUser) {
-        throw boom(403, "You do not have access to this account.");
-      }
-      if (teamUser.userLevel !== "contributor") {
-        return null;
-      }
-      const query = applyProjectVisibility(
-        Project.query().where("accountId", account.id).select("projects.id"),
-        args,
-      );
-      invariant(query, "A team member always has a visibility query");
-      const rows = await query;
-      return rows.map((row) => row.id);
-    }
-    default:
-      return assertNever(account.type);
-  }
+  return queryVisibleProjectIds(args.account.id, visibility);
 }
 
 /**
- * Query the projects of an account visible to a user, most recently active
- * first (latest created project or build). Returns `null` when the user can
+ * Query the projects of an account visible to a viewer, most recently active
+ * first (latest created project or build). Returns `null` when the viewer can
  * see no project at all. Callers apply their own pagination.
  *
  * Shared by the GraphQL API (`Account.projects`) and the public REST API
@@ -183,8 +185,11 @@ export async function getRestrictedVisibleProjectIds(args: {
  */
 export function queryAccountProjects(args: {
   account: Account;
-  user: { id: string; staff: boolean };
+  visibility: ProjectVisibility;
 }): QueryBuilder<Project, Project[]> | null {
+  if (!args.visibility) {
+    return null;
+  }
   return applyProjectVisibility(
     Project.query()
       .where("accountId", args.account.id)
@@ -192,7 +197,7 @@ export function queryAccountProjects(args: {
       .orderByRaw(
         `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
       ),
-    args,
+    args.visibility,
   );
 }
 
@@ -217,11 +222,11 @@ export type ProjectCreationSource =
  */
 export async function createProject(input: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   name: string;
   source?: ProjectCreationSource;
 }): Promise<Project> {
-  const permissions = await input.account.$getPermissions(input.user);
+  const permissions = await input.account.$getPermissions(input.auth);
   if (!permissions.includes("admin")) {
     throw boom(
       403,
@@ -243,7 +248,7 @@ export async function createProject(input: {
   await notifyProjectCreation({
     project,
     account: input.account,
-    email: input.user.email,
+    email: input.auth.user.email,
     source: input.source ?? null,
   });
 
@@ -259,9 +264,9 @@ export async function createProject(input: {
  */
 export async function assertProjectAdmin(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
 }): Promise<void> {
-  const permissions = await args.project.$getPermissions(args.user);
+  const permissions = await args.project.$getPermissions(args.auth);
   if (!permissions.includes("admin")) {
     throw boom(403, "You are not an administrator of this project.");
   }
@@ -317,7 +322,7 @@ export type UpdateProjectInput = {
  */
 export async function updateProject(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
   input: UpdateProjectInput;
 }): Promise<Project> {
   const { project, input } = args;
@@ -482,18 +487,18 @@ async function resolveAvailableProjectName(args: {
  */
 export async function transferProject(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
   targetAccount: Account;
   name: string;
 }): Promise<Project> {
-  const { project, user, targetAccount, name } = args;
-  await assertProjectAdmin({ project, user });
+  const { project, auth, targetAccount, name } = args;
+  await assertProjectAdmin({ project, auth });
 
   if (project.accountId === targetAccount.id) {
     throw boom(400, "Project is already owned by this account.");
   }
 
-  const targetPermissions = await targetAccount.$getPermissions(user);
+  const targetPermissions = await targetAccount.$getPermissions(auth);
   if (!targetPermissions.includes("admin")) {
     throw boom(
       403,
@@ -525,7 +530,7 @@ export async function transferProject(args: {
       previousAccount,
       previousName,
       targetAccount,
-      email: user.email,
+      email: auth.user.email,
     });
   }
 

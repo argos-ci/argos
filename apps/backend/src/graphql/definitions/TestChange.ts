@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import type { AuthSessionPayload } from "@/auth/payload";
 import { Project, Test, type AuditTrail, type User } from "@/database/models";
 import {
   getChangeMutationDenial,
@@ -189,7 +190,7 @@ export const resolvers: IResolvers = {
         {
           changeId: input.changeId,
           accountSlug: input.accountSlug,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         },
         async ({ changeIdPayload, project, user }) => {
           await ignoreTestChange({
@@ -206,7 +207,7 @@ export const resolvers: IResolvers = {
         {
           changeId: input.changeId,
           accountSlug: input.accountSlug,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         },
         async ({ changeIdPayload, project, user }) => {
           await unignoreTestChange({
@@ -225,7 +226,7 @@ async function runChangeMutaton(
   context: {
     changeId: string;
     accountSlug: string;
-    user: User | null;
+    auth: AuthSessionPayload | null;
   },
   run: (props: {
     changeIdPayload: TestChangeIdPayload;
@@ -233,7 +234,7 @@ async function runChangeMutaton(
     user: User;
   }) => Promise<void>,
 ): Promise<TestChangeObject> {
-  const { changeId, accountSlug, user } = context;
+  const { changeId, accountSlug, auth } = context;
   const changeIdPayload = safeParseTestChangeId(changeId);
 
   if (!changeIdPayload) {
@@ -263,7 +264,7 @@ async function runChangeMutaton(
     throw notFound("Test change not found");
   }
 
-  const denial = await getChangeMutationDenial(project, user);
+  const denial = await getChangeMutationDenial(project, auth);
 
   switch (denial) {
     case "forbidden":
@@ -278,9 +279,9 @@ async function runChangeMutaton(
       assertNever(denial);
   }
 
-  invariant(user, "User should be defined because of permissions check");
+  invariant(auth, "User should be defined because of permissions check");
 
-  await run({ changeIdPayload, project, user });
+  await run({ changeIdPayload, project, user: auth.user });
 
   return {
     project,

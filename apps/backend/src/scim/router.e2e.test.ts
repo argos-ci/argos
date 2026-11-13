@@ -14,7 +14,7 @@ import {
   User,
   UserEmail,
 } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import { getRedisClient } from "@/util/redis/client";
 
 import router from "./router";
@@ -64,7 +64,10 @@ const test = base.extend<{
   },
   token: async ({ owner, teamAccount }, use) => {
     await use(
-      await generateTeamScimToken({ account: teamAccount, user: owner }),
+      await generateTeamScimToken({
+        account: teamAccount,
+        auth: sessionViewer(owner),
+      }),
     );
   },
 });
@@ -544,7 +547,7 @@ describe("SCIM API", () => {
       });
       const otherToken = await generateTeamScimToken({
         account: otherTeam,
-        user: owner,
+        auth: sessionViewer(owner),
       });
       expect((await scim(otherToken).get("/Users")).status).toBe(200);
     });

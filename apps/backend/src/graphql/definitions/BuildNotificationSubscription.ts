@@ -1,8 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import type { AuthViewer } from "@/auth/payload";
 import { Build } from "@/database/models/Build";
-import type { User } from "@/database/models/User";
 import {
   subscribeUserToBuild,
   unsubscribeUserFromBuild,
@@ -30,7 +30,10 @@ export const typeDefs = gql`
   }
 `;
 
-async function getBuildForUser(buildId: string, user: User): Promise<Build> {
+async function getBuildForUser(
+  buildId: string,
+  auth: AuthViewer,
+): Promise<Build> {
   const build = await Build.query()
     .findById(buildId)
     .withGraphFetched("project.account");
@@ -41,7 +44,7 @@ async function getBuildForUser(buildId: string, user: User): Promise<Build> {
 
   invariant(build.project?.account);
 
-  const permissions = await build.project.$getPermissions(user);
+  const permissions = await build.project.$getPermissions(auth);
 
   if (!permissions.includes("view")) {
     throw forbidden("You cannot access this build");
@@ -57,7 +60,7 @@ export const resolvers: IResolvers = {
       if (!auth) {
         throw unauthenticated();
       }
-      const build = await getBuildForUser(args.input.buildId, auth.user);
+      const build = await getBuildForUser(args.input.buildId, auth);
       await subscribeUserToBuild({
         buildId: build.id,
         userId: auth.user.id,
@@ -69,7 +72,7 @@ export const resolvers: IResolvers = {
       if (!auth) {
         throw unauthenticated();
       }
-      const build = await getBuildForUser(args.input.buildId, auth.user);
+      const build = await getBuildForUser(args.input.buildId, auth);
       await unsubscribeUserFromBuild({
         buildId: build.id,
         userId: auth.user.id,

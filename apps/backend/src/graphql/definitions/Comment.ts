@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
+import type { AuthViewer } from "@/auth/payload";
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
@@ -37,7 +38,6 @@ import {
   type CommentAnchor,
 } from "@/database/models/Comment";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff";
-import type { User } from "@/database/models/User";
 import {
   subscribeUserToCommentThread,
   unsubscribeUserFromCommentThread,
@@ -111,11 +111,11 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
  */
 async function assertCanReactToComment(
   comment: Comment,
-  user: User,
+  auth: AuthViewer,
 ): Promise<void> {
   const target = await resolveCommentTarget(comment);
   const project = await getCommentTargetProject(target);
-  const permissions = await project.$getPermissions(user);
+  const permissions = await project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot react to this comment");
   }
@@ -137,10 +137,10 @@ async function getCommentThreadByGraphqlId(id: string): Promise<Comment> {
 
 async function assertCanAccessCommentThread(input: {
   thread: Comment;
-  user: User;
+  auth: AuthViewer;
   permission: "view" | "review";
 }): Promise<void> {
-  const { thread, user, permission } = input;
+  const { thread, auth, permission } = input;
   const target = await resolveCommentTarget(thread);
   const project = await getCommentTargetProject(target);
   // Membership permissions for a media, the same rule the REST comment helper
@@ -152,8 +152,8 @@ async function assertCanAccessCommentThread(input: {
   // subscriber receives every later comment by email.
   const permissions =
     target.type === "media"
-      ? await project.$getMembershipPermissions(user)
-      : await project.$getPermissions(user);
+      ? await project.$getMembershipPermissions(auth)
+      : await project.$getPermissions(auth);
   if (!permissions.includes(permission)) {
     throw forbidden("You cannot access this thread");
   }
@@ -166,7 +166,7 @@ async function assertCanAccessCommentThread(input: {
  */
 async function getCommentThreadForUser(input: {
   id: string;
-  user: User;
+  auth: AuthViewer;
   permission: "view" | "review";
   target?: CommentTarget;
 }): Promise<Comment> {
@@ -176,7 +176,7 @@ async function getCommentThreadForUser(input: {
   }
   await assertCanAccessCommentThread({
     thread,
-    user: input.user,
+    auth: input.auth,
     permission: input.permission,
   });
   return thread;
@@ -549,7 +549,7 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const permissions = await build.project.$getPermissions(auth.user);
+      const permissions = await build.project.$getPermissions(auth);
 
       if (!permissions.includes("review")) {
         throw forbidden("You cannot comment on this build");
@@ -560,7 +560,7 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
@@ -646,7 +646,7 @@ export const resolvers: IResolvers = {
 
       const test = await getTestForUser({
         id: input.testId,
-        user: auth.user,
+        auth,
         permission: "review",
         message: "You cannot comment on this test",
       });
@@ -656,7 +656,7 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
@@ -681,7 +681,7 @@ export const resolvers: IResolvers = {
 
       const media = await getMediaForUser({
         id: input.mediaId,
-        user: auth.user,
+        auth,
         permission: "review",
         message: "You cannot comment on this media",
       });
@@ -698,7 +698,7 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
@@ -775,7 +775,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await assertCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth);
 
       return addCommentReaction({
         comment,
@@ -793,7 +793,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await assertCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth);
 
       return removeCommentReaction({
         comment,
@@ -808,7 +808,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "view",
       });
       await subscribeUserToCommentThread({
@@ -824,7 +824,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "view",
       });
       await unsubscribeUserFromCommentThread({
@@ -840,7 +840,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "review",
       });
       return resolveCommentThread({ thread });
@@ -852,7 +852,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "review",
       });
       return unresolveCommentThread({ thread });
@@ -863,7 +863,7 @@ export const resolvers: IResolvers = {
       // Authorize before opening the stream so an unpermitted subscription is
       // rejected upfront rather than after the first event.
       subscribe: async (_root, args, ctx) => {
-        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        await assertCanViewBuild(args.buildId, ctx.auth);
         return mapCommentChanges(
           subscribeToBuildCommentChanges(args.buildId),
           ctx.loaders,
@@ -875,7 +875,7 @@ export const resolvers: IResolvers = {
       subscribe: async (_root, args, ctx) => {
         const test = await getTestForUser({
           id: args.testId,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
           permission: "view",
           message: "You cannot view this test",
         });

@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TeamInvite, type Account, type User } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import * as emailTemplate from "@/email/send-email-template";
 import { HTTPError } from "@/util/error";
 
@@ -69,7 +69,7 @@ describe("inviteTeamMembers", () => {
 
     const invites = await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [
         { email: "jane@acme.com", level: "member" },
@@ -112,7 +112,7 @@ describe("inviteTeamMembers", () => {
 
     await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [{ email: "Jane@Acme.com", level: "member" }],
     });
@@ -128,7 +128,7 @@ describe("inviteTeamMembers", () => {
     await expectHttpError(
       inviteTeamMembers({
         account: teamAccount,
-        user,
+        auth: sessionViewer(user),
         actorAccount: userAccount,
         members: [{ email: "not-an-email", level: "member" }],
       }),
@@ -140,14 +140,14 @@ describe("inviteTeamMembers", () => {
     const { teamAccount, teamId, user, userAccount } = await createTeamOwner();
     const first = await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [{ email: "jane@acme.com", level: "member" }],
     });
 
     const second = await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [{ email: "jane@acme.com", level: "contributor" }],
     });
@@ -176,7 +176,7 @@ describe("inviteTeamMembers", () => {
     const error = await expectHttpError(
       inviteTeamMembers({
         account: teamAccount,
-        user,
+        auth: sessionViewer(user),
         actorAccount: userAccount,
         members: [{ email: "already@acme.com", level: "member" }],
       }),
@@ -197,7 +197,7 @@ describe("inviteTeamMembers", () => {
     await expectHttpError(
       inviteTeamMembers({
         account: teamAccount,
-        user,
+        auth: sessionViewer(user),
         actorAccount: userAccount,
         members: [],
       }),
@@ -219,7 +219,7 @@ describe("inviteTeamMembers", () => {
     await expectHttpError(
       inviteTeamMembers({
         account: teamAccount,
-        user: memberAccount.user,
+        auth: sessionViewer(memberAccount.user),
         actorAccount: memberAccount,
         members: [{ email: "jane@acme.com", level: "member" }],
       }),
@@ -237,7 +237,7 @@ describe("queryTeamInvites", () => {
     const { teamAccount, teamId, user, userAccount } = await createTeamOwner();
     await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [
         { email: "jane@acme.com", level: "member" },
@@ -254,7 +254,7 @@ describe("queryTeamInvites", () => {
     const { teamAccount, teamId, user, userAccount } = await createTeamOwner();
     await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [
         { email: "jane@acme.com", level: "member" },
@@ -273,7 +273,7 @@ describe("queryTeamInvites", () => {
     const second = await createTeamOwner();
     await inviteTeamMembers({
       account: first.teamAccount,
-      user: first.user,
+      auth: sessionViewer(first.user),
       actorAccount: first.userAccount,
       members: [{ email: "jane@acme.com", level: "member" }],
     });
@@ -291,7 +291,7 @@ describe("cancelTeamInvite", () => {
     const { teamAccount, teamId, user, userAccount } = await createTeamOwner();
     const [invite] = await inviteTeamMembers({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       actorAccount: userAccount,
       members: [{ email: "jane@acme.com", level: "member" }],
     });
@@ -299,7 +299,7 @@ describe("cancelTeamInvite", () => {
 
     await cancelTeamInvite({
       account: teamAccount,
-      user,
+      auth: sessionViewer(user),
       inviteId: TeamInvite.formatId(invite),
     });
 
@@ -310,7 +310,11 @@ describe("cancelTeamInvite", () => {
     const { teamAccount, user } = await createTeamOwner();
 
     await expectHttpError(
-      cancelTeamInvite({ account: teamAccount, user, inviteId: "nope" }),
+      cancelTeamInvite({
+        account: teamAccount,
+        auth: sessionViewer(user),
+        inviteId: "nope",
+      }),
       404,
     );
   });
@@ -320,7 +324,7 @@ describe("cancelTeamInvite", () => {
     const second = await createTeamOwner();
     const [invite] = await inviteTeamMembers({
       account: first.teamAccount,
-      user: first.user,
+      auth: sessionViewer(first.user),
       actorAccount: first.userAccount,
       members: [{ email: "jane@acme.com", level: "member" }],
     });
@@ -331,7 +335,7 @@ describe("cancelTeamInvite", () => {
     await expectHttpError(
       cancelTeamInvite({
         account: second.teamAccount,
-        user: second.user,
+        auth: sessionViewer(second.user),
         inviteId: TeamInvite.formatId(invite),
       }),
       404,
