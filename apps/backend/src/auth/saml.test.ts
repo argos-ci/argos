@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractEmailFromSaml,
-  getTeamSamlPublicValues,
   parseIdpMetadataXml,
   parseSamlSigningCertificate,
-  samlTestUtils,
 } from "./saml";
 
 describe("saml", () => {
@@ -83,43 +81,6 @@ EyVdxIQnWw2OnQzi8v2ikUrIsxKvlWUvHFmTIeYEfWF2J7rITon4FZkuGf1LKiIr
       expect(parsed.idpEntityId).toBe("https://idp.example.com/entity");
       expect(parsed.ssoUrl).toBe("https://idp.example.com/sso");
       expect(parsed.signingCertificate).toEqual(certificate);
-    });
-  });
-
-  describe("assertSamlAudienceAndRecipient", () => {
-    const values = getTeamSamlPublicValues("acme");
-    const extract = {
-      issuer: "https://idp.example.com/entity",
-      audience: values.entityId,
-      nameId: null,
-      response: { destination: values.acsUrl },
-      recipients: [values.acsUrl],
-      conditions: { notBefore: null, notOnOrAfter: null },
-      attributes: {},
-    };
-
-    it("accepts a response addressed to the team", () => {
-      expect(() =>
-        samlTestUtils.assertSamlAudienceAndRecipient({
-          extract,
-          teamSlug: "acme",
-          idpEntityId: "https://idp.example.com/entity",
-        }),
-      ).not.toThrow();
-    });
-
-    it.each([
-      [[]],
-      [["https://example.com/acs"]],
-      [[values.acsUrl, "https://example.com/acs"]],
-    ])("rejects recipients %j", (recipients) => {
-      expect(() =>
-        samlTestUtils.assertSamlAudienceAndRecipient({
-          extract: { ...extract, recipients },
-          teamSlug: "acme",
-          idpEntityId: "https://idp.example.com/entity",
-        }),
-      ).toThrow("Invalid SAML recipient.");
     });
   });
 });

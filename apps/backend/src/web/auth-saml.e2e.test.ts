@@ -3,7 +3,7 @@ import * as samlify from "samlify";
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
-import { getTeamSamlPublicValues } from "@/auth/saml";
+import { getSamlSpMetadata } from "@/auth/saml";
 import { TeamSamlConfig, type Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -47,44 +47,54 @@ const test = base.extend<{ teamAccount: Account }>({
   },
 });
 
+const idp = samlify.IdentityProvider({
+  entityID: IDP_ENTITY_ID,
+  privateKey: samlTestIdpPrivateKey,
+  signingCert: samlTestIdpCertificate,
+  singleSignOnService: [
+    {
+      Binding: samlify.Constants.namespace.binding.redirect,
+      Location: IDP_SSO_URL,
+    },
+  ],
+});
+
+type LoginRequestInfo = Parameters<
+  samlify.IdentityProviderInstance["createLoginResponse"]
+>[1];
+
 /**
- * The team's identity provider, signing only the assertion: the default of
- * most IdPs.
+ * The team's identity provider, answering the SP described by the metadata
+ * Argos publishes. It signs the assertion when the metadata asks for it, and
+ * the whole Response when `wantMessageSigned` is set. Most IdPs sign only the
+ * assertion by default.
  */
-function createIdp(teamSlug: string) {
-  const urls = getTeamSamlPublicValues(teamSlug);
-  const idp = samlify.IdentityProvider({
-    entityID: IDP_ENTITY_ID,
-    privateKey: samlTestIdpPrivateKey,
-    signingCert: samlTestIdpCertificate,
-    singleSignOnService: [
-      {
-        Binding: samlify.Constants.namespace.binding.redirect,
-        Location: IDP_SSO_URL,
-      },
-    ],
-  });
+function createIdp(
+  teamSlug: string,
+  signed: "assertion" | "response" | "both" = "assertion",
+) {
+  const metadata = getSamlSpMetadata(teamSlug);
+  invariant(metadata.includes('WantAssertionsSigned="true"'));
   const sp = samlify.ServiceProvider({
-    entityID: urls.entityId,
-    wantAssertionsSigned: true,
-    wantMessageSigned: false,
-    assertionConsumerService: [
-      {
-        Binding: samlify.Constants.namespace.binding.post,
-        Location: urls.acsUrl,
-      },
-    ],
+    metadata: metadata.replace(
+      'WantAssertionsSigned="true"',
+      `WantAssertionsSigned="${signed !== "response"}"`,
+    ),
+    wantMessageSigned: signed !== "assertion",
   });
 
   return {
-    async parseLoginRequest(redirectUrl: string) {
+    async parseLoginRequest(redirectUrl: string): Promise<LoginRequestInfo> {
       const query = Object.fromEntries(new URL(redirectUrl).searchParams);
-      return idp.parseLoginRequest(sp, "redirect", { query });
+      const { extract } = await idp.parseLoginRequest(sp, "redirect", {
+        query,
+      });
+      return { extract };
     },
-    async createLoginResponse(requestId: string | null) {
+    async createLoginResponse(requestInfo: LoginRequestInfo = { extract: {} }) {
       const { context } = await idp.createLoginResponse(
         sp,
-        { extract: { request: { id: requestId ?? "" } } },
+        requestInfo,
         "post",
         { email: "jane@example.com" },
       );
@@ -103,7 +113,7 @@ function postResponse(args: {
     .type("form")
     .send({
       SAMLResponse: Buffer.from(args.samlResponse).toString("base64"),
-      ...(args.relayState ? { RelayState: args.relayState } : {}),
+      RelayState: args.relayState,
     });
 }
 
@@ -127,36 +137,38 @@ function expectRejected(res: request.Response) {
 }
 
 describe("SAML assertion consumer service", () => {
-  test("signs in when the IdP signs only the assertion", async ({
-    teamAccount,
-  }) => {
-    const idp = createIdp(teamAccount.slug);
-    const loginRes = await request(app)
-      .get(`/auth/saml/${teamAccount.slug}/login`)
-      .expect(302);
-    const redirectUrl = loginRes.headers["location"];
-    invariant(redirectUrl, "Expected a redirect to the IdP");
-    const { request: loginRequest } = (await idp.parseLoginRequest(redirectUrl))
-      .extract;
-    invariant(loginRequest, "Expected a login request");
-    const requestId = loginRequest["id"];
-    invariant(typeof requestId === "string", "Expected a request id");
-    const relayState = new URL(redirectUrl).searchParams.get("RelayState");
-    invariant(relayState, "Expected a RelayState");
+  test.for([
+    { signed: "assertion", what: "only the assertion" },
+    { signed: "response", what: "only the Response" },
+    { signed: "both", what: "the Response and the assertion" },
+  ] as const)(
+    "signs in when the IdP signs $what",
+    async ({ signed }, { teamAccount }) => {
+      const teamIdp = createIdp(teamAccount.slug, signed);
+      const loginRes = await request(app)
+        .get(`/auth/saml/${teamAccount.slug}/login`)
+        .expect(302);
+      const redirectUrl = loginRes.headers["location"];
+      invariant(redirectUrl, "Expected a redirect to the IdP");
+      const relayState = new URL(redirectUrl).searchParams.get("RelayState");
+      invariant(relayState, "Expected a RelayState");
 
-    const res = await postResponse({
-      teamSlug: teamAccount.slug,
-      samlResponse: await idp.createLoginResponse(requestId),
-      relayState,
-    });
+      const res = await postResponse({
+        teamSlug: teamAccount.slug,
+        samlResponse: await teamIdp.createLoginResponse(
+          await teamIdp.parseLoginRequest(redirectUrl),
+        ),
+        relayState,
+      });
 
-    expectSignedIn(res);
-  });
+      expectSignedIn(res);
+    },
+  );
 
   test("rejects a replayed assertion", async ({ teamAccount }) => {
-    const samlResponse = await createIdp(teamAccount.slug).createLoginResponse(
-      null,
-    );
+    const samlResponse = await createIdp(
+      teamAccount.slug,
+    ).createLoginResponse();
 
     expectSignedIn(
       await postResponse({ teamSlug: teamAccount.slug, samlResponse }),
@@ -179,9 +191,9 @@ describe("SAML assertion consumer service", () => {
   test("rejects a response to a request this login did not start", async ({
     teamAccount,
   }) => {
-    const samlResponse = await createIdp(teamAccount.slug).createLoginResponse(
-      "_another-login-request",
-    );
+    const samlResponse = await createIdp(teamAccount.slug).createLoginResponse({
+      extract: { request: { id: "_another-login-request" } },
+    });
 
     // The outer InResponseTo is not covered by the assertion signature, so it
     // cannot pass the response off as IdP-initiated.
@@ -197,9 +209,9 @@ describe("SAML assertion consumer service", () => {
   });
 
   test("rejects an unsigned response", async ({ teamAccount }) => {
-    const samlResponse = await createIdp(teamAccount.slug).createLoginResponse(
-      null,
-    );
+    const samlResponse = await createIdp(
+      teamAccount.slug,
+    ).createLoginResponse();
 
     expectRejected(
       await postResponse({

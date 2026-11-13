@@ -10,7 +10,7 @@ import logger from "@/logger";
 import { boom } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
-const CLOCK_SKEW_SECONDS = 5 * 60;
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 /**
  * Time allowed to store the login state.
@@ -43,21 +43,12 @@ const SamlAuthCodePayloadSchema = z.object({
 type SamlAuthCodePayload = z.infer<typeof SamlAuthCodePayloadSchema>;
 
 type SamlResponseExtract = {
-  issuer: string;
-  audience: string;
   nameId: string | null;
-  response: {
-    destination: string;
-  };
   /**
    * `Recipient` of each `SubjectConfirmationData`, read from the verified
    * assertion.
    */
   recipients: string[];
-  conditions: {
-    notBefore: string | null;
-    notOnOrAfter: string | null;
-  };
   attributes: SamlAttributes;
 };
 
@@ -121,7 +112,7 @@ function createServiceProvider(args: {
         Location: urls.acsUrl,
       },
     ],
-    clockDrifts: [-CLOCK_SKEW_SECONDS, CLOCK_SKEW_SECONDS],
+    clockDrifts: [-CLOCK_SKEW_MS, CLOCK_SKEW_MS],
     replayCache: {
       saveIfAbsent: async (key, expiresAt) => {
         const redis = await getRedisClient();
@@ -222,24 +213,14 @@ function getString(input: string | string[] | null | undefined) {
 
 function readExtract(result: { extract: object }): SamlResponseExtract {
   const raw = result.extract as {
-    issuer?: string | null;
-    audience?: string | null;
     nameID?: string | { value?: string } | null;
-    nameId?: string | { value?: string } | null;
-    response?: {
-      destination?: string | null;
-    };
     subjectConfirmation?:
       | { recipient?: string | null }
       | { recipient?: string | null }[]
       | null;
-    conditions?: {
-      notBefore?: string | null;
-      notOnOrAfter?: string | null;
-    };
     attributes?: SamlAttributes;
   };
-  const rawNameId = raw.nameID ?? raw.nameId ?? null;
+  const rawNameId = raw.nameID ?? null;
   const nameId =
     typeof rawNameId === "string"
       ? rawNameId
@@ -248,62 +229,13 @@ function readExtract(result: { extract: object }): SamlResponseExtract {
         : null;
 
   return {
-    issuer: raw.issuer ?? "",
-    audience: raw.audience ?? "",
     nameId,
-    response: {
-      destination: raw.response?.destination ?? "",
-    },
     recipients: [raw.subjectConfirmation ?? []]
       .flat()
       .map((confirmation) => confirmation.recipient)
       .filter((recipient) => typeof recipient === "string"),
-    conditions: {
-      notBefore: raw.conditions?.notBefore ?? null,
-      notOnOrAfter: raw.conditions?.notOnOrAfter ?? null,
-    },
     attributes: raw.attributes ?? {},
   };
-}
-
-function assertSamlTiming(conditions: SamlResponseExtract["conditions"]) {
-  const now = Date.now();
-  const skewMs = CLOCK_SKEW_SECONDS * 1000;
-  if (conditions.notBefore) {
-    const notBefore = new Date(conditions.notBefore).getTime();
-    if (Number.isFinite(notBefore) && now + skewMs < notBefore) {
-      throw boom(401, "SAML response is not yet valid.");
-    }
-  }
-  if (conditions.notOnOrAfter) {
-    const notOnOrAfter = new Date(conditions.notOnOrAfter).getTime();
-    if (Number.isFinite(notOnOrAfter) && now - skewMs >= notOnOrAfter) {
-      throw boom(401, "SAML response has expired.");
-    }
-  }
-}
-
-function assertSamlAudienceAndRecipient(args: {
-  extract: SamlResponseExtract;
-  teamSlug: string;
-  idpEntityId: string;
-}) {
-  const urls = getTeamSamlUrls(args.teamSlug);
-  if (args.extract.issuer !== args.idpEntityId) {
-    throw boom(401, "Invalid SAML issuer.");
-  }
-  if (args.extract.audience !== urls.entityId) {
-    throw boom(401, "Invalid SAML audience.");
-  }
-  if (args.extract.response.destination !== urls.acsUrl) {
-    throw boom(401, "Invalid SAML destination.");
-  }
-  if (
-    args.extract.recipients.length === 0 ||
-    args.extract.recipients.some((recipient) => recipient !== urls.acsUrl)
-  ) {
-    throw boom(401, "Invalid SAML recipient.");
-  }
 }
 
 export function extractEmailFromSaml(attributes: SamlAttributes) {
@@ -397,13 +329,16 @@ export async function parseAndValidateSamlLoginResponse(args: {
       );
     });
 
+  // samlify checks issuer, audience, destination, recipient and timing itself,
+  // but only warns when Recipient is missing, which saml-profiles §4.1.4.2
+  // requires.
   const extract = readExtract({ extract: result.extract });
-  assertSamlTiming(extract.conditions);
-  assertSamlAudienceAndRecipient({
-    extract,
-    teamSlug: args.teamSlug,
-    idpEntityId: args.samlConfig.idpEntityId ?? "",
-  });
+  if (extract.recipients.length === 0) {
+    throw boom(
+      401,
+      "The SAML response names no recipient. Ask a team admin to check the SAML settings.",
+    );
+  }
 
   return {
     attributes: extract.attributes,
@@ -541,7 +476,3 @@ function parseCertificates(certificates: unknown) {
   }
   return typeof certificates === "string" ? [certificates] : [];
 }
-
-export const samlTestUtils = {
-  assertSamlAudienceAndRecipient,
-};

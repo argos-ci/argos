@@ -32,10 +32,11 @@ function getLoginErrorUrl(message: string) {
 }
 
 /**
- * The IdP's page posts to the ACS, so a rejected login goes back to the login
- * page with the reason instead of ending on a bare error response.
+ * The browser reaches these routes by navigation (the IdP's page posts to the
+ * ACS), so a failed login goes back to the login page with the reason instead
+ * of ending on a bare error response.
  */
-const redirectRejectedLoginToLoginPage: ErrorRequestHandler = (
+const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
   error,
   _req,
   res,
@@ -104,29 +105,24 @@ const router: Router = Router();
 router.get(
   "/auth/saml/:teamSlug/login",
   asyncHandler(async (req, res) => {
-    try {
-      const teamSlug = getFirstString(req.params["teamSlug"]);
-      if (!teamSlug) {
-        throw boom(400, "Team slug is missing.");
-      }
-      const query = LoginQuerySchema.safeParse(req.query);
-      const redirect = getSafeRedirect(
-        query.success ? getFirstString(query.data.r) : undefined,
-      );
-      const account = await getTeamAccountOrThrow(teamSlug);
-      const samlConfig = await getEnabledTeamSamlConfig(account);
-      const loginUrl = await createSamlLoginRedirect({
-        teamSlug,
-        samlConfig,
-        redirect,
-      });
-      res.redirect(loginUrl);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start SAML login.";
-      res.redirect(getLoginErrorUrl(message));
+    const teamSlug = getFirstString(req.params["teamSlug"]);
+    if (!teamSlug) {
+      throw boom(400, "Team slug is missing.");
     }
+    const query = LoginQuerySchema.safeParse(req.query);
+    const redirect = getSafeRedirect(
+      query.success ? getFirstString(query.data.r) : undefined,
+    );
+    const account = await getTeamAccountOrThrow(teamSlug);
+    const samlConfig = await getEnabledTeamSamlConfig(account);
+    const loginUrl = await createSamlLoginRedirect({
+      teamSlug,
+      samlConfig,
+      redirect,
+    });
+    res.redirect(loginUrl);
   }),
+  redirectFailedLoginToLoginPage,
 );
 
 router.post(
@@ -175,7 +171,7 @@ router.post(
     );
     res.redirect(loginUrl.toString());
   }),
-  redirectRejectedLoginToLoginPage,
+  redirectFailedLoginToLoginPage,
 );
 
 router.get(
