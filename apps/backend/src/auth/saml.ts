@@ -6,6 +6,7 @@ import z from "zod";
 import config from "@/config";
 import { Team, type Account, type TeamSamlConfig } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
+import logger from "@/logger";
 import { boom } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
@@ -20,7 +21,6 @@ const LOGIN_STATE_TTL_MS = 10 * 60 * 1000;
  * Time allowed to exchange a SAML code for a JWT token.
  */
 const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const ASSERTION_REPLAY_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 type SamlAttributeValue = string | string[];
 type SamlAttributes = Record<string, SamlAttributeValue>;
@@ -48,8 +48,12 @@ type SamlResponseExtract = {
   nameId: string | null;
   response: {
     destination: string;
-    inResponseTo: string | null;
   };
+  /**
+   * `Recipient` of each `SubjectConfirmationData`, read from the verified
+   * assertion.
+   */
+  recipients: string[];
   conditions: {
     notBefore: string | null;
     notOnOrAfter: string | null;
@@ -79,8 +83,8 @@ function getAuthCodeKey(code: string) {
   return `saml:auth-code:${code}`;
 }
 
-function getAssertionReplayKey(teamSlug: string, assertionId: string) {
-  return `saml:assertion:${teamSlug}:${assertionId}`;
+function getAssertionReplayKey(teamSlug: string, key: string) {
+  return `saml:assertion:${teamSlug}:${key}`;
 }
 
 function getTeamSamlUrls(teamSlug: string) {
@@ -106,7 +110,11 @@ function createServiceProvider(args: {
     relayState: args.relayState,
     authnRequestsSigned: args.requestSigned,
     wantAssertionsSigned: true,
-    wantMessageSigned: true,
+    // Requiring a signed <Response> locks out IdPs that sign only the
+    // assertion (the default of Entra ID and Google Workspace), and SP metadata
+    // cannot ask them for more. samlify still rejects a response unless the
+    // assertion or the whole Response verifies against the team's certificate.
+    wantMessageSigned: false,
     assertionConsumerService: [
       {
         Binding: samlify.Constants.namespace.binding.post,
@@ -114,6 +122,20 @@ function createServiceProvider(args: {
       },
     ],
     clockDrifts: [-CLOCK_SKEW_SECONDS, CLOCK_SKEW_SECONDS],
+    replayCache: {
+      saveIfAbsent: async (key, expiresAt) => {
+        const redis = await getRedisClient();
+        const result = await redis.set(
+          getAssertionReplayKey(args.teamSlug, key),
+          "1",
+          {
+            expiration: { type: "PXAT", value: expiresAt.getTime() },
+            condition: "NX",
+          },
+        );
+        return result === "OK";
+      },
+    },
   });
 }
 
@@ -206,8 +228,11 @@ function readExtract(result: { extract: object }): SamlResponseExtract {
     nameId?: string | { value?: string } | null;
     response?: {
       destination?: string | null;
-      inResponseTo?: string | null;
     };
+    subjectConfirmation?:
+      | { recipient?: string | null }
+      | { recipient?: string | null }[]
+      | null;
     conditions?: {
       notBefore?: string | null;
       notOnOrAfter?: string | null;
@@ -228,8 +253,11 @@ function readExtract(result: { extract: object }): SamlResponseExtract {
     nameId,
     response: {
       destination: raw.response?.destination ?? "",
-      inResponseTo: raw.response?.inResponseTo ?? null,
     },
+    recipients: [raw.subjectConfirmation ?? []]
+      .flat()
+      .map((confirmation) => confirmation.recipient)
+      .filter((recipient) => typeof recipient === "string"),
     conditions: {
       notBefore: raw.conditions?.notBefore ?? null,
       notOnOrAfter: raw.conditions?.notOnOrAfter ?? null,
@@ -255,13 +283,6 @@ function assertSamlTiming(conditions: SamlResponseExtract["conditions"]) {
   }
 }
 
-function assertContainsSignature(samlContent: string) {
-  const hasSignatureTag = /<(?:\w+:)?Signature\b/.test(samlContent);
-  if (!hasSignatureTag) {
-    throw boom(401, "SAML response is not signed.");
-  }
-}
-
 function assertSamlAudienceAndRecipient(args: {
   extract: SamlResponseExtract;
   teamSlug: string;
@@ -277,66 +298,11 @@ function assertSamlAudienceAndRecipient(args: {
   if (args.extract.response.destination !== urls.acsUrl) {
     throw boom(401, "Invalid SAML destination.");
   }
-}
-
-function assertSamlRecipientInXml(args: {
-  samlContent: string;
-  acsUrl: string;
-}) {
-  const recipientMatch = args.samlContent.match(/Recipient="([^"]+)"/);
-  const recipient = recipientMatch?.[1] ?? null;
-  if (!recipient || recipient !== args.acsUrl) {
+  if (
+    args.extract.recipients.length === 0 ||
+    args.extract.recipients.some((recipient) => recipient !== urls.acsUrl)
+  ) {
     throw boom(401, "Invalid SAML recipient.");
-  }
-}
-
-function extractAssertionIdFromXml(samlContent: string) {
-  const assertionMatch = samlContent.match(
-    /<(?:\w+:)?Assertion\b[^>]*\bID="([^"]+)"/,
-  );
-  const assertionId = assertionMatch?.[1] ?? null;
-  if (!assertionId) {
-    throw boom(401, "Invalid SAML assertion.");
-  }
-  return assertionId;
-}
-
-async function assertSamlAssertionNotReplayed(args: {
-  teamSlug: string;
-  assertionId: string;
-}) {
-  const redis = await getRedisClient();
-  const result = await redis.set(
-    getAssertionReplayKey(args.teamSlug, args.assertionId),
-    "1",
-    {
-      expiration: {
-        type: "PX",
-        value: ASSERTION_REPLAY_TTL_MS,
-      },
-      condition: "NX",
-    },
-  );
-  if (result !== "OK") {
-    throw boom(
-      401,
-      `SAML assertion was already used for team ${args.teamSlug}.`,
-    );
-  }
-}
-
-function assertSamlRequestBinding(args: {
-  inResponseTo: string | null;
-  loginState: SamlLoginState | null;
-}) {
-  if (!args.inResponseTo) {
-    return;
-  }
-  if (!args.loginState) {
-    throw boom(401, "Invalid SAML InResponseTo.");
-  }
-  if (args.inResponseTo !== args.loginState.requestId) {
-    throw boom(401, "Invalid SAML InResponseTo.");
   }
 }
 
@@ -409,33 +375,34 @@ export async function parseAndValidateSamlLoginResponse(args: {
     requestSigned: false,
   });
   const idp = createIdentityProvider(args.samlConfig);
-  const result = await sp.parseLoginResponse(idp, "post", {
-    body: {
-      SAMLResponse: args.samlResponse,
-      RelayState: relayState ?? "",
-    },
-  });
+  const result = await sp
+    .parseLoginResponse(
+      idp,
+      "post",
+      {
+        body: {
+          SAMLResponse: args.samlResponse,
+          RelayState: relayState ?? "",
+        },
+      },
+      // Without a pending request, a response answering one is rejected.
+      { inResponseTo: loginState?.requestId ?? null },
+    )
+    .catch((error: unknown) => {
+      logger.warn({ error, teamSlug: args.teamSlug }, "SAML response rejected");
+      throw boom(
+        401,
+        "Argos could not verify the SAML response from your identity provider. Ask a team admin to check the SAML settings.",
+        { cause: error },
+      );
+    });
 
   const extract = readExtract({ extract: result.extract });
-  const assertionId = extractAssertionIdFromXml(result.samlContent);
-  assertContainsSignature(result.samlContent);
   assertSamlTiming(extract.conditions);
   assertSamlAudienceAndRecipient({
     extract,
     teamSlug: args.teamSlug,
     idpEntityId: args.samlConfig.idpEntityId ?? "",
-  });
-  assertSamlRecipientInXml({
-    samlContent: result.samlContent,
-    acsUrl: getTeamSamlUrls(args.teamSlug).acsUrl,
-  });
-  assertSamlRequestBinding({
-    inResponseTo: extract.response.inResponseTo,
-    loginState,
-  });
-  await assertSamlAssertionNotReplayed({
-    teamSlug: args.teamSlug,
-    assertionId,
   });
 
   return {
@@ -576,10 +543,5 @@ function parseCertificates(certificates: unknown) {
 }
 
 export const samlTestUtils = {
-  assertSamlTiming,
   assertSamlAudienceAndRecipient,
-  assertSamlRecipientInXml,
-  assertSamlRequestBinding,
-  assertSamlAssertionNotReplayed,
-  extractAssertionIdFromXml,
 };
