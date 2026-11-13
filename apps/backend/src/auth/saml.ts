@@ -7,7 +7,7 @@ import config from "@/config";
 import { Team, type Account, type TeamSamlConfig } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import logger from "@/logger";
-import { boom } from "@/util/error";
+import { boom, HTTPError } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -42,13 +42,50 @@ const SamlAuthCodePayloadSchema = z.object({
 
 type SamlAuthCodePayload = z.infer<typeof SamlAuthCodePayloadSchema>;
 
+const SamlValuesSchema = z.union([z.string(), z.array(z.string())]);
+
+const SamlExtractSchema = z.object({
+  nameID: SamlValuesSchema.nullish(),
+  response: z.object({ inResponseTo: z.string().optional() }).nullish(),
+  subjectConfirmations: SamlValuesSchema.nullish(),
+  attributes: z.record(z.string(), SamlValuesSchema).nullish(),
+});
+
+const SubjectConfirmationSchema = z.object({
+  method: z.string().optional(),
+  recipient: z.string().optional(),
+  inResponseTo: z.string().optional(),
+});
+
+const SUBJECT_CONFIRMATION_FIELDS: samlify.Extractor.ExtractorFields = [
+  { key: "method", localPath: ["SubjectConfirmation"], attributes: ["Method"] },
+  {
+    key: "recipient",
+    localPath: ["SubjectConfirmation", "SubjectConfirmationData"],
+    attributes: ["Recipient"],
+  },
+  {
+    key: "inResponseTo",
+    localPath: ["SubjectConfirmation", "SubjectConfirmationData"],
+    attributes: ["InResponseTo"],
+  },
+];
+
+const BEARER_METHOD = "urn:oasis:names:tc:SAML:2.0:cm:bearer";
+
 type SamlResponseExtract = {
   nameId: string | null;
   /**
-   * `Recipient` of each `SubjectConfirmationData`, read from the verified
-   * assertion.
+   * Whether every bearer `SubjectConfirmationData` of the verified assertion
+   * names a `Recipient`.
    */
-  recipients: string[];
+  bearerRecipientsPresent: boolean;
+  /**
+   * The request the response answers: the signed `SubjectConfirmationData`
+   * value, else the outer one, which samlify only lets through when the whole
+   * Response is signed.
+   */
+  inResponseTo: string | null;
   attributes: SamlAttributes;
 };
 
@@ -115,16 +152,24 @@ function createServiceProvider(args: {
     clockDrifts: [-CLOCK_SKEW_MS, CLOCK_SKEW_MS],
     replayCache: {
       saveIfAbsent: async (key, expiresAt) => {
-        const redis = await getRedisClient();
-        const result = await redis.set(
-          getAssertionReplayKey(args.teamSlug, key),
-          "1",
-          {
-            expiration: { type: "PXAT", value: expiresAt.getTime() },
-            condition: "NX",
-          },
-        );
-        return result === "OK";
+        try {
+          const redis = await getRedisClient();
+          const result = await redis.set(
+            getAssertionReplayKey(args.teamSlug, key),
+            "1",
+            {
+              expiration: { type: "PXAT", value: expiresAt.getTime() },
+              condition: "NX",
+            },
+          );
+          return result === "OK";
+        } catch (error) {
+          // An HTTPError passes through the SAML response parser as is, so an
+          // outage is not reported as an invalid response.
+          throw boom(503, "SAML replay store is unavailable.", {
+            cause: error,
+          });
+        }
       },
     },
   });
@@ -211,29 +256,25 @@ function getString(input: string | string[] | null | undefined) {
   return null;
 }
 
-function readExtract(result: { extract: object }): SamlResponseExtract {
-  const raw = result.extract as {
-    nameID?: string | { value?: string } | null;
-    subjectConfirmation?:
-      | { recipient?: string | null }
-      | { recipient?: string | null }[]
-      | null;
-    attributes?: SamlAttributes;
-  };
-  const rawNameId = raw.nameID ?? null;
-  const nameId =
-    typeof rawNameId === "string"
-      ? rawNameId
-      : rawNameId && typeof rawNameId.value === "string"
-        ? rawNameId.value
-        : null;
-
+function readExtract(extract: unknown): SamlResponseExtract {
+  const raw = SamlExtractSchema.parse(extract);
+  const confirmations = [raw.subjectConfirmations ?? []]
+    .flat()
+    .map((xml) =>
+      SubjectConfirmationSchema.parse(
+        samlify.Extractor.extract(xml, SUBJECT_CONFIRMATION_FIELDS),
+      ),
+    );
   return {
-    nameId,
-    recipients: [raw.subjectConfirmation ?? []]
-      .flat()
-      .map((confirmation) => confirmation.recipient)
-      .filter((recipient) => typeof recipient === "string"),
+    nameId: getString(raw.nameID),
+    bearerRecipientsPresent: confirmations
+      .filter((confirmation) => confirmation.method === BEARER_METHOD)
+      .every((confirmation) => Boolean(confirmation.recipient)),
+    inResponseTo:
+      confirmations.find((confirmation) => confirmation.inResponseTo)
+        ?.inResponseTo ||
+      raw.response?.inResponseTo ||
+      null,
     attributes: raw.attributes ?? {},
   };
 }
@@ -317,10 +358,14 @@ export async function parseAndValidateSamlLoginResponse(args: {
           RelayState: relayState ?? "",
         },
       },
-      // Without a pending request, a response answering one is rejected.
-      { inResponseTo: loginState?.requestId ?? null },
+      // Without a pending request, a response answering one is rejected. With
+      // one, the check runs below: some IdPs leave InResponseTo out.
+      loginState ? {} : { inResponseTo: null },
     )
     .catch((error: unknown) => {
+      if (error instanceof HTTPError) {
+        throw error;
+      }
       logger.warn({ error, teamSlug: args.teamSlug }, "SAML response rejected");
       throw boom(
         401,
@@ -330,13 +375,23 @@ export async function parseAndValidateSamlLoginResponse(args: {
     });
 
   // samlify checks issuer, audience, destination, recipient and timing itself,
-  // but only warns when Recipient is missing, which saml-profiles §4.1.4.2
-  // requires.
-  const extract = readExtract({ extract: result.extract });
-  if (extract.recipients.length === 0) {
+  // but only warns when a bearer confirmation has no Recipient, which
+  // saml-profiles §4.1.4.2 requires.
+  const extract = readExtract(result.extract);
+  if (!extract.bearerRecipientsPresent) {
     throw boom(
       401,
       "The SAML response names no recipient. Ask a team admin to check the SAML settings.",
+    );
+  }
+  if (
+    loginState &&
+    extract.inResponseTo &&
+    extract.inResponseTo !== loginState.requestId
+  ) {
+    throw boom(
+      401,
+      "The SAML response answers another login. Try signing in again.",
     );
   }
 

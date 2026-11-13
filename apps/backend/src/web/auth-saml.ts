@@ -12,6 +12,7 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { Account } from "@/database/models";
+import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 
 import { asyncHandler } from "./util";
@@ -40,13 +41,16 @@ const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
   error,
   _req,
   res,
-  next,
+  _next,
 ) => {
   if (error instanceof HTTPError && error.statusCode < 500) {
     res.redirect(getLoginErrorUrl(error.message));
     return;
   }
-  next(error);
+  logger.error({ error }, "SAML login failed");
+  res.redirect(
+    getLoginErrorUrl("SAML login failed on the Argos side. Try again shortly."),
+  );
 };
 
 /**
@@ -135,7 +139,10 @@ router.post(
     }
     const body = AcsBodySchema.safeParse(req.body);
     if (!body.success) {
-      throw boom(400, "SAML response is missing.");
+      throw boom(
+        400,
+        "Argos could not read the SAML response. Try signing in again.",
+      );
     }
     const account = await getTeamAccountOrThrow(teamSlug);
     const samlConfig = await getEnabledTeamSamlConfig(account);

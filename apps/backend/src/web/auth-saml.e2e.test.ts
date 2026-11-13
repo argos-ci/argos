@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import * as samlify from "samlify";
 import request from "supertest";
-import { test as base, describe, expect } from "vitest";
+import { test as base, describe, expect, vi } from "vitest";
 
 import { getSamlSpMetadata } from "@/auth/saml";
 import { TeamSamlConfig, type Account } from "@/database/models";
@@ -164,6 +164,17 @@ describe("SAML assertion consumer service", () => {
       expectSignedIn(res);
     },
   );
+
+  test("signs in when the IdP clock runs ahead", async ({ teamAccount }) => {
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 2 * 60 * 1000 });
+    const samlResponse = await createIdp(teamAccount.slug)
+      .createLoginResponse()
+      .finally(() => vi.useRealTimers());
+
+    expectSignedIn(
+      await postResponse({ teamSlug: teamAccount.slug, samlResponse }),
+    );
+  });
 
   test("rejects a replayed assertion", async ({ teamAccount }) => {
     const samlResponse = await createIdp(
