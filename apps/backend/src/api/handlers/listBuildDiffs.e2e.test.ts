@@ -246,6 +246,11 @@ describe("listBuildDiffs", () => {
       });
       expect(diff.base.url).toContain(files.base.key);
       expect(diff.head.url).toContain(files.compare.key);
+      // API clients save and compare these files: the image CDN must serve
+      // them as uploaded, not converted to another format.
+      for (const url of [diff.url, diff.base.url, diff.head.url]) {
+        expect(new URL(url).searchParams.get("tr")).toBe("orig-true");
+      }
     });
 
     test("returns diffs with a user access token", async ({ factory }) => {
