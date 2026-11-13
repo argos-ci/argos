@@ -6,8 +6,15 @@
  * Schema for `tools/list` and validates arguments and structured results, so
  * MCP clients get the exact same validation the REST API applies.
  */
+import { invariant } from "@argos/util/invariant";
+import { isRecord } from "@argos/util/isRecord";
 import { trimTrailingSlash } from "@argos/util/url";
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
+import {
+  McpServer,
+  ResourceTemplate,
+  type StandardSchemaWithJSON,
+} from "@modelcontextprotocol/server";
+import type { z } from "zod";
 
 import config from "@/config";
 import { getSkillFileUrl, getSkills } from "@/skills/registry";
@@ -59,7 +66,7 @@ export function createMcpServer(context: { authorization: string }): McpServer {
       {
         ...(tool.title ? { title: tool.title } : {}),
         description: tool.description,
-        inputSchema: tool.inputSchema,
+        inputSchema: validateOnly(tool.inputSchema),
         ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         annotations: tool.annotations,
       },
@@ -70,6 +77,32 @@ export function createMcpServer(context: { authorization: string }): McpServer {
   registerSkillResources(server);
 
   return server;
+}
+
+/**
+ * Validate tool arguments against the API's Zod schema, but hand the tool the
+ * arguments as the client sent them. Dispatch turns them back into a REST
+ * request that the API parses again, and a parsed value does not always
+ * survive the trip: a `Date` stringifies to a format the API rejects, and a
+ * comma-separated list split into an array becomes a repeated parameter.
+ */
+function validateOnly(
+  schema: z.ZodObject,
+): StandardSchemaWithJSON<Record<string, unknown>> {
+  const standard = schema["~standard"];
+  return {
+    "~standard": {
+      ...standard,
+      validate: async (value) => {
+        const result = await standard.validate(value);
+        if (result.issues) {
+          return result;
+        }
+        invariant(isRecord(value), "tool arguments are not an object");
+        return { value };
+      },
+    },
+  };
 }
 
 /**

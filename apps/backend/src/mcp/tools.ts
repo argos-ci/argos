@@ -27,9 +27,11 @@ export type McpToolDefinition = {
   title: string | undefined;
   description: string;
   /**
-   * Zod schemas, passed to the MCP SDK as-is: it converts them to JSON Schema
-   * for `tools/list` (`io: "input"` for inputs, `io: "output"` for outputs)
-   * and validates `tools/call` arguments and structured results against them.
+   * Zod schemas, passed to the MCP SDK: it converts them to JSON Schema for
+   * `tools/list` (`io: "input"` for inputs, `io: "output"` for outputs) and
+   * validates `tools/call` arguments and structured results against them.
+   * The input schema goes through `validateOnly` (`server.ts`), so tools get
+   * the raw arguments rather than the Zod output.
    */
   inputSchema: z.ZodObject;
   outputSchema: z.ZodObject | undefined;

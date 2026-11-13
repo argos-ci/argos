@@ -336,6 +336,28 @@ describe("MCP server", () => {
     });
   });
 
+  test("forwards arguments that the API schema transforms (getAccountAnalytics)", async ({
+    patToken,
+  }) => {
+    const res = await rpc(patToken, "tools/call", {
+      name: "getAccountAnalytics",
+      arguments: {
+        accountSlug: "jane-doe",
+        from: "2026-11-06T10:04:39.000+00:00",
+        to: "2026-11-13T10:04:39Z",
+        groupBy: "day",
+        projectNames: "awesome-project",
+      },
+    });
+    expect(res.status).toBe(200);
+    const body = res.body as RpcResponse;
+    expect(body.result!.isError).toBeUndefined();
+    expect(body.result!.structuredContent).toMatchObject({
+      screenshots: { all: { total: 0 } },
+      builds: { all: { total: 0 } },
+    });
+  });
+
   test("calls a write tool with a JSON body (createProject)", async ({
     patToken,
   }) => {
