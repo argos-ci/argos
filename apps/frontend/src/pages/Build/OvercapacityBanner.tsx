@@ -2,6 +2,7 @@ import { memo } from "react";
 import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { AlertTriangleIcon } from "lucide-react";
 
+import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -11,6 +12,7 @@ import { getAccountURL } from "../Account/AccountParams";
 
 const _AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
+    slug
     permissions
     plan {
       id
@@ -49,7 +51,10 @@ export const OvercapacityBanner = memo(
             Upgrade plan
           </Link>
         ) : account.__typename === "Team" ? (
-          <span>Ask a team owner to upgrade the plan.</span>
+          <span>
+            Ask <TeamOwnersLink account={account}>a team owner</TeamOwnersLink>{" "}
+            to upgrade the plan.
+          </span>
         ) : null}
       </Banner>
     );

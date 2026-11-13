@@ -7,7 +7,7 @@ import { useParams } from "react-router";
 import { CheckoutStatusDialog } from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
-import { AccountPermission } from "@/gql/graphql";
+import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Page } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 
@@ -17,7 +17,14 @@ const AccountQuery = graphql(`
   query AccountProjects_account($slug: String!) {
     account(slug: $slug) {
       id
+      slug
       permissions
+      ... on Team {
+        me {
+          id
+          level
+        }
+      }
       projects(first: 100, after: 0) {
         edges {
           id
@@ -55,12 +62,16 @@ function Projects(props: { accountSlug: string }) {
     return <NotFound />;
   }
 
+  const { account } = data;
   return (
     <ProjectList
-      projects={data.account.projects.edges}
-      canCreateProject={data.account.permissions.includes(
-        AccountPermission.Admin,
-      )}
+      projects={account.projects.edges}
+      canCreateProject={account.permissions.includes(AccountPermission.Admin)}
+      account={account}
+      isContributor={
+        account.__typename === "Team" &&
+        account.me?.level === TeamUserLevel.Contributor
+      }
     />
   );
 }

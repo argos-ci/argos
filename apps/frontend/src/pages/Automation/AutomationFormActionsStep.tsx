@@ -13,6 +13,7 @@ import {
   SlackInstallButton,
   SlackOwnerOnlyTooltip,
 } from "@/containers/Slack";
+import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -40,6 +41,7 @@ const SlackInstallationQuery = graphql(`
   query AutomationFormActionsStep_team($accountSlug: String!) {
     account(slug: $accountSlug) {
       id
+      slug
       permissions
       slackInstallation {
         id
@@ -94,9 +96,17 @@ function SendSlackMessageAction(props: {
     return (
       <div className="flex flex-col items-start gap-3 p-2">
         <p>
-          {hasAdminPermission
-            ? "To post to a Slack channel, you need to connect your Slack workspace first."
-            : "To post to a Slack channel, a team owner needs to connect your Slack workspace first."}
+          {hasAdminPermission ? (
+            "To post to a Slack channel, you need to connect your Slack workspace first."
+          ) : (
+            <>
+              To post to a Slack channel,{" "}
+              <TeamOwnersLink account={data.account}>
+                a team owner
+              </TeamOwnersLink>{" "}
+              needs to connect your Slack workspace first.
+            </>
+          )}
         </p>
         {hasAdminPermission ? (
           <LinkButton
@@ -119,9 +129,17 @@ function SendSlackMessageAction(props: {
       <div className="text-warning-low flex flex-col items-start gap-3 p-2">
         <p>
           <TriangleAlertIcon className="inline size-4" />{" "}
-          {hasAdminPermission
-            ? "Slack permissions need an update, please reconnect to be able to post messages in channels."
-            : "Slack permissions need an update, ask a team owner to reconnect Slack to be able to post messages in channels."}
+          {hasAdminPermission ? (
+            "Slack permissions need an update, please reconnect to be able to post messages in channels."
+          ) : (
+            <>
+              Slack permissions need an update, ask{" "}
+              <TeamOwnersLink account={data.account}>
+                a team owner
+              </TeamOwnersLink>{" "}
+              to reconnect Slack to be able to post messages in channels.
+            </>
+          )}
         </p>
         <SlackInstallButton
           accountId={data.account.id}

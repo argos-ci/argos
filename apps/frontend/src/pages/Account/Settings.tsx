@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
@@ -320,30 +320,54 @@ function PageContent() {
     checkIsNonEmptyElement(route.element),
   );
 
+  const [firstRoute] = matchedRoutes;
+  invariant(firstRoute, "A settings viewer has at least one section");
+  const firstSectionUrl = firstRoute.slug
+    ? `${settingsUrl}/${firstRoute.slug}`
+    : settingsUrl;
+
   return (
     <SettingsLayout>
       <SettingsNav
-        sections={matchedRoutes.map((route, index) => ({
+        sections={matchedRoutes.map((route) => ({
           name: route.name,
-          href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
+          href: route.slug ? `${settingsUrl}/${route.slug}` : settingsUrl,
         }))}
       />
       <SettingsPage>
         <Routes>
-          {matchedRoutes.map((route, index) => {
-            return (
-              <Route
-                key={route.slug}
-                index={index === 0}
-                path={index === 0 ? "" : route.slug}
-                element={route.element}
-              />
-            );
-          })}
+          {firstRoute.slug ? (
+            <Route
+              index
+              element={<RedirectToSection url={firstSectionUrl} />}
+            />
+          ) : null}
+          {matchedRoutes.map((route) => (
+            <Route
+              key={route.slug}
+              index={!route.slug}
+              path={route.slug || undefined}
+              element={route.element}
+            />
+          ))}
+          <Route
+            path="*"
+            element={<RedirectToSection url={firstSectionUrl} />}
+          />
         </Routes>
       </SettingsPage>
     </SettingsLayout>
   );
+}
+
+/**
+ * A settings URL with nothing to show this viewer opens the first section they
+ * have: `/settings` for a member, who has no General section, or a section they
+ * lack, which the account switcher reaches by keeping the path across teams.
+ */
+function RedirectToSection(props: { url: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: props.url, search, hash }} replace />;
 }
 
 function checkIsNonEmptyElement(element: ReactNode): boolean {
