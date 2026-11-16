@@ -1,4 +1,7 @@
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  type ProjectTokenPermission,
+} from "@argos/schemas/project-token";
 import { invariant } from "@argos/util/invariant";
 
 import { waitUntil } from "@/api/request-context";
@@ -21,8 +24,20 @@ import { tokenlessStrategies } from "./tokenless";
 const LAST_USED_AT_PRECISION_MS = 5 * 60 * 1000;
 
 /**
- * Payload of a bearer bound to a single project with every permission: a
- * short-lived token minted from a CI identity, or a tokenless CI bearer.
+ * What a tokenless bearer can do: upload what CI uploads, as the SDK does. It
+ * proves only that a workflow run of the repository is in progress, which
+ * anyone can read on a public repository, so it reads nothing: the project can
+ * be private while its repository is public.
+ */
+const TOKENLESS_PERMISSIONS: readonly ProjectTokenPermission[] = [
+  "builds:write",
+  "deployments:write",
+  "media:write",
+];
+
+/**
+ * Payload of a bearer bound to a single project: a short-lived token minted
+ * from a CI identity, or a tokenless CI bearer.
  */
 function getSingleProjectPayload(
   project: Project,
@@ -33,7 +48,10 @@ function getSingleProjectPayload(
     type: "project",
     source,
     projects: [project],
-    permissions: PROJECT_TOKEN_PERMISSION_LIST,
+    permissions:
+      source === "github-actions-tokenless"
+        ? TOKENLESS_PERMISSIONS
+        : PROJECT_TOKEN_PERMISSION_LIST,
     sha,
   };
 }
