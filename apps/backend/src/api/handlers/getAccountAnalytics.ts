@@ -44,6 +44,10 @@ const GetAccountAnalyticsQuerySchema = z.object({
   groupBy: z.enum(["day", "week", "month"]).meta({
     description: "Time period used to group each series data point.",
   }),
+  timeZone: z.string().optional().meta({
+    description:
+      "IANA time zone that periods start in, such as `Europe/Paris`. Defaults to UTC. Set `from` to midnight in that zone, such as `2026-11-02T00:00:00+01:00`, to get a whole first period.",
+  }),
   projectNames: ProjectNamesSchema.meta({
     description:
       "Optional project name filter. Pass one value or repeat the parameter for multiple projects.",
@@ -67,10 +71,13 @@ const ScreenshotMetricDataSchema = MetricDataSchema.extend({
   }),
 });
 
+const PeriodStartSchema = z.number().int().meta({
+  description:
+    "Unix timestamp in milliseconds at the start of the period: midnight in `timeZone`, UTC by default.",
+});
+
 const ScreenshotMetricDataPointSchema = ScreenshotMetricDataSchema.extend({
-  ts: z.number().int().meta({
-    description: "Unix timestamp in milliseconds at the start of the period.",
-  }),
+  ts: PeriodStartSchema,
 });
 
 const BuildMetricDataSchema = MetricDataSchema.extend({
@@ -81,9 +88,7 @@ const BuildMetricDataSchema = MetricDataSchema.extend({
 });
 
 const BuildMetricDataPointSchema = BuildMetricDataSchema.extend({
-  ts: z.number().int().meta({
-    description: "Unix timestamp in milliseconds at the start of the period.",
-  }),
+  ts: PeriodStartSchema,
 });
 
 const MetricProjectSchema = z.object({

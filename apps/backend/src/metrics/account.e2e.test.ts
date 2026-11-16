@@ -364,7 +364,7 @@ describe("getAccountMetrics", () => {
     expect(metrics.builds.all.total).toBe(1);
   });
 
-  it.each(["Mars/Olympus", "+02:00"])(
+  it.each(["Mars/Olympus", "+02:00", "UTC+2"])(
     "rejects %s as a time zone",
     async (timeZone) => {
       await expect(
