@@ -71,7 +71,12 @@ export const handler = defineNotificationHandler({
           <Paragraph>
             Grant these permissions in GitLab, or{" "}
             <Link href={settingsURL}>replace the token</Link> with one from a
-            user who has them.
+            user who has them, such as a Maintainer.
+          </Paragraph>
+          <Paragraph>
+            <Link href="https://argos-ci.com/docs/learn/integrations/gitlab-integration#token-permissions">
+              Learn more about GitLab token permissions
+            </Link>
           </Paragraph>
           <Signature />
         </EmailLayout>
