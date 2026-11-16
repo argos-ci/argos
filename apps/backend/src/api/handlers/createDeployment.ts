@@ -15,6 +15,7 @@ import type { Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { generateDeploymentSlug } from "@/deployment/slug";
+import { sendProjectEvent } from "@/event/send";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
@@ -288,6 +289,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         deploymentId: deployment.id,
         type: "progress",
       }),
+      sendProjectEvent({ name: "deployment.created", deployment }),
       // Insert all files into DynamoDB deployment_files table
       writeDeploymentFiles(deployment.id, body.files),
     ]);

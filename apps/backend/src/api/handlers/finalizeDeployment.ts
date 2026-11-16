@@ -13,6 +13,7 @@ import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { githubDeploymentJob } from "@/github-deployment/job";
+import { sendProjectEvent } from "@/event/send";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
@@ -298,6 +299,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         type: "success",
       }),
       githubDeploymentJob.push(...previousDeploymentIds),
+      sendProjectEvent({ name: "deployment.ready", deployment }),
     ]);
 
     res.send(serializeDeployment(deployment));

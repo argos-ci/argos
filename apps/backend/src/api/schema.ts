@@ -76,6 +76,7 @@ import {
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
+import { listProjectEventsOperation } from "./handlers/listProjectEvents";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
@@ -153,6 +154,7 @@ import {
 } from "./handlers/updateComment";
 import { updateProjectOperation } from "./handlers/updateProject";
 import { securitySchemes } from "./security";
+import { webhooks } from "./webhooks";
 
 export const zodSchema = {
   openapi: "3.2.0",
@@ -233,6 +235,12 @@ export const zodSchema = {
       description:
         "Create, finalize, and resolve deployments to publish and serve project artifacts.",
       "x-page-icon": "rocket",
+    },
+    {
+      name: "Events",
+      description:
+        "Follow what happens in your projects: builds completing and getting reviewed, deployments created and ready. Read them from the events feed, or receive each one on a webhook set up in your account settings.",
+      "x-page-icon": "webhook",
     },
     {
       name: "Automations",
@@ -419,6 +427,9 @@ export const zodSchema = {
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,
     },
+    "/projects/{owner}/{project}/events": {
+      get: listProjectEventsOperation,
+    },
     "/projects/{owner}/{project}/builds/{buildNumber}": {
       get: getBuildOperation,
     },
@@ -525,6 +536,7 @@ export const zodSchema = {
         delete: unsubscribeTestCommentThreadOperation,
       },
   },
+  webhooks,
 } satisfies ZodOpenApiObject;
 
 /**

@@ -11,6 +11,7 @@ import {
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
 import { githubDeploymentJob } from "@/github-deployment/job";
+import { purgeProjectEvents } from "@/event/feed";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
@@ -28,6 +29,7 @@ import { checkIsStripeConfigured } from "@/stripe";
 import { syncStripeInvoices } from "@/stripe/invoice-mirror";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
+import { webhookDeliveryJob } from "@/webhook/job";
 
 // Even though prod-ro queues are local, every job handler writes to the
 // database and to third parties — nothing a worker does makes sense against
@@ -59,6 +61,10 @@ scheduleCron("project-token-expiration", "40 * * * *", (context) =>
 // into one pass.
 scheduleCron("media-retention", "15 * * * *", (context) =>
   purgeExpiredMedia(context.date),
+);
+
+scheduleCron("project-event-retention", "55 * * * *", (context) =>
+  purgeProjectEvents(context.date),
 );
 
 // Anonymous client registrations nobody authorized. Hourly, so an abandoned
@@ -112,4 +118,5 @@ createJobWorker(
   synchronizeJob,
   screenshotDiffJob,
   monthlyReportJob,
+  webhookDeliveryJob,
 );

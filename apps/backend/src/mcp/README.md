@@ -50,6 +50,19 @@ Operations can opt out or customize their projection:
 
 No operation needs it by default — eligibility is computed from `security`.
 
+## Events
+
+The server implements the events extension (`io.modelcontextprotocol/events`,
+SEP-3415) in `events.ts`. `events/list` describes the event types from the
+same registry as webhooks and the OpenAPI `webhooks` section
+(`api/schema/primitives/event.ts`). `events/poll` reads the REST events feed
+(`GET /projects/{owner}/{project}/events`) through the dispatch layer, so
+access checks are the API's own, and maps each item to an `EventOccurrence`
+(`id` → `eventId`, `type` → `name`). Only the `poll` delivery mode is
+offered: `push` needs a stream held open per subscription, which the
+stateless transport does not keep, and `webhook` overlaps the webhooks teams
+configure in their settings.
+
 ## Authentication and audience
 
 - Requests without a valid PAT/OAuth bearer get `401` +
