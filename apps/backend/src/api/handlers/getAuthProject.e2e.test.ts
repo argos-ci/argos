@@ -22,7 +22,9 @@ const test = base.extend<{
 }>({
   project: async ({}, use) => {
     await setupDatabase();
-    const project = await factory.Project.create({
+    const project = await factory.Project.create();
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     await use(project);

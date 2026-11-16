@@ -57,9 +57,7 @@ const test = base.extend<Fixtures>({
     });
 
     const s3 = getS3Client();
-    const project = await factory.Project.create({
-      token: "xx",
-    });
+    const project = await factory.Project.create();
     const buckets = await factory.ScreenshotBucket.createMany(2, [
       {
         name: "test-bucket",

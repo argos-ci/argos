@@ -1,10 +1,17 @@
+import type { ProjectTokenPermission } from "@argos/schemas/project-token";
 import { assertNever } from "@argos/util/assertNever";
 
 import type { Account, Project, User } from "@/database/models";
 
 export type AuthProjectPayload = {
   type: "project";
-  project: Project;
+  /**
+   * Live projects the bearer can act on, owned by the token's account. Never
+   * empty. Short-lived and tokenless bearers carry exactly one. The account of
+   * a token's projects is fetched with them.
+   */
+  projects: Project[];
+  permissions: readonly ProjectTokenPermission[];
   /**
    * Commit SHA the bearer is bound to. Populated when the bearer is a
    * short-lived token minted from a GitHub Actions OIDC claim that carried

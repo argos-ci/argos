@@ -16,9 +16,10 @@ import { getSignedObjectUrl } from "@/storage/signed-url";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
+import { TokenProjectPath } from "../schema/primitives/project";
 import {
   Sha1HashSchema,
   Sha256HashSchema,
@@ -26,6 +27,7 @@ import {
 } from "../schema/primitives/sha";
 import {
   conflict,
+  forbidden,
   invalidParameters,
   serverError,
   unauthorized,
@@ -66,6 +68,7 @@ const withinScreenshotLimit = (items: unknown[]) =>
   items.length <= MAX_SCREENSHOTS_PER_BUILD;
 
 const CommonRequestBodySchema = z.object({
+  project: TokenProjectPath,
   commit: Sha1HashSchema.meta({
     description: "The commit the build is running on",
   }),
@@ -218,7 +221,7 @@ export const createBuildOperation = {
   description:
     "Create a build and receive signed upload targets for its screenshots and Playwright traces. The response lists, for every file Argos doesn't already have, a secure `postUrl` with `fields` (or a legacy `putUrl`) to upload it to. Supports single and parallel builds.",
   tags: ["Builds"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["builds:write"]),
   requestBody: {
     content: {
       "application/json": {
@@ -236,6 +239,7 @@ export const createBuildOperation = {
       },
     },
     "401": unauthorized,
+    "403": forbidden,
     "409": conflict,
     "400": invalidParameters,
     "500": serverError,
@@ -249,7 +253,7 @@ export const createBuild: CreateAPIHandler = ({ post }) => {
 
     const ctx = {
       body: req.ctx.body,
-      project: auth.project,
+      project: await resolveAuthProject(auth, req.ctx.body.project),
     } satisfies BuildContext;
 
     const { build, screenshots, pwTraces } = await (async () => {

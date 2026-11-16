@@ -187,13 +187,16 @@ describe("getAccountAnalytics", () => {
   test("rejects project tokens", async ({ account }) => {
     const project = await factory.Project.create({
       accountId: account.id,
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
 
     await request(app)
       .get("/accounts/acme/analytics")
       .query(analyticsQuery)
-      .set("Authorization", `Bearer ${project.token}`)
+      .set("Authorization", "Bearer the-awesome-token")
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toContain(

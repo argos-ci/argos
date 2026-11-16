@@ -1,3 +1,4 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
@@ -27,6 +28,7 @@ import { OAuthClient } from "./models/OAuthClient";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
+import { ProjectToken } from "./models/ProjectToken";
 import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
@@ -39,6 +41,7 @@ import { Test } from "./models/Test";
 import { User } from "./models/User";
 import { UserPasskey } from "./models/UserPasskey";
 import { ignoreChange } from "./services/ignored-change";
+import { insertProjectToken } from "./services/project-token";
 
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
@@ -145,16 +148,22 @@ export async function createProject(input: {
   private?: boolean;
   defaultBaseBranch?: string;
 }): Promise<Project> {
-  return Project.query().insertAndFetch({
+  const project = await Project.query().insertAndFetch({
     name: input.name,
-    token:
-      input.token ?? `${input.name}-${Math.random().toString(36).slice(2)}`,
     accountId: input.accountId,
     private: input.private ?? false,
     ...(input.defaultBaseBranch !== undefined && {
       defaultBaseBranch: input.defaultBaseBranch,
     }),
   });
+  await insertProjectToken({
+    accountId: project.accountId,
+    name: "Default token",
+    token: input.token ?? ProjectToken.generateToken(),
+    permissions: PROJECT_TOKEN_PERMISSION_LIST,
+    projectIds: [project.id],
+  });
+  return project;
 }
 
 /**

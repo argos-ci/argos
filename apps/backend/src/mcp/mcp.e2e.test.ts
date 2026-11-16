@@ -164,6 +164,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: userAccount.id,
       name: "awesome-project",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     await use(project);

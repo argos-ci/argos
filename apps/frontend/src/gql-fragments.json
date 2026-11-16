@@ -64,6 +64,7 @@
       "Project",
       "ProjectContributor",
       "ProjectCustomDomain",
+      "ProjectToken",
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",

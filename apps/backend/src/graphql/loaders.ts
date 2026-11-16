@@ -60,6 +60,7 @@ import {
   Test,
   User,
 } from "@/database/models";
+import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
 import {
   getAccountBillings,
@@ -67,6 +68,7 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import { getProjectsByTokenId } from "@/database/services/project-token";
 import {
   getSubscriptionRevenues,
   type SubscriptionRevenue,
@@ -88,6 +90,7 @@ import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
+import { getVisibleProjectIds } from "./services/project";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -583,6 +586,67 @@ function createDiscordWebhooksByAccountIdLoader() {
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
   });
+}
+
+function createProjectTokenProjectsLoader() {
+  return new DataLoader<string, Project[]>(async (tokenIds) => {
+    const projectsByTokenId = await getProjectsByTokenId(tokenIds);
+    return tokenIds.map((tokenId) => projectsByTokenId.get(tokenId) ?? []);
+  });
+}
+
+/**
+ * The projects of an account a viewer can see, once per request: a list of
+ * project tokens asks it for each token, always about the same account.
+ */
+function createVisibleProjectIdsLoader() {
+  return new DataLoader<
+    { account: Account; auth: AuthViewer },
+    Set<string>,
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map(async (input) => new Set(await getVisibleProjectIds(input))),
+      ),
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
+  );
+}
+
+/**
+ * A viewer's permissions on an account, once per request. The calls are still
+ * made one by one: the check reads an `Account` instance rather than an id.
+ */
+function createAccountPermissionsLoader() {
+  return new DataLoader<
+    { account: Account; auth: AuthViewer },
+    AccountPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => input.account.$getPermissions(input.auth)),
+      ),
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
+  );
+}
+
+/**
+ * A viewer's permissions on a project, once per request. The calls are still
+ * made one by one: the check reads a `Project` instance rather than an id.
+ */
+function createProjectPermissionsLoader() {
+  return new DataLoader<
+    { project: Project; auth: AuthViewer },
+    ProjectPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => input.project.$getPermissions(input.auth)),
+      ),
+    { cacheKeyFn: (input) => `${input.project.id}:${input.auth.user.id}` },
+  );
 }
 
 function createAutomationRunActionRunsLoader() {
@@ -2057,6 +2121,10 @@ export const createLoaders = () => ({
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
+  ProjectTokenProjects: createProjectTokenProjectsLoader(),
+  VisibleProjectIds: createVisibleProjectIdsLoader(),
+  AccountPermissions: createAccountPermissionsLoader(),
+  ProjectPermissions: createProjectPermissionsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),

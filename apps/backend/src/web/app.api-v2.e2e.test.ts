@@ -141,6 +141,9 @@ describe("api v2", () => {
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
+        });
+        await factory.createProjectToken({
+          projects: [project],
           token: "awesome-token",
         });
       });
@@ -349,6 +352,9 @@ describe("api v2", () => {
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
+        });
+        await factory.createProjectToken({
+          projects: [project],
           token: "awesome-token",
         });
       });
@@ -641,6 +647,9 @@ describe("api v2", () => {
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
+        });
+        await factory.createProjectToken({
+          projects: [project],
           token: "awesome-token",
         });
       });

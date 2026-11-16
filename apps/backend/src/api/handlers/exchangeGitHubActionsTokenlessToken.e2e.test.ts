@@ -57,7 +57,9 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     expect(Date.parse(res.body.expiresAt)).toBeGreaterThan(Date.now());
 
     const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-    expect(auth.project.id).toBe(linkedProject.project.id);
+    expect(auth.projects.map((project) => project.id)).toEqual([
+      linkedProject.project.id,
+    ]);
   });
 
   test("rejects when no project is linked to the GitHub repository", async () => {
@@ -242,7 +244,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       const res = await exchange(bearer).expect(200);
 
       const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-      expect(auth.project.id).toBe(projectB.id);
+      expect(auth.projects.map((project) => project.id)).toEqual([projectB.id]);
     });
 
     test("rejects when the provided slug does not match any linked project", async () => {

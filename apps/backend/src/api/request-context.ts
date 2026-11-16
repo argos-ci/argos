@@ -66,6 +66,21 @@ async function drainScope(scope: RequestScope): Promise<void> {
 }
 
 /**
+ * Responses whose `end` was called, including the ones still held by
+ * {@link gateResponseOnRequestScope}: `headersSent` stays false until the held
+ * `end` runs for real.
+ */
+const endedResponses = new WeakSet<Response>();
+
+/**
+ * Whether a response was already answered, even if it is still held until
+ * background work settles. What error handlers must check before answering.
+ */
+export function isResponseCommitted(res: Response): boolean {
+  return res.headersSent || endedResponses.has(res);
+}
+
+/**
  * Defer the response's socket close until every {@link waitUntil} task has
  * settled, by wrapping `res.end`. Must be called within the request scope; the
  * scope is captured so the deferral works regardless of the async context
@@ -79,6 +94,7 @@ export function gateResponseOnRequestScope(res: Response): void {
   const realEnd = res.end.bind(res) as (...args: unknown[]) => Response;
   let draining = false;
   res.end = function (this: Response, ...args: unknown[]): Response {
+    endedResponses.add(res);
     // Re-entrant call from within the drain continuation: end for real.
     if (draining || scope.tasks.size === 0) {
       return realEnd(...args);

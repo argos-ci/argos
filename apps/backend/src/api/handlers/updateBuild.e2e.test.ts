@@ -25,8 +25,11 @@ const test = base.extend<{
     await setupDatabase();
     const account = await factory.TeamAccount.create({ slug: "awesome-team" });
     const project = await factory.Project.create({
-      token: "the-awesome-token",
       accountId: account.id,
+    });
+    await factory.createProjectToken({
+      projects: [project],
+      token: "the-awesome-token",
     });
     await use(project);
   },
@@ -143,7 +146,6 @@ describe("updateBuild", () => {
     // build is known to belong to the token's project.
     const otherProject = await factory.Project.create({
       name: "other",
-      token: "another-token",
     });
     const otherBucket = await factory.ScreenshotBucket.create({
       projectId: otherProject.id,
