@@ -36,7 +36,7 @@ overrides:
   ws: ^8.20.1
 
 patchedDependencies:
-  '@base-ui/react@1.9.0': 50333a934026ad6b2f708ce4633fa3cfd6416ee70ddfbefea95eb91270ffd841
+  '@base-ui/react@1.9.0': 702522d03e528b6fa4da0b6b0cd56cb386a2ae1b540a12f6bd20ed12301a59b1
 
 importers:
 
@@ -468,7 +468,7 @@ importers:
         version: link:../../packages/vite-plugin-graphql-documents
       '@base-ui/react':
         specifier: ^1.9.0
-        version: 1.9.0(patch_hash=50333a934026ad6b2f708ce4633fa3cfd6416ee70ddfbefea95eb91270ffd841)(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.9.0(patch_hash=702522d03e528b6fa4da0b6b0cd56cb386a2ae1b540a12f6bd20ed12301a59b1)(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@floating-ui/react-dom':
         specifier: ^2.1.9
         version: 2.1.9(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -9114,7 +9114,7 @@ snapshots:
       '@babel/helper-string-parser': 8.1.2
       '@babel/helper-validator-identifier': 8.0.6
 
-  '@base-ui/react@1.9.0(patch_hash=50333a934026ad6b2f708ce4633fa3cfd6416ee70ddfbefea95eb91270ffd841)(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@base-ui/react@1.9.0(patch_hash=702522d03e528b6fa4da0b6b0cd56cb386a2ae1b540a12f6bd20ed12301a59b1)(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@babel/runtime': 8.1.2
       '@base-ui/utils': 0.5.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
