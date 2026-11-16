@@ -51,10 +51,11 @@ export class InvalidAccountMetricsInputError extends Error {}
  * Postgres reads a POSIX zone in `AT TIME ZONE` with the sign inverted
  * ("+02:00" and "UTC+2" are both UTC-2), so it would shift every bucket
  * without failing. Intl rejects "UTC+2" but accepts "+02:00", hence both
- * checks.
+ * checks. Intl also accepts ICU-only IDs Postgres does not know ("AET"):
+ * `isUnknownTimeZoneError` catches those once the query runs.
  */
 function checkIsSupportedTimeZone(timeZone: string) {
-  if (/^[+\-\d]/.test(timeZone)) {
+  if (/^[+-]/.test(timeZone)) {
     return false;
   }
   try {
