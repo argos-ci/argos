@@ -60,6 +60,9 @@ import {
   Test,
   User,
   UserSession,
+  Webhook,
+  WebhookDelivery,
+  WebhookProject,
 } from "@/database/models";
 import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
@@ -586,6 +589,50 @@ function createDiscordWebhooksByAccountIdLoader() {
       {},
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
+}
+
+/**
+ * The live projects a webhook is linked to, keyed by webhook so the account
+ * it belongs to is at hand: a link to a project of another account reaches
+ * nothing.
+ */
+function createWebhookProjectsLoader() {
+  return new DataLoader<Webhook, Project[], string>(
+    async (webhooks) => {
+      const links = await WebhookProject.query()
+        .withGraphJoined("project")
+        .whereIn(
+          "webhook_projects.webhookId",
+          webhooks.map((webhook) => webhook.id),
+        )
+        .whereNull("project.deletedAt")
+        .orderBy("project.name");
+      return webhooks.map((webhook) =>
+        links.flatMap((link) => {
+          invariant(link.project, "Webhook link without project");
+          return link.webhookId === webhook.id &&
+            link.project.accountId === webhook.accountId
+            ? [link.project]
+            : [];
+        }),
+      );
+    },
+    { cacheKeyFn: (webhook) => webhook.id },
+  );
+}
+
+function createWebhookLastDeliveryLoader() {
+  return new DataLoader<string, WebhookDelivery | null>(async (webhookIds) => {
+    const deliveries = await WebhookDelivery.query()
+      .distinctOn("webhookId")
+      .whereIn("webhookId", webhookIds as string[])
+      .orderBy("webhookId")
+      .orderBy("id", "desc");
+    return webhookIds.map(
+      (webhookId) =>
+        deliveries.find((delivery) => delivery.webhookId === webhookId) ?? null,
+    );
   });
 }
 
@@ -2150,6 +2197,8 @@ export const createLoaders = () => ({
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   ProjectTokenProjects: createProjectTokenProjectsLoader(),
+  WebhookProjects: createWebhookProjectsLoader(),
+  WebhookLastDelivery: createWebhookLastDeliveryLoader(),
   VisibleProjectIds: createVisibleProjectIdsLoader(),
   AccountPermissions: createAccountPermissionsLoader(),
   ProjectPermissions: createProjectPermissionsLoader(),

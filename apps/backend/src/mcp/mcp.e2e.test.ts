@@ -7,6 +7,7 @@ import {
 import express from "express";
 import request from "supertest";
 import { test as base, describe, expect, vi } from "vitest";
+import { z } from "zod";
 
 import {
   Account,
@@ -16,6 +17,7 @@ import {
   OAuthGrant,
   OAuthGrantAccount,
   Project,
+  ProjectEvent,
   User,
   UserAccessTokenScope,
 } from "@/database/models";
@@ -574,6 +576,108 @@ describe.for([
         .body;
       expect(client.getServerVersion()).toEqual(card.serverInfo);
       expect(client.getServerCapabilities()).toEqual(card.capabilities);
+    } finally {
+      await client.close();
+    }
+  });
+
+  test("lists and polls the project events", async ({
+    mcpUrl,
+    patToken,
+    project,
+  }) => {
+    const client = await connectClient(mcpUrl, patToken, options);
+    try {
+      const list = await client.request(
+        { method: "events/list", params: {} },
+        z.object({
+          events: z.array(
+            z.object({
+              name: z.string(),
+              delivery: z.array(z.string()),
+              inputSchema: z.object({ type: z.literal("object") }).loose(),
+              payloadSchema: z.object({ type: z.literal("object") }).loose(),
+            }),
+          ),
+        }),
+      );
+      expect(list.events.map((event) => event.name)).toEqual([
+        "build.completed",
+        "build.reviewed",
+        "deployment.created",
+        "deployment.ready",
+      ]);
+      expect(
+        list.events.every((event) => event.delivery.join() === "poll"),
+      ).toBe(true);
+
+      const PollResultSchema = z.object({
+        events: z.array(z.object({ eventId: z.string() }).loose()),
+        cursor: z.string(),
+        truncated: z.boolean(),
+        hasMore: z.boolean(),
+        nextPollMs: z.number(),
+      });
+      const poll = (cursor: string | null) =>
+        client.request(
+          {
+            method: "events/poll",
+            params: {
+              name: "build.completed",
+              arguments: { owner: "jane-doe", project: "awesome-project" },
+              cursor,
+            },
+          },
+          PollResultSchema,
+        );
+
+      const start = await poll(null);
+      expect(start.events).toEqual([]);
+
+      const event = await ProjectEvent.query().insertAndFetch({
+        projectId: project.id,
+        name: "build.completed",
+        data: { build: { id: "1" } },
+        createdAt: new Date(Date.now() - 10_000).toISOString(),
+      });
+      const next = await poll(start.cursor);
+      expect(next.events).toEqual([
+        {
+          eventId: event.id,
+          name: "build.completed",
+          timestamp: new Date(event.createdAt).toISOString(),
+          data: { build: { id: "1" } },
+        },
+      ]);
+      expect(next.nextPollMs).toBeGreaterThan(0);
+
+      await expect(
+        client.request(
+          {
+            method: "events/poll",
+            params: {
+              name: "build.deleted",
+              arguments: { owner: "jane-doe", project: "awesome-project" },
+              cursor: null,
+            },
+          },
+          PollResultSchema,
+        ),
+      ).rejects.toMatchObject({ code: -32023 });
+
+      await expect(
+        client.request(
+          {
+            method: "events/poll",
+            params: {
+              name: "build.completed",
+              arguments: { owner: "jane-doe", project: "unknown" },
+              cursor: null,
+            },
+          },
+          PollResultSchema,
+        ),
+      ).rejects.toMatchObject({ code: -32023 });
     } finally {
       await client.close();
     }

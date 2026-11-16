@@ -16,6 +16,7 @@ import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
 import { AccountProjectTokens } from "@/containers/Account/ProjectTokens";
+import { AccountWebhooks } from "@/containers/Account/Webhooks";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -104,6 +105,7 @@ const AccountQuery = graphql(`
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
       ...AccountProjectTokens_Account
+      ...AccountWebhooks_Account
       ...OAuthApps_Account
     }
   }
@@ -290,6 +292,11 @@ function PageContent() {
           <AccountProjectTokens account={account} />
         </>
       ),
+    },
+    {
+      name: "Webhooks",
+      slug: "webhooks",
+      element: hasAdminPermission && <AccountWebhooks account={account} />,
     },
     {
       name: "Applications",

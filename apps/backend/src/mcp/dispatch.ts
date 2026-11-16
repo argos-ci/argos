@@ -77,6 +77,21 @@ function getInternalBaseUrl(): Promise<string> {
   return internalBaseUrl;
 }
 
+/**
+ * Send a GET request to the API with the caller's bearer, for the MCP methods
+ * that are not tool calls.
+ */
+export async function getFromApi(
+  path: string,
+  authorization: string,
+): Promise<{ status: number; payload: string }> {
+  const baseUrl = await getInternalBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, {
+    headers: { authorization },
+  });
+  return { status: response.status, payload: await response.text() };
+}
+
 function textResult(text: string, isError?: boolean): CallToolResult {
   return {
     content: [{ type: "text", text }],

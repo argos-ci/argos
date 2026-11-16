@@ -96,6 +96,8 @@ const config: CodegenConfig = {
           StaffCancellation: "../../database/models/index.js#Subscription",
           Project: "../../database/models/index.js#Project",
           ProjectToken: "../../database/models/index.js#ProjectToken",
+          Webhook: "../../database/models/index.js#Webhook",
+          WebhookDelivery: "../../database/models/index.js#WebhookDelivery",
           ProjectCustomDomain: "../../database/models/index.js#ProjectDomain",
           Team: "../../database/models/index.js#Account",
           TeamDomain: "../../database/models/index.js#TeamDomain",

@@ -65,6 +65,7 @@ describe("buildMcpTools", () => {
         "listMediaVersions",
         "listProjectContributors",
         "listProjectDeployments",
+        "listProjectEvents",
         "listProjectTokens",
         "listProjects",
         "listReviews",
