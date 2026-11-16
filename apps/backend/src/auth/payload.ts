@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 
 import type { Account, Project, User } from "@/database/models";
 
-const AUTH_PROJECT_SOURCES = [
+export const AUTH_PROJECT_SOURCES = [
   "project-token",
   "github-actions-oidc",
   "github-actions-tokenless",

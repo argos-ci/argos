@@ -832,6 +832,9 @@ CREATE TABLE public.deployments (
     slug character varying(255) NOT NULL,
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
+    "authSource" text,
+    "githubDeploymentId" bigint,
+    CONSTRAINT "deployments_authSource_check" CHECK (("authSource" = ANY (ARRAY['project-token'::text, 'github-actions-oidc'::text, 'github-actions-tokenless'::text]))),
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
 );
@@ -7386,3 +7389,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112211844_token-saml-authorization.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261116120000_screenshot-diff-layout-shift.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119120000_deployment-github-deployment.js', 1, NOW());

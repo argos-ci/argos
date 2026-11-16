@@ -10,6 +10,7 @@ import {
 } from "@/database/services/monthly-report";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
@@ -101,6 +102,7 @@ createJobWorker(
   buildJob,
   buildNotificationJob,
   deploymentNotificationJob,
+  githubDeploymentJob,
   githubPullRequestJob,
   mediaDiffJob,
   notificationMessageJob,
