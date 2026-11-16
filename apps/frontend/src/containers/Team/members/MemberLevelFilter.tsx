@@ -8,6 +8,7 @@ const FilterUserLevelSchema = z.enum([
   "all",
   TeamUserLevel.Contributor,
   TeamUserLevel.Member,
+  TeamUserLevel.Billing,
   TeamUserLevel.Owner,
 ]);
 
@@ -18,6 +19,7 @@ const FilterUserLevelLabels: Record<FilterUserLevel, string> = {
   all: "All roles",
   [TeamUserLevel.Contributor]: "Contributor",
   [TeamUserLevel.Member]: "Member",
+  [TeamUserLevel.Billing]: "Billing",
   [TeamUserLevel.Owner]: "Owner",
 };
 
@@ -44,6 +46,7 @@ export function MemberLevelFilter(props: {
           <ListBoxItem value="contributor">Contributor</ListBoxItem>
         )}
         <ListBoxItem value="member">Member</ListBoxItem>
+        <ListBoxItem value="billing">Billing</ListBoxItem>
         <ListBoxItem value="owner">Owner</ListBoxItem>
       </ListBox>
     </Select>

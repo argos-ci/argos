@@ -158,9 +158,13 @@ function computeAccountSubscriptionStatus(args: {
   return "canceled";
 }
 
-export type AccountPermission = "admin" | "view";
+export type AccountPermission = "admin" | "billing" | "view";
 
-export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
+export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = [
+  "admin",
+  "billing",
+  "view",
+];
 
 /**
  * Usage a flat-rate plan may reach, as a share of its included screenshots,
@@ -899,6 +903,19 @@ export class Account extends Model {
     }
     if (this.teamId && !this.userId) {
       return Team.getOwnerIds(this.teamId);
+    }
+    throw new Error("Incoherent account type");
+  }
+
+  /**
+   * Get the ids of the users who manage the billing of the account.
+   */
+  async $getBillingUserIds(): Promise<string[]> {
+    if (this.userId && !this.teamId) {
+      return [this.userId];
+    }
+    if (this.teamId && !this.userId) {
+      return Team.getBillingUserIds(this.teamId);
     }
     throw new Error("Incoherent account type");
   }

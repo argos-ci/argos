@@ -15,6 +15,7 @@ import {
 const MemberLevelLabels = {
   contributor: "Contributor",
   member: "Member",
+  billing: "Billing",
   owner: "Owner",
 };
 
@@ -49,6 +50,12 @@ export function MemberLevelSelect(
         <ListBoxItem value="member">
           <ListBoxItemLabel>Member</ListBoxItemLabel>
           <ListBoxItemDescription>See and review builds</ListBoxItemDescription>
+        </ListBoxItem>
+        <ListBoxItem value="billing">
+          <ListBoxItemLabel>Billing</ListBoxItemLabel>
+          <ListBoxItemDescription>
+            Member access, plus the plan, spend limit and invoices
+          </ListBoxItemDescription>
         </ListBoxItem>
         <ListBoxItem value="owner">
           <ListBoxItemLabel>Owner</ListBoxItemLabel>

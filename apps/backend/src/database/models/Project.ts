@@ -383,6 +383,7 @@ export class Project extends Model {
     switch (teamAccess.userLevel) {
       // Owners and members of the team have all permissions.
       case "owner":
+      case "billing":
       case "member":
         return ALL_PROJECT_PERMISSIONS;
 

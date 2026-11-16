@@ -84,7 +84,11 @@ import {
   type ITeamDefaultUserLevel,
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
-import { deleteAccount, getAdminAccount } from "../services/account";
+import {
+  deleteAccount,
+  getAdminAccount,
+  getBillingAccount,
+} from "../services/account";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
@@ -240,6 +244,8 @@ export const typeDefs = gql`
 
   enum TeamUserLevel {
     owner
+    "A member who also manages billing"
+    billing
     member
     contributor
   }
@@ -1121,7 +1127,7 @@ export const resolvers: IResolvers = {
       }
 
       const [teamAccount, plan] = await Promise.all([
-        getAdminAccount({
+        getBillingAccount({
           id: args.teamAccountId,
           auth,
         }),

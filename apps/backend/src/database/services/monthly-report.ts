@@ -6,7 +6,13 @@ import { getChangelogNews } from "@/changelog/news";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { createJob } from "@/job-core";
 
-import { Account, Subscription, Team, TeamUser } from "../models";
+import {
+  Account,
+  BILLING_USER_LEVELS,
+  Subscription,
+  Team,
+  TeamUser,
+} from "../models";
 import { getMonthlyReportActivity } from "./monthly-report-activity";
 import {
   checkIsBilledPeriod,
@@ -314,12 +320,12 @@ async function getMonthlyReportData(
 }
 
 /**
- * Send the monthly report of a team to its owners who have not turned it off,
- * if one is due: a month closed since the last report, a few days ago at most,
- * and the team took enough screenshots over it.
+ * Send the monthly report of a team to the members managing its billing who
+ * have not turned it off, if one is due: a month closed since the last report,
+ * a few days ago at most, and the team took enough screenshots over it.
  *
  * The report is marked sent once every email went out, so a failure is
- * retried. A retry sends to every owner again, and the idempotency key keeps
+ * retried. A retry sends to every recipient again, and the idempotency key keeps
  * the ones who already got it from getting it twice.
  */
 export async function sendAccountMonthlyReport(accountId: string, now: Date) {
@@ -340,11 +346,12 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
     return;
   }
 
-  const owners = await Team.relatedQuery("owners")
+  const recipients = await Team.relatedQuery("users")
     .for(account.teamId)
+    .whereIn("team_users.userLevel", BILLING_USER_LEVELS)
     .whereNull("team_users.monthlyReportOptedOutAt")
     .whereNotNull("users.email");
-  if (owners.length === 0) {
+  if (recipients.length === 0) {
     return;
   }
 
@@ -356,15 +363,15 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
   }
 
   const data = await getMonthlyReportData(account, term, usage, now);
-  // One email per owner, so no address is shown to the others.
+  // One email per recipient, so no address is shown to the others.
   await Promise.all(
-    owners.map((owner) => {
-      invariant(owner.email, "owners are filtered on their email");
+    recipients.map((recipient) => {
+      invariant(recipient.email, "recipients are filtered on their email");
       return sendEmailTemplate({
         template: "monthly_report",
         data,
-        to: [owner.email],
-        idempotencyKey: `monthly-report/${account.id}/${term.reportedMonth.to.toISOString()}/${owner.id}`,
+        to: [recipient.email],
+        idempotencyKey: `monthly-report/${account.id}/${term.reportedMonth.to.toISOString()}/${recipient.id}`,
       });
     }),
   );
@@ -375,8 +382,8 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
 }
 
 /**
- * Turn the monthly report of a team on or off for a member. Each owner chooses
- * for themself. Null when the user is not a member of the team.
+ * Turn the monthly report of a team on or off for a member. Each recipient
+ * chooses for themself. Null when the user is not a member of the team.
  */
 export async function setMonthlyReportSubscription(input: {
   account: Account;
@@ -412,7 +419,7 @@ export const monthlyReportJob = createJob<string>(
 /**
  * A page of the teams on a usage-based Stripe plan, the ones the
  * monthly report is for, in id order after `after`. Only teams: the choice to
- * receive it is kept on each owner's membership.
+ * receive it is kept on each recipient's membership.
  */
 async function getMonthlyReportAccountIds(
   after: string | null,

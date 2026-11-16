@@ -25,6 +25,14 @@ export type TeamAccess =
   | { type: "outsider" }
   | { type: "saml_required" };
 
+/**
+ * Team roles that manage billing, and so receive its emails.
+ */
+export const BILLING_USER_LEVELS = [
+  "owner",
+  "billing",
+] as const satisfies TeamUser["userLevel"][];
+
 export class Team extends Model {
   static override tableName = "teams";
 
@@ -235,6 +243,8 @@ export class Team extends Model {
     switch (access.userLevel) {
       case "owner":
         return ALL_ACCOUNT_PERMISSIONS;
+      case "billing":
+        return ["billing", "view"];
       case "member":
       case "contributor":
         return ["view"];
@@ -250,6 +260,17 @@ export class Team extends Model {
     const teamUsers = await TeamUser.query()
       .select("userId")
       .where({ teamId, userLevel: "owner" });
+    return teamUsers.map((teamUser) => teamUser.userId);
+  }
+
+  /**
+   * Get the user IDs of the members who manage the billing of a team.
+   */
+  static async getBillingUserIds(teamId: string): Promise<string[]> {
+    const teamUsers = await TeamUser.query()
+      .select("userId")
+      .where({ teamId })
+      .whereIn("userLevel", BILLING_USER_LEVELS);
     return teamUsers.map((teamUser) => teamUser.userId);
   }
 }

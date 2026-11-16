@@ -20,6 +20,7 @@ import {
   UserEmail,
   UserPasskey,
 } from "@/database/models";
+import type { AccountPermission } from "@/database/models/Account";
 import { resolveAccountSlug } from "@/database/services/account";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
@@ -69,6 +70,25 @@ export async function getAdminAccount(args: {
   auth: AuthViewer | null;
   withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
+  return getAccountWithPermission({ ...args, permission: "admin" });
+}
+
+/**
+ * Get an account by ID, ensuring the user manages its billing.
+ */
+export async function getBillingAccount(args: {
+  id: string;
+  auth: AuthViewer | null;
+}): Promise<Account> {
+  return getAccountWithPermission({ ...args, permission: "billing" });
+}
+
+export async function getAccountWithPermission(args: {
+  id: string;
+  auth: AuthViewer | null;
+  permission: AccountPermission;
+  withGraphFetched?: RelationExpression<Account>;
+}): Promise<Account> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
   }
@@ -81,8 +101,10 @@ export async function getAdminAccount(args: {
   }
   const account = await query;
   const permissions = await account.$getPermissions(args.auth);
-  if (!permissions.includes("admin")) {
-    throw forbidden("user is not an admin of the account");
+  if (!permissions.includes(args.permission)) {
+    throw forbidden(
+      `user does not have the ${args.permission} permission on the account`,
+    );
   }
   return account;
 }
