@@ -1,7 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
 import { getGitlabClientForProject, type GitlabProjectClient } from "@/gitlab";
-import { setGitLabCommitStatus } from "@/gitlab/commit-status";
+import {
+  notifyGitLabStatusForbidden,
+  setGitLabCommitStatus,
+} from "@/gitlab/commit-status";
 import { UnretryableError } from "@/job-core";
 
 import type { SendNotificationContext } from "../context";
@@ -45,7 +48,7 @@ export async function postGitLabNotificationCommitStatus(
   ctx: SendGitLabNotificationContext,
   notification: NotificationPayload,
 ) {
-  await setGitLabCommitStatus({
+  const posted = await setGitLabCommitStatus({
     ...ctx.gitlab,
     sha: ctx.commit,
     state: notification.gitlab.state,
@@ -53,4 +56,11 @@ export async function postGitLabNotificationCommitStatus(
     targetUrl: notification.url,
     description: notification.description,
   });
+
+  if (!posted) {
+    await notifyGitLabStatusForbidden({
+      project: ctx.project,
+      branch: ctx.compareScreenshotBucket.branch,
+    });
+  }
 }
