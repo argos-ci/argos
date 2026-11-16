@@ -70,7 +70,7 @@ async function updateUsage(project: Project) {
           blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
           threshold: spendLimitThreshold,
         },
-        recipients: await account.$getBillingUserIds(),
+        recipients: await account.$getUserIdsWithPermission("billing"),
       });
     }
 
@@ -86,7 +86,7 @@ async function updateUsage(project: Project) {
           threshold: overageAlert.threshold,
           currency: overageAlert.currency,
         },
-        recipients: await account.$getBillingUserIds(),
+        recipients: await account.$getUserIdsWithPermission("billing"),
       });
     }
   });

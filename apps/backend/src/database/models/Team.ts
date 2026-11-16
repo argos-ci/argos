@@ -1,3 +1,4 @@
+import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
@@ -25,13 +26,33 @@ export type TeamAccess =
   | { type: "outsider" }
   | { type: "saml_required" };
 
+function getTeamUserLevelPermissions(
+  level: TeamUser["userLevel"],
+): AccountPermission[] {
+  switch (level) {
+    case "owner":
+      return ALL_ACCOUNT_PERMISSIONS;
+    case "billing":
+      return ["billing", "view"];
+    case "member":
+    case "contributor":
+      return ["view"];
+    default:
+      assertNever(level);
+  }
+}
+
 /**
- * Team roles that manage billing, and so receive its emails.
+ * The team roles granted `permission`, so the members it reaches can be
+ * listed with the same rule that guards it.
  */
-export const BILLING_USER_LEVELS = [
-  "owner",
-  "billing",
-] as const satisfies TeamUser["userLevel"][];
+export function getTeamUserLevelsWithPermission(
+  permission: AccountPermission,
+): TeamUser["userLevel"][] {
+  return TeamUserLevelSchema.options.filter((level) =>
+    getTeamUserLevelPermissions(level).includes(permission),
+  );
+}
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -240,37 +261,20 @@ export class Team extends Model {
       return [];
     }
 
-    switch (access.userLevel) {
-      case "owner":
-        return ALL_ACCOUNT_PERMISSIONS;
-      case "billing":
-        return ["billing", "view"];
-      case "member":
-      case "contributor":
-        return ["view"];
-      default:
-        assertNever(access.userLevel);
-    }
+    return getTeamUserLevelPermissions(access.userLevel);
   }
 
   /**
-   * Get the user IDs of the owners of a team.
+   * Get the user IDs of the team members granted `permission`.
    */
-  static async getOwnerIds(teamId: string): Promise<string[]> {
-    const teamUsers = await TeamUser.query()
-      .select("userId")
-      .where({ teamId, userLevel: "owner" });
-    return teamUsers.map((teamUser) => teamUser.userId);
-  }
-
-  /**
-   * Get the user IDs of the members who manage the billing of a team.
-   */
-  static async getBillingUserIds(teamId: string): Promise<string[]> {
+  static async getUserIdsWithPermission(
+    teamId: string,
+    permission: AccountPermission,
+  ): Promise<string[]> {
     const teamUsers = await TeamUser.query()
       .select("userId")
       .where({ teamId })
-      .whereIn("userLevel", BILLING_USER_LEVELS);
+      .whereIn("userLevel", getTeamUserLevelsWithPermission(permission));
     return teamUsers.map((teamUser) => teamUser.userId);
   }
 }

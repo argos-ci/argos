@@ -898,24 +898,21 @@ export class Account extends Model {
    * Get the owner ids associated with the account.
    */
   async $getOwnerIds(): Promise<string[]> {
-    if (this.userId && !this.teamId) {
-      return [this.userId];
-    }
-    if (this.teamId && !this.userId) {
-      return Team.getOwnerIds(this.teamId);
-    }
-    throw new Error("Incoherent account type");
+    return this.$getUserIdsWithPermission("admin");
   }
 
   /**
-   * Get the ids of the users who manage the billing of the account.
+   * Get the ids of the users granted `permission` on the account: its user, or
+   * the team members whose role grants it.
    */
-  async $getBillingUserIds(): Promise<string[]> {
+  async $getUserIdsWithPermission(
+    permission: AccountPermission,
+  ): Promise<string[]> {
     if (this.userId && !this.teamId) {
       return [this.userId];
     }
     if (this.teamId && !this.userId) {
-      return Team.getBillingUserIds(this.teamId);
+      return Team.getUserIdsWithPermission(this.teamId, permission);
     }
     throw new Error("Incoherent account type");
   }

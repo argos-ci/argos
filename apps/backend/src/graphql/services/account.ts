@@ -73,16 +73,6 @@ export async function getAdminAccount(args: {
   return getAccountWithPermission({ ...args, permission: "admin" });
 }
 
-/**
- * Get an account by ID, ensuring the user manages its billing.
- */
-export async function getBillingAccount(args: {
-  id: string;
-  auth: AuthViewer | null;
-}): Promise<Account> {
-  return getAccountWithPermission({ ...args, permission: "billing" });
-}
-
 export async function getAccountWithPermission(args: {
   id: string;
   auth: AuthViewer | null;
@@ -100,13 +90,21 @@ export async function getAccountWithPermission(args: {
     query.withGraphFetched(args.withGraphFetched);
   }
   const account = await query;
-  const permissions = await account.$getPermissions(args.auth);
-  if (!permissions.includes(args.permission)) {
+  await assertAccountPermission(account, args.auth, args.permission);
+  return account;
+}
+
+export async function assertAccountPermission(
+  account: Account,
+  auth: AuthViewer | null,
+  permission: AccountPermission,
+): Promise<void> {
+  const permissions = await account.$getPermissions(auth);
+  if (!permissions.includes(permission)) {
     throw forbidden(
-      `user does not have the ${args.permission} permission on the account`,
+      `user does not have the ${permission} permission on the account`,
     );
   }
-  return account;
 }
 
 export async function getAccessibleAccounts(args: {

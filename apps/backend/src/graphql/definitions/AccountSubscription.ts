@@ -11,7 +11,7 @@ import {
   ISubscriptionCancelReason,
   type IResolvers,
 } from "../__generated__/resolver-types";
-import { getBillingAccount } from "../services/account";
+import { getAccountWithPermission } from "../services/account";
 import { badUserInput } from "../util";
 
 const { gql } = gqlTag;
@@ -128,9 +128,10 @@ export const resolvers: IResolvers = {
   Mutation: {
     cancelSubscription: async (_root, args, ctx) => {
       const { accountId, reason, comment } = args.input;
-      const account = await getBillingAccount({
+      const account = await getAccountWithPermission({
         id: accountId,
         auth: ctx.auth,
+        permission: "billing",
       });
       const subscriptionId = await getStripeSubscriptionIdOrThrow(account);
       const trimmedComment = comment?.trim() || null;
@@ -148,9 +149,10 @@ export const resolvers: IResolvers = {
       return refetchAccount(account);
     },
     resumeSubscription: async (_root, args, ctx) => {
-      const account = await getBillingAccount({
+      const account = await getAccountWithPermission({
         id: args.input.accountId,
         auth: ctx.auth,
+        permission: "billing",
       });
       const subscriptionId = await getStripeSubscriptionIdOrThrow(account);
       await resumeStripeSubscription(subscriptionId);

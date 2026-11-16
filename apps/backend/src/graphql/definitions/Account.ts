@@ -51,7 +51,11 @@ import {
   IUpdateAccountInput,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
-import { getAccountWithPermission, getAdminAccount } from "../services/account";
+import {
+  assertAccountPermission,
+  getAccountWithPermission,
+  getAdminAccount,
+} from "../services/account";
 import { getVisibleProjectIds } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
 import {
@@ -346,27 +350,20 @@ async function checkAccountVisible(
   return account;
 }
 
-/**
- * The `UpdateAccountInput` fields a billing member may change: everything else
- * on the account is administration.
- */
 const SPEND_LIMIT_FIELDS = new Set<string>([
   "meteredSpendLimitByPeriod",
   "blockWhenSpendLimitIsReached",
 ] satisfies (keyof IUpdateAccountInput)[]);
 
 /**
- * Billing reads what the account is charged, which only the members managing
- * it are entitled to see.
+ * Whether `input` changes the spend limit and nothing else: the one update a
+ * billing member may make. Everything else on the account is administration.
  */
-async function assertAccountBilling(
-  account: Account,
-  ctx: Context,
-): Promise<void> {
-  const permissions = await account.$getPermissions(ctx.auth);
-  if (!permissions.includes("billing")) {
-    throw forbidden("user does not manage the billing of the account");
-  }
+function checkIsSpendLimitUpdate(input: Record<string, unknown>): boolean {
+  const fields = Object.keys(input);
+  return (
+    fields.length > 0 && fields.every((field) => SPEND_LIMIT_FIELDS.has(field))
+  );
 }
 
 export const commonAccountResolvers: IResolvers["Team"] = {
@@ -441,7 +438,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return manager.getAdditionalScreenshotCost();
   },
   invoices: async (account, args, ctx) => {
-    await assertAccountBilling(account, ctx);
+    await assertAccountPermission(account, ctx.auth, "billing");
     if (!account.stripeCustomerId) {
       return {
         pageInfo: { totalCount: 0, hasNextPage: false, isEmpty: true },
@@ -458,7 +455,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return paginateResult({ result, after: args.after, first: args.first });
   },
   upcomingInvoice: async (account, _args, ctx) => {
-    await assertAccountBilling(account, ctx);
+    await assertAccountPermission(account, ctx.auth, "billing");
     return getUpcomingInvoice(account);
   },
   includedScreenshots: async (account) => {
@@ -663,15 +660,10 @@ export const resolvers: IResolvers = {
   Mutation: {
     updateAccount: async (_root, args, ctx) => {
       const { id, ...input } = args.input;
-      const fields = Object.keys(input);
       const account = await getAccountWithPermission({
         id,
         auth: ctx.auth,
-        permission:
-          fields.length > 0 &&
-          fields.every((field) => SPEND_LIMIT_FIELDS.has(field))
-            ? "billing"
-            : "admin",
+        permission: checkIsSpendLimitUpdate(input) ? "billing" : "admin",
       });
 
       const data: PartialModelRow<Account> = {};
@@ -796,7 +788,8 @@ export const resolvers: IResolvers = {
                   updatedAccount.blockWhenSpendLimitIsReached,
                 threshold,
               },
-              recipients: await updatedAccount.$getBillingUserIds(),
+              recipients:
+                await updatedAccount.$getUserIdsWithPermission("billing"),
             });
           }
         })();

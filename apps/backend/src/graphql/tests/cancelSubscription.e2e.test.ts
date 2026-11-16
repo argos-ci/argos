@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Subscription } from "@/database/models";
+import { Subscription, type TeamUser } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { stripe, type Stripe } from "@/stripe";
 import {
@@ -57,7 +57,7 @@ async function createUserAccount() {
  */
 async function createSubscribedTeam(options: {
   userId: string;
-  userLevel: "owner" | "billing" | "member";
+  userLevel: TeamUser["userLevel"];
   /** Set to schedule the cancellation these tests then call off. */
   endDate?: string;
 }) {

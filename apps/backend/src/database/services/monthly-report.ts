@@ -8,7 +8,7 @@ import { createJob } from "@/job-core";
 
 import {
   Account,
-  BILLING_USER_LEVELS,
+  getTeamUserLevelsWithPermission,
   Subscription,
   Team,
   TeamUser,
@@ -348,7 +348,7 @@ export async function sendAccountMonthlyReport(accountId: string, now: Date) {
 
   const recipients = await Team.relatedQuery("users")
     .for(account.teamId)
-    .whereIn("team_users.userLevel", BILLING_USER_LEVELS)
+    .whereIn("team_users.userLevel", getTeamUserLevelsWithPermission("billing"))
     .whereNull("team_users.monthlyReportOptedOutAt")
     .whereNotNull("users.email");
   if (recipients.length === 0) {

@@ -837,7 +837,7 @@ async function notifyTrialEnded(
   // instead of going through the manager.
   const [plan, recipients] = await Promise.all([
     subscription.$relatedQuery("plan"),
-    account.$getBillingUserIds(),
+    account.$getUserIdsWithPermission("billing"),
   ]);
   invariant(plan, "Plan not found");
 

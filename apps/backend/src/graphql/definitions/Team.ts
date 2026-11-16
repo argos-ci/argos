@@ -86,8 +86,8 @@ import {
 } from "../__generated__/resolver-types";
 import {
   deleteAccount,
+  getAccountWithPermission,
   getAdminAccount,
-  getBillingAccount,
 } from "../services/account";
 import {
   checkUserHasAccessToInstallation,
@@ -260,7 +260,7 @@ export const typeDefs = gql`
     user: User!
     level: TeamUserLevel!
     fromSSO: Boolean!
-    "Whether the member has the monthly report on. It is only sent to the owners of a team on an annual plan."
+    "Whether the member has the monthly report on. It is only sent to the owners and billing members of a team on a usage-based plan."
     receivesMonthlyReport: Boolean!
   }
 
@@ -1127,9 +1127,10 @@ export const resolvers: IResolvers = {
       }
 
       const [teamAccount, plan] = await Promise.all([
-        getBillingAccount({
+        getAccountWithPermission({
           id: args.teamAccountId,
           auth,
+          permission: "billing",
         }),
         getStripeProPlanOrThrow(),
       ]);

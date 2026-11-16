@@ -9,8 +9,9 @@ import {
 import { sendNotification } from ".";
 
 /**
- * Tell the billing users of an account on a flat-rate plan that it is about to run
- * out of screenshots, or that it ran out and its builds are now rejected.
+ * Tell the users managing the billing of an account on a flat-rate plan that
+ * it is about to run out of screenshots, or that it ran out and its builds are
+ * now rejected.
  *
  * Started, not awaited, by the capacity checks of build creation and media
  * upload: the account's subscription manager has already loaded the usage it
@@ -29,8 +30,8 @@ export async function sendPlanLimitAlert(account: Account): Promise<void> {
       return;
     }
     try {
-      const recipients = await account.$getBillingUserIds();
-      // SCIM offboarding can leave a team without an owner: nobody to tell.
+      const recipients = await account.$getUserIdsWithPermission("billing");
+      // SCIM offboarding can leave a team with nobody managing its billing.
       if (recipients.length === 0) {
         return;
       }

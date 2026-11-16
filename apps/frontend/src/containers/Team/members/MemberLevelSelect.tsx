@@ -1,3 +1,4 @@
+import { TeamMemberLabel } from "@/containers/UserList";
 import {
   ListBox,
   ListBoxItem,
@@ -11,14 +12,6 @@ import {
   type SelectButtonProps,
 } from "@/ui/Select";
 
-/** What each role is called, so the trigger can name the chosen one. */
-const MemberLevelLabels = {
-  contributor: "Contributor",
-  member: "Member",
-  billing: "Billing",
-  owner: "Owner",
-};
-
 export function MemberLevelSelect(
   props: {
     hasFineGrainedAccessControl: boolean;
@@ -31,7 +24,7 @@ export function MemberLevelSelect(
   return (
     <Select
       aria-label="User role"
-      items={MemberLevelLabels}
+      items={TeamMemberLabel}
       className={className}
       {...rest}
     >

@@ -381,7 +381,6 @@ export class Project extends Model {
 
     // If the user is part of the team, we apply permissions based on their level.
     switch (teamAccess.userLevel) {
-      // Owners and members of the team have all permissions.
       case "owner":
       case "billing":
       case "member":
