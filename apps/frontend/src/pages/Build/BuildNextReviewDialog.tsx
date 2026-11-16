@@ -4,9 +4,11 @@ import { clsx } from "clsx";
 import { ChevronDownIcon } from "lucide-react";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { PullRequestCard } from "@/containers/PullRequestCard";
+import { PullRequestProviderIcons } from "@/containers/Repository";
 import { DocumentType, graphql } from "@/gql";
-import { BuildStatus } from "@/gql/graphql";
-import { LinkButton } from "@/ui/Button";
+import { BuildStatus, PullRequestState } from "@/gql/graphql";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
@@ -55,10 +57,18 @@ const _BuildFragment = graphql(`
     project {
       id
       slug
+      repository {
+        id
+        ...PullRequestCard_Repository
+      }
     }
     pullRequest {
       id
       number
+      url
+      merged
+      state
+      ...PullRequestCard_PullRequest
     }
     siblingBuilds {
       ...BuildNextReviewDialog_ListedBuild
@@ -111,11 +121,38 @@ function getNewerBuildToReview(build: ReviewedBuild): ListedBuild | null {
   }
 }
 
+/**
+ * The pull request to send the reviewer back to once the commit has nothing
+ * left for them. Not a merged or closed one: nothing waits on the reviewer
+ * there. Not while one of the commit's suites is still running either, since
+ * it may yet bring changes to review.
+ */
+function getPullRequestToReturnTo(
+  build: ReviewedBuild,
+): ReviewedBuild["pullRequest"] {
+  const { pullRequest } = build;
+  if (
+    !pullRequest ||
+    pullRequest.merged ||
+    pullRequest.state === PullRequestState.Closed
+  ) {
+    return null;
+  }
+  const hasRunningSibling = build.siblingBuilds.some(
+    (sibling) =>
+      !sibling.newerBuild &&
+      (sibling.status === BuildStatus.Pending ||
+        sibling.status === BuildStatus.Progress),
+  );
+  return hasRunningSibling ? null : pullRequest;
+}
+
 type ContextValue = {
   /**
    * Offer to move on: to the newer build of the same suite when the reviewed
    * one is outdated, otherwise to the next build of the same commit awaiting a
-   * review. Does nothing when there is neither, the reviewer is done.
+   * review. When there is neither, the reviewer is done with the commit, and
+   * the offer is to go back to its pull request.
    */
   promptNextReview: (build: ReviewedBuild) => void;
 };
@@ -140,7 +177,8 @@ export function BuildNextReviewDialogProvider(props: {
   const promptNextReview = useEventCallback((build: ReviewedBuild) => {
     if (
       !getNewerBuildToReview(build) &&
-      getBuildsAwaitingReview(build.siblingBuilds).length === 0
+      getBuildsAwaitingReview(build.siblingBuilds).length === 0 &&
+      !getPullRequestToReturnTo(build)
     ) {
       return;
     }
@@ -176,7 +214,9 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
   }
   const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
   const [nextBuild, ...otherBuilds] = awaitingReview;
-  invariant(nextBuild, "The dialog only opens when a build awaits a review");
+  if (!nextBuild) {
+    return <PullRequestDialog build={build} />;
+  }
 
   return (
     <Dialog size="medium">
@@ -261,6 +301,49 @@ function NewerBuildDialog(props: {
           showFocusRing
         >
           Review latest build
+        </LinkButton>
+      </DialogFooter>
+    </Dialog>
+  );
+}
+
+/**
+ * Where the reviewer goes once the commit has nothing left for them: back to
+ * the pull request, where the change gets merged or sent back to its author.
+ */
+function PullRequestDialog(props: { build: ReviewedBuild }) {
+  const { build } = props;
+  const pullRequest = getPullRequestToReturnTo(build);
+  invariant(
+    pullRequest,
+    "The dialog only opens on a pull request when nothing is left to review",
+  );
+  const ProviderIcon = PullRequestProviderIcons[pullRequest.__typename];
+  return (
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Nothing left to review</DialogTitle>
+        <DialogText>
+          No other build of this commit needs your review.
+        </DialogText>
+        <PullRequestCard
+          pullRequest={pullRequest}
+          repository={build.project.repository}
+        />
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>Stay here</DialogDismiss>
+        <LinkButton
+          href={pullRequest.url}
+          autoFocus
+          // The dialog opens on its own once a review is submitted, so nothing
+          // marks the link as focused for a pointer user. Keep the ring on.
+          showFocusRing
+        >
+          <ButtonIcon>
+            <ProviderIcon />
+          </ButtonIcon>
+          Back to pull request
         </LinkButton>
       </DialogFooter>
     </Dialog>

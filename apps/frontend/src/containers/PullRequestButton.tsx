@@ -59,19 +59,15 @@ const PullRequestStatusIcon = (props: {
   }
 };
 
-const _PullRequestInfoFragment = graphql(`
-  fragment PullRequestInfo_PullRequest on PullRequest {
+const _PullRequestActivityFragment = graphql(`
+  fragment PullRequestActivity_PullRequest on PullRequest {
     __typename
-    title
     draft
     merged
     mergedAt
     closedAt
     state
-    number
     date
-    url
-    ...PullRequestStatusIcon_PullRequest
     ... on GithubPullRequest {
       creator {
         id
@@ -82,6 +78,66 @@ const _PullRequestInfoFragment = graphql(`
   }
 `);
 
+/**
+ * When the pull request was merged, closed or opened, and who opened it.
+ */
+export function PullRequestActivity(props: {
+  pullRequest: DocumentType<typeof _PullRequestActivityFragment>;
+}) {
+  const { pullRequest } = props;
+  if (pullRequest.merged && pullRequest.mergedAt) {
+    return (
+      <>
+        Merged <Time date={pullRequest.mergedAt} tooltip="title" />
+      </>
+    );
+  }
+  if (pullRequest.state === PullRequestState.Closed && pullRequest.closedAt) {
+    return (
+      <>
+        Closed <Time date={pullRequest.closedAt} tooltip="title" />
+      </>
+    );
+  }
+  if (!pullRequest.date) {
+    return null;
+  }
+  // Only GitHub tells who opened the pull request.
+  const creator =
+    pullRequest.__typename === "GithubPullRequest" ? pullRequest.creator : null;
+  return (
+    <>
+      {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
+      <Time date={pullRequest.date} tooltip="title" />
+      {creator && (
+        <>
+          {" "}
+          by
+          <ImageAvatar
+            src={`https://github.com/${creator.login}.png?size=32`}
+            className="size-4 shrink-0"
+            // Fetched from GitHub at capture time, so it can change or fail to
+            // load from one screenshot to the next.
+            data-visual-test="transparent"
+          />
+          <span>{creator.name || creator.login}</span>
+        </>
+      )}
+    </>
+  );
+}
+
+const _PullRequestInfoFragment = graphql(`
+  fragment PullRequestInfo_PullRequest on PullRequest {
+    title
+    number
+    date
+    url
+    ...PullRequestStatusIcon_PullRequest
+    ...PullRequestActivity_PullRequest
+  }
+`);
+
 function PullRequestInfo(props: {
   pullRequest: DocumentType<typeof _PullRequestInfoFragment>;
 }) {
@@ -89,9 +145,6 @@ function PullRequestInfo(props: {
   if (!pullRequest.title || !pullRequest.date) {
     return null;
   }
-  // Only GitHub tells who opened the pull request.
-  const creator =
-    pullRequest.__typename === "GithubPullRequest" ? pullRequest.creator : null;
   return (
     <div className="flex gap-2">
       <div className="mt-1 flex shrink-0">
@@ -117,42 +170,7 @@ function PullRequestInfo(props: {
           </a>
         </div>
         <div className="text-low flex items-center gap-1 px-1">
-          {(() => {
-            if (pullRequest.merged && pullRequest.mergedAt) {
-              return (
-                <>
-                  Merged <Time date={pullRequest.mergedAt} tooltip="title" />
-                </>
-              );
-            }
-            if (
-              pullRequest.state === PullRequestState.Closed &&
-              pullRequest.closedAt
-            ) {
-              return (
-                <>
-                  Closed <Time date={pullRequest.closedAt} tooltip="title" />
-                </>
-              );
-            }
-            return (
-              <>
-                {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
-                <Time date={pullRequest.date} tooltip="title" />
-                {creator && (
-                  <>
-                    {" "}
-                    by
-                    <ImageAvatar
-                      src={`https://github.com/${creator.login}.png?size=32`}
-                      className="size-4 shrink-0"
-                    />
-                    <span>{creator.name || creator.login}</span>
-                  </>
-                )}
-              </>
-            );
-          })()}
+          <PullRequestActivity pullRequest={pullRequest} />
         </div>
       </div>
     </div>
