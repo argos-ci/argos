@@ -20,9 +20,9 @@
   "devDependencies": {
     "@argos/tsconfig": "workspace:*",
     "@types/node": "^26.6.6",
-    "tsdown": "^0.23.5"
+    "tsdown": "^0.23.7"
   },
   "dependencies": {
-    "@sindresorhus/slugify": "^4.0.0"
+    "@sindresorhus/slugify": "^4.0.1"
   }
 }

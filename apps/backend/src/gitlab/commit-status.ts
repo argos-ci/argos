@@ -1,6 +1,6 @@
 import {
   GitbeakerRequestError,
-  type CommitablePipelineStatus,
+  type CommittablePipelineStatus,
 } from "@gitbeaker/rest";
 
 import type { GitlabClient } from "@/gitlab";
@@ -21,7 +21,7 @@ export async function setGitLabCommitStatus(args: {
   client: GitlabClient;
   gitlabProjectId: number;
   sha: string;
-  state: CommitablePipelineStatus;
+  state: CommittablePipelineStatus;
   context: string;
   targetUrl: string;
   description: string;

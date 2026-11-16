@@ -176,7 +176,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
-      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.64.1-jammy
+      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.65.1-jammy
 
     services:
       redis:
