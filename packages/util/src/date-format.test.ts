@@ -46,6 +46,16 @@ describe("#formatDate", () => {
     );
   });
 
+  it("honours an explicit time zone", () => {
+    const instant = new Date("2026-09-04T23:30:00.000Z");
+    expect(formatDate(instant, "dateTime", { timeZone: "UTC" })).toBe(
+      "September 4, 2026 at 11:30 PM",
+    );
+    expect(formatDate(instant, "dateTime", { timeZone: "Asia/Tokyo" })).toBe(
+      "September 5, 2026 at 8:30 AM",
+    );
+  });
+
   it("returns the same result on repeated calls, exercising the cache", () => {
     expect(formatDate(date, "date")).toBe(formatDate(date, "date"));
   });
