@@ -4048,7 +4048,6 @@ async function createGithubPullRequest(projectId: string): Promise<string> {
     merged: false,
     draft: false,
     jobStatus: "complete",
-    creatorId: githubAccount.id,
     date: "2026-04-19T09:00:00.000Z",
     createdAt: "2026-04-19T09:00:00.000Z",
     updatedAt: "2026-04-19T09:00:00.000Z",

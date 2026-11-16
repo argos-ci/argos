@@ -22,6 +22,7 @@ export const typeDefs = gql`
     url: String!
     date: DateTime
     creator: GithubAccount
+    repository: Repository!
   }
 `;
 
@@ -50,6 +51,13 @@ export const resolvers: IResolvers = {
       );
       invariant(account, "Account not found");
       return `https://github.com/${account.login}/${repo.name}/pull/${pullRequest.number}`;
+    },
+    repository: async (pullRequest, _args, ctx) => {
+      const repository = await ctx.loaders.GithubRepository.load(
+        pullRequest.githubRepositoryId,
+      );
+      invariant(repository, "Repository not found");
+      return repository;
     },
     creator: async (pullRequest, _args, ctx) => {
       if (!pullRequest.creatorId) {

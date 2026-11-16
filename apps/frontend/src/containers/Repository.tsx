@@ -11,16 +11,6 @@ export const RepositoryIcons: Record<RepositoryType, React.ElementType> = {
   OriginRepository: CursorOriginLogo,
 };
 
-type PullRequestType = "GithubPullRequest" | "OriginPullRequest";
-
-export const PullRequestProviderIcons: Record<
-  PullRequestType,
-  React.ElementType
-> = {
-  GithubPullRequest: MarkGithubIcon,
-  OriginPullRequest: CursorOriginLogo,
-};
-
 const repositoryLabels = {
   GithubRepository: "GitHub",
   GitlabProject: "GitLab",

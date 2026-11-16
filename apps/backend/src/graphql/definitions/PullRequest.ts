@@ -21,6 +21,7 @@ export const typeDefs = gql`
     draft: Boolean
     url: String!
     date: DateTime
+    repository: Repository!
   }
 `;
 

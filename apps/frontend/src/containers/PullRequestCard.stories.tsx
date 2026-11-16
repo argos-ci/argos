@@ -20,25 +20,30 @@ const openPullRequest = {
   closedAt: null,
   state: PullRequestState.Open,
   date: "2026-04-19T09:00:00.000Z",
+  repository: {
+    __typename: "GithubRepository",
+    id: "1",
+    fullName: "acme/sparkle",
+  },
   creator: {
     __typename: "GithubAccount",
     id: "1",
-    login: "argos-ci",
-    name: "Argos",
+    login: "acme",
+    name: "Acme",
+    avatar: {
+      __typename: "AccountAvatar",
+      url: null,
+      color: "#7c3aed",
+      initial: "A",
+    },
   },
 } satisfies PullRequest;
-
-const repository = {
-  __typename: "GithubRepository",
-  id: "1",
-  fullName: "acme/sparkle",
-} satisfies ComponentProps<typeof PullRequestCard>["repository"];
 
 const examples: { title: string; pullRequest: PullRequest }[] = [
   { title: "Open", pullRequest: openPullRequest },
   {
     title: "Draft",
-    pullRequest: { ...openPullRequest, draft: true, creator: null },
+    pullRequest: { ...openPullRequest, draft: true },
   },
   {
     title: "Merged",
@@ -60,13 +65,7 @@ const examples: { title: string; pullRequest: PullRequest }[] = [
   {
     // Argos knows the number before it has fetched the rest from GitHub.
     title: "Not fetched yet",
-    pullRequest: {
-      ...openPullRequest,
-      title: null,
-      state: null,
-      date: null,
-      creator: null,
-    },
+    pullRequest: { ...openPullRequest, title: null, date: null },
   },
   {
     title: "Long title",
@@ -81,7 +80,7 @@ const examples: { title: string; pullRequest: PullRequest }[] = [
 const meta = {
   title: "Containers/PullRequestCard",
   component: PullRequestCard,
-  args: { pullRequest: openPullRequest, repository },
+  args: { pullRequest: openPullRequest },
 } satisfies Meta<typeof PullRequestCard>;
 
 export default meta;
@@ -93,17 +92,9 @@ export const States: Story = {
       {examples.map((example) => (
         <div key={example.title}>
           <StoryTitle>{example.title}</StoryTitle>
-          <PullRequestCard
-            pullRequest={example.pullRequest}
-            repository={repository}
-          />
+          <PullRequestCard pullRequest={example.pullRequest} />
         </div>
       ))}
     </div>
   ),
-};
-
-/** A project no longer connected to its repository. */
-export const WithoutRepository: Story = {
-  args: { repository: null },
 };
