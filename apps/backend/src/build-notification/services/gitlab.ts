@@ -1,10 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 
 import { getGitlabClientForProject, type GitlabProjectClient } from "@/gitlab";
-import {
-  notifyGitLabStatusForbidden,
-  setGitLabCommitStatus,
-} from "@/gitlab/commit-status";
+import { setGitLabCommitStatus } from "@/gitlab/commit-status";
+import { notifyGitLabStatusForbidden } from "@/gitlab/status-forbidden";
 import { UnretryableError } from "@/job-core";
 
 import type { SendNotificationContext } from "../context";

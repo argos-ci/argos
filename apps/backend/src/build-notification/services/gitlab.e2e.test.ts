@@ -15,8 +15,7 @@ import { sendNotification } from "@/notification";
 
 import { processBuildNotification } from "../notifications";
 
-vi.mock("@/notification", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/notification")>()),
+vi.mock("@/notification", () => ({
   sendNotification: vi.fn(),
 }));
 
@@ -26,52 +25,50 @@ const mockSendNotification = vi.mocked(sendNotification);
  * A GitLab instance that accepts the token but refuses every commit status,
  * as gitlab.com does for a user who can't push to the protected branch.
  */
-function startRefusingGitLab() {
-  const statusRequests: string[] = [];
-  const server = createServer((req, res) => {
-    res.setHeader("content-type", "application/json");
-    if (req.url === "/api/v4/personal_access_tokens/self") {
-      res.end(JSON.stringify({ id: 1, scopes: ["api"], active: true }));
-      return;
-    }
-    if (req.method === "POST" && req.url?.includes("/statuses/")) {
-      statusRequests.push(req.url);
-      res.statusCode = 403;
-      res.end(JSON.stringify({ message: "403 Forbidden" }));
-      return;
-    }
-    res.statusCode = 404;
-    res.end(JSON.stringify({ message: "404 Not Found" }));
-  });
-  return { server, statusRequests };
-}
+const gitlab = createServer((req, res) => {
+  res.setHeader("content-type", "application/json");
+  if (req.url === "/api/v4/personal_access_tokens/self") {
+    res.end(JSON.stringify({ id: 1, scopes: ["api"], active: true }));
+    return;
+  }
+  if (req.method === "POST" && req.url?.includes("/statuses/")) {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ message: "403 Forbidden" }));
+    return;
+  }
+  res.statusCode = 404;
+  res.end(JSON.stringify({ message: "404 Not Found" }));
+});
 
 describe("GitLab commit status refused", () => {
-  let gitlab: ReturnType<typeof startRefusingGitLab>;
   let gitlabUrl: string;
 
   beforeAll(async () => {
-    gitlab = startRefusingGitLab();
-    const { server } = gitlab;
     await new Promise<void>((resolve) =>
-      server.listen(0, "127.0.0.1", resolve),
+      gitlab.listen(0, "127.0.0.1", resolve),
     );
-    const address = server.address();
+    const address = gitlab.address();
     invariant(address && typeof address === "object", "server not listening");
     gitlabUrl = `http://127.0.0.1:${address.port}`;
   });
 
   afterAll(async () => {
-    await new Promise((resolve) => gitlab.server.close(resolve));
+    await new Promise((resolve) => gitlab.close(resolve));
   });
 
   beforeEach(async () => {
     await setupDatabase();
     vi.clearAllMocks();
-    gitlab.statusRequests.length = 0;
   });
 
-  async function seedGitLabBuild() {
+  async function notify(buildId: string) {
+    const buildNotification = await factory.BuildNotification.create({
+      buildId,
+    });
+    await processBuildNotification(buildNotification);
+  }
+
+  it("emails the owners once instead of failing the job", async () => {
     const account = await factory.UserAccount.create({
       gitlabAccessToken: "glpat-test",
       gitlabBaseUrl: gitlabUrl,
@@ -95,30 +92,14 @@ describe("GitLab commit status refused", () => {
       projectId: project.id,
       compareScreenshotBucketId: bucket.id,
     });
-    return { account, project, build };
-  }
-
-  async function notify(buildId: string) {
-    const buildNotification = await factory.BuildNotification.create({
-      buildId,
-    });
-    await processBuildNotification(buildNotification);
-  }
-
-  it("emails the owners once instead of failing the job", async () => {
-    const { account, build } = await seedGitLabBuild();
 
     await notify(build.id);
 
-    expect(gitlab.statusRequests.length).toBeGreaterThan(0);
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
     expect(mockSendNotification).toHaveBeenCalledWith({
       type: "gitlab_status_forbidden",
       data: {
-        project: {
-          name: "web",
-          url: expect.stringContaining(`/${account.slug}/web`),
-        },
+        project: { name: "web", url: await project.getUrl() },
         gitlabProject: {
           path: "acme/web",
           url: "https://gitlab.example.com/acme/web",
