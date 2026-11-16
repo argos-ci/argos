@@ -15,6 +15,7 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
+import { assertAuthCanDeploy } from "../auth/deployment";
 import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
@@ -224,6 +225,11 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     }
 
     assertAuthAttributes(auth, { sha: deployment.commitSha });
+    await assertAuthCanDeploy(auth, {
+      project,
+      environment: deployment.environment,
+      branch: deployment.branch,
+    });
 
     if (deployment.status !== "pending") {
       throw boom(400, "Deployment is not in pending status");

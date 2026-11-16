@@ -21,6 +21,7 @@ import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
+import { assertAuthCanDeploy } from "../auth/deployment";
 import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import { TokenProjectPath } from "../schema/primitives/project";
@@ -263,6 +264,8 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         project,
         branch,
       }));
+
+    await assertAuthCanDeploy(auth, { project, environment, branch });
 
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
