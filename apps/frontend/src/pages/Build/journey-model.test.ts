@@ -6,7 +6,43 @@ import {
   getStepLabel,
   getVariantSignature,
   resolveJourneyIdentity,
+  resolveTestIdentity,
 } from "./journey-model";
+
+describe("#resolveTestIdentity", () => {
+  it("merges the runs of one test", () => {
+    const titlePath = ["checkout.spec.ts", "complete a purchase"];
+    const desktop = resolveTestIdentity({
+      test: { id: "a1b2-desktop", titlePath },
+    });
+    expect(desktop).toEqual({
+      key: "checkout.spec.ts › complete a purchase",
+      prefix: "checkout.spec.ts",
+      title: "complete a purchase",
+    });
+    expect(
+      resolveTestIdentity({ test: { id: "c3d4-mobile", titlePath } }),
+    ).toEqual(desktop);
+  });
+
+  it("groups stories by component", () => {
+    expect(
+      resolveTestIdentity({
+        story: { id: "components-button--primary" },
+        test: { id: "a1b2", titlePath: ["storybook.spec.ts", "primary"] },
+      }),
+    ).toEqual({
+      key: "storybook › components-button",
+      prefix: "storybook",
+      title: "components-button",
+    });
+  });
+
+  it("returns null without test or story metadata", () => {
+    expect(resolveTestIdentity(null)).toBeNull();
+    expect(resolveTestIdentity({ test: { titlePath: [" "] } })).toBeNull();
+  });
+});
 
 describe("#resolveJourneyIdentity", () => {
   it("groups by test title path", () => {

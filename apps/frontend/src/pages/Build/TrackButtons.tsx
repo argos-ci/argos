@@ -25,7 +25,7 @@ function useEvaluationToggle(props: {
   const [checkIsPending, acknowledge, planDeferredAck] =
     useAcknowledgeMarkedDiff();
   const promptRejectComment = useRejectCommentInvite();
-  const { diffs } = useBuildDiffState();
+  const { diffs, isStackCollapsed } = useBuildDiffState();
   const [status, setStatus] = useBuildDiffStatusState({
     diffId,
     diffGroup,
@@ -44,7 +44,7 @@ function useEvaluationToggle(props: {
       // before the rejection re-sorts the list) so it runs once the reviewer
       // submits or skips the note; otherwise proceed as normal.
       if (target === EvaluationStatus.Rejected) {
-        const rejectDiffId = diffGroup
+        const rejectDiffId = isStackCollapsed(diffGroup)
           ? (diffs.find((diff) => diff.group === diffGroup)?.id ?? diffId)
           : diffId;
         const proceed = planDeferredAck();

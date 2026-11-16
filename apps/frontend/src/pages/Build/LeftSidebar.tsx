@@ -14,6 +14,7 @@ import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
+import { SnapshotListDisplayButton } from "./SnapshotListDisplayButton";
 
 const _BuildFragment = graphql(`
   fragment BuildLeftSidebar_Build on Build {
@@ -143,6 +144,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
             </>
           )}
           <FilterButton />
+          <SnapshotListDisplayButton />
         </div>
       ) : null}
 
