@@ -6,13 +6,13 @@ packages:
 catalog:
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
-  react: ^19.3.0
-  react-dom: ^19.3.0
-  react-router: ^8.4.0
+  react: ^19.3.1
+  react-dom: ^19.3.1
+  react-router: ^8.5.1
   # tsrs ports one exact TypeScript build (`tsrs --version` prints it), and
   # `typescript` is pinned to that build so the editor and every tool peering on
   # it see the compiler CI checks with. Bump the two together.
-  tsrs: 0.21.0-ts7.1.0-beta
+  tsrs: 0.25.0-ts7.1.0-beta
   typescript: 7.1.0-beta
   zod: ^4.6.7
 
@@ -24,11 +24,11 @@ overrides:
   esbuild: ^0.28.1
   file-type: ^22.1.1
   # A CVE floor across a major: GHSA-3g3m-2fjr-6pw4 is fixed only in 14.0.2,
-  # while react-email, @sentry/bundler-plugins and the Storybook docgen plugin
-  # still ask for ^13. None of them uses what 14 removed (the `debug` option)
-  # or changed (ignore patterns starting with `/`).
+  # while the Storybook docgen plugin still asks for ^13. It uses neither what
+  # 14 removed (the `debug` option) nor what it changed (ignore patterns
+  # starting with `/`).
   glob: ^14.0.3
-  # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
+  # Apollo Server only supports graphql 16 (@apollo/server 5.5.2 peers on
   # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
   # rewrites that peer range too: pnpm reports no conflict even when it is
   # raised past what Apollo supports.
@@ -36,9 +36,11 @@ overrides:
   ip-address: ^10.7.4
   lodash: ^4.17.23
   lodash-es: ^4.18.1
-  # A floor, not a cap: graphql-config still needs minimatch 10, while glob 14
-  # and the backend, which matches user-defined globs, take 11.
-  minimatch@<10.2.6: ^10.2.6
+  # A CVE floor across a major: GHSA-g3hv-75wg-m249 is fixed only in 11.0.1,
+  # while graphql-config (through @graphql-codegen/cli) still asks for ^10. It
+  # only calls `minimatch()`, which 11 keeps; 11 removed `makeRe()`, the `AST`
+  # class and the `debug` option.
+  minimatch@<11.0.1: ^11.0.1
   react: "catalog:"
   react-dom: "catalog:"
   react-router: "catalog:"
