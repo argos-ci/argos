@@ -73,6 +73,17 @@ test("returns latest production deployments for project lists", async ({
     createdAt: "2026-04-12T10:00:00.000Z",
     slug: "first-project-latest-preview",
   });
+  // Hosted elsewhere: the project card pairs this deployment with the
+  // production domain Argos serves.
+  await factory.Deployment.create({
+    projectId: firstProject.id,
+    environment: "production",
+    status: "ready",
+    branch: "main",
+    createdAt: "2026-04-14T10:00:00.000Z",
+    slug: null,
+    externalUrl: "https://first-project.vercel.app/",
+  });
   const secondProjectLatestDeployment = await factory.Deployment.create({
     projectId: secondProject.id,
     environment: "production",

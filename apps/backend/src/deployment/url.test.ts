@@ -48,7 +48,7 @@ describe("getDeploymentPreferredUrl", () => {
   it("prefers a custom domain over everything else", () => {
     expect(
       getDeploymentPreferredUrl({
-        slug: "deployment-1",
+        url: "https://deployment-1.dev.argos-ci.live/",
         aliases: [
           { type: "branch", alias: "main" },
           { type: "domain", alias: "my-project.dev.argos-ci.live" },
@@ -58,8 +58,9 @@ describe("getDeploymentPreferredUrl", () => {
     ).toBe("https://docs.example.com/");
   });
 
-  // The slug URL is immutable, unlike the internal domain, so it stays the
-  // fallback rather than being replaced by a domain no more recognisable.
+  // The deployment's own URL is immutable, unlike the internal domain, so it
+  // stays the fallback rather than being replaced by a domain no more
+  // recognisable.
   it.each([
     ["no aliases", []],
     ["only a branch alias", [{ type: "branch" as const, alias: "main" }]],
@@ -67,9 +68,12 @@ describe("getDeploymentPreferredUrl", () => {
       "only an internal domain",
       [{ type: "domain" as const, alias: "my-project.dev.argos-ci.live" }],
     ],
-  ])("falls back to the slug URL with %s", (_label, aliases) => {
-    expect(getDeploymentPreferredUrl({ slug: "deployment-1", aliases })).toBe(
-      "https://deployment-1.dev.argos-ci.live/",
-    );
+  ])("falls back to the deployment URL with %s", (_label, aliases) => {
+    expect(
+      getDeploymentPreferredUrl({
+        url: "https://deployment-1.dev.argos-ci.live/",
+        aliases,
+      }),
+    ).toBe("https://deployment-1.dev.argos-ci.live/");
   });
 });

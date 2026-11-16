@@ -56,10 +56,14 @@ const RequestBodySchema = z.object({
     description:
       "The deployment environment. When omitted, it is inferred from `branch`: branches matching the configured production-branch glob are treated as `production`; all others default to `preview`.",
   }),
-  files: z
-    .array(FileEntrySchema)
-    .min(1)
-    .meta({ description: "List of files to deploy" }),
+  files: z.array(FileEntrySchema).min(1).optional().meta({
+    description:
+      "The files Argos hosts and serves. Required unless `url` is set.",
+  }),
+  url: z.httpUrl({ normalize: true }).max(2048).optional().meta({
+    description:
+      "The URL of a deployment hosted elsewhere, such as a Vercel or Netlify preview. The deployment is created `ready`, and the builds of the same commit link their screenshots to it. Required unless `files` is set.",
+  }),
 });
 
 const UploadFileSchema = z.object({
@@ -77,7 +81,7 @@ export const createDeploymentOperation = {
   operationId: "createDeployment",
   summary: "Create a deployment",
   description:
-    "Create a deployment and receive signed upload URLs for the files Argos doesn't already store. Files already present (matched by content hash) are reused and omitted from `uploadFiles`. The environment is inferred from the branch when omitted.",
+    "Create a deployment hosted by Argos, or report one hosted elsewhere.\n\nWith `files`, Argos returns signed upload URLs for the files it doesn't already store. Files already present (matched by content hash) are reused and omitted from `uploadFiles`. Finalize the deployment once they are uploaded.\n\nWith `url`, the deployment is ready at once and `uploadFiles` is empty.\n\nThe environment is inferred from the branch when omitted.",
   tags: ["Deployments"],
   security: projectTokenAuth(["deployments:write"]),
   requestBody: {
@@ -239,6 +243,22 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       throw boom(400, "Request body is required");
     }
 
+    const { files, url } = body;
+
+    if (files && url) {
+      throw boom(
+        400,
+        "`files` and `url` can't be used together. Send `files` to deploy on Argos, or `url` for a deployment hosted elsewhere.",
+      );
+    }
+
+    if (!files && !url) {
+      throw boom(
+        400,
+        "`files` or `url` is required. Send `files` to deploy on Argos, or `url` for a deployment hosted elsewhere.",
+      );
+    }
+
     const auth = await req.ctx.auth();
     assertAuthAttributes(auth, { sha: body.commit });
 
@@ -264,19 +284,43 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         branch,
       }));
 
-    // Create the deployment row in PostgreSQL
-    const deployment = await Deployment.query().insertAndFetch({
+    const deploymentData = {
       projectId: project.id,
-      status: "pending",
       environment,
       branch,
       commitSha: body.commit,
       prHeadCommit: body.prHeadCommit ?? null,
+      githubPullRequestId: pullRequest?.id ?? null,
+    };
+
+    if (url) {
+      const deployment = await Deployment.query().insertAndFetch({
+        ...deploymentData,
+        status: "ready",
+        externalUrl: url,
+        slug: null,
+      });
+
+      await pushDeploymentNotification({
+        deploymentId: deployment.id,
+        type: "success",
+      });
+
+      res.status(201).send({ deploymentId: deployment.id, uploadFiles: [] });
+      return;
+    }
+
+    invariant(files, "`files` is set when `url` is not");
+
+    // Create the deployment row in PostgreSQL
+    const deployment = await Deployment.query().insertAndFetch({
+      ...deploymentData,
+      status: "pending",
       slug: generateDeploymentSlug({
         accountSlug: project.account.slug,
         projectName: project.name,
       }),
-      githubPullRequestId: pullRequest?.id ?? null,
+      externalUrl: null,
     });
 
     await Promise.all([
@@ -286,16 +330,16 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         type: "progress",
       }),
       // Insert all files into DynamoDB deployment_files table
-      writeDeploymentFiles(deployment.id, body.files),
+      writeDeploymentFiles(deployment.id, files),
     ]);
 
     // Check which files already exist in the files table
-    const uniqueHashes = new Set(body.files.map((f) => f.hash));
+    const uniqueHashes = new Set(files.map((f) => f.hash));
     const existingHashes = await getExistingHashes(uniqueHashes);
 
     // Deduplicate by hash for upload URLs
     const seenHashes = new Set<string>();
-    const filesToUpload = body.files.filter((f) => {
+    const filesToUpload = files.filter((f) => {
       if (existingHashes.has(f.hash)) {
         return false;
       }

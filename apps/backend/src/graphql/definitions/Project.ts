@@ -225,7 +225,7 @@ export const typeDefs = gql`
     latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
-    "Latest production deployment"
+    "Latest production deployment served by Argos"
     latestProductionDeployment: Deployment
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
