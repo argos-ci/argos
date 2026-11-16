@@ -1,6 +1,6 @@
 import { countBy } from "lodash-es";
 import request from "supertest";
-import { test as base, describe, expect } from "vitest";
+import { test as base, describe, expect, onTestFinished, vi } from "vitest";
 
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { FAILED_RUN_LOOKUPS_LIMIT } from "@/auth/tokenless/github-actions";
@@ -149,6 +149,14 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
   test("stops asking GitHub once an installation has had too many lookups find no run in progress", async ({
     linkedProject,
   }) => {
+    // Failed lookups are counted per window of the clock, so requests
+    // crossing into the next window would start a fresh count. Only `Date` is
+    // frozen: the request path's timers have to keep running.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+
     const lookups = stubWorkflowRuns({ 42: {} });
     const forgeBearer = (runId: number) =>
       createTokenlessBearer({
