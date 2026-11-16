@@ -170,6 +170,25 @@ describe("processDeploymentNotification", () => {
     );
   });
 
+  test("only updates the pull request comment for a deployment hosted elsewhere", async ({
+    deployment,
+    deploymentNotification,
+  }) => {
+    await deployment.$query().patch({
+      slug: null,
+      externalUrl: "https://docs-git-feature.vercel.app/",
+    });
+
+    await processDeploymentNotification(deploymentNotification);
+
+    expect(createGhCommitStatusMock).not.toHaveBeenCalled();
+    expect(commentGithubPrMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.stringContaining("https://docs-git-feature.vercel.app/"),
+      }),
+    );
+  });
+
   test("posts a pending status for progress notifications", async ({
     repository,
     deployment,

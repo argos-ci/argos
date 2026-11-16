@@ -204,6 +204,7 @@ function createLatestProductionDeploymentByProjectLoader() {
             from "deployments"
             where "deployments"."projectId" = t."projectId"
               and "deployments"."environment" = 'production'
+              and "deployments"."externalUrl" is null
             order by "deployments"."createdAt" desc, "deployments"."id" desc
             limit 1
           ) as deployments on true

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict oz1sIGf8bmpe5b0Avwp4ALH8UfZPaL0nmvYTywXeXaal9AhgKW7Gxcc5vpcMT5z
+\restrict IpKfHreozvFAKgLHoX0PRZh0oUED8K7sLidyhoPCBIj4NXtl5b0NcD6QHtgqINA
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -829,10 +829,12 @@ CREATE TABLE public.deployments (
     environment text NOT NULL,
     branch character varying(255) NOT NULL,
     "commitSha" character varying(255) NOT NULL,
-    slug character varying(255) NOT NULL,
+    slug character varying(255),
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
+    "externalUrl" text,
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
+    CONSTRAINT "deployments_slug_externalUrl_check" CHECK (((slug IS NULL) <> ("externalUrl" IS NULL))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
 );
 
@@ -7101,7 +7103,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oz1sIGf8bmpe5b0Avwp4ALH8UfZPaL0nmvYTywXeXaal9AhgKW7Gxcc5vpcMT5z
+\unrestrict IpKfHreozvFAKgLHoX0PRZh0oUED8K7sLidyhoPCBIj4NXtl5b0NcD6QHtgqINA
 
 -- Knex migrations
 
@@ -7384,3 +7386,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112211844_token-saml-authorization.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261116120000_deployment-external-url.js', 1, NOW());

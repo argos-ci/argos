@@ -264,6 +264,17 @@ function getBuildRows(input: {
     });
 }
 
+/**
+ * An external deployment's URL comes from the API: an unbalanced parenthesis
+ * would end the link early, and a pipe would split the table row.
+ */
+function escapeMarkdownTableUrl(url: string): string {
+  return url.replace(
+    /[()|]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
 function getDeploymentRows(input: {
   deployments: Deployment[];
   hasMultipleProjects: boolean;
@@ -284,11 +295,11 @@ function getDeploymentRows(input: {
       invariant(deployment.aliases, "Relation `aliases` should be fetched");
 
       const url = getDeploymentPreferredUrl({
-        slug: deployment.slug,
+        url: deployment.url,
         aliases: deployment.aliases,
       });
 
-      return `| **${name}** ([Open](${url})) | ${getDeploymentLabel(
+      return `| **${name}** ([Open](${escapeMarkdownTableUrl(url)})) | ${getDeploymentLabel(
         deployment,
       )} | ${deployment.branch} | ${formatDate(deployment.updatedAt)} |`;
     });
