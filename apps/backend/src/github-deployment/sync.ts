@@ -213,6 +213,12 @@ async function reportGitHubDeployment(deploymentId: string) {
     );
 
   invariant(deployment, "Deployment not found", UnretryableError);
+
+  // Its host reports it to GitHub itself.
+  if (deployment.externalUrl) {
+    return;
+  }
+
   const { aliases, project } = deployment;
 
   const state = getGitHubDeploymentState(deployment, aliases);
@@ -283,7 +289,7 @@ async function reportGitHubDeployment(deploymentId: string) {
     state,
     environmentUrl:
       state === "success"
-        ? getDeploymentPreferredUrl({ slug: deployment.slug, aliases })
+        ? getDeploymentPreferredUrl({ url: deployment.url, aliases })
         : null,
   });
 }

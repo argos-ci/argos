@@ -142,6 +142,26 @@ describe("getCommentBody", () => {
     expect(body).not.toContain(deployment.url);
   });
 
+  test("links a deployment hosted elsewhere on its own URL", async ({
+    project,
+  }) => {
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: commit,
+      slug: null,
+      externalUrl: "https://docs.example.com/a)|b",
+      branch: "feature/comment",
+      updatedAt: "2026-05-07T12:05:00.000Z",
+    });
+
+    const body = await getCommentBody({ commit });
+
+    // Escaped so the link and the table row stay whole.
+    expect(body).toContain(
+      "| **preview** ([Open](https://docs.example.com/a%29%7Cb)) | Ready | feature/comment | May 7, 2026, 12:05 PM |",
+    );
+  });
+
   test("uses the latest deployment per project and environment", async ({
     project,
   }) => {

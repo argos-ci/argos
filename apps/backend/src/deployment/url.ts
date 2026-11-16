@@ -40,16 +40,15 @@ export function getDeploymentAliasUrl(alias: AliasLike): string {
  * The URL to show a human when only one will fit — a commit status, a pull
  * request comment.
  *
- * The custom domain wins even though, unlike the slug URL, it follows whatever
- * is deployed to production next. Falling back to the slug rather than to the
- * internal domain keeps that mutability to the case where it is the point.
+ * The custom domain wins even though, unlike the deployment's own URL, it
+ * follows whatever is deployed to production next. Falling back to the
+ * deployment's URL rather than to the internal domain keeps that mutability to
+ * the case where it is the point.
  */
 export function getDeploymentPreferredUrl(input: {
-  slug: string;
+  url: string;
   aliases: AliasLike[];
 }): string {
   const customDomain = input.aliases.find(checkIsCustomDomainAlias);
-  return customDomain
-    ? getDeploymentAliasUrl(customDomain)
-    : getDeploymentUrl(input.slug);
+  return customDomain ? getDeploymentAliasUrl(customDomain) : input.url;
 }

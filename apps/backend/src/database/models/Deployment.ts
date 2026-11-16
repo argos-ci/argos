@@ -4,6 +4,7 @@ import {
   type DeploymentEnvironment,
   type DeploymentStatus,
 } from "@argos/schemas/deployment";
+import { invariant } from "@argos/util/invariant";
 import { SLUG_REGEX } from "@argos/util/slug";
 import type { JSONSchema, RelationMappings } from "objection";
 
@@ -26,14 +27,7 @@ export class Deployment extends Model {
       timestampsSchema,
       {
         type: "object" as const,
-        required: [
-          "projectId",
-          "status",
-          "environment",
-          "branch",
-          "commitSha",
-          "slug",
-        ],
+        required: ["projectId", "status", "environment", "branch", "commitSha"],
         properties: {
           projectId: { type: "string" },
           status: DeploymentStatusSchema.toJSONSchema() as JSONSchema,
@@ -41,10 +35,11 @@ export class Deployment extends Model {
           branch: { type: "string" },
           commitSha: { type: "string" },
           slug: {
-            type: "string",
+            type: ["string", "null"],
             pattern: SLUG_REGEX.source,
             maxLength: DEPLOYMENT_SLUG_MAX_LENGTH,
           },
+          externalUrl: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },
           prHeadCommit: { type: ["string", "null"] },
           authSource: {
@@ -103,7 +98,10 @@ export class Deployment extends Model {
   environment!: DeploymentEnvironment;
   branch!: string;
   commitSha!: string;
-  slug!: string;
+  // Exactly one is set: the slug Argos serves the deployment on, or the URL of
+  // a deployment hosted elsewhere.
+  slug!: string | null;
+  externalUrl!: string | null;
   githubPullRequestId!: string | null;
   prHeadCommit!: string | null;
   /** `null` for the deployments created before it was recorded. */
@@ -116,6 +114,10 @@ export class Deployment extends Model {
   pullRequest?: GithubPullRequest | null;
 
   get url() {
+    if (this.externalUrl) {
+      return this.externalUrl;
+    }
+    invariant(this.slug, "A deployment served by Argos has a slug");
     return getDeploymentUrl(this.slug);
   }
 }
