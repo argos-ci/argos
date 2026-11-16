@@ -1,4 +1,5 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
+import { addDays } from "@argos/util/date";
 
 import { ProjectEvent } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
@@ -7,14 +8,11 @@ import { boom } from "@/util/error";
 /** How long events stay in the feed, and their deliveries with them. */
 export const EVENT_RETENTION_DAYS = 7;
 
-/**
- * Ids are allocated when an insert starts, not when it commits, so a reader
- * that sees event 11 may not see event 10 yet. The feed only reads up to the
- * newest event created at least this long ago: every id below it was
- * allocated before, and has committed since. Events must therefore never be
- * inserted inside a long transaction.
- */
-const SETTLE_MS = 2_000;
+/** The most events one read of the feed returns. */
+export const MAX_EVENTS_PER_PAGE = 100;
+
+/** Events deleted per statement, so a purge never locks the table for long. */
+const PURGE_BATCH_SIZE = 1000;
 
 export type ProjectEventsPage = {
   events: ProjectEvent[];
@@ -34,63 +32,75 @@ function parseCursor(cursor: string): bigint {
   return BigInt(cursor);
 }
 
-/**
- * The newest position every reader can safely move to (see `SETTLE_MS`).
- * Shared by all projects, so a cursor taken on a quiet project skips nothing.
- */
-async function getSettledHead(now: number): Promise<bigint> {
-  const head = await ProjectEvent.query()
-    .select("id")
-    .where("createdAt", "<=", new Date(now - SETTLE_MS).toISOString())
-    .orderBy("id", "desc")
-    .first();
-  return head ? BigInt(head.id) : 0n;
+async function getFirstId(
+  order: "asc" | "desc",
+  createdAfter?: Date,
+): Promise<bigint | null> {
+  const query = ProjectEvent.query().select("id").first();
+  if (createdAfter) {
+    query
+      .where("createdAt", ">=", createdAfter.toISOString())
+      .orderBy("createdAt", "asc");
+  } else {
+    query.orderBy("id", order);
+  }
+  const row = await query;
+  return row ? BigInt(row.id) : null;
 }
 
 /**
- * Read a project's events in order, after a cursor.
+ * Read a project's events in order, after a cursor. Events commit in id order
+ * (see `sendProjectEvent`), so the newest id is a position every reader can
+ * move to.
  *
  * Without a cursor, the feed starts now, or `maxAgeMs` milliseconds ago.
  * With one, `maxAgeMs` only skips the events older than that.
  */
 export async function listProjectEvents(args: {
   projectId: string;
-  name: ProjectEventName | null;
-  cursor: string | null;
-  maxAgeMs: number | null;
+  name?: ProjectEventName | undefined;
+  cursor?: string | undefined;
+  maxAgeMs?: number | undefined;
   limit: number;
 }): Promise<ProjectEventsPage> {
   const { projectId, name, maxAgeMs, limit } = args;
-  const now = Date.now();
-  const head = await getSettledHead(now);
+  const ageFloor =
+    maxAgeMs === undefined ? undefined : new Date(Date.now() - maxAgeMs);
+  const [head, oldest, floorId] = await Promise.all([
+    getFirstId("desc"),
+    getFirstId("asc"),
+    ageFloor ? getFirstId("asc", ageFloor) : null,
+  ]);
+  const headCursor = head ?? 0n;
 
-  if (args.cursor === null && maxAgeMs === null) {
+  if (args.cursor === undefined && !ageFloor) {
     return {
       events: [],
-      cursor: String(head),
+      cursor: String(headCursor),
       truncated: false,
       hasMore: false,
     };
   }
 
-  const cursor = args.cursor === null ? 0n : parseCursor(args.cursor);
+  const cursor = args.cursor === undefined ? 0n : parseCursor(args.cursor);
+  // Seeking from the oldest event young enough keeps the read on the
+  // `(projectId, id)` index rather than every retained event of the project.
+  const after =
+    floorId !== null && floorId - 1n > cursor ? floorId - 1n : cursor;
 
   const query = ProjectEvent.query()
     .where("projectId", projectId)
-    .where("id", ">", String(cursor))
-    .where("id", "<=", String(head))
+    .where("id", ">", String(after))
+    .where("id", "<=", String(headCursor))
     .orderBy("id", "asc")
     .limit(limit + 1);
   if (name) {
     query.where("name", name);
   }
-  if (maxAgeMs !== null) {
-    query.where("createdAt", ">=", new Date(now - maxAgeMs).toISOString());
+  if (ageFloor) {
+    query.where("createdAt", ">=", ageFloor.toISOString());
   }
-  const [rows, oldest] = await Promise.all([
-    query,
-    ProjectEvent.query().select("id").orderBy("id", "asc").first(),
-  ]);
+  const rows = await query;
 
   const events = rows.slice(0, limit);
   const hasMore = rows.length > limit;
@@ -98,7 +108,11 @@ export async function listProjectEvents(args: {
   // A full read up to the head moves the cursor there even when nothing in
   // this project matched, so a quiet project's cursor keeps up.
   const next =
-    hasMore && last ? BigInt(last.id) : head > cursor ? head : cursor;
+    hasMore && last
+      ? BigInt(last.id)
+      : headCursor > cursor
+        ? headCursor
+        : cursor;
 
   return {
     events,
@@ -106,9 +120,7 @@ export async function listProjectEvents(args: {
     // Ids are allocated in sequence: a gap between the cursor and the oldest
     // event left means the events in between were purged.
     truncated:
-      args.cursor !== null &&
-      oldest !== undefined &&
-      BigInt(oldest.id) > cursor + 1n,
+      args.cursor !== undefined && oldest !== null && oldest > cursor + 1n,
     hasMore,
   };
 }
@@ -118,10 +130,20 @@ export async function listProjectEvents(args: {
  * deliveries with them.
  */
 export async function purgeProjectEvents(now: Date): Promise<void> {
-  const cutoff = new Date(
-    now.getTime() - EVENT_RETENTION_DAYS * 24 * 3600 * 1000,
-  );
-  await ProjectEvent.query()
-    .where("createdAt", "<", cutoff.toISOString())
-    .delete();
+  const cutoff = addDays(now, -EVENT_RETENTION_DAYS).toISOString();
+  for (;;) {
+    const deleted = await ProjectEvent.query()
+      .whereIn(
+        "id",
+        ProjectEvent.query()
+          .select("id")
+          .where("createdAt", "<", cutoff)
+          .orderBy("createdAt", "asc")
+          .limit(PURGE_BATCH_SIZE),
+      )
+      .delete();
+    if (deleted < PURGE_BATCH_SIZE) {
+      return;
+    }
+  }
 }

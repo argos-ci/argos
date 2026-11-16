@@ -14,6 +14,7 @@ import { graphql } from "@/gql";
 import type { WebhookEvent } from "@/gql/graphql";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
+import { CheckboxListField } from "@/ui/CheckboxListField";
 import { Code } from "@/ui/Code";
 import {
   Dialog,
@@ -227,7 +228,6 @@ function ProjectsField(props: {
   const { control, projects } = props;
   const labelId = useId();
   const { field: scope } = useController({ control, name: "scope" });
-  const { fieldState } = useController({ control, name: "projectIds" });
   return (
     <div className="flex flex-col gap-2">
       <div id={labelId} className="text-sm font-semibold">
@@ -254,26 +254,15 @@ function ProjectsField(props: {
         />
       </RadioOptionGroup>
       {scope.value === "selected" && (
-        <div className="max-h-48 overflow-auto rounded-md border p-3">
-          <CheckboxGroupField
-            control={control}
-            name="projectIds"
-            aria-labelledby={labelId}
-          >
-            {projects.map((project) => (
-              <Checkbox
-                key={project.id}
-                name={project.id}
-                invalid={Boolean(fieldState.error)}
-              >
-                {project.name}
-              </Checkbox>
-            ))}
-          </CheckboxGroupField>
-        </div>
-      )}
-      {fieldState.error && (
-        <ErrorMessage>{fieldState.error.message}</ErrorMessage>
+        <CheckboxListField
+          control={control}
+          name="projectIds"
+          aria-labelledby={labelId}
+          options={projects.map((project) => ({
+            value: project.id,
+            label: project.name,
+          }))}
+        />
       )}
     </div>
   );

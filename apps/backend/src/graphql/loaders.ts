@@ -60,7 +60,6 @@ import {
   Test,
   User,
   UserSession,
-  Webhook,
   WebhookDelivery,
   WebhookProject,
 } from "@/database/models";
@@ -593,42 +592,46 @@ function createDiscordWebhooksByAccountIdLoader() {
 }
 
 /**
- * The live projects a webhook is linked to, keyed by webhook so the account
- * it belongs to is at hand: a link to a project of another account reaches
- * nothing.
+ * The live projects a webhook is linked to. A link to a project of another
+ * account reaches nothing.
  */
 function createWebhookProjectsLoader() {
-  return new DataLoader<Webhook, Project[], string>(
-    async (webhooks) => {
-      const links = await WebhookProject.query()
-        .withGraphJoined("project")
-        .whereIn(
-          "webhook_projects.webhookId",
-          webhooks.map((webhook) => webhook.id),
-        )
-        .whereNull("project.deletedAt")
-        .orderBy("project.name");
-      return webhooks.map((webhook) =>
-        links.flatMap((link) => {
-          invariant(link.project, "Webhook link without project");
-          return link.webhookId === webhook.id &&
-            link.project.accountId === webhook.accountId
-            ? [link.project]
-            : [];
-        }),
-      );
-    },
-    { cacheKeyFn: (webhook) => webhook.id },
-  );
+  return new DataLoader<string, Project[]>(async (webhookIds) => {
+    const links = await WebhookProject.query()
+      .withGraphJoined("project")
+      .join("webhooks", "webhooks.id", "webhook_projects.webhookId")
+      .whereIn("webhook_projects.webhookId", [...webhookIds])
+      .whereNull("project.deletedAt")
+      .whereColumn("project.accountId", "webhooks.accountId")
+      .orderBy("project.name");
+    return webhookIds.map((webhookId) =>
+      links.flatMap((link) => {
+        invariant(link.project, "Webhook link without project");
+        return link.webhookId === webhookId ? [link.project] : [];
+      }),
+    );
+  });
 }
 
+/**
+ * The latest delivery of each webhook: one index probe per webhook, where
+ * `DISTINCT ON` would read every delivery kept.
+ */
 function createWebhookLastDeliveryLoader() {
   return new DataLoader<string, WebhookDelivery | null>(async (webhookIds) => {
     const deliveries = await WebhookDelivery.query()
-      .distinctOn("webhookId")
-      .whereIn("webhookId", webhookIds as string[])
-      .orderBy("webhookId")
-      .orderBy("id", "desc");
+      .select("last.*")
+      .from(
+        knex.raw(
+          `unnest(?::bigint[]) as webhook(id) cross join lateral (
+            select * from webhook_deliveries
+            where "webhookId" = webhook.id
+            order by id desc
+            limit 1
+          ) as last`,
+          [`{${webhookIds.join(",")}}`],
+        ),
+      );
     return webhookIds.map(
       (webhookId) =>
         deliveries.find((delivery) => delivery.webhookId === webhookId) ?? null,

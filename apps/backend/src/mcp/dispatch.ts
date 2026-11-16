@@ -206,7 +206,7 @@ export async function callTool(
 }
 
 /** Format the API error payload (`{ error, details }`, see api/util.ts). */
-function formatApiError(payload: string): string {
+export function formatApiError(payload: string): string {
   try {
     const parsed = JSON.parse(payload) as {
       error?: string;

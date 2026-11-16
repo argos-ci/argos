@@ -23,7 +23,7 @@ const _AccountFragment = graphql(`
       id
       ...ProjectTokenList_ProjectToken
     }
-    tokenProjects: projects(first: 1000, after: 0) {
+    accountProjects: projects(first: 1000, after: 0) {
       edges {
         id
         name
@@ -40,7 +40,7 @@ export function AccountProjectTokens(props: {
   if (!account.projectTokens) {
     return null;
   }
-  const projects = account.tokenProjects.edges;
+  const projects = account.accountProjects.edges;
   return (
     <Card>
       <CardBody>

@@ -299,7 +299,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         type: "success",
       }),
       githubDeploymentJob.push(...previousDeploymentIds),
-      sendProjectEvent({ name: "deployment.ready", deployment }),
+      sendProjectEvent({ name: "deployment.ready", deployment, project }),
     ]);
 
     res.send(serializeDeployment(deployment));

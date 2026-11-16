@@ -1,4 +1,5 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
+import { invariant } from "@argos/util/invariant";
 
 import type { AuthViewer } from "@/auth/payload";
 import config from "@/config";
@@ -114,7 +115,7 @@ export async function createWebhook(args: {
       events,
       allProjects: projects === null,
     });
-    if (projects && projects.length > 0) {
+    if (projects) {
       await WebhookProject.query(trx).insert(
         projects.map((project) => ({
           webhookId: webhook.id,
@@ -134,9 +135,7 @@ export async function deleteWebhook(args: {
 }): Promise<void> {
   const { webhook, auth } = args;
   const account = await webhook.$relatedQuery("account");
-  if (!account) {
-    throw boom(404, "Webhook not found.");
-  }
+  invariant(account, "webhook account not found");
   await assertAccountAdmin(account, auth);
   await webhook.$query().delete();
 }

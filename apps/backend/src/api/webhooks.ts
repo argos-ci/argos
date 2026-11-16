@@ -1,8 +1,18 @@
-import { PROJECT_EVENTS } from "@argos/schemas/project-event";
+import {
+  PROJECT_EVENT_DESCRIPTIONS,
+  PROJECT_EVENTS,
+} from "@argos/schemas/project-event";
 import { z } from "zod";
 import type { ZodOpenApiPathsObject } from "zod-openapi";
 
-import { EVENT_SCHEMAS, EVENT_TYPES } from "./schema/primitives/event";
+import { DEFAULT_RETRY_LADDER } from "@/job-core/backoff";
+import { WEBHOOK_TIMEOUT_MS } from "@/webhook/request";
+
+import { EVENT_SCHEMAS } from "./schema/primitives/event";
+
+const RETRY_MINUTES = Math.round(
+  DEFAULT_RETRY_LADDER.reduce((total, tier) => total + tier.delay, 0) / 60_000,
+);
 
 const WebhookHeadersSchema = z.object({
   "webhook-id": z.string().meta({
@@ -29,7 +39,7 @@ export const webhooks: ZodOpenApiPathsObject = Object.fromEntries(
     {
       post: {
         summary: name,
-        description: `${EVENT_TYPES[name].description} Argos sends it to the webhooks subscribed to \`${name}\`. The body is also an item of the events feed.`,
+        description: `${PROJECT_EVENT_DESCRIPTIONS[name]} Argos sends it to the webhooks subscribed to \`${name}\`. The body is also an item of the events feed.`,
         tags: ["Events"],
         security: [],
         requestParams: { header: WebhookHeadersSchema },
@@ -39,8 +49,7 @@ export const webhooks: ZodOpenApiPathsObject = Object.fromEntries(
         },
         responses: {
           "200": {
-            description:
-              "Answer with any 2xx status within 10 seconds. Argos retries any other answer, a redirect or a timeout up to 3 more times over about 6 minutes.",
+            description: `Answer with any 2xx status within ${WEBHOOK_TIMEOUT_MS / 1000} seconds. Argos retries any other status or a timeout up to ${DEFAULT_RETRY_LADDER.length} more times over about ${RETRY_MINUTES} minutes. A redirect is not followed and not retried.`,
           },
         },
       },

@@ -124,13 +124,7 @@ describe("webhooks", () => {
   webhooksTest(
     "members can neither see nor create webhooks",
     async ({ team, post }) => {
-      await Webhook.query().insert({
-        accountId: team.id,
-        url: URL,
-        secret: "secret",
-        events: ["build.completed"],
-        allProjects: true,
-      });
+      await factory.Webhook.create({ accountId: team.id });
 
       const listed = await post("member", {
         query: WebhooksQuery,
@@ -174,13 +168,7 @@ describe("webhooks", () => {
   );
 
   webhooksTest("only an admin deletes a webhook", async ({ team, post }) => {
-    const webhook = await Webhook.query().insertAndFetch({
-      accountId: team.id,
-      url: URL,
-      secret: "secret",
-      events: ["build.completed"],
-      allProjects: true,
-    });
+    const webhook = await factory.Webhook.create({ accountId: team.id });
     const body = {
       query: DeleteWebhookMutation,
       variables: { input: { id: webhook.id } },

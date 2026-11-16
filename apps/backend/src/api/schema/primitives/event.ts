@@ -1,4 +1,7 @@
-import type { ProjectEventName } from "@argos/schemas/project-event";
+import {
+  PROJECT_EVENT_DESCRIPTIONS,
+  type ProjectEventName,
+} from "@argos/schemas/project-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
@@ -14,12 +17,13 @@ import type {
 import { BuildSchema, serializeBuild } from "./build";
 import { BuildReviewSchema, serializeBuildReview } from "./buildReview";
 import { DeploymentSchema, serializeDeployment } from "./deployment";
+import { AccountSchema } from "./project";
 
 const EventProjectSchema = z
   .object({
     id: z.string(),
     name: z.string(),
-    account: z.object({ id: z.string(), slug: z.string() }),
+    account: AccountSchema,
     url: z.url().meta({ description: "The URL of the project in Argos." }),
   })
   .meta({
@@ -43,32 +47,6 @@ const DeploymentEventDataSchema = z.object({
   deployment: DeploymentSchema,
 });
 
-/**
- * Every event type: what it means and the shape of its `data`. Webhooks, the
- * events feed and the MCP events extension all describe events from here.
- */
-export const EVENT_TYPES = {
-  "build.completed": {
-    description: "A build finishes comparing its screenshots.",
-    data: BuildEventDataSchema,
-  },
-  "build.reviewed": {
-    description: "A build receives a review.",
-    data: BuildReviewedEventDataSchema,
-  },
-  "deployment.created": {
-    description: "A deployment starts uploading its files.",
-    data: DeploymentEventDataSchema,
-  },
-  "deployment.ready": {
-    description: "A deployment is ready to be served.",
-    data: DeploymentEventDataSchema,
-  },
-} satisfies Record<
-  ProjectEventName,
-  { description: string; data: z.ZodObject }
->;
-
 function createEventSchema<
   TName extends ProjectEventName,
   TData extends z.ZodObject,
@@ -85,9 +63,13 @@ function createEventSchema<
       }),
       data,
     })
-    .meta({ id, description: EVENT_TYPES[name].description });
+    .meta({ id, description: PROJECT_EVENT_DESCRIPTIONS[name] });
 }
 
+/**
+ * Every event type and the shape of its body. Webhooks, the events feed and
+ * the MCP events extension all describe events from here.
+ */
 export const EVENT_SCHEMAS = {
   "build.completed": createEventSchema(
     "build.completed",
@@ -126,20 +108,12 @@ export const EventSchema = z
 export type EventMessage =
   | { name: "build.completed"; build: Build }
   | { name: "build.reviewed"; build: Build; buildReview: BuildReview }
-  | { name: "deployment.created" | "deployment.ready"; deployment: Deployment };
-
-export function getEventProjectId(message: EventMessage): string {
-  switch (message.name) {
-    case "build.completed":
-    case "build.reviewed":
-      return message.build.projectId;
-    case "deployment.created":
-    case "deployment.ready":
-      return message.deployment.projectId;
-    default:
-      return assertNever(message);
-  }
-}
+  | {
+      name: "deployment.created" | "deployment.ready";
+      deployment: Deployment;
+      /** The deployment's project, with its account. */
+      project: Project;
+    };
 
 async function serializeEventProject(
   project: Project,
@@ -154,9 +128,7 @@ async function serializeEventProject(
   };
 }
 
-type EventData = z.infer<
-  (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES]["data"]
->;
+type EventData = z.infer<(typeof EVENT_SCHEMAS)[ProjectEventName]>["data"];
 
 /**
  * The `data` of an event, as it is when the event happens.

@@ -17,7 +17,6 @@ import {
   OAuthGrant,
   OAuthGrantAccount,
   Project,
-  ProjectEvent,
   User,
   UserAccessTokenScope,
 } from "@/database/models";
@@ -618,29 +617,34 @@ describe.for([
         hasMore: z.boolean(),
         nextPollMs: z.number(),
       });
-      const poll = (cursor: string | null) =>
+      const poll = ({
+        name = "build.completed",
+        project = "awesome-project",
+        cursor,
+      }: {
+        name?: string;
+        project?: string;
+        cursor: string | null;
+      }) =>
         client.request(
           {
             method: "events/poll",
             params: {
-              name: "build.completed",
-              arguments: { owner: "jane-doe", project: "awesome-project" },
+              name,
+              arguments: { owner: "jane-doe", project },
               cursor,
             },
           },
           PollResultSchema,
         );
 
-      const start = await poll(null);
+      const start = await poll({ cursor: null });
       expect(start.events).toEqual([]);
 
-      const event = await ProjectEvent.query().insertAndFetch({
+      const event = await factory.ProjectEvent.create({
         projectId: project.id,
-        name: "build.completed",
-        data: { build: { id: "1" } },
-        createdAt: new Date(Date.now() - 10_000).toISOString(),
       });
-      const next = await poll(start.cursor);
+      const next = await poll({ cursor: start.cursor });
       expect(next.events).toEqual([
         {
           eventId: event.id,
@@ -652,31 +656,10 @@ describe.for([
       expect(next.nextPollMs).toBeGreaterThan(0);
 
       await expect(
-        client.request(
-          {
-            method: "events/poll",
-            params: {
-              name: "build.deleted",
-              arguments: { owner: "jane-doe", project: "awesome-project" },
-              cursor: null,
-            },
-          },
-          PollResultSchema,
-        ),
+        poll({ name: "build.deleted", cursor: null }),
       ).rejects.toMatchObject({ code: -32023 });
-
       await expect(
-        client.request(
-          {
-            method: "events/poll",
-            params: {
-              name: "build.completed",
-              arguments: { owner: "jane-doe", project: "unknown" },
-              cursor: null,
-            },
-          },
-          PollResultSchema,
-        ),
+        poll({ project: "unknown", cursor: null }),
       ).rejects.toMatchObject({ code: -32023 });
     } finally {
       await client.close();
