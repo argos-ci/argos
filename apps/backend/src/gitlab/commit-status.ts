@@ -51,5 +51,9 @@ export async function setGitLabCommitStatus(args: {
         throw error;
       }
     },
+    // gitbeaker retries a 429 or 502 for up to ~4 minutes, within its 5 minute
+    // query timeout. Releasing the lock sooner lets that late request land
+    // after a newer status for the same commit.
+    { timeout: 300_000 },
   );
 }
