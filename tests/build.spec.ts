@@ -606,6 +606,37 @@ loggedTest(
 );
 
 loggedTest(
+  "switches the build sidebar between its tabs",
+  async ({ page, auth, team, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${builds.diffDetectedBuild.number}`,
+    );
+    await page
+      .getByRole("button", { name: "dummy-375x1440.png" })
+      .first()
+      .click();
+
+    // Both panels fade their edges with a scroll-driven animation, and Base UI
+    // keeps a panel on screen until its animations finish. A scroll-driven one
+    // never does unless patched out (patches/@base-ui__react@*.patch): the
+    // panel switched away from would stay on screen, inert.
+    const tabs = page.getByRole("tablist", { name: "Sidebar" });
+    const metadata = page.getByText("Metadata", { exact: true });
+    const reviewers = page.getByText("Reviewers", { exact: true });
+    await expect(metadata).toBeVisible();
+
+    await tabs.getByRole("tab", { name: "Review" }).click();
+    await expect(reviewers).toBeVisible();
+    await expect(metadata).toBeHidden();
+
+    await tabs.getByRole("tab", { name: "Snapshot" }).click();
+    await expect(metadata).toBeVisible();
+    await expect(reviewers).toBeHidden();
+  },
+);
+
+loggedTest(
   "undoes and redoes review marks with the keyboard",
   async ({ page, auth, team, project, builds }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });

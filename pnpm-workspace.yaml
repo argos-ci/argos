@@ -74,5 +74,12 @@ minimumReleaseAgeExclude:
 # unmounts, leaving a tooltip open after the pointer leaves. Re-check on every
 # upgrade: the Tooltip story "Closes When Another Trigger Unmounts" fails
 # without the patch.
+#
+# Base UI also keeps a closing part mounted until its animations finish, and a
+# scroll-driven animation (our `scroll-mask-*` fades) never finishes, so a tab
+# panel switched away from stayed on screen, inert. The patch leaves those out
+# of the wait. The e2e test "switches the build sidebar between its tabs"
+# fails without it: Storybook cannot catch it, since its setup turns the wait
+# off.
 patchedDependencies:
   '@base-ui/react@1.9.0': patches/@base-ui__react@1.9.0.patch
