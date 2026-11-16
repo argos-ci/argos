@@ -98,6 +98,7 @@ const config: CodegenConfig = {
           ProjectToken: "../../database/models/index.js#ProjectToken",
           Webhook: "../../database/models/index.js#Webhook",
           WebhookDelivery: "../../database/models/index.js#WebhookDelivery",
+          WebhookDeliveryEvent: "../../database/models/index.js#ProjectEvent",
           ProjectCustomDomain: "../../database/models/index.js#ProjectDomain",
           Team: "../../database/models/index.js#Account",
           TeamDomain: "../../database/models/index.js#TeamDomain",

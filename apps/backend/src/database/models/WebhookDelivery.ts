@@ -28,7 +28,10 @@ export class WebhookDelivery extends Model {
               { type: "null" },
             ],
           },
+          attemptedAt: { type: ["string", "null"] },
           responseStatus: { type: ["integer", "null"] },
+          durationMs: { type: ["integer", "null"] },
+          responseBody: { type: ["string", "null"] },
           failureReason: { type: ["string", "null"] },
         },
       },
@@ -40,7 +43,10 @@ export class WebhookDelivery extends Model {
   jobStatus!: JobStatus;
   attempts!: number;
   conclusion!: "success" | "failed" | null;
+  attemptedAt!: string | null;
   responseStatus!: number | null;
+  durationMs!: number | null;
+  responseBody!: string | null;
   failureReason!: string | null;
 
   static override get relationMappings(): RelationMappings {

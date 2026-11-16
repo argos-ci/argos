@@ -49,6 +49,7 @@ import {
   Plan,
   Project,
   ProjectDomain,
+  ProjectEvent,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -2208,6 +2209,7 @@ export const createLoaders = () => ({
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
+  ProjectEvent: createModelLoader(ProjectEvent),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),

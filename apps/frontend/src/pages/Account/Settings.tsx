@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router";
+import { Route, Routes, useParams } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
@@ -42,6 +42,7 @@ import { UserEmails } from "@/containers/User/Emails";
 import { UserNotificationPreferences } from "@/containers/User/NotificationPreferences";
 import { OAuthApps } from "@/containers/User/OAuthApps";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
+import { WebhookDeliveries } from "@/containers/Webhook/WebhookDeliveries";
 import { graphql } from "@/gql";
 import { AccountPermission, PlanInterval } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -291,7 +292,26 @@ function PageContent() {
     {
       name: "Webhooks",
       slug: "webhooks",
-      element: hasAdminPermission && <AccountWebhooks account={account} />,
+      nested: true,
+      element: hasAdminPermission && (
+        <Routes>
+          <Route
+            index
+            element={
+              <AccountWebhooks account={account} accountSlug={accountSlug} />
+            }
+          />
+          <Route
+            path=":webhookId"
+            element={
+              <WebhookDeliveriesRoute
+                accountSlug={accountSlug}
+                backHref={`${settingsUrl}/webhooks`}
+              />
+            }
+          />
+        </Routes>
+      ),
     },
     {
       name: "Applications",
@@ -339,6 +359,7 @@ function PageContent() {
         sections={matchedRoutes.map((route, index) => ({
           name: route.name,
           href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
+          nested: route.nested,
         }))}
       />
       <SettingsPage>
@@ -348,7 +369,13 @@ function PageContent() {
               <Route
                 key={route.slug}
                 index={index === 0}
-                path={index === 0 ? "" : route.slug}
+                path={
+                  index === 0
+                    ? ""
+                    : route.nested
+                      ? `${route.slug}/*`
+                      : route.slug
+                }
                 element={route.element}
               />
             );
@@ -372,4 +399,13 @@ function checkIsNonEmptyElement(element: ReactNode): boolean {
     );
   }
   return true;
+}
+
+function WebhookDeliveriesRoute(props: {
+  accountSlug: string;
+  backHref: string;
+}) {
+  const { webhookId } = useParams();
+  invariant(webhookId, "webhookId route param required");
+  return <WebhookDeliveries webhookId={webhookId} {...props} />;
 }

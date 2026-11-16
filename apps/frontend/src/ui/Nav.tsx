@@ -39,10 +39,11 @@ export function NavLink(props: NavLinkProps) {
 
 /**
  * The links of a `NavList`, picked from a select. The one shown is the one
- * matching the current page exactly, as `NavLink` does with `end`.
+ * matching the current page exactly, as `NavLink` does with `end`, or one of
+ * its sub-pages for a `nested` item.
  */
 export function NavSelect(props: {
-  items: { name: string; href: string }[];
+  items: { name: string; href: string; nested?: boolean | undefined }[];
   "aria-label": string;
   className?: string;
 }) {
@@ -50,7 +51,7 @@ export function NavSelect(props: {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const current = items.find((item) =>
-    matchPath({ path: item.href, end: true }, pathname),
+    matchPath({ path: item.href, end: !item.nested }, pathname),
   );
   return (
     <Select

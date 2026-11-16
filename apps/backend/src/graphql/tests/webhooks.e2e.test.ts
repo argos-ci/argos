@@ -2,7 +2,12 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { describe, expect, test } from "vitest";
 
-import { Webhook, type Account, type Project } from "@/database/models";
+import {
+  Webhook,
+  WebhookDelivery,
+  type Account,
+  type Project,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -37,6 +42,29 @@ const CreateWebhookMutation = `
 const DeleteWebhookMutation = `
   mutation DeleteWebhook($input: DeleteWebhookInput!) {
     deleteWebhook(input: $input)
+  }
+`;
+
+const DeliveriesQuery = `
+  query Deliveries($slug: String!, $id: ID!, $status: WebhookDeliveryStatus, $deliveryId: ID!) {
+    account(slug: $slug) {
+      webhook(id: $id) {
+        deliveries(status: $status) {
+          edges { id status responseStatus event { id type } }
+        }
+        delivery(id: $deliveryId) {
+          id
+          responseBody
+          event { id body }
+        }
+      }
+    }
+  }
+`;
+
+const ResendMutation = `
+  mutation Resend($input: ResendWebhookDeliveryInput!) {
+    resendWebhookDelivery(input: $input) { id status }
   }
 `;
 
@@ -185,4 +213,91 @@ describe("webhooks", () => {
     expect(deleted.body.data.deleteWebhook).toBe(webhook.id);
     expect(await Webhook.query().findById(webhook.id)).toBeUndefined();
   });
+
+  webhooksTest(
+    "an admin lists deliveries, filters the failed ones and resends one",
+    async ({ team, project, post }) => {
+      const webhook = await factory.Webhook.create({ accountId: team.id });
+      const event = await factory.ProjectEvent.create({
+        projectId: project.id,
+      });
+      const [, failed] = await WebhookDelivery.query().insert([
+        {
+          webhookId: webhook.id,
+          eventId: event.id,
+          jobStatus: "complete",
+          attempts: 1,
+          conclusion: "success",
+          responseStatus: 200,
+          responseBody: "ok",
+        },
+        {
+          webhookId: webhook.id,
+          eventId: event.id,
+          jobStatus: "complete",
+          attempts: 4,
+          conclusion: "failed",
+          responseStatus: 500,
+          responseBody: "boom",
+        },
+      ]);
+      invariant(failed);
+
+      const listed = await post("owner", {
+        query: DeliveriesQuery,
+        variables: {
+          slug: team.slug,
+          id: webhook.id,
+          status: "failed",
+          deliveryId: failed.id,
+        },
+      });
+      expectNoGraphQLError(listed);
+      const found = listed.body.data.account.webhook;
+      expect(found.deliveries.edges).toEqual([
+        {
+          id: failed.id,
+          status: "failed",
+          responseStatus: 500,
+          event: { id: event.id, type: "build_completed" },
+        },
+      ]);
+      expect(found.delivery.responseBody).toBe("boom");
+      expect(JSON.parse(found.delivery.event.body)).toMatchObject({
+        id: event.id,
+        type: "build.completed",
+      });
+
+      const resent = await post("owner", {
+        query: ResendMutation,
+        variables: { input: { id: failed.id } },
+      });
+      expectNoGraphQLError(resent);
+      expect(resent.body.data.resendWebhookDelivery.status).toBe("pending");
+      expect(
+        await WebhookDelivery.query().findById(
+          resent.body.data.resendWebhookDelivery.id,
+        ),
+      ).toMatchObject({ eventId: event.id, attempts: 0, conclusion: null });
+
+      const asMember = await post("member", {
+        query: DeliveriesQuery,
+        variables: {
+          slug: team.slug,
+          id: webhook.id,
+          deliveryId: failed.id,
+        },
+      });
+      expectNoGraphQLError(asMember);
+      expect(asMember.body.data.account.webhook).toBeNull();
+
+      const memberResend = await post("member", {
+        query: ResendMutation,
+        variables: { input: { id: failed.id } },
+      });
+      expect(memberResend.body.errors?.[0]?.message).toBe(
+        "Only administrators of the account can manage webhooks.",
+      );
+    },
+  );
 });

@@ -1,12 +1,11 @@
-import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
 import { Trash2Icon } from "lucide-react";
 
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
-import { WebhookDeliveryStatus } from "@/gql/graphql";
-import { Chip, type ChipColor } from "@/ui/Chip";
+import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
+import { Link } from "@/ui/Link";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
@@ -16,6 +15,7 @@ import {
   DeleteWebhookDialog,
   type WebhookDialogValue,
 } from "./DeleteWebhookDialog";
+import { getDeliveryChip, getProjectsLabel } from "./delivery";
 import { formatWebhookEvents } from "./events";
 
 const _WebhookFragment = graphql(`
@@ -41,33 +41,6 @@ const _WebhookFragment = graphql(`
 
 type Webhook = DocumentType<typeof _WebhookFragment>;
 type WebhookDelivery = NonNullable<Webhook["lastDelivery"]>;
-
-function getProjectsLabel(webhook: Webhook): string {
-  if (webhook.allProjects) {
-    return "All projects";
-  }
-  return webhook.projects.length > 0
-    ? webhook.projects.map((project) => project.name).join(", ")
-    : "No project";
-}
-
-function getDeliveryChip(delivery: WebhookDelivery): {
-  label: string;
-  color: ChipColor;
-} {
-  switch (delivery.status) {
-    case WebhookDeliveryStatus.Success:
-      return { label: "Delivered", color: "success" };
-    case WebhookDeliveryStatus.Failed:
-      return { label: "Failed", color: "danger" };
-    case WebhookDeliveryStatus.Pending:
-      return delivery.attempts > 0
-        ? { label: "Retrying", color: "warning" }
-        : { label: "Sending", color: "pending" };
-    default:
-      return assertNever(delivery.status);
-  }
-}
 
 function LastDelivery(props: { delivery: WebhookDelivery | null }) {
   const { delivery } = props;
@@ -117,8 +90,12 @@ function WebhookActions(props: {
   );
 }
 
-export function WebhookList(props: { webhooks: Webhook[] }) {
-  const { webhooks } = props;
+export function WebhookList(props: {
+  webhooks: Webhook[];
+  /** The page listing a webhook's deliveries. */
+  getWebhookHref: (webhook: Webhook) => string;
+}) {
+  const { webhooks, getWebhookHref } = props;
   const deleting = useDialogValueState<WebhookDialogValue | null>(null);
   const columns = "grid-cols-[4fr_2fr_1fr_2rem]";
 
@@ -140,9 +117,14 @@ export function WebhookList(props: { webhooks: Webhook[] }) {
             )}
           >
             <div className="min-w-0 py-2">
-              <div className="truncate font-medium" title={webhook.url}>
+              <Link
+                href={getWebhookHref(webhook)}
+                variant="neutral"
+                className="block truncate font-medium"
+                title={webhook.url}
+              >
                 {webhook.url}
-              </div>
+              </Link>
               <div className="text-low mt-0.5 flex flex-col gap-0.5 text-xs">
                 <span className="truncate">
                   {formatWebhookEvents(webhook.events)}

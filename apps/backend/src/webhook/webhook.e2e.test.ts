@@ -59,7 +59,7 @@ const webhookTest = test.extend<Fixtures>({
           headers: req.headers,
           body: Buffer.concat(chunks).toString("utf8"),
         });
-        res.writeHead(endpoint.status).end();
+        res.writeHead(endpoint.status).end(`received ${endpoint.status}`);
       });
     });
     server.listen(0, "127.0.0.1");
@@ -209,14 +209,16 @@ describe("webhooks", () => {
           }),
         },
       });
-      expect(await getDeliveries(webhook)).toMatchObject([
-        {
-          attempts: 1,
-          conclusion: "success",
-          responseStatus: 200,
-          failureReason: null,
-        },
-      ]);
+      const [delivery] = await getDeliveries(webhook);
+      expect(delivery).toMatchObject({
+        attempts: 1,
+        conclusion: "success",
+        responseStatus: 200,
+        responseBody: "received 200",
+        failureReason: null,
+      });
+      expect(delivery?.attemptedAt).not.toBeNull();
+      expect(delivery?.durationMs).toBeGreaterThanOrEqual(0);
     },
   );
 
@@ -301,6 +303,7 @@ describe("webhooks", () => {
         attempts: 4,
         conclusion: "failed",
         responseStatus: 500,
+        responseBody: "received 500",
         failureReason: "Your endpoint responded with HTTP 500.",
       });
       // Every attempt carries the same message id, signed anew.
