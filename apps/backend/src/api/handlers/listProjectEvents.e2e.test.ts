@@ -2,7 +2,7 @@ import type { ProjectEventName } from "@argos/schemas/project-event";
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
-import { ProjectEvent, type Account, type Project } from "@/database/models";
+import type { Account, Project, ProjectEvent } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -38,10 +38,9 @@ const test = base.extend<{
   },
   addEvent: async ({ project }, use) => {
     await use(async (input) =>
-      ProjectEvent.query().insertAndFetch({
+      factory.ProjectEvent.create({
         projectId: (input.project ?? project).id,
         name: input.name ?? "build.completed",
-        data: { build: { id: "1" } },
         createdAt: new Date(Date.now() - input.secondsAgo * 1000).toISOString(),
       }),
     );
@@ -55,6 +54,10 @@ const test = base.extend<{
     );
   },
 });
+
+function eventIds(res: request.Response): string[] {
+  return res.body.events.map((event: { id: string }) => event.id);
+}
 
 describe("GET /projects/{owner}/{project}/events", () => {
   test("starts now, then returns what happens after the cursor", async ({
@@ -72,14 +75,12 @@ describe("GET /projects/{owner}/{project}/events", () => {
       hasMore: false,
     });
 
-    const event = await addEvent({ secondsAgo: 10 });
+    const event = await addEvent({ secondsAgo: 0 });
     const otherProject = await factory.Project.create({
       accountId: account.id,
       name: "other",
     });
-    await addEvent({ project: otherProject, secondsAgo: 10 });
-    // Too recent to be read: an older id may still be committing.
-    const recent = await addEvent({ secondsAgo: 0 });
+    await addEvent({ project: otherProject, secondsAgo: 0 });
 
     const next = await read({ cursor: start.body.cursor });
     expect(next.status).toBe(200);
@@ -97,12 +98,9 @@ describe("GET /projects/{owner}/{project}/events", () => {
       hasMore: false,
     });
 
-    await recent.$query().patch({
-      createdAt: new Date(Date.now() - 5000).toISOString(),
-    });
-    const last = await read({ cursor: next.body.cursor });
-    expect(last.body.events.map((e: { id: string }) => e.id)).toEqual([
-      recent.id,
+    const later = await addEvent({ secondsAgo: 0 });
+    expect(eventIds(await read({ cursor: next.body.cursor }))).toEqual([
+      later.id,
     ]);
   });
 
@@ -114,16 +112,16 @@ describe("GET /projects/{owner}/{project}/events", () => {
       await addEvent({ secondsAgo: 20 }),
       await addEvent({ secondsAgo: 10 }),
     ];
-    const builds = events.filter((event) => event.name === "build.completed");
+    const builds = events
+      .filter((event) => event.name === "build.completed")
+      .map((event) => event.id);
 
     const first = await read({
       cursor: start.body.cursor,
       name: "build.completed",
       limit: "2",
     });
-    expect(first.body.events.map((e: { id: string }) => e.id)).toEqual(
-      builds.slice(0, 2).map((event) => event.id),
-    );
+    expect(eventIds(first)).toEqual(builds.slice(0, 2));
     expect(first.body.hasMore).toBe(true);
 
     const second = await read({
@@ -131,9 +129,7 @@ describe("GET /projects/{owner}/{project}/events", () => {
       name: "build.completed",
       limit: "2",
     });
-    expect(second.body.events.map((e: { id: string }) => e.id)).toEqual(
-      builds.slice(2).map((event) => event.id),
-    );
+    expect(eventIds(second)).toEqual(builds.slice(2));
     expect(second.body.hasMore).toBe(false);
   });
 
@@ -141,10 +137,7 @@ describe("GET /projects/{owner}/{project}/events", () => {
     await addEvent({ secondsAgo: 120 });
     const recent = await addEvent({ secondsAgo: 30 });
 
-    const res = await read({ maxAgeMs: "60000" });
-    expect(res.body.events.map((e: { id: string }) => e.id)).toEqual([
-      recent.id,
-    ]);
+    expect(eventIds(await read({ maxAgeMs: "60000" }))).toEqual([recent.id]);
   });
 
   test("flags the events purged before being read", async ({

@@ -5,7 +5,7 @@ import { Agent, fetch } from "undici";
 
 import { checkIsPublicAddress, parseWebhookUrl } from "./url";
 
-const TIMEOUT_MS = 10_000;
+export const WEBHOOK_TIMEOUT_MS = 10_000;
 
 export class NonPublicAddressError extends Error {}
 
@@ -95,7 +95,7 @@ function describeRequestError(error: unknown): {
 } {
   if (error instanceof Error && error.name === "TimeoutError") {
     return {
-      reason: `Your endpoint did not respond within ${TIMEOUT_MS / 1000} seconds.`,
+      reason: `Your endpoint did not respond within ${WEBHOOK_TIMEOUT_MS / 1000} seconds.`,
       retryable: true,
     };
   }
@@ -173,7 +173,7 @@ export async function postWebhookRequest(args: {
       body,
       // A redirect would send the request to a host nobody validated.
       redirect: "manual",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
       dispatcher: allowPrivateNetwork ? privateNetworkAgent : publicAgent,
     });
   } catch (error) {

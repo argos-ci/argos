@@ -2,7 +2,11 @@ import { ProjectEventNameSchema } from "@argos/schemas/project-event";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { EVENT_RETENTION_DAYS, listProjectEvents } from "@/event/feed";
+import {
+  EVENT_RETENTION_DAYS,
+  listProjectEvents,
+  MAX_EVENTS_PER_PAGE,
+} from "@/event/feed";
 
 import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
 import { EventSchema, serializeEvent } from "../schema/primitives/event";
@@ -39,9 +43,17 @@ const ProjectEventsQuerySchema = z.object({
     .string()
     .optional()
     .transform((value) =>
-      z.coerce.number().int().min(1).max(100).default(100).parse(value),
+      z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_EVENTS_PER_PAGE)
+        .default(MAX_EVENTS_PER_PAGE)
+        .parse(value),
     )
-    .meta({ description: "Maximum number of events to return (max 100)." }),
+    .meta({
+      description: `Maximum number of events to return (max ${MAX_EVENTS_PER_PAGE}).`,
+    }),
 });
 
 export const listProjectEventsOperation = {
@@ -88,7 +100,6 @@ export const listProjectEventsOperation = {
 
 export const listProjectEventsHandler: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/events", async (req, res) => {
-    const { name, cursor, maxAgeMs, limit } = req.ctx.query;
     const project = await getProjectForAuth(
       req.ctx.auth(),
       req.ctx.params,
@@ -96,16 +107,8 @@ export const listProjectEventsHandler: CreateAPIHandler = ({ get }) => {
     );
     const page = await listProjectEvents({
       projectId: project.id,
-      name: name ?? null,
-      cursor: cursor ?? null,
-      maxAgeMs: maxAgeMs ?? null,
-      limit,
+      ...req.ctx.query,
     });
-    res.send({
-      events: page.events.map(serializeEvent),
-      cursor: page.cursor,
-      truncated: page.truncated,
-      hasMore: page.hasMore,
-    });
+    res.send({ ...page, events: page.events.map(serializeEvent) });
   });
 };

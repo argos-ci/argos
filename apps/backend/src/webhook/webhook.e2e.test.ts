@@ -1,29 +1,33 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { once } from "node:events";
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { ProjectEventName } from "@argos/schemas/project-event";
 import { invariant } from "@argos/util/invariant";
 import { describe, expect, test } from "vitest";
 
+import type { EventMessage } from "@/api/schema/primitives/event";
 import {
   ProjectEvent,
-  Webhook,
   WebhookDelivery,
   WebhookProject,
   type Account,
   type Build,
   type Project,
+  type Webhook,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendProjectEvent } from "@/event/send";
 
 import { deliverWebhook } from "./job";
 
+type ReceivedRequest = { headers: IncomingHttpHeaders; body: string };
+
 type Endpoint = {
   url: string;
   /** Status the endpoint answers with. */
   status: number;
-  requests: { headers: IncomingHttpHeaders; body: string }[];
+  requests: ReceivedRequest[];
 };
 
 type Fixtures = {
@@ -31,16 +35,21 @@ type Fixtures = {
   account: Account;
   project: Project;
   build: Build;
-  createWebhook: (
-    data: Partial<Pick<Webhook, "events" | "accountId">> & {
-      projectIds?: string[];
-    },
-  ) => Promise<Webhook>;
+  createWebhook: (data?: {
+    events?: ProjectEventName[];
+    accountId?: string;
+    projectIds?: string[];
+  }) => Promise<Webhook>;
+  /** Send an event, deliver it to the webhook and return what it received. */
+  deliver: (
+    webhook: Webhook,
+    message: EventMessage,
+  ) => Promise<{ event: ProjectEvent; request: ReceivedRequest }>;
 };
 
 const webhookTest = test.extend<Fixtures>({
   endpoint: async ({}, use) => {
-    const requests: Endpoint["requests"] = [];
+    const requests: ReceivedRequest[] = [];
     const endpoint: Endpoint = { url: "", status: 200, requests };
     const server = createServer((req, res) => {
       const chunks: Buffer[] = [];
@@ -71,13 +80,11 @@ const webhookTest = test.extend<Fixtures>({
     await use(await factory.Build.create({ projectId: project.id }));
   },
   createWebhook: async ({ account, endpoint }, use) => {
-    await use(async (data) => {
+    await use(async (data = {}) => {
       const { projectIds = [], ...rest } = data;
-      const webhook = await Webhook.query().insertAndFetch({
+      const webhook = await factory.Webhook.create({
         accountId: account.id,
         url: endpoint.url,
-        secret: `whsec_${randomBytes(32).toString("base64")}`,
-        events: ["build.completed"],
         allProjects: projectIds.length === 0,
         ...rest,
       });
@@ -87,6 +94,20 @@ const webhookTest = test.extend<Fixtures>({
         );
       }
       return webhook;
+    });
+  },
+  deliver: async ({ endpoint }, use) => {
+    await use(async (webhook, message) => {
+      const event = await sendProjectEvent(message);
+      const delivery = await WebhookDelivery.query().findOne({
+        webhookId: webhook.id,
+        eventId: event.id,
+      });
+      invariant(delivery, "delivery not created");
+      await deliverWebhook(delivery, { attempts: 0, isLastAttempt: true });
+      const request = endpoint.requests.at(-1);
+      invariant(request, "no request received");
+      return { event, request };
     });
   },
 });
@@ -99,10 +120,7 @@ async function getDeliveries(webhook: Webhook) {
  * Verify a request the way the Standard Webhooks specification describes it,
  * independently from the code that signs it.
  */
-function verifySignature(
-  request: Endpoint["requests"][number],
-  secret: string,
-): boolean {
+function verifySignature(request: ReceivedRequest, secret: string): boolean {
   const id = request.headers["webhook-id"];
   const timestamp = request.headers["webhook-timestamp"];
   const signature = request.headers["webhook-signature"];
@@ -124,7 +142,7 @@ describe("webhooks", () => {
       const otherAccount = await factory.TeamAccount.create();
 
       const [allProjects, thisProject] = await Promise.all([
-        createWebhook({}),
+        createWebhook(),
         createWebhook({ projectIds: [project.id] }),
       ]);
       const ignored = await Promise.all([
@@ -161,17 +179,13 @@ describe("webhooks", () => {
 
   webhookTest(
     "posts the event signed per Standard Webhooks",
-    async ({ project, build, endpoint, createWebhook }) => {
-      const webhook = await createWebhook({});
-      const event = await sendProjectEvent({ name: "build.completed", build });
-      const [delivery] = await getDeliveries(webhook);
-      invariant(delivery, "delivery not created");
+    async ({ project, build, createWebhook, deliver }) => {
+      const webhook = await createWebhook();
+      const { event, request } = await deliver(webhook, {
+        name: "build.completed",
+        build,
+      });
 
-      await deliverWebhook(delivery);
-
-      expect(endpoint.requests).toHaveLength(1);
-      const [request] = endpoint.requests;
-      invariant(request);
       expect(request.headers["content-type"]).toBe("application/json");
       expect(request.headers["webhook-id"]).toBe(event.id);
       expect(
@@ -195,34 +209,31 @@ describe("webhooks", () => {
           }),
         },
       });
-
-      const delivered = await delivery.$query();
-      expect(delivered).toMatchObject({
-        attempts: 1,
-        conclusion: "success",
-        responseStatus: 200,
-        failureReason: null,
-      });
-      expect(delivered.completedAt).not.toBeNull();
+      expect(await getDeliveries(webhook)).toMatchObject([
+        {
+          attempts: 1,
+          conclusion: "success",
+          responseStatus: 200,
+          failureReason: null,
+        },
+      ]);
     },
   );
 
   webhookTest(
     "sends the review with build.reviewed",
-    async ({ build, endpoint, createWebhook }) => {
+    async ({ build, createWebhook, deliver }) => {
       const webhook = await createWebhook({ events: ["build.reviewed"] });
       const buildReview = await factory.BuildReview.create({
         buildId: build.id,
         state: "rejected",
       });
-      await sendProjectEvent({ name: "build.reviewed", build, buildReview });
-      const [delivery] = await getDeliveries(webhook);
-      invariant(delivery, "delivery not created");
+      const { request } = await deliver(webhook, {
+        name: "build.reviewed",
+        build,
+        buildReview,
+      });
 
-      await deliverWebhook(delivery);
-
-      const [request] = endpoint.requests;
-      invariant(request);
       expect(JSON.parse(request.body)).toMatchObject({
         type: "build.reviewed",
         data: {
@@ -235,7 +246,7 @@ describe("webhooks", () => {
 
   webhookTest(
     "sends the deployment with deployment events",
-    async ({ project, endpoint, createWebhook }) => {
+    async ({ project, account, createWebhook, deliver }) => {
       const webhook = await createWebhook({
         events: ["deployment.created", "deployment.ready"],
       });
@@ -243,14 +254,13 @@ describe("webhooks", () => {
         projectId: project.id,
         status: "ready",
       });
-      await sendProjectEvent({ name: "deployment.ready", deployment });
-      const [delivery] = await getDeliveries(webhook);
-      invariant(delivery, "delivery not created");
+      project.account = account;
+      const { request } = await deliver(webhook, {
+        name: "deployment.ready",
+        deployment,
+        project,
+      });
 
-      await deliverWebhook(delivery);
-
-      const [request] = endpoint.requests;
-      invariant(request);
       expect(JSON.parse(request.body)).toMatchObject({
         type: "deployment.ready",
         data: {
@@ -269,34 +279,30 @@ describe("webhooks", () => {
     "retries a failing endpoint, then records the failure",
     async ({ build, endpoint, createWebhook }) => {
       endpoint.status = 500;
-      const webhook = await createWebhook({});
+      const webhook = await createWebhook();
       await sendProjectEvent({ name: "build.completed", build });
       const [delivery] = await getDeliveries(webhook);
       invariant(delivery, "delivery not created");
 
       // Throwing hands the delivery back to the job queue, which runs it
       // again after a delay.
-      await expect(deliverWebhook(delivery)).rejects.toThrow(
-        "Your endpoint responded with HTTP 500.",
-      );
+      await expect(
+        deliverWebhook(delivery, { attempts: 0, isLastAttempt: false }),
+      ).rejects.toThrow("Your endpoint responded with HTTP 500.");
       expect(await delivery.$query()).toMatchObject({
         attempts: 1,
         conclusion: null,
         responseStatus: 500,
       });
 
-      await delivery.$query().patch({ attempts: 3 });
-      await deliverWebhook(await delivery.$query());
+      await deliverWebhook(delivery, { attempts: 3, isLastAttempt: true });
 
-      const failed = await delivery.$query();
-      expect(failed).toMatchObject({
+      expect(await delivery.$query()).toMatchObject({
         attempts: 4,
         conclusion: "failed",
         responseStatus: 500,
         failureReason: "Your endpoint responded with HTTP 500.",
       });
-      expect(failed.completedAt).not.toBeNull();
-      expect(endpoint.requests).toHaveLength(2);
       // Every attempt carries the same message id, signed anew.
       const [first, second] = endpoint.requests;
       invariant(first && second);

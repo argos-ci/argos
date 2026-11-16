@@ -23,7 +23,7 @@ const _AccountFragment = graphql(`
       id
       ...WebhookList_Webhook
     }
-    webhookProjects: projects(first: 1000, after: 0) {
+    accountProjects: projects(first: 1000, after: 0) {
       edges {
         id
         name
@@ -74,7 +74,7 @@ export function AccountWebhooks(props: {
           <Modal>
             <CreateWebhookDialog
               accountId={account.id}
-              projects={account.webhookProjects.edges}
+              projects={account.accountProjects.edges}
             />
           </Modal>
         </DialogTrigger>

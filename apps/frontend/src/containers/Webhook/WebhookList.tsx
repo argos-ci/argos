@@ -12,8 +12,11 @@ import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 
+import {
+  DeleteWebhookDialog,
+  type WebhookDialogValue,
+} from "./DeleteWebhookDialog";
 import { formatWebhookEvents } from "./events";
-import { DeleteWebhookDialog, type WebhookDialogValue } from "./WebhookDialogs";
 
 const _WebhookFragment = graphql(`
   fragment WebhookList_Webhook on Webhook {

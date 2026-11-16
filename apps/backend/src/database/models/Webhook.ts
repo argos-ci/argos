@@ -7,7 +7,6 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account } from "./Account";
-import { Project } from "./Project";
 
 /**
  * An endpoint an account registers to receive its projects' events, each
@@ -60,21 +59,8 @@ export class Webhook extends Model {
           to: "accounts.id",
         },
       },
-      projects: {
-        relation: Model.ManyToManyRelation,
-        modelClass: Project,
-        join: {
-          from: "webhooks.id",
-          through: {
-            from: "webhook_projects.webhookId",
-            to: "webhook_projects.projectId",
-          },
-          to: "projects.id",
-        },
-      },
     };
   }
 
   account?: Account;
-  projects?: Project[];
 }

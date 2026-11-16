@@ -4,7 +4,6 @@ import { Model } from "../util/model";
 import { jobModelSchema, timestampsSchema } from "../util/schemas";
 import type { JobStatus } from "../util/schemas";
 import { ProjectEvent } from "./ProjectEvent";
-import { Webhook } from "./Webhook";
 
 /**
  * One event sent to one webhook, across all of its attempts.
@@ -31,7 +30,6 @@ export class WebhookDelivery extends Model {
           },
           responseStatus: { type: ["integer", "null"] },
           failureReason: { type: ["string", "null"] },
-          completedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -44,18 +42,9 @@ export class WebhookDelivery extends Model {
   conclusion!: "success" | "failed" | null;
   responseStatus!: number | null;
   failureReason!: string | null;
-  completedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
-      webhook: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: Webhook,
-        join: {
-          from: "webhook_deliveries.webhookId",
-          to: "webhooks.id",
-        },
-      },
       event: {
         relation: Model.BelongsToOneRelation,
         modelClass: ProjectEvent,
@@ -67,6 +56,5 @@ export class WebhookDelivery extends Model {
     };
   }
 
-  webhook?: Webhook;
   event?: ProjectEvent;
 }

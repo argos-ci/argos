@@ -289,7 +289,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         deploymentId: deployment.id,
         type: "progress",
       }),
-      sendProjectEvent({ name: "deployment.created", deployment }),
+      sendProjectEvent({ name: "deployment.created", deployment, project }),
       // Insert all files into DynamoDB deployment_files table
       writeDeploymentFiles(deployment.id, body.files),
     ]);

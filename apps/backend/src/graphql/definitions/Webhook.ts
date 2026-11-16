@@ -134,7 +134,7 @@ export const resolvers: IResolvers = {
       if (webhook.allProjects) {
         return [];
       }
-      return ctx.loaders.WebhookProjects.load(webhook);
+      return ctx.loaders.WebhookProjects.load(webhook.id);
     },
     lastDelivery: (webhook, _args, ctx) =>
       ctx.loaders.WebhookLastDelivery.load(webhook.id),

@@ -542,7 +542,7 @@ export async function transferProject(args: {
           trx,
         }),
         // A link to the account the project leaves is inert while the project
-        // is away (see `sendWebhookEvent`), but would revive if it came back.
+        // is away (see `querySubscribedWebhooks`), but would revive if it came back.
         WebhookProject.query(trx).where("projectId", project.id).delete(),
       ]);
       return transferredProject;

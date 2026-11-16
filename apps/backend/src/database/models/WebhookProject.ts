@@ -3,7 +3,6 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Project } from "./Project";
-import { Webhook } from "./Webhook";
 
 export class WebhookProject extends Model {
   static override tableName = "webhook_projects";
@@ -27,14 +26,6 @@ export class WebhookProject extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      webhook: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: Webhook,
-        join: {
-          from: "webhook_projects.webhookId",
-          to: "webhooks.id",
-        },
-      },
       project: {
         relation: Model.BelongsToOneRelation,
         modelClass: Project,
@@ -46,6 +37,5 @@ export class WebhookProject extends Model {
     };
   }
 
-  webhook?: Webhook;
   project?: Project;
 }

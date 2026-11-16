@@ -61,7 +61,6 @@ export const up = async (knex) => {
     // From the latest attempt, also filled while retries are pending.
     table.integer("responseStatus");
     table.text("failureReason");
-    table.dateTime("completedAt");
     table.index(["webhookId", "id"]);
   });
 };

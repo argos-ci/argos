@@ -87,13 +87,10 @@ export function parseWebhookUrl(
     });
   }
 
-  const url = (() => {
-    try {
-      return new URL(trimmed);
-    } catch {
-      throw boom(400, "This is not a valid URL.", { field: "url" });
-    }
-  })();
+  const url = URL.parse(trimmed);
+  if (!url) {
+    throw boom(400, "This is not a valid URL.", { field: "url" });
+  }
 
   const allowedProtocols = options.allowPrivateNetwork
     ? ["https:", "http:"]
