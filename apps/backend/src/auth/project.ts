@@ -3,15 +3,8 @@ import { invariant } from "@argos/util/invariant";
 
 import { waitUntil } from "@/api/request-context";
 import type { AuthProjectPayload } from "@/auth/payload";
-import {
-  Project,
-  ProjectToken,
-  ProjectTokenProject,
-  UserAccessToken,
-} from "@/database/models";
+import { Project, ProjectToken, UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { encryptDeterministic } from "@/database/services/encrypt";
-import { transaction } from "@/database/transaction";
 import { boom } from "@/util/error";
 
 import {
@@ -26,10 +19,6 @@ import { tokenlessStrategies } from "./tokenless";
  * upload into a stream of updates on the same row.
  */
 const LAST_USED_AT_PRECISION_MS = 5 * 60 * 1000;
-
-/** Name the migration gave the tokens it copied from `projects.token`. */
-const LEGACY_TOKEN_NAME = "Legacy token";
-const LEGACY_TOKEN_LENGTH = 40;
 
 /**
  * Payload of a bearer bound to a single project with every permission: a
@@ -61,74 +50,10 @@ async function findProjectToken(bearer: string) {
   return projectToken ?? null;
 }
 
-/**
- * Move a token from `projects.token` to `project_tokens`, and authenticate
- * with it.
- *
- * The migration copied every token, but the code serving while it ran kept
- * writing there until the deploy finished: projects created then, or whose
- * token was regenerated then, only have it there. A regenerated token
- * replaces the one the migration copied, which is revoked here. The column is
- * cleared once moved, and when a token is deleted, so a revoked token never
- * comes back.
- *
- * TODO: remove with the `projects.token` column.
- */
-async function moveLegacyProjectToken(bearer: string) {
-  // Every token ever written there has this length: the SDK rejects any
-  // other, so an unknown bearer of another length skips the lookup.
-  if (bearer.length !== LEGACY_TOKEN_LENGTH) {
-    return null;
-  }
-  const project = await Project.queryNotDeleted().findOne({
-    token: encryptDeterministic(bearer),
-  });
-  if (!project) {
-    return null;
-  }
-  const token = hashToken(bearer);
-  await transaction(async (trx) => {
-    await ProjectToken.query(trx)
-      .where("name", LEGACY_TOKEN_NAME)
-      .whereNull("createdById")
-      .whereNot("token", token)
-      .whereExists(
-        ProjectTokenProject.query(trx)
-          .whereColumn(
-            "project_token_projects.projectTokenId",
-            "project_tokens.id",
-          )
-          .where("project_token_projects.projectId", project.id),
-      )
-      .delete();
-    await ProjectToken.query(trx)
-      .insert({
-        accountId: project.accountId,
-        name: LEGACY_TOKEN_NAME,
-        token,
-        permissions: PROJECT_TOKEN_PERMISSION_LIST,
-      })
-      .onConflict("token")
-      .ignore();
-    const projectToken = await ProjectToken.query(trx)
-      .select("id")
-      .findOne({ token });
-    if (projectToken) {
-      await ProjectTokenProject.query(trx)
-        .insert({ projectTokenId: projectToken.id, projectId: project.id })
-        .onConflict(["projectTokenId", "projectId"])
-        .ignore();
-    }
-    await Project.query(trx).findById(project.id).patch({ token: null });
-  });
-  return findProjectToken(bearer);
-}
-
 async function getAuthPayloadFromProjectToken(
   bearer: string,
 ): Promise<AuthProjectPayload> {
-  const projectToken =
-    (await findProjectToken(bearer)) ?? (await moveLegacyProjectToken(bearer));
+  const projectToken = await findProjectToken(bearer);
 
   if (!projectToken) {
     throw boom(
