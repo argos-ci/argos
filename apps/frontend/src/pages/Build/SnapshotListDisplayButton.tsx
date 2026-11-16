@@ -21,8 +21,8 @@ import { useBuildDiffState } from "./BuildDiffState";
 import { useSnapshotDisplay } from "./SnapshotListPreferences";
 
 export function SnapshotListDisplayButton() {
-  const { grouping, setGrouping } = useBuildDiffState();
-  const [display, setDisplay] = useSnapshotDisplay();
+  const { grouping, setGrouping, setDisplay } = useBuildDiffState();
+  const [display] = useSnapshotDisplay();
   return (
     <MenuRoot>
       <Tooltip content="Display options">

@@ -51,7 +51,9 @@ import {
 } from "./metadata/filters/util";
 import { resolveDiffMetadata } from "./metadata/utils";
 import {
+  useSnapshotDisplay,
   useSnapshotGrouping,
+  type SnapshotDisplay,
   type SnapshotGrouping,
 } from "./SnapshotListPreferences";
 
@@ -230,10 +232,11 @@ export type DiffListGroup =
 type ScrollRequest = {
   diff: Diff;
   /**
-   * The list was just regrouped: what is on screen says nothing about where
-   * the diff now is, and there is no path to animate along.
+   * The list was just regrouped or redrawn at another density: what is on
+   * screen says nothing about where the diff now is, and there is no path to
+   * animate along.
    */
-  regrouped: boolean;
+  reflowed: boolean;
 };
 
 type BuildDiffContextValue = {
@@ -242,6 +245,8 @@ type BuildDiffContextValue = {
   grouping: SnapshotGrouping;
   /** Regroups the list, keeping the active diff open and in view. */
   setGrouping: (grouping: SnapshotGrouping) => void;
+  /** Changes how the list draws diffs, keeping the active one in view. */
+  setDisplay: (display: SnapshotDisplay) => void;
   groups: DiffListGroup[];
   /** The groups of the list that are open, and the stacks opened by hand. */
   expanded: ReadonlySet<string>;
@@ -988,6 +993,7 @@ export function BuildDiffProvider(props: {
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
   const [grouping, setGroupingPreference] = useSnapshotGrouping();
+  const [, setDisplayPreference] = useSnapshotDisplay();
   const listToggles = useGroupToggles();
   const searchToggles = useGroupToggles();
   const { toggles, setToggle } = searchMode ? searchToggles : listToggles;
@@ -1164,7 +1170,7 @@ export function BuildDiffProvider(props: {
 
     if (scroll) {
       startTransition(() => {
-        setScrollRequest({ diff, regrouped: false });
+        setScrollRequest({ diff, reflowed: false });
         const group = getDiffGroup(diff);
         invariant(group, "the active diff always belongs to a group");
         toggleGroup(group.name, true);
@@ -1190,7 +1196,14 @@ export function BuildDiffProvider(props: {
     if (name) {
       setToggle(name, true);
     }
-    setScrollRequest({ diff: activeDiff, regrouped: true });
+    setScrollRequest({ diff: activeDiff, reflowed: true });
+  });
+
+  const setDisplay = useEventCallback((next: SnapshotDisplay) => {
+    setDisplayPreference(next);
+    if (activeDiff) {
+      setScrollRequest({ diff: activeDiff, reflowed: true });
+    }
   });
 
   // Read from `groups` rather than through `getDiffGroup`: an event callback
@@ -1206,16 +1219,23 @@ export function BuildDiffProvider(props: {
   );
 
   const [ready, setReady] = useState(false);
+  // A regroup renames the initial diff's group without the diff moving:
+  // `setGrouping` opens the active diff's group instead, and the reader may
+  // have closed this one since.
+  const initialDiffGroupingRef = useRef(grouping);
 
   useLayoutEffect(() => {
     if (initialDiffGroup?.name) {
-      toggleGroup(initialDiffGroup.name, true);
+      if (initialDiffGroupingRef.current === grouping) {
+        toggleGroup(initialDiffGroup.name, true);
+      }
+      initialDiffGroupingRef.current = grouping;
       // oxlint-disable-next-line react/react-compiler
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup?.name, toggleGroup]);
+  }, [complete, initialDiffGroup?.name, grouping, toggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -1238,6 +1258,7 @@ export function BuildDiffProvider(props: {
     (): BuildDiffContextValue => ({
       grouping,
       setGrouping,
+      setDisplay,
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
@@ -1261,6 +1282,7 @@ export function BuildDiffProvider(props: {
     [
       grouping,
       setGrouping,
+      setDisplay,
       groups,
       sortedDiffs,
       screenshotDiffs,

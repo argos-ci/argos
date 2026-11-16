@@ -1,23 +1,35 @@
 import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { atomWithStorage, createJSONStorage } from "jotai/utils";
 
 export type SnapshotGrouping = "status" | "test";
 
 export type SnapshotDisplay = "screenshots" | "names";
+
+/**
+ * Local storage without the default `subscribe`: a choice made in another tab
+ * applies from the next page load, rather than relaying the list out under the
+ * reader of this one, past the setters that keep the open snapshot in view.
+ */
+function createTabStorage<Value>() {
+  const { getItem, setItem, removeItem } = createJSONStorage<Value>(
+    () => localStorage,
+  );
+  return { getItem, setItem, removeItem };
+}
 
 // Read on init: the list is grouped from its first render, and a value that
 // arrived a render later would regroup it under the reader's eyes.
 const groupingAtom = atomWithStorage<SnapshotGrouping>(
   "preferences.snapshotList.grouping",
   "status",
-  undefined,
+  createTabStorage(),
   { getOnInit: true },
 );
 
 const displayAtom = atomWithStorage<SnapshotDisplay>(
   "preferences.snapshotList.display",
   "screenshots",
-  undefined,
+  createTabStorage(),
   { getOnInit: true },
 );
 
