@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict oz1sIGf8bmpe5b0Avwp4ALH8UfZPaL0nmvYTywXeXaal9AhgKW7Gxcc5vpcMT5z
+\restrict qZOaKCTd2QgNixJdaCIOmCcuf23tSu8spjRipYeGOsIQNo8aZogw2BSbhpYfFY7
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2458,7 +2458,8 @@ CREATE TABLE public.screenshot_diffs (
     "testId" bigint,
     "group" character varying(255),
     ignored boolean DEFAULT false NOT NULL,
-    fingerprint character varying(80)
+    fingerprint character varying(80),
+    "layoutShift" jsonb
 );
 
 
@@ -7101,7 +7102,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oz1sIGf8bmpe5b0Avwp4ALH8UfZPaL0nmvYTywXeXaal9AhgKW7Gxcc5vpcMT5z
+\unrestrict qZOaKCTd2QgNixJdaCIOmCcuf23tSu8spjRipYeGOsIQNo8aZogw2BSbhpYfFY7
 
 -- Knex migrations
 
@@ -7384,3 +7385,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112211844_token-saml-authorization.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261116120000_screenshot-diff-layout-shift.js', 1, NOW());

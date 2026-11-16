@@ -1259,6 +1259,130 @@ export async function createFallbackBaselineScenario(input: {
 }
 
 /**
+ * A page that grew by 304 px: the baseline is the 720 px tall placeholder, the
+ * changes the 1024 px one. Their centre text changed, and their footer moved
+ * down with the gray block above it, which is what iris reports as a layout
+ * shift. The shift below is what iris returns for these two images.
+ */
+export async function createLayoutShiftScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build; screenshotDiff: ScreenshotDiff }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 1,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "3b5d7f9a1c3e5a7b9d1f3a5c7e9b1d3f5a7c9e1b" },
+      { ...bucketProps, commit: "9e7c5a3f1d9b7e5c3a1f9d7b5e3c1a9f7d5b3e1c" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [test] = await Test.query().insertAndFetch([
+    { name: "pricing.png", buildName: "default", projectId },
+  ]);
+  invariant(test);
+
+  const [baseScreenshot, compareScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        screenshotBucketId: baseBucket.id,
+        testId: test.id,
+        name: test.name,
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        screenshotBucketId: compareBucket.id,
+        testId: test.id,
+        name: test.name,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(baseScreenshot && compareScreenshot);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "default",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  const screenshotDiff = await ScreenshotDiff.query().insertAndFetch({
+    buildId: build.id,
+    baseScreenshotId: baseScreenshot.id,
+    compareScreenshotId: compareScreenshot.id,
+    testId: test.id,
+    score: 0.3016,
+    jobStatus: "complete" as const,
+    s3Id: diffFile.key,
+    fileId: diffFile.id,
+    layoutShift: {
+      segments: [
+        { x: 0, width: 375, baseY: 416, headY: 720, height: 304, dy: 304 },
+      ],
+      inserted: [
+        { x: 0, y: 346, width: 375, height: 31 },
+        { x: 0, y: 501, width: 375, height: 26 },
+        { x: 0, y: 699, width: 375, height: 14 },
+      ],
+      removed: [{ x: 0, y: 346, width: 375, height: 31 }],
+      shiftedPixels: 113753,
+    },
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  });
+
+  // Computes the build stats and conclusion the build page relies on.
+  await concludeBuild({ build, notify: false });
+
+  return { build, screenshotDiff };
+}
+
+/**
  * One snapshot captured across two browsers and two viewports — what a
  * Playwright matrix produces, and the only shape in which the toolbar's variant
  * switchers have anywhere to switch to. The four diffs become siblings of one

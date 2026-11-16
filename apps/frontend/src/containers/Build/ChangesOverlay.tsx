@@ -15,6 +15,7 @@ import {
 import { overlayColorAtom, useOverlayStyle } from "./OverlayStyle";
 import { useScaleContext } from "./ScaleContext";
 import { HighlightButton } from "./toolbar/HighlightButton";
+import { LayoutShiftToggle } from "./toolbar/LayoutShiftToggle";
 import {
   GoToNextChangesButton,
   GoToPreviousChangesButton,
@@ -49,12 +50,15 @@ export const ChangesOverlayControls = memo(
      * preference about the pane, not something done to the snapshot.
      */
     settings?: boolean;
+    /** Whether the snapshot has moved content to show or hide. */
+    layoutShift?: boolean;
   }) {
-    const { settings = true } = props;
+    const { settings = true, layoutShift } = props;
     const { loading } = useBuildDiffHighlighterContext();
     return (
       <>
         <OverlayToggle />
+        {layoutShift && <LayoutShiftToggle />}
         {/*
          * All three enable together, once the changed areas have been detected —
          * so the group is what is busy until then, not any one button. It also has
@@ -90,12 +94,13 @@ export const ChangesOverlayControls = memo(
 export function ChangesMask(props: {
   /** The mask image. */
   url: string;
+  clipUrl?: string | undefined;
   className?: string;
   style?: React.CSSProperties;
   /** Laid out inside the span, purely to give it a size. */
   children?: React.ReactNode;
 }) {
-  const style = useOverlayStyle({ src: props.url });
+  const style = useOverlayStyle({ src: props.url, clipUrl: props.clipUrl });
   return (
     <span className={props.className} style={{ ...style, ...props.style }}>
       {props.children}
@@ -131,13 +136,26 @@ export function ChangesHighlights(props: {
   layoutSize?: Dimensions;
   /** Vertical placement of the image in the pane — must match the CSS. */
   verticalAlign?: "top" | "center";
+  /** Areas of the mask that are not changes, in its own pixel space. */
+  exclude?: ReadonlyArray<Rect> | undefined;
 }) {
-  const { url, paneSize, imgSize, layoutSize = imgSize, verticalAlign } = props;
+  const {
+    url,
+    paneSize,
+    imgSize,
+    layoutSize = imgSize,
+    verticalAlign,
+    exclude,
+  } = props;
   const color = useAtomValue(overlayColorAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const transform = useZoomTransform();
   const jpgUrl = useMemo(() => getChangesDetectionUrl(url), [url]);
-  const { rects, loading } = useColoredRects({ url: jpgUrl, blockSize: 24 });
+  const { rects, loading } = useColoredRects({
+    url: jpgUrl,
+    blockSize: 24,
+    exclude,
+  });
   const [imgScale] = useScaleContext();
   const realScale = imgScale ? imgScale * transform.scale : null;
   // Convert image coordinates to pane coordinates.

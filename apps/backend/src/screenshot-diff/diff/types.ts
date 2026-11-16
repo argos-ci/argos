@@ -1,3 +1,5 @@
+import type { Shift } from "@argos-ci/iris";
+
 export type DiffResult = {
   score: number;
   file?: {
@@ -10,6 +12,8 @@ export type DiffResult = {
     /** Equal for diffs that look alike: ignore rules are keyed on it. */
     fingerprint: string;
   };
+  /** Content that moved rather than changed, when it explains part of the mask. */
+  layoutShift?: Shift | undefined;
 };
 
 export type DiffOptions = {

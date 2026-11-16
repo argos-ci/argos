@@ -11,6 +11,7 @@ import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 import { checkDiffCanBeBlended } from "./BuildViewMode";
 import { ChangesOverlayControls } from "./ChangesOverlay";
 import { CommentsEnabledContext } from "./CommentsContext";
+import { checkDiffHasLayoutShift } from "./layoutShift";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
 import { FitToggle } from "./toolbar/FitToggle";
@@ -97,7 +98,13 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
           <Separator orientation="vertical" className="w-thin mx-0.5 h-8" />
           {/* Reading the mask happens next to the snapshot; how it is painted
               is a preference, and preferences live up here. */}
-          {snapshotControls ? <ChangesOverlayControls /> : <SettingsButton />}
+          {snapshotControls ? (
+            <ChangesOverlayControls
+              layoutShift={checkDiffHasLayoutShift(diff)}
+            />
+          ) : (
+            <SettingsButton />
+          )}
         </>
       )}
       {showComments && (

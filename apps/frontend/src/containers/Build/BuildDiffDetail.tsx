@@ -47,6 +47,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { useObjectRef } from "@/ui/useObjectRef";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
+import type { Rect } from "@/util/color-detection/types";
 import { checkIsImageContentType } from "@/util/content-type";
 import { useTextContent } from "@/util/text";
 
@@ -73,6 +74,8 @@ import {
   getChangesDetectionUrl,
 } from "./ChangesOverlay";
 import { Editor, getLanguageFromContentType } from "./DiffEditor";
+import { useLayoutShiftClipUrl } from "./layoutShift";
+import { LayoutShiftMoves } from "./LayoutShiftMoves";
 import {
   overlayColorAtom,
   overlayOpacityAtom,
@@ -128,6 +131,9 @@ const _DiffFragment = graphql(`
     contentType
     group
     threshold
+    layoutShift {
+      ...LayoutShift_LayoutShift
+    }
     baseScreenshot {
       id
       url
@@ -292,6 +298,8 @@ async function canvasToBlob(canvas: HTMLCanvasElement) {
 async function createMaskedCompareBlob(props: {
   compareUrl: string;
   maskUrl: string;
+  /** Areas of the mask left out of the overlay. */
+  exclude: ReadonlyArray<Rect>;
   color: string;
   opacity: number;
 }) {
@@ -344,6 +352,9 @@ async function createMaskedCompareBlob(props: {
     maskDimensions.width,
     maskDimensions.height,
   );
+  for (const rect of props.exclude) {
+    overlayContext.clearRect(rect.x, rect.y, rect.width, rect.height);
+  }
 
   context.drawImage(
     overlayCanvas,
@@ -802,28 +813,7 @@ function BaseScreenshot({
     }
     case ScreenshotDiffStatus.Ignored:
     case ScreenshotDiffStatus.Changed: {
-      const dimensions = extractDimensions(diff);
-      invariant(diff.url, "Expected diff.url to be defined");
-      return (
-        <ZoomPane
-          dimensions={dimensions}
-          controls={<BaseScreenshotActionsMenu diff={diff} buildId={buildId} />}
-        >
-          <ScreenshotContainer dimensions={dimensions} contained={contained}>
-            <ScreenshotPicture
-              className={clsx("relative opacity-0", contained && "max-h-full")}
-              src={diff.url}
-              width={diff.width}
-              height={diff.height}
-            />
-            <ScreenshotPicture
-              className="absolute top-0 left-0 w-full"
-              alt="Baseline screenshot"
-              {...getScreenshotPictureProps(diff.baseScreenshot!)}
-            />
-          </ScreenshotContainer>
-        </ZoomPane>
-      );
+      return <BaseScreenshotChanged diff={diff} buildId={buildId} />;
     }
     case ScreenshotDiffStatus.Pending: {
       return null;
@@ -831,6 +821,50 @@ function BaseScreenshot({
     default:
       assertNever(diff.status, `Unexpected diff status: ${diff.status}`);
   }
+}
+
+function BaseScreenshotChanged(props: {
+  diff: BuildDiffDetailDocument;
+  buildId: string;
+}) {
+  const { diff, buildId } = props;
+  const contained = useAtomValue(buildDiffFitContainedAtom);
+  const dimensions = useMemo(() => extractDimensions(diff), [diff]);
+  const { layoutShift } = diff;
+  invariant(diff.url, "Expected diff.url to be defined");
+  invariant(diff.baseScreenshot, "Expected diff.baseScreenshot to be defined");
+  return (
+    <ZoomPane
+      dimensions={dimensions}
+      controls={<BaseScreenshotActionsMenu diff={diff} buildId={buildId} />}
+      overlay={
+        dimensions && layoutShift
+          ? (paneSize) => (
+              <LayoutShiftMoves
+                moves={layoutShift.moves}
+                side="base"
+                paneSize={paneSize}
+                imgSize={dimensions}
+              />
+            )
+          : undefined
+      }
+    >
+      <ScreenshotContainer dimensions={dimensions} contained={contained}>
+        <ScreenshotPicture
+          className={clsx("relative opacity-0", contained && "max-h-full")}
+          src={diff.url}
+          width={diff.width}
+          height={diff.height}
+        />
+        <ScreenshotPicture
+          className="absolute top-0 left-0 w-full"
+          alt="Baseline screenshot"
+          {...getScreenshotPictureProps(diff.baseScreenshot)}
+        />
+      </ScreenshotContainer>
+    </ZoomPane>
+  );
 }
 
 function CompareScreenshotActionsMenu({
@@ -894,6 +928,7 @@ function CompareScreenshotActionsMenu({
                     createMaskedCompareBlob({
                       compareUrl: compareScreenshot.originalUrl,
                       maskUrl: diffUrl,
+                      exclude: diff.layoutShift?.hidden ?? [],
                       color: overlayColor,
                       opacity: overlayOpacity,
                     }).then((blob) => {
@@ -1094,6 +1129,8 @@ function CompareScreenshotChanged(props: {
   const swipePosition = useAtomValue(swipePositionAtom);
   const { url } = diff;
   const dimensions = useMemo(() => extractDimensions(diff), [diff]);
+  const { layoutShift } = diff;
+  const clipUrl = useLayoutShiftClipUrl(diff);
   invariant(url);
   const [paneSize, setPaneSize] = useState<{
     width: number;
@@ -1127,6 +1164,14 @@ function CompareScreenshotChanged(props: {
                       imgSize={dimensions}
                       paneSize={paneSize}
                     />
+                    {layoutShift && (
+                      <LayoutShiftMoves
+                        moves={layoutShift.moves}
+                        side="head"
+                        paneSize={paneSize}
+                        imgSize={dimensions}
+                      />
+                    )}
                     {blendMode === "swipe" && paneSize && (
                       <BuildSwipeDivider
                         paneSize={paneSize}
@@ -1174,6 +1219,7 @@ function CompareScreenshotChanged(props: {
               className={clsx("relative z-10", contained && "max-h-full")}
               alt="Changes screenshot"
               src={url}
+              clipUrl={clipUrl}
               width={diff.width}
               height={diff.height}
               style={{
@@ -1194,13 +1240,18 @@ function CompareScreenshotChanged(props: {
               url={url}
               paneSize={paneSize}
               imgSize={dimensions}
+              exclude={layoutShift?.hidden}
             />
           </div>
         )}
         {blendMode === "onion" && <BuildOnionOpacityControl />}
       </div>
       {dimensions && paneSize && (
-        <DiffIndicator url={jpgUrl} imgSize={dimensions} />
+        <DiffIndicator
+          url={jpgUrl}
+          imgSize={dimensions}
+          exclude={layoutShift?.hidden}
+        />
       )}
     </>
   );
@@ -1234,13 +1285,20 @@ function BuildOnionOpacityControl() {
   return <OnionOpacityControl value={opacity} onChange={setOpacity} />;
 }
 
-function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
+function ChangesScreenshotPicture(
+  props: ScreenshotPictureProps & { clipUrl?: string | undefined },
+) {
+  const { clipUrl, ...pictureProps } = props;
   const imageRendering = useImageRendering();
   return (
-    <ChangesMask url={props.src} style={{ imageRendering, ...props.style }}>
+    <ChangesMask
+      url={props.src}
+      clipUrl={clipUrl}
+      style={{ imageRendering, ...props.style }}
+    >
       <ScreenshotPicture
         alt="Changes screenshot"
-        {...props}
+        {...pictureProps}
         style={{ opacity: 0, display: "block" }}
       />
     </ChangesMask>
@@ -1253,10 +1311,12 @@ function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
 const DiffIndicator = memo(function DiffIndicator(props: {
   url: string;
   imgSize: { width: number; height: number };
+  /** Areas of the mask that are not changes. */
+  exclude?: ReadonlyArray<Rect> | undefined;
 }) {
-  const { imgSize, url } = props;
+  const { imgSize, url, exclude } = props;
   const [imgScale] = useScaleContext();
-  const { rects, loading } = useColoredRects({ url, blockSize: 5 });
+  const { rects, loading } = useColoredRects({ url, blockSize: 5, exclude });
   const color = useAtomValue(overlayColorAtom);
   const transform = useZoomTransform();
   const [containerSize, setContainerSize] = useState<{

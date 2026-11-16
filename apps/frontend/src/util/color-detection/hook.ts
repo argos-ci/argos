@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { MessageData, Rect } from "./types";
+import type { MessageData, MessageInput, Rect } from "./types";
 // Inlined rather than emitted as its own chunk: a worker's top-level script has
 // to be same-origin, whatever CORS allows, and in production the rest of the
 // build is served from the asset CDN. `?worker&inline` bundles the worker with
@@ -28,8 +28,13 @@ const LOADING_STATE = {
 export function useColoredRects(input: {
   url: string;
   blockSize: number;
+  /**
+   * Areas of the image to treat as uncolored. Compared by reference: a new
+   * array restarts the detection.
+   */
+  exclude?: ReadonlyArray<Rect> | undefined;
 }): ColoredRectsState {
-  const { url, blockSize } = input;
+  const { url, blockSize, exclude } = input;
   const [state, setState] = useState<ColoredRectsState>(LOADING_STATE);
   useEffect(() => {
     setState(LOADING_STATE);
@@ -42,10 +47,14 @@ export function useColoredRects(input: {
       console.error(event.message);
       setState({ loading: false, rects: null });
     });
-    worker.postMessage({ url, blockSize });
+    worker.postMessage({
+      url,
+      blockSize,
+      exclude: exclude ?? [],
+    } satisfies MessageInput);
     return () => {
       worker.terminate();
     };
-  }, [url, blockSize]);
+  }, [url, blockSize, exclude]);
   return state;
 }

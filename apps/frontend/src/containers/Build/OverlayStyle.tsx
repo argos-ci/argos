@@ -16,12 +16,26 @@ export const overlayVisibleAtom = atomWithStorage<boolean>(
   true,
 );
 
-export function useOverlayStyle(props: { src: string }) {
+export const layoutShiftVisibleAtom = atomWithStorage<boolean>(
+  "preferences.overlay.layoutShift",
+  true,
+);
+
+export function useOverlayStyle(props: {
+  src: string;
+  /**
+   * An image the size of the mask to intersect it with: only the mask's pixels
+   * under its opaque ones are painted.
+   */
+  clipUrl?: string | undefined;
+}) {
+  const { src, clipUrl } = props;
   const color = useAtomValue(overlayColorAtom);
   const opacity = useAtomValue(overlayOpacityAtom);
   return {
     background: color,
-    maskImage: `url(${props.src})`,
+    maskImage: clipUrl ? `url(${src}), url("${clipUrl}")` : `url(${src})`,
+    maskComposite: "intersect",
     maskSize: "100%",
     maskRepeat: "no-repeat",
     maskPosition: "center",

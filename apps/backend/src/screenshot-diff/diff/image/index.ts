@@ -70,6 +70,7 @@ export async function diffImages(
       const result = await diff(basePath, headPath, { threshold, output });
       span.setAttributes({
         "argos.diff.score": result.score,
+        "argos.diff.shifted_pixels": result.shift?.shiftedPixels ?? 0,
         "argos.diff.width": result.width,
         "argos.diff.height": result.height,
         "argos.diff.antialiased_pixels": result.antialiasedPixels,
@@ -95,6 +96,10 @@ export async function diffImages(
           sha256: result.mask.sha256,
           fingerprint: result.fingerprint,
         },
+        // iris also reports blocks that match rows elsewhere by coincidence,
+        // such as the rows of a table whose colours changed: they explain
+        // none of the mask, and drawing them would only add noise.
+        layoutShift: result.shift?.shiftedPixels ? result.shift : undefined,
       };
     },
   );

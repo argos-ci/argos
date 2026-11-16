@@ -9,6 +9,7 @@ import {
   BuildScenario,
   createBuildScenario,
   createFallbackBaselineScenario,
+  createLayoutShiftScenario,
   createSiblingBuildsScenario,
   createVariantSwitchersScenario,
 } from "../apps/backend/src/database/seeds";
@@ -183,6 +184,35 @@ loggedTest(
     await expect(
       page.locator("dt:has-text('Total screenshots') + dd"),
     ).toHaveText("3");
+  },
+);
+
+loggedTest(
+  "snapshot whose content moved",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build, screenshotDiff } = await createLayoutShiftScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/${screenshotDiff.id}`,
+    );
+
+    // The block that moved is outlined where it was and where it is now, in
+    // place of the mask it would otherwise fill.
+    const moves = page.getByRole("img", { name: "Moved down 304 px" });
+    await expect(moves).toHaveCount(2);
+    await screenshot(page, "build-layout-shift", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    const toggle = page.getByRole("button", { name: "Layout shift" });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await expect(moves).toHaveCount(0);
   },
 );
 

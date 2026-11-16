@@ -6,6 +6,7 @@ import {
 } from "@/containers/Build/BuildDiffDetailToolbar";
 import { ChangesOverlayControls } from "@/containers/Build/ChangesOverlay";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
+import { checkDiffHasLayoutShift } from "@/containers/Build/layoutShift";
 import { CommentToolToggle } from "@/containers/Build/toolbar/CommentToolToggle";
 import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import { useProjectIgnoreEnabled } from "@/containers/Project/IgnoreContext";
@@ -70,7 +71,12 @@ export const ScreenshotActionsToolbar = memo(
             walk through it, annotate it, then rule on it. The verdict is last,
             at the end the eye arrives at and under "Submit review". */}
         <div className="bg-app border-thin pointer-events-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 shadow-xs">
-          {showOverlayControls && <ChangesOverlayControls settings={false} />}
+          {showOverlayControls && (
+            <ChangesOverlayControls
+              settings={false}
+              layoutShift={checkDiffHasLayoutShift(diff)}
+            />
+          )}
           {showOverlayControls && (showCommentTool || showVerdict) && (
             <Separator
               orientation="vertical"

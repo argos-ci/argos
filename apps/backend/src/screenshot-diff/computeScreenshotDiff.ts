@@ -166,6 +166,7 @@ export async function computeScreenshotDiff(
       s3Id: diffFile ? diffFile.file.key : null,
       fileId: diffFile ? diffFile.file.id : null,
       fingerprint: diffFile ? diffFile.fingerprint : null,
+      layoutShift: (diffFile && result?.layoutShift) || null,
     });
 
   await Promise.all([
@@ -283,7 +284,7 @@ async function diffFiles(
   base: S3FileHandle,
   head: S3FileHandle,
   options: DiffOptions,
-) {
+): Promise<DiffResult> {
   if (base.getKey() === head.getKey()) {
     return { score: 0 };
   }
