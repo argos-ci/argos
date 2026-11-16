@@ -7,12 +7,14 @@ import { transaction } from "@/database";
 import {
   Project,
   Webhook,
+  WebhookDelivery,
   WebhookProject,
   type Account,
 } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { boom } from "@/util/error";
 
+import { webhookDeliveryJob } from "./job";
 import { generateWebhookSecret } from "./request";
 import { parseWebhookUrl } from "./url";
 
@@ -138,4 +140,76 @@ export async function deleteWebhook(args: {
   invariant(account, "webhook account not found");
   await assertAccountAdmin(account, auth);
   await webhook.$query().delete();
+}
+
+/**
+ * A webhook of the account, or `null` when there is none with this id or the
+ * viewer is not an administrator.
+ */
+export async function getAccountWebhook(args: {
+  account: Account;
+  auth: AuthViewer;
+  id: string;
+}): Promise<Webhook | null> {
+  const { account, auth, id } = args;
+  const permissions = await account.$getPermissions(auth);
+  if (!permissions.includes("admin") || !isValidPgBigInt(id)) {
+    return null;
+  }
+  const webhook = await Webhook.query().findOne({ id, accountId: account.id });
+  return webhook ?? null;
+}
+
+export type WebhookDeliveryStatus = "pending" | "success" | "failed";
+
+/**
+ * A webhook's deliveries, most recent first.
+ */
+export async function listWebhookDeliveries(args: {
+  webhookId: string;
+  status: WebhookDeliveryStatus | null;
+  eventId: string | null;
+  after: number;
+  first: number;
+}): Promise<{ results: WebhookDelivery[]; total: number }> {
+  const { webhookId, status, eventId, after, first } = args;
+  if (eventId !== null && !isValidPgBigInt(eventId)) {
+    return { results: [], total: 0 };
+  }
+  const query = WebhookDelivery.query()
+    .where("webhookId", webhookId)
+    .orderBy("id", "desc")
+    .range(after, after + first - 1);
+  if (status === "pending") {
+    query.whereNull("conclusion");
+  } else if (status) {
+    query.where("conclusion", status);
+  }
+  if (eventId !== null) {
+    query.where("eventId", eventId);
+  }
+  return query;
+}
+
+/**
+ * Send a delivery's event to its webhook again, as a new delivery. It keeps
+ * the event's id, so an endpoint that already processed it can tell.
+ */
+export async function resendWebhookDelivery(args: {
+  delivery: WebhookDelivery;
+  auth: AuthViewer;
+}): Promise<WebhookDelivery> {
+  const { delivery, auth } = args;
+  const webhook = await Webhook.query()
+    .findById(delivery.webhookId)
+    .withGraphFetched("account");
+  invariant(webhook?.account, "delivery webhook account not found");
+  await assertAccountAdmin(webhook.account, auth);
+  const resent = await WebhookDelivery.query().insertAndFetch({
+    webhookId: webhook.id,
+    eventId: delivery.eventId,
+    jobStatus: "pending",
+  });
+  await webhookDeliveryJob.push(resent.id);
+  return resent;
 }

@@ -32,22 +32,24 @@ export async function deliverWebhook(
     body: JSON.stringify(serializeEvent(event)),
     allowPrivateNetwork: config.get("webhooks.allowPrivateNetwork"),
   });
-  const attempts = ctx.attempts + 1;
+  const attempt = {
+    attempts: ctx.attempts + 1,
+    attemptedAt: new Date().toISOString(),
+    responseStatus: result.response?.status ?? null,
+    durationMs: result.response?.durationMs ?? null,
+    responseBody: result.response?.body ?? null,
+  };
 
   if (result.ok) {
-    await delivery.$query().patch({
-      attempts,
-      conclusion: "success",
-      responseStatus: result.status,
-      failureReason: null,
-    });
+    await delivery
+      .$query()
+      .patch({ ...attempt, conclusion: "success", failureReason: null });
     return;
   }
 
   const isFinal = !result.retryable || ctx.isLastAttempt;
   await delivery.$query().patch({
-    attempts,
-    responseStatus: result.status,
+    ...attempt,
     failureReason: result.reason,
     ...(isFinal ? { conclusion: "failed" } : {}),
   });

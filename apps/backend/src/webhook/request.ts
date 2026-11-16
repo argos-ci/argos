@@ -79,15 +79,62 @@ function signWebhookMessage(args: {
   return `v1,${signature}`;
 }
 
+/** The bytes of a response kept to show on the delivery. */
+const MAX_RESPONSE_BODY_BYTES = 4096;
+
+type WebhookResponse = {
+  status: number;
+  /** The start of the response body. */
+  body: string;
+  /** Time until the response headers arrived. */
+  durationMs: number;
+};
+
 export type WebhookRequestResult =
-  | { ok: true; status: number }
+  | { ok: true; response: WebhookResponse }
   | {
       ok: false;
-      status: number | null;
+      response: WebhookResponse | null;
       reason: string;
       /** Whether another attempt could succeed without anyone acting. */
       retryable: boolean;
     };
+
+/**
+ * The first bytes of a response body, as text. An endpoint answers what it
+ * wants: anything past the limit, or a body that fails to arrive, is dropped.
+ */
+async function readResponseStart(
+  body: Awaited<ReturnType<typeof fetch>>["body"],
+): Promise<string> {
+  if (!body) {
+    return "";
+  }
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (size < MAX_RESPONSE_BODY_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      chunks.push(value);
+      size += value.byteLength;
+    }
+  } catch {
+    // Keep what arrived.
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  return (
+    Buffer.concat(chunks)
+      .subarray(0, MAX_RESPONSE_BODY_BYTES)
+      .toString("utf8")
+      // Postgres text cannot hold a NUL character.
+      .replaceAll("\u0000", "")
+  );
+}
 
 function describeRequestError(error: unknown): {
   reason: string;
@@ -146,7 +193,7 @@ export async function postWebhookRequest(args: {
   } catch (error) {
     return {
       ok: false,
-      status: null,
+      response: null,
       reason: error instanceof Error ? error.message : "Invalid URL.",
       retryable: false,
     };
@@ -154,9 +201,10 @@ export async function postWebhookRequest(args: {
 
   // Signed anew on every attempt: endpoints refuse a stale timestamp.
   const timestamp = Math.floor(Date.now() / 1000);
-  let response: Awaited<ReturnType<typeof fetch>>;
+  const startedAt = performance.now();
+  let fetchResponse: Awaited<ReturnType<typeof fetch>>;
   try {
-    response = await fetch(url, {
+    fetchResponse = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -177,20 +225,23 @@ export async function postWebhookRequest(args: {
       dispatcher: allowPrivateNetwork ? privateNetworkAgent : publicAgent,
     });
   } catch (error) {
-    return { ok: false, status: null, ...describeRequestError(error) };
+    return { ok: false, response: null, ...describeRequestError(error) };
   }
 
-  // Nothing in the response is used; release the connection.
-  await response.body?.cancel().catch(() => undefined);
+  const response: WebhookResponse = {
+    status: fetchResponse.status,
+    durationMs: Math.round(performance.now() - startedAt),
+    body: await readResponseStart(fetchResponse.body),
+  };
 
   if (response.status >= 200 && response.status < 300) {
-    return { ok: true, status: response.status };
+    return { ok: true, response };
   }
 
   if (response.status >= 300 && response.status < 400) {
     return {
       ok: false,
-      status: response.status,
+      response,
       reason: `Your endpoint redirected with HTTP ${response.status}. Argos does not follow redirects: use the final URL.`,
       retryable: false,
     };
@@ -198,7 +249,7 @@ export async function postWebhookRequest(args: {
 
   return {
     ok: false,
-    status: response.status,
+    response,
     reason: `Your endpoint responded with HTTP ${response.status}.`,
     retryable: true,
   };

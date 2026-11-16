@@ -59,7 +59,11 @@ export const up = async (knex) => {
     table.integer("attempts").notNullable().defaultTo(0);
     table.enum("conclusion", ["success", "failed"]);
     // From the latest attempt, also filled while retries are pending.
+    table.dateTime("attemptedAt");
     table.integer("responseStatus");
+    table.integer("durationMs");
+    // The start of the response body, for whoever looks into a failure.
+    table.text("responseBody");
     table.text("failureReason");
     table.index(["webhookId", "id"]);
   });
