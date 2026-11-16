@@ -1,4 +1,4 @@
-import { use } from "react";
+import { createContext, use, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import type { ErrorCode } from "@argos/error-types";
 import {
@@ -42,6 +42,14 @@ function unwrapErrors(error: unknown) {
   ];
 }
 
+/**
+ * Whether the last submit of the enclosing `Form` succeeded. `Form` tracks it
+ * itself because react-hook-form leaves `isSubmitSuccessful` false when
+ * `onSubmit` calls `reset()`, which is how forms here take the saved values
+ * as their new defaults.
+ */
+export const FormSubmitSuccessContext = createContext<boolean | null>(null);
+
 export function Form<
   TFieldValues extends FieldValues = FieldValues,
   TContext = any,
@@ -54,26 +62,31 @@ export function Form<
 ) {
   const { ref, onSubmit, autoComplete = "off", form, ...rest } = props;
   const actionContext = use(ModalActionContext);
+  const [isSubmitSuccessful, setIsSubmitSuccessful] = useState(false);
   return (
-    <form
-      ref={ref}
-      onSubmit={form.handleSubmit(async (data, event) => {
-        actionContext?.setIsPending(true);
-        try {
-          form.clearErrors();
-          await onSubmit(data, event);
-        } catch (error) {
-          handleFormError(form, error);
-          if (process.env["NODE_ENV"] === "development") {
-            console.error(error);
+    <FormSubmitSuccessContext value={isSubmitSuccessful}>
+      <form
+        ref={ref}
+        onSubmit={form.handleSubmit(async (data, event) => {
+          actionContext?.setIsPending(true);
+          setIsSubmitSuccessful(false);
+          try {
+            form.clearErrors();
+            await onSubmit(data, event);
+            setIsSubmitSuccessful(true);
+          } catch (error) {
+            handleFormError(form, error);
+            if (process.env["NODE_ENV"] === "development") {
+              console.error(error);
+            }
+          } finally {
+            actionContext?.setIsPending(false);
           }
-        } finally {
-          actionContext?.setIsPending(false);
-        }
-      })}
-      autoComplete={autoComplete}
-      {...rest}
-    />
+        })}
+        autoComplete={autoComplete}
+        {...rest}
+      />
+    </FormSubmitSuccessContext>
   );
 }
 

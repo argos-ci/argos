@@ -1,25 +1,22 @@
-import type { ComponentPropsWithRef } from "react";
+import { use, type ComponentPropsWithRef } from "react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { CheckIcon } from "lucide-react";
-import { useFormState, type Control, type FieldValues } from "react-hook-form";
 
-interface FormSuccessProps<
-  TFieldValues extends FieldValues = FieldValues,
-  TContext = any,
-  TTransformedValues = TFieldValues,
-> extends ComponentPropsWithRef<"div"> {
-  control: Control<TFieldValues, TContext, TTransformedValues>;
+import { FormSubmitSuccessContext } from "./Form";
+
+interface FormSuccessProps extends ComponentPropsWithRef<"div"> {
   isSuccessful?: boolean;
 }
 
-export function FormSuccess<
-  TFieldValues extends FieldValues = FieldValues,
-  TContext = any,
-  TTransformedValues = TFieldValues,
->(props: FormSuccessProps<TFieldValues, TContext, TTransformedValues>) {
-  const { className, children, isSuccessful, control, ...otherProps } = props;
-  const formState = useFormState({ control });
-  if (!isSuccessful && !formState.isSubmitSuccessful) {
+export function FormSuccess(props: FormSuccessProps) {
+  const { className, children, isSuccessful, ...otherProps } = props;
+  const isSubmitSuccessful = use(FormSubmitSuccessContext);
+  invariant(
+    isSubmitSuccessful !== null,
+    "FormSuccess must be rendered inside a Form",
+  );
+  if (!isSuccessful && !isSubmitSuccessful) {
     return null;
   }
   return (
