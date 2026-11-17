@@ -21,6 +21,7 @@ vi.mock("./auth/project", () => ({
 
 const projectPayload: AuthProjectPayload = {
   type: "project",
+  source: "project-token",
   projects: [Project.fromJson({ id: "project-1" }, { skipValidation: true })],
   permissions: PROJECT_TOKEN_PERMISSION_LIST,
   sha: null,

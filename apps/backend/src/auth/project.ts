@@ -1,8 +1,11 @@
-import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
+import {
+  PROJECT_TOKEN_PERMISSION_LIST,
+  type ProjectTokenPermission,
+} from "@argos/schemas/project-token";
 import { invariant } from "@argos/util/invariant";
 
 import { waitUntil } from "@/api/request-context";
-import type { AuthProjectPayload } from "@/auth/payload";
+import type { AuthProjectPayload, AuthProjectSource } from "@/auth/payload";
 import { Project, ProjectToken, UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { boom } from "@/util/error";
@@ -21,17 +24,34 @@ import { tokenlessStrategies } from "./tokenless";
 const LAST_USED_AT_PRECISION_MS = 5 * 60 * 1000;
 
 /**
- * Payload of a bearer bound to a single project with every permission: a
- * short-lived token minted from a CI identity, or a tokenless CI bearer.
+ * What a tokenless bearer can do: upload what CI uploads, as the SDK does. It
+ * proves only that a workflow run of the repository is in progress, which
+ * anyone can read on a public repository, so it reads nothing: the project can
+ * be private while its repository is public.
+ */
+const TOKENLESS_PERMISSIONS: readonly ProjectTokenPermission[] = [
+  "builds:write",
+  "deployments:write",
+  "media:write",
+];
+
+/**
+ * Payload of a bearer bound to a single project: a short-lived token minted
+ * from a CI identity, or a tokenless CI bearer.
  */
 function getSingleProjectPayload(
   project: Project,
   sha: string | null,
+  source: AuthProjectSource,
 ): AuthProjectPayload {
   return {
     type: "project",
+    source,
     projects: [project],
-    permissions: PROJECT_TOKEN_PERMISSION_LIST,
+    permissions:
+      source === "github-actions-tokenless"
+        ? TOKENLESS_PERMISSIONS
+        : PROJECT_TOKEN_PERMISSION_LIST,
     sha,
   };
 }
@@ -98,6 +118,7 @@ async function getAuthPayloadFromProjectToken(
 
   return {
     type: "project",
+    source: "project-token",
     projects,
     permissions: projectToken.permissions,
     sha: null,
@@ -125,7 +146,11 @@ export async function getAuthProjectPayloadFromBearerToken(
       throw boom(401, "Short-lived project token has expired or is invalid.");
     }
 
-    return getSingleProjectPayload(resolved.project, resolved.sha);
+    return getSingleProjectPayload(
+      resolved.project,
+      resolved.sha,
+      resolved.source,
+    );
   }
 
   const strategy = tokenlessStrategies.find((strategy) =>
@@ -145,5 +170,5 @@ export async function getAuthProjectPayloadFromBearerToken(
     );
   }
 
-  return getSingleProjectPayload(project, null);
+  return getSingleProjectPayload(project, null, "github-actions-tokenless");
 }

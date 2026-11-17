@@ -58,6 +58,7 @@ export async function createShortLivedProjectToken(
 export type ResolvedShortLivedProjectToken = {
   project: Project;
   sha: string | null;
+  source: ShortLivedProjectTokenPayload["source"];
 };
 
 /**
@@ -99,14 +100,15 @@ export async function getProjectFromShortLivedProjectToken(
     return null;
   }
 
+  const { source } = result.data;
   const sha = result.data.sha ?? null;
 
-  switch (result.data.source) {
+  switch (source) {
     case "github-actions-oidc":
-      return project.githubActionsOidcEnabled ? { project, sha } : null;
+      return project.githubActionsOidcEnabled ? { project, sha, source } : null;
     case "github-actions-tokenless":
-      return project.tokenlessAuthEnabled ? { project, sha } : null;
+      return project.tokenlessAuthEnabled ? { project, sha, source } : null;
     default:
-      assertNever(result.data.source);
+      assertNever(source);
   }
 }

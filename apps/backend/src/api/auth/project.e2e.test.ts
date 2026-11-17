@@ -114,6 +114,7 @@ function createProjectPayload(
 ): AuthProjectPayload {
   return {
     type: "project",
+    source: "project-token",
     projects: [Project.fromJson({ id: projectId }, { skipValidation: true })],
     permissions: PROJECT_TOKEN_PERMISSION_LIST,
     sha,

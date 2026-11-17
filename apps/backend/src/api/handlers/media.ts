@@ -85,12 +85,23 @@ type AnyAuth = AuthProjectPayload | AuthPATPayload | AuthOAuthPayload;
  * own upload has a half-broken feature. Deleting stays `admin` — a share URL may
  * already be pasted somewhere, and removing the media breaks it.
  */
-type MediaAction = "read" | "write" | "destroy";
+type MediaAction = "read" | "write" | "edit" | "destroy";
 
 const MEDIA_ACTION_PERMISSION: Record<MediaAction, ProjectPermission> = {
   read: "view",
   write: "review",
+  edit: "review",
   destroy: "admin",
+};
+
+/**
+ * A tokenless bearer can finish its upload, but not edit or delete media: it
+ * reaches every media of the project, including the ones others uploaded.
+ */
+const TOKENLESS_MEDIA_ACTION_ERRORS: Partial<Record<MediaAction, string>> = {
+  edit: "Tokenless authentication cannot edit media. Use a project token or a personal access token.",
+  destroy:
+    "Tokenless authentication cannot delete media. Use a project token or a personal access token.",
 };
 
 const CreateMediaRequestSchema = MediaInputSchema.extend({
@@ -624,10 +635,7 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      // Editing identity is not something a viewer does, but it is the same
-      // authority as making the upload in the first place — a reviewer has to be
-      // able to correct their own staged media.
-      action: "write",
+      action: "edit",
     });
 
     if (getMediaStage(media) === "published") {
@@ -879,6 +887,10 @@ async function loadMediaForAuth(args: {
   if (auth.type === "project") {
     if (!findAuthProject(auth, media.projectId)) {
       throw boom(404, "Media not found");
+    }
+    const tokenlessError = TOKENLESS_MEDIA_ACTION_ERRORS[action];
+    if (auth.source === "github-actions-tokenless" && tokenlessError) {
+      throw boom(403, tokenlessError);
     }
     return media;
   }

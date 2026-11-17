@@ -3,8 +3,18 @@ import { assertNever } from "@argos/util/assertNever";
 
 import type { Account, Project, User } from "@/database/models";
 
+const AUTH_PROJECT_SOURCES = [
+  "project-token",
+  "github-actions-oidc",
+  "github-actions-tokenless",
+] as const;
+
+export type AuthProjectSource = (typeof AUTH_PROJECT_SOURCES)[number];
+
 export type AuthProjectPayload = {
   type: "project";
+  /** How the bearer was obtained. */
+  source: AuthProjectSource;
   /**
    * Live projects the bearer can act on, owned by the token's account. Never
    * empty. Short-lived and tokenless bearers carry exactly one. The account of
