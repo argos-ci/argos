@@ -82,6 +82,7 @@ const ScreenshotDiffFragment = graphql(`
       metadata {
         url
         previewUrl
+        description
         colorScheme
         mediaType
         automationLibrary {
@@ -147,6 +148,7 @@ const ScreenshotDiffFragment = graphql(`
       metadata {
         url
         previewUrl
+        description
         colorScheme
         mediaType
         automationLibrary {

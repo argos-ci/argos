@@ -2034,6 +2034,7 @@ type RealWorldScreenshot = {
   score?: number;
   /** Attach a Playwright trace file (a non-screenshot file). */
   trace?: boolean;
+  description?: string;
 };
 
 const CHROMIUM = { name: "chromium", version: "131.0.6778.85" };
@@ -2062,6 +2063,8 @@ const realWorldScreenshots: RealWorldScreenshot[] = [
     browser: CHROMIUM,
     score: 0.0698,
     trace: true,
+    description:
+      "Dashboard after the analytics redesign (#142).\nKPI cards sit above the revenue chart, and the date range picker moved to the header: https://acme-analytics.dev/changelog/dashboard-redesign",
   },
   {
     name: "dashboard/overview.mobile.png",
@@ -2167,10 +2170,12 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
       browser: s.browser,
       automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
       sdk: REALWORLD_SDK,
+      description: s.description,
     };
   }
   return {
     url: s.url,
+    description: s.description,
     test,
     automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
     sdk: REALWORLD_SDK,

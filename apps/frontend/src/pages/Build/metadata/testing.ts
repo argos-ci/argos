@@ -10,6 +10,7 @@ export function metadata(props: Partial<Metadata>): Metadata {
     __typename: "ScreenshotMetadata",
     url: null,
     previewUrl: null,
+    description: null,
     colorScheme: null,
     mediaType: null,
     automationLibrary: {

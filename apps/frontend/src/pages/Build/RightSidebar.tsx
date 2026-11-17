@@ -17,6 +17,7 @@ import {
   rightSidebarTabAtom,
   type RightSidebarTab,
 } from "./RightSidebarState";
+import { DescriptionSection } from "./sidebar/DescriptionSection";
 import {
   MetadataSection,
   type MetadataSectionProps,
@@ -83,6 +84,7 @@ export function RightSidebar(
           <PillTab value="review">Review</PillTab>
         </TabList>
         <SidebarTabPanel value="snapshot" className="scroll-mask-b-from-95%">
+          <DescriptionSection diff={activeDiff} repoUrl={context.repoUrl} />
           <MetadataSection
             diff={activeDiff}
             siblingDiffs={siblingDiffs}
