@@ -440,6 +440,9 @@ export const resolvers: IResolvers = {
             .joinRelated("build")
             .withGraphFetched("build.compareScreenshotBucket")
             .where("build.projectId", project.id)
+            // A pending review is an unsubmitted draft: the event never fires
+            // for it, and the message actions cannot render one.
+            .whereNot("build_reviews.state", "pending")
             .orderBy("build_reviews.createdAt", "desc")
             .first();
 
