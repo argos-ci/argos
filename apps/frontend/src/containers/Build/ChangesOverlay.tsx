@@ -15,12 +15,11 @@ import {
 import { overlayColorAtom, useOverlayStyle } from "./OverlayStyle";
 import { useScaleContext } from "./ScaleContext";
 import { HighlightButton } from "./toolbar/HighlightButton";
-import { LayoutShiftToggle } from "./toolbar/LayoutShiftToggle";
 import {
   GoToNextChangesButton,
   GoToPreviousChangesButton,
 } from "./toolbar/NavChangesButton";
-import { OverlayToggle } from "./toolbar/OverlayToggle";
+import { LayoutShiftToggle, OverlayToggle } from "./toolbar/OverlayToggle";
 import { SettingsButton } from "./toolbar/SettingsButton";
 import {
   useZoomerSyncContext,

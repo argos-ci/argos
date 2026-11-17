@@ -20,13 +20,12 @@ function band(x: number, y: number, width: number, height: number) {
 
 type Shift = Omit<ScreenshotDiffLayoutShift, "shiftedPixels">;
 
-function hidden(shift: Shift, maskHeight: number) {
-  return getLayoutShiftRegions({ ...shift, shiftedPixels: 1 }, maskHeight)
-    .hidden;
+function hidden(shift: Shift) {
+  return getLayoutShiftRegions({ ...shift, shiftedPixels: 1 }).hidden;
 }
 
 function moves(shift: Shift) {
-  return getLayoutShiftRegions({ ...shift, shiftedPixels: 1 }, 1000).moves;
+  return getLayoutShiftRegions({ ...shift, shiftedPixels: 1 }).moves;
 }
 
 // A 30 px banner pushed in at y = 90 of a 200 px wide strip: what was below
@@ -38,12 +37,11 @@ const banner: Shift = {
 };
 
 describe("hidden areas", () => {
-  test.each<[string, Shift, number, ReturnType<typeof hidden>]>([
+  test.each<[string, Shift, ReturnType<typeof hidden>]>([
     [
-      "hides the strip around its new rows",
+      "hides where the block is and was, around its new rows",
       banner,
-      430,
-      [band(0, 0, 200, 90), band(0, 120, 200, 310)],
+      [band(0, 120, 200, 310)],
     ],
     [
       "keeps removed rows, and merges bands that overlap",
@@ -52,27 +50,24 @@ describe("hidden areas", () => {
         inserted: [band(10, 100, 50, 10)],
         removed: [band(10, 20, 50, 20), band(10, 105, 50, 15)],
       },
-      200,
-      [band(10, 0, 50, 20), band(10, 40, 50, 60), band(10, 120, 50, 80)],
+      [band(10, 40, 50, 60)],
     ],
     [
-      "hides a strip with no new rows whole, and leaves others alone",
+      "hides each strip on its own",
       {
         segments: [segment(0, 100, 10, 50, 40), segment(300, 80, 0, 20, 60)],
         inserted: [band(300, 0, 80, 20)],
         removed: [],
       },
-      100,
-      [band(0, 0, 100, 100), band(300, 20, 80, 80)],
+      [band(0, 10, 100, 80), band(300, 20, 80, 60)],
     ],
     [
       "hides nothing without a segment",
       { segments: [], inserted: [], removed: [] },
-      100,
       [],
     ],
-  ])("%s", (_name, shift, height, expected) => {
-    expect(hidden(shift, height)).toEqual(expected);
+  ])("%s", (_name, shift, expected) => {
+    expect(hidden(shift)).toEqual(expected);
   });
 });
 

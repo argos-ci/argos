@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { MessageData, MessageInput, Rect } from "./types";
 // Inlined rather than emitted as its own chunk: a worker's top-level script has
@@ -28,13 +28,13 @@ const LOADING_STATE = {
 export function useColoredRects(input: {
   url: string;
   blockSize: number;
-  /**
-   * Areas of the image to treat as uncolored. Compared by reference: a new
-   * array restarts the detection.
-   */
+  /** Areas of the image to treat as uncolored. */
   exclude?: ReadonlyArray<Rect> | undefined;
 }): ColoredRectsState {
   const { url, blockSize, exclude } = input;
+  // Compared by value: a refetched diff hands back the same areas in a new
+  // array, which must not restart the detection.
+  const excludeKey = useMemo(() => JSON.stringify(exclude ?? []), [exclude]);
   const [state, setState] = useState<ColoredRectsState>(LOADING_STATE);
   useEffect(() => {
     setState(LOADING_STATE);
@@ -47,14 +47,15 @@ export function useColoredRects(input: {
       console.error(event.message);
       setState({ loading: false, rects: null });
     });
+    const areas: Rect[] = JSON.parse(excludeKey);
     worker.postMessage({
       url,
       blockSize,
-      exclude: exclude ?? [],
+      exclude: areas,
     } satisfies MessageInput);
     return () => {
       worker.terminate();
     };
-  }, [url, blockSize, exclude]);
+  }, [url, blockSize, excludeKey]);
   return state;
 }

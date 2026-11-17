@@ -66,27 +66,30 @@ function subtract(start: number, end: number, holes: Interval[]): Interval[] {
 
 /**
  * The areas of the mask whose pixels differ only because content moved, to be
- * left out of it. In a strip that holds a shift, every row is part of a block
- * that moved, or of a band that is new (`inserted`) or gone (`removed`): the
- * hidden rows are all the others. The rows above and below the strip's first
- * and last difference hold nothing to hide, so the strip is taken whole.
+ * left out of it. In a strip that holds a shift, a row can only differ where a
+ * block is now or where it was, or in a band that is new (`inserted`) or gone
+ * (`removed`): the hidden rows are the blocks' rows outside the bands.
  */
-function getHiddenRects(
-  shift: ScreenshotDiffLayoutShift,
-  maskHeight: number,
-): Rect[] {
+function getHiddenRects(shift: ScreenshotDiffLayoutShift): Rect[] {
   const strips = new Map(
     shift.segments.map((segment) => [getStripKey(segment), segment]),
   );
+  const blocks = shift.segments.flatMap((segment) => [
+    { ...segment, y: segment.headY },
+    { ...segment, y: segment.baseY },
+  ]);
   const bands = [...shift.inserted, ...shift.removed];
-  return [...strips.values()].flatMap((strip) =>
-    subtract(0, maskHeight, getStripRows(bands, strip)).map(([start, end]) => ({
-      x: strip.x,
-      y: start,
-      width: strip.width,
-      height: end - start,
-    })),
-  );
+  return [...strips.values()].flatMap((strip) => {
+    const bandRows = getStripRows(bands, strip);
+    return getStripRows(blocks, strip)
+      .flatMap(([start, end]) => subtract(start, end, bandRows))
+      .map(([start, end]) => ({
+        x: strip.x,
+        y: start,
+        width: strip.width,
+        height: end - start,
+      }));
+  });
 }
 
 /**
@@ -134,12 +137,12 @@ function getMoves(shift: ScreenshotDiffLayoutShift): Segment[] {
  * What a layout shift changes in how a diff reads: the areas left out of its
  * mask, and the moves to draw in their place.
  */
-export function getLayoutShiftRegions(
-  shift: ScreenshotDiffLayoutShift,
-  maskHeight: number,
-): { hidden: Rect[]; moves: Segment[] } {
+export function getLayoutShiftRegions(shift: ScreenshotDiffLayoutShift): {
+  hidden: Rect[];
+  moves: Segment[];
+} {
   return {
-    hidden: getHiddenRects(shift, maskHeight),
+    hidden: getHiddenRects(shift),
     moves: getMoves(shift),
   };
 }

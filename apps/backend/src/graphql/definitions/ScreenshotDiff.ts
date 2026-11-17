@@ -205,14 +205,14 @@ export const resolvers: IResolvers = {
       return file.height;
     },
     status: statusResolver,
-    layoutShift: async (screenshotDiff, _args, ctx) => {
+    layoutShift: (screenshotDiff) => {
       if (!screenshotDiff.layoutShift) {
         return null;
       }
-      invariant(screenshotDiff.fileId, "A layout shift comes with its mask");
-      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
-      invariant(file?.height, "A layout shift comes with a sized mask");
-      return getLayoutShiftRegions(screenshotDiff.layoutShift, file.height);
+      const regions = getLayoutShiftRegions(screenshotDiff.layoutShift);
+      // Hiding pixels with no outline to draw in their place would take them
+      // off the screen with nothing to say so: show the mask whole instead.
+      return regions.moves.length > 0 ? regions : null;
     },
     threshold: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.compareScreenshotId) {

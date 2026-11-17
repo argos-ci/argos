@@ -1164,7 +1164,9 @@ function CompareScreenshotChanged(props: {
                       imgSize={dimensions}
                       paneSize={paneSize}
                     />
-                    {layoutShift && (
+                    {/* Placed for the changes image, which a blend mode
+                        only partly shows. */}
+                    {layoutShift && !blendMode && (
                       <LayoutShiftMoves
                         moves={layoutShift.moves}
                         side="head"
