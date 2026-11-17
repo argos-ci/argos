@@ -2163,6 +2163,7 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
   if (isRealWorldImage(s)) {
     return {
       url: s.url,
+      description: s.description,
       viewport: s.viewport,
       colorScheme: "light",
       mediaType: "screen",
@@ -2170,7 +2171,6 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
       browser: s.browser,
       automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
       sdk: REALWORLD_SDK,
-      description: s.description,
     };
   }
   return {
