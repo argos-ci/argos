@@ -17,6 +17,10 @@ catalog:
   zod: ^4.6.7
 
 overrides:
+  # A CVE floor: GHSA-c4qx-w738-7hr3 is fixed in 12.0.2, but @apollo/server
+  # 5.5.2 caps the range below it. The cap only keeps Node 20 installs off
+  # @whatwg-node/promise-helpers@2 (engines >=22.15), which Node 26 accepts.
+  '@graphql-tools/utils@<12.0.2': ^12.0.2
   '@types/react': "catalog:"
   '@types/react-dom': "catalog:"
   browserslist: ^4.28.7
