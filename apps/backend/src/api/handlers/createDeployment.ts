@@ -6,7 +6,6 @@ import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { minimatch } from "minimatch";
 import pRetry from "p-retry";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -245,6 +244,16 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
 
     const project = await resolveAuthProject(auth, body.project);
 
+    const branch = body.branch;
+    const environment =
+      body.environment ??
+      (await getEnvironmentFromBranch({
+        project,
+        branch,
+      }));
+
+    await assertAuthCanDeploy(auth, { project, environment, branch });
+
     const [pullRequest] = await Promise.all([
       body.prNumber && project.githubRepositoryId
         ? await getOrCreatePullRequest({
@@ -256,16 +265,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     ]);
 
     invariant(project.account, "Account relation is not loaded");
-
-    const branch = body.branch;
-    const environment =
-      body.environment ??
-      (await getEnvironmentFromBranch({
-        project,
-        branch,
-      }));
-
-    await assertAuthCanDeploy(auth, { project, environment, branch });
 
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
@@ -346,9 +345,7 @@ async function getEnvironmentFromBranch(args: {
   branch: string;
 }): Promise<DeploymentEnvironment> {
   const { project, branch } = args;
-  const glob = await project.$getDeploymentProductionBranchGlob();
-  if (minimatch(branch, glob)) {
-    return "production";
-  }
-  return "preview";
+  const isProductionBranch =
+    await project.$getDeploymentProductionBranchMatcher();
+  return isProductionBranch(branch) ? "production" : "preview";
 }

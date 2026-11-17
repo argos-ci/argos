@@ -42,7 +42,7 @@ setupGithubServer();
 
 function postDeployment(
   bearer: string,
-  input: { branch: string; environment?: DeploymentEnvironment },
+  input: { branch: string; environment?: DeploymentEnvironment | undefined },
 ) {
   return request(app)
     .post("/deployments")
@@ -62,6 +62,9 @@ function postDeployment(
     });
 }
 
+const PRODUCTION_ERROR =
+  "Tokenless authentication cannot deploy to production. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable.";
+
 describe("tokenless deployments", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
@@ -72,14 +75,12 @@ describe("tokenless deployments", () => {
       name: "to production",
       branch: "feature",
       environment: "production",
-      error:
-        "Tokenless authentication cannot deploy to production. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable.",
+      error: PRODUCTION_ERROR,
     },
     {
       name: "to production inferred from the branch",
       branch: "main",
-      error:
-        "Tokenless authentication cannot deploy to production. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable.",
+      error: PRODUCTION_ERROR,
     },
     {
       name: "of the production branch as a preview",
@@ -90,8 +91,8 @@ describe("tokenless deployments", () => {
     },
   ] as const)(
     "refuses a deployment $name",
-    async ({ name: _name, error, ...input }, { linkedProject }) => {
-      await postDeployment(linkedProject.bearer, input)
+    async ({ branch, environment, error }, { linkedProject }) => {
+      await postDeployment(linkedProject.bearer, { branch, environment })
         .expect(403)
         .expect((res) => {
           expect(res.body.error).toBe(error);

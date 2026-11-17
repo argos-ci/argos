@@ -635,9 +635,6 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      // Editing identity is not something a viewer does, but it is the same
-      // authority as making the upload in the first place — a reviewer has to be
-      // able to correct their own staged media.
       action: "edit",
     });
 

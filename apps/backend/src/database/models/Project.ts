@@ -531,6 +531,17 @@ export class Project extends Model {
     return this.$getDefaultGitRepoBranch();
   }
 
+  /**
+   * Get a function telling whether deployments of a branch are production
+   * deployments.
+   */
+  async $getDeploymentProductionBranchMatcher(): Promise<
+    (branch: string) => boolean
+  > {
+    const glob = await this.$getDeploymentProductionBranchGlob();
+    return (branch) => minimatch(branch, glob);
+  }
+
   async getUrl() {
     await this.$fetchGraph("account", { skipFetched: true });
     invariant(this.account, "account is not fetched");
