@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
 import {
-  type DiffGroupName,
+  ATTENTION_STATUSES,
   getDiffGroupDefinition,
   getDiffStatusGroup,
 } from "@/containers/Build/BuildDiffGroup";
@@ -11,7 +11,6 @@ import {
   disableHotkeys,
   useBuildHotkey,
 } from "@/containers/Build/BuildHotkeys";
-import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -88,14 +87,6 @@ function useFocusFollowsActiveStep(
     }
   }, [stripRef, activeStepKey]);
 }
-
-/** What the dot marks: the statuses that put a diff in front of a reviewer. */
-const ATTENTION_STATUSES = [
-  ScreenshotDiffStatus.Failure,
-  ScreenshotDiffStatus.Changed,
-  ScreenshotDiffStatus.Added,
-  ScreenshotDiffStatus.Removed,
-] as const satisfies DiffGroupName[];
 
 /**
  * The statuses of a step worth a reviewer's attention, named as the rest of the

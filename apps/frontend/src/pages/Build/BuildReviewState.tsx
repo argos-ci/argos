@@ -441,7 +441,7 @@ export function useBuildDiffStatusState(args: {
   const getTargetDiffIds = useEventCallback((): string[] | null => {
     // An expanded group is reviewed diff by diff, so it falls back to the
     // single diff below.
-    if (diffGroup && !diffState.expanded.includes(diffGroup)) {
+    if (diffState.isStackCollapsed(diffGroup)) {
       return diffState.diffs
         .filter(
           (diff) =>
