@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { crc32 } from "node:zlib";
+import { invariant } from "@argos/util/invariant";
+import sharp from "sharp";
 import { describe, expect, test } from "vitest";
 
 import { LocalFileHandle } from "@/storage/FileHandle";
@@ -89,6 +91,74 @@ test("reports images too large to hold in memory as changed, without decoding th
   expect(await diffImages(small, tall, {})).toEqual({ score: 1 });
   expect(await diffImages(wide, wider, {})).toEqual({ score: 1 });
   await rm(directory, { recursive: true, force: true });
+});
+
+/** An image on disk, its path relative to this directory or absolute. */
+function imageAt(path: string) {
+  return new ImageHandle({
+    fileHandle: new LocalFileHandle({ filepath: resolve(__dirname, path) }),
+  });
+}
+
+describe("layout shift", () => {
+  test("reports content that moved below an inserted band", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "diff-layout-shift-"));
+    const basePath = resolve(__dirname, "__fixtures__/simple/base.png");
+    const { width, height } = await sharp(basePath).metadata();
+    // The base page with a 40 px band pushed in at y = 300: everything below
+    // it moves down, and only the band itself is new.
+    const headPath = join(directory, "head.png");
+    await sharp({
+      create: {
+        width,
+        height: height + 40,
+        channels: 4,
+        background: "#4f46e5",
+      },
+    })
+      .composite([
+        {
+          input: await sharp(basePath)
+            .extract({ left: 0, top: 0, width, height: 300 })
+            .toBuffer(),
+          top: 0,
+          left: 0,
+        },
+        {
+          input: await sharp(basePath)
+            .extract({ left: 0, top: 300, width, height: height - 300 })
+            .toBuffer(),
+          top: 340,
+          left: 0,
+        },
+      ])
+      .png()
+      .toFile(headPath);
+
+    const result = await diffImages(imageAt(basePath), imageAt(headPath), {});
+    await rm(directory, { recursive: true, force: true });
+
+    invariant(result.layoutShift, "a layout shift is reported");
+    expect(result.layoutShift.shiftedPixels).toBeGreaterThan(0);
+    expect(result.layoutShift.segments).toContainEqual(
+      expect.objectContaining({ baseY: 300, headY: 340 }),
+    );
+    expect(result.layoutShift.inserted).toContainEqual(
+      expect.objectContaining({ y: 300, height: 40 }),
+    );
+  });
+
+  test("leaves out rows that only match elsewhere by coincidence", async () => {
+    // The rows of this table changed colour: iris finds some of them at
+    // other heights, but none of the mask is explained by it.
+    const result = await diffImages(
+      imageAt("__fixtures__/tableAlpha/base.png"),
+      imageAt("__fixtures__/tableAlpha/compare.png"),
+      {},
+    );
+    expect(result.score).toBeGreaterThan(0);
+    expect(result.layoutShift).toBeUndefined();
+  });
 });
 
 describe("#diffImages", () => {

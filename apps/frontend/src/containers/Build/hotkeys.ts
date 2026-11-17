@@ -238,6 +238,12 @@ const hotkeyGroups = [
         description: "Toggle changes overlay",
         envs: ["test", "build", "media"],
       },
+      toggleLayoutShift: {
+        keys: [SHIFT, "KeyD"],
+        displayKeys: [SHIFT, "D"],
+        description: "Toggle layout shift",
+        envs: ["test", "build"],
+      },
       highlightChanges: {
         keys: ["KeyH"],
         displayKeys: ["H"],

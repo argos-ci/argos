@@ -1,4 +1,4 @@
-import { diff } from "@argos-ci/iris";
+import { diff, type Shift } from "@argos-ci/iris";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 
@@ -8,6 +8,13 @@ import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 import type { DiffOptions, DiffResult } from "../types";
 
 const DEFAULT_THRESHOLD = 0.5;
+
+/**
+ * Most segments and bands a shift may hold to be kept. Content that moved
+ * reads as a few blocks; a report past this comes from a scattered diff, and
+ * would be stored and sent with every build for nothing but noise.
+ */
+const MAX_LAYOUT_SHIFT_PARTS = 100;
 
 /**
  * Most memory one comparison may take. It runs inside the worker, which has
@@ -70,6 +77,7 @@ export async function diffImages(
       const result = await diff(basePath, headPath, { threshold, output });
       span.setAttributes({
         "argos.diff.score": result.score,
+        "argos.diff.shifted_pixels": result.shift?.shiftedPixels ?? 0,
         "argos.diff.width": result.width,
         "argos.diff.height": result.height,
         "argos.diff.antialiased_pixels": result.antialiasedPixels,
@@ -95,7 +103,23 @@ export async function diffImages(
           sha256: result.mask.sha256,
           fingerprint: result.fingerprint,
         },
+        layoutShift:
+          result.shift && checkIsLayoutShift(result.shift)
+            ? result.shift
+            : undefined,
       };
     },
   );
+}
+
+/**
+ * Whether movement explains part of the mask. iris also reports blocks that
+ * match rows elsewhere by coincidence, such as the rows of a table whose
+ * colours changed: they explain none of it, and drawing them would only add
+ * noise.
+ */
+function checkIsLayoutShift(shift: Shift): boolean {
+  const parts =
+    shift.segments.length + shift.inserted.length + shift.removed.length;
+  return shift.shiftedPixels > 0 && parts <= MAX_LAYOUT_SHIFT_PARTS;
 }

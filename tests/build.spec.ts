@@ -9,6 +9,7 @@ import {
   BuildScenario,
   createBuildScenario,
   createFallbackBaselineScenario,
+  createLayoutShiftScenario,
   createSiblingBuildsScenario,
   createVariantSwitchersScenario,
 } from "../apps/backend/src/database/seeds";
@@ -83,7 +84,12 @@ buildExamples.forEach((build) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     const number = build.getNumber(builds);
     await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
-    await expect(page.getByText(`Build ${number}`)).toBeVisible();
+    // The header reads "Build 1", then "Build 1 • main" once loaded. Anchored,
+    // because a newer build's banner links "Go to build 15", which a substring
+    // match takes for it whenever the banner renders first.
+    await expect(
+      page.getByRole("link", { name: new RegExp(`^Build ${number}( •|$)`) }),
+    ).toBeVisible();
     if (build.compare !== false) {
       await expect(page).toHaveURL(new RegExp(`/builds/${number}/overview$`));
       await expect(getStartButton(page)).toBeVisible();
@@ -183,6 +189,35 @@ loggedTest(
     await expect(
       page.locator("dt:has-text('Total screenshots') + dd"),
     ).toHaveText("3");
+  },
+);
+
+loggedTest(
+  "snapshot whose content moved",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build, screenshotDiff } = await createLayoutShiftScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/${screenshotDiff.id}`,
+    );
+
+    // The block that moved is outlined where it was and where it is now, in
+    // place of the mask it would otherwise fill.
+    const moves = page.getByRole("img", { name: "Moved down 304 px" });
+    await expect(moves).toHaveCount(2);
+    await screenshot(page, "build-layout-shift", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    const toggle = page.getByRole("button", { name: "Layout shift" });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await expect(moves).toHaveCount(0);
   },
 );
 
