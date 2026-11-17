@@ -113,10 +113,9 @@ export async function diffImages(
 }
 
 /**
- * Whether movement explains part of the mask. iris also reports blocks that
- * match rows elsewhere by coincidence, such as the rows of a table whose
- * colours changed: they explain none of it, and drawing them would only add
- * noise.
+ * Whether movement explains part of the mask, in few enough parts to draw. A
+ * report that explains no pixel of it would only outline content that
+ * changed.
  */
 function checkIsLayoutShift(shift: Shift): boolean {
   const parts =

@@ -113,8 +113,8 @@ importers:
         specifier: ^5.5.2
         version: 5.5.2(graphql@16.14.2)(supports-color@10.2.2)
       '@argos-ci/iris':
-        specifier: 0.1.0-beta.1
-        version: 0.1.0-beta.1
+        specifier: 1.0.0
+        version: 1.0.0
       '@argos/knex-scripts':
         specifier: workspace:*
         version: link:../../packages/knex-scripts
@@ -943,40 +943,40 @@ packages:
     resolution: {integrity: sha512-Y7pdBqlz6G9hjFLLBDthKmJL0s3AOyTyZ4i7iK4279xanQCxsxMNY30oJKGUtcaSD9a/QKxqJnYNuNC/2pJlvA==}
     engines: {node: '>=22.0.0'}
 
-  '@argos-ci/iris-darwin-arm64@0.1.0-beta.1':
-    resolution: {integrity: sha512-EaUpMaUXb3tM5R+ZxSBupchwXom0K+Qqchn3yrWyHOr9vomlQ0yZygF4E3gzx7FHTIo+G9rc0vbpM+VhH2JWMw==}
+  '@argos-ci/iris-darwin-arm64@1.0.0':
+    resolution: {integrity: sha512-9B4XopvhOTXQqgUAsIJWbSnTs8hc7jsRuiIEIfKzA06bGDsMxymx9ramruaaAxK2DAmettIsJFjUi9hcO2/bYA==}
     engines: {node: '>=22'}
     cpu: [arm64]
     os: [darwin]
 
-  '@argos-ci/iris-darwin-x64@0.1.0-beta.1':
-    resolution: {integrity: sha512-Fi0WGJl6oEQGGBJ0b3bwNmFWJr7VepotGdw7fnNd3DvZojqzbC1sFY9W9/4qRSQgyGTtHoiAAvhvO4Bw4vT2vw==}
+  '@argos-ci/iris-darwin-x64@1.0.0':
+    resolution: {integrity: sha512-8f6wTkejL8QrOIqjZUqIdrdXmQK2gJV7N3oMkBguUfPLHIurI2t4V6OFk5PWIkuXgPzzksrz0+/TM9Y1nf4DbQ==}
     engines: {node: '>=22'}
     cpu: [x64]
     os: [darwin]
 
-  '@argos-ci/iris-linux-arm64-gnu@0.1.0-beta.1':
-    resolution: {integrity: sha512-WZ1U8CEGehpNr/vnjqbGigTrOCeDYzXCYzi3PugHw1ZOvbvaq/tjz3emkZZOn7wjnmr6cXdPTguBVNe5yV4ODg==}
+  '@argos-ci/iris-linux-arm64-gnu@1.0.0':
+    resolution: {integrity: sha512-C6f9MELFAbrpF/Tnsa9nKgi1WPQcRTxjRBvwYUesfkvxZ6UCssXUX8LrXY2AqcwgsB+FTkV7xj/vIUqdMBpEEQ==}
     engines: {node: '>=22'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@argos-ci/iris-linux-x64-gnu@0.1.0-beta.1':
-    resolution: {integrity: sha512-f9XJOvwGp9YupTwIOinPCVu4DncykxTqPG5+TM4lgcaw6Bki+yRs6J4QYf/B5mT2kpoA0Z7FY5mwUhsxy3VGXw==}
+  '@argos-ci/iris-linux-x64-gnu@1.0.0':
+    resolution: {integrity: sha512-hikDENivR+fAqsBPwDre6pGIO2DjIBNe26jOG7yFhhbJ+pxgn/r9vjiH+Oy3cZ1g5HLwd5DrwCntlMvrjLoB0Q==}
     engines: {node: '>=22'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@argos-ci/iris-win32-x64-msvc@0.1.0-beta.1':
-    resolution: {integrity: sha512-UzVSXB5AsUBgK6QeP16HN9yojjNEOEt7Zo98b+0QPZnm3b1LH0BJT9GChStIKpu2x6I14mPXMl2tU5GbIB2ZDg==}
+  '@argos-ci/iris-win32-x64-msvc@1.0.0':
+    resolution: {integrity: sha512-o3iBX04ag9c+mT+d+Oxzezv3tSS5VvMctTKpAB1cA751FqPVrkmXrea2pwAa04j60xCNRd2YH4knN6e/rxsM0Q==}
     engines: {node: '>=22'}
     cpu: [x64]
     os: [win32]
 
-  '@argos-ci/iris@0.1.0-beta.1':
-    resolution: {integrity: sha512-59G3rZxO5/MOFpcEgt++8uzmXR48qVvonxxn3CiLderb6cqipcBrecx+GuGILKOqgurVDdhdMugRO8jPMHLSFA==}
+  '@argos-ci/iris@1.0.0':
+    resolution: {integrity: sha512-Dwyr6yesaCC07dMt0BC4Za4dufiV+zCepVXYgxe8ku5oeZt2RRcnPaQRKxqHur5wO1vNb+B5OB99VNr6oDP08Q==}
     engines: {node: '>=22'}
 
   '@argos-ci/playwright@7.8.0':
@@ -8537,28 +8537,28 @@ snapshots:
       - '@types/node'
       - supports-color
 
-  '@argos-ci/iris-darwin-arm64@0.1.0-beta.1':
+  '@argos-ci/iris-darwin-arm64@1.0.0':
     optional: true
 
-  '@argos-ci/iris-darwin-x64@0.1.0-beta.1':
+  '@argos-ci/iris-darwin-x64@1.0.0':
     optional: true
 
-  '@argos-ci/iris-linux-arm64-gnu@0.1.0-beta.1':
+  '@argos-ci/iris-linux-arm64-gnu@1.0.0':
     optional: true
 
-  '@argos-ci/iris-linux-x64-gnu@0.1.0-beta.1':
+  '@argos-ci/iris-linux-x64-gnu@1.0.0':
     optional: true
 
-  '@argos-ci/iris-win32-x64-msvc@0.1.0-beta.1':
+  '@argos-ci/iris-win32-x64-msvc@1.0.0':
     optional: true
 
-  '@argos-ci/iris@0.1.0-beta.1':
+  '@argos-ci/iris@1.0.0':
     optionalDependencies:
-      '@argos-ci/iris-darwin-arm64': 0.1.0-beta.1
-      '@argos-ci/iris-darwin-x64': 0.1.0-beta.1
-      '@argos-ci/iris-linux-arm64-gnu': 0.1.0-beta.1
-      '@argos-ci/iris-linux-x64-gnu': 0.1.0-beta.1
-      '@argos-ci/iris-win32-x64-msvc': 0.1.0-beta.1
+      '@argos-ci/iris-darwin-arm64': 1.0.0
+      '@argos-ci/iris-darwin-x64': 1.0.0
+      '@argos-ci/iris-linux-arm64-gnu': 1.0.0
+      '@argos-ci/iris-linux-x64-gnu': 1.0.0
+      '@argos-ci/iris-win32-x64-msvc': 1.0.0
 
   '@argos-ci/playwright@7.8.0(@types/node@26.6.6)(supports-color@10.2.2)':
     dependencies:

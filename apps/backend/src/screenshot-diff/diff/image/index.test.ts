@@ -149,8 +149,8 @@ describe("layout shift", () => {
   });
 
   test("leaves out rows that only match elsewhere by coincidence", async () => {
-    // The rows of this table changed colour: iris finds some of them at
-    // other heights, but none of the mask is explained by it.
+    // The rows of this table changed colour, and look like one another:
+    // nothing moved, so no shift is reported.
     const result = await diffImages(
       imageAt("__fixtures__/tableAlpha/base.png"),
       imageAt("__fixtures__/tableAlpha/compare.png"),
