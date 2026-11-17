@@ -84,7 +84,12 @@ buildExamples.forEach((build) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     const number = build.getNumber(builds);
     await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
-    await expect(page.getByText(`Build ${number}`)).toBeVisible();
+    // The header reads "Build 1", then "Build 1 • main" once loaded. Anchored,
+    // because a newer build's banner links "Go to build 15", which a substring
+    // match takes for it whenever the banner renders first.
+    await expect(
+      page.getByRole("link", { name: new RegExp(`^Build ${number}( •|$)`) }),
+    ).toBeVisible();
     if (build.compare !== false) {
       await expect(page).toHaveURL(new RegExp(`/builds/${number}/overview$`));
       await expect(getStartButton(page)).toBeVisible();
