@@ -11,74 +11,118 @@ import { PullRequestState } from "@/gql/graphql";
 import { Button, ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { lowTextColorClassNames, type UIColor } from "@/util/colors";
 
-import { ImageAvatar } from "./ImageAvatar";
+import { AccountAvatar } from "./AccountAvatar";
 
-const _PullRequestStatusIconFragment = graphql(`
-  fragment PullRequestStatusIcon_PullRequest on PullRequest {
+const _PullRequestStatusFragment = graphql(`
+  fragment PullRequestStatus_PullRequest on PullRequest {
     draft
     merged
     state
   }
 `);
 
-const PullRequestStatusIcon = (props: {
-  pullRequest: DocumentType<typeof _PullRequestStatusIconFragment>;
-}) => {
-  const { pullRequest } = props;
-
+export function getPullRequestStatus(
+  pullRequest: DocumentType<typeof _PullRequestStatusFragment>,
+): {
+  label: string;
+  color: UIColor;
+  icon: React.ComponentType<{ className?: string }>;
+} {
   if (pullRequest.merged) {
-    return (
-      <ButtonIcon className="text-primary-low">
-        <GitMergeIcon />
-      </ButtonIcon>
-    );
+    return { label: "Merged", color: "primary", icon: GitMergeIcon };
   }
   if (pullRequest.draft) {
-    return (
-      <ButtonIcon className="text-low">
-        <GitPullRequestDraftIcon />
-      </ButtonIcon>
-    );
+    return { label: "Draft", color: "neutral", icon: GitPullRequestDraftIcon };
   }
-  switch (pullRequest.state) {
-    case PullRequestState.Closed: {
-      return (
-        <ButtonIcon className="text-danger-low">
-          <GitPullRequestClosedIcon />
-        </ButtonIcon>
-      );
-    }
-    case PullRequestState.Open:
-    default:
-      return (
-        <ButtonIcon className="text-success-low">
-          <GitPullRequestIcon />
-        </ButtonIcon>
-      );
+  if (pullRequest.state === PullRequestState.Closed) {
+    return { label: "Closed", color: "danger", icon: GitPullRequestClosedIcon };
   }
-};
+  return { label: "Open", color: "success", icon: GitPullRequestIcon };
+}
 
-const _PullRequestInfoFragment = graphql(`
-  fragment PullRequestInfo_PullRequest on PullRequest {
+function PullRequestStatusIcon(props: {
+  pullRequest: DocumentType<typeof _PullRequestStatusFragment>;
+}) {
+  const { icon: Icon, color } = getPullRequestStatus(props.pullRequest);
+  return (
+    <ButtonIcon className={lowTextColorClassNames[color]}>
+      <Icon />
+    </ButtonIcon>
+  );
+}
+
+const _PullRequestActivityFragment = graphql(`
+  fragment PullRequestActivity_PullRequest on PullRequest {
     __typename
-    title
     draft
     merged
     mergedAt
     closedAt
     state
-    number
     date
-    url
-    ...PullRequestStatusIcon_PullRequest
     ... on GithubPullRequest {
       creator {
         id
         login
         name
+        avatar {
+          ...AccountAvatarFragment
+        }
       }
     }
+  }
+`);
+
+export function PullRequestActivity(props: {
+  pullRequest: DocumentType<typeof _PullRequestActivityFragment>;
+}) {
+  const { pullRequest } = props;
+  if (pullRequest.merged && pullRequest.mergedAt) {
+    return (
+      <>
+        Merged <Time date={pullRequest.mergedAt} tooltip="title" />
+      </>
+    );
+  }
+  if (pullRequest.state === PullRequestState.Closed && pullRequest.closedAt) {
+    return (
+      <>
+        Closed <Time date={pullRequest.closedAt} tooltip="title" />
+      </>
+    );
+  }
+  if (!pullRequest.date) {
+    return null;
+  }
+  // Only GitHub tells who opened the pull request.
+  const creator =
+    pullRequest.__typename === "GithubPullRequest" ? pullRequest.creator : null;
+  return (
+    <>
+      {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
+      <Time date={pullRequest.date} tooltip="title" />
+      {creator && (
+        <>
+          {" "}
+          by
+          <AccountAvatar avatar={creator.avatar} className="size-4" />
+          <span>{creator.name || creator.login}</span>
+        </>
+      )}
+    </>
+  );
+}
+
+const _PullRequestInfoFragment = graphql(`
+  fragment PullRequestInfo_PullRequest on PullRequest {
+    title
+    number
+    date
+    url
+    ...PullRequestStatus_PullRequest
+    ...PullRequestActivity_PullRequest
   }
 `);
 
@@ -89,9 +133,6 @@ function PullRequestInfo(props: {
   if (!pullRequest.title || !pullRequest.date) {
     return null;
   }
-  // Only GitHub tells who opened the pull request.
-  const creator =
-    pullRequest.__typename === "GithubPullRequest" ? pullRequest.creator : null;
   return (
     <div className="flex gap-2">
       <div className="mt-1 flex shrink-0">
@@ -117,42 +158,7 @@ function PullRequestInfo(props: {
           </a>
         </div>
         <div className="text-low flex items-center gap-1 px-1">
-          {(() => {
-            if (pullRequest.merged && pullRequest.mergedAt) {
-              return (
-                <>
-                  Merged <Time date={pullRequest.mergedAt} tooltip="title" />
-                </>
-              );
-            }
-            if (
-              pullRequest.state === PullRequestState.Closed &&
-              pullRequest.closedAt
-            ) {
-              return (
-                <>
-                  Closed <Time date={pullRequest.closedAt} tooltip="title" />
-                </>
-              );
-            }
-            return (
-              <>
-                {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
-                <Time date={pullRequest.date} tooltip="title" />
-                {creator && (
-                  <>
-                    {" "}
-                    by
-                    <ImageAvatar
-                      src={`https://github.com/${creator.login}.png?size=32`}
-                      className="size-4 shrink-0"
-                    />
-                    <span>{creator.name || creator.login}</span>
-                  </>
-                )}
-              </>
-            );
-          })()}
+          <PullRequestActivity pullRequest={pullRequest} />
         </div>
       </div>
     </div>
@@ -184,7 +190,7 @@ const _PullRequestButtonFragment = graphql(`
     title
     number
     url
-    ...PullRequestStatusIcon_PullRequest
+    ...PullRequestStatus_PullRequest
     ...PullRequestInfo_PullRequest
   }
 `);

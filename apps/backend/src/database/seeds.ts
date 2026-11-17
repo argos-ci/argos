@@ -1815,10 +1815,14 @@ export async function createJourneyScenario(input: {
  *
  * With `withNewerBuild`, the `default` suite also ran on a later commit of the
  * branch, which leaves the first `default` build outdated.
+ *
+ * With `withPullRequest`, the branch has an open GitHub pull request, and the
+ * builds of the given project belong to it.
  */
 export async function createSiblingBuildsScenario(input: {
   projectId: string;
   withNewerBuild?: boolean;
+  withPullRequest?: boolean;
   /** Further suites the commit ran in this project. */
   extraSuites?: string[];
 }): Promise<{
@@ -1832,6 +1836,9 @@ export async function createSiblingBuildsScenario(input: {
   const { projectId, extraSuites = [] } = input;
   const seededAt = getSeedInstant();
   const branch = "feat/sparkle";
+  const githubPullRequestId = input.withPullRequest
+    ? await createGithubPullRequest(projectId)
+    : null;
   const baseCommit = "b1a7a4a1e5f0c3d2b9a8e7f6c5d4b3a2f1e0d9c8";
   const headCommit = "c2b8b5b2f6a1d4e3c0b9f8a7d6e5c4b3a2f1e0d9";
 
@@ -1923,6 +1930,8 @@ export async function createSiblingBuildsScenario(input: {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId,
+      githubPullRequestId:
+        projectId === input.projectId ? githubPullRequestId : null,
       createdAt,
       updatedAt: createdAt,
     });
@@ -3471,7 +3480,7 @@ export async function createMediaScenario(input: {
 }) {
   const { projectId, commentAuthorId, withPullRequest } = input;
   const githubPullRequestId = withPullRequest
-    ? await createMediaPullRequest(projectId)
+    ? await createGithubPullRequest(projectId)
     : null;
   const beforeTs = "2026-04-20T08:00:00.000Z";
   const afterV1Ts = "2026-04-20T09:00:00.000Z";
@@ -4130,9 +4139,10 @@ async function createDemoMediaScenario(input: {
  * The GitHub rows a pull request needs, plus the pull request.
  *
  * A seeded project is not connected to a repository, so this creates one and
- * links it — enough for the share header to render a real number, title and URL.
+ * links it — enough for the page to render a real number, title and URL. The
+ * repository is `acme-<projectId>/sparkle`.
  */
-async function createMediaPullRequest(projectId: string): Promise<string> {
+async function createGithubPullRequest(projectId: string): Promise<string> {
   const project = await Project.query().findById(projectId);
   invariant(project, "project should exist");
 
@@ -4162,7 +4172,6 @@ async function createMediaPullRequest(projectId: string): Promise<string> {
     merged: false,
     draft: false,
     jobStatus: "complete",
-    creatorId: githubAccount.id,
     date: "2026-04-19T09:00:00.000Z",
     createdAt: "2026-04-19T09:00:00.000Z",
     updatedAt: "2026-04-19T09:00:00.000Z",

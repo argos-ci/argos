@@ -1,12 +1,15 @@
 import { createContext, use, useId, useMemo, useState } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon } from "lucide-react";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { PullRequestCard } from "@/containers/PullRequestCard";
+import { RepositoryIcons } from "@/containers/Repository";
 import { DocumentType, graphql } from "@/gql";
-import { BuildStatus } from "@/gql/graphql";
-import { LinkButton } from "@/ui/Button";
+import { BuildStatus, PullRequestState } from "@/gql/graphql";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
@@ -59,6 +62,10 @@ const _BuildFragment = graphql(`
     pullRequest {
       id
       number
+      url
+      merged
+      state
+      ...PullRequestCard_PullRequest
     }
     siblingBuilds {
       ...BuildNextReviewDialog_ListedBuild
@@ -74,7 +81,8 @@ const _BuildFragment = graphql(`
 
 type ListedBuild = DocumentType<typeof _ListedBuildFragment>;
 type ReviewedBuild = DocumentType<typeof _BuildFragment>;
-export type SiblingBuild = ReviewedBuild["siblingBuilds"][number];
+type SiblingBuild = ReviewedBuild["siblingBuilds"][number];
+type PullRequest = NonNullable<ReviewedBuild["pullRequest"]>;
 
 /**
  * The builds still waiting for the viewer to make a call: nobody has concluded
@@ -111,11 +119,72 @@ function getNewerBuildToReview(build: ReviewedBuild): ListedBuild | null {
   }
 }
 
+/**
+ * The pull request to send the reviewer back to once the commit has nothing
+ * left for them. Not a merged or closed one: nothing waits on the reviewer
+ * there. Not while one of the commit's suites is still running either, since
+ * it may yet bring changes to review.
+ */
+function getPullRequestToReturnTo(build: ReviewedBuild): PullRequest | null {
+  const { pullRequest } = build;
+  if (
+    !pullRequest ||
+    pullRequest.merged ||
+    pullRequest.state === PullRequestState.Closed
+  ) {
+    return null;
+  }
+  const hasRunningSibling = build.siblingBuilds.some(
+    (sibling) =>
+      !sibling.newerBuild &&
+      (sibling.status === BuildStatus.Pending ||
+        sibling.status === BuildStatus.Progress),
+  );
+  return hasRunningSibling ? null : pullRequest;
+}
+
+type NextReviewPrompt =
+  | {
+      kind: "newer-build";
+      build: ReviewedBuild;
+      newerBuild: ListedBuild;
+      awaitingReview: SiblingBuild[];
+    }
+  | {
+      kind: "next-build";
+      build: ReviewedBuild;
+      nextBuild: SiblingBuild;
+      otherBuilds: SiblingBuild[];
+    }
+  | { kind: "pull-request"; pullRequest: PullRequest };
+
+/**
+ * Where to go once a build is reviewed: to the newer build of the same suite
+ * when the reviewed one is outdated, otherwise to the next build of the same
+ * commit awaiting a review. When there is neither, the reviewer is done with
+ * the commit, and goes back to its pull request.
+ */
+function getNextReviewPrompt(build: ReviewedBuild): NextReviewPrompt | null {
+  const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
+  const newerBuild = getNewerBuildToReview(build);
+  if (newerBuild) {
+    return { kind: "newer-build", build, newerBuild, awaitingReview };
+  }
+  const [nextBuild, ...otherBuilds] = awaitingReview;
+  if (nextBuild) {
+    return { kind: "next-build", build, nextBuild, otherBuilds };
+  }
+  const pullRequest = getPullRequestToReturnTo(build);
+  if (pullRequest) {
+    return { kind: "pull-request", pullRequest };
+  }
+  return null;
+}
+
 type ContextValue = {
   /**
-   * Offer to move on: to the newer build of the same suite when the reviewed
-   * one is outdated, otherwise to the next build of the same commit awaiting a
-   * review. Does nothing when there is neither, the reviewer is done.
+   * Offer to move on from the build just reviewed, when there is somewhere to
+   * go.
    */
   promptNextReview: (build: ReviewedBuild) => void;
 };
@@ -135,16 +204,13 @@ export function BuildNextReviewDialogProvider(props: {
   children: React.ReactNode;
 }) {
   const { children } = props;
-  const dialog = useDialogValueState<ReviewedBuild | null>(null);
+  const dialog = useDialogValueState<NextReviewPrompt | null>(null);
 
   const promptNextReview = useEventCallback((build: ReviewedBuild) => {
-    if (
-      !getNewerBuildToReview(build) &&
-      getBuildsAwaitingReview(build.siblingBuilds).length === 0
-    ) {
-      return;
+    const prompt = getNextReviewPrompt(build);
+    if (prompt) {
+      dialog.open(prompt);
     }
-    dialog.open(build);
   });
   const value = useMemo(() => ({ promptNextReview }), [promptNextReview]);
 
@@ -158,7 +224,7 @@ export function BuildNextReviewDialogProvider(props: {
           onOpenChange={dialog.onOpenChange}
           dismissible
         >
-          <BuildNextReviewDialog build={dialog.value} />
+          <BuildNextReviewDialog prompt={dialog.value} />
         </Modal>
       ) : null}
       <BuildNextReviewDialogContext value={value}>
@@ -168,24 +234,60 @@ export function BuildNextReviewDialogProvider(props: {
   );
 }
 
-function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
-  const { build } = props;
-  const newerBuild = getNewerBuildToReview(build);
-  if (newerBuild) {
-    return <NewerBuildDialog build={build} newerBuild={newerBuild} />;
+function BuildNextReviewDialog(props: { prompt: NextReviewPrompt }) {
+  const { prompt } = props;
+  switch (prompt.kind) {
+    case "newer-build":
+      return (
+        <NewerBuildDialog
+          build={prompt.build}
+          newerBuild={prompt.newerBuild}
+          awaitingReview={prompt.awaitingReview}
+        />
+      );
+    case "next-build":
+      return (
+        <NextBuildDialog
+          build={prompt.build}
+          nextBuild={prompt.nextBuild}
+          otherBuilds={prompt.otherBuilds}
+        />
+      );
+    case "pull-request":
+      return <PullRequestDialog pullRequest={prompt.pullRequest} />;
+    default:
+      assertNever(prompt);
   }
-  const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
-  const [nextBuild, ...otherBuilds] = awaitingReview;
-  invariant(nextBuild, "The dialog only opens when a build awaits a review");
+}
 
+/**
+ * The dialog's way forward, focused as it opens. The dialog opens on its own
+ * once a review is submitted, so nothing marks the link as focused for a
+ * pointer user: the ring stays on.
+ */
+function DefaultActionLink(props: { href: string; children: React.ReactNode }) {
+  return (
+    <LinkButton href={props.href} autoFocus showFocusRing>
+      {props.children}
+    </LinkButton>
+  );
+}
+
+function NextBuildDialog(props: {
+  build: ReviewedBuild;
+  nextBuild: SiblingBuild;
+  otherBuilds: SiblingBuild[];
+}) {
+  const { build, nextBuild, otherBuilds } = props;
+  const awaitingCount = otherBuilds.length + 1;
   return (
     <Dialog size="medium">
       <DialogBody>
         <DialogTitle>Review the next build</DialogTitle>
         <DialogText>
-          {awaitingReview.length === 1
+          {awaitingCount === 1
             ? "One more build ran on this commit and still needs your review."
-            : `${awaitingReview.length} more builds ran on this commit and still need your review.`}
+            : `${awaitingCount} more builds ran on this commit and still need your review.`}
         </DialogText>
         <BuildsToReview
           nextBuild={nextBuild}
@@ -195,15 +297,11 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
       </DialogBody>
       <DialogFooter>
         <DialogDismiss>Not now</DialogDismiss>
-        <LinkButton
+        <DefaultActionLink
           href={getBuildOverviewURL(getBuildParams(nextBuild))}
-          autoFocus
-          // The dialog opens on its own once a review is submitted, so nothing
-          // marks the link as focused for a pointer user. Keep the ring on.
-          showFocusRing
         >
           Review next build
-        </LinkButton>
+        </DefaultActionLink>
       </DialogFooter>
     </Dialog>
   );
@@ -221,9 +319,9 @@ function BuildNextReviewDialog(props: { build: ReviewedBuild }) {
 function NewerBuildDialog(props: {
   build: ReviewedBuild;
   newerBuild: ListedBuild;
+  awaitingReview: SiblingBuild[];
 }) {
-  const { build, newerBuild } = props;
-  const awaitingReview = getBuildsAwaitingReview(build.siblingBuilds);
+  const { build, newerBuild, awaitingReview } = props;
   const subject = (() => {
     if (build.pullRequest) {
       return `pull request #${build.pullRequest.number}`;
@@ -253,15 +351,40 @@ function NewerBuildDialog(props: {
       </DialogBody>
       <DialogFooter>
         <DialogDismiss>Not now</DialogDismiss>
-        <LinkButton
+        <DefaultActionLink
           href={getBuildOverviewURL(getBuildParams(newerBuild))}
-          autoFocus
-          // The dialog opens on its own once a review is submitted, so nothing
-          // marks the link as focused for a pointer user. Keep the ring on.
-          showFocusRing
         >
           Review latest build
-        </LinkButton>
+        </DefaultActionLink>
+      </DialogFooter>
+    </Dialog>
+  );
+}
+
+/**
+ * Where the reviewer goes once the commit has nothing left for them: back to
+ * the pull request, where the change gets merged or sent back to its author.
+ */
+function PullRequestDialog(props: { pullRequest: PullRequest }) {
+  const { pullRequest } = props;
+  const RepositoryIcon = RepositoryIcons[pullRequest.repository.__typename];
+  return (
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Nothing left to review</DialogTitle>
+        <DialogText>
+          No other build of this commit needs your review.
+        </DialogText>
+        <PullRequestCard pullRequest={pullRequest} />
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>Stay here</DialogDismiss>
+        <DefaultActionLink href={pullRequest.url}>
+          <ButtonIcon>
+            <RepositoryIcon />
+          </ButtonIcon>
+          Back to pull request
+        </DefaultActionLink>
       </DialogFooter>
     </Dialog>
   );

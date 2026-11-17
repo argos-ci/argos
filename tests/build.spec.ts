@@ -561,6 +561,48 @@ loggedTest(
 );
 
 loggedTest(
+  "sends the reviewer back to the pull request once nothing is left to review",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { defaultBuild, storybookBuild, docsBuild } =
+      await createSiblingBuildsScenario({
+        projectId: project.id,
+        withPullRequest: true,
+      });
+    await Build.query()
+      .whereIn("id", [storybookBuild.id, docsBuild.id])
+      .patch({ conclusion: "no-changes" });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${defaultBuild.number}`,
+    );
+    await page.getByRole("button", { name: "Submit review" }).click();
+    await page.getByRole("button", { name: "Approve" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Nothing left to review" });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    const pullRequestURL = `https://github.com/acme-${project.id}/sparkle/pull/1234`;
+    // The preview tells which pull request the reviewer is about to land on.
+    await expect(
+      dialog.getByRole("link", { name: /Tighten the checkout spacing #1234/ }),
+    ).toHaveAttribute("href", pullRequestURL);
+    // Enter is all it takes to go back.
+    const backLink = dialog.getByRole("link", {
+      name: "Back to pull request",
+    });
+    await expect(backLink).toBeFocused();
+    await expect(backLink).toHaveAttribute("href", pullRequestURL);
+
+    await screenshot(page, "build-pull-request-dialog", {
+      replacements: {
+        [team.account.slug]: "acme",
+        [`acme-${project.id}`]: "acme",
+      },
+    });
+  },
+);
+
+loggedTest(
   "header switches between the builds of a commit",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
