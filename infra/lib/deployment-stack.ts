@@ -248,7 +248,10 @@ export class ArgosDeploymentStack extends cdk.Stack {
       ),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
-      memorySize: 128,
+      // Viewer triggers are capped at 128 MB; origin triggers are not, and CPU
+      // scales with memory. A cold start here loads the AWS SDK and opens a TLS
+      // connection to DynamoDB, both CPU-bound, while the visitor waits.
+      memorySize: 1024,
       timeout: cdk.Duration.seconds(5),
       logGroup: new cdk.aws_logs.LogGroup(this, "OriginRequestFnLogGroup", {
         retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
@@ -343,6 +346,31 @@ export class ArgosDeploymentStack extends cdk.Stack {
       },
     );
 
+    // ----------------------------------------------------------------
+    // Browser caching — on the distributions viewers reach only.
+    //
+    // S3 objects carry no Cache-Control, so browsers guess a lifetime from
+    // Last-Modified, which is weeks for a file that has been stable that long,
+    // and keep serving it after an alias has moved to another deployment.
+    // `no-cache` makes them revalidate: the ETag is the object's, so an
+    // unchanged file costs a 304 from the edge cache.
+    //
+    // Not on the files distribution: its viewers are the distributions below,
+    // which would then revalidate with it on every request.
+    // ----------------------------------------------------------------
+    const viewerResponseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      "ViewerResponseHeadersPolicy",
+      {
+        comment: "Make browsers revalidate deployment files",
+        customHeadersBehavior: {
+          customHeaders: [
+            { header: "Cache-Control", value: "no-cache", override: true },
+          ],
+        },
+      },
+    );
+
     const aliasDistribution = new cloudfront.Distribution(
       this,
       "AliasDistribution",
@@ -366,6 +394,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
             },
           ],
           cachePolicy,
+          responseHeadersPolicy: viewerResponseHeadersPolicy,
         },
         domainNames: [`*.${baseDomain}`],
         certificate,
@@ -434,6 +463,8 @@ export class ArgosDeploymentStack extends cdk.Stack {
             // Multi-tenant distributions reject the legacy TTL fields, so the
             // shared cache policy is not just tidier here — it is required.
             cachePolicyId: cachePolicy.cachePolicyId,
+            responseHeadersPolicyId:
+              viewerResponseHeadersPolicy.responseHeadersPolicyId,
             lambdaFunctionAssociations: [
               {
                 eventType: "viewer-request",
