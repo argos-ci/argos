@@ -1,11 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import {
-  Build,
-  GithubPullRequest,
-  OriginPullRequest,
-  type Project,
-} from "@/database/models";
+import { Build, GithubPullRequest, OriginPullRequest } from "@/database/models";
 
 type PullRequest = GithubPullRequest | OriginPullRequest;
 
@@ -16,40 +11,45 @@ type PullRequest = GithubPullRequest | OriginPullRequest;
 const MAX_STACK_DEPTH = 20;
 
 /**
- * The open pull request whose head is `branch`, in the repository of
+ * The open pull request coming from `branch`, in the repository of
  * `pullRequest`.
- *
- * A fork's branch can share its name with one of the repository's, so only
- * pull requests from the repository itself qualify.
  */
-async function findOpenPullRequestByHead(
+function findOpenPullRequestByHead(
   pullRequest: PullRequest,
   branch: string,
 ): Promise<PullRequest | null> {
   if (pullRequest instanceof GithubPullRequest) {
-    const found = await GithubPullRequest.query()
-      .where("githubRepositoryId", pullRequest.githubRepositoryId)
-      .where("headRef", branch)
-      .where("headFromFork", false)
-      .where("state", "open")
-      .orderBy("number", "desc")
-      .first();
-    return found ?? null;
+    return GithubPullRequest.findOpenByHead({
+      githubRepositoryId: pullRequest.githubRepositoryId,
+      branch,
+    });
   }
-  const found = await OriginPullRequest.query()
-    .where("originRepositoryId", pullRequest.originRepositoryId)
-    .where("headRef", branch)
-    .where("state", "open")
-    .orderBy("number", "desc")
-    .first();
-  return found ?? null;
+  return OriginPullRequest.findOpenByHead({
+    originRepositoryId: pullRequest.originRepositoryId,
+    branch,
+  });
+}
+
+/** The open pull request `pullRequest` merges into, when there is one. */
+async function findParent(pullRequest: PullRequest) {
+  if (!pullRequest.baseRef) {
+    return null;
+  }
+  return findOpenPullRequestByHead(pullRequest, pullRequest.baseRef);
 }
 
 /**
- * The open pull requests merging into the head branch of `pullRequest`, at
- * most two: one continues the stack, two means it forks.
+ * The open pull request merging into `pullRequest`. Two or more make a tree
+ * rather than a stack: which one continues it is anyone's guess, so there is
+ * none.
  */
-async function findOpenChildPullRequests(
+async function findChild(pullRequest: PullRequest) {
+  const [child, other] = await findOpenChildren(pullRequest);
+  return child && !other ? child : null;
+}
+
+/** Up to two of the open pull requests merging into `pullRequest`. */
+async function findOpenChildren(
   pullRequest: PullRequest,
 ): Promise<PullRequest[]> {
   const { headRef } = pullRequest;
@@ -57,6 +57,7 @@ async function findOpenChildPullRequests(
     return [];
   }
   if (pullRequest instanceof GithubPullRequest) {
+    // A fork's branch is not one of the repository's: nothing merges into it.
     if (pullRequest.headFromFork !== false) {
       return [];
     }
@@ -64,15 +65,37 @@ async function findOpenChildPullRequests(
       .where("githubRepositoryId", pullRequest.githubRepositoryId)
       .where("baseRef", headRef)
       .where("state", "open")
-      .orderBy("number", "desc")
       .limit(2);
   }
   return OriginPullRequest.query()
     .where("originRepositoryId", pullRequest.originRepositoryId)
     .where("baseRef", headRef)
     .where("state", "open")
-    .orderBy("number", "desc")
     .limit(2);
+}
+
+/**
+ * The pull requests reached from `start` by repeatedly taking `next`, closest
+ * first. Stops at a pull request already reached, which pull requests merging
+ * into each other's branches would otherwise repeat until the depth limit.
+ */
+async function follow(
+  start: PullRequest,
+  next: (pullRequest: PullRequest) => Promise<PullRequest | null>,
+): Promise<PullRequest[]> {
+  const seen = new Set([start.id]);
+  const chain: PullRequest[] = [];
+  let current = start;
+  while (chain.length < MAX_STACK_DEPTH) {
+    const found = await next(current);
+    if (!found || seen.has(found.id)) {
+      break;
+    }
+    seen.add(found.id);
+    chain.push(found);
+    current = found;
+  }
+  return chain;
 }
 
 /**
@@ -81,75 +104,46 @@ async function findOpenChildPullRequests(
  * auto-approved.
  */
 export async function checkIsStackedPullRequest(args: {
-  project: Project;
   pullRequest: PullRequest | null;
   baseBranch: string | null;
+  isAutoApprovedBranch: (branch: string) => boolean;
 }): Promise<boolean> {
-  const { project, pullRequest, baseBranch } = args;
-  if (!pullRequest || !baseBranch) {
-    return false;
-  }
-  const isAutoApprovedBranch = await project.$getAutoApprovedBranchMatcher();
-  if (isAutoApprovedBranch(baseBranch)) {
+  const { pullRequest, baseBranch } = args;
+  if (!pullRequest || !baseBranch || args.isAutoApprovedBranch(baseBranch)) {
     return false;
   }
   const parent = await findOpenPullRequestByHead(pullRequest, baseBranch);
   return parent !== null;
 }
 
-export type PullRequestStack = {
-  /**
-   * The pull requests of the stack, from its top down to the one merging into
-   * `baseBranch`.
-   */
-  pullRequests: PullRequest[];
-  /** The branch the bottom pull request merges into. */
-  baseBranch: string | null;
-};
-
 /**
  * The stack a pull request belongs to: the open pull requests it builds on,
  * down to the one merging into a branch no pull request comes from, and the
- * ones built on it.
- *
- * Going up, the stack stops where two pull requests build on the same one:
- * that is a tree, and which branch continues the stack is anyone's guess.
+ * ones built on it. Null when the pull request is not stacked.
  */
-export async function getPullRequestStack(
-  pullRequest: PullRequest,
-): Promise<PullRequestStack> {
-  // A pull request merging into its own descendant would loop forever.
-  const seen = new Set<string>([pullRequest.id]);
-
-  const below: PullRequest[] = [];
-  let bottom = pullRequest;
-  while (bottom.baseRef && below.length < MAX_STACK_DEPTH) {
-    const parent = await findOpenPullRequestByHead(bottom, bottom.baseRef);
-    if (!parent || seen.has(parent.id)) {
-      break;
-    }
-    seen.add(parent.id);
-    below.push(parent);
-    bottom = parent;
+export async function getPullRequestStack(pullRequest: PullRequest): Promise<{
+  /** From the top of the stack down to the one merging into `baseBranch`. */
+  pullRequests: PullRequest[];
+  /** The branch the bottom pull request merges into. */
+  baseBranch: string | null;
+} | null> {
+  const [below, above] = await Promise.all([
+    follow(pullRequest, findParent),
+    follow(pullRequest, findChild),
+  ]);
+  // In a loop of pull requests merging into each other, every one of them is
+  // both above and below.
+  const belowIds = new Set(below.map((item) => item.id));
+  const pullRequests = [
+    ...above.filter((item) => !belowIds.has(item.id)).reverse(),
+    pullRequest,
+    ...below,
+  ];
+  if (pullRequests.length < 2) {
+    return null;
   }
-
-  const above: PullRequest[] = [];
-  let top = pullRequest;
-  while (above.length < MAX_STACK_DEPTH) {
-    const children = await findOpenChildPullRequests(top);
-    const child = children.length === 1 ? children[0] : null;
-    if (!child || seen.has(child.id)) {
-      break;
-    }
-    seen.add(child.id);
-    above.unshift(child);
-    top = child;
-  }
-
-  return {
-    pullRequests: [...above, pullRequest, ...below],
-    baseBranch: bottom.baseRef,
-  };
+  const bottom = below.at(-1) ?? pullRequest;
+  return { pullRequests, baseBranch: bottom.baseRef };
 }
 
 /**
@@ -161,10 +155,9 @@ export async function getLatestPullRequestBuilds(args: {
   pullRequests: PullRequest[];
 }): Promise<Map<string, Build>> {
   const { build, pullRequests } = args;
-  const column =
-    pullRequests[0] instanceof OriginPullRequest
-      ? "originPullRequestId"
-      : "githubPullRequestId";
+  const column = build.originPullRequestId
+    ? "originPullRequestId"
+    : "githubPullRequestId";
   const builds = await Build.query()
     .where("projectId", build.projectId)
     .where("name", build.name)
@@ -184,4 +177,29 @@ export async function getLatestPullRequestBuilds(args: {
       return [pullRequestId, latest];
     }),
   );
+}
+
+/**
+ * The stack of a build's pull request, each pull request with the latest
+ * build of the same suite. Null when the pull request is not stacked.
+ */
+export async function getBuildPullRequestStack(args: {
+  build: Build;
+  pullRequest: PullRequest;
+}) {
+  const stack = await getPullRequestStack(args.pullRequest);
+  if (!stack) {
+    return null;
+  }
+  const builds = await getLatestPullRequestBuilds({
+    build: args.build,
+    pullRequests: stack.pullRequests,
+  });
+  return {
+    baseBranch: stack.baseBranch,
+    items: stack.pullRequests.map((pullRequest) => ({
+      pullRequest,
+      build: builds.get(pullRequest.id) ?? null,
+    })),
+  };
 }

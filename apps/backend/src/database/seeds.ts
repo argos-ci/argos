@@ -2192,12 +2192,6 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
 }
 
 /**
- * Creates a realistic CI build with real metadata, polished screenshots and a
- * couple of non-screenshot files (Playwright traces and markdown snapshots). It
- * mimics a pull request that redesigns the analytics dashboard: a few
- * screenshots change, one is added and one is removed.
- */
-/**
  * Three pull requests stacked on each other. The bottom one merges into `main`
  * and changed the screenshot; the middle one, compared with it, changed
  * nothing; the top one has not run the suite yet.
@@ -2394,6 +2388,12 @@ export async function createStackedPullRequestsScenario(input: {
   return { bottomBuild, middleBuild };
 }
 
+/**
+ * Creates a realistic CI build with real metadata, polished screenshots and a
+ * couple of non-screenshot files (Playwright traces and markdown snapshots). It
+ * mimics a pull request that redesigns the analytics dashboard: a few
+ * screenshots change, one is added and one is removed.
+ */
 async function createRealWorldBuildScenario(input: {
   projectId: string;
 }): Promise<Build> {

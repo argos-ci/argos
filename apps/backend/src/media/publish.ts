@@ -24,15 +24,7 @@ export async function publishMediaForBranch(args: {
   githubRepositoryId: string;
   branch: string;
 }): Promise<number> {
-  const pullRequest = await GithubPullRequest.query()
-    .where("githubRepositoryId", args.githubRepositoryId)
-    .where("headRef", args.branch)
-    .where("headFromFork", false)
-    .whereNot("state", "closed")
-    // Newest wins if a branch somehow has two open pull requests: it is the one
-    // people are looking at.
-    .orderBy("number", "desc")
-    .first();
+  const pullRequest = await GithubPullRequest.findOpenByHead(args);
 
   if (!pullRequest) {
     return 0;

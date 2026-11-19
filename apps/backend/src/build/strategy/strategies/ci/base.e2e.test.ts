@@ -53,7 +53,10 @@ const test = baseTest.extend<Fixtures>({
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
   },
 });
@@ -323,7 +326,10 @@ describe("#getCIBase (no git provider)", () => {
 
       const result = await getCIBase({
         ...args,
-        context: { checkIsAutoApproved: () => true },
+        context: {
+          checkIsAutoApproved: () => true,
+          isAutoApprovedBranch: () => true,
+        },
       });
       expect(
         result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict DmojPpVoURuNFLbZ23yXJ88Oy4xvol8xkWqaUHBKzbM6ah3gVzX7uG6brrGMvf0
+\restrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -5356,7 +5356,7 @@ CREATE INDEX github_accounts_type_index ON public.github_accounts USING btree (t
 -- Name: github_pull_requests_githubrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX github_pull_requests_githubrepositoryid_baseref_index ON public.github_pull_requests USING btree ("githubRepositoryId", "baseRef");
+CREATE INDEX github_pull_requests_githubrepositoryid_baseref_index ON public.github_pull_requests USING btree ("githubRepositoryId", "baseRef") WHERE (state = 'open'::text);
 
 
 --
@@ -5549,7 +5549,7 @@ CREATE INDEX oauth_refresh_tokens_oauthgrantid_index ON public.oauth_refresh_tok
 -- Name: origin_pull_requests_originrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX origin_pull_requests_originrepositoryid_baseref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "baseRef");
+CREATE INDEX origin_pull_requests_originrepositoryid_baseref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "baseRef") WHERE (state = 'open'::text);
 
 
 --
@@ -7134,7 +7134,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DmojPpVoURuNFLbZ23yXJ88Oy4xvol8xkWqaUHBKzbM6ah3gVzX7uG6brrGMvf0
+\unrestrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Knex migrations
 

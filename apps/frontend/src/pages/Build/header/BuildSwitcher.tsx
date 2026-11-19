@@ -62,7 +62,7 @@ type SwitchableBuild = Build | Build["siblingBuilds"][number];
  * rather than a tooltip: one per row would fire over the neighbouring rows as
  * the pointer runs down the column.
  */
-function BuildStatusIcon(props: {
+export function BuildStatusIcon(props: {
   type: BuildType | null;
   status: BuildStatus;
 }) {

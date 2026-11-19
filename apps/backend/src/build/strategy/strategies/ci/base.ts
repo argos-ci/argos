@@ -175,9 +175,9 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     ? context.checkIsAutoApproved(baseBranch)
     : false;
   const isStacked = await checkIsStackedPullRequest({
-    project,
     pullRequest,
     baseBranch,
+    isAutoApprovedBranch: context.isAutoApprovedBranch,
   });
   const approved = isBaseBranchAutoApproved || isStacked ? undefined : true;
 

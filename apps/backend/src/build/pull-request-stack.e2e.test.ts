@@ -1,10 +1,7 @@
+import { invariant } from "@argos/util/invariant";
 import { test as baseTest, beforeEach, describe, expect } from "vitest";
 
-import type {
-  GithubPullRequest,
-  GithubRepository,
-  Project,
-} from "@/database/models";
+import type { GithubRepository, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import {
@@ -43,7 +40,7 @@ function createPullRequest(
   });
 }
 
-function numbers(pullRequests: GithubPullRequest[]) {
+function numbers(pullRequests: { number: number }[]) {
   return pullRequests.map((pullRequest) => pullRequest.number);
 }
 
@@ -72,9 +69,8 @@ describe("#getPullRequestStack", () => {
     });
 
     const stack = await getPullRequestStack(middle);
-    expect(numbers(stack.pullRequests as GithubPullRequest[])).toEqual([
-      3, 2, 1,
-    ]);
+    invariant(stack);
+    expect(numbers(stack.pullRequests)).toEqual([3, 2, 1]);
     expect(stack.baseBranch).toBe("main");
   });
 
@@ -105,9 +101,7 @@ describe("#getPullRequestStack", () => {
       baseRef: "two",
     });
 
-    const stack = await getPullRequestStack(pullRequest);
-    expect(numbers(stack.pullRequests as GithubPullRequest[])).toEqual([2]);
-    expect(stack.baseBranch).toBe("one");
+    expect(await getPullRequestStack(pullRequest)).toBeNull();
   });
 
   test("stops going up where two pull requests build on the same one", async ({
@@ -129,8 +123,7 @@ describe("#getPullRequestStack", () => {
       baseRef: "one",
     });
 
-    const stack = await getPullRequestStack(pullRequest);
-    expect(numbers(stack.pullRequests as GithubPullRequest[])).toEqual([1]);
+    expect(await getPullRequestStack(pullRequest)).toBeNull();
   });
 
   test("ends when the pull requests merge into each other", async ({
@@ -148,7 +141,8 @@ describe("#getPullRequestStack", () => {
     });
 
     const stack = await getPullRequestStack(pullRequest);
-    expect(numbers(stack.pullRequests as GithubPullRequest[])).toEqual([1, 2]);
+    invariant(stack);
+    expect(numbers(stack.pullRequests)).toEqual([1, 2]);
   });
 });
 

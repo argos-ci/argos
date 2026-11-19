@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { StackIcon } from "@primer/octicons-react";
 import { clsx } from "clsx";
 import { ChevronDownIcon, CircleDashedIcon, CircleIcon } from "lucide-react";
@@ -6,10 +7,9 @@ import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
-import { getBuildDescriptor } from "@/util/build";
-import { lowTextColorClassNames } from "@/util/colors";
 
 import { getBuildOverviewURL } from "../BuildParams";
+import { BuildStatusIcon } from "./BuildSwitcher";
 
 const _BuildFragment = graphql(`
   fragment PullRequestStack_Build on Build {
@@ -36,13 +36,12 @@ const _BuildFragment = graphql(`
 `);
 
 type Build = DocumentType<typeof _BuildFragment>;
-type StackItem = NonNullable<Build["pullRequestStack"]>["items"][number];
 
 /**
  * A row's icon, on the line that runs down the stack. The line leaves a gap
  * around the icon and reaches through the row's vertical padding, so the
- * segments of two rows meet at their shared edge: the offsets mirror the
- * padding of `getMenuItemClassName`, and a two-line row would break the line.
+ * segments of two rows meet at their shared edge. A two-line row would break
+ * it: the icon would no longer be one line away from that edge.
  */
 function StackNode(props: {
   children: React.ReactNode;
@@ -57,7 +56,7 @@ function StackNode(props: {
           aria-hidden
           className={clsx(
             segment,
-            "-top-1.5 bottom-[calc(50%+0.5em+2px)] pointer-coarse:-top-2.5",
+            "-top-(--menu-item-py) bottom-[calc(50%+0.5em+2px)]",
           )}
         />
       ) : null}
@@ -67,26 +66,11 @@ function StackNode(props: {
           aria-hidden
           className={clsx(
             segment,
-            "top-[calc(50%+0.5em+2px)] -bottom-1.5 pointer-coarse:-bottom-2.5",
+            "top-[calc(50%+0.5em+2px)] -bottom-(--menu-item-py)",
           )}
         />
       ) : null}
     </span>
-  );
-}
-
-function StackItemIcon(props: { build: StackItem["build"] }) {
-  const { build } = props;
-  if (!build) {
-    return <CircleDashedIcon aria-label="No build" />;
-  }
-  const descriptor = getBuildDescriptor(build.type, build.status);
-  const Icon = descriptor.icon;
-  return (
-    <Icon
-      aria-label={descriptor.label}
-      className={lowTextColorClassNames[descriptor.color]}
-    />
   );
 }
 
@@ -106,7 +90,8 @@ export function PullRequestStack(props: {
   if (!stack) {
     return null;
   }
-  const currentId = build.pullRequest?.id;
+  invariant(build.pullRequest, "A stacked build has a pull request");
+  const currentId = build.pullRequest.id;
   return (
     <MenuRoot defaultOpen={props.defaultOpen}>
       <Tooltip content="Stacked pull requests">
@@ -148,7 +133,14 @@ export function PullRequestStack(props: {
                   index < stack.items.length - 1 || Boolean(stack.baseBranch)
                 }
               >
-                <StackItemIcon build={item.build} />
+                {item.build ? (
+                  <BuildStatusIcon
+                    type={item.build.type}
+                    status={item.build.status}
+                  />
+                ) : (
+                  <CircleDashedIcon aria-label="No build" />
+                )}
               </StackNode>
             }
             checked={item.pullRequest.id === currentId}

@@ -39,7 +39,7 @@ function item(
 function stack(
   items: StackItem[],
   current: number,
-  baseBranch: string | null = "main",
+  baseBranch = "main",
 ): Build {
   return {
     __typename: "Build",

@@ -9,10 +9,7 @@ import {
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
 import { getNewerBuild } from "@/build/lineage";
-import {
-  getLatestPullRequestBuilds,
-  getPullRequestStack,
-} from "@/build/pull-request-stack";
+import { getBuildPullRequestStack } from "@/build/pull-request-stack";
 import { getSiblingBuilds } from "@/build/siblings";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
@@ -407,21 +404,7 @@ export const resolvers: IResolvers = {
       if (!pullRequest) {
         return null;
       }
-      const stack = await getPullRequestStack(pullRequest);
-      if (stack.pullRequests.length < 2) {
-        return null;
-      }
-      const builds = await getLatestPullRequestBuilds({
-        build,
-        pullRequests: stack.pullRequests,
-      });
-      return {
-        baseBranch: stack.baseBranch,
-        items: stack.pullRequests.map((item) => ({
-          pullRequest: item,
-          build: builds.get(item.id) ?? null,
-        })),
-      };
+      return getBuildPullRequestStack({ build, pullRequest });
     },
     parallel: (build) => {
       if (build.batchCount !== null && build.externalId !== null) {
