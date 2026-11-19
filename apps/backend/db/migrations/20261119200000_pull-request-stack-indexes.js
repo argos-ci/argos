@@ -12,27 +12,58 @@
  * @returns { Promise<void> }
  */
 export const up = async (knex) => {
-  await knex.raw(
-    `CREATE INDEX CONCURRENTLY IF NOT EXISTS github_pull_requests_githubrepositoryid_baseref_index
-       ON github_pull_requests ("githubRepositoryId", "baseRef")
-       WHERE state = 'open'`,
+  await createIndex(
+    knex,
+    "github_pull_requests_githubrepositoryid_baseref_index",
+    `ON github_pull_requests ("githubRepositoryId", "baseRef")
+     WHERE state = 'open'`,
   );
-  await knex.raw(
-    `CREATE INDEX CONCURRENTLY IF NOT EXISTS origin_pull_requests_originrepositoryid_baseref_index
-       ON origin_pull_requests ("originRepositoryId", "baseRef")
-       WHERE state = 'open'`,
+  await createIndex(
+    knex,
+    "origin_pull_requests_originrepositoryid_baseref_index",
+    `ON origin_pull_requests ("originRepositoryId", "baseRef")
+     WHERE state = 'open'`,
   );
-  await knex.raw(
-    `CREATE INDEX CONCURRENTLY IF NOT EXISTS builds_githubpullrequestid_idx
-       ON builds ("githubPullRequestId")
-       WHERE "githubPullRequestId" IS NOT NULL`,
+  await createIndex(
+    knex,
+    "builds_githubpullrequestid_idx",
+    `ON builds ("githubPullRequestId")
+     WHERE "githubPullRequestId" IS NOT NULL`,
   );
-  await knex.raw(
-    `CREATE INDEX CONCURRENTLY IF NOT EXISTS builds_originpullrequestid_idx
-       ON builds ("originPullRequestId")
-       WHERE "originPullRequestId" IS NOT NULL`,
+  await createIndex(
+    knex,
+    "builds_originpullrequestid_idx",
+    `ON builds ("originPullRequestId")
+     WHERE "originPullRequestId" IS NOT NULL`,
   );
 };
+
+/**
+ * A concurrent build that fails leaves the index in place, marked invalid,
+ * and `IF NOT EXISTS` alone would then report success on an index no query
+ * can use. Only an invalid one is dropped, never a working one built ahead of
+ * the deploy.
+ *
+ * @param { import("knex").Knex } knex
+ * @param {string} name
+ * @param {string} definition
+ */
+async function createIndex(knex, name, definition) {
+  const invalid = await knex.raw(
+    `SELECT 1
+     FROM pg_class c
+     JOIN pg_index i ON i.indexrelid = c.oid
+     WHERE c.relname = ?
+       AND NOT i.indisvalid`,
+    [name],
+  );
+  if (invalid.rows.length > 0) {
+    await knex.raw(`DROP INDEX CONCURRENTLY ??`, [name]);
+  }
+  await knex.raw(`CREATE INDEX CONCURRENTLY IF NOT EXISTS ?? ${definition}`, [
+    name,
+  ]);
+}
 
 /**
  * @param { import("knex").Knex } knex
