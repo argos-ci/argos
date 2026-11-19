@@ -264,9 +264,18 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
   // popovers (all rendered outside `#root`) don't close it, which is what lets
   // the thread's actions menu work.
   const hasActivePopover = draftShown || threadShown;
-  const canDismissPlacing = placing && onPlacingDismiss != null;
+
+  // A press that ends close to where it started is a click and places a
+  // point; one that moves further draws an area. The click itself is left to
+  // `onClick`, which is also what assistive technology fires.
+  const pressRef = useRef<Press | null>(null);
+  // Set when a press ends as a drag or is cancelled, so the click the browser
+  // sends after it does not also drop a pin. The next press resets it, in case
+  // that click never comes.
+  const skipClickRef = useRef(false);
+
   useEffect(() => {
-    if (!hasActivePopover && !canDismissPlacing) {
+    if (!hasActivePopover && !placing) {
       return;
     }
     const close = () => {
@@ -294,6 +303,12 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
       if (event.key !== "Escape") {
         return;
       }
+      if (pressRef.current?.dragging) {
+        pressRef.current = null;
+        skipClickRef.current = true;
+        setSelection(null);
+        return;
+      }
       if (hasActivePopover) {
         close();
         return;
@@ -310,12 +325,8 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
       });
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [hasActivePopover, canDismissPlacing, onPlacingDismiss]);
+  }, [hasActivePopover, placing, onPlacingDismiss]);
 
-  // A press that ends close to where it started is a click and places a
-  // point; one that moves further draws an area. The click itself is left to
-  // `onClick`, which is also what assistive technology fires.
-  const pressRef = useRef<Press | null>(null);
   const getPointerPoint = (
     event: React.MouseEvent<HTMLDivElement>,
   ): NormalizedPoint | null => {
@@ -328,6 +339,7 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     if (event.button !== 0) {
       return;
     }
+    skipClickRef.current = false;
     const point = getPointerPoint(event);
     pressRef.current = point
       ? {
@@ -346,6 +358,13 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
   ) => {
     const press = pressRef.current;
     if (!press) {
+      return;
+    }
+    // The release never reached us: the overlay unmounted mid-drag, or the
+    // button came up where capture could not follow.
+    if (event.buttons === 0) {
+      pressRef.current = null;
+      setSelection(null);
       return;
     }
     if (
@@ -368,9 +387,11 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
     const press = pressRef.current;
+    pressRef.current = null;
     if (!press?.dragging) {
       return;
     }
+    skipClickRef.current = true;
     const point = getPointerPoint(event);
     const area = point ? getRectInImage(press.point, point) : null;
     setSelection(null);
@@ -387,13 +408,29 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     );
   };
   const handlePlacementClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    const press = pressRef.current;
-    pressRef.current = null;
-    if (press?.dragging) {
+    if (skipClickRef.current) {
+      skipClickRef.current = false;
       return;
     }
     placePoint(getPointerPoint(event));
   };
+
+  // Pins panned out of the pane are not rendered, except the open one.
+  const markers = threads.flatMap((thread) => {
+    const open = thread.root.id === openThreadId;
+    const point = toScreen(getAnchorPinPoint(thread.anchor));
+    return open || isInPane(point) ? [{ thread, open, point }] : [];
+  });
+
+  // A marker that unmounts while hovered never reports the hover's end: one
+  // panned out of the pane, or a thread that left the layer. Forget the hover
+  // with it, so its preview and outline do not come back on their own.
+  if (
+    hoveredThreadId !== null &&
+    !markers.some(({ thread }) => thread.root.id === hoveredThreadId)
+  ) {
+    setHoveredThreadId(null);
+  }
 
   const handleCreate = useCallback(
     async (body: EditorValue, options: { addToReview: boolean }) => {
@@ -461,31 +498,22 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
           <CommentPin point={draftPin} avatar={draftAvatar} />
         ) : null}
       </div>
-      {threads.map((thread) => {
-        const open = thread.root.id === openThreadId;
-        const point = toScreen(getAnchorPinPoint(thread.anchor));
-        if (!open && !isInPane(point)) {
-          return null;
-        }
-        return (
-          <CommentMarker
-            key={thread.root.id}
-            point={toViewport(point)}
-            comment={thread.root}
-            open={open}
-            onOpen={() => {
-              setDraft(null);
-              setOpenThreadId(thread.root.id);
-            }}
-            onHoverChange={
-              thread.anchor.type === "area"
-                ? (hovered) =>
-                    setHoveredThreadId(hovered ? thread.root.id : null)
-                : undefined
-            }
-          />
-        );
-      })}
+      {markers.map(({ thread, open, point }) => (
+        <CommentMarker
+          key={thread.root.id}
+          point={toViewport(point)}
+          comment={thread.root}
+          open={open}
+          onOpen={() => {
+            setDraft(null);
+            setOpenThreadId(thread.root.id);
+          }}
+          hovered={thread.root.id === hoveredThreadId}
+          onHoverChange={(hovered) =>
+            setHoveredThreadId(hovered ? thread.root.id : null)
+          }
+        />
+      ))}
       {/* The open thread is a separate popover beside its pin. */}
       {openThread ? (
         <CommentThreadPopover

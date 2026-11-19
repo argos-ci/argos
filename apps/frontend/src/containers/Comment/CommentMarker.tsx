@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { flip, useFloating } from "@floating-ui/react-dom";
 import { clsx } from "clsx";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
@@ -68,11 +67,14 @@ export function CommentMarker(props: {
   comment: Comment;
   open: boolean;
   onOpen: () => void;
-  /** Lets the layer outline the area a hovered pin is about. */
-  onHoverChange?: (hovered: boolean) => void;
+  /**
+   * Owned by the layer, which also outlines the area a hovered pin is about
+   * and forgets the hover when the pin unmounts.
+   */
+  hovered: boolean;
+  onHoverChange: (hovered: boolean) => void;
 }) {
-  const { point, comment, open, onOpen, onHoverChange } = props;
-  const [hovered, setHovered] = useState(false);
+  const { point, comment, open, onOpen, hovered, onHoverChange } = props;
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const name = comment.user?.name || comment.user?.slug || "Unknown user";
   const resolved = Boolean(comment.resolvedAt);
@@ -128,14 +130,8 @@ export function CommentMarker(props: {
             ? `Open resolved comment from ${name}`
             : `Open comment from ${name}`
         }
-        onHoverStart={() => {
-          setHovered(true);
-          onHoverChange?.(true);
-        }}
-        onHoverEnd={() => {
-          setHovered(false);
-          onHoverChange?.(false);
-        }}
+        onHoverStart={() => onHoverChange(true)}
+        onHoverEnd={() => onHoverChange(false)}
         onClick={onOpen}
         onKeyDown={(event: React.KeyboardEvent) => {
           if (event.key === "Enter" || event.key === " ") {

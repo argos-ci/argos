@@ -202,6 +202,32 @@ describe("createComment", () => {
     },
   );
 
+  test("rejects an area on a text snapshot", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const file = await factory.File.create({
+      type: "screenshot",
+      contentType: "text/markdown",
+    });
+    const screenshot = await factory.Screenshot.create({ fileId: file.id });
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      compareScreenshotId: screenshot.id,
+    });
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .send({
+        body: "This section",
+        screenshotDiffId: diff.id,
+        anchor: { type: "area", x: 0.1, y: 0.1, width: 0.5, height: 0.5 },
+      })
+      .expect(400);
+
+    expect(res.body.error).toContain("Use a line range");
+  });
+
   test("anchors a comment to a line range", async ({
     build,
     screenshotDiffs,

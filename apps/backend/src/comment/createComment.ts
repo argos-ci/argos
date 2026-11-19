@@ -1,7 +1,12 @@
+import {
+  isImageContentType,
+  normalizeContentType,
+} from "@argos/schemas/content-type";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
-import { Comment, Project } from "@/database/models";
+import { Comment, Project, ScreenshotDiff } from "@/database/models";
 import type { CommentAnchor } from "@/database/models/Comment";
 import {
   autoSubscribeUserToBuild,
@@ -102,6 +107,10 @@ export async function createComment(input: {
     );
   }
 
+  if (screenshotDiffId && anchor && anchor.type !== "lines") {
+    await assertScreenshotDiffIsImage(screenshotDiffId);
+  }
+
   // Inserting the comment and loading the project are independent — run them
   // together rather than back-to-back.
   //
@@ -194,6 +203,29 @@ export async function createComment(input: {
   await publishCommentChange({ type: "ADDED", comment });
 
   return comment;
+}
+
+/**
+ * A point or an area is drawn over a snapshot's image. A text snapshot shows
+ * its diff as source code, where only a line range can be drawn, so an image
+ * anchor on one would point nowhere.
+ */
+async function assertScreenshotDiffIsImage(
+  screenshotDiffId: string,
+): Promise<void> {
+  const diff = await ScreenshotDiff.query()
+    .findById(screenshotDiffId)
+    .withGraphFetched("[compareScreenshot.file, baseScreenshot.file]");
+  invariant(diff, "Screenshot diff not found");
+  const screenshot = diff.compareScreenshot ?? diff.baseScreenshot;
+  // Screenshots uploaded before files were tracked are all PNGs.
+  const contentType = screenshot?.file?.contentType ?? "image/png";
+  if (!isImageContentType(normalizeContentType(contentType))) {
+    throw boom(
+      400,
+      "A text snapshot can't be anchored to a point or an area. Use a line range.",
+    );
+  }
 }
 
 /** Follow a build or a test, whichever the comment was posted on. */
