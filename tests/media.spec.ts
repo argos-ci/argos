@@ -242,8 +242,8 @@ loggedTest(
     await composer.click();
     await composer.pressSequentially("Over to you @Kyle");
 
-    // The composer sits at the right edge of the page, where the list used to
-    // overflow the viewport.
+    // The composer sits at the right edge of the page, so the list has to shift
+    // to stay in view.
     const suggestion = page.getByRole("button", { name: /Kyle Bertolino/ });
     await expect(suggestion).toBeInViewport({ ratio: 1 });
     await suggestion.click();
