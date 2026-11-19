@@ -10,9 +10,9 @@ import type { DiffOptions, DiffResult } from "../types";
 const DEFAULT_THRESHOLD = 0.5;
 
 /**
- * Most segments and bands a shift may hold to be kept. Content that moved
- * reads as a few blocks; a report past this comes from a scattered diff, and
- * would be stored and sent with every build for nothing but noise.
+ * Most blocks and areas a shift may draw to be kept. Content that moved reads
+ * as a few blocks; a report past this comes from a scattered diff, and would
+ * be stored and sent with every build for nothing but noise.
  */
 const MAX_LAYOUT_SHIFT_PARTS = 100;
 
@@ -118,7 +118,6 @@ export async function diffImages(
  * changed.
  */
 function checkIsLayoutShift(shift: Shift): boolean {
-  const parts =
-    shift.segments.length + shift.inserted.length + shift.removed.length;
+  const parts = shift.segments.length + shift.hidden.length;
   return shift.shiftedPixels > 0 && parts <= MAX_LAYOUT_SHIFT_PARTS;
 }

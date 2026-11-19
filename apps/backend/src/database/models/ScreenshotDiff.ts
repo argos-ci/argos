@@ -31,10 +31,17 @@ const LayoutShiftSchema = z.object({
       headY: z.number().int().min(0),
       height: z.number().int().min(0),
       dy: z.number().int(),
+      /** Absent from shifts iris 1.0 found: it looked for vertical moves only. */
+      dx: z.number().int().optional(),
     }),
   ),
   inserted: z.array(PixelRectSchema),
   removed: z.array(PixelRectSchema),
+  /**
+   * Areas of the mask that differ only because content moved. Absent from
+   * shifts iris 1.0 found, where they are derived from the bands.
+   */
+  hidden: z.array(PixelRectSchema).optional(),
   shiftedPixels: z.number().int().min(0),
 });
 

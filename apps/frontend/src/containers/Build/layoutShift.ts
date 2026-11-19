@@ -13,11 +13,13 @@ const _LayoutShiftFragment = graphql(`
     }
     moves {
       x
+      baseX
       width
       baseY
       headY
       height
       dy
+      dx
     }
   }
 `);

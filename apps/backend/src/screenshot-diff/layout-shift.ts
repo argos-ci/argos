@@ -2,6 +2,7 @@ import type { ScreenshotDiffLayoutShift } from "@/database/models";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Segment = ScreenshotDiffLayoutShift["segments"][number];
+type Move = Segment & { dx: number; baseX: number };
 
 /**
  * Rows a move has to span to be drawn: iris's own floor for a shift. A block
@@ -66,11 +67,12 @@ function subtract(start: number, end: number, holes: Interval[]): Interval[] {
 
 /**
  * The areas of the mask whose pixels differ only because content moved, to be
- * left out of it. In a strip that holds a shift, a row can only differ where a
- * block is now or where it was, or in a band that is new (`inserted`) or gone
- * (`removed`): the hidden rows are the blocks' rows outside the bands.
+ * left out of it, for a shift iris did not report them for. In a strip that
+ * holds a shift, a row can only differ where a block is now or where it was,
+ * or in a band that is new (`inserted`) or gone (`removed`): the hidden rows
+ * are the blocks' rows outside the bands.
  */
-function getHiddenRects(shift: ScreenshotDiffLayoutShift): Rect[] {
+function getHiddenRectsFromBands(shift: ScreenshotDiffLayoutShift): Rect[] {
   const strips = new Map(
     shift.segments.map((segment) => [getStripKey(segment), segment]),
   );
@@ -98,10 +100,11 @@ function getHiddenRects(shift: ScreenshotDiffLayoutShift): Rect[] {
  * base are real changes, so they stay in the mask and out of the moves.
  * Touching parts of a strip that moved by the same amount are one move.
  */
-function getMoves(shift: ScreenshotDiffLayoutShift): Segment[] {
+function getMoves(shift: ScreenshotDiffLayoutShift): Move[] {
   const pieces = shift.segments
-    .flatMap((segment) =>
-      subtract(
+    .flatMap((segment) => {
+      const dx = segment.dx ?? 0;
+      return subtract(
         segment.headY,
         segment.headY + segment.height,
         getStripRows(shift.removed, segment),
@@ -110,17 +113,20 @@ function getMoves(shift: ScreenshotDiffLayoutShift): Segment[] {
         headY: start,
         baseY: start - segment.dy,
         height: end - start,
-      })),
-    )
+        dx,
+        baseX: segment.x - dx,
+      }));
+    })
     .sort((a, b) => a.x - b.x || a.headY - b.headY);
 
-  const moves: Segment[] = [];
+  const moves: Move[] = [];
   for (const piece of pieces) {
     const last = moves.at(-1);
     if (
       last &&
       getStripKey(last) === getStripKey(piece) &&
       last.dy === piece.dy &&
+      last.dx === piece.dx &&
       last.headY + last.height === piece.headY
     ) {
       last.height += piece.height;
@@ -139,10 +145,10 @@ function getMoves(shift: ScreenshotDiffLayoutShift): Segment[] {
  */
 export function getLayoutShiftRegions(shift: ScreenshotDiffLayoutShift): {
   hidden: Rect[];
-  moves: Segment[];
+  moves: Move[];
 } {
   return {
-    hidden: getHiddenRects(shift),
+    hidden: shift.hidden ?? getHiddenRectsFromBands(shift),
     moves: getMoves(shift),
   };
 }
