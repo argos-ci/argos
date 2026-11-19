@@ -30,6 +30,7 @@ import {
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { createBuildReviewPrompt } from "./BuildReviewPrompt";
 import { BuildSwitcher } from "./BuildSwitcher";
+import { PullRequestStack } from "./PullRequestStack";
 
 const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
@@ -265,7 +266,14 @@ export const BuildHeader = memo(
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 empty:hidden">
           {build?.mergeQueue ? <BuildMergeQueueIndicator /> : null}
           {build?.pullRequest ? (
-            <PullRequestButton pullRequest={build.pullRequest} size="small" />
+            <>
+              <PullRequestStack
+                accountSlug={props.accountSlug}
+                projectName={props.projectName}
+                buildNumber={props.buildNumber}
+              />
+              <PullRequestButton pullRequest={build.pullRequest} size="small" />
+            </>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-4">

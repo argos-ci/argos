@@ -73,6 +73,28 @@ export class GithubPullRequest extends Model {
   merged!: boolean | null;
   draft!: boolean | null;
 
+  /**
+   * The open pull request coming from `branch` of the repository, the newest
+   * if the branch somehow has several: it is the one people are looking at.
+   *
+   * A fork's branch can share its name with one of the repository's, and that
+   * name is chosen by whoever opened the pull request, who needs no access to
+   * the repository: only pull requests from the repository itself match.
+   */
+  static async findOpenByHead(args: {
+    githubRepositoryId: string;
+    branch: string;
+  }): Promise<GithubPullRequest | null> {
+    const pullRequest = await GithubPullRequest.query()
+      .where("githubRepositoryId", args.githubRepositoryId)
+      .where("headRef", args.branch)
+      .where("headFromFork", false)
+      .where("state", "open")
+      .orderBy("number", "desc")
+      .first();
+    return pullRequest ?? null;
+  }
+
   static override get relationMappings(): RelationMappings {
     return {
       builds: {

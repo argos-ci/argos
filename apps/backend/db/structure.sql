@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 4Gl9dmoDtKmKOCebCQqAOfY0c5ipebDcypnUqByFdziXRrPKvQ554DVn6PrTnd2
+\restrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -5157,6 +5157,13 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 
 
 --
+-- Name: builds_githubpullrequestid_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_githubpullrequestid_idx ON public.builds USING btree ("githubPullRequestId") WHERE ("githubPullRequestId" IS NOT NULL);
+
+
+--
 -- Name: builds_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5168,6 +5175,13 @@ CREATE INDEX builds_jobstatus_index ON public.builds USING btree ("jobStatus");
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
+
+
+--
+-- Name: builds_originpullrequestid_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_originpullrequestid_idx ON public.builds USING btree ("originPullRequestId") WHERE ("originPullRequestId" IS NOT NULL);
 
 
 --
@@ -5336,6 +5350,13 @@ CREATE INDEX github_account_members_githubmemberid_index ON public.github_accoun
 --
 
 CREATE INDEX github_accounts_type_index ON public.github_accounts USING btree (type);
+
+
+--
+-- Name: github_pull_requests_githubrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_pull_requests_githubrepositoryid_baseref_index ON public.github_pull_requests USING btree ("githubRepositoryId", "baseRef") WHERE (state = 'open'::text);
 
 
 --
@@ -5522,6 +5543,13 @@ CREATE INDEX oauth_grants_userid_index ON public.oauth_grants USING btree ("user
 --
 
 CREATE INDEX oauth_refresh_tokens_oauthgrantid_index ON public.oauth_refresh_tokens USING btree ("oauthGrantId");
+
+
+--
+-- Name: origin_pull_requests_originrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX origin_pull_requests_originrepositoryid_baseref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "baseRef") WHERE (state = 'open'::text);
 
 
 --
@@ -7106,7 +7134,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 4Gl9dmoDtKmKOCebCQqAOfY0c5ipebDcypnUqByFdziXRrPKvQ554DVn6PrTnd2
+\unrestrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Knex migrations
 
@@ -7392,3 +7420,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261116120000_screenshot-diff-layout-shift.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119120000_deployment-github-deployment.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119193529_team-billing-role.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119200000_pull-request-stack-indexes.js', 1, NOW());

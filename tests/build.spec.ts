@@ -11,6 +11,7 @@ import {
   createFallbackBaselineScenario,
   createLayoutShiftScenario,
   createSiblingBuildsScenario,
+  createStackedPullRequestsScenario,
   createVariantSwitchersScenario,
 } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
@@ -305,6 +306,39 @@ loggedTest(
     });
   },
 );
+loggedTest(
+  "navigates the stacked pull requests from the build header",
+  async ({ page, team, project }) => {
+    const { bottomBuild, middleBuild } =
+      await createStackedPullRequestsScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${middleBuild.number}`,
+    );
+    await page.getByRole("button", { name: "3 stacked" }).click();
+    const menu = page.getByRole("listbox", { name: "Stacked pull requests" });
+    // Top of the stack first, down to the branch the stack merges into.
+    await expect(menu.getByRole("option")).toHaveText([
+      "#103Animate the order totalNo build",
+      "#102Refactor the order summary card",
+      "#101Add the order summary",
+      "main",
+    ]);
+
+    await screenshot(page, "build-pull-request-stack", {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
+
+    await menu.getByRole("option", { name: /#101/ }).click();
+    await expect(page).toHaveURL(
+      new RegExp(`/builds/${bottomBuild.number}/overview$`),
+    );
+    await expect(page.getByRole("button", { name: "3 stacked" })).toBeVisible();
+  },
+);
+
 loggedTest(
   "offers the next build of the commit once a review is submitted",
   async ({ page, auth, team, project }) => {
