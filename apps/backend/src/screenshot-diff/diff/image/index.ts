@@ -1,8 +1,7 @@
-import { diff } from "@argos-ci/iris";
+import { diff, type Shift } from "@argos-ci/iris";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 
-import type { ScreenshotDiffLayoutShift } from "@/database/models";
 import logger from "@/logger";
 import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 
@@ -118,11 +117,7 @@ export async function diffImages(
  * report that explains no pixel of it would only outline content that
  * changed.
  */
-function checkIsLayoutShift(shift: ScreenshotDiffLayoutShift): boolean {
-  const areas =
-    shift.hidden?.length ?? shift.inserted.length + shift.removed.length;
-  return (
-    shift.shiftedPixels > 0 &&
-    shift.segments.length + areas <= MAX_LAYOUT_SHIFT_PARTS
-  );
+function checkIsLayoutShift(shift: Shift): boolean {
+  const parts = shift.segments.length + shift.hidden.length;
+  return shift.shiftedPixels > 0 && parts <= MAX_LAYOUT_SHIFT_PARTS;
 }
