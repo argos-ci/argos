@@ -2074,21 +2074,18 @@ async function loadLatestCompareScreenshots(
  * sessions are kept, though only since they were introduced in June 2026.
  */
 function createUserLastSeenAtByUserIdLoader() {
-  return new DataLoader<string, string | null>(async (userIds) => {
+  return new DataLoader<string, Date | null>(async (userIds) => {
     const rows = (await UserSession.query()
       .select("userId")
       .max("lastSeenAt as lastSeenAt")
       .whereIn("userId", userIds as string[])
       .groupBy("userId")) as unknown as Array<{
       userId: string | number;
-      lastSeenAt: string | Date | null;
+      lastSeenAt: string;
     }>;
 
     const lastSeenAtByUserId = new Map(
-      rows.map((row) => [
-        String(row.userId),
-        row.lastSeenAt ? new Date(row.lastSeenAt).toISOString() : null,
-      ]),
+      rows.map((row) => [String(row.userId), new Date(row.lastSeenAt)]),
     );
 
     return userIds.map((userId) => lastSeenAtByUserId.get(userId) ?? null);

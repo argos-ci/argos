@@ -10,8 +10,8 @@ import {
   Account,
   StaffTeamContact,
   Subscription,
-  TeamUser,
   type StripeInvoice,
+  type TeamUser,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
@@ -40,12 +40,12 @@ import type {
   IPlanInterval,
   IResolvers,
   IStaffTeamOrderBy,
-  ITeamUserLevel,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
+import { teamMemberResolvers } from "./Team";
 
 /** Every staff entry point opens with this — the check lives in one place. */
 function assertStaff(ctx: Context): asserts ctx is Context & {
@@ -84,6 +84,13 @@ const { gql } = gqlTag;
  * scan the whole build history.
  */
 const MAX_TRIAL_PIPELINE_DAYS = 365;
+
+/** How the staff team page lists members: owners first. */
+const LEVEL_ORDER: Record<TeamUser["userLevel"], number> = {
+  owner: 0,
+  member: 1,
+  contributor: 2,
+};
 
 /** Upper bound on the cancellations window, which reads the invoice mirror. */
 const MAX_CANCELLATIONS_DAYS = 365;
@@ -482,12 +489,7 @@ export const typeDefs = gql`
     "When the team got its first build compared to a baseline"
     firstComparisonAt: DateTime
     owners: [TeamStaffOwner!]!
-    """
-    Every member of the team, owners first, then by the date they joined.
-
-    Unpaginated, and a query per team, so meant to be read for one team rather
-    than across the directory.
-    """
+    "Every member of the team, owners first, then by the date they joined."
     members: [TeamStaffMember!]!
     "When a staff member reached out to the team, null if never"
     contact: TeamStaffContact
@@ -920,15 +922,18 @@ export const resolvers: IResolvers = {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
     },
-    members: async (account) => {
+    members: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
-      return TeamUser.query()
-        .where("teamId", account.teamId)
-        .orderByRaw(
-          `case "userLevel" when 'owner' then 0 when 'member' then 1 else 2 end`,
-        )
-        .orderBy("createdAt", "asc")
-        .orderBy("id", "asc");
+      const members = await ctx.loaders.TeamMembersByTeamId.load(
+        account.teamId,
+      );
+      return members.toSorted(
+        (left, right) =>
+          LEVEL_ORDER[left.userLevel] - LEVEL_ORDER[right.userLevel] ||
+          new Date(left.createdAt).getTime() -
+            new Date(right.createdAt).getTime() ||
+          Number(left.id) - Number(right.id),
+      );
     },
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
@@ -974,21 +979,10 @@ export const resolvers: IResolvers = {
     },
   },
   TeamStaffMember: {
-    user: async (teamUser, _args, ctx) => {
-      const account = await ctx.loaders.AccountFromRelation.load({
-        userId: teamUser.userId,
-      });
-      invariant(account, "user account not found");
-      return account;
-    },
-    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    ...teamMemberResolvers,
     joinedAt: (teamUser) => new Date(teamUser.createdAt),
-    lastSeenAt: async (teamUser, _args, ctx) => {
-      const lastSeenAt = await ctx.loaders.UserLastSeenAtByUserId.load(
-        teamUser.userId,
-      );
-      return lastSeenAt ? new Date(lastSeenAt) : null;
-    },
+    lastSeenAt: (teamUser, _args, ctx) =>
+      ctx.loaders.UserLastSeenAtByUserId.load(teamUser.userId),
   },
   TeamStaffPeriodUsage: {
     currentPeriodScreenshotsCount: async (account, _args, ctx) => {

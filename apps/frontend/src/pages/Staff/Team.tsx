@@ -1,20 +1,12 @@
 import { useQuery } from "@apollo/client/react";
-import {
-  checkHasSubscriptionStatus,
-  checkIsTrialingSubscriptionStatus,
-} from "@argos/schemas/subscription-status";
-import { diffInCalendarDays } from "@argos/util/date";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
-  ArrowLeftIcon,
   BoxesIcon,
   ExternalLinkIcon,
-  HourglassIcon,
   ImagesIcon,
   MailIcon,
-  MoreVerticalIcon,
   UsersIcon,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
@@ -22,9 +14,9 @@ import { useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
+import { TeamMemberLabel } from "@/containers/UserList";
 import { graphql, type DocumentType } from "@/gql";
-import { PlanInterval } from "@/gql/graphql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
+import { TeamUserLevel } from "@/gql/graphql";
 import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Card, CardBody } from "@/ui/Card";
 import { useDialogValueState } from "@/ui/Dialog";
@@ -38,13 +30,6 @@ import {
   PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
-import {
-  Menu,
-  MenuItem,
-  MenuItemTooltip,
-  MenuRoot,
-  MenuTrigger,
-} from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
@@ -54,13 +39,21 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getAccountURL } from "../Account/AccountParams";
 import { NotFound } from "../NotFound";
 import { getProjectURL } from "../Project/ProjectParams";
-import { getOwnerEmails, useCopyOwnerEmails } from "./owner-emails";
-import { formatPrice, PRO_PLAN_NAME } from "./pricing";
+import {
+  formatDaysLeft,
+  formatPrice,
+  getIntervalUnit,
+  getPeriodAmount,
+  getPeriodFlatPrice,
+  PRO_PLAN_NAME,
+} from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
+import { StaffTeamActionsMenu } from "./StaffTeamActionsMenu";
 import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
 import { StripeCustomerLink } from "./stripe";
-import { getPeriodAmount, SubscriptionLabel } from "./team-billing";
+import { SubscriptionLabel } from "./SubscriptionLabel";
+import { useCopyOwnerEmails } from "./useCopyOwnerEmails";
 
-/** How many projects the page lists, largest first. */
 const PROJECTS_LIMIT = 100;
 
 const StaffTeamQuery = graphql(`
@@ -73,8 +66,6 @@ const StaffTeamQuery = graphql(`
         name
         stripeCustomerId
         subscriptionStatus
-        membersCount
-        ownersCount
         last30DaysScreenshots
         lastBuildDate
         avatar {
@@ -113,10 +104,6 @@ const StaffTeamQuery = graphql(`
           addOns {
             label
             monthlyPrice
-          }
-          owners {
-            id
-            email
           }
           contact {
             id
@@ -164,58 +151,36 @@ const StaffTeamQuery = graphql(`
 type AccountNode = NonNullable<DocumentType<typeof StaffTeamQuery>["account"]>;
 type TeamNode = Extract<AccountNode, { __typename?: "Team" }>;
 type StaffTeam = TeamNode & { staff: NonNullable<TeamNode["staff"]> };
-type StaffInfo = StaffTeam["staff"];
 type BillingPeriod = NonNullable<
-  StaffInfo["periodUsage"]
+  StaffTeam["staff"]["periodUsage"]
 >["billingPeriods"][number];
-type StaffMember = StaffInfo["members"][number];
-type StaffProject = StaffTeam["projects"]["edges"][number];
+type StaffMember = StaffTeam["staff"]["members"][number];
 
 function Dash() {
   return <span className="text-low">-</span>;
 }
 
-/** A section of the page: a title, then what it is about. */
 function Section(props: {
   title: string;
-  description?: React.ReactNode;
-  actions?: React.ReactNode;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="mt-10">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <Heading level={2} className="text-lg font-semibold">
-            {props.title}
-          </Heading>
-          {props.description ? (
-            <p className="text-low text-sm">{props.description}</p>
-          ) : null}
-        </div>
-        {props.actions}
+      <div className="mb-3">
+        <Heading level={2} className="text-lg font-semibold">
+          {props.title}
+        </Heading>
+        {props.description ? (
+          <p className="text-low text-sm">{props.description}</p>
+        ) : null}
       </div>
       {props.children}
     </section>
   );
 }
 
-/** Label and value pairs, read down a card. */
-function DetailList(props: {
-  items: { label: string; value: React.ReactNode }[];
-}) {
-  return (
-    <dl className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-x-6 gap-y-2.5 text-sm">
-      {props.items.map((item) => (
-        <div key={item.label} className="contents">
-          <dt className="text-low">{item.label}</dt>
-          <dd className="min-w-0">{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
+/** Label and value pairs. A null value reads as a dash. */
 function DetailCard(props: {
   title: string;
   items: { label: string; value: React.ReactNode }[];
@@ -226,13 +191,19 @@ function DetailCard(props: {
         <Heading level={2} className="mb-4 text-base font-semibold">
           {props.title}
         </Heading>
-        <DetailList items={props.items} />
+        <dl className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-x-6 gap-y-2.5 text-sm">
+          {props.items.map((item) => (
+            <div key={item.label} className="contents">
+              <dt className="text-low">{item.label}</dt>
+              <dd className="min-w-0">{item.value ?? <Dash />}</dd>
+            </div>
+          ))}
+        </dl>
       </CardBody>
     </Card>
   );
 }
 
-/** The table frame the staff directory uses, rows striped the same way. */
 function StaffTable(props: {
   head: React.ReactNode;
   children: React.ReactNode;
@@ -270,67 +241,21 @@ function Td(props: { children?: React.ReactNode; className?: string }) {
   );
 }
 
-function formatInterval(interval: PlanInterval): string {
-  return interval === PlanInterval.Year ? "year" : "month";
-}
-
-function StaffTeamActionsMenu(props: {
-  team: StaffTeam;
-  onTrial: (mode: StaffTrialMode) => void;
-}) {
-  const { team, onTrial } = props;
-  const isTrialing = checkIsTrialingSubscriptionStatus(team.subscriptionStatus);
-  // The rule the start mutation enforces: a trial over a live subscription
-  // would leave the team with two in Stripe.
-  const hasSubscription = checkHasSubscriptionStatus(team.subscriptionStatus);
-
-  return (
-    <MenuRoot>
-      <MenuTrigger>
-        <Button variant="secondary" iconOnly aria-label="Team actions">
-          <MoreVerticalIcon />
-        </Button>
-      </MenuTrigger>
-      <Menu aria-label="Team actions">
-        {isTrialing ? (
-          <MenuItem icon={<HourglassIcon />} onAction={() => onTrial("extend")}>
-            Extend trial…
-          </MenuItem>
-        ) : (
-          <MenuItem
-            icon={<HourglassIcon />}
-            disabled={hasSubscription}
-            suffix={
-              hasSubscription ? (
-                <MenuItemTooltip content="The team already has a subscription" />
-              ) : null
-            }
-            onAction={() => onTrial("start")}
-          >
-            Start trial…
-          </MenuItem>
-        )}
-      </Menu>
-    </MenuRoot>
-  );
+function getOwners(team: StaffTeam) {
+  return team.staff.members
+    .filter((member) => member.level === TeamUserLevel.Owner)
+    .map((member) => member.user);
 }
 
 function TeamHeader(props: { team: StaffTeam }) {
   const { team } = props;
-  const copyOwnerEmails = useCopyOwnerEmails();
-  const ownerEmailsCount = getOwnerEmails(team.staff.owners).length;
+  const owners = getOwners(team);
+  const copyOwnerEmails = useCopyOwnerEmails(owners);
   const trialDialog = useDialogValueState<StaffTrialMode | null>(null);
   const name = team.name || team.slug;
 
   return (
     <>
-      <Link
-        href="/staff/teams"
-        className="text-low mb-4 inline-flex items-center gap-1 self-start text-sm"
-      >
-        <ArrowLeftIcon className="size-4" />
-        All teams
-      </Link>
       <PageHeader>
         <PageHeaderContent className="flex min-w-0 items-center gap-4">
           <AccountAvatar avatar={team.avatar} className="size-12 shrink-0" />
@@ -347,14 +272,12 @@ function TeamHeader(props: { team: StaffTeam }) {
         </PageHeaderContent>
         <PageHeaderActions className="items-center">
           <Tooltip
-            content={
-              ownerEmailsCount === 0 ? "No owner has an email on file" : null
-            }
+            content={copyOwnerEmails ? null : "No owner has an email on file"}
           >
             <Button
               variant="secondary"
-              disabled={ownerEmailsCount === 0}
-              onClick={() => copyOwnerEmails(team.staff.owners)}
+              disabled={!copyOwnerEmails}
+              onClick={copyOwnerEmails ?? undefined}
             >
               <ButtonIcon>
                 <MailIcon />
@@ -371,7 +294,12 @@ function TeamHeader(props: { team: StaffTeam }) {
             </ButtonIcon>
             Open in Argos
           </LinkButton>
-          <StaffTeamActionsMenu team={team} onTrial={trialDialog.open} />
+          <StaffTeamActionsMenu
+            team={team}
+            owners={owners}
+            onTrial={trialDialog.open}
+            triggerVariant="secondary"
+          />
         </PageHeaderActions>
       </PageHeader>
       {trialDialog.value ? (
@@ -393,14 +321,9 @@ function TeamHeader(props: { team: StaffTeam }) {
 function TeamStats(props: { team: StaffTeam }) {
   const { team } = props;
   const { staff } = team;
+  const ownersCount = getOwners(team).length;
   const runningPeriod =
     staff.periodUsage?.billingPeriods.find((period) => !period.closed) ?? null;
-  const daysLeft = runningPeriod
-    ? Math.max(
-        0,
-        diffInCalendarDays(new Date(runningPeriod.endsAt), new Date()),
-      )
-    : null;
   const quotaHint =
     staff.includedScreenshots !== null
       ? `of ${staff.includedScreenshots.toLocaleString()} included`
@@ -417,8 +340,8 @@ function TeamStats(props: { team: StaffTeam }) {
           staff.periodUsage ? (
             <span data-visual-test="transparent">
               {quotaHint}
-              {daysLeft !== null
-                ? `, ${daysLeft === 1 ? "1 day" : `${daysLeft} days`} left`
+              {runningPeriod
+                ? `, ${formatDaysLeft(runningPeriod.endsAt)}`
                 : null}
             </span>
           ) : (
@@ -456,10 +379,34 @@ function TeamStats(props: { team: StaffTeam }) {
         icon={UsersIcon}
         color="warning"
         label="Members"
-        value={team.membersCount}
-        hint={team.ownersCount === 1 ? "1 owner" : `${team.ownersCount} owners`}
+        value={staff.members.length}
+        hint={ownersCount === 1 ? "1 owner" : `${ownersCount} owners`}
       />
     </StatTileGroup>
+  );
+}
+
+/**
+ * What the plan costs per period. A subscription with no amount on file is
+ * priced at the same guess the billing periods below estimate with.
+ */
+function getPrice(team: StaffTeam): React.ReactNode {
+  const { plan, flatPrice } = team.staff;
+
+  if (!plan || !team.subscription) {
+    return null;
+  }
+
+  const unit = getIntervalUnit(plan.interval);
+
+  if (flatPrice !== null) {
+    return `${formatPrice(flatPrice)} / ${unit}`;
+  }
+
+  return (
+    <span className="text-low">
+      {formatPrice(getPeriodFlatPrice(null, plan))} / {unit}, estimated
+    </span>
   );
 }
 
@@ -478,27 +425,12 @@ function SubscriptionCard(props: { team: StaffTeam }) {
         },
         {
           label: "Plan",
-          value: plan ? (
-            `${plan.displayName}, billed by the ${formatInterval(plan.interval)}`
-          ) : (
-            <Dash />
-          ),
-        },
-        {
-          label: "Provider",
-          value: subscription ? subscription.provider : <Dash />,
-        },
-        {
-          label: "Price",
           value:
-            plan && staff.flatPrice !== null ? (
-              `${formatPrice(staff.flatPrice)} / ${formatInterval(plan.interval)}`
-            ) : plan && subscription ? (
-              <span className="text-low">Not on file</span>
-            ) : (
-              <Dash />
-            ),
+            plan &&
+            `${plan.displayName}, billed by the ${getIntervalUnit(plan.interval)}`,
         },
+        { label: "Provider", value: subscription?.provider },
+        { label: "Price", value: getPrice(team) },
         {
           label: "Add-ons",
           value:
@@ -516,46 +448,36 @@ function SubscriptionCard(props: { team: StaffTeam }) {
         {
           label: "Included screenshots",
           value:
-            staff.includedScreenshots !== null ? (
-              `${staff.includedScreenshots.toLocaleString()} / period`
-            ) : (
-              <Dash />
-            ),
+            staff.includedScreenshots !== null
+              ? `${staff.includedScreenshots.toLocaleString()} / period`
+              : null,
         },
         {
           label: "Trial ends",
-          value: staff.trialEndsAt ? (
+          value: staff.trialEndsAt && (
             <Time date={staff.trialEndsAt} format="date" />
-          ) : (
-            <Dash />
           ),
         },
         {
           label: "Subscription ends",
-          value: subscription?.endDate ? (
+          value: subscription?.endDate && (
             <Time date={subscription.endDate} format="date" />
-          ) : (
-            <Dash />
           ),
         },
         {
           label: "Payment method",
-          value: subscription ? (
-            subscription.paymentMethodFilled ? (
+          value:
+            subscription &&
+            (subscription.paymentMethodFilled ? (
               "On file"
             ) : (
               <span className="text-low">Missing</span>
-            )
-          ) : (
-            <Dash />
-          ),
+            )),
         },
         {
           label: "Stripe customer",
-          value: team.stripeCustomerId ? (
+          value: team.stripeCustomerId && (
             <span className="font-mono text-xs">{team.stripeCustomerId}</span>
-          ) : (
-            <Dash />
           ),
         },
       ]}
@@ -567,6 +489,7 @@ function ActivityCard(props: { team: StaffTeam }) {
   const { team } = props;
   const { staff } = team;
   const storybookRatio = staff.periodUsage?.storybookRatio ?? null;
+  const never = <span className="text-low">Never</span>;
 
   return (
     <DetailCard
@@ -581,7 +504,7 @@ function ActivityCard(props: { team: StaffTeam }) {
           value: staff.firstComparisonAt ? (
             <Time date={staff.firstComparisonAt} format="date" />
           ) : (
-            <span className="text-low">Never</span>
+            never
           ),
         },
         {
@@ -589,7 +512,7 @@ function ActivityCard(props: { team: StaffTeam }) {
           value: team.lastBuildDate ? (
             <Time date={team.lastBuildDate} />
           ) : (
-            <span className="text-low">Never</span>
+            never
           ),
         },
         {
@@ -599,11 +522,9 @@ function ActivityCard(props: { team: StaffTeam }) {
         {
           label: "Storybook share",
           value:
-            storybookRatio !== null ? (
-              `${Math.round(storybookRatio * 100)}%`
-            ) : (
-              <Dash />
-            ),
+            storybookRatio !== null
+              ? `${Math.round(storybookRatio * 100)}%`
+              : null,
         },
         {
           label: "Projects",
@@ -617,7 +538,7 @@ function ActivityCard(props: { team: StaffTeam }) {
               {staff.contact.user.name || staff.contact.user.slug}
             </>
           ) : (
-            <span className="text-low">Never</span>
+            never
           ),
         },
       ]}
@@ -647,13 +568,12 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
   invariant(plan, "a team billed by usage is on a plan");
   // Pro includes the same amount everywhere, so the quota only earns a line on
   // a contract, where it was negotiated.
-  const showQuota =
-    staff.includedScreenshots !== null && plan.name !== PRO_PLAN_NAME;
+  const quota = plan.name !== PRO_PLAN_NAME ? staff.includedScreenshots : null;
 
   return (
     <Section
       title="Billing periods"
-      description={`What each period came to, most recent first. Amounts are per ${formatInterval(plan.interval)}, before tax.`}
+      description={`What each period came to, most recent first. Amounts are per ${getIntervalUnit(plan.interval)}, before tax.`}
     >
       <StaffTable
         className="min-w-160"
@@ -676,9 +596,9 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
             </Td>
             <Td className="text-right tabular-nums">
               {period.screenshotsCount.toLocaleString()}
-              {showQuota && staff.includedScreenshots !== null ? (
+              {quota !== null ? (
                 <div className="text-low text-xs">
-                  / {staff.includedScreenshots.toLocaleString()}
+                  / {quota.toLocaleString()}
                 </div>
               ) : null}
             </Td>
@@ -694,7 +614,7 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
                 {formatPrice(getPeriodAmount(period, staff, plan))}
               </div>
               <div className="text-low text-xs">
-                {period.invoicedAmount != null ? "Invoiced" : "Estimated"}
+                {period.invoicedAmount !== null ? "Invoiced" : "Estimated"}
               </div>
             </Td>
           </tr>
@@ -718,7 +638,7 @@ function ProjectsSection(props: { team: StaffTeam }) {
       title="Projects"
       description={
         totalCount > projects.length
-          ? `The ${projects.length} first of ${totalCount}, by builds.`
+          ? `The ${projects.length} most recently active of ${totalCount}, by builds.`
           : undefined
       }
     >
@@ -733,7 +653,7 @@ function ProjectsSection(props: { team: StaffTeam }) {
             </>
           }
         >
-          {projects.map((project: StaffProject) => (
+          {projects.map((project) => (
             <tr key={project.id}>
               <Td>
                 <Link
@@ -781,7 +701,7 @@ function MemberRow(props: { member: StaffMember }) {
           <span className="text-low">No email</span>
         )}
       </Td>
-      <Td className="capitalize">{member.level}</Td>
+      <Td>{TeamMemberLabel[member.level]}</Td>
       <Td>
         <Time date={member.joinedAt} format="date" />
       </Td>
@@ -851,13 +771,7 @@ function StaffTeamPage(props: { slug: string }) {
   if (!account.staff) {
     return (
       <PageContainer>
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
+        <StaffAccessRestricted />
       </PageContainer>
     );
   }

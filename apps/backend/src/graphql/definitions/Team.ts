@@ -82,6 +82,7 @@ import {
   ITeamMembersOrderBy,
   type IResolvers,
   type ITeamDefaultUserLevel,
+  type ITeamMemberResolvers,
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
 import { deleteAccount, getAdminAccount } from "../services/account";
@@ -597,6 +598,19 @@ function fromGraphQLTeamMembersOrderBy(
   }
 }
 
+/** What `TeamStaffMember` reads off the same membership row, resolved alike. */
+export const teamMemberResolvers: Pick<ITeamMemberResolvers, "user" | "level"> =
+  {
+    user: async (teamUser, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: teamUser.userId,
+      });
+      invariant(account, "account not found");
+      return account;
+    },
+    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+  };
+
 export const resolvers: IResolvers = {
   TeamGithubMember: {
     githubAccount: async (githubAccountMember, _args, ctx) => {
@@ -611,14 +625,7 @@ export const resolvers: IResolvers = {
     },
   },
   TeamMember: {
-    user: async (teamUser, _args, ctx) => {
-      const account = await ctx.loaders.AccountFromRelation.load({
-        userId: teamUser.userId,
-      });
-      invariant(account, "account not found");
-      return account;
-    },
-    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    ...teamMemberResolvers,
     fromSSO: async (teamUser, _args, ctx) => {
       const [team, userAccount] = await Promise.all([
         ctx.loaders.Team.load(teamUser.teamId),
