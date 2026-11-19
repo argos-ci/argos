@@ -119,9 +119,8 @@ export async function diffImages(
  * changed.
  */
 function checkIsLayoutShift(shift: ScreenshotDiffLayoutShift): boolean {
-  const areas = shift.hidden
-    ? shift.hidden.length
-    : shift.inserted.length + shift.removed.length;
+  const areas =
+    shift.hidden?.length ?? shift.inserted.length + shift.removed.length;
   return (
     shift.shiftedPixels > 0 &&
     shift.segments.length + areas <= MAX_LAYOUT_SHIFT_PARTS

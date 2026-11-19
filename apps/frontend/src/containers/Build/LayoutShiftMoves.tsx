@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/ui/Badge";
+import { formatList } from "@/util/intl";
 
 import type { LayoutShiftMove } from "./layoutShift";
 import {
@@ -18,26 +19,17 @@ import {
 import { useImageProjection } from "./projection";
 import type { PaneSize } from "./Zoomer";
 
-/** How far a block went down or up, then right or left: the ways it moved. */
+const MOVE_STEPS = [
+  { axis: "dy", sign: 1, direction: "down", Icon: ArrowDownIcon },
+  { axis: "dy", sign: -1, direction: "up", Icon: ArrowUpIcon },
+  { axis: "dx", sign: 1, direction: "right", Icon: ArrowRightIcon },
+  { axis: "dx", sign: -1, direction: "left", Icon: ArrowLeftIcon },
+] as const;
+
 function getMoveSteps(move: LayoutShiftMove) {
-  return [
-    move.dy > 0 && {
-      direction: "down",
-      Icon: ArrowDownIcon,
-      distance: move.dy,
-    },
-    move.dy < 0 && { direction: "up", Icon: ArrowUpIcon, distance: -move.dy },
-    move.dx > 0 && {
-      direction: "right",
-      Icon: ArrowRightIcon,
-      distance: move.dx,
-    },
-    move.dx < 0 && {
-      direction: "left",
-      Icon: ArrowLeftIcon,
-      distance: -move.dx,
-    },
-  ].filter((step) => step !== false);
+  return MOVE_STEPS.filter(
+    (step) => Math.sign(move[step.axis]) === step.sign,
+  ).map((step) => ({ ...step, distance: Math.abs(move[step.axis]) }));
 }
 
 /**
@@ -67,7 +59,7 @@ export const LayoutShiftMoves = memo(function LayoutShiftMoves(props: {
   }
   return moves.map((move) => {
     const [x, y] =
-      side === "head" ? [move.x, move.headY] : [move.x - move.dx, move.baseY];
+      side === "head" ? [move.x, move.headY] : [move.baseX, move.baseY];
     const rect = toScreenRect({
       x: x / imgSize.width,
       y: y / imgSize.height,
@@ -79,9 +71,9 @@ export const LayoutShiftMoves = memo(function LayoutShiftMoves(props: {
       <div
         key={`${move.x}:${move.headY}`}
         role="img"
-        aria-label={`Moved ${steps
-          .map((step) => `${step.direction} ${step.distance} px`)
-          .join(" and ")}`}
+        aria-label={`Moved ${formatList(
+          steps.map((step) => `${step.direction} ${step.distance} px`),
+        )}`}
         className="absolute border border-dashed"
         style={{ ...rect, borderColor: color }}
       >

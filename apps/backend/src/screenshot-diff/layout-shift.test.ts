@@ -12,7 +12,16 @@ function segment(
   height: number,
   dx = 0,
 ) {
-  return { x, width, baseY, headY, height, dy: headY - baseY, dx };
+  return {
+    x,
+    width,
+    baseY,
+    headY,
+    height,
+    dy: headY - baseY,
+    dx,
+    baseX: x - dx,
+  };
 }
 
 function band(x: number, y: number, width: number, height: number) {

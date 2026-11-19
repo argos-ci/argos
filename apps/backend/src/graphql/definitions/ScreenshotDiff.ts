@@ -62,14 +62,17 @@ export const typeDefs = gql`
 
   "A block that moved, where it was in the baseline and where it is in the changes"
   type LayoutShiftMove {
+    "Left edge in the changes"
     x: Int!
+    "Left edge in the baseline"
+    baseX: Int!
     width: Int!
     baseY: Int!
     headY: Int!
     height: Int!
     "Vertical move in pixels, positive when the block moved down"
     dy: Int!
-    "Horizontal move in pixels, positive when the block moved right: in the baseline, it was at x - dx"
+    "Horizontal move in pixels, positive when the block moved right"
     dx: Int!
   }
 

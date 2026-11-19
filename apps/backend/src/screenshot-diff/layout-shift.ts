@@ -2,7 +2,7 @@ import type { ScreenshotDiffLayoutShift } from "@/database/models";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Segment = ScreenshotDiffLayoutShift["segments"][number];
-type Move = Segment & { dx: number };
+type Move = Segment & { dx: number; baseX: number };
 
 /**
  * Rows a move has to span to be drawn: iris's own floor for a shift. A block
@@ -102,8 +102,9 @@ function getHiddenRectsFromBands(shift: ScreenshotDiffLayoutShift): Rect[] {
  */
 function getMoves(shift: ScreenshotDiffLayoutShift): Move[] {
   const pieces = shift.segments
-    .flatMap((segment) =>
-      subtract(
+    .flatMap((segment) => {
+      const dx = segment.dx ?? 0;
+      return subtract(
         segment.headY,
         segment.headY + segment.height,
         getStripRows(shift.removed, segment),
@@ -112,9 +113,10 @@ function getMoves(shift: ScreenshotDiffLayoutShift): Move[] {
         headY: start,
         baseY: start - segment.dy,
         height: end - start,
-        dx: segment.dx ?? 0,
-      })),
-    )
+        dx,
+        baseX: segment.x - dx,
+      }));
+    })
     .sort((a, b) => a.x - b.x || a.headY - b.headY);
 
   const moves: Move[] = [];
