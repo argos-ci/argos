@@ -130,12 +130,18 @@ export class ArgosAssetsStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
-    // CloudFront — path-only cache key, everything immutable
+    // CloudFront — cache key is the path plus the encoding the viewer accepts,
+    // everything immutable.
+    //
+    // CloudFront compresses only when the cache policy enables the encodings,
+    // whatever `compress` says on the behavior.
     // ----------------------------------------------------------------
     const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
       headerBehavior: cloudfront.CacheHeaderBehavior.none(),
       queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
       cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      enableAcceptEncodingBrotli: true,
+      enableAcceptEncodingGzip: true,
       minTtl: cdk.Duration.days(1),
       defaultTtl: cdk.Duration.days(365),
       maxTtl: cdk.Duration.days(365),
@@ -144,8 +150,8 @@ export class ArgosAssetsStack extends cdk.Stack {
     // The upload stamps `Cache-Control: public, max-age=31536000, immutable` on
     // the objects themselves, so only CORS and security headers are added here.
     // Response headers policies are evaluated per request rather than stored
-    // with the cached object, which is why the cache key above can stay
-    // path-only even though the allowed origin is echoed back.
+    // with the cached object, which is why the cache key above can leave out
+    // `Origin` even though the allowed origin is echoed back.
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
       this,
       "ResponseHeadersPolicy",
