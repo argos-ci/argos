@@ -88,8 +88,9 @@ const MAX_TRIAL_PIPELINE_DAYS = 365;
 /** How the staff team page lists members: owners first. */
 const LEVEL_ORDER: Record<TeamUser["userLevel"], number> = {
   owner: 0,
-  member: 1,
-  contributor: 2,
+  billing: 1,
+  member: 2,
+  contributor: 3,
 };
 
 /** Upper bound on the cancellations window, which reads the invoice mirror. */
