@@ -208,6 +208,12 @@ export async function syncGitHubDeployment(deploymentId: string) {
 
   const state = getGitHubDeploymentState(deployment, aliases);
 
+  // The setting stops new GitHub deployments only: the ones already created
+  // keep their statuses, so they still go inactive once replaced.
+  if (!deployment.githubDeploymentId && !project.githubDeploymentEnabled) {
+    return;
+  }
+
   // Superseded before GitHub heard of it: there is nothing to show.
   if (!deployment.githubDeploymentId && state === "inactive") {
     return;

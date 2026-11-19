@@ -310,6 +310,7 @@ export type UpdateProjectInput = {
   ignoreConfig?: ResolvedIgnoreConfig | null | undefined;
   deploymentEnabled?: boolean | undefined;
   deploymentAuth?: DeploymentAuth | undefined;
+  githubDeploymentEnabled?: boolean | undefined;
   githubActionsOidcEnabled?: boolean | undefined;
   tokenlessAuthEnabled?: boolean | undefined;
 };
@@ -379,6 +380,13 @@ export async function updateProject(args: {
     project.deploymentEnabled !== input.deploymentEnabled
   ) {
     data.deploymentEnabled = input.deploymentEnabled;
+  }
+
+  if (
+    typeof input.githubDeploymentEnabled === "boolean" &&
+    project.githubDeploymentEnabled !== input.githubDeploymentEnabled
+  ) {
+    data.githubDeploymentEnabled = input.githubDeploymentEnabled;
   }
 
   if (

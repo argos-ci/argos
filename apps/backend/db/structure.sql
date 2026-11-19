@@ -2331,6 +2331,7 @@ CREATE TABLE public.projects (
     "deletedAt" timestamp with time zone,
     "awaitingReviewStatus" text DEFAULT 'failure'::text NOT NULL,
     "autoApprovalEnabled" boolean DEFAULT true NOT NULL,
+    "githubDeploymentEnabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "projects_awaitingReviewStatus_check" CHECK (("awaitingReviewStatus" = ANY (ARRAY['failure'::text, 'pending'::text]))),
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),

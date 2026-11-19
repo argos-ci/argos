@@ -65,6 +65,10 @@ const UpdateProjectBodySchema = z
     ignoreConfig: IgnoreConfigSchema,
     deploymentEnabled: z.boolean(),
     deploymentAuth: DeploymentAuth,
+    githubDeploymentEnabled: z.boolean().meta({
+      description:
+        "Turn GitHub deployments on or off. When `true`, Argos reports each deployment to the linked GitHub repository as a GitHub deployment.",
+    }),
     githubActionsOidcEnabled: z.boolean(),
     tokenlessAuthEnabled: z.boolean(),
   })

@@ -203,6 +203,33 @@ describe("syncGitHubDeployment", () => {
     );
   });
 
+  test("creates no GitHub deployment once the project turns them off", async ({
+    project,
+    deployment,
+  }) => {
+    await project.$query().patch({ githubDeploymentEnabled: false });
+
+    await syncGitHubDeployment(deployment.id);
+
+    expect(octokit.repos.createDeployment).not.toHaveBeenCalled();
+    expect(octokit.repos.createDeploymentStatus).not.toHaveBeenCalled();
+  });
+
+  test("still updates the GitHub deployments created before it was turned off", async ({
+    project,
+    deployment,
+  }) => {
+    await project.$query().patch({ githubDeploymentEnabled: false });
+    await deployment.$query().patch({ githubDeploymentId: "1234" });
+
+    await syncGitHubDeployment(deployment.id);
+
+    expect(octokit.repos.createDeployment).not.toHaveBeenCalled();
+    expect(octokit.repos.createDeploymentStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ deployment_id: 1234, state: "success" }),
+    );
+  });
+
   test("never reports a deployment authenticated tokenless", async ({
     deployment,
   }) => {

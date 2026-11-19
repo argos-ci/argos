@@ -10,6 +10,9 @@ export const up = async (knex) => {
     ]);
     table.bigInteger("githubDeploymentId");
   });
+  await knex.schema.alterTable("projects", (table) => {
+    table.boolean("githubDeploymentEnabled").notNullable().defaultTo(true);
+  });
 };
 
 /**
@@ -19,5 +22,8 @@ export const down = async (knex) => {
   await knex.schema.alterTable("deployments", (table) => {
     table.dropColumn("authSource");
     table.dropColumn("githubDeploymentId");
+  });
+  await knex.schema.alterTable("projects", (table) => {
+    table.dropColumn("githubDeploymentEnabled");
   });
 };
