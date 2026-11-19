@@ -436,8 +436,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
         distributionConfig: {
           enabled: true,
           connectionMode: "tenant-only",
-          // Unlike the construct above, CloudFormation defaults to HTTP/1.1 and
-          // to no compression, so both are spelled out here.
           httpVersion: "http2and3",
           // No `ipv6Enabled` — the connection group owns viewer-side
           // addressing and CloudFront rejects the field here.
@@ -469,6 +467,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
           defaultCacheBehavior: {
             targetOriginId: customDomainsOriginId,
             viewerProtocolPolicy: "redirect-to-https",
+            // On by default in the construct above, off in CloudFormation.
             compress: true,
             // Multi-tenant distributions reject the legacy TTL fields, so the
             // shared cache policy is not just tidier here — it is required.
