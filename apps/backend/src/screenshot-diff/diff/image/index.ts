@@ -1,7 +1,8 @@
-import { diff, type Shift } from "@argos-ci/iris";
+import { diff } from "@argos-ci/iris";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 
+import type { ScreenshotDiffLayoutShift } from "@/database/models";
 import logger from "@/logger";
 import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 
@@ -10,9 +11,9 @@ import type { DiffOptions, DiffResult } from "../types";
 const DEFAULT_THRESHOLD = 0.5;
 
 /**
- * Most segments and bands a shift may hold to be kept. Content that moved
- * reads as a few blocks; a report past this comes from a scattered diff, and
- * would be stored and sent with every build for nothing but noise.
+ * Most blocks and areas a shift may draw to be kept. Content that moved reads
+ * as a few blocks; a report past this comes from a scattered diff, and would
+ * be stored and sent with every build for nothing but noise.
  */
 const MAX_LAYOUT_SHIFT_PARTS = 100;
 
@@ -117,8 +118,12 @@ export async function diffImages(
  * report that explains no pixel of it would only outline content that
  * changed.
  */
-function checkIsLayoutShift(shift: Shift): boolean {
-  const parts =
-    shift.segments.length + shift.inserted.length + shift.removed.length;
-  return shift.shiftedPixels > 0 && parts <= MAX_LAYOUT_SHIFT_PARTS;
+function checkIsLayoutShift(shift: ScreenshotDiffLayoutShift): boolean {
+  const areas = shift.hidden
+    ? shift.hidden.length
+    : shift.inserted.length + shift.removed.length;
+  return (
+    shift.shiftedPixels > 0 &&
+    shift.segments.length + areas <= MAX_LAYOUT_SHIFT_PARTS
+  );
 }

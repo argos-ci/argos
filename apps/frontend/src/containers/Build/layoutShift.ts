@@ -18,6 +18,7 @@ const _LayoutShiftFragment = graphql(`
       headY
       height
       dy
+      dx
     }
   }
 `);

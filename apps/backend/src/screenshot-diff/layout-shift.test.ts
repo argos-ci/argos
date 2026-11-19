@@ -10,8 +10,9 @@ function segment(
   baseY: number,
   headY: number,
   height: number,
+  dx = 0,
 ) {
-  return { x, width, baseY, headY, height, dy: headY - baseY };
+  return { x, width, baseY, headY, height, dy: headY - baseY, dx };
 }
 
 function band(x: number, y: number, width: number, height: number) {
@@ -66,6 +67,14 @@ describe("hidden areas", () => {
       { segments: [], inserted: [], removed: [] },
       [],
     ],
+    [
+      "takes the areas iris reports over the bands",
+      {
+        ...banner,
+        hidden: [band(0, 120, 200, 100), band(250, 120, 60, 40)],
+      },
+      [band(0, 120, 200, 100), band(250, 120, 60, 40)],
+    ],
   ])("%s", (_name, shift, expected) => {
     expect(hidden(shift)).toEqual(expected);
   });
@@ -112,6 +121,19 @@ describe("moves", () => {
         segment(0, 100, 70, 80, 20),
         segment(200, 50, 10, 100, 20),
       ],
+    ],
+    [
+      "keeps how far a block moved sideways, and joins only what moved alike",
+      {
+        segments: [
+          segment(100, 80, 10, 10, 20, -8),
+          segment(100, 80, 30, 30, 20, -8),
+          segment(100, 80, 50, 50, 20, 1),
+        ],
+        inserted: [],
+        removed: [],
+      },
+      [segment(100, 80, 10, 10, 40, -8), segment(100, 80, 50, 50, 20, 1)],
     ],
     [
       "reads removed rows of its own strip only",

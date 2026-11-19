@@ -69,6 +69,8 @@ export const typeDefs = gql`
     height: Int!
     "Vertical move in pixels, positive when the block moved down"
     dy: Int!
+    "Horizontal move in pixels, positive when the block moved right: in the baseline, it was at x - dx"
+    dx: Int!
   }
 
   "Content that moved between the baseline and the changes screenshot"
