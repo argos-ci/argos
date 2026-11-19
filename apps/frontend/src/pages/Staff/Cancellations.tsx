@@ -23,7 +23,6 @@ import {
   SubscriptionCancellationReason,
   SubscriptionCancelReason,
 } from "@/gql/graphql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import {
@@ -48,6 +47,7 @@ import { getErrorMessage } from "@/util/error";
 import { getAccountURL } from "../Account/AccountParams";
 import { getCancellationEmail } from "./Cancellations.email";
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
 import { StripeCustomerLink } from "./stripe";
 import { getMailtoUrl } from "./Trials.email";
 
@@ -756,15 +756,7 @@ function StaffCancellationsList() {
       error.errors.some((error) => error.extensions?.code === "FORBIDDEN");
 
     if (isForbidden) {
-      return (
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
-      );
+      return <StaffAccessRestricted />;
     }
 
     throw error;

@@ -1,3 +1,5 @@
+import { getOwnerEmails } from "./owner-emails";
+
 export type Owner = { name: string | null; email: string | null };
 
 /**
@@ -104,9 +106,7 @@ export function getMailtoUrl(input: {
   subject: string;
   body: string;
 }): string | null {
-  const recipients = input.owners
-    .map((owner) => owner.email)
-    .filter((email): email is string => Boolean(email));
+  const recipients = getOwnerEmails(input.owners);
 
   if (recipients.length === 0) {
     return null;

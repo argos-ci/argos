@@ -28,7 +28,6 @@ import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
 import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import {
@@ -58,6 +57,7 @@ import {
   PRO_PLAN_NAME,
   toMonthlyAmount,
 } from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
 import { StripeCustomerLink } from "./stripe";
 import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
@@ -1064,15 +1064,7 @@ function StaffTrialsList() {
       error.errors.some((error) => error.extensions?.code === "FORBIDDEN");
 
     if (isForbidden) {
-      return (
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
-      );
+      return <StaffAccessRestricted />;
     }
 
     throw error;
