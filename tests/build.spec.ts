@@ -193,6 +193,59 @@ loggedTest(
 );
 
 loggedTest(
+  "comments on an area of a snapshot",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    // Its snapshots have dimensions, which the comment layer needs.
+    const { build, screenshotDiff } = await createLayoutShiftScenario({
+      projectId: project.id,
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}/${screenshotDiff.id}`,
+    );
+    await page.getByRole("button", { name: "Comment tool" }).click();
+
+    // The changes image is top-aligned and centered horizontally, so a drag
+    // from the pane's top center lands on it.
+    const box = await page
+      .getByRole("button", { name: "Pick a spot or an area to comment on" })
+      .boundingBox();
+    if (!box) {
+      throw new Error("The comment layer has no box");
+    }
+    const centerX = box.x + box.width / 2;
+    await page.mouse.move(centerX - 60, box.y + 120);
+    await page.mouse.down();
+    await page.mouse.move(centerX + 60, box.y + 240, { steps: 10 });
+    await page.mouse.up();
+
+    const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
+    await draftDialog
+      .getByLabel("Add a comment")
+      .fill("This block moved, check the spacing.");
+    await draftDialog.getByRole("button", { name: "Add to review" }).click();
+
+    const thread = page.getByRole("dialog", { name: /^Comment from/ });
+    await expect(thread).toContainText("This block moved, check the spacing.");
+    await page.keyboard.press("Escape");
+    await expect(thread).toBeHidden();
+
+    // The sidebar marks it as an area comment, and its snapshot reference
+    // opens the thread on the image again.
+    await page
+      .getByRole("tablist", { name: "Sidebar" })
+      .getByRole("tab", { name: "Review" })
+      .click();
+    await expect(page.getByLabel("Comment on an area")).toBeVisible();
+    await page
+      .getByRole("button", { name: "Go to snapshot pricing.png" })
+      .click();
+    await expect(thread).toContainText("This block moved, check the spacing.");
+  },
+);
+
+loggedTest(
   "snapshot whose content moved",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });

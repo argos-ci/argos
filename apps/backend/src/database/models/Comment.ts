@@ -14,6 +14,13 @@ import { User } from "./User";
 
 const COORDINATE_MESSAGE = "Comment anchor coordinates must be between 0 and 1";
 const LINES_MESSAGE = "Comment anchor lines must be positive integers";
+const AREA_SIZE_MESSAGE =
+  "Comment anchor area width and height must be greater than 0";
+
+const NormalizedCoordinateSchema = z
+  .number()
+  .min(0, { message: COORDINATE_MESSAGE })
+  .max(1, { message: COORDINATE_MESSAGE });
 
 /**
  * A point on the referenced screenshot diff, stored as normalized coordinates
@@ -23,12 +30,20 @@ const LINES_MESSAGE = "Comment anchor lines must be positive integers";
  */
 const CommentPointAnchorSchema = z.object({
   type: z.literal("point"),
-  x: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
-  y: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
+  x: NormalizedCoordinateSchema,
+  y: NormalizedCoordinateSchema,
+});
+
+/**
+ * A rectangle on the image, in the same normalized coordinates as a point:
+ * `x`/`y` is its top-left corner.
+ */
+const CommentAreaAnchorSchema = z.object({
+  type: z.literal("area"),
+  x: NormalizedCoordinateSchema,
+  y: NormalizedCoordinateSchema,
+  width: z.number().gt(0, { message: AREA_SIZE_MESSAGE }),
+  height: z.number().gt(0, { message: AREA_SIZE_MESSAGE }),
 });
 
 /** A 1-based inclusive line range on a textual snapshot. */
@@ -40,8 +55,15 @@ const CommentLinesAnchorSchema = z.object({
 
 const CommentAnchorObjectSchema = z.discriminatedUnion("type", [
   CommentPointAnchorSchema,
+  CommentAreaAnchorSchema,
   CommentLinesAnchorSchema,
 ]);
+
+/**
+ * Clients compute an area's size from its corners, so `x + width` can land a
+ * rounding error past the edge of an area drawn up to it.
+ */
+const AREA_BOUNDS_EPSILON = 1e-9;
 
 /**
  * Where on the referenced screenshot diff a comment points. A null anchor (with
@@ -52,6 +74,15 @@ const CommentAnchorObjectSchema = z.discriminatedUnion("type", [
 export const CommentAnchorSchema = CommentAnchorObjectSchema.refine(
   (anchor) => anchor.type !== "lines" || anchor.to >= anchor.from,
   { message: "Comment anchor line range is inverted" },
+).refine(
+  (anchor) =>
+    anchor.type !== "area" ||
+    (anchor.x + anchor.width <= 1 + AREA_BOUNDS_EPSILON &&
+      anchor.y + anchor.height <= 1 + AREA_BOUNDS_EPSILON),
+  {
+    message:
+      "Comment anchor area goes past the edge of the image. Keep x + width and y + height at most 1.",
+  },
 );
 
 export type CommentAnchor = z.infer<typeof CommentAnchorSchema>;

@@ -10,8 +10,8 @@ import { useBuildHotkey } from "../BuildHotkeys";
 import { useCommentTool } from "../CommentTool";
 
 /**
- * Switches between the Hand tool (pan/zoom) and the Comment tool (click the
- * changes image to leave a comment). Mirrors `ViewToggle`'s button group.
+ * Switches between the Hand tool (pan/zoom) and the Comment tool (click or drag
+ * on the changes image to leave a comment). Mirrors `ViewToggle`'s button group.
  */
 export const CommentToolToggle = memo(() => {
   const { mode, activateHand, activateComment } = useCommentTool();
@@ -34,7 +34,7 @@ export const CommentToolToggle = memo(() => {
         </Button>
       </Tooltip>
       <HotkeyTooltip
-        description="Comment tool: click the image to comment"
+        description="Comment tool: click or drag on the image to comment"
         keys={hotkey.displayKeys}
         keysEnabled={mode !== "comment"}
       >

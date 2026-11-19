@@ -3,17 +3,22 @@ import { useApolloClient } from "@apollo/client/react";
 
 import { useAuth } from "@/containers/Auth";
 import { useCommentTool } from "@/containers/Build/CommentTool";
-import { type NormalizedPoint } from "@/containers/Build/projection";
 import { type PaneSize } from "@/containers/Build/Zoomer";
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
 import {
-  PointCommentLayer,
-  type PointCommentThread,
-} from "@/containers/Comment/PointCommentLayer";
+  getImageAnchor,
+  toCommentAnchorInput,
+  type ImageAnchor,
+} from "@/containers/Comment/imageAnchor";
+import {
+  ImageCommentLayer,
+  type ImageCommentThread,
+} from "@/containers/Comment/ImageCommentLayer";
 import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { DocumentType, graphql } from "@/gql";
+import type { CommentAnchorInput } from "@/gql/graphql";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
@@ -35,11 +40,7 @@ const _MediaFragment = graphql(`
       threadId
       mediaVersionId
       anchor {
-        __typename
-        ... on CommentPointAnchor {
-          x
-          y
-        }
+        ...ImageAnchor_CommentAnchor
       }
       ...CommentCard_Comment
     }
@@ -63,11 +64,7 @@ const AddMediaCommentMutation = graphql(`
         threadId
         mediaVersionId
         anchor {
-          __typename
-          ... on CommentPointAnchor {
-            x
-            y
-          }
+          ...ImageAnchor_CommentAnchor
         }
         ...CommentCard_Comment
       }
@@ -76,8 +73,8 @@ const AddMediaCommentMutation = graphql(`
 `);
 
 /**
- * The media's point comments, drawn over the share page's viewer: the shared
- * {@link PointCommentLayer} wired to the media's threads and mutation.
+ * The media's point and area comments, drawn over the share page's viewer: the
+ * shared {@link ImageCommentLayer} wired to the media's threads and mutation.
  *
  * Only threads pinned to the version on screen get a marker. A pin at
  * (0.62, 0.34) described a spot on one upload; drawing it over another version
@@ -90,7 +87,7 @@ export function MediaCommentLayer(props: {
   viewedVersionId: string;
   paneSize: PaneSize | null;
   imgSize: { width: number; height: number };
-  /** A thread the sidebar asks to open on the image (see PointCommentLayer). */
+  /** A thread the sidebar asks to open on the image (see ImageCommentLayer). */
   requestedThreadId?: string | null;
   onRequestedThreadConsumed?: () => void;
 }) {
@@ -119,16 +116,17 @@ export function MediaCommentLayer(props: {
   const threads = useMemo(
     () =>
       getCommentThreads(media.comments).flatMap(
-        (thread): PointCommentThread<Comment>[] => {
+        (thread): ImageCommentThread<Comment>[] => {
           const { root } = thread;
+          const anchor = getImageAnchor(root.anchor);
           if (
-            root.anchor?.__typename !== "CommentPointAnchor" ||
+            !anchor ||
             root.mediaVersionId !== viewedVersionId ||
             !isAnchorShown(root)
           ) {
             return [];
           }
-          return [{ ...thread, point: { x: root.anchor.x, y: root.anchor.y } }];
+          return [{ ...thread, anchor }];
         },
       ),
     [media.comments, viewedVersionId, isAnchorShown],
@@ -148,7 +146,7 @@ export function MediaCommentLayer(props: {
     async (input: {
       body: EditorValue;
       threadId?: string;
-      anchor?: { point: NormalizedPoint };
+      anchor?: CommentAnchorInput;
     }) => {
       return client.mutate({
         mutation: AddMediaCommentMutation,
@@ -169,13 +167,13 @@ export function MediaCommentLayer(props: {
     async (
       body: EditorValue,
       _options: { addToReview: boolean },
-      point: NormalizedPoint,
+      anchor: ImageAnchor,
     ): Promise<string | null> => {
       const priorIds = new Set(media.comments.map((comment) => comment.id));
       try {
         const result = await postComment({
           body,
-          anchor: { point: { x: point.x, y: point.y } },
+          anchor: toCommentAnchorInput(anchor),
         });
         // The pin the button armed has been dropped; the next comment starts
         // from a resting toolbar.
@@ -194,7 +192,7 @@ export function MediaCommentLayer(props: {
   );
 
   return (
-    <PointCommentLayer
+    <ImageCommentLayer
       paneSize={paneSize}
       imgSize={imgSize}
       // The media image is centered in its pane; the build's snapshots are not.

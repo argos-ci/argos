@@ -47,16 +47,20 @@ import { resolveCommentMediaVersionId } from "@/media/version";
 import {
   ICommentChangeType,
   type ICommentAnchorInput,
-  type ICommentLinesAnchor,
   type ICommentPermission,
-  type ICommentPointAnchor,
   type IResolvers,
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import type { Context } from "../context";
 import { getMediaForUser } from "../mediaAccess";
 import { getTestForUser } from "../testAccess";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { resolveAgent } from "./Agent";
 
 const { gql } = gqlTag;
@@ -67,15 +71,17 @@ const { gql } = gqlTag;
  * model's {@link CommentAnchorSchema}.
  */
 function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
-  const { point, lines } = input;
-  if (Number(point != null) + Number(lines != null) !== 1) {
+  const candidates = [
+    input.point ? { type: "point", ...input.point } : null,
+    input.area ? { type: "area", ...input.area } : null,
+    input.lines ? { type: "lines", ...input.lines } : null,
+  ].filter((candidate) => candidate !== null);
+  const [candidate] = candidates;
+  if (!candidate || candidates.length > 1) {
     throw badUserInput(
-      "A comment anchor must set exactly one of point or lines",
+      "A comment anchor must set exactly one of point, area or lines",
     );
   }
-  const candidate = point
-    ? { type: "point", x: point.x, y: point.y }
-    : { type: "lines", from: lines!.from, to: lines!.to };
   const result = CommentAnchorSchema.safeParse(candidate);
   if (!result.success) {
     throw badUserInput(
@@ -83,6 +89,20 @@ function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
     );
   }
   return result.data;
+}
+
+/**
+ * The service rejects a bad comment (empty, too large, lines on a media) with a
+ * 400, which Apollo would otherwise report as a server error.
+ */
+async function createCommentFromResolver(
+  input: Parameters<typeof createComment>[0],
+): Promise<void> {
+  try {
+    await createComment(input);
+  } catch (error) {
+    throw toGraphQLError(error);
+  }
 }
 
 /**
@@ -212,6 +232,17 @@ export const typeDefs = gql`
     y: Float!
   }
 
+  """
+  A rectangle on a screenshot diff or a media, in normalized coordinates (0-1
+  of the image's width/height). \`x\`/\`y\` is its top-left corner.
+  """
+  type CommentAreaAnchor {
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
+  }
+
   "A 1-based inclusive line range on a textual snapshot."
   type CommentLinesAnchor {
     from: Int!
@@ -222,7 +253,10 @@ export const typeDefs = gql`
   Where on the referenced screenshot diff a comment points. A null anchor on a
   comment that has a screenshotDiff means it refers to the whole diff.
   """
-  union CommentAnchor = CommentPointAnchor | CommentLinesAnchor
+  union CommentAnchor =
+    | CommentPointAnchor
+    | CommentAreaAnchor
+    | CommentLinesAnchor
 
   """
   A comment posted on a build or on a test.
@@ -272,6 +306,13 @@ export const typeDefs = gql`
     y: Float!
   }
 
+  input CommentAreaAnchorInput {
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
+  }
+
   input CommentLinesAnchorInput {
     from: Int!
     to: Int!
@@ -283,6 +324,7 @@ export const typeDefs = gql`
   """
   input CommentAnchorInput {
     point: CommentPointAnchorInput
+    area: CommentAreaAnchorInput
     lines: CommentLinesAnchorInput
   }
 
@@ -363,7 +405,7 @@ export const typeDefs = gql`
     addBuildComment(input: AddBuildCommentInput!): Build!
     "Post a comment on a test"
     addTestComment(input: AddTestCommentInput!): Test!
-    "Post a comment on an uploaded media, optionally pinned to a point on it"
+    "Post a comment on an uploaded media, optionally pinned to a point or an area of it"
     addMediaComment(input: AddMediaCommentInput!): Media!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
@@ -468,13 +510,7 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.ScreenshotDiff.load(comment.screenshotDiffId);
     },
-    // The stored anchor is structurally the union the schema exposes; only its
-    // `side` differs nominally (model string-union vs generated enum), so cast.
-    anchor: (comment) =>
-      (comment.anchor ?? null) as
-        | ICommentPointAnchor
-        | ICommentLinesAnchor
-        | null,
+    anchor: (comment) => comment.anchor,
     threadSubscribed: async (comment, _args, ctx) => {
       if (!ctx.auth) {
         return false;
@@ -505,9 +541,11 @@ export const resolvers: IResolvers = {
   },
   CommentAnchor: {
     __resolveType: (anchor) => {
-      switch ((anchor as CommentAnchor).type) {
+      switch (anchor.type) {
         case "point":
           return "CommentPointAnchor";
+        case "area":
+          return "CommentAreaAnchor";
         case "lines":
           return "CommentLinesAnchor";
         default:
@@ -623,7 +661,7 @@ export const resolvers: IResolvers = {
         }
       }
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -662,7 +700,7 @@ export const resolvers: IResolvers = {
           })
         : null;
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -711,12 +749,7 @@ export const resolvers: IResolvers = {
 
       const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
 
-      // A line range describes a textual snapshot; an image has no lines.
-      if (anchor && anchor.type !== "point") {
-        throw badUserInput("A media comment can only be anchored to a point");
-      }
-
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,

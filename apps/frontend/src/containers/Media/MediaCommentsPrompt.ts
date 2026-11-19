@@ -29,7 +29,7 @@ export function createHandleMediaCommentsPrompt(input: {
     "Drive Argos through its CLI. Load the `argos-cli` skill for the token model and the flags, or run `npx @argos-ci/cli comment --help`.",
     "",
     `1. Read the thread: \`argos comment get ${shareUrl} ${threadId} --json\`, and its replies (the comments whose \`threadId\` is \`${threadId}\` in \`argos comment list ${shareUrl} --json\`). Leave the media's other threads alone.`,
-    `2. See what it points at. A comment carries an \`anchor\` (a point in normalized 0-1 coordinates) but no image, so open the media itself from ${shareUrl}. A before/after pair shows both halves there. A comment names its target loosely ("this button"), and the capture says which one it is.`,
+    `2. See what it points at. A comment carries an \`anchor\` (a point or an area, in normalized 0-1 coordinates) but no image, so open the media itself from ${shareUrl}. A before/after pair shows both halves there. A comment names its target loosely ("this button"), and the capture says which one it is.`,
     "3. Do what it asks, in this repository. When it asks a question rather than for a change, answer it instead of touching the code. Keep to what was asked. Run the repository's checks, then commit following its conventions.",
     `4. Reply in the thread with \`argos comment create ${shareUrl} --reply-to ${threadId} --body "..."\`, and resolve it only once its change is committed. Leave it open if you could not handle it, and say why in the reply.`,
     "",

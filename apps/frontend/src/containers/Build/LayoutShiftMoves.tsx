@@ -34,19 +34,17 @@ export const LayoutShiftMoves = memo(function LayoutShiftMoves(props: {
   const overlayVisible = useAtomValue(overlayVisibleAtom);
   const visible = useAtomValue(layoutShiftVisibleAtom);
   const color = useAtomValue(overlayColorAtom);
-  const { toScreen, ready } = useImageProjection({ paneSize, imgSize });
+  const { toScreenRect, ready } = useImageProjection({ paneSize, imgSize });
   if (!overlayVisible || !visible || !ready) {
     return null;
   }
   return moves.map((move) => {
     const y = side === "head" ? move.headY : move.baseY;
-    const start = toScreen({
+    const rect = toScreenRect({
       x: move.x / imgSize.width,
       y: y / imgSize.height,
-    });
-    const end = toScreen({
-      x: (move.x + move.width) / imgSize.width,
-      y: (y + move.height) / imgSize.height,
+      width: move.width / imgSize.width,
+      height: move.height / imgSize.height,
     });
     const Icon = move.dy > 0 ? ArrowDownIcon : ArrowUpIcon;
     const distance = `${Math.abs(move.dy)} px`;
@@ -56,13 +54,7 @@ export const LayoutShiftMoves = memo(function LayoutShiftMoves(props: {
         role="img"
         aria-label={`Moved ${move.dy > 0 ? "down" : "up"} ${distance}`}
         className="absolute border border-dashed"
-        style={{
-          left: start.left,
-          top: start.top,
-          width: end.left - start.left,
-          height: end.top - start.top,
-          borderColor: color,
-        }}
+        style={{ ...rect, borderColor: color }}
       >
         <Badge className="absolute top-1 right-1 flex items-center gap-0.5 whitespace-nowrap shadow-xs">
           <Icon className="size-3" style={{ color }} />
