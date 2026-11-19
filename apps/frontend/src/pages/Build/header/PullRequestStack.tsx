@@ -40,8 +40,10 @@ type Build = DocumentType<typeof _BuildFragment>;
 /**
  * A row's icon, on the line that runs down the stack. The line leaves a gap
  * around the icon and reaches through the row's vertical padding, so the
- * segments of two rows meet at their shared edge. A two-line row would break
- * it: the icon would no longer be one line away from that edge.
+ * segments of two rows meet at their shared edge. The one above an icon
+ * reaches 1px past that edge: rows sit on fractional pixels, and an exact
+ * meeting leaves a hairline gap at some of them. A two-line row would break
+ * the line: the icon would no longer be one line away from the edge.
  */
 function StackNode(props: {
   children: React.ReactNode;
@@ -56,7 +58,7 @@ function StackNode(props: {
           aria-hidden
           className={clsx(
             segment,
-            "-top-(--menu-item-py) bottom-[calc(50%+0.5em+2px)]",
+            "-top-[calc(var(--menu-item-py)+1px)] bottom-[calc(50%+0.5em+2px)]",
           )}
         />
       ) : null}
