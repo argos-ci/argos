@@ -311,12 +311,17 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
-    // CloudFront — cache key is path-only.
+    // CloudFront — cache key is the path, plus the encoding the viewer accepts.
+    //
+    // CloudFront compresses only when the cache policy enables the encodings,
+    // whatever `compress` says on the behavior.
     // ----------------------------------------------------------------
     const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
       headerBehavior: cloudfront.CacheHeaderBehavior.none(),
       queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
       cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      enableAcceptEncodingBrotli: true,
+      enableAcceptEncodingGzip: true,
       defaultTtl: cdk.Duration.days(365),
       maxTtl: cdk.Duration.days(365),
     });
@@ -398,6 +403,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
         },
         domainNames: [`*.${baseDomain}`],
         certificate,
+        httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       },
     );
 
@@ -430,6 +436,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
         distributionConfig: {
           enabled: true,
           connectionMode: "tenant-only",
+          // Unlike the construct above, CloudFormation defaults to HTTP/1.1 and
+          // to no compression, so both are spelled out here.
+          httpVersion: "http2and3",
           // No `ipv6Enabled` — the connection group owns viewer-side
           // addressing and CloudFront rejects the field here.
           //
@@ -460,6 +469,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
           defaultCacheBehavior: {
             targetOriginId: customDomainsOriginId,
             viewerProtocolPolicy: "redirect-to-https",
+            compress: true,
             // Multi-tenant distributions reject the legacy TTL fields, so the
             // shared cache policy is not just tidier here — it is required.
             cachePolicyId: cachePolicy.cachePolicyId,

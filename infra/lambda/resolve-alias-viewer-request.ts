@@ -1,4 +1,5 @@
 import { createPublicKey } from "node:crypto";
+import { Agent, request } from "node:https";
 import type {
   CloudFrontHeaders,
   CloudFrontRequestEvent,
@@ -146,6 +147,55 @@ function normalizePath(filePath: string): string {
   return filePath;
 }
 
+/**
+ * Not `fetch`: its first call loads undici and compiles its WebAssembly HTTP
+ * parser, which cost a cold container over 2 seconds of its 128 MB CPU share.
+ * The socket outlives the invocation, so a warm container whose cache entry
+ * has expired skips the TLS handshake.
+ */
+const apiAgent = new Agent({ keepAlive: true });
+
+function getApi(
+  url: string,
+  isRetry = false,
+): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = request(
+      url,
+      { agent: apiAgent, headers: { "user-agent": "argos-deployment-edge" } },
+      (res) => {
+        const status = res.statusCode;
+        if (status === undefined) {
+          reject(new Error(`No status code from ${url}`));
+          return;
+        }
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => {
+          body += chunk;
+        });
+        res.on("end", () => resolve({ status, body }));
+        res.on("error", reject);
+      },
+    );
+    req.on("error", (error) => {
+      // The server may have closed a kept socket while the container was
+      // frozen, and Node only notices when it writes to it.
+      if (
+        !isRetry &&
+        req.reusedSocket &&
+        "code" in error &&
+        error.code === "ECONNRESET"
+      ) {
+        resolve(getApi(url, true));
+        return;
+      }
+      reject(error);
+    });
+    req.end();
+  });
+}
+
 async function resolveAlias(
   domain: string,
 ): Promise<ResolvedDeployment | null> {
@@ -153,20 +203,20 @@ async function resolveAlias(
     throw new Error("API_BASEURL is not configured");
   }
 
-  const response = await fetch(
+  const response = await getApi(
     `${API_BASEURL}/v2/deployments/resolve/${encodeURIComponent(domain)}`,
   );
 
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error(
       `Failed to resolve deployment domain "${domain}" (${response.status})`,
     );
   }
 
-  const body = (await response.json()) as Partial<ResolvedDeployment>;
+  const body: Partial<ResolvedDeployment> = JSON.parse(response.body);
   if (
     typeof body.deploymentId !== "string" ||
     !body.deploymentId ||
