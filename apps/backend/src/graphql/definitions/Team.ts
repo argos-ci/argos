@@ -84,7 +84,11 @@ import {
   type ITeamDefaultUserLevel,
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
-import { deleteAccount, getAdminAccount } from "../services/account";
+import {
+  deleteAccount,
+  getAccountWithPermission,
+  getAdminAccount,
+} from "../services/account";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
@@ -240,6 +244,8 @@ export const typeDefs = gql`
 
   enum TeamUserLevel {
     owner
+    "A member who also manages billing"
+    billing
     member
     contributor
   }
@@ -254,7 +260,7 @@ export const typeDefs = gql`
     user: User!
     level: TeamUserLevel!
     fromSSO: Boolean!
-    "Whether the member has the monthly report on. It is only sent to the owners of a team on an annual plan."
+    "Whether the member has the monthly report on. It is only sent to the owners and billing members of a team on a usage-based plan."
     receivesMonthlyReport: Boolean!
   }
 
@@ -1121,9 +1127,10 @@ export const resolvers: IResolvers = {
       }
 
       const [teamAccount, plan] = await Promise.all([
-        getAdminAccount({
+        getAccountWithPermission({
           id: args.teamAccountId,
           auth,
+          permission: "billing",
         }),
         getStripeProPlanOrThrow(),
       ]);

@@ -127,7 +127,7 @@ export const PaymentBanner = memo(
       return null;
     }
 
-    const userIsAdmin = permissions.includes(AccountPermission.Admin);
+    const canManageBilling = permissions.includes(AccountPermission.Billing);
 
     const trialing = checkIsTrialingSubscriptionStatus(subscriptionStatus);
 
@@ -141,7 +141,7 @@ export const PaymentBanner = memo(
             team features until the{" "}
             <Time date={pendingCancelAt} format="longDate" />.
           </p>
-          {userIsAdmin &&
+          {canManageBilling &&
             // The portal's renew control goes away with its cancel section,
             // which is turned off so the survey is not asked twice.
             (subscription?.provider === AccountSubscriptionProvider.Stripe ? (
@@ -183,7 +183,7 @@ export const PaymentBanner = memo(
               ) : null}
               Add a payment method to retain access to team features.
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -200,7 +200,7 @@ export const PaymentBanner = memo(
             <p>
               Your subscription is past due. Please update your payment method.
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -218,7 +218,7 @@ export const PaymentBanner = memo(
               Your subscription is unpaid. Please proceed to payment to retain
               access to team features.
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -236,7 +236,7 @@ export const PaymentBanner = memo(
               Your trial has expired. Subscribe to Pro plan to use team
               features.
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <div className="flex flex-wrap items-center gap-2">
                 <TeamSubscribeDialog initialAccountId={account.id}>
                   Subscribe
@@ -253,7 +253,7 @@ export const PaymentBanner = memo(
         return (
           <BannerTemplate color="danger">
             <p>Subscribe to Pro plan to use team features.</p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe
               </TeamSubscribeDialog>

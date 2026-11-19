@@ -262,7 +262,7 @@ router.get("/Schemas", (_req, res) => {
         attribute("roles", "complex", {
           multiValued: true,
           description:
-            "The level of the member in the team: owner, member or contributor. Without a role, the member's level is left as it is.",
+            "The level of the member in the team: owner, billing, member or contributor. Without a role, the member's level is left as it is.",
           subAttributes: [
             stringAttribute("value"),
             attribute("primary", "boolean"),

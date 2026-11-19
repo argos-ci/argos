@@ -825,8 +825,8 @@ export async function endTrialToUnlockUsage(
 }
 
 /**
- * Tell the account owners that their trial has been converted, they are now
- * being charged for the screenshots they take.
+ * Tell the account billing users that their trial has been converted, they
+ * are now being charged for the screenshots they take.
  */
 async function notifyTrialEnded(
   account: Account,
@@ -837,7 +837,7 @@ async function notifyTrialEnded(
   // instead of going through the manager.
   const [plan, recipients] = await Promise.all([
     subscription.$relatedQuery("plan"),
-    account.$getOwnerIds(),
+    account.$getUserIdsWithPermission("billing"),
   ]);
   invariant(plan, "Plan not found");
 

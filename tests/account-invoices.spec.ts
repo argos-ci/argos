@@ -63,6 +63,26 @@ loggedTest(
 );
 
 loggedTest(
+  "account invoices - read by a billing member",
+  async ({ page, team, auth }) => {
+    await createInvoicesScenario({ accountId: team.account.id });
+    await TeamUser.query()
+      .patch({ userLevel: "billing" })
+      .where({ teamId: team.team.id, userId: auth.user.id });
+
+    await page.goto(`/${team.account.slug}/settings`);
+    await expect(page.getByRole("link", { name: "Billing" })).toBeVisible();
+    // Billing, not the settings an owner administers.
+    await expect(
+      page.getByRole("link", { name: "Authentication" }),
+    ).toHaveCount(0);
+
+    await page.getByRole("link", { name: "Invoices" }).click();
+    await expect(page.getByRole("row")).toHaveCount(5);
+  },
+);
+
+loggedTest(
   "account invoices - no tab for a member, nor for a yearly contract",
   async ({ page, team, auth, plan }) => {
     await createInvoicesScenario({ accountId: team.account.id });

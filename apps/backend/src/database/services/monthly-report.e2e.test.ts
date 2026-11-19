@@ -165,6 +165,28 @@ describe("sendAccountMonthlyReport", () => {
     expect(mockSendEmailTemplate.mock.calls[0]?.[0].to).toEqual([ownerEmail]);
   });
 
+  it("sends it to the billing members too, not to the other members", async () => {
+    invariant(account.teamId, "a team account has a team");
+    const [billingUser, member] = await Promise.all([
+      factory.User.create(),
+      factory.User.create(),
+    ]);
+    await factory.TeamUser.createMany(2, [
+      { teamId: account.teamId, userId: billingUser.id, userLevel: "billing" },
+      { teamId: account.teamId, userId: member.id, userLevel: "member" },
+    ]);
+
+    await sendAccountMonthlyReport(account.id, now);
+
+    const recipients = mockSendEmailTemplate.mock.calls.map(
+      (call) => call[0].to,
+    );
+    expect(recipients).toHaveLength(2);
+    expect(recipients).toEqual(
+      expect.arrayContaining([[ownerEmail], [billingUser.email]]),
+    );
+  });
+
   it("sends the report once per month", async () => {
     await sendAccountMonthlyReport(account.id, now);
     await sendAccountMonthlyReport(

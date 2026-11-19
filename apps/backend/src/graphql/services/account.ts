@@ -20,6 +20,7 @@ import {
   UserEmail,
   UserPasskey,
 } from "@/database/models";
+import type { AccountPermission } from "@/database/models/Account";
 import { resolveAccountSlug } from "@/database/services/account";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
@@ -69,6 +70,15 @@ export async function getAdminAccount(args: {
   auth: AuthViewer | null;
   withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
+  return getAccountWithPermission({ ...args, permission: "admin" });
+}
+
+export async function getAccountWithPermission(args: {
+  id: string;
+  auth: AuthViewer | null;
+  permission: AccountPermission;
+  withGraphFetched?: RelationExpression<Account>;
+}): Promise<Account> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
   }
@@ -80,11 +90,21 @@ export async function getAdminAccount(args: {
     query.withGraphFetched(args.withGraphFetched);
   }
   const account = await query;
-  const permissions = await account.$getPermissions(args.auth);
-  if (!permissions.includes("admin")) {
-    throw forbidden("user is not an admin of the account");
-  }
+  await assertAccountPermission(account, args.auth, args.permission);
   return account;
+}
+
+export async function assertAccountPermission(
+  account: Account,
+  auth: AuthViewer | null,
+  permission: AccountPermission,
+): Promise<void> {
+  const permissions = await account.$getPermissions(auth);
+  if (!permissions.includes(permission)) {
+    throw forbidden(
+      `user does not have the ${permission} permission on the account`,
+    );
+  }
 }
 
 export async function getAccessibleAccounts(args: {

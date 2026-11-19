@@ -59,6 +59,8 @@ export function getTeamUserLevelLabel(level: TeamUser["userLevel"]) {
   switch (level) {
     case "owner":
       return "Owner";
+    case "billing":
+      return "Billing";
     case "member":
       return "Member";
     case "contributor":

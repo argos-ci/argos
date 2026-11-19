@@ -78,9 +78,9 @@ export type ProjectVisibility =
  * public REST API (`GET /accounts/{accountSlug}/projects`):
  * - staff see every project
  * - on a user account, only the owner
- * - on a team, owners/members see all; contributors see projects they are a
- *   contributor on (or that expose a default user level); a member kept out
- *   by the team's SAML enforcement sees nothing
+ * - on a team, everyone but contributors sees all; contributors see projects
+ *   they are a contributor on (or that expose a default user level); a member
+ *   kept out by the team's SAML enforcement sees nothing
  */
 export async function getProjectVisibility(args: {
   account: Account;
