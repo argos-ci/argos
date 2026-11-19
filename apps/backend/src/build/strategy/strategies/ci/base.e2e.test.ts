@@ -87,12 +87,17 @@ async function createBaseline(project: Project, commit: string) {
 /**
  * Create a completed check build that nobody reviewed at a given commit.
  */
-async function createUnreviewedBuild(project: Project, commit: string) {
+async function createUnreviewedBuild(
+  project: Project,
+  commit: string,
+  input: { branch?: string; prHeadCommit?: string } = {},
+) {
   const bucket = await factory.ScreenshotBucket.create({
     projectId: project.id,
     name: "default",
     mode: "ci",
     commit,
+    ...(input.branch ? { branch: input.branch } : {}),
   });
   const build = await factory.Build.create({
     projectId: project.id,
@@ -101,6 +106,7 @@ async function createUnreviewedBuild(project: Project, commit: string) {
     mode: "ci",
     type: "check",
     jobStatus: "complete",
+    prHeadCommit: input.prHeadCommit ?? null,
   });
   return { bucket, build };
 }
@@ -340,6 +346,7 @@ describe("#getCIBase (no git provider)", () => {
   describe("stacked pull requests", () => {
     const BELOW_COMMIT = "dddddddddddddddddddddddddddddddddddddddd";
     const MAIN_COMMIT = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const MERGE_COMMIT = "ffffffffffffffffffffffffffffffffffffffff";
 
     /**
      * Open a pull request from `feature-2` into `baseRef`, with the pull
@@ -376,6 +383,7 @@ describe("#getCIBase (no git provider)", () => {
       const { bucket: belowBucket } = await createUnreviewedBuild(
         project,
         BELOW_COMMIT,
+        { branch: "feature-1" },
       );
       await createBaseline(project, MAIN_COMMIT);
       await build.$query().patch({
@@ -399,10 +407,53 @@ describe("#getCIBase (no git provider)", () => {
       const { build: belowBuild } = await createUnreviewedBuild(
         project,
         BELOW_COMMIT,
+        { branch: "feature-1" },
       );
       await factory.BuildReview.create({
         buildId: belowBuild.id,
         state: "rejected",
+      });
+      const mainBucket = await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(mainBucket.id);
+    });
+
+    test("finds the build below by its head commit when CI builds merge commits", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      const { bucket: belowBucket } = await createUnreviewedBuild(
+        project,
+        MERGE_COMMIT,
+        { branch: "feature-1", prHeadCommit: BELOW_COMMIT },
+      );
+      await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(belowBucket.id);
+    });
+
+    test("requires an approved baseline from any other branch", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      await createUnreviewedBuild(project, BELOW_COMMIT, {
+        branch: "feature-3",
       });
       const mainBucket = await createBaseline(project, MAIN_COMMIT);
       await build.$query().patch({
@@ -429,7 +480,9 @@ describe("#getCIBase (no git provider)", () => {
       "requires an approved baseline when %s",
       async ([, input], { args, build, project }) => {
         const pullRequest = await createStack(input);
-        await createUnreviewedBuild(project, BELOW_COMMIT);
+        await createUnreviewedBuild(project, BELOW_COMMIT, {
+          branch: "feature-1",
+        });
         const mainBucket = await createBaseline(project, MAIN_COMMIT);
         await build.$query().patch({
           parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],

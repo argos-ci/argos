@@ -170,7 +170,8 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
   // A pull request stacked on another one is the exception: the one below is
   // still in review, and its latest build is what the stacked one changes.
   // Comparing with the last approved build would show both pull requests'
-  // changes at once.
+  // changes at once. Only the builds of its branch are exempt: past them, the
+  // history is reviewed as usual.
   const isBaseBranchAutoApproved = baseBranch
     ? context.checkIsAutoApproved(baseBranch)
     : false;
@@ -179,7 +180,8 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     baseBranch,
     isAutoApprovedBranch: context.isAutoApprovedBranch,
   });
-  const approved = isBaseBranchAutoApproved || isStacked ? undefined : true;
+  const approved = isBaseBranchAutoApproved ? undefined : true;
+  const exemptBranch = isStacked ? baseBranch : null;
 
   // When we have a merge base commit that differs from the head, we first try
   // to find a bucket for that exact commit.
@@ -191,7 +193,7 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
       // (ARGOS_REFERENCE_COMMIT), so the build on it is trusted without
       // approval. Without a Git provider the CLI sends one too: the commit of
       // the closest approved build, or the merge base when it found none.
-      { approved: build.baseCommit ? undefined : approved },
+      { approved: build.baseCommit ? undefined : approved, exemptBranch },
     );
 
     // A bucket exists for the merge base commit.
@@ -208,6 +210,7 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
     pages: listCommitPages(mergeBaseCommitSha ?? head),
     build,
     approved,
+    exemptBranch,
   });
 
   return result(baseBucket);

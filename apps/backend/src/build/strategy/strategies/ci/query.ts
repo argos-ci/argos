@@ -38,6 +38,11 @@ type QueryBaseBucketOptions = {
    * Only return buckets from approved builds.
    */
   approved?: true | undefined;
+  /**
+   * A branch whose builds count as approved: the head branch of the pull
+   * request a stacked one builds on, still in review.
+   */
+  exemptBranch?: string | null | undefined;
 };
 
 /**
@@ -59,6 +64,7 @@ function queryEligibleBaselineBuilds(args: {
    * approved review or a merged pull request).
    */
   approved?: boolean | undefined;
+  exemptBranch?: QueryBaseBucketOptions["exemptBranch"];
 }) {
   const query = Build.query()
     .where("builds.projectId", args.projectId)
@@ -78,6 +84,7 @@ function queryEligibleBaselineBuilds(args: {
       // - reference (auto-approved)
       // - orphans
       // - checks that have an approved review or a merged pull request
+      // - builds of the exempt branch
       qb.whereIn("builds.type", ["reference", "orphan"]).orWhere((qb) => {
         qb.where("builds.type", "check").where((qb) =>
           qb
@@ -101,6 +108,15 @@ function queryEligibleBaselineBuilds(args: {
             ),
         );
       });
+      if (args.exemptBranch) {
+        qb.orWhereExists(
+          ScreenshotBucket.query()
+            .whereRaw(
+              'screenshot_buckets."id" = builds."compareScreenshotBucketId"',
+            )
+            .where("screenshot_buckets.branch", args.exemptBranch),
+        );
+      }
     });
   }
 
@@ -126,6 +142,7 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
     name: build.name,
     mode: build.mode,
     approved: options?.approved,
+    exemptBranch: options?.exemptBranch,
   })
     .select("compareScreenshotBucketId")
     .whereNot("builds.id", build.id);
@@ -176,28 +193,65 @@ function rankedBindings(shas: string[]): (string | number)[] {
 
 /**
  * Get the bucket from a list of commits, ordered by the order of the commits.
+ *
+ * A pull request build is matched on its head commit too (`prHeadCommit`): CI
+ * running on `pull_request` events builds a merge commit no branch contains.
  */
-export async function getBucketFromCommits(args: {
-  shas: string[];
-  build: Build;
-  approved?: QueryBaseBucketOptions["approved"];
-}) {
-  if (args.shas.length === 0) {
+export async function getBucketFromCommits(
+  args: {
+    shas: string[];
+    build: Build;
+  } & QueryBaseBucketOptions,
+) {
+  const { shas, build, ...options } = args;
+  if (shas.length === 0) {
     return null;
   }
-  const bucket = await queryBaseBucket(args.build, { approved: args.approved })
-    .whereIn("commit", args.shas)
-    .joinRaw(
-      `join (values ${rankedValuesClause(args.shas)}) as ordering(sha, rank) on commit = ordering.sha`,
-      rankedBindings(args.shas),
-    )
-    // queryBaseBucket orders by id to pick the latest bucket of a commit. Here
-    // the position has to decide first, the id only settles ties within one
-    // commit - appended after an existing order, it would never get a say.
-    .clearOrder()
-    .orderBy("ordering.rank")
-    .orderBy("id", "desc")
-    .first();
+  const [bucket, prHeadBuild] = await Promise.all([
+    queryBaseBucket(build, options)
+      .whereIn("commit", shas)
+      .joinRaw(
+        `join (values ${rankedValuesClause(shas)}) as ordering(sha, rank) on commit = ordering.sha`,
+        rankedBindings(shas),
+      )
+      // queryBaseBucket orders by id to pick the latest bucket of a commit.
+      // Here the position has to decide first, the id only settles ties within
+      // one commit - appended after an existing order, it would never get a
+      // say.
+      .clearOrder()
+      .orderBy("ordering.rank")
+      .orderBy("id", "desc")
+      .first(),
+    queryEligibleBaselineBuilds({
+      projectId: build.projectId,
+      name: build.name,
+      mode: build.mode,
+      ...options,
+    })
+      .whereNot("builds.id", build.id)
+      .joinRelated("compareScreenshotBucket")
+      .where("compareScreenshotBucket.complete", true)
+      .where("compareScreenshotBucket.valid", true)
+      .whereIn("builds.prHeadCommit", shas)
+      .joinRaw(
+        `join (values ${rankedValuesClause(shas)}) as ordering(sha, rank) on builds."prHeadCommit" = ordering.sha`,
+        rankedBindings(shas),
+      )
+      .select("builds.compareScreenshotBucketId", "builds.prHeadCommit")
+      .orderBy("ordering.rank")
+      .orderBy("builds.compareScreenshotBucketId", "desc")
+      .first(),
+  ]);
+  if (
+    prHeadBuild?.prHeadCommit &&
+    (!bucket ||
+      shas.indexOf(prHeadBuild.prHeadCommit) < shas.indexOf(bucket.commit))
+  ) {
+    const prHeadBucket = await ScreenshotBucket.query().findById(
+      prHeadBuild.compareScreenshotBucketId,
+    );
+    return prHeadBucket ?? null;
+  }
   return bucket ?? null;
 }
 
@@ -215,18 +269,19 @@ export const MAX_LISTED_COMMITS = 5000;
  * through the history. The commit itself is not a candidate. Pages are pulled
  * one at a time, so the provider is no longer queried once a bucket is found.
  */
-export async function getBucketFromAncestors(args: {
-  pages: AsyncIterable<string[]> | Iterable<string[]>;
-  build: Build;
-  approved?: QueryBaseBucketOptions["approved"];
-}) {
+export async function getBucketFromAncestors(
+  args: {
+    pages: AsyncIterable<string[]> | Iterable<string[]>;
+    build: Build;
+  } & QueryBaseBucketOptions,
+) {
+  const { pages, ...options } = args;
   let listed = 0;
-  for await (const page of args.pages) {
+  for await (const page of pages) {
     const shas = page.slice(0, MAX_LISTED_COMMITS - listed);
     const bucket = await getBucketFromCommits({
+      ...options,
       shas: listed === 0 ? shas.slice(1) : shas,
-      build: args.build,
-      approved: args.approved,
     });
     if (bucket) {
       return bucket;
