@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import { useSetAtom } from "jotai/react";
-import { MapPinIcon } from "lucide-react";
+import { MapPinIcon, SquareDashedIcon } from "lucide-react";
 
 import {
   commentsVisibleAtom,
@@ -28,6 +28,13 @@ type ScreenshotDiff = DocumentType<typeof _ScreenshotDiffFragment>;
  */
 export type CommentAnchor =
   | { __typename: "CommentPointAnchor"; x: number; y: number }
+  | {
+      __typename: "CommentAreaAnchor";
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }
   | { __typename: "CommentLinesAnchor"; from: number; to: number };
 
 /** Short human label describing where on the diff a comment points. */
@@ -41,6 +48,7 @@ function getAnchorLabel(anchor: CommentAnchor | null): string | null {
         ? `Line ${anchor.from}`
         : `Lines ${anchor.from}-${anchor.to}`;
     case "CommentPointAnchor":
+    case "CommentAreaAnchor":
       return null;
     default:
       return null;
@@ -62,7 +70,9 @@ export function useGoToCommentDiff(input: {
   const { allDiffs, setActiveDiff } = useBuildDiffState();
   const setCommentsVisible = useSetAtom(commentsVisibleAtom);
   const requestOpenComment = useSetAtom(requestedScreenshotCommentIdAtom);
-  const isPoint = anchor?.__typename === "CommentPointAnchor";
+  const isOnImage =
+    anchor?.__typename === "CommentPointAnchor" ||
+    anchor?.__typename === "CommentAreaAnchor";
 
   if (!screenshotDiff) {
     return null;
@@ -76,11 +86,11 @@ export function useGoToCommentDiff(input: {
       return;
     }
     setActiveDiff(diff, true);
-    // A point-anchored comment lives as a marker on the image: reveal comments
-    // and ask the screenshot layer to open this one's thread once its diff is
-    // shown. (Line-anchored comments render inline on the diff, so navigating
-    // there already surfaces them.)
-    if (isPoint) {
+    // A comment on a point or an area lives as a marker on the image: reveal
+    // comments and ask the screenshot layer to open this one's thread once its
+    // diff is shown. (Line-anchored comments render inline on the diff, so
+    // navigating there already surfaces them.)
+    if (isOnImage) {
       setCommentsVisible(true);
       requestOpenComment(commentId);
     }
@@ -102,7 +112,6 @@ export function CommentScreenshotReference(props: {
   const goToDiff = useGoToCommentDiff({ commentId, screenshotDiff, anchor });
   invariant(goToDiff, "always navigable: screenshotDiff is provided");
   const linesLabel = getAnchorLabel(anchor);
-  const isPoint = anchor?.__typename === "CommentPointAnchor";
 
   return (
     <button
@@ -121,8 +130,14 @@ export function CommentScreenshotReference(props: {
       <span className="min-w-0 flex-1 truncate font-medium">
         {screenshotDiff.name}
       </span>
-      {isPoint ? (
+      {anchor?.__typename === "CommentPointAnchor" ? (
         <MapPinIcon className="size-3.5 shrink-0" aria-label="Pinned comment" />
+      ) : null}
+      {anchor?.__typename === "CommentAreaAnchor" ? (
+        <SquareDashedIcon
+          className="size-3.5 shrink-0"
+          aria-label="Comment on an area"
+        />
       ) : null}
       {linesLabel ? (
         <span className="shrink-0 tabular-nums">{linesLabel}</span>

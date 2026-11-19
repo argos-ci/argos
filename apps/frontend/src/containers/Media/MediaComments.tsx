@@ -11,6 +11,7 @@ import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
+import { getImageAnchor } from "@/containers/Comment/imageAnchor";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { DocumentType, graphql } from "@/gql";
@@ -51,6 +52,12 @@ const _MediaCommentsFragment = graphql(`
           x
           y
         }
+        ... on CommentAreaAnchor {
+          x
+          y
+          width
+          height
+        }
       }
       ...CommentCard_Comment
     }
@@ -77,6 +84,12 @@ const AddMediaCommentMutation = graphql(`
           ... on CommentPointAnchor {
             x
             y
+          }
+          ... on CommentAreaAnchor {
+            x
+            y
+            width
+            height
           }
         }
         ...CommentCard_Comment
@@ -187,8 +200,8 @@ export function MediaComments(props: {
       <div className="px-3">
         {mode === "comment" && canComment ? (
           <p className="text-low bg-ui mb-3 rounded-md px-3 py-2 text-xs">
-            Click the spot on the image you want to comment on. Press Esc to
-            cancel.
+            Click a spot on the image, or drag over an area, to comment on it.
+            Press Esc to cancel.
           </p>
         ) : null}
 
@@ -287,7 +300,7 @@ function ActivityEntryRow(props: {
       );
     case "comment": {
       const { thread } = entry;
-      const pinned = thread.root.anchor?.__typename === "CommentPointAnchor";
+      const pinned = getImageAnchor(thread.root.anchor) !== null;
       return (
         <div className={clsx("pb-px", spacing)}>
           <CommentCard

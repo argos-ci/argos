@@ -59,6 +59,12 @@ const ANCHORED_MUTATION = `
             x
             y
           }
+          ... on CommentAreaAnchor {
+            x
+            y
+            width
+            height
+          }
           ... on CommentLinesAnchor {
             from
             to
@@ -636,6 +642,42 @@ describe("GraphQL addBuildComment mutation", () => {
     });
   });
 
+  test("anchors a comment to an area of a snapshot", async ({ fixture }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const area = { x: 0.1, y: 0.25, width: 0.5, height: 0.2 };
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            anchor: { area },
+            body: commentBody("This whole card shifted."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    const { anchor } = res.body.data.addBuildComment.comments[0];
+    expect(anchor).toEqual({ __typename: "CommentAreaAnchor", ...area });
+
+    const stored = await Comment.query().findOne({ buildId: fixture.build.id });
+    invariant(stored);
+    expect(stored.anchor).toEqual({ type: "area", ...area });
+  });
+
   test("anchors a comment to a line range on a snapshot", async ({
     fixture,
   }) => {
@@ -850,7 +892,7 @@ describe("GraphQL addBuildComment mutation", () => {
 
     expect(res.body.errors).toBeDefined();
     expect(res.body.errors[0].message).toBe(
-      "A comment anchor must set exactly one of point or lines",
+      "A comment anchor must set exactly one of point, area or lines",
     );
     const comments = await Comment.query().where({ buildId: fixture.build.id });
     expect(comments).toHaveLength(0);

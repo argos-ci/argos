@@ -208,7 +208,7 @@ export const typeDefs = gql`
     permissions: [MediaPermission!]!
     """
     Comment threads on this media, oldest first. A comment's \`anchor\` gives the
-    point on the image it refers to, which is how a reviewer marks one up.
+    point or area of the image it refers to, which is how a reviewer marks one up.
 
     Threads belong to the media rather than to a version, so they survive the
     re-upload they asked for; each comment's \`mediaVersion\` says which version

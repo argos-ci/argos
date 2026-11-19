@@ -27,6 +27,12 @@ const _CommentFragment = graphql(`
         x
         y
       }
+      ... on CommentAreaAnchor {
+        x
+        y
+        width
+        height
+      }
       ... on CommentLinesAnchor {
         from
         to

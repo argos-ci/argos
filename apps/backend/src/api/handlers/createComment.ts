@@ -82,7 +82,7 @@ export const createBuildCommentOperation = {
   operationId: "createBuildComment",
   summary: "Post a comment (or reply) on a build",
   description:
-    "Post a comment on a build. Start a new thread, reply to an existing one with `threadId`, optionally anchor the comment to a screenshot diff, or attach it to your pending review with `addToReview`.",
+    "Post a comment on a build. Start a new thread, reply to an existing one with `threadId`, optionally anchor the comment to a screenshot diff (and to a point, an area or a line range on it with `anchor`), or attach it to your pending review with `addToReview`.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
@@ -217,7 +217,7 @@ export const createMediaCommentOperation = {
   operationId: "createMediaComment",
   summary: "Post a comment (or reply) on a media",
   description:
-    "Post a comment on an uploaded media. Start a new thread, or reply to an existing one with `threadId`. Pass an `anchor` to pin the comment to a point on the image (normalized coordinates, so it survives any scaling). This is how a reviewer marks up a screenshot.",
+    "Post a comment on an uploaded media. Start a new thread, or reply to an existing one with `threadId`. Pass an `anchor` to pin the comment to a point or an area of the image (normalized coordinates, so it survives any scaling). This is how a reviewer marks up a screenshot.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
@@ -260,9 +260,12 @@ function resolveMediaCommentOptions(input: {
   const anchor = parseCommentAnchor(requestBody.anchor);
 
   // A line range describes a textual snapshot. An uploaded image or video has
-  // no lines, so only a point makes sense here.
-  if (anchor.type !== "point") {
-    throw boom(400, "A media comment can only be anchored to a point");
+  // no lines.
+  if (anchor.type === "lines") {
+    throw boom(
+      400,
+      "A media comment can't be anchored to lines. Use a point or an area.",
+    );
   }
 
   return { anchor };

@@ -4,6 +4,11 @@ import { useScaleContext } from "./ScaleContext";
 import { useZoomTransform, type PaneSize } from "./Zoomer";
 
 export type NormalizedPoint = { x: number; y: number };
+/** A rectangle in normalized coordinates, `x`/`y` being its top-left corner. */
+export type NormalizedRect = NormalizedPoint & {
+  width: number;
+  height: number;
+};
 export type ScreenPoint = { left: number; top: number };
 
 /**

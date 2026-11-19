@@ -68,8 +68,10 @@ export function CommentMarker(props: {
   comment: Comment;
   open: boolean;
   onOpen: () => void;
+  /** Lets the layer outline the area a hovered pin is about. */
+  onHoverChange?: (hovered: boolean) => void;
 }) {
-  const { point, comment, open, onOpen } = props;
+  const { point, comment, open, onOpen, onHoverChange } = props;
   const [hovered, setHovered] = useState(false);
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const name = comment.user?.name || comment.user?.slug || "Unknown user";
@@ -126,8 +128,14 @@ export function CommentMarker(props: {
             ? `Open resolved comment from ${name}`
             : `Open comment from ${name}`
         }
-        onHoverStart={() => setHovered(true)}
-        onHoverEnd={() => setHovered(false)}
+        onHoverStart={() => {
+          setHovered(true);
+          onHoverChange?.(true);
+        }}
+        onHoverEnd={() => {
+          setHovered(false);
+          onHoverChange?.(false);
+        }}
         onClick={onOpen}
         onKeyDown={(event: React.KeyboardEvent) => {
           if (event.key === "Enter" || event.key === " ") {

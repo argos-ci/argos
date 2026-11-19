@@ -164,6 +164,44 @@ describe("createComment", () => {
     expect(res.body.anchor).toEqual({ type: "point", x: 0.5, y: 0.5 });
   });
 
+  test("anchors a comment to an area", async ({
+    build,
+    screenshotDiffs,
+    scopedPatToken,
+  }) => {
+    const anchor = { type: "area", x: 0.3, y: 0.2, width: 0.7, height: 0.4 };
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .send({
+        body: "This whole card moved",
+        screenshotDiffId: screenshotDiffs[0]!.id,
+        anchor,
+      })
+      .expect(201);
+
+    expect(res.body.anchor).toEqual(anchor);
+  });
+
+  test.for([
+    { x: 0.5, y: 0.5, width: 0.6, height: 0.1 },
+    { x: 0.1, y: 0.1, width: 0, height: 0.1 },
+    { x: -0.1, y: 0.1, width: 0.2, height: 0.1 },
+  ])(
+    "rejects an area that isn't inside the image: %o",
+    async (area, { build, screenshotDiffs, scopedPatToken }) => {
+      await request(app)
+        .post(`/projects/acme/web/builds/${build.number}/comments`)
+        .set(auth(scopedPatToken))
+        .send({
+          body: "bad area",
+          screenshotDiffId: screenshotDiffs[0]!.id,
+          anchor: { type: "area", ...area },
+        })
+        .expect(400);
+    },
+  );
+
   test("anchors a comment to a line range", async ({
     build,
     screenshotDiffs,

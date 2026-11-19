@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,6 +11,7 @@ import {
   isPointInImage,
   useImageProjection,
   type NormalizedPoint,
+  type NormalizedRect,
   type ScreenPoint,
 } from "@/containers/Build/projection";
 import {
@@ -18,25 +20,41 @@ import {
 } from "@/containers/Build/Zoomer";
 import { type EditorValue } from "@/ui/Editor/Editor";
 
+import { CommentArea } from "./CommentArea";
 import { CommentDraftPopover } from "./CommentDraftPopover";
 import { CommentMarker } from "./CommentMarker";
 import { CommentPin } from "./CommentPin";
 import { CommentThreadPopover } from "./CommentThreadPopover";
+import {
+  getAnchorPinPoint,
+  getRectInImage,
+  type ImageAnchor,
+} from "./imageAnchor";
 
 /** What the layer reads off a comment — the marker's needs plus an identity. */
 type LayerComment = React.ComponentProps<typeof CommentMarker>["comment"] & {
   id: string;
 };
 
-/** A point-anchored thread: its comments, and where on the image it points. */
-export type PointCommentThread<TComment extends LayerComment = LayerComment> = {
+/** An image-anchored thread: its comments, and where on the image it points. */
+export type ImageCommentThread<TComment extends LayerComment = LayerComment> = {
   root: TComment;
   replies: TComment[];
-  point: NormalizedPoint;
+  anchor: ImageAnchor;
 };
 
-/** How close pointerdown and click must be to count as a click, not a pan. */
+/** How far the pointer may move and still place a point rather than an area. */
 const CLICK_MOVE_THRESHOLD = 4;
+
+/** A press on the image, until it ends as a click or as an area. */
+type Press = {
+  clientX: number;
+  clientY: number;
+  /** The corner the area grows from. */
+  point: NormalizedPoint;
+  /** Set once the pointer moved past the click threshold. */
+  dragging: boolean;
+};
 
 // A comment-bubble cursor with the same silhouette as the pin: a rounded body
 // with a sharp bottom-left tip (matching `rounded-full rounded-bl-none`), a dark
@@ -66,19 +84,22 @@ const PIN_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(PIN_CURSOR_SVG)
 
 /**
  * The floating comment UI drawn over a pannable image: markers on the anchored
- * points, a hover preview per marker, the full thread in a popover on click,
- * and — with `placing` on — a pin cursor that drops a draft where the user
- * clicks.
+ * points and areas, a hover preview per marker, the full thread in a popover on
+ * click, and — with `placing` on — a pin cursor that drops a draft where the
+ * user clicks, or on the area they drag over.
  *
- * The mechanics are the same wherever an image takes point comments — a
- * build's snapshot or an uploaded media — so this owns them once: what varies
- * (which threads, how a comment is created, what the thread card renders) is
- * injected. The click-capture layer and the draft indicator live inside the
- * `ZoomPane` overlay slot (so they track pan/zoom and clip to the image); the
- * markers and the popovers are portaled and fixed-positioned so they escape
- * the pane's overflow clipping while still following the image.
+ * Placing takes the drag from panning: the wheel still pans and zooms, and the
+ * Move tool gives the drag back.
+ *
+ * The mechanics are the same wherever an image takes comments — a build's
+ * snapshot or an uploaded media — so this owns them once: what varies (which
+ * threads, how a comment is created, what the thread card renders) is
+ * injected. The click-capture layer, the areas and the draft indicator live
+ * inside the `ZoomPane` overlay slot (so they track pan/zoom and clip to the
+ * image); the markers and the popovers are portaled and fixed-positioned so
+ * they escape the pane's overflow clipping while still following the image.
  */
-export function PointCommentLayer<TComment extends LayerComment>(props: {
+export function ImageCommentLayer<TComment extends LayerComment>(props: {
   paneSize: PaneSize | null;
   imgSize: { width: number; height: number };
   /**
@@ -86,9 +107,12 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
    * the build's snapshots are top-aligned, a media is centered.
    */
   verticalAlign?: "top" | "center";
-  /** The point-anchored threads to draw. */
-  threads: PointCommentThread<TComment>[];
-  /** Placement mode: the image takes the pin cursor and a click drops a draft. */
+  /** The image-anchored threads to draw. */
+  threads: ImageCommentThread<TComment>[];
+  /**
+   * Placement mode: the image takes the pin cursor, a click drops a draft on a
+   * point and a drag on an area.
+   */
   placing: boolean;
   /** Avatar shown on the draft pin — the current user's. */
   draftAvatar: React.ComponentProps<typeof CommentPin>["avatar"];
@@ -101,10 +125,10 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
   onCreate: (
     body: EditorValue,
     options: { addToReview: boolean },
-    point: NormalizedPoint,
+    anchor: ImageAnchor,
   ) => Promise<string | null>;
   /** The full thread, rendered inside the popover once a marker is opened. */
-  renderThreadCard: (thread: PointCommentThread<TComment>) => React.ReactNode;
+  renderThreadCard: (thread: ImageCommentThread<TComment>) => React.ReactNode;
   /**
    * A thread the surroundings ask to open — e.g. jumping to a comment from a
    * sidebar. Honored (and reported consumed) once it names one of `threads`.
@@ -139,8 +163,11 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
     verticalAlign,
   });
 
-  const [draft, setDraft] = useState<NormalizedPoint | null>(null);
+  const [draft, setDraft] = useState<ImageAnchor | null>(null);
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+  const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
+  // The area under an ongoing drag, before it becomes the draft.
+  const [selection, setSelection] = useState<NormalizedRect | null>(null);
 
   const openThread =
     threads.find((thread) => thread.root.id === openThreadId) ?? null;
@@ -179,6 +206,7 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
   if (prevPlacing !== placing) {
     setPrevPlacing(placing);
     setDraft(null);
+    setSelection(null);
   }
 
   const draftShown = placing && draft !== null;
@@ -285,24 +313,82 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
     };
   }, [hasActivePopover, canDismissPlacing, onPlacingDismiss]);
 
-  // Distinguish a click (place a comment) from a drag (pan the image).
-  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
-  const handlePlacementPointerDown = (event: React.PointerEvent) => {
-    pointerDownRef.current = { x: event.clientX, y: event.clientY };
+  // A press that ends close to where it started is a click and places a
+  // point; one that moves further draws an area. The click itself is left to
+  // `onClick`, which is also what assistive technology fires.
+  const pressRef = useRef<Press | null>(null);
+  const getPointerPoint = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ): NormalizedPoint | null => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return toNormalized(event.clientX - rect.left, event.clientY - rect.top);
+  };
+  const handlePlacementPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const point = getPointerPoint(event);
+    pressRef.current = point
+      ? {
+          clientX: event.clientX,
+          clientY: event.clientY,
+          point,
+          dragging: false,
+        }
+      : null;
+    // Keeps the drag going once it leaves the image, and has the click that
+    // ends it land here.
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handlePlacementPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    const press = pressRef.current;
+    if (!press) {
+      return;
+    }
+    if (
+      !press.dragging &&
+      Math.hypot(event.clientX - press.clientX, event.clientY - press.clientY) >
+        CLICK_MOVE_THRESHOLD
+    ) {
+      press.dragging = true;
+    }
+    if (press.dragging) {
+      const point = getPointerPoint(event);
+      setSelection(point ? getRectInImage(press.point, point) : null);
+    }
+  };
+  const handlePlacementPointerUp = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    const press = pressRef.current;
+    if (!press?.dragging) {
+      return;
+    }
+    const point = getPointerPoint(event);
+    const area = point ? getRectInImage(press.point, point) : null;
+    setSelection(null);
+    setOpenThreadId(null);
+    setDraft(area ? { type: "area", ...area } : null);
+  };
+  const handlePlacementPointerCancel = () => {
+    pressRef.current = null;
+    setSelection(null);
   };
   const placeAt = (paneX: number, paneY: number) => {
     const point = toNormalized(paneX, paneY);
     setOpenThreadId(null);
-    setDraft(point && isPointInImage(point) ? point : null);
+    setDraft(
+      point && isPointInImage(point) ? { type: "point", ...point } : null,
+    );
   };
   const handlePlacementClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    const start = pointerDownRef.current;
-    pointerDownRef.current = null;
-    if (
-      start &&
-      Math.hypot(event.clientX - start.x, event.clientY - start.y) >
-        CLICK_MOVE_THRESHOLD
-    ) {
+    const press = pressRef.current;
+    pressRef.current = null;
+    if (press?.dragging) {
       return;
     }
     const rect = event.currentTarget.getBoundingClientRect();
@@ -327,6 +413,17 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
     return null;
   }
 
+  const renderArea = (area: NormalizedRect) => (
+    <CommentArea
+      topLeft={toScreen(area)}
+      bottomRight={toScreen({
+        x: area.x + area.width,
+        y: area.y + area.height,
+      })}
+    />
+  );
+  const draftPin = draft ? toScreen(getAnchorPinPoint(draft)) : null;
+
   return (
     <>
       <div ref={rootRef} className="pointer-events-none absolute inset-0">
@@ -336,10 +433,13 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
           <div
             role="button"
             tabIndex={0}
-            aria-label="Pick the spot to comment on"
-            className="pointer-events-auto absolute inset-0 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+            aria-label="Pick a spot or an area to comment on"
+            className={`${ZOOMER_OVERLAY_INTERACTIVE_CLASS} pointer-events-auto absolute inset-0 touch-none select-none focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none`}
             style={{ cursor: PIN_CURSOR }}
             onPointerDown={handlePlacementPointerDown}
+            onPointerMove={handlePlacementPointerMove}
+            onPointerUp={handlePlacementPointerUp}
+            onPointerCancel={handlePlacementPointerCancel}
             onClick={handlePlacementClick}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -351,14 +451,25 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
             }}
           />
         ) : null}
-        {/* The comment being drafted gets an immediate indicator at its point. */}
-        {draftShown && draft ? (
-          <CommentPin point={toScreen(draft)} avatar={draftAvatar} />
+        {threads.map((thread) =>
+          thread.anchor.type === "area" &&
+          (thread.root.id === openThreadId ||
+            thread.root.id === hoveredThreadId) ? (
+            <Fragment key={thread.root.id}>
+              {renderArea(thread.anchor)}
+            </Fragment>
+          ) : null,
+        )}
+        {selection ? renderArea(selection) : null}
+        {/* The comment being drafted gets an immediate indicator at its spot. */}
+        {draftShown && draft?.type === "area" ? renderArea(draft) : null}
+        {draftShown && draftPin ? (
+          <CommentPin point={draftPin} avatar={draftAvatar} />
         ) : null}
       </div>
       {threads.map((thread) => {
         const open = thread.root.id === openThreadId;
-        const point = toScreen(thread.point);
+        const point = toScreen(getAnchorPinPoint(thread.anchor));
         if (!open && !isInPane(point)) {
           return null;
         }
@@ -372,6 +483,15 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
               setDraft(null);
               setOpenThreadId(thread.root.id);
             }}
+            onHoverChange={(hovered) => {
+              setHoveredThreadId((current) =>
+                hovered
+                  ? thread.root.id
+                  : current === thread.root.id
+                    ? null
+                    : current,
+              );
+            }}
           />
         );
       })}
@@ -382,7 +502,7 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
           // reads its own draft when switching directly between markers (the
           // popover stays mounted across that switch).
           key={openThread.root.id}
-          point={toViewport(toScreen(openThread.point))}
+          point={toViewport(toScreen(getAnchorPinPoint(openThread.anchor)))}
           authorName={
             openThread.root.user?.name ||
             openThread.root.user?.slug ||
@@ -392,9 +512,9 @@ export function PointCommentLayer<TComment extends LayerComment>(props: {
           {renderThreadCard(openThread)}
         </CommentThreadPopover>
       ) : null}
-      {draftShown && draft ? (
+      {draftShown && draftPin ? (
         <CommentDraftPopover
-          point={toViewport(toScreen(draft))}
+          point={toViewport(draftPin)}
           canAddToReview={canAddToReview}
           onSubmit={handleCreate}
         />
