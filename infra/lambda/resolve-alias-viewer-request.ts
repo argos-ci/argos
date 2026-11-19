@@ -20,6 +20,16 @@ const ACCESS_TOKEN_PUBLIC_KEY = createPublicKey(
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
 const AUTH_CALLBACK_PATH = "/__argos/auth";
 
+/**
+ * A container handles one request at a time but many in a row, so this spares
+ * every file of a page the round trip to the API. Kept short because a deploy
+ * that moves an alias reaches a warm container only once its entry expires,
+ * whatever Cloudflare has purged.
+ */
+const RESOLVE_CACHE_TTL_MS = 10_000;
+// Bounds memory when a container sees a stream of unknown hosts.
+const RESOLVE_CACHE_MAX_ENTRIES = 500;
+
 type ResolvedDeployment = {
   deploymentId: string;
   projectId: string;
@@ -175,6 +185,38 @@ async function resolveAlias(
   };
 }
 
+const resolveCache = new Map<
+  string,
+  { deployment: ResolvedDeployment | null; expiresAt: number }
+>();
+
+async function resolveAliasCached(
+  domain: string,
+): Promise<ResolvedDeployment | null> {
+  const now = Date.now();
+  const cached = resolveCache.get(domain);
+  if (cached && cached.expiresAt > now) {
+    return cached.deployment;
+  }
+
+  console.log(`[resolve] host=${domain}`);
+  const deployment = await resolveAlias(domain);
+
+  // Re-inserting keeps the Map in expiry order, so the first key is the oldest.
+  resolveCache.delete(domain);
+  if (resolveCache.size >= RESOLVE_CACHE_MAX_ENTRIES) {
+    for (const oldest of resolveCache.keys()) {
+      resolveCache.delete(oldest);
+      break;
+    }
+  }
+  resolveCache.set(domain, {
+    deployment,
+    expiresAt: now + RESOLVE_CACHE_TTL_MS,
+  });
+  return deployment;
+}
+
 function isSafeReturnTo(value: string): boolean {
   // Only allow same-host relative paths to prevent open-redirect via the
   // callback. Must start with "/" but not "//" (protocol-relative).
@@ -249,7 +291,7 @@ export const handler = async (
 
   console.log(`[request] host=${host} path=${request.uri}`);
 
-  const deployment = await resolveAlias(host);
+  const deployment = await resolveAliasCached(host);
   if (!deployment) {
     console.log(`[404] host not found: ${host}`);
     return notFoundResponse();

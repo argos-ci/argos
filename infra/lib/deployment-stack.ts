@@ -248,7 +248,10 @@ export class ArgosDeploymentStack extends cdk.Stack {
       ),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
-      memorySize: 128,
+      // Viewer triggers are capped at 128 MB; origin triggers are not, and CPU
+      // scales with memory. A cold start here loads the AWS SDK and opens a TLS
+      // connection to DynamoDB, both CPU-bound, while the visitor waits.
+      memorySize: 1024,
       timeout: cdk.Duration.seconds(5),
       logGroup: new cdk.aws_logs.LogGroup(this, "OriginRequestFnLogGroup", {
         retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
